@@ -2,12 +2,8 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,61 +21,29 @@ class FeaturesTest {
   void everySpecIsLinkedAndEveryLinkedSpecExists() {
     List<String> linked =
         Pattern.compile("openspec/specs/([^/)#]+)/spec\\.md")
-            .matcher(FEATURES.stream().map(FeaturesTest::read).collect(Collectors.joining("\n")))
+            .matcher(FEATURES.stream().map(DocFiles::read).collect(Collectors.joining("\n")))
             .results()
             .map(match -> match.group(1))
             .distinct()
             .sorted()
             .toList();
 
-    assertThat(linked).isEqualTo(specDirectories());
+    assertThat(linked).isEqualTo(DocFiles.specDirectories());
   }
 
   @Test
   void everyKeyNamedAsOptInIsDescribedInJagtYmlDist() {
-    String dist = read(Path.of("../jagt.yml.dist"));
+    String dist = DocFiles.read(Path.of("../jagt.yml.dist"));
     List<String> keys =
         Pattern.compile("Key: `([^`]+)`")
-            .matcher(FEATURES.stream().map(FeaturesTest::read).collect(Collectors.joining("\n")))
+            .matcher(FEATURES.stream().map(DocFiles::read).collect(Collectors.joining("\n")))
             .results()
             .map(match -> match.group(1))
             .toList();
 
     assertThat(keys)
         .isNotEmpty()
-        .allSatisfy(key -> assertThat(describedInOrder(dist, key)).describedAs("%s", key).isTrue());
-  }
-
-  private static boolean describedInOrder(String dist, String key) {
-    int from = 0;
-    for (String segment : key.replaceFirst("^orchestrator\\.", "").split("\\.", 0)) {
-      Matcher found =
-          Pattern.compile("(?m)^\\s*#?\\s*" + Pattern.quote(segment) + ":").matcher(dist);
-      if (!found.find(from)) {
-        return false;
-      }
-      from = found.end();
-    }
-    return true;
-  }
-
-  private static List<String> specDirectories() {
-    try (Stream<Path> specs = Files.list(Path.of("../openspec/specs"))) {
-      return specs
-          .filter(Files::isDirectory)
-          .map(path -> path.getFileName().toString())
-          .sorted()
-          .toList();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static String read(Path path) {
-    try {
-      return Files.readString(path);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+        .allSatisfy(key ->
+            assertThat(DocFiles.describesInOrder(dist, key)).describedAs("%s", key).isTrue());
   }
 }

@@ -3,14 +3,11 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import com.google.errorprone.annotations.MustBeClosed;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class LogbackLoggersTest {
@@ -35,23 +32,16 @@ class LogbackLoggersTest {
   @Test
   void everyClassLoggingMasterStepIsRoutedToTheMasterWindow() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
-    List<String> logging;
-    try (Stream<Path> sources =
-        Stream.of("src", "core/src", "usecase/src", "adapter/src", "surface/src")
-            .map(root -> Path.of(root, "main/java"))
-            .filter(Files::isDirectory)
-            .flatMap(LogbackLoggersTest::walk)) {
-      logging =
-          sources
-              .filter(source -> read(source).contains("setMessage(\"master "))
-              .map(source ->
-                  source
-                      .toString()
-                      .replaceFirst(".*main/java/", "")
-                      .replace(".java", "")
-                      .replace('/', '.'))
-              .toList();
-    }
+    List<String> logging =
+        SourceRoots.mainJavaFiles()
+            .filter(source -> SourceRoots.read(source).contains("setMessage(\"master "))
+            .map(source ->
+                source
+                    .toString()
+                    .replaceFirst(".*main/java/", "")
+                    .replace(".java", "")
+                    .replace('/', '.'))
+            .toList();
 
     assertThat(logging)
         .isNotEmpty()
@@ -82,22 +72,5 @@ class LogbackLoggersTest {
             .toList();
 
     assertThat(appenders).containsExactlyInAnyOrder("CONSOLE", "FILE", "MASTER");
-  }
-
-  @MustBeClosed
-  private static Stream<Path> walk(Path root) {
-    try {
-      return Files.walk(root).filter(path -> path.toString().endsWith(".java"));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static String read(Path source) {
-    try {
-      return Files.readString(source);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }

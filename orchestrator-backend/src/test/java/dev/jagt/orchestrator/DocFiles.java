@@ -5,7 +5,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,7 +37,7 @@ final class DocFiles {
     }
   }
 
-  private static String read(Path file) {
+  static String read(Path file) {
     try {
       return Files.readString(file);
     } catch (IOException e) {
@@ -51,5 +54,62 @@ final class DocFiles {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  static List<Path> documents() {
+    return Stream.concat(
+            Stream.of("..", "../docs", "../docs/features", "../docs/rules", "../.claude/rules")
+                .flatMap(directory -> markdownIn(Path.of(directory)).stream()),
+            specs().stream())
+        .toList();
+  }
+
+  static List<String> headingSlugs(Path document) {
+    if (!Files.isRegularFile(document)) {
+      return List.of();
+    }
+    return withoutCodeBlocks(document)
+        .lines()
+        .filter(line -> line.matches("#{1,6} .*"))
+        .map(line ->
+            line.replaceFirst("#+ ", "")
+                .trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N} _-]", "")
+                .replace(' ', '-'))
+        .toList();
+  }
+
+  static List<String> namesIn(Path directory) {
+    return markdownIn(directory).stream().map(path -> path.getFileName().toString()).toList();
+  }
+
+  static String withoutCodeBlocks(Path document) {
+    return read(document).replaceAll("(?s)```.*?```", "");
+  }
+
+  static List<String> specDirectories() {
+    try (Stream<Path> specs = Files.list(Path.of("../openspec/specs"))) {
+      return specs
+          .filter(Files::isDirectory)
+          .map(path -> path.getFileName().toString())
+          .sorted()
+          .toList();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  static boolean describesInOrder(String dist, String key) {
+    int from = 0;
+    for (String segment : key.replaceFirst("^orchestrator\\.", "").split("\\.", 0)) {
+      Matcher found =
+          Pattern.compile("(?m)^\\s*#?\\s*" + Pattern.quote(segment) + ":").matcher(dist);
+      if (!found.find(from)) {
+        return false;
+      }
+      from = found.end();
+    }
+    return true;
   }
 }

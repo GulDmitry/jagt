@@ -9,7 +9,6 @@ import java.util.stream.StreamSupport;
 import net.sourceforge.pmd.cpd.CPDConfiguration;
 import net.sourceforge.pmd.cpd.CPDReport;
 import net.sourceforge.pmd.cpd.CpdAnalysis;
-import net.sourceforge.pmd.cpd.Mark;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -35,15 +34,14 @@ class DuplicationTest {
                     match.getTokenCount()
                         + " tokens: "
                         + StreamSupport.stream(match.spliterator(), false)
-                            .map(DuplicationTest::place)
+                            .map(mark ->
+                                mark.getLocation().getFileId().getFileName()
+                                    + ":"
+                                    + mark.getLocation().getStartLine())
                             .toList()));
       });
     }
 
     assertThat(String.join(System.lineSeparator(), duplicates)).isEmpty();
-  }
-
-  private static String place(Mark mark) {
-    return mark.getLocation().getFileId().getFileName() + ":" + mark.getLocation().getStartLine();
   }
 }
