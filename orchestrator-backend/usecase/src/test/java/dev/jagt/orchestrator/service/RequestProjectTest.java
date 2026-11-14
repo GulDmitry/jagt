@@ -114,27 +114,22 @@ class RequestProjectTest {
                       new TreeMap<>(
                           Map.of(
                               "mirror",
-                                  new ProjectConfig(
-                                      "/srv/mirror", "origin/main", "dev", List.of()),
+                                  new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
                               "origin",
                                   new ProjectConfig(
                                       "/srv/origin", "origin/main", "dev", List.of())))));
-      when(worktrees.remoteUrl(Path.of("/srv/mirror")))
-          .thenReturn("git@mirror.test:group/api.git");
-      when(worktrees.remoteUrl(Path.of("/srv/origin")))
-          .thenReturn("git@host.test:group/api.git");
+      when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
+      when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
     }
 
     @Test
     void breaksTieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
-      assertThat(projects.of("https://host.test/group/api/-/merge_requests/4"))
-          .isEqualTo("origin");
+      assertThat(projects.of("https://host.test/group/api/-/merge_requests/4")).isEqualTo("origin");
     }
 
     @Test
     void namesTheFirstProjectOfOnePathWhenNoneIsOnTheHostTheRequestIsOn() {
-      assertThat(projects.of("https://web.test/group/api/-/merge_requests/4"))
-          .isEqualTo("mirror");
+      assertThat(projects.of("https://web.test/group/api/-/merge_requests/4")).isEqualTo("mirror");
     }
   }
 }

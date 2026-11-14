@@ -123,12 +123,11 @@ public class TicketCloseJob implements Job {
     Map<String, TaskState> waiting = new LinkedHashMap<>();
     stateService
         .tasks()
-        .forEach(
-            (taskId, task) -> {
-              if (FlowRules.handedOver(task.status()) && close.watches(taskId)) {
-                waiting.put(taskId, task);
-              }
-            });
+        .forEach((taskId, task) -> {
+          if (FlowRules.handedOver(task.status()) && close.watches(taskId)) {
+            waiting.put(taskId, task);
+          }
+        });
     return waiting;
   }
 

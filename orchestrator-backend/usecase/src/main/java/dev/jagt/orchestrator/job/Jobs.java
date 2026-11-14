@@ -77,22 +77,21 @@ public class Jobs {
   /** {@code now} is passed in so a report reads the clock once, outside. */
   public List<Status> statuses(long now) {
     return jobs.values().stream()
-        .map(
-            job -> {
-              Run run = Objects.requireNonNull(runs.get(job.id()));
-              // Never behind the present: a job that has not run yet is due at the tick about to
-              // happen.
-              Long next = run.nextAt == Long.MAX_VALUE ? null : Math.max(run.nextAt, now);
-              return new Status(
-                  job.id(),
-                  job.describe(),
-                  every(job, run),
-                  run.startedAt,
-                  run.lastError,
-                  next,
-                  run.running.get(),
-                  Objects.requireNonNullElse(job.serves(), Job.Serves.HOUSEKEEPING).label());
-            })
+        .map(job -> {
+          Run run = Objects.requireNonNull(runs.get(job.id()));
+          // Never behind the present: a job that has not run yet is due at the tick about to
+          // happen.
+          Long next = run.nextAt == Long.MAX_VALUE ? null : Math.max(run.nextAt, now);
+          return new Status(
+              job.id(),
+              job.describe(),
+              every(job, run),
+              run.startedAt,
+              run.lastError,
+              next,
+              run.running.get(),
+              Objects.requireNonNullElse(job.serves(), Job.Serves.HOUSEKEEPING).label());
+        })
         .toList();
   }
 

@@ -52,10 +52,9 @@ public class MergedRequests {
     boolean known =
         stateService
             .task(taskId)
-            .map(
-                task ->
-                    task.repos().stream()
-                        .anyMatch(repo -> project.equals(repo.project()) && repo.wasHostMerged()))
+            .map(task ->
+                task.repos().stream()
+                    .anyMatch(repo -> project.equals(repo.project()) && repo.wasHostMerged()))
             .orElse(true);
     if (!known) {
       stateService.reduce(taskId, (reducer, current) -> reducer.mergedByHost(current, project));
@@ -70,8 +69,8 @@ public class MergedRequests {
 
   /**
    * The host said {@code repo}'s request was closed unmerged: where the task holds other
-   * repositories, it leaves the task and this answers true; the task's primary repository, alone
-   * or not, and one already deployed stay, for the caller to refuse.
+   * repositories, it leaves the task and this answers true; the task's primary repository, alone or
+   * not, and one already deployed stay, for the caller to refuse.
    */
   public boolean hostSaidClosed(String taskId, TaskRepo repo) {
     return departure.leave(taskId, repo, "its request was closed on the host");
@@ -79,8 +78,7 @@ public class MergedRequests {
 
   private void record(String taskId, String project, boolean merged) {
     stateService.reduce(
-        taskId,
-        (reducer, current) -> reducer.mergedByGit(current, project, merged));
+        taskId, (reducer, current) -> reducer.mergedByGit(current, project, merged));
     log.atInfo()
         .setMessage(merged ? "request merged" : "request no longer merged")
         .addKeyValue("task", taskId)
@@ -104,10 +102,9 @@ public class MergedRequests {
   public List<String> owingRequest(List<TaskRepo> repos) {
     ConfigService.ConfigFile config = configService.load();
     return repos.stream()
-        .filter(
-            repo ->
-                !repo.hasReviewRequest()
-                    && !config.hasNoCodeHost(Objects.requireNonNull(repo.project())))
+        .filter(repo ->
+            !repo.hasReviewRequest()
+                && !config.hasNoCodeHost(Objects.requireNonNull(repo.project())))
         .map(TaskRepo::project)
         .toList();
   }

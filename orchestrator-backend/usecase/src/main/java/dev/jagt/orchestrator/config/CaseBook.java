@@ -72,8 +72,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
       return Stream.of(JAGT, MASTER, HUMAN)
           .filter(by -> by.id().equals(id))
           .findFirst()
-          .or(
-              () -> id.isEmpty() ? Optional.empty() : Optional.of(new Role(id)));
+          .or(() -> id.isEmpty() ? Optional.empty() : Optional.of(new Role(id)));
     }
 
     /** A call over MCP is a session's own, so what it sets off is jagt's answer to it. */
@@ -221,11 +220,10 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
       Set<String> named, String file, List<String> checkers, Set<String> shipped) {
     List<Case> dormant =
         cases.stream()
-            .filter(
-                c ->
-                    c.by() instanceof By.Role role
-                        && shipped.contains(role.id())
-                        && !checkers.contains(role.id()))
+            .filter(c ->
+                c.by() instanceof By.Role role
+                    && shipped.contains(role.id())
+                    && !checkers.contains(role.id()))
             .toList();
     CaseBook loaded =
         new CaseBook(shape, cases.stream().filter(c -> !dormant.contains(c)).toList(), faults);
@@ -239,24 +237,22 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
     List<Problem> problems = new ArrayList<>(faults);
     cases.stream()
         .filter(c -> c.by() instanceof By.Role role && !checkers.contains(role.id()))
-        .forEach(
-            c ->
-                problems.add(
-                    fault(
-                        c.file(),
-                        c.id(),
-                        "has by: '"
-                            + c.by().id()
-                            + "', which is not jagt, master, human or a checker jagt ships")));
+        .forEach(c ->
+            problems.add(
+                fault(
+                    c.file(),
+                    c.id(),
+                    "has by: '"
+                        + c.by().id()
+                        + "', which is not jagt, master, human or a checker jagt ships")));
     cases.stream()
         .filter(c -> !named.contains(c.step()))
-        .forEach(
-            c ->
-                problems.add(
-                    fault(
-                        c.file(),
-                        c.id(),
-                        "names " + shape.key + " '" + c.step() + "', " + shape.unknown)));
+        .forEach(c ->
+            problems.add(
+                fault(
+                    c.file(),
+                    c.id(),
+                    "names " + shape.key + " '" + c.step() + "', " + shape.unknown)));
     named.stream()
         .filter(step -> cases.stream().noneMatch(c -> c.step().equals(step)))
         .forEach(
@@ -273,15 +269,14 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         .lines()
         .map(String::strip)
         .filter(line -> !line.isEmpty())
-        .forEach(
-            line -> {
-              Matcher key = KEY.matcher(line);
-              if (key.matches()) {
-                keys.put(key.group(1), key.group(2).strip());
-              } else {
-                says.add(line);
-              }
-            });
+        .forEach(line -> {
+          Matcher key = KEY.matcher(line);
+          if (key.matches()) {
+            keys.put(key.group(1), key.group(2).strip());
+          } else {
+            says.add(line);
+          }
+        });
     final int before = faults.size();
     String id = section.id();
     String step = keys.getOrDefault(shape.key, "");

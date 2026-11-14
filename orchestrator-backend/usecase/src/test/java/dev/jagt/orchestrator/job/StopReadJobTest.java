@@ -20,8 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class StopReadJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StopReads reads = mock(StopReads.class);
 
@@ -77,6 +76,7 @@ class StopReadJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {});
+        reducer,
+        event -> {});
   }
 }

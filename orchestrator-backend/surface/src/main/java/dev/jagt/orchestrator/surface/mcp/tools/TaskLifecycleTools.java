@@ -66,13 +66,12 @@ public class TaskLifecycleTools implements McpTools {
         (said, caller) -> MessageContext.NONE,
         (said, caller) ->
             configService.load().projects().entrySet().stream()
-                .map(
-                    entry ->
-                        entry.getKey()
-                            + ": "
-                            + entry.getValue().aboutOrPath()
-                            + " — labels "
-                            + entry.getValue().labels())
+                .map(entry ->
+                    entry.getKey()
+                        + ": "
+                        + entry.getValue().aboutOrPath()
+                        + " — labels "
+                        + entry.getValue().labels())
                 .collect(Collectors.joining("\n")));
   }
 }

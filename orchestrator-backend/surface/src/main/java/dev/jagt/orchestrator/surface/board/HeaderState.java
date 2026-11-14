@@ -8,9 +8,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * What the header says beside the tasks: the unattended jobs and the reach jagt lost.
- */
+/** What the header says beside the tasks: the unattended jobs and the reach jagt lost. */
 @Component
 @RequiredArgsConstructor
 class HeaderState {

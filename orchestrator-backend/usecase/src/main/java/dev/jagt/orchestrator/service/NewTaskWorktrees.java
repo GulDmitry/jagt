@@ -61,13 +61,12 @@ public class NewTaskWorktrees {
         projectKeys == null || projectKeys.isEmpty() ? config.projects().keySet() : projectKeys;
     return keys.stream()
         .filter(config.projects()::containsKey)
-        .filter(
-            k ->
-                gitWorktrees.branchExists(
-                    Path.of(Objects.requireNonNull(config.projects().get(k)).path())
-                        .toAbsolutePath()
-                        .normalize(),
-                    taskId))
+        .filter(k ->
+            gitWorktrees.branchExists(
+                Path.of(Objects.requireNonNull(config.projects().get(k)).path())
+                    .toAbsolutePath()
+                    .normalize(),
+                taskId))
         .findFirst()
         .orElse(null);
   }
@@ -144,18 +143,15 @@ public class NewTaskWorktrees {
       NewTask request, ConfigService.ConfigFile config, Consumer<List<NewRepo>> registration) {
     Map<String, BranchStrategy> strategies = strategies(request, config);
     List<NewRepo> repos = new ArrayList<>();
-    strategies.forEach(
-        (key, strategy) -> {
-          NewRepo resolved =
-              resolveRepos(
-                      NewTask.builder(request.taskId(), key)
-                          .baseBranch(request.baseBranch())
-                          .build(),
-                      config,
-                      strategy)
-                  .getFirst();
-          repos.add(repos.isEmpty() ? resolved : resolved.besideTheSession());
-        });
+    strategies.forEach((key, strategy) -> {
+      NewRepo resolved =
+          resolveRepos(
+                  NewTask.builder(request.taskId(), key).baseBranch(request.baseBranch()).build(),
+                  config,
+                  strategy)
+              .getFirst();
+      repos.add(repos.isEmpty() ? resolved : resolved.besideTheSession());
+    });
     List<NewRepo> cut = new ArrayList<>();
     try {
       for (NewRepo repo : repos) {
@@ -170,13 +166,12 @@ public class NewTaskWorktrees {
       }
       registration.accept(repos);
     } catch (RuntimeException e) {
-      cut.forEach(
-          repo ->
-              unwind(
-                  request,
-                  List.of(repo),
-                  List.of(repo),
-                  Objects.requireNonNull(strategies.get(repo.project()))));
+      cut.forEach(repo ->
+          unwind(
+              request,
+              List.of(repo),
+              List.of(repo),
+              Objects.requireNonNull(strategies.get(repo.project()))));
       throw e;
     }
     return repos;
@@ -240,20 +235,19 @@ public class NewTaskWorktrees {
     stateService.tasks().keySet().stream()
         .filter(registered -> TaskName.slug(registered).equals(TaskName.slug(taskId)))
         .findFirst()
-        .ifPresent(
-            registered -> {
-              throw Refusal.byState(
-                  "Task "
-                      + taskId
-                      + " and "
-                      + registered
-                      + " both become"
-                      + " the directory "
-                      + TaskName.slug(taskId)
-                      + ". Retire "
-                      + registered
-                      + " first, or take a different branch.");
-            });
+        .ifPresent(registered -> {
+          throw Refusal.byState(
+              "Task "
+                  + taskId
+                  + " and "
+                  + registered
+                  + " both become"
+                  + " the directory "
+                  + TaskName.slug(taskId)
+                  + ". Retire "
+                  + registered
+                  + " first, or take a different branch.");
+        });
   }
 
   private List<NewRepo> resolveRepos(
@@ -342,8 +336,7 @@ public class NewTaskWorktrees {
    * A task trusted at its first check stays so; else the added repository joins what was trusted as
    * it stood.
    */
-  private static TaskState trusted(
-      TaskReducer reducer, TaskState task, @Nullable GitTrust added) {
+  private static TaskState trusted(TaskReducer reducer, TaskState task, @Nullable GitTrust added) {
     return added == null ? task : reducer.gitRepoJoined(task, added);
   }
 
@@ -399,9 +392,8 @@ public class NewTaskWorktrees {
     // was
     // already there with the human's commits.
     String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
-    cut.forEach(
-        repo ->
-            gitWorktrees.removeWorktree(repo.projectPath(), repo.worktreePath(), branchToDelete));
+    cut.forEach(repo ->
+        gitWorktrees.removeWorktree(repo.projectPath(), repo.worktreePath(), branchToDelete));
     // A resumed branch survives, so the repository jagt detached to free it must go back.
     if (branchToDelete == null) {
       repos.forEach(repo -> gitWorktrees.reattach(repo.projectPath(), request.taskId()));
@@ -427,24 +419,22 @@ public class NewTaskWorktrees {
     String task = Remote.ORIGIN.branchOf(taskId);
     Stream.concat(
             config.projects().values().stream()
-                .flatMap(
-                    project ->
-                        Stream.of(
-                            project.baseBranchName(),
-                            project.gitRemote().branchOf(project.deployBranch()))),
+                .flatMap(project ->
+                    Stream.of(
+                        project.baseBranchName(),
+                        project.gitRemote().branchOf(project.deployBranch()))),
             Stream.of(Remote.ORIGIN.branchOf(baseOverride)))
         .filter(task::equalsIgnoreCase)
         .findFirst()
-        .ifPresent(
-            shared -> {
-              throw new IllegalArgumentException(
-                  "Task "
-                      + taskId
-                      + " would be the shared branch "
-                      + shared
-                      + ", which a task rebases and pushes. Name the task after a branch of its"
-                      + " own.");
-            });
+        .ifPresent(shared -> {
+          throw new IllegalArgumentException(
+              "Task "
+                  + taskId
+                  + " would be the shared branch "
+                  + shared
+                  + ", which a task rebases and pushes. Name the task after a branch of its"
+                  + " own.");
+        });
   }
 
   /**

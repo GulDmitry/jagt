@@ -28,7 +28,7 @@ public class StopReadJob implements TaskJob {
   @Override
   public String describe() {
     return "read the checks of a task stopped by an outside condition, and end the stop once the"
-               + " host is well";
+        + " host is well";
   }
 
   @Override

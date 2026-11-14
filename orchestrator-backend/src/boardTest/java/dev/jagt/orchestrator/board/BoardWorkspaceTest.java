@@ -38,9 +38,7 @@ class BoardWorkspaceTest extends BoardPageContext {
             .alias("a1")
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    state.putTask(
-        "ABC-2",
-        alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
     Page page = openLiveBoard();
     assertThat(page.locator("#tasks .group.project .alias")).hasText(new String[] {"a2", "a1"});
   }

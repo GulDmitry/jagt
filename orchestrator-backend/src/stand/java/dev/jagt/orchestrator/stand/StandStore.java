@@ -65,10 +65,9 @@ public class StandStore {
       String source, String target, String title, String description) {
     Optional<JsonNode> open =
         allRequests().stream()
-            .filter(
-                r ->
-                    r.path("state").asString().equals("open")
-                        && r.path("sourceBranch").asString().equals(source))
+            .filter(r ->
+                r.path("state").asString().equals("open")
+                    && r.path("sourceBranch").asString().equals(source))
             .findFirst();
     if (open.isPresent()) {
       return (ObjectNode) open.get();
@@ -149,12 +148,11 @@ public class StandStore {
             .toList();
     return !open.isEmpty()
         && open.stream()
-            .allMatch(
-                thread -> {
-                  JsonNode replies = thread.path("replies");
-                  return replies.size() > 0
-                      && replies.get(replies.size() - 1).path("author").asString().equals("agent");
-                });
+            .allMatch(thread -> {
+              JsonNode replies = thread.path("replies");
+              return replies.size() > 0
+                  && replies.get(replies.size() - 1).path("author").asString().equals("agent");
+            });
   }
 
   private static java.util.stream.Stream<JsonNode> stream(JsonNode threads) {

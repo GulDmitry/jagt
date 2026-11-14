@@ -22,11 +22,10 @@ public interface TaskJob extends Job {
    */
   default void runOn(Map<String, TaskState> tasks) {
     Watch watch = watch();
-    tasks.forEach(
-        (taskId, task) -> {
-          if (watch.admits(task)) {
-            run(taskId, task);
-          }
-        });
+    tasks.forEach((taskId, task) -> {
+      if (watch.admits(task)) {
+        run(taskId, task);
+      }
+    });
   }
 }

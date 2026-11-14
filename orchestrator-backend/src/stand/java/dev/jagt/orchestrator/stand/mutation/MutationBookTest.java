@@ -101,9 +101,8 @@ class MutationBookTest {
 
   @Test
   void refusesMutationExpectingStatusThatDoesNotExist() {
-    assertThatThrownBy(
-            () ->
-                MutationBook.parse("## odd\nkind: attack\nask: rain\nexpects: SUNNY\nholds: dry\n"))
+    assertThatThrownBy(() ->
+            MutationBook.parse("## odd\nkind: attack\nask: rain\nexpects: SUNNY\nholds: dry\n"))
         .isInstanceOf(StandFailure.class);
   }
 }

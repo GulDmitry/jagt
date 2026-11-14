@@ -23,7 +23,7 @@ class StandHostTest {
           post(
               host,
               "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVe"
-              + "rsion\":\"2024-11-05\"}}");
+                  + "rsion\":\"2024-11-05\"}}");
 
       JsonNode result = JsonMapper.builder().build().readTree(response.body()).path("result");
       assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("stand-host");
@@ -59,7 +59,7 @@ class StandHostTest {
     try (StandHost host = new StandHost(directory).start()) {
       String create =
           "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"create_"
-          + "merge_request\","
+              + "merge_request\","
               + "\"arguments\":{\"source_branch\":\"feature/abc-42\",\"target_branch\":\"main\",\"t"
               + "itle\":\"ABC-42\","
               + "\"description\":\"d\"}}}";
@@ -102,7 +102,7 @@ class StandHostTest {
       post(
           host,
           "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\",\"params\":{\"name\":\"resolve"
-          + "_thread\","
+              + "_thread\","
               + "\"arguments\":{\"id\":1,\"thread_id\":1}}}");
 
       assertThat(before.body()).contains("rename this").contains("reviewer");

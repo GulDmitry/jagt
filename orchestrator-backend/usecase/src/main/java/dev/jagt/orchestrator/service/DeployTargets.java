@@ -96,9 +96,8 @@ public class DeployTargets {
     return Optional.ofNullable(task.deployment())
         .flatMap(Deployment::conflictedTarget)
         .filter(recorded -> projects.containsKey(recorded.project()))
-        .map(
-            recorded ->
-                recorded(recorded, Objects.requireNonNull(projects.get(recorded.project()))));
+        .map(recorded ->
+            recorded(recorded, Objects.requireNonNull(projects.get(recorded.project()))));
   }
 
   /** The branch the press recorded, the configured one where the record holds none. */

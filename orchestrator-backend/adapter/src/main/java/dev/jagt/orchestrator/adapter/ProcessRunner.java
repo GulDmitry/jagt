@@ -143,14 +143,13 @@ public class ProcessRunner implements Processes {
     CompletableFuture<Void> _ =
         launched
             .onExit()
-            .thenAccept(
-                ended ->
-                    log.atInfo()
-                        .setMessage("process ended")
-                        .addKeyValue("pid", ended.pid())
-                        .addKeyValue("exit", endedBy(ended.exitValue()))
-                        .addKeyValue("after", Duration.ofNanos(System.nanoTime() - startedAt))
-                        .log());
+            .thenAccept(ended ->
+                log.atInfo()
+                    .setMessage("process ended")
+                    .addKeyValue("pid", ended.pid())
+                    .addKeyValue("exit", endedBy(ended.exitValue()))
+                    .addKeyValue("after", Duration.ofNanos(System.nanoTime() - startedAt))
+                    .log());
   }
 
   /**
@@ -241,14 +240,13 @@ public class ProcessRunner implements Processes {
   }
 
   private static void feed(Process process, String stdin) {
-    Thread.startVirtualThread(
-        () -> {
-          try (var out = process.getOutputStream()) {
-            out.write(stdin.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-          } catch (IOException e) {
-            // a command that exits without reading its input is judged by its exit
-          }
-        });
+    Thread.startVirtualThread(() -> {
+      try (var out = process.getOutputStream()) {
+        out.write(stdin.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      } catch (IOException e) {
+        // a command that exits without reading its input is judged by its exit
+      }
+    });
   }
 
   /**

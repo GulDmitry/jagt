@@ -78,11 +78,7 @@ final class SourceRoots {
 
   private static List<Path> classDirectories() {
     return roots().stream()
-        .map(
-            root ->
-                moduleOf(root)
-                    .resolve("build/classes/java")
-                    .resolve(setOf(root)))
+        .map(root -> moduleOf(root).resolve("build/classes/java").resolve(setOf(root)))
         .filter(Files::isDirectory)
         .toList();
   }
@@ -91,14 +87,13 @@ final class SourceRoots {
     URL[] urls =
         classDirectories().stream()
             .map(directory -> directory.toAbsolutePath().normalize())
-            .map(
-                directory -> {
-                  try {
-                    return directory.toUri().toURL();
-                  } catch (MalformedURLException e) {
-                    throw new IllegalStateException(e);
-                  }
-                })
+            .map(directory -> {
+              try {
+                return directory.toUri().toURL();
+              } catch (MalformedURLException e) {
+                throw new IllegalStateException(e);
+              }
+            })
             .toArray(URL[]::new);
     return new URLClassLoader(urls, SourceRoots.class.getClassLoader());
   }

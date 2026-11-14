@@ -19,12 +19,10 @@ class FileTrackerAssistantCompositionTest {
 
   @Test
   void theFileDriverIsTheOneAssistantAndWrapsTheOtherOne() {
-    runner.run(
-        context -> {
-          assertThat(context).hasNotFailed();
-          assertThat(context.getBean(TrackerAssistant.class))
-              .isInstanceOf(FileTrackerAssistant.class);
-        });
+    runner.run(context -> {
+      assertThat(context).hasNotFailed();
+      assertThat(context.getBean(TrackerAssistant.class)).isInstanceOf(FileTrackerAssistant.class);
+    });
   }
 
   @Test

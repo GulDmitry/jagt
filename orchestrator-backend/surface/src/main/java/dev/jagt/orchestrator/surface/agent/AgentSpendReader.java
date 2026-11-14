@@ -29,17 +29,16 @@ public class AgentSpendReader {
     long from =
         stateService.task(taskId).map(task -> task.agentSpendOrNone().markFor(name)).orElse(0L);
     LogSpend.since(sessionLog, log, from)
-        .ifPresent(
-            advance ->
-                stateService.updateTask(
-                    taskId,
-                    task -> {
-                      AgentSpend counted = task.agentSpendOrNone();
-                      // Checked again inside the write: two reports arriving together book the
-                      // window once.
-                      return counted.markFor(name) == from
-                          ? task.withAgentSpend(counted.plus(advance.usage(), name, advance.mark()))
-                          : task;
-                    }));
+        .ifPresent(advance ->
+            stateService.updateTask(
+                taskId,
+                task -> {
+                  AgentSpend counted = task.agentSpendOrNone();
+                  // Checked again inside the write: two reports arriving together book the
+                  // window once.
+                  return counted.markFor(name) == from
+                      ? task.withAgentSpend(counted.plus(advance.usage(), name, advance.mark()))
+                      : task;
+                }));
   }
 }

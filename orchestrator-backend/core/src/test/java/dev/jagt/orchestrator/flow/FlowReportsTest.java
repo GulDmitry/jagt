@@ -64,12 +64,11 @@ class FlowReportsTest {
     TaskState live = read.withStatus(TaskStatus.SHIPPING, null, 6_000);
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              written.set(write.apply(reducer, live));
-              return true;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, live));
+          return true;
+        });
 
     FlowReports.Claimed claimed =
         reports.reportWhileStanding(
@@ -84,12 +83,11 @@ class FlowReportsTest {
     TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              written.set(write.apply(reducer, read));
-              return true;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, read));
+          return true;
+        });
 
     FlowReports.Claimed claimed =
         reports.reportWhileStanding(
@@ -121,15 +119,13 @@ class FlowReportsTest {
   void countsReportTheTasksStatusForbidsOnTheTask() {
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              written.set(
-                  write.apply(
-                      reducer,
-                      TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
-              return true;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(
+              write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+          return true;
+        });
 
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
         .isInstanceOf(IllegalArgumentException.class);
@@ -238,13 +234,12 @@ class FlowReportsTest {
   @Test
   void answersTrueAndTheStatusItFoundAndLeftWhenTheReportWasWritten() {
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              return write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
-                  != null;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          return write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+              != null;
+        });
 
     boolean accepted = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
     var landed =
@@ -268,29 +263,20 @@ class FlowReportsTest {
   }
 
   @ParameterizedTest
-  @CsvSource({
-    "PLAIN, widget fixed, VERIFYING",
-    "QUESTION, which widget?, REVIEW_PENDING"
-  })
+  @CsvSource({"PLAIN, widget fixed, VERIFYING", "QUESTION, which widget?, REVIEW_PENDING"})
   void holdsHandBackForTheOwedVerificationUnlessTheSessionAsks(
       AgentReport report, String message, TaskStatus lands) {
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              return write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
-                  != null;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          return write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+              != null;
+        });
 
     var landed =
         reports.report(
-            "ABC-1",
-            TaskStatus.REVIEW_PENDING,
-            report,
-            message,
-            (was, task) -> task,
-            task -> true);
+            "ABC-1", TaskStatus.REVIEW_PENDING, report, message, (was, task) -> task, task -> true);
 
     assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, lands));
   }
@@ -298,13 +284,12 @@ class FlowReportsTest {
   @Test
   void tellsTheSessionWhyItsReportWasRefusedInTheStatusItIsIn() {
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              return write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
-                  != null;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          return write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
+              != null;
+        });
 
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
         .isInstanceOf(Refusal.class)
@@ -317,13 +302,12 @@ class FlowReportsTest {
       names = {"QUESTION", "PERMISSION"})
   void refusesQuestionThatParksAtCiPolling(AgentReport asked) {
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              return write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
-                  != null;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          return write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+              != null;
+        });
 
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.CI_POLLING, asked, "which one?"))
         .isInstanceOf(Refusal.class)
@@ -334,14 +318,13 @@ class FlowReportsTest {
   void landsQuestionReportedAtReviewPendingFromCiPolling() {
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              written.set(
-                  write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-              return true;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(
+              write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
+          return true;
+        });
 
     reports.report("ABC-1", TaskStatus.REVIEW_PENDING, AgentReport.QUESTION, "which one?");
 
@@ -351,13 +334,12 @@ class FlowReportsTest {
   @Test
   void answersWhatRoundReadFoundAndLeftWhenItMovedTheTask() {
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              return write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
-                  != null;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          return write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+              != null;
+        });
 
     var landed = reports.read("ABC-1", TaskStatus.APPROVED, "approved");
 
@@ -369,12 +351,11 @@ class FlowReportsTest {
     AtomicReference<TaskState> written = new AtomicReference<>();
     TaskState before = TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build();
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              written.set(write.apply(reducer, before));
-              return true;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, before));
+          return true;
+        });
 
     reports.read("ABC-1", TaskStatus.APPROVED, "approved");
 
@@ -393,12 +374,11 @@ class FlowReportsTest {
             .report(asked)
             .build();
     when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              written.set(write.apply(reducer, before));
-              return true;
-            });
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, before));
+          return true;
+        });
 
     reports.read("ABC-1", TaskStatus.REVIEWED, "reviewed");
 
@@ -475,8 +455,7 @@ class FlowReportsTest {
     Deployment held =
         Deployment.defaults()
             .withTargets(
-                java.util.List.of(
-                    mergedWeb.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
+                java.util.List.of(mergedWeb.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).deployment(held).build();
     assertThat(write.getValue().apply(reducer, conflicted)).isSameAs(conflicted);

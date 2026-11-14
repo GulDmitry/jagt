@@ -134,15 +134,14 @@ class HeadlessOpenCodeTest {
     AtomicReference<String> fence = new AtomicReference<>();
     AtomicBoolean held = new AtomicBoolean();
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
-        .thenAnswer(
-            call -> {
-              String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
-              fence.set(
-                  Objects.requireNonNull(url)
-                      .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1));
-              held.set(scopes.ask(fence.get()).isPresent());
-              return new Processes.Result(0, "", "");
-            });
+        .thenAnswer(call -> {
+          String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
+          fence.set(
+              Objects.requireNonNull(url)
+                  .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1));
+          held.set(scopes.ask(fence.get()).isPresent());
+          return new Processes.Result(0, "", "");
+        });
 
     headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
@@ -223,13 +222,15 @@ class HeadlessOpenCodeTest {
             usage,
             gate);
 
-    HeadlessReply reply = hearing.run(openCodeRead()
-            .withCwd(worktree)
-            .withSchema(SCHEMA)
-            .withShell(List.of())
-            .withRefuseRead(List.of("**/review_replies.md"))
-            .withGit(false)
-            .build());
+    HeadlessReply reply =
+        hearing.run(
+            openCodeRead()
+                .withCwd(worktree)
+                .withSchema(SCHEMA)
+                .withShell(List.of())
+                .withRefuseRead(List.of("**/review_replies.md"))
+                .withGit(false)
+                .build());
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).startsWith("out of scope: read ");

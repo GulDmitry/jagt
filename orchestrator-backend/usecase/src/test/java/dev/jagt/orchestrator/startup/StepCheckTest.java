@@ -64,7 +64,6 @@ class StepCheckTest {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
 
-    assertThat(check.problems())
-        .isEmpty();
+    assertThat(check.problems()).isEmpty();
   }
 }

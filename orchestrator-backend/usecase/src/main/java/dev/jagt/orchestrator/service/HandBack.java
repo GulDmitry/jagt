@@ -43,10 +43,9 @@ public class HandBack {
   public boolean verificationOwed(TaskState task) {
     return !task.probes().isEmpty()
         || task.repos().stream()
-            .anyMatch(
-                repo ->
-                    !Verification.command(configService.load().projects().get(repo.project()))
-                        .isEmpty());
+            .anyMatch(repo ->
+                !Verification.command(configService.load().projects().get(repo.project()))
+                    .isEmpty());
   }
 
   public PlanProbes.Read planProbes(TaskState task) {
@@ -57,14 +56,13 @@ public class HandBack {
     }
     return WorktreeFiles.read(plan)
         .map(text -> planRead(text, projects))
-        .orElseGet(
-            () ->
-                new PlanProbes.Read(
-                    List.of(),
-                    List.of(
-                        new Violation(
-                            Artifact.PLAN.fileName(),
-                            "jagt could not read it; check its permissions"))));
+        .orElseGet(() ->
+            new PlanProbes.Read(
+                List.of(),
+                List.of(
+                    new Violation(
+                        Artifact.PLAN.fileName(),
+                        "jagt could not read it; check its permissions"))));
   }
 
   private static PlanProbes.Read planRead(String plan, List<String> projects) {
@@ -85,14 +83,13 @@ public class HandBack {
   private static List<Violation> foreignRepos(List<Probe> probes, List<String> projects) {
     return probes.stream()
         .filter(probe -> probe.repo() != null && !projects.contains(probe.repo()))
-        .map(
-            probe ->
-                new Violation(
-                    "plan.md probes",
-                    "`"
-                        + probe
-                        + "` names a repository the task lacks; its repositories: "
-                        + String.join(", ", projects)))
+        .map(probe ->
+            new Violation(
+                "plan.md probes",
+                "`"
+                    + probe
+                    + "` names a repository the task lacks; its repositories: "
+                    + String.join(", ", projects)))
         .toList();
   }
 

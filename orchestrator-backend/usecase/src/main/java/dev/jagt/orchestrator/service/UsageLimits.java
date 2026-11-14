@@ -35,11 +35,10 @@ public class UsageLimits {
     String currency = " " + paid.currency();
     String used =
         paid.used()
-            .map(
-                amount ->
-                    money(amount)
-                        + paid.monthlyLimit().map(limit -> " of " + money(limit)).orElse("")
-                        + currency)
+            .map(amount ->
+                money(amount)
+                    + paid.monthlyLimit().map(limit -> " of " + money(limit)).orElse("")
+                    + currency)
             .orElse("");
     String balance = paid.balance().map(amount -> "balance " + money(amount) + currency).orElse("");
     return used.isEmpty() || balance.isEmpty() ? used + balance : used + ", " + balance;

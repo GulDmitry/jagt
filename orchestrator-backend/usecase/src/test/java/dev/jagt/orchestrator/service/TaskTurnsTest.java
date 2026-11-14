@@ -47,7 +47,8 @@ class TaskTurnsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+            reducer,
+            event -> {});
     turns =
         new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
   }

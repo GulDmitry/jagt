@@ -55,14 +55,13 @@ public class ReportEffects {
     if (!said.waits()) {
       stops
           .endOnReport(taskId)
-          .ifPresent(
-              stop ->
-                  log.atInfo()
-                      .setMessage("stop voided by read")
-                      .addKeyValue("task", taskId)
-                      .addKeyValue("trigger", stop.trigger())
-                      .addKeyValue("read", "session report")
-                      .log());
+          .ifPresent(stop ->
+              log.atInfo()
+                  .setMessage("stop voided by read")
+                  .addKeyValue("task", taskId)
+                  .addKeyValue("trigger", stop.trigger())
+                  .addKeyValue("read", "session report")
+                  .log());
       return;
     }
     if (stops.standing(taskId, TaskStop.Trigger.WAIT)) {

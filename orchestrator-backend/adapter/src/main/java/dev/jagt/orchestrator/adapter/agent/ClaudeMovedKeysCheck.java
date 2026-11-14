@@ -37,16 +37,15 @@ public class ClaudeMovedKeysCheck implements StartupCheck {
     Binder binder = Binder.get(environment);
     return MOVED.stream()
         .filter(moved -> binder.bind(ROOT + moved.bound(), moved.shape()).isBound())
-        .map(
-            moved ->
-                new Problem(
-                    ROOT + moved.written(),
-                    ROOT
-                        + moved.written()
-                        + " is no longer read: it moved to "
-                        + ROOT
-                        + moved.now()
-                        + ". Rename it in jagt.yml."))
+        .map(moved ->
+            new Problem(
+                ROOT + moved.written(),
+                ROOT
+                    + moved.written()
+                    + " is no longer read: it moved to "
+                    + ROOT
+                    + moved.now()
+                    + ". Rename it in jagt.yml."))
         .toList();
   }
 

@@ -36,8 +36,7 @@ final class PlaywrightReport {
   private FlowResult result(String flow, Path report) {
     List<JsonNode> specs = new ArrayList<>();
     collect(document.path("suites"), flow, specs);
-    FlowResult base =
-        FlowResult.defaults().withFlow(flow).withEvidence(List.of(report));
+    FlowResult base = FlowResult.defaults().withFlow(flow).withEvidence(List.of(report));
     if (specs.isEmpty()) {
       return base.withReason("no spec carries this flow");
     }

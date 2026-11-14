@@ -16,19 +16,18 @@ class StandRecordingsTest {
   @Test
   void theRecordingsOfTheOldestRunsFoldAwayWholePastTheCeiling(@TempDir Path dir) throws Exception {
     IntStream.rangeClosed(1, StandRecordings.KEPT + 1)
-        .forEach(
-            pid -> {
-              try {
-                for (String scenario : List.of("happy-path-act", "plan-judge")) {
-                  Path file =
-                      Files.writeString(
-                          dir.resolve(scenario + "-jagt-stand-" + pid + "-3.jsonl"), "\n");
-                  Files.setLastModifiedTime(file, FileTime.fromMillis(pid * 1000L));
-                }
-              } catch (java.io.IOException e) {
-                throw new java.io.UncheckedIOException(e);
-              }
-            });
+        .forEach(pid -> {
+          try {
+            for (String scenario : List.of("happy-path-act", "plan-judge")) {
+              Path file =
+                  Files.writeString(
+                      dir.resolve(scenario + "-jagt-stand-" + pid + "-3.jsonl"), "\n");
+              Files.setLastModifiedTime(file, FileTime.fromMillis(pid * 1000L));
+            }
+          } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+          }
+        });
 
     StandRecordings.fold(dir);
 

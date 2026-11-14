@@ -35,11 +35,8 @@ class AgentSessionControllerTest {
   void recordsTheReportAgainstTheTaskRunningInThatWorktree() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller
-        .report(
-            "idle",
-            "/wt/ABC-1-proj",
-            new SessionHookReport("/logs/session.jsonl", "compact", null));
+    controller.report(
+        "idle", "/wt/ABC-1-proj", new SessionHookReport("/logs/session.jsonl", "compact", null));
 
     verify(reports)
         .record(
@@ -58,15 +55,14 @@ class AgentSessionControllerTest {
         SessionReports.Report.defaults().withFailedOn("rate_limit").withTask(task);
     when(reports.turnFailed("ABC-1", report)).thenReturn(true);
 
-    controller
-        .turnFailure(
-            "/wt/ABC-1-proj",
-            new SessionHookReport(
-                null,
-                null,
-                null,
-                new SessionHookReport.Ending(null, "rate_limit", null),
-                new SessionHookReport.Turn(null, null, java.util.List.of())));
+    controller.turnFailure(
+        "/wt/ABC-1-proj",
+        new SessionHookReport(
+            null,
+            null,
+            null,
+            new SessionHookReport.Ending(null, "rate_limit", null),
+            new SessionHookReport.Turn(null, null, java.util.List.of())));
 
     verify(wakes).arm("ABC-1");
   }
@@ -75,15 +71,14 @@ class AgentSessionControllerTest {
   void armsNoWakeForTurnFailureThatIsNotUsageLimit() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller
-        .turnFailure(
-            "/wt/ABC-1-proj",
-            new SessionHookReport(
-                null,
-                null,
-                null,
-                new SessionHookReport.Ending(null, "overloaded", null),
-                new SessionHookReport.Turn(null, null, java.util.List.of())));
+    controller.turnFailure(
+        "/wt/ABC-1-proj",
+        new SessionHookReport(
+            null,
+            null,
+            null,
+            new SessionHookReport.Ending(null, "overloaded", null),
+            new SessionHookReport.Turn(null, null, java.util.List.of())));
 
     verify(wakes, never()).arm("ABC-1");
   }
@@ -122,17 +117,15 @@ class AgentSessionControllerTest {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
     try (FakeLogCapture log = new FakeLogCapture(AgentSessionController.class)) {
-      controller
-          .report(
-              "working",
-              "/wt/ABC-1-proj",
-              new SessionHookReport("/logs/session.jsonl", "compact", null));
+      controller.report(
+          "working",
+          "/wt/ABC-1-proj",
+          new SessionHookReport("/logs/session.jsonl", "compact", null));
       final int warnedForAbsolute = log.events().size();
-      controller
-          .report(
-              "working",
-              "/wt/ABC-1-proj",
-              new SessionHookReport("relative/session.jsonl", "compact", null));
+      controller.report(
+          "working",
+          "/wt/ABC-1-proj",
+          new SessionHookReport("relative/session.jsonl", "compact", null));
 
       verify(reports)
           .record(
@@ -157,8 +150,8 @@ class AgentSessionControllerTest {
         .thenReturn("re-read task_context.md");
 
     String answered =
-        controller
-            .report("working", "/wt/ABC-1-proj", new SessionHookReport(null, "compact", null));
+        controller.report(
+            "working", "/wt/ABC-1-proj", new SessionHookReport(null, "compact", null));
 
     assertThat(answered).isEqualTo("re-read task_context.md");
   }
@@ -167,11 +160,10 @@ class AgentSessionControllerTest {
   void carriesWhatTheCliToldTheHumanSoOneEventCanMeanTwoDifferentWaits() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller
-        .report(
-            "idle",
-            "/wt/ABC-1-proj",
-            new SessionHookReport(null, null, "Claude needs your permission to use Bash"));
+    controller.report(
+        "idle",
+        "/wt/ABC-1-proj",
+        new SessionHookReport(null, null, "Claude needs your permission to use Bash"));
 
     verify(reports)
         .record(
@@ -187,15 +179,14 @@ class AgentSessionControllerTest {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
     String answered =
-        controller
-            .permission(
-                "/wt/ABC-1-proj",
-                new SessionHookReport(
-                    null,
-                    null,
-                    null,
-                    new SessionHookReport.Ending(null, null, null),
-                    new SessionHookReport.Turn(null, "Bash", java.util.List.of())));
+        controller.permission(
+            "/wt/ABC-1-proj",
+            new SessionHookReport(
+                null,
+                null,
+                null,
+                new SessionHookReport.Ending(null, null, null),
+                new SessionHookReport.Turn(null, "Bash", java.util.List.of())));
 
     verify(reports)
         .permissionAsked(
@@ -207,15 +198,14 @@ class AgentSessionControllerTest {
   void tellsTheTurnEndWhetherRefusalAlreadySentItOn() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller
-        .turnEnd(
-            "/wt/ABC-1-proj",
-            new SessionHookReport(
-                null,
-                null,
-                null,
-                new SessionHookReport.Ending(true, null, null),
-                new SessionHookReport.Turn(null, null, java.util.List.of(Map.of("id", "b1")))));
+    controller.turnEnd(
+        "/wt/ABC-1-proj",
+        new SessionHookReport(
+            null,
+            null,
+            null,
+            new SessionHookReport.Ending(true, null, null),
+            new SessionHookReport.Turn(null, null, java.util.List.of(Map.of("id", "b1")))));
 
     verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
   }
@@ -226,8 +216,7 @@ class AgentSessionControllerTest {
     when(reports.turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false))
         .thenReturn("{\"decision\": \"block\"}");
 
-    String answered =
-        controller.turnEnd("/wt/ABC-1-proj", null);
+    String answered = controller.turnEnd("/wt/ABC-1-proj", null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -237,10 +226,9 @@ class AgentSessionControllerTest {
     StateService state = mock(StateService.class);
     when(state.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(
-            () ->
-                new AgentSessionController(state, mock(SessionReports.class), wakes)
-                    .report("waiting", "/elsewhere", null))
+    assertThatThrownBy(() ->
+            new AgentSessionController(state, mock(SessionReports.class), wakes)
+                .report("waiting", "/elsewhere", null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("/elsewhere");
   }
@@ -255,10 +243,9 @@ class AgentSessionControllerTest {
                     "ABC-1",
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-    assertThatThrownBy(
-            () ->
-                new AgentSessionController(state, mock(SessionReports.class), wakes)
-                    .report("busy", "/wt/ABC-1-proj", null))
+    assertThatThrownBy(() ->
+            new AgentSessionController(state, mock(SessionReports.class), wakes)
+                .report("busy", "/wt/ABC-1-proj", null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("busy");
   }

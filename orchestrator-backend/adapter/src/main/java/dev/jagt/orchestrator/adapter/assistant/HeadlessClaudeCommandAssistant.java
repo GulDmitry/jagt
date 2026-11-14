@@ -52,12 +52,11 @@ public class HeadlessClaudeCommandAssistant implements CommandAssistant {
             "command mapping",
             AssistantCallKind.COMMAND_MAP,
             TIMEOUT)
-        .map(
-            n ->
-                new CommandProposal(
-                    n.path("command").asString(""),
-                    n.path("task").asString(""),
-                    n.path("ticket").asString(""),
-                    n.path("reason").asString("")));
+        .map(n ->
+            new CommandProposal(
+                n.path("command").asString(""),
+                n.path("task").asString(""),
+                n.path("ticket").asString(""),
+                n.path("reason").asString("")));
   }
 }

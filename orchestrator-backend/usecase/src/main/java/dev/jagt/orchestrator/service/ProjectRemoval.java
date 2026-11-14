@@ -17,10 +17,9 @@ public class ProjectRemoval {
   public String remove(String key) {
     List<String> using =
         state.tasks().entrySet().stream()
-            .filter(
-                task ->
-                    task.getValue().status() != TaskStatus.DONE
-                        && task.getValue().projects().contains(key))
+            .filter(task ->
+                task.getValue().status() != TaskStatus.DONE
+                    && task.getValue().projects().contains(key))
             .map(Map.Entry::getKey)
             .sorted()
             .toList();

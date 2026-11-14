@@ -79,12 +79,11 @@ class TmuxSessionHostTest {
     TmuxSessionHost host = tmuxHost().build(processes, reads, terminal, agent);
     List<WindowState> states = new java.util.ArrayList<>();
 
-    reads.once(
-        () -> {
-          states.add(host.taskWindowState("jagt", "ABC-1"));
-          states.add(host.taskWindowState("jagt", "ABC-2"));
-          states.add(host.taskWindowState("jagt", "ABC-3"));
-        });
+    reads.once(() -> {
+      states.add(host.taskWindowState("jagt", "ABC-1"));
+      states.add(host.taskWindowState("jagt", "ABC-2"));
+      states.add(host.taskWindowState("jagt", "ABC-3"));
+    });
 
     assertThat(states)
         .containsExactly(
@@ -103,12 +102,11 @@ class TmuxSessionHostTest {
     TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host = tmuxHost().build(processes, reads, terminal, agent);
 
-    reads.once(
-        () -> {
-          host.lastWindowActivityMillis("jagt", "ABC-1");
-          change.accept(host);
-          host.lastWindowActivityMillis("jagt", "ABC-1");
-        });
+    reads.once(() -> {
+      host.lastWindowActivityMillis("jagt", "ABC-1");
+      change.accept(host);
+      host.lastWindowActivityMillis("jagt", "ABC-1");
+    });
 
     assertThat(processes.issuedContaining("list-windows", "-a")).hasSize(2);
   }
@@ -258,9 +256,8 @@ class TmuxSessionHostTest {
     assertThat(focused).isTrue();
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command ->
-                assertThat(command).startsWith("/opt/jagt/tmux", "select-window", "-t", "@2"));
+        .anySatisfy(command ->
+            assertThat(command).startsWith("/opt/jagt/tmux", "select-window", "-t", "@2"));
     verify(terminal)
         .openViewer(eq(List.of("/opt/jagt/tmux", "attach", "-t", "jagt")), eq("agents"), any());
   }
@@ -277,15 +274,14 @@ class TmuxSessionHostTest {
     assertThat(commands)
         .filteredOn(command -> command.contains("set-titles"))
         .singleElement()
-        .satisfies(
-            options ->
-                assertThat(options)
-                    .containsSequence("set-option", "-t", "jagt", "set-titles", "on")
-                    .containsSequence(
-                        "set-option", "-t", "jagt", "status-style", "bg=colour252,fg=colour235")
-                    .containsSequence("set-hook", "-t", "jagt", "after-new-window")
-                    .doesNotContainSequence("-g", "set-titles")
-                    .doesNotContain("window-status-format"));
+        .satisfies(options ->
+            assertThat(options)
+                .containsSequence("set-option", "-t", "jagt", "set-titles", "on")
+                .containsSequence(
+                    "set-option", "-t", "jagt", "status-style", "bg=colour252,fg=colour235")
+                .containsSequence("set-hook", "-t", "jagt", "after-new-window")
+                .doesNotContainSequence("-g", "set-titles")
+                .doesNotContain("window-status-format"));
   }
 
   @Test
@@ -311,9 +307,8 @@ class TmuxSessionHostTest {
     assertThat(nudged).isTrue();
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command ->
-                assertThat(command).containsSequence("send-keys", "-t", "@2", "-l", "carry on"));
+        .anySatisfy(command ->
+            assertThat(command).containsSequence("send-keys", "-t", "@2", "-l", "carry on"));
     assertThat(commands)
         .anySatisfy(
             command -> assertThat(command).containsSequence("send-keys", "-t", "@2", "Enter"));
@@ -413,11 +408,10 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command -> {
-              assertThat(command).containsSequence("new-window", "-P");
-              assertThat(command.getLast()).contains("agent-cmd").endsWith("; exec sleep 15");
-            });
+        .anySatisfy(command -> {
+          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command.getLast()).contains("agent-cmd").endsWith("; exec sleep 15");
+        });
   }
 
   @Test
@@ -454,10 +448,9 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command ->
-                assertThat(command)
-                    .containsSequence("set-option", "-w", "-t", "@9", "@jagt_alias", "login fix"));
+        .anySatisfy(command ->
+            assertThat(command)
+                .containsSequence("set-option", "-w", "-t", "@9", "@jagt_alias", "login fix"));
     assertThat(commands).anySatisfy(command -> assertThat(command).containsSequence("-n", "ABC-1"));
   }
 
@@ -524,11 +517,10 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command -> {
-              assertThat(command).containsSequence("new-window", "-P");
-              assertThat(command.getLast()).contains("agent --continue");
-            });
+        .anySatisfy(command -> {
+          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command.getLast()).contains("agent --continue");
+        });
   }
 
   @Test
@@ -550,9 +542,8 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command ->
-                assertThat(command.getLast()).startsWith("tail -n 200 -F '/feeds/it'\\''s.log'"));
+        .anySatisfy(command ->
+            assertThat(command.getLast()).startsWith("tail -n 200 -F '/feeds/it'\\''s.log'"));
   }
 
   @Test
@@ -562,11 +553,10 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command -> {
-              assertThat(command).containsSequence("new-window", "-P");
-              assertThat(command.getLast()).startsWith("'no-such-cli' 'auth' 'it'\\''s';");
-            });
+        .anySatisfy(command -> {
+          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command.getLast()).startsWith("'no-such-cli' 'auth' 'it'\\''s';");
+        });
   }
 
   @Test
@@ -576,12 +566,11 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command -> {
-              assertThat(command).containsSequence("new-window", "-P");
-              assertThat(command).containsSequence("-n", "acceptance-alpha", "-c", "/ws");
-              assertThat(command.getLast()).startsWith("agent 'p';");
-            });
+        .anySatisfy(command -> {
+          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command).containsSequence("-n", "acceptance-alpha", "-c", "/ws");
+          assertThat(command.getLast()).startsWith("agent 'p';");
+        });
   }
 
   @Test
@@ -699,10 +688,8 @@ class TmuxSessionHostTest {
     processes.answering(new Processes.Result(1, "", "server timed out"), "list-windows");
     TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
 
-    assertThatThrownBy(
-            () ->
-                host.openTaskWindow(
-                    "jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, ""))
+    assertThatThrownBy(() ->
+            host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, ""))
         .isInstanceOf(IllegalStateException.class);
     assertThat(processes.issuedContaining("new-window")).isEmpty();
   }
@@ -721,10 +708,9 @@ class TmuxSessionHostTest {
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
-        .anySatisfy(
-            command ->
-                assertThat(command.getLast())
-                    .startsWith("GIT_CEILING_DIRECTORIES='" + paths.scratch() + "' "));
+        .anySatisfy(command ->
+            assertThat(command.getLast())
+                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.scratch() + "' "));
   }
 
   @Test

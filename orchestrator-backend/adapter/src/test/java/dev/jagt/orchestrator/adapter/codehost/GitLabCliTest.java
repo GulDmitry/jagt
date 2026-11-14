@@ -255,14 +255,13 @@ class GitLabCliTest {
         gitlab.onCommit(host, "https://git.example.invalid/shop/web.git", "0123abc");
 
     assertThat(answer.reach().orElseThrow().fix())
-        .satisfies(
-            fix -> {
-              assertThat(fix.get(0)).isEqualTo("sh");
-              assertThat(fix.get(1)).isEqualTo("-c");
-              assertThat(fix.get(2))
-                  .contains(" auth login --hostname 'git.example.invalid' --device || ")
-                  .endsWith(" auth login --hostname 'git.example.invalid'");
-            });
+        .satisfies(fix -> {
+          assertThat(fix.get(0)).isEqualTo("sh");
+          assertThat(fix.get(1)).isEqualTo("-c");
+          assertThat(fix.get(2))
+              .contains(" auth login --hostname 'git.example.invalid' --device || ")
+              .endsWith(" auth login --hostname 'git.example.invalid'");
+        });
   }
 
   @Test

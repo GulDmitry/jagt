@@ -58,7 +58,8 @@ final class PointCatalogue {
 
   private static void stopped(TaskState task, StopHold hold, List<Standing> standing) {
     TaskStop stop = task.stop();
-    if (stop != null && stop.trigger().ends() != TaskStop.Trigger.Ends.PAUSE
+    if (stop != null
+        && stop.trigger().ends() != TaskStop.Trigger.Ends.PAUSE
         && hold != StopHold.MASTER) {
       standing.add(new Standing(Point.STOPPED, stop.key()));
       return;
@@ -100,12 +101,11 @@ final class PointCatalogue {
     Map<String, Point> byId = new HashMap<>();
     declared.forEach(point -> byId.put(point.id(), point));
     task.roles()
-        .forEach(
-            (role, record) -> {
-              roleStanding(byId, role + "-passed", record.passed(), standing);
-              roleStanding(byId, role + "-round-sent", record.roundDigest(), standing);
-              roleStanding(byId, role + "-declined", record.declined(), standing);
-            });
+        .forEach((role, record) -> {
+          roleStanding(byId, role + "-passed", record.passed(), standing);
+          roleStanding(byId, role + "-round-sent", record.roundDigest(), standing);
+          roleStanding(byId, role + "-declined", record.declined(), standing);
+        });
   }
 
   private static void roleStanding(

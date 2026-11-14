@@ -31,7 +31,7 @@ public class FreshStartWaitJob implements TaskJob {
   @Override
   public String describe() {
     return "start the fresh session held back while the human types in or answers inside the"
-               + " agent's window";
+        + " agent's window";
   }
 
   @Override

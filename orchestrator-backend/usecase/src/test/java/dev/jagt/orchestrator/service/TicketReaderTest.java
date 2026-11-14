@@ -38,7 +38,8 @@ class TicketReaderTest {
                     .withTrackerProject("ABC")
                     .withUrl("https://elsewhere.example.com/item/9")),
             TokenUsage.ofCall(25_000, 0, 120, 0.05));
-    when(assistants.tracker().readTicket(eq("https://elsewhere.example.com/item/9"), any())).thenReturn(paid);
+    when(assistants.tracker().readTicket(eq("https://elsewhere.example.com/item/9"), any()))
+        .thenReturn(paid);
 
     var read =
         new TicketReader(assistants, mcp, usage, RetryPolicy.PAID_READ)

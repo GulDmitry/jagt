@@ -78,13 +78,12 @@ class PressLogTest {
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
             true);
 
-    assertThatThrownBy(
-            () ->
-                presses.record(
-                    List.of(
-                        new Interaction(NOW, "action:done", null),
-                        new Interaction(at, control, status)),
-                    NOW))
+    assertThatThrownBy(() ->
+            presses.record(
+                List.of(
+                    new Interaction(NOW, "action:done", null),
+                    new Interaction(at, control, status)),
+                NOW))
         .isInstanceOf(IllegalArgumentException.class);
     assertThat(file).doesNotExist();
   }
@@ -150,10 +149,8 @@ class PressLogTest {
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
             true);
 
-    assertThatThrownBy(
-            () ->
-                presses.record(
-                    java.util.Arrays.asList(new Interaction(NOW, "flag", null), null), NOW))
+    assertThatThrownBy(() ->
+            presses.record(java.util.Arrays.asList(new Interaction(NOW, "flag", null), null), NOW))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

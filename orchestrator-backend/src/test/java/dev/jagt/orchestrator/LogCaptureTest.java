@@ -23,18 +23,12 @@ class LogCaptureTest {
 
   @Test
   void noTestHoldsLockOrRunsOnOneThread() {
-    classes()
-        .should(holdNoLockAndNoSameThread())
-        .allowEmptyShould(true)
-        .check(SourceRoots.ALL);
+    classes().should(holdNoLockAndNoSameThread()).allowEmptyShould(true).check(SourceRoots.ALL);
   }
 
   @Test
   void logIsCapturedOnlyThroughTheFake() {
-    classes()
-        .should(buildNoListAppender())
-        .allowEmptyShould(true)
-        .check(SourceRoots.ALL);
+    classes().should(buildNoListAppender()).allowEmptyShould(true).check(SourceRoots.ALL);
   }
 
   private static ArchCondition<JavaClass> holdNoLockAndNoSameThread() {
@@ -51,10 +45,7 @@ class LogCaptureTest {
   private static Stream<JavaAnnotation<?>> annotations(JavaClass type) {
     Stream<JavaAnnotation<?>> own = type.getAnnotations().stream().map(a -> a);
     Stream<JavaAnnotation<?>> onMethods =
-        type.getMethods().stream()
-            .map(JavaMethod::getAnnotations)
-            .flatMap(Set::stream)
-            .map(a -> a);
+        type.getMethods().stream().map(JavaMethod::getAnnotations).flatMap(Set::stream).map(a -> a);
     return Stream.concat(own, onMethods);
   }
 

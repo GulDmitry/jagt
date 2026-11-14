@@ -49,11 +49,10 @@ class RoleCheckStartupTest {
     assertThat(check(roles, paths).problems()).isEmpty();
     assertThat(check(roles, paths).notes())
         .singleElement()
-        .satisfies(
-            note -> {
-              assertThat(note.key()).isEqualTo("roles/dead");
-              assertThat(note.text()).contains("no exit");
-            });
+        .satisfies(note -> {
+          assertThat(note.key()).isEqualTo("roles/dead");
+          assertThat(note.text()).contains("no exit");
+        });
   }
 
   @Test
@@ -116,11 +115,10 @@ class RoleCheckStartupTest {
             acceptance -> assertThat(acceptance.replies().outcomes()).contains("round"));
     assertThat(roles.skipped())
         .singleElement()
-        .satisfies(
-            problem ->
-                assertThat(problem.text())
-                    .startsWith("role.yml: ")
-                    .endsWith("the shipped file stands"));
+        .satisfies(problem ->
+            assertThat(problem.text())
+                .startsWith("role.yml: ")
+                .endsWith("the shipped file stands"));
   }
 
   @Test
@@ -135,11 +133,10 @@ class RoleCheckStartupTest {
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
         .singleElement()
-        .satisfies(
-            note -> {
-              assertThat(note.key()).isEqualTo("roles/acceptance");
-              assertThat(note.text()).contains("no roles/acceptance/role.yml");
-            });
+        .satisfies(note -> {
+          assertThat(note.key()).isEqualTo("roles/acceptance");
+          assertThat(note.text()).contains("no roles/acceptance/role.yml");
+        });
   }
 
   @Test
@@ -157,11 +154,10 @@ class RoleCheckStartupTest {
 
     assertThat(check(roles, paths).problems())
         .singleElement()
-        .satisfies(
-            problem -> {
-              assertThat(problem.key()).isEqualTo("roles/acceptance");
-              assertThat(problem.text()).contains("no roles/acceptance/role.yml");
-            });
+        .satisfies(problem -> {
+          assertThat(problem.key()).isEqualTo("roles/acceptance");
+          assertThat(problem.text()).contains("no roles/acceptance/role.yml");
+        });
   }
 
   @Test
@@ -205,12 +201,10 @@ class RoleCheckStartupTest {
 
     assertThat(check.notes())
         .singleElement()
-        .satisfies(
-            note -> {
-              assertThat(note.key()).isEqualTo("roles.ACCEPTANCE");
-              assertThat(note.text())
-                  .contains("orchestrator.roles.ACCEPTANCE names no installed role");
-            });
+        .satisfies(note -> {
+          assertThat(note.key()).isEqualTo("roles.ACCEPTANCE");
+          assertThat(note.text()).contains("orchestrator.roles.ACCEPTANCE names no installed role");
+        });
     assertThat(check.problems()).isEmpty();
   }
 

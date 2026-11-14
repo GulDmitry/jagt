@@ -51,20 +51,18 @@ public class DeployService {
    */
   private void requireTheFixStaged(TaskState task, String taskId, Optional<Target> waiting) {
     waiting
-        .filter(
-            target ->
-                DeployTargets.handedBackForItsPipeline(task)
-                    && !gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))
-        .ifPresent(
-            target -> {
-              throw Refusal.byState(
-                  "deploy "
-                      + taskId
-                      + " waits on the session's fix in "
-                      + GitDeploy.deployWorktreePath(target.path(), taskId)
-                      + ": it is not staged in full yet."
-                      + " Stage it, then deploy again.");
-            });
+        .filter(target ->
+            DeployTargets.handedBackForItsPipeline(task)
+                && !gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))
+        .ifPresent(target -> {
+          throw Refusal.byState(
+              "deploy "
+                  + taskId
+                  + " waits on the session's fix in "
+                  + GitDeploy.deployWorktreePath(target.path(), taskId)
+                  + ": it is not staged in full yet."
+                  + " Stage it, then deploy again.");
+        });
   }
 
   /**
@@ -75,19 +73,18 @@ public class DeployService {
     Optional<Target> waiting = deployTargets.stopped(task);
     waiting
         .filter(target -> !gitDeploy.hasDeployWorktree(target.path(), taskId))
-        .ifPresent(
-            target -> {
-              throw Refusal.byState(
-                  "deploy "
-                      + taskId
-                      + " waits on a conflict in "
-                      + target.project()
-                      + " but its deploy worktree "
-                      + GitDeploy.deployWorktreePath(target.path(), taskId)
-                      + " is gone. `revert "
-                      + taskId
-                      + "` clears it.");
-            });
+        .ifPresent(target -> {
+          throw Refusal.byState(
+              "deploy "
+                  + taskId
+                  + " waits on a conflict in "
+                  + target.project()
+                  + " but its deploy worktree "
+                  + GitDeploy.deployWorktreePath(target.path(), taskId)
+                  + " is gone. `revert "
+                  + taskId
+                  + "` clears it.");
+        });
     return waiting;
   }
 

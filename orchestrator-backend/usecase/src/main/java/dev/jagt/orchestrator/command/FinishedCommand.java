@@ -75,11 +75,10 @@ public class FinishedCommand implements GlobalCommand {
       lines.add(clock);
     }
     Map<Guard, Integer> refused = new EnumMap<>(Guard.class);
-    records.forEach(
-        task ->
-            task.course()
-                .refusals()
-                .forEach((guard, count) -> refused.merge(guard, count, Integer::sum)));
+    records.forEach(task ->
+        task.course()
+            .refusals()
+            .forEach((guard, count) -> refused.merge(guard, count, Integer::sum)));
     if (!refused.isEmpty()) {
       lines.add(
           "refused: "
@@ -102,24 +101,22 @@ public class FinishedCommand implements GlobalCommand {
     }
     long median = (took[(took.length - 1) / 2] + took[took.length / 2]) / 2;
     Map<Owner, Long> held = new EnumMap<>(Owner.class);
-    records.forEach(
-        task ->
-            HeldTime.byOwner(task.course().history(), task.finishedAt())
-                .forEach((owner, millis) -> held.merge(owner, millis, Long::sum)));
+    records.forEach(task ->
+        HeldTime.byOwner(task.course().history(), task.finishedAt())
+            .forEach((owner, millis) -> held.merge(owner, millis, Long::sum)));
     held.remove(Owner.NOBODY);
     long total = held.values().stream().mapToLong(Long::longValue).sum();
     String split =
         Stream.of(Owner.YOU, Owner.AGENT, Owner.CI)
             .filter(owner -> held.getOrDefault(owner, 0L) > 0)
-            .map(
-                owner -> {
-                  long millis = held.getOrDefault(owner, 0L);
-                  return "%s %s (%d%%)"
-                      .formatted(
-                          HOLDER.get(owner),
-                          DurationFormat.compact(millis),
-                          Math.round(100.0 * millis / total));
-                })
+            .map(owner -> {
+              long millis = held.getOrDefault(owner, 0L);
+              return "%s %s (%d%%)"
+                  .formatted(
+                      HOLDER.get(owner),
+                      DurationFormat.compact(millis),
+                      Math.round(100.0 * millis / total));
+            })
             .collect(Collectors.joining(", "));
     return "median "
         + DurationFormat.compact(median)

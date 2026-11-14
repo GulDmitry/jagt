@@ -36,11 +36,10 @@ class ConfigReferenceTest {
         ROOTS.stream()
             .flatMap(SourceRoots::javaFilesUnder)
             .flatMap(path -> named.matcher(SourceRoots.read(path)).results())
-            .map(
-                match ->
-                    Pattern.compile("-([a-z])")
-                        .matcher(match.group(1))
-                        .replaceAll(letter -> letter.group(1).toUpperCase(Locale.ROOT)));
+            .map(match ->
+                Pattern.compile("-([a-z])")
+                    .matcher(match.group(1))
+                    .replaceAll(letter -> letter.group(1).toUpperCase(Locale.ROOT)));
 
     assertThat(
             Stream.concat(bound, looked)
@@ -49,5 +48,4 @@ class ConfigReferenceTest {
                     key -> !Pattern.compile("(?m)^\\s*#?\\s*" + key + ":").matcher(dist).find()))
         .isEmpty();
   }
-
 }

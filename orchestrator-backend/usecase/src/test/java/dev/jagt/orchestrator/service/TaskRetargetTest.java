@@ -63,8 +63,7 @@ class TaskRetargetTest {
   void keepsTheBaseWhenTheWorktreeDoesNotStandOnTheBranchItNames() {
     when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
-    assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41"))
-        .isInstanceOf(Refusal.class);
+    assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41")).isInstanceOf(Refusal.class);
     assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isNull();
   }
 
@@ -72,8 +71,7 @@ class TaskRetargetTest {
   void keepsTheBaseWhenOriginHasNoSuchBranch() {
     when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
-    assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41"))
-        .isInstanceOf(Refusal.class);
+    assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41")).isInstanceOf(Refusal.class);
     assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isNull();
   }
 

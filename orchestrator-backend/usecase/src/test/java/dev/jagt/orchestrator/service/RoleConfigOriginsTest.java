@@ -112,12 +112,11 @@ class RoleConfigOriginsTest {
       List<ILoggingEvent> events = appender.events();
       assertThat(events).extracting(ILoggingEvent::getMessage).containsOnly("role config");
       return events.stream()
-          .map(
-              event ->
-                  event.getKeyValuePairs().stream()
-                      .map(pair -> String.valueOf(pair.value))
-                      .reduce((a, b) -> a + " " + b)
-                      .orElse(""))
+          .map(event ->
+              event.getKeyValuePairs().stream()
+                  .map(pair -> String.valueOf(pair.value))
+                  .reduce((a, b) -> a + " " + b)
+                  .orElse(""))
           .toList();
     }
   }

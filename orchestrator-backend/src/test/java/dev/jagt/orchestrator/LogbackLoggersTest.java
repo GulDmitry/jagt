@@ -44,23 +44,21 @@ class LogbackLoggersTest {
       logging =
           sources
               .filter(source -> read(source).contains("setMessage(\"master "))
-              .map(
-                  source ->
-                      source
-                          .toString()
-                          .replaceFirst(".*main/java/", "")
-                          .replace(".java", "")
-                          .replace('/', '.'))
+              .map(source ->
+                  source
+                      .toString()
+                      .replaceFirst(".*main/java/", "")
+                      .replace(".java", "")
+                      .replace('/', '.'))
               .toList();
     }
 
     assertThat(logging)
         .isNotEmpty()
-        .allSatisfy(
-            name ->
-                assertThat(config)
-                    .as(name)
-                    .contains("<logger name=\"" + name + "\"><appender-ref ref=\"MASTER\"/>"));
+        .allSatisfy(name ->
+            assertThat(config)
+                .as(name)
+                .contains("<logger name=\"" + name + "\"><appender-ref ref=\"MASTER\"/>"));
   }
 
   @Test

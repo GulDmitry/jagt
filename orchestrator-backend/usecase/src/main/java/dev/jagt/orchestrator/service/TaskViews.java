@@ -55,15 +55,14 @@ public class TaskViews {
     config.projects().forEach((key, project) -> deployBranches.put(key, project.deployBranch()));
     List<TaskView> views =
         tasks.entrySet().stream()
-            .map(
-                entry ->
-                    TaskView.of(
-                        rules,
-                        entry.getKey(),
-                        entry.getValue(),
-                        rounds.of(entry.getValue(), config),
-                        cadence.watch(entry.getValue(), now),
-                        deployBranches))
+            .map(entry ->
+                TaskView.of(
+                    rules,
+                    entry.getKey(),
+                    entry.getValue(),
+                    rounds.of(entry.getValue(), config),
+                    cadence.watch(entry.getValue(), now),
+                    deployBranches))
             .toList();
     return new Snapshot(
         views,
@@ -90,20 +89,18 @@ public class TaskViews {
   private String listed(@Nullable TaskState task, TaskView view) {
     String tail =
         Optional.ofNullable(task)
-            .map(
-                t ->
-                    (t.title() == null ? "" : " " + t.title())
-                        + (t.message() == null || t.message().isBlank() ? "" : " — " + t.message())
-                        + (t.report() == AgentReport.PLAIN
-                            ? ""
-                            : " report=" + t.report().name().toLowerCase(Locale.ROOT))
-                        + t.repos().stream()
-                            .map(
-                                repo ->
-                                    " | "
-                                        + repo.worktreePath()
-                                        + (repo.mrUrl() == null ? "" : " " + repo.mrUrl()))
-                            .collect(Collectors.joining()))
+            .map(t ->
+                (t.title() == null ? "" : " " + t.title())
+                    + (t.message() == null || t.message().isBlank() ? "" : " — " + t.message())
+                    + (t.report() == AgentReport.PLAIN
+                        ? ""
+                        : " report=" + t.report().name().toLowerCase(Locale.ROOT))
+                    + t.repos().stream()
+                        .map(repo ->
+                            " | "
+                                + repo.worktreePath()
+                                + (repo.mrUrl() == null ? "" : " " + repo.mrUrl()))
+                        .collect(Collectors.joining()))
             .orElse("");
     return view.id()
         + " ["

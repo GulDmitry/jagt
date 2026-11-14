@@ -124,10 +124,9 @@ public class ClaudeSessionLog implements SessionLog {
       TokenUsage turn =
           priceOf(model, usage, input, cacheRead, output)
               .map(cost -> TokenUsage.ofCall(input + cacheWrite, cacheRead, output, cost))
-              .orElseGet(
-                  () ->
-                      unpriced(
-                          model, TokenUsage.ofUnpricedCall(input + cacheWrite, cacheRead, output)));
+              .orElseGet(() ->
+                  unpriced(
+                      model, TokenUsage.ofUnpricedCall(input + cacheWrite, cacheRead, output)));
       return firstTurn && usage.has("cache_read_input_tokens") ? turn.asStart() : turn;
     } catch (RuntimeException unreadable) {
       return TokenUsage.NONE;

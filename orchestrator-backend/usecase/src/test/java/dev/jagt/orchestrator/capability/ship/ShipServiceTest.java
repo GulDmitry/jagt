@@ -85,8 +85,7 @@ class ShipServiceTest {
             .title("Widget layout is off")
             .build());
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     verify(relay)
         .write(eq("ABC-42"), eq(Step.SHIP), contains("Push branch ABC-42."), any(Standing.class));
@@ -146,8 +145,7 @@ class ShipServiceTest {
             .build());
     when(changes.holdsWork("web", "/wt-web", "master")).thenReturn(false);
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
     verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
@@ -162,8 +160,7 @@ class ShipServiceTest {
     stateService.putTask(
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
     assertThat(outcome.message()).contains("no case sends ship at REVIEW_PENDING");
@@ -175,8 +172,7 @@ class ShipServiceTest {
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
     when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
     assertThat(outcome.message()).contains("nothing to ship");
@@ -199,8 +195,7 @@ class ShipServiceTest {
             .build());
     when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
     verify(relay)
@@ -359,8 +354,7 @@ class ShipServiceTest {
     stateService.putTask(
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     assertThat(outcome.message())
         .contains("until it reports the request")
@@ -379,8 +373,7 @@ class ShipServiceTest {
                     TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git")))
             .build());
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     assertThat(outcome.message()).contains("until it reports the requests");
   }
@@ -398,8 +391,7 @@ class ShipServiceTest {
                     ConfigService.ConfigFile.CodeReviewConfig.defaults()
                         .withPostReviewReplies(false)));
 
-    Outcome outcome =
-        ships.ship("ABC-42");
+    Outcome outcome = ships.ship("ABC-42");
 
     assertThat(outcome.message())
         .contains("review_replies.md is yours to post (postReviewReplies=false)");
@@ -407,8 +399,7 @@ class ShipServiceTest {
 
   @Test
   void refusesTaskThatIsNotThereNamingIt() {
-    assertThatThrownBy(
-            () -> ships.ship("ABC-9"))
+    assertThatThrownBy(() -> ships.ship("ABC-9"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("No task ABC-9")
         .extracting("code")

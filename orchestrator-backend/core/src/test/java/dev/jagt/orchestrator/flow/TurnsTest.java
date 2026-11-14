@@ -41,27 +41,24 @@ class TurnsTest {
 
   static Stream<Arguments> everyTurn() {
     return Arrays.stream(TaskStatus.values())
-        .flatMap(
-            status ->
-                Arrays.stream(AgentReport.values())
-                    .flatMap(
-                        report ->
-                            PROFILES.keySet().stream()
-                                .map(profile -> Arguments.of(status, report, profile))));
+        .flatMap(status ->
+            Arrays.stream(AgentReport.values())
+                .flatMap(report ->
+                    PROFILES.keySet().stream()
+                        .map(profile -> Arguments.of(status, report, profile))));
   }
 
   static Stream<Arguments> everyTurnNoMasterHolds() {
     return everyTurn()
-        .filter(
-            row ->
-                !Objects.equals(
-                    Turns.next(
-                        Objects.requireNonNull((TaskStatus) row.get()[0]),
-                        Objects.requireNonNull((AgentReport) row.get()[1]),
-                        false,
-                        Map.of(),
-                        Objects.requireNonNull(PROFILES.get((String) row.get()[2]))),
-                    Holder.ARBITER));
+        .filter(row ->
+            !Objects.equals(
+                Turns.next(
+                    Objects.requireNonNull((TaskStatus) row.get()[0]),
+                    Objects.requireNonNull((AgentReport) row.get()[1]),
+                    false,
+                    Map.of(),
+                    Objects.requireNonNull(PROFILES.get((String) row.get()[2]))),
+                Holder.ARBITER));
   }
 
   @ParameterizedTest
@@ -260,19 +257,14 @@ class TurnsTest {
 
   static Stream<Arguments> everyStatusReportStoppedAndAcceptancePhase() {
     return Arrays.stream(TaskStatus.values())
-        .flatMap(
-            status ->
-                Arrays.stream(AgentReport.values())
-                    .flatMap(
-                        report ->
-                            Stream.of(false, true)
-                                .flatMap(
-                                    stopped ->
-                                        Arrays.stream(CheckerPhase.values())
-                                            .map(
-                                                acceptance ->
-                                                    Arguments.of(
-                                                        status, report, stopped, acceptance)))));
+        .flatMap(status ->
+            Arrays.stream(AgentReport.values())
+                .flatMap(report ->
+                    Stream.of(false, true)
+                        .flatMap(stopped ->
+                            Arrays.stream(CheckerPhase.values())
+                                .map(acceptance ->
+                                    Arguments.of(status, report, stopped, acceptance)))));
   }
 
   @ParameterizedTest

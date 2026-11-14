@@ -14,10 +14,10 @@ class CodexSessionLogTest {
 
   private static final String TURN_ONE =
       "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"last_token_usag"
-      + "e\":{\"input_tokens\":1000,\"cached_input_tokens\":800,\"output_tokens\":50}}}}\n";
+          + "e\":{\"input_tokens\":1000,\"cached_input_tokens\":800,\"output_tokens\":50}}}}\n";
   private static final String TURN_TWO =
       "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"last_token_usag"
-      + "e\":{\"input_tokens\":2000,\"cached_input_tokens\":1500,\"output_tokens\":70}}}}\n";
+          + "e\":{\"input_tokens\":2000,\"cached_input_tokens\":1500,\"output_tokens\":70}}}}\n";
 
   @Test
   void booksEachTurnUnpricedWithItsCachedTokensApartFromItsInput(@TempDir Path dir)

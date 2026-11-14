@@ -39,11 +39,10 @@ public class McpController {
     }
     return protocolService
         .handle(message, cwd, masterToken.matches(token))
-        .map(
-            answer ->
-                answer.path("error").path("code").asInt() == McpProtocolService.UNKNOWN_CALLER
-                    ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(answer)
-                    : ResponseEntity.ok(answer))
+        .map(answer ->
+            answer.path("error").path("code").asInt() == McpProtocolService.UNKNOWN_CALLER
+                ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(answer)
+                : ResponseEntity.ok(answer))
         .orElseGet(() -> ResponseEntity.noContent().build());
   }
 

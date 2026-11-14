@@ -16,8 +16,7 @@ public record TestProjectConfigBuilder(
     @Nullable Integer verifyMinutes) {
 
   public static TestProjectConfigBuilder projectConfig() {
-    return new TestProjectConfigBuilder(
-        "/repo", "origin/main", "dev", null, null, List.of(), null);
+    return new TestProjectConfigBuilder("/repo", "origin/main", "dev", null, null, List.of(), null);
   }
 
   public ProjectConfig build() {

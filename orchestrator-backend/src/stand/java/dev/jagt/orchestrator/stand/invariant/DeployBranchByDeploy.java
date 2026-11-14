@@ -36,10 +36,9 @@ public final class DeployBranchByDeploy implements Invariant {
   private static boolean landedBy(RunRecord run, Instant at) {
     return run.histories().values().stream()
         .flatMap(List::stream)
-        .anyMatch(
-            step ->
-                LANDED.contains(step.status())
-                    && !step.at().isBefore(at.minus(BEFORE))
-                    && !step.at().isAfter(at.plus(AFTER)));
+        .anyMatch(step ->
+            LANDED.contains(step.status())
+                && !step.at().isBefore(at.minus(BEFORE))
+                && !step.at().isAfter(at.plus(AFTER)));
   }
 }

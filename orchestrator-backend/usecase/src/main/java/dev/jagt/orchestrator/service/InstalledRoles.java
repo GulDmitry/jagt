@@ -125,10 +125,9 @@ public final class InstalledRoles {
       return found
           .filter(Files::isDirectory)
           .filter(folder -> files(folder).isEmpty())
-          .filter(
-              folder ->
-                  Files.exists(folder.resolve("brief.md"))
-                      || Files.exists(folder.resolve("brief.md.dist")))
+          .filter(folder ->
+              Files.exists(folder.resolve("brief.md"))
+                  || Files.exists(folder.resolve("brief.md.dist")))
           .map(folder -> folder.getFileName().toString())
           .sorted()
           .toList();

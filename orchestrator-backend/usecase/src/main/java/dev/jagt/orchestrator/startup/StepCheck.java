@@ -26,25 +26,24 @@ public class StepCheck implements StartupCheck {
     Set<String> sections = brief.steps();
     return Arrays.stream(Step.values())
         .map(Step::id)
-        .flatMap(
-            step ->
-                Stream.of(
-                    sections.contains(step)
-                        ? null
-                        : new Problem(
-                            SessionBrief.FILE,
-                            SessionBrief.FILE
-                                + ": no section for the step '"
-                                + step
-                                + "' — add one, or the session is told nothing of it"),
-                    cases.book().names(step)
-                        ? null
-                        : new Problem(
-                            SessionCases.FILE,
-                            SessionCases.FILE
-                                + ": no case sends the step '"
-                                + step
-                                + "' — add one, or it never reaches a session")))
+        .flatMap(step ->
+            Stream.of(
+                sections.contains(step)
+                    ? null
+                    : new Problem(
+                        SessionBrief.FILE,
+                        SessionBrief.FILE
+                            + ": no section for the step '"
+                            + step
+                            + "' — add one, or the session is told nothing of it"),
+                cases.book().names(step)
+                    ? null
+                    : new Problem(
+                        SessionCases.FILE,
+                        SessionCases.FILE
+                            + ": no case sends the step '"
+                            + step
+                            + "' — add one, or it never reaches a session")))
         .filter(Objects::nonNull)
         .toList();
   }

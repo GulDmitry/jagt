@@ -33,23 +33,21 @@ final class RoundAnswers {
     List<Finding> findings = new ArrayList<>();
     answer
         .path("findings")
-        .forEach(
-            f ->
-                findings.add(
-                    new Finding(
-                        f.path("file").asString(""),
-                        f.path("issue").asString(""),
-                        f.path("pattern").asString(""),
-                        f.path("severity").asString("").strip().toLowerCase(Locale.ROOT),
-                        f.path("anchor").asString(""),
-                        f.path("kind").asString(""))));
+        .forEach(f ->
+            findings.add(
+                new Finding(
+                    f.path("file").asString(""),
+                    f.path("issue").asString(""),
+                    f.path("pattern").asString(""),
+                    f.path("severity").asString("").strip().toLowerCase(Locale.ROOT),
+                    f.path("anchor").asString(""),
+                    f.path("kind").asString(""))));
     List<Premise> premises = new ArrayList<>();
     answer
         .path("premises")
-        .forEach(
-            p ->
-                premises.add(
-                    new Premise(p.path("claim").asString(""), p.path("provenBy").asString(""))));
+        .forEach(p ->
+            premises.add(
+                new Premise(p.path("claim").asString(""), p.path("provenBy").asString(""))));
     return new Judgement(
         answer.path("failure").asString(""),
         answer.path("verdict").asString(""),

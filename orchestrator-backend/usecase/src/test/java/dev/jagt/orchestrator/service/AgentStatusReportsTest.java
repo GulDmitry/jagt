@@ -59,8 +59,7 @@ class AgentStatusReportsTest {
       ConfigService.ConfigFile.defaults()
           .withProjects(
               Map.of(
-                  "proj",
-                  projectConfig().withVerifyCommand(List.of("./gradlew", "test")).build()));
+                  "proj", projectConfig().withVerifyCommand(List.of("./gradlew", "test")).build()));
 
   private final TaskState inProgress =
       TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
@@ -291,16 +290,15 @@ class AgentStatusReportsTest {
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-    assertThatThrownBy(
-            () ->
-                reports.report(
-                    new AgentStatusMessage(
-                        "CI_POLLING",
-                        "requests up",
-                        null,
-                        null,
-                        Map.of("frontend", "https://host/x/-/merge_requests/9")),
-                    "ABC-1"))
+    assertThatThrownBy(() ->
+            reports.report(
+                new AgentStatusMessage(
+                    "CI_POLLING",
+                    "requests up",
+                    null,
+                    null,
+                    Map.of("frontend", "https://host/x/-/merge_requests/9")),
+                "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("project 'frontend' is not on this task")
         .hasMessageContaining("proj");
@@ -368,12 +366,17 @@ class AgentStatusReportsTest {
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     ReachLedger reach = new ReachLedger();
     AgentStatusReports reports =
-        new AgentStatusReports(state, new LinkRefusals(
+        new AgentStatusReports(
+            state,
+            new LinkRefusals(
                 reach,
                 (task, line) -> {
                   throw new AssertionError("no session to tell");
                 },
-                state), flowReports, handBack, configService);
+                state),
+            flowReports,
+            handBack,
+            configService);
 
     reports.report(
         new AgentStatusMessage(
@@ -395,16 +398,15 @@ class AgentStatusReportsTest {
             .build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-    assertThatThrownBy(
-            () ->
-                reports.report(
-                    new AgentStatusMessage(
-                        "CI_POLLING",
-                        "shipped",
-                        null,
-                        "https://host/other/proj/-/merge_requests/9",
-                        Map.of()),
-                    "ABC-1"))
+    assertThatThrownBy(() ->
+            reports.report(
+                new AgentStatusMessage(
+                    "CI_POLLING",
+                    "shipped",
+                    null,
+                    "https://host/other/proj/-/merge_requests/9",
+                    Map.of()),
+                "ABC-1"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("not under the repository's remote");
   }
@@ -512,8 +514,7 @@ class AgentStatusReportsTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"branch pushed", "pushed, see the http docs for the request"})
-  void refusesToSayTaskIsWaitingOnChecksWithoutNamingTheRequest(
-      String message) {
+  void refusesToSayTaskIsWaitingOnChecksWithoutNamingTheRequest(String message) {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -774,9 +775,8 @@ class AgentStatusReportsTest {
             .build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-    assertThatThrownBy(
-            () ->
-                reports.report(TaskStatus.CI_POLLING, "review request: https://host/mr/1", "ABC-1"))
+    assertThatThrownBy(() ->
+            reports.report(TaskStatus.CI_POLLING, "review request: https://host/mr/1", "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("already APPROVED");
     assertThat(state.task("ABC-1"))
@@ -926,11 +926,10 @@ class AgentStatusReportsTest {
         TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.REQUIRED).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-    assertThatThrownBy(
-            () ->
-                reports.report(
-                    new AgentStatusMessage("IN_PROGRESS", "one file", "no_plan", null, Map.of()),
-                    "ABC-1"))
+    assertThatThrownBy(() ->
+            reports.report(
+                new AgentStatusMessage("IN_PROGRESS", "one file", "no_plan", null, Map.of()),
+                "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("outcome");
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
@@ -961,19 +960,18 @@ class AgentStatusReportsTest {
     state.putTask("ABC-1", inProgress);
     when(configService.load()).thenReturn(projOnly);
 
-    assertThatThrownBy(
-            () ->
-                reports.report(
-                    new AgentStatusMessage(
-                        "IN_PROGRESS",
-                        "needs it",
-                        "question",
-                        new AgentStatusMessage.Request(null, Map.of()),
-                        null,
-                        "ghost",
-                        null,
-                        Map.of()),
-                    "ABC-1"))
+    assertThatThrownBy(() ->
+            reports.report(
+                new AgentStatusMessage(
+                    "IN_PROGRESS",
+                    "needs it",
+                    "question",
+                    new AgentStatusMessage.Request(null, Map.of()),
+                    null,
+                    "ghost",
+                    null,
+                    Map.of()),
+                "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("needsProject")
         .hasMessageContaining("[proj]");
@@ -1053,9 +1051,7 @@ class AgentStatusReportsTest {
           new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()),
           "ABC-1");
 
-      assertThat(log.events())
-          .extracting(ILoggingEvent::getMessage)
-          .containsExactly("agent asked");
+      assertThat(log.events()).extracting(ILoggingEvent::getMessage).containsExactly("agent asked");
     }
   }
 

@@ -39,7 +39,8 @@ public class RoundRecord {
           taskId,
           (reducer, task) ->
               reducer.headSeen(
-                  reducer.approvalRead(
+                  reducer
+                      .approvalRead(
                           reducer.checksUnread(
                               task, new ChecksUnread(now, facts.pipeline().failure())),
                           facts.request().approved())
@@ -82,7 +83,8 @@ public class RoundRecord {
       stateService.reduce(
           taskId,
           (reducer, task) ->
-              reducer.approvalRead(
+              reducer
+                  .approvalRead(
                       reducer.checksRead(reducer.headSeen(task, tip), read, tip),
                       facts.request().approved())
                   .withRequestOpenedAt(facts.request().openedAt())

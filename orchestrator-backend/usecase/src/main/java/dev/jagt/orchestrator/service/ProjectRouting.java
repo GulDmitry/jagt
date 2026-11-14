@@ -153,10 +153,9 @@ public class ProjectRouting {
   private boolean routerPlacedElsewhere(String ticketKey, String project) {
     return finished.all().stream()
         .filter(task -> task.identity().id().equals(ticketKey))
-        .anyMatch(
-            task ->
-                task.openedBy() == ActionOrigin.TRACKER
-                    && !task.identity().projects().contains(project));
+        .anyMatch(task ->
+            task.openedBy() == ActionOrigin.TRACKER
+                && !task.identity().projects().contains(project));
   }
 
   private void learn(TicketFacts item, RoutingAnswer routed) {
@@ -201,14 +200,13 @@ public class ProjectRouting {
         finished.all().stream().filter(FinishedTask::routingWorthLearningFrom).toList();
     return learnable.stream()
         .skip(Math.max(0, learnable.size() - PRECEDENTS))
-        .map(
-            task ->
-                "- "
-                    + task.identity().id()
-                    + " \""
-                    + task.identity().title()
-                    + "\" → "
-                    + task.identity().projects().get(0))
+        .map(task ->
+            "- "
+                + task.identity().id()
+                + " \""
+                + task.identity().title()
+                + "\" → "
+                + task.identity().projects().get(0))
         .toList();
   }
 
@@ -218,9 +216,8 @@ public class ProjectRouting {
     Set<String> tokens = new HashSet<>(facts.labels());
     tokens.add(facts.trackerProject());
     return projectLabels.entrySet().stream()
-        .filter(
-            entry ->
-                entry.getValue() != null && entry.getValue().stream().anyMatch(tokens::contains))
+        .filter(entry ->
+            entry.getValue() != null && entry.getValue().stream().anyMatch(tokens::contains))
         .map(Map.Entry::getKey)
         .toList();
   }

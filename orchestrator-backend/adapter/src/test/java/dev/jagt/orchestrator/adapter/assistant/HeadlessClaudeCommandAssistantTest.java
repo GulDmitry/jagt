@@ -65,10 +65,9 @@ class HeadlessClaudeCommandAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anySatisfy(
-            argument ->
-                assertThat(argument)
-                    .contains("<request>send ABC-5 out for review</request>")
-                    .contains("ship <task>\nresume <url>"));
+        .anySatisfy(argument ->
+            assertThat(argument)
+                .contains("<request>send ABC-5 out for review</request>")
+                .contains("ship <task>\nresume <url>"));
   }
 }

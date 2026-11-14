@@ -30,19 +30,17 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
 
   private AcceptanceFixtureEnvironment(Map<String, Object> environment) throws IOException {
     Yamls.mapOrEmpty(environment.get("login"))
-        .forEach(
-            (role, said) ->
-                replies.put(
-                    "GET /login/" + role,
-                    "ok".equals(said)
-                        ? new Reply(200, "text/plain", "signed in as " + role)
-                        : new Reply(401, "text/plain", String.valueOf(said))));
+        .forEach((role, said) ->
+            replies.put(
+                "GET /login/" + role,
+                "ok".equals(said)
+                    ? new Reply(200, "text/plain", "signed in as " + role)
+                    : new Reply(401, "text/plain", String.valueOf(said))));
     Yamls.mapOrEmpty(environment.get("http"))
         .forEach((call, said) -> replies.put(call, http(Yamls.map(said))));
     Yamls.mapOrEmpty(environment.get("ui"))
-        .forEach(
-            (page, said) ->
-                replies.put("GET " + page, new Reply(200, "application/json", json(said))));
+        .forEach((page, said) ->
+            replies.put("GET " + page, new Reply(200, "application/json", json(said))));
     server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
     server.createContext("/", this::answer);
     server.start();

@@ -115,9 +115,7 @@ class BoardReportsTest extends BoardPageContext {
     putReviewTask("ABC-13");
     state.putTask(
         "ABC-14",
-        alphaTask("ABC-14", TaskStatus.REVIEW_PENDING)
-            .mrUrl("https://host.example/mr/8")
-            .build());
+        alphaTask("ABC-14", TaskStatus.REVIEW_PENDING).mrUrl("https://host.example/mr/8").build());
 
     Page page = openLiveBoard();
     ask(page, "replies a13");
@@ -364,8 +362,7 @@ class BoardReportsTest extends BoardPageContext {
       held = new CopyOnWriteArrayList<>();
       page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
       page.waitForRequest(
-          Pattern.compile("/api/commands/replies\\?about=a7$"),
-          () -> ask(page, "replies a7"));
+          Pattern.compile("/api/commands/replies\\?about=a7$"), () -> ask(page, "replies a7"));
       page.locator("#reports-toggle").click();
       page.locator("#show-stats").click();
       assertThat(page.locator("#report-title")).containsText("stats");

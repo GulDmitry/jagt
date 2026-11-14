@@ -41,9 +41,7 @@ class WorktreeOrphanScannerTest {
     repo = Files.createDirectories(root.resolve("demo-repo"));
     StateService state = stateService().withRoot(root).build();
     when(config.load()).thenReturn(worktreeOrphanScanner().withRepo(repo).config());
-    scanner =
-        worktreeOrphanScanner()
-            .build(config, state, mock(GitCommands.class), notifications);
+    scanner = worktreeOrphanScanner().build(config, state, mock(GitCommands.class), notifications);
   }
 
   static Stream<Arguments> orphansLeftOnDisk() {
@@ -115,8 +113,7 @@ class WorktreeOrphanScannerTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("orphansKept")
-  void keepsAnOrphanHoldingWork(String situation, String file, String content)
-      throws IOException {
+  void keepsAnOrphanHoldingWork(String situation, String file, String content) throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-44-demo"));
     Files.writeString(orphan.resolve(file), content);
 
@@ -127,8 +124,8 @@ class WorktreeOrphanScannerTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("orphansLeftOnDisk")
-  void pingsWhatAnOrphanWasLeftHolding(
-      String situation, String file, String content, String body) throws IOException {
+  void pingsWhatAnOrphanWasLeftHolding(String situation, String file, String content, String body)
+      throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
     Files.writeString(orphan.resolve(file), content);
 
@@ -137,8 +134,7 @@ class WorktreeOrphanScannerTest {
     verify(notifications)
         .send(
             argThat(
-                sent ->
-                    "1 orphaned worktree(s)".equals(sent.title()) && body.equals(sent.body())));
+                sent -> "1 orphaned worktree(s)".equals(sent.title()) && body.equals(sent.body())));
   }
 
   @Test

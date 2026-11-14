@@ -50,10 +50,9 @@ class UsageLimitsJobTest {
 
     verify(notifications)
         .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.USAGE
-                        && sent.title().equals("week window at 80%")));
+            argThat(sent ->
+                sent.topic() == Notification.Topic.USAGE
+                    && sent.title().equals("week window at 80%")));
   }
 
   @Test

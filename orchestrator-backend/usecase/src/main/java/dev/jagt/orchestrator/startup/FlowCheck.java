@@ -35,17 +35,15 @@ public class FlowCheck implements StartupCheck {
   private java.util.stream.Stream<String> unreachableStatuses() {
     return java.util.Arrays.stream(TaskStatus.values())
         .filter(status -> !WITHOUT_A_WAY_IN.contains(status))
-        .filter(
-            status ->
-                !rules.targets().contains(status)
-                    && !FlowRules.reportable(status)
-                    && !rules.redirects().contains(status)
-                    && !FlowRules.reads().contains(status))
-        .map(
-            status ->
-                "flow: nothing can put a task into "
-                    + status
-                    + " — no action, report or round read leads there");
+        .filter(status ->
+            !rules.targets().contains(status)
+                && !FlowRules.reportable(status)
+                && !rules.redirects().contains(status)
+                && !FlowRules.reads().contains(status))
+        .map(status ->
+            "flow: nothing can put a task into "
+                + status
+                + " — no action, report or round read leads there");
   }
 
   /** A missing rule looks exactly like a rule that says no. */

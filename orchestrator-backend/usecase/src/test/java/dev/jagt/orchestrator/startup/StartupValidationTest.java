@@ -41,10 +41,9 @@ class StartupValidationTest {
   void treatsCheckThatCannotAnswerAsPartThatIsNotThere() {
     StartupValidation validation =
         new StartupValidation(
-            List.of(
-                () -> {
-                  throw new IllegalStateException("no such directory");
-                }),
+            List.of(() -> {
+              throw new IllegalStateException("no such directory");
+            }),
             true);
 
     assertThatThrownBy(validation::refuseToRunWithoutWhatItNeeds)

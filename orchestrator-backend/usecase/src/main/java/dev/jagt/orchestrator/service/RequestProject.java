@@ -25,22 +25,19 @@ public class RequestProject {
     configService
         .load()
         .projects()
-        .forEach(
-            (name, project) -> {
-              String remote = remoteOf(project);
-              if (GitRemote.holds(remote, mrUrl)) {
-                owners.put(name, remote);
-              }
-            });
+        .forEach((name, project) -> {
+          String remote = remoteOf(project);
+          if (GitRemote.holds(remote, mrUrl)) {
+            owners.put(name, remote);
+          }
+        });
     return owners.entrySet().stream()
         .filter(owner -> owners.size() == 1 || GitRemote.onHostOf(owner.getValue(), mrUrl))
         .findFirst()
         .or(() -> owners.entrySet().stream().findFirst())
         .map(Map.Entry::getKey)
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "no configured project matches request url: " + mrUrl));
+        .orElseThrow(() ->
+            new IllegalArgumentException("no configured project matches request url: " + mrUrl));
   }
 
   private @Nullable String remoteOf(ProjectConfig project) {

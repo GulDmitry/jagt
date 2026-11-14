@@ -56,11 +56,8 @@ class ReadOnlyToolsTest {
   void allowsReadNamedByTheDiscussionsOrNotesItReturns(String tool) {
 
     assertThat(allowed)
-        .anyMatch(
-            glob ->
-                Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q"))
-                    .matcher(tool)
-                    .matches());
+        .anyMatch(glob ->
+            Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
   }
 
   @ParameterizedTest
@@ -74,11 +71,8 @@ class ReadOnlyToolsTest {
   void allowsReadThatAsksWhoIsSignedInOrWhichToolsTheHostHas(String tool) {
 
     assertThat(allowed)
-        .anyMatch(
-            glob ->
-                Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q"))
-                    .matcher(tool)
-                    .matches());
+        .anyMatch(glob ->
+            Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
   }
 
   @ParameterizedTest
@@ -93,11 +87,8 @@ class ReadOnlyToolsTest {
   void neverAllowsWriteOfTheServerWhoseReadsAreAllowed(String tool) {
 
     assertThat(allowed)
-        .noneMatch(
-            glob ->
-                Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q"))
-                    .matcher(tool)
-                    .matches());
+        .noneMatch(glob ->
+            Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
   }
 
   @ParameterizedTest
@@ -109,11 +100,8 @@ class ReadOnlyToolsTest {
       })
   void refusesWriteWhoseNameHoldsDiscussionsOrNotes(String tool) {
     assertThat(ReadOnlyTools.MCP_WRITES)
-        .anyMatch(
-            glob ->
-                Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q"))
-                    .matcher(tool)
-                    .matches());
+        .anyMatch(glob ->
+            Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
   }
 
   @Test
@@ -163,11 +151,8 @@ class ReadOnlyToolsTest {
       })
   void refusesWriteNamedByItsVerbMidNameToo(String tool) {
     assertThat(ReadOnlyTools.MCP_WRITES)
-        .anyMatch(
-            glob ->
-                Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q"))
-                    .matcher(tool)
-                    .matches());
+        .anyMatch(glob ->
+            Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
   }
 
   @ParameterizedTest
@@ -183,11 +168,8 @@ class ReadOnlyToolsTest {
       })
   void letsReadWhoseNameHoldsWriteVerbThrough(String tool) {
     assertThat(ReadOnlyTools.MCP_WRITES)
-        .noneMatch(
-            glob ->
-                Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q"))
-                    .matcher(tool)
-                    .matches());
+        .noneMatch(glob ->
+            Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
   }
 
   @Test

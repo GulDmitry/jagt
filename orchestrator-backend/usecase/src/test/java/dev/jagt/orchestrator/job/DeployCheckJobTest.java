@@ -94,8 +94,7 @@ class DeployCheckJobTest {
         "ABC-42",
         TaskState.builder("proj", worktree.toString(), TaskStatus.DEPLOYED)
             .build()
-            .withDeployment(
-                Objects.requireNonNull(deployCheckTask().build().deployment())));
+            .withDeployment(Objects.requireNonNull(deployCheckTask().build().deployment())));
     when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
     AgentSessions sessions = mock(AgentSessions.class);
     StepRelay firstRelay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
@@ -161,8 +160,7 @@ class DeployCheckJobTest {
 
       job.runOn(state.tasks());
 
-      assertThat(state.task("ABC-42").orElseThrow().status())
-          .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     }
 
     @Test

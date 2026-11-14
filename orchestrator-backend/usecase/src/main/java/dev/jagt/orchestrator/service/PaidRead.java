@@ -38,30 +38,28 @@ final class PaidRead {
                 .includes(Unusable.class)
                 .build());
     try {
-      template.execute(
-          () -> {
-            attempts.number++;
-            Answer<T> answer = ask.apply(attempts.corrections);
-            attempts.spent = attempts.spent.plus(answer.usage());
-            attempts.last = answer;
-            if (answer.facts().filter(usable).isPresent()) {
-              return answer;
-            }
-            attempts.corrections =
-                answer
-                    .facts()
-                    .map(
-                        facts -> violations.apply(facts).stream().map(Violation::toString).toList())
-                    .orElse(List.of());
-            log.atWarn()
-                .setMessage("paid read unusable")
-                .addKeyValue("ref", ref)
-                .addKeyValue("cause", cause(answer, attempts.corrections))
-                .addKeyValue("attempt", attempts.number)
-                .addKeyValue("limit", policy.attempts())
-                .log();
-            throw answer.refused() ? new Refused() : new Unusable();
-          });
+      template.execute(() -> {
+        attempts.number++;
+        Answer<T> answer = ask.apply(attempts.corrections);
+        attempts.spent = attempts.spent.plus(answer.usage());
+        attempts.last = answer;
+        if (answer.facts().filter(usable).isPresent()) {
+          return answer;
+        }
+        attempts.corrections =
+            answer
+                .facts()
+                .map(facts -> violations.apply(facts).stream().map(Violation::toString).toList())
+                .orElse(List.of());
+        log.atWarn()
+            .setMessage("paid read unusable")
+            .addKeyValue("ref", ref)
+            .addKeyValue("cause", cause(answer, attempts.corrections))
+            .addKeyValue("attempt", attempts.number)
+            .addKeyValue("limit", policy.attempts())
+            .log();
+        throw answer.refused() ? new Refused() : new Unusable();
+      });
     } catch (RetryException exhausted) {
       // The last answer is what the caller judges; the attempts hold it.
     }

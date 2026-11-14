@@ -77,10 +77,9 @@ public class OpenSpec implements Specs {
     }
     for (String name : open(worktree, changeName(taskId))) {
       refusal(worktree, name)
-          .ifPresent(
-              refused -> {
-                throw new IllegalStateException(refused);
-              });
+          .ifPresent(refused -> {
+            throw new IllegalStateException(refused);
+          });
       run(worktree, List.of("archive", name, "-y")).expectSuccess("openspec archive " + name);
     }
   }
@@ -198,7 +197,7 @@ public class OpenSpec implements Specs {
 
   private static String howToOpen(String change) {
     return "this repository records its behaviour in openspec/specs, and your hand-back carries no"
-               + " change: run `openspec new change "
+        + " change: run `openspec new change "
         + change
         + "`, read `openspec instructions specs --change "
         + change

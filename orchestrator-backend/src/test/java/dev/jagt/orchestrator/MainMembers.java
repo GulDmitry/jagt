@@ -48,10 +48,9 @@ final class MainMembers {
             method.getOwner().getAllRawSuperclasses().stream(),
             method.getOwner().getAllRawInterfaces().stream())
         .flatMap(type -> type.getMethods().stream())
-        .anyMatch(
-            other ->
-                other.getName().equals(method.getName())
-                    && other.getRawParameterTypes().equals(parameters));
+        .anyMatch(other ->
+            other.getName().equals(method.getName())
+                && other.getRawParameterTypes().equals(parameters));
   }
 
   private static boolean accessor(JavaMethod method) {

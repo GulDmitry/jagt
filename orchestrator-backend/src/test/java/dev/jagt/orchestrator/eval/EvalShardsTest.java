@@ -15,8 +15,7 @@ class EvalShardsTest {
   static class MasterVerdictEvalShard0Test {}
 
   @Test
-  void lateShardClassClaimsItsOwnNumberWhileShardZeroIsFree(@TempDir Path base)
-      throws IOException {
+  void lateShardClassClaimsItsOwnNumberWhileShardZeroIsFree(@TempDir Path base) throws IOException {
     EvalShards shards = EvalShards.under(base, 6);
 
     int claimed = shards.claim(AcceptanceVerdictEvalShard3Test.class);

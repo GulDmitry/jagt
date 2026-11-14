@@ -31,8 +31,7 @@ class GitDeployTest {
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
     GitRepos.git(runner, repo, "fetch", "-q");
-    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim())
-        .isEqualTo(taskTip);
+    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
     assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:g.txt").stdout())
         .contains("task");
     assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
@@ -119,8 +118,7 @@ class GitDeployTest {
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
 
-    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim())
-        .isEqualTo(taskTip);
+    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
     assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
   }
 
@@ -168,8 +166,7 @@ class GitDeployTest {
     git.discardDeploy(repo, "ABC-1");
 
     assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
-    assertThat(
-            GitRepos.git(runner, repo, "branch", "--list", "jagt-deploy-ABC-1").stdout())
+    assertThat(GitRepos.git(runner, repo, "branch", "--list", "jagt-deploy-ABC-1").stdout())
         .isBlank();
   }
 
@@ -190,8 +187,7 @@ class GitDeployTest {
     assertThat(GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim())
         .isEqualTo(merged);
     assertThat(deployWorktree).doesNotExist();
-    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim())
-        .isEqualTo(taskTip);
+    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
   }
 
   @Test
@@ -378,9 +374,7 @@ class GitDeployTest {
 
     GitRepos.git(runner, repo, "fetch", "-q");
     String subject =
-        GitRepos.git(runner, repo, "log", "-1", "--format=%s", "origin/dev")
-            .stdout()
-            .trim();
+        GitRepos.git(runner, repo, "log", "-1", "--format=%s", "origin/dev").stdout().trim();
     assertThat(subject).isEqualTo("Merge branch 'ABC-1' into dev");
   }
 
@@ -414,8 +408,7 @@ class GitDeployTest {
     assertThat(GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim())
         .isEqualTo(devWithOnlyDevCommit)
         .isNotEqualTo(devBefore);
-    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim())
-        .isEqualTo(taskTip);
+    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
     assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
   }
 
@@ -459,9 +452,7 @@ class GitDeployTest {
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
     GitRepos.git(runner, repo, "fetch", "-q");
-    assertThat(
-            GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:g.txt")
-                .stdout())
+    assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:g.txt").stdout())
         .contains("task feature");
     String parents =
         GitRepos.git(runner, repo, "rev-list", "--parents", "-n", "1", "origin/dev")
@@ -479,14 +470,11 @@ class GitDeployTest {
     String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
 
     GitRepos.git(runner, repo, "fetch", "-q");
-    assertThat(
-            GitRepos.git(runner, repo, "cat-file", "-e", "origin/dev:feature.txt")
-                .exitCode())
+    assertThat(GitRepos.git(runner, repo, "cat-file", "-e", "origin/dev:feature.txt").exitCode())
         .isNotZero();
     assertThat(GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim())
         .isEqualTo(revert);
-    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim())
-        .isEqualTo(taskTip);
+    assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
     assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
   }
 
@@ -574,8 +562,7 @@ class GitDeployTest {
         .isEqualTo(revert);
     assertThat(GitRepos.git(runner, repo, "show", "origin/dev:feature.txt").stdout())
         .isEqualTo("resolved by the session");
-    assertThat(
-            GitRepos.git(runner, repo, "log", "-1", "--format=%B", "origin/dev").stdout())
+    assertThat(GitRepos.git(runner, repo, "log", "-1", "--format=%B", "origin/dev").stdout())
         .contains("This reverts commit " + merge);
     assertThat(revertWorktree).doesNotExist();
   }
@@ -622,9 +609,7 @@ class GitDeployTest {
     assertThat(history)
         .contains("This reverts commit " + fix)
         .contains("This reverts commit " + merge);
-    assertThat(
-            GitRepos.git(runner, repo, "cat-file", "-e", "origin/dev:feature.txt")
-                .exitCode())
+    assertThat(GitRepos.git(runner, repo, "cat-file", "-e", "origin/dev:feature.txt").exitCode())
         .isNotZero();
     assertThat(revertWorktree).doesNotExist();
   }
@@ -772,9 +757,7 @@ class GitDeployTest {
     assertThat(fix).isNotEqualTo(merge);
     assertThat(GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim())
         .isEqualTo(fix);
-    assertThat(
-            GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:feature.txt")
-                .stdout())
+    assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:feature.txt").stdout())
         .contains("the feature, fixed");
     assertThat(GitRepos.git(runner, repo, "rev-parse", fix + "^1").stdout().trim())
         .isEqualTo(merge);
@@ -795,9 +778,7 @@ class GitDeployTest {
     GitRepos.git(runner, repo, "fetch", "-q");
     assertThat(git.isFix(repo, fix)).isTrue();
     assertThat(git.isFix(repo, merge)).isFalse();
-    assertThat(
-            GitRepos.git(runner, repo, "cat-file", "-e", "origin/dev:feature.txt")
-                .exitCode())
+    assertThat(GitRepos.git(runner, repo, "cat-file", "-e", "origin/dev:feature.txt").exitCode())
         .isNotZero();
   }
 
@@ -885,8 +866,7 @@ class GitDeployTest {
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
-    assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "dev:g.txt").stdout())
-        .contains("task");
+    assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "dev:g.txt").stdout()).contains("task");
     assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
   }
 

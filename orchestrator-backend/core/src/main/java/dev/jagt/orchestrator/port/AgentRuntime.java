@@ -79,8 +79,7 @@ public interface AgentRuntime {
   }
 
   /**
-   * The models, lowest first, a stopped session is moved up through unless configured; EMPTY:
-   * none.
+   * The models, lowest first, a stopped session is moved up through unless configured; EMPTY: none.
    */
   default List<String> tiers() {
     return List.of();
@@ -255,8 +254,7 @@ public interface AgentRuntime {
    * human's prompts, every {@code typedByJagt} cut out, and the model's own text, never a tool's
    * input or output. Empty where this runtime keeps no record to read.
    */
-  default Optional<String> conversationTail(
-      Path worktree, int maxChars, Set<String> typedByJagt) {
+  default Optional<String> conversationTail(Path worktree, int maxChars, Set<String> typedByJagt) {
     return Optional.empty();
   }
 

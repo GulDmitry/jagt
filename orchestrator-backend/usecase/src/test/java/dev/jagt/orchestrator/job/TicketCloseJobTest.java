@@ -155,9 +155,7 @@ class TicketCloseJobTest {
             .withHistory(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
             .build();
     ConfigFile every10 =
-        ticketCloseJob()
-            .withTracker(ticketCloseJob().tracker().withEveryMinutes(10))
-            .config();
+        ticketCloseJob().withTracker(ticketCloseJob().tracker().withEveryMinutes(10)).config();
     when(configService.load()).thenReturn(every10);
     stateService.putTask("ABC-42", task);
     when(close.closes("ABC-42", task)).thenReturn(false);
@@ -177,5 +175,4 @@ class TicketCloseJobTest {
 
     verify(close, times(3)).closes("ABC-42", task);
   }
-
 }

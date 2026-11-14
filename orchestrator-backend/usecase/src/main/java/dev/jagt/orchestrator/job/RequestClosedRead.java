@@ -49,11 +49,10 @@ class RequestClosedRead implements ConflictRead {
     return Optional.ofNullable(task.deployment())
         .flatMap(Deployment::conflictedTarget)
         .map(Deployment.Target::project)
-        .flatMap(
-            project ->
-                task.repos().stream()
-                    .filter(repo -> project.equals(repo.project()) && repo.hasReviewRequest())
-                    .findFirst());
+        .flatMap(project ->
+            task.repos().stream()
+                .filter(repo -> project.equals(repo.project()) && repo.hasReviewRequest())
+                .findFirst());
   }
 
   private void reportGone(String taskId, String request) {

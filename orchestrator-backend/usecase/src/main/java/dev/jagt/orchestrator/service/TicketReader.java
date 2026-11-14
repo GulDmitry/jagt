@@ -45,13 +45,12 @@ public class TicketReader {
     Optional<List<String>> broken = mcp.brokenServers();
     broken
         .filter(down -> !down.isEmpty())
-        .ifPresent(
-            down ->
-                log.atError()
-                    .setMessage("mcp servers down")
-                    .addKeyValue("ref", ticketRef)
-                    .addKeyValue("servers", String.join(", ", down))
-                    .log());
+        .ifPresent(down ->
+            log.atError()
+                .setMessage("mcp servers down")
+                .addKeyValue("ref", ticketRef)
+                .addKeyValue("servers", String.join(", ", down))
+                .log());
     if (answer.facts().isEmpty() && answer.failure().isBlank()) {
       return Answer.failed(answer.usage(), mcpSentence(broken));
     }
@@ -61,11 +60,10 @@ public class TicketReader {
   private static String mcpSentence(Optional<List<String>> broken) {
     String fix = "; see docs/installation.md#mcp-access-comes-first";
     return broken
-            .map(
-                down ->
-                    down.isEmpty()
-                        ? "no MCP server is down, so the tracker's tool answered nothing"
-                        : "MCP server down: " + String.join(", ", down))
+            .map(down ->
+                down.isEmpty()
+                    ? "no MCP server is down, so the tracker's tool answered nothing"
+                    : "MCP server down: " + String.join(", ", down))
             .orElse("MCP health could not be established")
         + fix;
   }

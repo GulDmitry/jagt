@@ -25,7 +25,7 @@ class BoardAssetsTest {
   private static final Pattern LOADED_FROM_OUTSIDE =
       Pattern.compile(
           "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:"
-          + ")?//"
+              + ")?//"
               + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)"
               + "?//[^\"]*\\.m?js\"");
 
@@ -131,10 +131,9 @@ class BoardAssetsTest {
     assertThat(scripts)
         .isNotEmpty()
         .noneMatch(script -> read(script).contains("toLocale"))
-        .noneMatch(
-            script ->
-                read(script).contains("Intl.DateTimeFormat")
-                    && !read(script).contains("timeZone: 'UTC'"));
+        .noneMatch(script ->
+            read(script).contains("Intl.DateTimeFormat")
+                && !read(script).contains("timeZone: 'UTC'"));
   }
 
   private static long size(Path path) {

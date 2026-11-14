@@ -73,8 +73,7 @@ class FlowEngineInterceptorTest {
   @Test
   void runsTheWorkInsideEveryStepAnInstallPutAroundTheVerb() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(inProgress));
+    when(tasks.task("ABC-1")).thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
             tasks,
@@ -92,8 +91,7 @@ class FlowEngineInterceptorTest {
   @Test
   void stopsTheWorkAndTheTransitionWhenStepAroundItRefuses() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(inProgress));
+    when(tasks.task("ABC-1")).thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
             tasks,
@@ -112,8 +110,7 @@ class FlowEngineInterceptorTest {
   @Test
   void leavesVerbNobodyWrappedExactlyAsItWas() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(inProgress));
+    when(tasks.task("ABC-1")).thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
             tasks,

@@ -69,20 +69,19 @@ class HeadlessClaudeRoutingAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anySatisfy(
-            argument ->
-                assertThat(argument)
-                    .contains("- ledger: invoicing")
-                    .contains(
-                        """
-                        Rules this install has written, which outrank everything above:
-                        VAT goes to ledger
-                        """)
-                    .contains(
-                        """
-                        Items finished before, and the repository each was done in:
-                        ABC-7 was done in ledger
-                        """));
+        .anySatisfy(argument ->
+            assertThat(argument)
+                .contains("- ledger: invoicing")
+                .contains(
+                    """
+                    Rules this install has written, which outrank everything above:
+                    VAT goes to ledger
+                    """)
+                .contains(
+                    """
+                    Items finished before, and the repository each was done in:
+                    ABC-7 was done in ledger
+                    """));
   }
 
   @Test
@@ -94,10 +93,9 @@ class HeadlessClaudeRoutingAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .noneMatch(
-            argument ->
-                argument.contains("Rules this install has written")
-                    || argument.contains("Items finished before"));
+        .noneMatch(argument ->
+            argument.contains("Rules this install has written")
+                || argument.contains("Items finished before"));
   }
 
   @Test
@@ -126,12 +124,11 @@ class HeadlessClaudeRoutingAssistantTest {
     assertThat(answer.facts()).contains("VAT goes to ledger");
     List<String> command = runner.command();
     assertThat(command)
-        .anySatisfy(
-            argument ->
-                assertThat(argument)
-                    .contains("ABC-42")
-                    .contains("'shop'")
-                    .contains("VAT goes to ledger"));
+        .anySatisfy(argument ->
+            assertThat(argument)
+                .contains("ABC-42")
+                .contains("'shop'")
+                .contains("VAT goes to ledger"));
   }
 
   @Test

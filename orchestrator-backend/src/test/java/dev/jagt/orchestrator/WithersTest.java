@@ -55,13 +55,11 @@ class WithersTest {
 
   private static Stream<Wither> withers() {
     return RECORDS.stream()
-        .flatMap(
-            type ->
-                Arrays.stream(type.getRecordComponents())
-                    .flatMap(
-                        component ->
-                            witherOf(type, component).stream()
-                                .map(method -> new Wither(type, component, method))));
+        .flatMap(type ->
+            Arrays.stream(type.getRecordComponents())
+                .flatMap(component ->
+                    witherOf(type, component).stream()
+                        .map(method -> new Wither(type, component, method))));
   }
 
   private static Optional<Method> witherOf(Class<?> type, RecordComponent component) {
@@ -84,13 +82,12 @@ class WithersTest {
       Object changed = sample(wither.component().getGenericType(), 1);
       Object after = wither.method().invoke(before, changed);
       return Arrays.stream(wither.type().getRecordComponents())
-          .filter(
-              other ->
-                  !equal(
-                      value(other, after),
-                      other.getName().equals(wither.component().getName())
-                          ? changed
-                          : value(other, before)))
+          .filter(other ->
+              !equal(
+                  value(other, after),
+                  other.getName().equals(wither.component().getName())
+                      ? changed
+                      : value(other, before)))
           .map(other -> at + " left " + other.getName() + " wrong")
           .findFirst()
           .orElse("");

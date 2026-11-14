@@ -94,8 +94,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
       Path root, String model, String prompt, CheckerReader.Workspace reach) {
     return launchCommand(root, false, model, prompt)
         + " --allowedTools "
-        + ClaudeToolScope.of(
-                List.of(), List.of(), List.of(), false, Optional.of(reach))
+        + ClaudeToolScope.of(List.of(), List.of(), List.of(), false, Optional.of(reach))
             .allow()
             .stream()
             .map(AbstractAgentRuntime::shellQuote)
@@ -141,8 +140,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   }
 
   @Override
-  public Optional<String> conversationTail(
-      Path worktree, int maxChars, Set<String> typedByJagt) {
+  public Optional<String> conversationTail(Path worktree, int maxChars, Set<String> typedByJagt) {
     return ClaudeTranscripts.tail(
         ClaudeTranscripts.projectsDir(), worktree, maxChars, withBriefLines(typedByJagt));
   }
@@ -303,18 +301,17 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
    * worktree path.
    */
   static String mcpJson(String url, String worktreePath) {
-    return
-        """
-        {
-          "mcpServers": {
-            "jagt-orchestrator": {
-              "type": "http",
-              "url": %s,
-              "headers": { %s: %s }
-            }
-          }
+    return """
+    {
+      "mcpServers": {
+        "jagt-orchestrator": {
+          "type": "http",
+          "url": %s,
+          "headers": { %s: %s }
         }
-        """
+      }
+    }
+    """
         .formatted(quoted(url), quoted(McpEndpoint.CALLER_HEADER), quoted(worktreePath));
   }
 
@@ -357,19 +354,18 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         pluginsLine = "\n  \"enabledPlugins\": {" + entries + "},";
       }
     }
-    return
-        """
-        {%s%s%s
-          "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
-          "enableAllProjectMcpServers": true,
-          "autoMemoryEnabled": false,
-          "idleCompaction": false,
-          "permissions": {
-            "allow": [%s],
-            "deny": ["AskUserQuestion"]
-          }
-        }
-        """
+    return """
+    {%s%s%s
+      "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
+      "enableAllProjectMcpServers": true,
+      "autoMemoryEnabled": false,
+      "idleCompaction": false,
+      "permissions": {
+        "allow": [%s],
+        "deny": ["AskUserQuestion"]
+      }
+    }
+    """
         .formatted(
             styleLine,
             pluginsLine,
@@ -531,12 +527,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 SessionHooks.turnEnd("claude").stream()
                     .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
                 SessionHooks.promptGate("claude").stream()
-                    .map(
-                        event ->
-                            hook(
-                                event,
-                                hooks.promptCommand(worktree),
-                                HookEndpoint.PROMPT_GATE_SECONDS + 5)),
+                    .map(event ->
+                        hook(
+                            event,
+                            hooks.promptCommand(worktree),
+                            HookEndpoint.PROMPT_GATE_SECONDS + 5)),
                 SessionHooks.turnFailure("claude").stream()
                     .map(event -> hook(event, hooks.command(worktree, "turn-failure"))),
                 SessionHooks.permissionRequest("claude").stream()
@@ -545,13 +540,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 // sit in
                 // front of every step the agent takes.
                 SessionHooks.gate("claude").stream()
-                    .map(
-                        event ->
-                            """
-                            %s: [{"matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": %s,\
-                             "timeout": 5}]}]\
-                            """
-                                .formatted(quoted(event), quoted(hooks.gateCommand(worktree)))))
+                    .map(event ->
+                        """
+                        %s: [{"matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": %s,\
+                         "timeout": 5}]}]\
+                        """
+                            .formatted(quoted(event), quoted(hooks.gateCommand(worktree)))))
             .flatMap(stream -> stream)
             .collect(Collectors.joining(",\n    "));
     return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";
@@ -562,10 +556,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   }
 
   private static String hook(String event, String command, int timeoutSeconds) {
-    return
-        """
-        %s: [{"hooks": [{"type": "command", "command": %s, "timeout": %d}]}]\
-        """
+    return """
+    %s: [{"hooks": [{"type": "command", "command": %s, "timeout": %d}]}]\
+    """
         .formatted(quoted(event), quoted(command), timeoutSeconds);
   }
 

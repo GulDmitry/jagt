@@ -58,12 +58,11 @@ public class FlowWiring {
     Capabilities capabilities = new Capabilities(declared, around);
     capabilities
         .takeovers()
-        .forEach(
-            takeover ->
-                log.atInfo()
-                    .setMessage("capability takes over")
-                    .addKeyValue("takeover", takeover)
-                    .log());
+        .forEach(takeover ->
+            log.atInfo()
+                .setMessage("capability takes over")
+                .addKeyValue("takeover", takeover)
+                .log());
     return capabilities;
   }
 
@@ -110,8 +109,7 @@ public class FlowWiring {
       Clock clock,
       RequestlessShip requestless,
       FlowRules rules) {
-    return new FlowEngine(
-        tasks, capabilities, new FactSources(agents, requestless), clock, rules);
+    return new FlowEngine(tasks, capabilities, new FactSources(agents, requestless), clock, rules);
   }
 
   @Bean

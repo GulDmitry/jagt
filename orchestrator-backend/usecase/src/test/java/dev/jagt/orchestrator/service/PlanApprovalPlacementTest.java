@@ -39,9 +39,7 @@ class PlanApprovalPlacementTest {
 
   private final ApprovedPlan plan = mock(ApprovedPlan.class);
   private final TaskState planned =
-      TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-          .planGate(PlanGate.REQUIRED)
-          .build();
+      TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).planGate(PlanGate.REQUIRED).build();
   private final StepRelay.Claim claim =
       new StepRelay.Claim(
           Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
@@ -69,8 +67,7 @@ class PlanApprovalPlacementTest {
         .thenReturn(true);
 
     boolean told =
-        new PlanApproval(state, relay, door, plan)
-            .approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -94,10 +91,8 @@ class PlanApprovalPlacementTest {
   void leavesTheGateShutAndTellsNoSessionWhereThePlanNamesWhatJagtCannotPlace() {
     when(plan.settle("ABC-1")).thenThrow(new Unplaceable(List.of("billing"), List.of()));
 
-    assertThatThrownBy(
-            () ->
-                new PlanApproval(state, relay, door, plan)
-                    .approve("ABC-1", "The human read plan.md"))
+    assertThatThrownBy(() ->
+            new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md"))
         .isInstanceOf(Unplaceable.class);
 
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
@@ -110,8 +105,7 @@ class PlanApprovalPlacementTest {
         .thenReturn(false);
 
     boolean told =
-        new PlanApproval(state, relay, door, plan)
-            .approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
   }

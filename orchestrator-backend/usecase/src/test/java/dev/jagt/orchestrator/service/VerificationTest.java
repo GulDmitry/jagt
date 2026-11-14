@@ -105,12 +105,11 @@ class VerificationTest {
         verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure)
-        .hasValueSatisfying(
-            text ->
-                assertThat(text)
-                    .startsWith("[proj] `./gradlew test` exited 1\ne6\n")
-                    .endsWith("\ne45")
-                    .doesNotContain("e5\n"));
+        .hasValueSatisfying(text ->
+            assertThat(text)
+                .startsWith("[proj] `./gradlew test` exited 1\ne6\n")
+                .endsWith("\ne45")
+                .doesNotContain("e5\n"));
   }
 
   @Test
@@ -172,10 +171,10 @@ class VerificationTest {
 
     Optional<String> failure =
         verification.failure(
-                TaskState.builder(
-                        List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("web", "/wt-web")),
-                        TaskStatus.VERIFYING)
-                    .build());
+            TaskState.builder(
+                    List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("web", "/wt-web")),
+                    TaskStatus.VERIFYING)
+                .build());
 
     assertThat(failure).contains("[proj] `npm test` exited 1\nred");
   }
@@ -199,11 +198,10 @@ class VerificationTest {
 
     List<Probe> probed =
         verification.probed(
-                "ABC-42",
-                TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
-                    .probes(
-                        List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0)))
-                    .build());
+            "ABC-42",
+            TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
+                .probes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0)))
+                .build());
 
     assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(true);
   }
@@ -223,15 +221,15 @@ class VerificationTest {
 
     List<Probe> probed =
         verification.probed(
-                "ABC-42",
-                TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
-                    .probes(
-                        List.of(
-                            Probe.specified(
-                                Probe.Kind.COMMAND,
-                                List.of("git", "push", "--no-verify", "upstream", "ABC-42"),
-                                0)))
-                    .build());
+            "ABC-42",
+            TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
+                .probes(
+                    List.of(
+                        Probe.specified(
+                            Probe.Kind.COMMAND,
+                            List.of("git", "push", "--no-verify", "upstream", "ABC-42"),
+                            0)))
+                .build());
 
     assertThat(probed)
         .singleElement()
@@ -250,15 +248,15 @@ class VerificationTest {
 
     List<Probe> probed =
         verification.probed(
-                "ABC-42",
-                TaskState.builder(
-                        List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
-                        TaskStatus.VERIFYING)
-                    .probes(
-                        List.of(
-                            Probe.specified(Probe.Kind.COMMAND, "front", List.of("npm", "test"), 0),
-                            Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0)))
-                    .build());
+            "ABC-42",
+            TaskState.builder(
+                    List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
+                    TaskStatus.VERIFYING)
+                .probes(
+                    List.of(
+                        Probe.specified(Probe.Kind.COMMAND, "front", List.of("npm", "test"), 0),
+                        Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0)))
+                .build());
 
     assertThat(probed).extracting(Probe::passed).containsExactly(true, false);
   }
@@ -279,18 +277,18 @@ class VerificationTest {
 
     List<Probe> probed =
         verification.probed(
-                "ABC-42",
-                TaskState.builder(
-                        List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
-                        TaskStatus.VERIFYING)
-                    .probes(
-                        List.of(
-                            Probe.specified(
-                                Probe.Kind.COMMAND,
-                                "front",
-                                List.of("git", "push", "--no-verify", "upstream", "ABC-42"),
-                                0)))
-                    .build());
+            "ABC-42",
+            TaskState.builder(
+                    List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
+                    TaskStatus.VERIFYING)
+                .probes(
+                    List.of(
+                        Probe.specified(
+                            Probe.Kind.COMMAND,
+                            "front",
+                            List.of("git", "push", "--no-verify", "upstream", "ABC-42"),
+                            0)))
+                .build());
 
     assertThat(probed)
         .singleElement()

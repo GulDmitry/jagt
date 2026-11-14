@@ -177,11 +177,10 @@ public final class RoleDefinitions {
     words.stream()
         .filter(word -> !vocabulary.contains(word))
         .findFirst()
-        .ifPresent(
-            unknown -> {
-              throw new RoleInvalid(
-                  key + " is of " + vocabulary.stream().sorted().toList() + ", not " + unknown);
-            });
+        .ifPresent(unknown -> {
+          throw new RoleInvalid(
+              key + " is of " + vocabulary.stream().sorted().toList() + ", not " + unknown);
+        });
     return words;
   }
 

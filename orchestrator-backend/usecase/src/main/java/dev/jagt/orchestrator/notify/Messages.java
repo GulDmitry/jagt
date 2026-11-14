@@ -90,12 +90,11 @@ public class Messages {
   private static String fill(String template, Map<String, Supplier<String>> values) {
     return TOKEN
         .matcher(template)
-        .replaceAll(
-            found ->
-                Matcher.quoteReplacement(
-                    values.containsKey(found.group(1))
-                        ? values.get(found.group(1)).get()
-                        : found.group()));
+        .replaceAll(found ->
+            Matcher.quoteReplacement(
+                values.containsKey(found.group(1))
+                    ? values.get(found.group(1)).get()
+                    : found.group()));
   }
 
   private static String withoutEmptySegments(String title) {

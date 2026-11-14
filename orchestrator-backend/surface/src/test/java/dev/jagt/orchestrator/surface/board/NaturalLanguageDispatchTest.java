@@ -175,11 +175,10 @@ class NaturalLanguageDispatchTest {
         new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
     when(launcher.launch(LaunchRequest.of("ABC-42")))
-        .thenAnswer(
-            call -> {
-              openedBy.set(OriginContext.current());
-              return Launched.created("ABC-42", "Task ABC-42 initialized");
-            });
+        .thenAnswer(call -> {
+          openedBy.set(OriginContext.current());
+          return Launched.created("ABC-42", "Task ABC-42 initialized");
+        });
 
     dispatch.interpret("pick up ABC-42");
 

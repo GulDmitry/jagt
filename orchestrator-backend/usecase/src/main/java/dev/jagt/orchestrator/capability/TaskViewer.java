@@ -31,11 +31,10 @@ public class TaskViewer {
   public boolean closeIfNoTasksLeft() {
     return sessions
         .viewerToClose()
-        .map(
-            title -> {
-              terminal.closeViewerWindow(title);
-              return true;
-            })
+        .map(title -> {
+          terminal.closeViewerWindow(title);
+          return true;
+        })
         .orElse(false);
   }
 

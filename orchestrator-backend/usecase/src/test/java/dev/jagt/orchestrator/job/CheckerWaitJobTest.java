@@ -26,8 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 class CheckerWaitJobTest {
 
   private static final ConfigFile ON =
-      ConfigFile.defaults()
-          .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
+      ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
@@ -61,8 +60,7 @@ class CheckerWaitJobTest {
     when(probe.answers("https://stage.example.com/health")).thenReturn(false);
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.WAITING);
 
-    job
-        .run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    job.run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     assertThat(records.settled("ABC-42", "digest")).isTrue();
   }
@@ -72,8 +70,7 @@ class CheckerWaitJobTest {
     when(probe.answers("https://stage.example.com/health")).thenReturn(true);
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.WAITING);
 
-    job
-        .run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    job.run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     assertThat(records.settled("ABC-42", "digest")).isFalse();
   }
@@ -83,8 +80,7 @@ class CheckerWaitJobTest {
     when(probe.answers("https://stage.example.com/health")).thenReturn(true);
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.PASSED);
 
-    job
-        .run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    job.run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     assertThat(records.settled("ABC-42", "digest")).isTrue();
   }

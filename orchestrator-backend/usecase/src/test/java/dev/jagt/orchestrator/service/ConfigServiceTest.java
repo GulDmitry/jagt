@@ -124,18 +124,13 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
 
-    boolean enabled =
-        service
-            .load()
-            .role("acceptance")
-            .enabledOrDefault();
+    boolean enabled = service.load().role("acceptance").enabledOrDefault();
 
     assertThat(enabled).isFalse();
   }
 
   @Test
-  void rolesKeyNamingNoRoleWithJobsNeverSwitchesTheSessionsDeployCheckOff()
-      throws Exception {
+  void rolesKeyNamingNoRoleWithJobsNeverSwitchesTheSessionsDeployCheckOff() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -148,9 +143,7 @@ class ConfigServiceTest {
               enabled: true
         """);
 
-    boolean any =
-        service
-            .anyCheckerEnabled();
+    boolean any = service.anyCheckerEnabled();
 
     assertThat(any).isFalse();
   }
@@ -160,10 +153,7 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");
 
-    MasterConfig master =
-        service
-            .load()
-            .master();
+    MasterConfig master = service.load().master();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
     assertThat(master.mineOrDefault()).containsExactly("ship");
@@ -184,10 +174,7 @@ class ConfigServiceTest {
               mine: [reply]
         """);
 
-    MasterConfig master =
-        service
-            .load()
-            .master();
+    MasterConfig master = service.load().master();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
@@ -207,10 +194,7 @@ class ConfigServiceTest {
               mode: act
         """);
 
-    MasterConfig master =
-        service
-            .load()
-            .master();
+    MasterConfig master = service.load().master();
 
     assertThat(master.mineOrDefault()).containsExactly("plan", "deploy", "revert");
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
@@ -223,10 +207,7 @@ class ConfigServiceTest {
         configFile,
         "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
 
-    MasterConfig master =
-        service
-            .load()
-            .master();
+    MasterConfig master = service.load().master();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
@@ -243,11 +224,7 @@ class ConfigServiceTest {
             mode: off
         """);
 
-    String mode =
-        service
-            .load()
-            .master()
-            .mode();
+    String mode = service.load().master().mode();
 
     assertThat(mode).isEqualTo("off");
   }
@@ -259,10 +236,7 @@ class ConfigServiceTest {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
 
     String mode =
-        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers)
-            .load()
-            .master()
-            .mode();
+        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers).load().master().mode();
 
     assertThat(mode).isEqualTo("judge");
   }
@@ -271,8 +245,7 @@ class ConfigServiceTest {
   void readsAnEditToTheConfigFileOnTheNextLoad() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: off\n");
-    ConfigService configService =
-        service;
+    ConfigService configService = service;
     configService.load();
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
 
@@ -291,25 +264,17 @@ class ConfigServiceTest {
     when(runtime.readsWhatTheHumanTyped()).thenReturn(reads);
 
     String mode =
-        new ConfigService(paths, runtime, mock(ActStops.class), checkers)
-            .load()
-            .master()
-            .mode();
+        new ConfigService(paths, runtime, mock(ActStops.class), checkers).load().master().mode();
 
     assertThat(mode).isEqualTo(expected);
   }
 
   @Test
-  void leavesTheMasterOffForBlankModeWhereTheRuntimeCannotReadTheHuman()
-      throws Exception {
+  void leavesTheMasterOffForBlankModeWhereTheRuntimeCannotReadTheHuman() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n  master:\n    mode: \"\"\n");
 
-    String mode =
-        service
-            .load()
-            .master()
-            .mode();
+    String mode = service.load().master().mode();
 
     assertThat(mode).isEqualTo("off");
   }
@@ -362,23 +327,19 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
 
-    ConfigService config =
-        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
 
     assertThat(config.actStop()).isEmpty();
   }
 
   @Test
-  void readsAnEmptySectionAsAnEmptyConfigurationWithItsMasterDefault()
-      throws Exception {
+  void readsAnEmptySectionAsAnEmptyConfigurationWithItsMasterDefault() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "other: 1\n");
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
 
-    ConfigFile config =
-        new ConfigService(paths, runtime, stops, checkers)
-            .load();
+    ConfigFile config = new ConfigService(paths, runtime, stops, checkers).load();
 
     assertThat(config.projects()).isEmpty();
     assertThat(config.master().mode()).isEqualTo("judge");
@@ -390,8 +351,7 @@ class ConfigServiceTest {
     Files.writeString(
         configFile,
         "orchestrator:\n  projects:\n    api: {path: /srv/api, baseBranch: origin/main}\n");
-    ConfigService config =
-        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
 
     assertThat(config.project("api").path()).isEqualTo("/srv/api");
     assertThatThrownBy(() -> config.project("web"))
@@ -631,8 +591,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void reachesTheDirectoriesSessionMayWriteThatExistWithTheSandboxOff()
-      throws Exception {
+  void reachesTheDirectoriesSessionMayWriteThatExistWithTheSandboxOff() throws Exception {
     Path specs = Files.createDirectory(root.resolve("specs"));
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
@@ -646,16 +605,13 @@ class ConfigServiceTest {
         """
             .formatted(specs, root.resolve("gone")));
 
-    var beside =
-        service
-            .beside();
+    var beside = service.beside();
 
     assertThat(beside).containsExactly(specs.toRealPath());
   }
 
   @Test
-  void handsTheLoopBreakerTheOwnerConfiguredAtTheMomentItIsAsked()
-      throws Exception {
+  void handsTheLoopBreakerTheOwnerConfiguredAtTheMomentItIsAsked() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -667,9 +623,7 @@ class ConfigServiceTest {
             stalledRounds: 7
         """);
 
-    var breaker =
-        service
-            .current();
+    var breaker = service.current();
 
     assertThat(breaker.rounds()).isEqualTo(5);
     assertThat(breaker.ships()).isEqualTo(6);
@@ -696,8 +650,7 @@ class ConfigServiceTest {
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
 
-    ConfigService config =
-        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
 
     assertThat(config.actStop()).isPresent();
   }
@@ -716,10 +669,7 @@ class ConfigServiceTest {
               enabled: true
         """);
 
-    List<String> unknown =
-        service
-            .load()
-            .unknownRoles(List.of("acceptance"));
+    List<String> unknown = service.load().unknownRoles(List.of("acceptance"));
 
     assertThat(unknown).containsExactly("foo");
   }
@@ -731,24 +681,17 @@ class ConfigServiceTest {
         configFile,
         "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
 
-    List<String> unknown =
-        service
-            .load()
-            .unknownRoles(List.of("acceptance"));
+    List<String> unknown = service.load().unknownRoles(List.of("acceptance"));
 
     assertThat(unknown).isEmpty();
   }
 
   @Test
-  void anAcceptanceWrittenUnderRolesIsUnknownWhereNoAcceptanceRoleIsInstalled()
-      throws Exception {
+  void anAcceptanceWrittenUnderRolesIsUnknownWhereNoAcceptanceRoleIsInstalled() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  roles:\n    acceptance:\n      model: haiku\n");
 
-    List<String> unknown =
-        service
-            .load()
-            .unknownRoles(List.of());
+    List<String> unknown = service.load().unknownRoles(List.of());
 
     assertThat(unknown).containsExactly("acceptance");
   }
@@ -792,8 +735,7 @@ class ConfigServiceTest {
             .withCodeHost("gitlab")
             .withProjects(
                 java.util.Map.of(
-                    "demo",
-                    projectConfig().withBaseBranch("main").withRemote("none").build()));
+                    "demo", projectConfig().withBaseBranch("main").withRemote("none").build()));
 
     assertThat(config.hasNoCodeHost("demo")).isTrue();
   }
@@ -865,9 +807,7 @@ class ConfigServiceTest {
                 inclusion -> inclusion.withValueInclusion(JsonInclude.Include.NON_NULL))
             .build();
 
-    ConfigFile config =
-        service
-            .load();
+    ConfigFile config = service.load();
 
     Object expected = new Yaml().<java.util.Map<String, Object>>load(written).get("orchestrator");
     JsonNode actual = mapper.valueToTree(config);

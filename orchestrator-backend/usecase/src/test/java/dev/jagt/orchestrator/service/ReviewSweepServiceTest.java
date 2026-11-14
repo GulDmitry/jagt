@@ -67,13 +67,12 @@ class ReviewSweepServiceTest {
   void refusesSecondSweepOfTaskWhileTheFirstIsStillRunning() {
     var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
     when(reading.read("ABC-1"))
-        .thenAnswer(
-            call -> {
-              reentrant.set(sweep.sweep("ABC-1"));
-              return new RoundReading.Refused(
-                  new ReviewSweepService.SweepResult(
-                      ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
-            });
+        .thenAnswer(call -> {
+          reentrant.set(sweep.sweep("ABC-1"));
+          return new RoundReading.Refused(
+              new ReviewSweepService.SweepResult(
+                  ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
+        });
 
     sweep.sweep("ABC-1");
 
@@ -87,13 +86,12 @@ class ReviewSweepServiceTest {
     var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
     when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
     when(reading.read("ABC-1"))
-        .thenAnswer(
-            call -> {
-              reentrant.set(sweep.sweep("a1"));
-              return new RoundReading.Refused(
-                  new ReviewSweepService.SweepResult(
-                      ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
-            });
+        .thenAnswer(call -> {
+          reentrant.set(sweep.sweep("a1"));
+          return new RoundReading.Refused(
+              new ReviewSweepService.SweepResult(
+                  ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
+        });
 
     sweep.sweep("ABC-1");
 
@@ -121,14 +119,13 @@ class ReviewSweepServiceTest {
     CountDownLatch secondSweepReturned = new CountDownLatch(1);
     AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();
     when(reading.read("ABC-1"))
-        .thenAnswer(
-            call -> {
-              firstSweepIsInside.countDown();
-              secondSweepReturned.await(5, TimeUnit.SECONDS);
-              return new RoundReading.Refused(
-                  new ReviewSweepService.SweepResult(
-                      ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
-            });
+        .thenAnswer(call -> {
+          firstSweepIsInside.countDown();
+          secondSweepReturned.await(5, TimeUnit.SECONDS);
+          return new RoundReading.Refused(
+              new ReviewSweepService.SweepResult(
+                  ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
+        });
     Thread contender =
         new Thread(
             () -> {

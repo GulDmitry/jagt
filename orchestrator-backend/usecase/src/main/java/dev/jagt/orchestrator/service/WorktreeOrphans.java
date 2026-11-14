@@ -44,10 +44,9 @@ public class WorktreeOrphans {
         scan().stream()
             .filter(found -> found.path().getFileName().toString().equals(name))
             .findFirst()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "no orphaned worktree called " + name + " — `worktrees` lists them"));
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "no orphaned worktree called " + name + " — `worktrees` lists them"));
     try {
       ProjectConfig project = configService.load().projects().get(orphan.projectKey());
       Path repository = project == null ? null : Path.of(project.path());
@@ -104,26 +103,25 @@ public class WorktreeOrphans {
         WorktreeFiles.localFileMatchers(config.worktree().copyGlobsOrDefault());
     config
         .projects()
-        .forEach(
-            (projectKey, project) -> {
-              Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-              Path parent = projectPath.getParent();
-              if (parent == null || !Files.isDirectory(parent)) {
-                return;
-              }
-              for (String name :
-                  orphanNames(
-                      directoryNames(parent),
-                      projectKey,
-                      owned,
-                      name -> holdsCheckout(parent.resolve(name)))) {
-                Path path = parent.resolve(name);
-                if (!path.equals(projectPath) && !somebodyElses(name, path)) {
-                  found.putIfAbsent(
-                      path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers)));
-                }
-              }
-            });
+        .forEach((projectKey, project) -> {
+          Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
+          Path parent = projectPath.getParent();
+          if (parent == null || !Files.isDirectory(parent)) {
+            return;
+          }
+          for (String name :
+              orphanNames(
+                  directoryNames(parent),
+                  projectKey,
+                  owned,
+                  name -> holdsCheckout(parent.resolve(name)))) {
+            Path path = parent.resolve(name);
+            if (!path.equals(projectPath) && !somebodyElses(name, path)) {
+              found.putIfAbsent(
+                  path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers)));
+            }
+          }
+        });
     return List.copyOf(found.values());
   }
 
@@ -149,15 +147,10 @@ public class WorktreeOrphans {
       Set<String> ownedNames,
       java.util.function.Predicate<String> holdsCheckout) {
     return directoryNames.stream()
-        .filter(
-            name ->
-                name.endsWith("-" + projectKey)
-                    || name.endsWith("-deploy")
-                    || name.endsWith("-revert"))
-        .filter(
-            name ->
-                !ownedNames.contains(name)
-                    || (name.endsWith("-deploy") && !holdsCheckout.test(name)))
+        .filter(name ->
+            name.endsWith("-" + projectKey) || name.endsWith("-deploy") || name.endsWith("-revert"))
+        .filter(name ->
+            !ownedNames.contains(name) || (name.endsWith("-deploy") && !holdsCheckout.test(name)))
         .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
   }
 
@@ -188,16 +181,15 @@ public class WorktreeOrphans {
     Set<String> owned = new java.util.HashSet<>();
     stateService
         .tasks()
-        .forEach(
-            (taskId, task) -> {
-              owned.add(TaskName.slug(taskId) + "-deploy");
-              task.repos().stream()
-                  .map(TaskRepo::worktreePath)
-                  .filter(path -> path != null && !path.isBlank())
-                  .map(path -> Path.of(path).getFileName())
-                  .filter(java.util.Objects::nonNull)
-                  .forEach(name -> owned.add(name.toString()));
-            });
+        .forEach((taskId, task) -> {
+          owned.add(TaskName.slug(taskId) + "-deploy");
+          task.repos().stream()
+              .map(TaskRepo::worktreePath)
+              .filter(path -> path != null && !path.isBlank())
+              .map(path -> Path.of(path).getFileName())
+              .filter(java.util.Objects::nonNull)
+              .forEach(name -> owned.add(name.toString()));
+        });
     return owned;
   }
 

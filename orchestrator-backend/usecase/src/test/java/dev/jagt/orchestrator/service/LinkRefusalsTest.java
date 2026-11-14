@@ -27,8 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class LinkRefusalsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static Reported ship(String url) {
     return new Reported(
@@ -43,7 +42,8 @@ class LinkRefusalsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

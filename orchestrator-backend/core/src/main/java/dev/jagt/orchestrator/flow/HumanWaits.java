@@ -44,11 +44,10 @@ public final class HumanWaits {
     return before.waits().stream()
         .filter(HumanWait::open)
         .findFirst()
-        .flatMap(
-            open ->
-                after.waits().stream()
-                    .filter(wait -> wait.since() == open.since() && !wait.open())
-                    .findFirst());
+        .flatMap(open ->
+            after.waits().stream()
+                .filter(wait -> wait.since() == open.since() && !wait.open())
+                .findFirst());
   }
 
   private static Why whyOf(TaskState task, boolean judged) {

@@ -47,19 +47,18 @@ public class MasterReview {
       return Optional.empty();
     }
     return JagtJson.bytes(file)
-        .flatMap(
-            bytes -> {
-              if (JagtJson.fingerprint(bytes).equals(task.masterOrNone().seal())) {
-                return JagtJson.parse(file, bytes, Review.class);
-              }
-              log.atWarn()
-                  .setMessage("master review not written by jagt")
-                  .addKeyValue("alias", task.alias())
-                  .addKeyValue("file", file)
-                  .addKeyValue("cause", "fingerprint differs from the stored one")
-                  .log();
-              return Optional.empty();
-            });
+        .flatMap(bytes -> {
+          if (JagtJson.fingerprint(bytes).equals(task.masterOrNone().seal())) {
+            return JagtJson.parse(file, bytes, Review.class);
+          }
+          log.atWarn()
+              .setMessage("master review not written by jagt")
+              .addKeyValue("alias", task.alias())
+              .addKeyValue("file", file)
+              .addKeyValue("cause", "fingerprint differs from the stored one")
+              .log();
+          return Optional.empty();
+        });
   }
 
   /**
@@ -122,15 +121,14 @@ public class MasterReview {
     }
     parsed
         .filter(read -> read.round() != sealed.sealedRound())
-        .ifPresent(
-            read ->
-                state.reduce(
-                    taskId,
-                    (reducer, current) ->
-                        sealedAs(current, fingerprint)
-                                && current.masterOrNone().sealedRound() != read.round()
-                            ? reducer.masterSealed(current, fingerprint, read.round())
-                            : current));
+        .ifPresent(read ->
+            state.reduce(
+                taskId,
+                (reducer, current) ->
+                    sealedAs(current, fingerprint)
+                            && current.masterOrNone().sealedRound() != read.round()
+                        ? reducer.masterSealed(current, fingerprint, read.round())
+                        : current));
   }
 
   private void clearSeal(String taskId, TaskState task) {
@@ -155,15 +153,13 @@ public class MasterReview {
    */
   private synchronized boolean store(String taskId, TaskState task, Review review) {
     return JagtJson.serialise(review)
-        .map(
-            bytes -> {
-              String fingerprint = JagtJson.fingerprint(bytes);
-              state.reduce(
-                  taskId,
-                  (reducer, current) -> reducer.masterSealed(current, fingerprint, review.round()));
-              return JagtJson.write(
-                  JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
-            })
+        .map(bytes -> {
+          String fingerprint = JagtJson.fingerprint(bytes);
+          state.reduce(
+              taskId,
+              (reducer, current) -> reducer.masterSealed(current, fingerprint, review.round()));
+          return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
+        })
         .orElse(false);
   }
 

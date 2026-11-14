@@ -121,10 +121,8 @@ class RepoRemovalTest {
                 TaskStatus.IN_PROGRESS)
             .build();
 
-    assertThatThrownBy(
-            () ->
-                new RepoRemoval(mock(StateService.class), host, departure)
-                    .vet("ABC-42", task, "docs"))
+    assertThatThrownBy(() ->
+            new RepoRemoval(mock(StateService.class), host, departure).vet("ABC-42", task, "docs"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("does not work in docs");
   }
@@ -137,10 +135,8 @@ class RepoRemovalTest {
                 TaskStatus.IN_PROGRESS)
             .build();
 
-    assertThatThrownBy(
-            () ->
-                new RepoRemoval(mock(StateService.class), host, departure)
-                    .vet("ABC-42", task, "api"))
+    assertThatThrownBy(() ->
+            new RepoRemoval(mock(StateService.class), host, departure).vet("ABC-42", task, "api"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("primary repository");
   }
@@ -157,10 +153,8 @@ class RepoRemovalTest {
             .deployment(deployed)
             .build();
 
-    assertThatThrownBy(
-            () ->
-                new RepoRemoval(mock(StateService.class), host, departure)
-                    .vet("ABC-42", task, "web"))
+    assertThatThrownBy(() ->
+            new RepoRemoval(mock(StateService.class), host, departure).vet("ABC-42", task, "web"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("revert first");
   }
@@ -173,10 +167,8 @@ class RepoRemovalTest {
                 TaskStatus.IN_PROGRESS)
             .build();
 
-    assertThatCode(
-            () ->
-                new RepoRemoval(mock(StateService.class), host, departure)
-                    .vet("ABC-42", task, "web"))
+    assertThatCode(() ->
+            new RepoRemoval(mock(StateService.class), host, departure).vet("ABC-42", task, "web"))
         .doesNotThrowAnyException();
   }
 }

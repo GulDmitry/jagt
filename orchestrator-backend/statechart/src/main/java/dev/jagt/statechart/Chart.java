@@ -137,17 +137,15 @@ public final class Chart<E, X, F> {
     return config
         .find(region)
         .or(() -> Optional.ofNullable(computed.get(region)))
-        .or(
-            () ->
-                derived.stream()
-                    .filter(d -> d.name().equals(region))
-                    .findFirst()
-                    .map(d -> d.compute().apply(facts))
-                    .map(
-                        state -> {
-                          computed.put(region, state);
-                          return state;
-                        }))
+        .or(() ->
+            derived.stream()
+                .filter(d -> d.name().equals(region))
+                .findFirst()
+                .map(d -> d.compute().apply(facts))
+                .map(state -> {
+                  computed.put(region, state);
+                  return state;
+                }))
         .orElseThrow(() -> new IllegalArgumentException("no region " + region));
   }
 

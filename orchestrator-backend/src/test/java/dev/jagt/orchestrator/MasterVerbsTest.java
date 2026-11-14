@@ -71,8 +71,7 @@ class MasterVerbsTest {
 
   @ParameterizedTest
   @EnumSource(TaskAction.class)
-  void theMasterHasMoveHeldToCaseForEveryVerbTheBoardOffers(TaskAction action)
-      throws IOException {
+  void theMasterHasMoveHeldToCaseForEveryVerbTheBoardOffers(TaskAction action) throws IOException {
     String shipped = Files.readString(Path.of("../roles/master/cases.md.dist"));
 
     assertThat(MasterMove.pressed()).contains(action.id());
@@ -82,10 +81,9 @@ class MasterVerbsTest {
   @Test
   void everyCommandIsRunnableByTheMasterOrSaysWhyItIsNot() {
     assertThat(globals.all())
-        .allSatisfy(
-            command ->
-                assertThat(command.whyNotTheMaster().map(String::isBlank).orElse(false))
-                    .as(command.id())
-                    .isFalse());
+        .allSatisfy(command ->
+            assertThat(command.whyNotTheMaster().map(String::isBlank).orElse(false))
+                .as(command.id())
+                .isFalse());
   }
 }

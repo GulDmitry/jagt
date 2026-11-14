@@ -41,10 +41,8 @@ class RunningJarWatchTest {
 
     verify(notifications, times(1))
         .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.INSTALL
-                        && sent.title().contains("restart")));
+            argThat(sent ->
+                sent.topic() == Notification.Topic.INSTALL && sent.title().contains("restart")));
   }
 
   @Test
@@ -84,10 +82,8 @@ class RunningJarWatchTest {
 
     verify(notifications)
         .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.INSTALL
-                        && sent.title().contains("restart")));
+            argThat(sent ->
+                sent.topic() == Notification.Topic.INSTALL && sent.title().contains("restart")));
   }
 
   @Test

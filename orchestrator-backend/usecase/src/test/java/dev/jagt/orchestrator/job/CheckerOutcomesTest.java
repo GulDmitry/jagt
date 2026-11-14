@@ -119,10 +119,7 @@ class CheckerOutcomesTest {
         new AcceptanceVerdict.Row("page opens", AcceptanceVerdict.Status.MET, "200");
     return Stream.of(
         Arguments.of(List.of(unprovable), "which user?", ":\nwhich user?"),
-        Arguments.of(
-            List.of(met, unprovable),
-            "",
-            ":\n- login works — unprovable: no login"),
+        Arguments.of(List.of(met, unprovable), "", ":\n- login works — unprovable: no login"),
         Arguments.of(List.of(), "", ":\nthe check named no criterion"));
   }
 }

@@ -132,9 +132,8 @@ public class CycleTimeRenderer {
   private static int byYou(List<StatusChange> history) {
     return (int)
         history.stream()
-            .filter(
-                step ->
-                    step.origin() == ActionOrigin.BOARD || step.origin() == ActionOrigin.PALETTE)
+            .filter(step ->
+                step.origin() == ActionOrigin.BOARD || step.origin() == ActionOrigin.PALETTE)
             .count();
   }
 

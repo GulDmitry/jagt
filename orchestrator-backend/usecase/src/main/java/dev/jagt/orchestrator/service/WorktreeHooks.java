@@ -109,41 +109,40 @@ public final class WorktreeHooks {
    * the task's own branch. The repository's own hook runs after the guard, on the same input.
    */
   private static String pushGuard(String taskBranch) {
-    return
-        """
-        #!/bin/sh
-        branch=%s
-        project_hook=%s/pre-push
-        refs=$(cat)
-        while read -r local_ref local_sha remote_ref remote_sha; do
-            [ -n "$remote_ref" ] || continue
-            if [ "$remote_ref" != "refs/heads/$branch" ]; then
-                echo "jagt refuses this push: $remote_ref is not this task's branch." >&2
-                echo "Only $branch may be pushed from this worktree. Work for another branch is\
-         another task: report outcome=question naming what goes on it and its base." >&2
-                exit 1
-            fi
-            case "$local_sha" in
-                *[!0]*) ;;
-                *)
-                    echo "jagt refuses deleting $remote_ref: the review request of this task is built\
-         on it." >&2
-                    exit 1
-                    ;;
-            esac
-        done <<REFS
-        $refs
-        REFS
-        if [ -x "$project_hook" ]; then
-            if [ -n "$refs" ]; then
-                printf '%%s\\n' "$refs" | GIT_CONFIG_COUNT=0 "$project_hook" "$@"
-            else
-                GIT_CONFIG_COUNT=0 "$project_hook" "$@" < /dev/null
-            fi
-            exit $?
+    return """
+    #!/bin/sh
+    branch=%s
+    project_hook=%s/pre-push
+    refs=$(cat)
+    while read -r local_ref local_sha remote_ref remote_sha; do
+        [ -n "$remote_ref" ] || continue
+        if [ "$remote_ref" != "refs/heads/$branch" ]; then
+            echo "jagt refuses this push: $remote_ref is not this task's branch." >&2
+            echo "Only $branch may be pushed from this worktree. Work for another branch is\
+     another task: report outcome=question naming what goes on it and its base." >&2
+            exit 1
         fi
-        exit 0
-        """
+        case "$local_sha" in
+            *[!0]*) ;;
+            *)
+                echo "jagt refuses deleting $remote_ref: the review request of this task is built\
+     on it." >&2
+                exit 1
+                ;;
+        esac
+    done <<REFS
+    $refs
+    REFS
+    if [ -x "$project_hook" ]; then
+        if [ -n "$refs" ]; then
+            printf '%%s\\n' "$refs" | GIT_CONFIG_COUNT=0 "$project_hook" "$@"
+        else
+            GIT_CONFIG_COUNT=0 "$project_hook" "$@" < /dev/null
+        fi
+        exit $?
+    fi
+    exit 0
+    """
         .formatted(quoted(taskBranch), PROJECT_HOOKS);
   }
 
@@ -152,15 +151,14 @@ public final class WorktreeHooks {
    * here.
    */
   private static String passThrough(String name) {
-    return
-        """
-        #!/bin/sh
-        hook=%s/%s
-        [ -x "$hook" ] || exit 0
-        GIT_CONFIG_COUNT=0
-        export GIT_CONFIG_COUNT
-        exec "$hook" "$@"
-        """
+    return """
+    #!/bin/sh
+    hook=%s/%s
+    [ -x "$hook" ] || exit 0
+    GIT_CONFIG_COUNT=0
+    export GIT_CONFIG_COUNT
+    exec "$hook" "$@"
+    """
         .formatted(PROJECT_HOOKS, name);
   }
 

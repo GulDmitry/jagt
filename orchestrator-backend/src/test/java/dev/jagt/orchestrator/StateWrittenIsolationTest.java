@@ -59,7 +59,6 @@ class StateWrittenIsolationTest {
         });
     context.refresh();
 
-    assertThatIllegalStateException()
-        .isThrownBy(() -> context.publishEvent(new Startup()));
+    assertThatIllegalStateException().isThrownBy(() -> context.publishEvent(new Startup()));
   }
 }

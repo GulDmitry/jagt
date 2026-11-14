@@ -27,9 +27,8 @@ class PlanFirstTest {
             .build();
 
     assertThat(PlanFirst.refusal(task, file))
-        .hasValueSatisfying(
-            reason ->
-                assertThat(reason).startsWith("jagt refuses").contains("plan first", "plan.md"));
+        .hasValueSatisfying(reason ->
+            assertThat(reason).startsWith("jagt refuses").contains("plan first", "plan.md"));
   }
 
   @ParameterizedTest

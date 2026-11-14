@@ -40,8 +40,7 @@ class RecordingTest {
   }
 
   @Test
-  void logsOnlyTheFirstDivergenceBecauseLaterOneFollowsFromIt(@TempDir Path root)
-      throws Exception {
+  void logsOnlyTheFirstDivergenceBecauseLaterOneFollowsFromIt(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");
     Recording recording = new Recording(file.toString());
@@ -56,8 +55,7 @@ class RecordingTest {
   }
 
   @Test
-  void saysOnlyOnceThatTheReplayDrainedHoweverOftenItIsToldSo(@TempDir Path root)
-      throws Exception {
+  void saysOnlyOnceThatTheReplayDrainedHoweverOftenItIsToldSo(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");
     Recording recording = new Recording(file.toString());

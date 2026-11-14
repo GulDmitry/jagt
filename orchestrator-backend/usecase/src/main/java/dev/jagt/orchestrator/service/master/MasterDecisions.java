@@ -101,17 +101,16 @@ public class MasterDecisions {
   public synchronized void answered(TaskState task) {
     changes
         .state(task)
-        .ifPresent(
-            tree -> {
-              Rounds before = read(task);
-              write(
-                  task,
-                  new Rounds(
-                      before.rounds(),
-                      last(
-                          Stream.concat(before.answers().stream(), Stream.of(asked(tree, task)))
-                              .toList())));
-            });
+        .ifPresent(tree -> {
+          Rounds before = read(task);
+          write(
+              task,
+              new Rounds(
+                  before.rounds(),
+                  last(
+                      Stream.concat(before.answers().stream(), Stream.of(asked(tree, task)))
+                          .toList())));
+        });
   }
 
   /**

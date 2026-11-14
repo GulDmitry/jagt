@@ -44,15 +44,11 @@ public class LinkRefusals {
     }
     judged
         .foreign()
-        .forEach(
-            foreign ->
-                reach.lost(
-                    new ReachLost(
-                        DRIVER,
-                        host(taskId, foreign.project()),
-                        List.of(),
-                        said(task.get(), foreign)),
-                    () -> standing(taskId, foreign.project())));
+        .forEach(foreign ->
+            reach.lost(
+                new ReachLost(
+                    DRIVER, host(taskId, foreign.project()), List.of(), said(task.get(), foreign)),
+                () -> standing(taskId, foreign.project())));
   }
 
   /**
@@ -84,14 +80,13 @@ public class LinkRefusals {
     String line =
         "jagt dropped "
             + foreign.stream()
-                .map(
-                    one ->
-                        one.project()
-                            + "'s link "
-                            + one.url()
-                            + " (expected under "
-                            + GitRemote.projectPath(one.remote())
-                            + ")")
+                .map(one ->
+                    one.project()
+                        + "'s link "
+                        + one.url()
+                        + " (expected under "
+                        + GitRemote.projectPath(one.remote())
+                        + ")")
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("")
             + ". Link the request that lives in the repository's own remote.";

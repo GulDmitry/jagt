@@ -37,8 +37,7 @@ class OpenSpecTest {
           "--no-interactive",
           "--json");
 
-  private static final List<String> ARCHIVE =
-      List.of("/bin/openspec", "archive", "abc-42", "-y");
+  private static final List<String> ARCHIVE = List.of("/bin/openspec", "archive", "abc-42", "-y");
 
   private static final Processes.Result VALID =
       new Processes.Result(0, "{\"items\":[{\"valid\":true,\"issues\":[]}]}", "");
@@ -98,7 +97,8 @@ class OpenSpecTest {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
-        .thenReturn(new Processes.Result(
+        .thenReturn(
+            new Processes.Result(
                 0,
                 """
                 {"items":[{"valid":true,"issues":[{"level":"INFO","path":"board/spec.md",
@@ -174,8 +174,7 @@ class OpenSpecTest {
   void findsNodeBesideTheCliWhenJagtsPathLacksIt(@TempDir Path worktree) throws IOException {
     when(host.resolve("openspec")).thenReturn("/opt/homebrew/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
-    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-        .thenReturn(VALID);
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(VALID);
 
     new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -192,8 +191,7 @@ class OpenSpecTest {
     when(host.env("PATH")).thenReturn(Optional.of("/usr/bin"));
     when(host.resolve("openspec")).thenReturn("/opt/homebrew/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
-    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-        .thenReturn(VALID);
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(VALID);
 
     new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -246,9 +244,7 @@ class OpenSpecTest {
       throws IOException {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42-2"));
-    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-        .thenReturn(
-            INVALID);
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(INVALID);
 
     assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
         .get()

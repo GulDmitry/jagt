@@ -72,33 +72,30 @@ public class RuntimeWiring {
 
   @Bean(destroyMethod = "")
   public ScheduledExecutorService notificationRetries() {
-    return Executors.newSingleThreadScheduledExecutor(
-        task -> {
-          Thread thread = new Thread(task, "jagt-notify-retry");
-          thread.setDaemon(true);
-          return thread;
-        });
+    return Executors.newSingleThreadScheduledExecutor(task -> {
+      Thread thread = new Thread(task, "jagt-notify-retry");
+      thread.setDaemon(true);
+      return thread;
+    });
   }
 
   /** Serial: a sweep runs for minutes, so polls must not pile up behind it. */
   @Bean(destroyMethod = "")
   public Executor autoReviewSweeps() {
-    return Executors.newSingleThreadExecutor(
-        task -> {
-          Thread thread = new Thread(task, "auto-review");
-          thread.setDaemon(true);
-          return thread;
-        });
+    return Executors.newSingleThreadExecutor(task -> {
+      Thread thread = new Thread(task, "auto-review");
+      thread.setDaemon(true);
+      return thread;
+    });
   }
 
   @Bean(destroyMethod = "")
   public ExecutorService boardBroadcaster() {
-    return Executors.newSingleThreadExecutor(
-        task -> {
-          Thread thread = new Thread(task, "board-sse");
-          thread.setDaemon(true);
-          return thread;
-        });
+    return Executors.newSingleThreadExecutor(task -> {
+      Thread thread = new Thread(task, "board-sse");
+      thread.setDaemon(true);
+      return thread;
+    });
   }
 
   /** One thread per job, which holds it for the whole run, and one for the board's heartbeat. */

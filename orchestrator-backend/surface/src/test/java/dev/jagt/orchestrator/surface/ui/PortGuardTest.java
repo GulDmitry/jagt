@@ -23,13 +23,12 @@ class PortGuardTest {
               .refusal(new MockEnvironment().withProperty("server.port", String.valueOf(port)));
 
       assertThat(refusal)
-          .hasValueSatisfying(
-              line ->
-                  assertThat(line)
-                      .startsWith("start refused")
-                      .contains("port=" + port)
-                      .contains("another jagt or process holds it")
-                      .doesNotContain("\n"));
+          .hasValueSatisfying(line ->
+              assertThat(line)
+                  .startsWith("start refused")
+                  .contains("port=" + port)
+                  .contains("another jagt or process holds it")
+                  .doesNotContain("\n"));
     }
   }
 

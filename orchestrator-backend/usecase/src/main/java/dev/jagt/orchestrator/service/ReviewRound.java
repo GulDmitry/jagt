@@ -34,11 +34,8 @@ public class ReviewRound {
     Optional<Answer<List<String>>> notesFirst =
         fingerprint.map(read -> codeHost.unresolvedNotes(project, reviewRequestUrl));
     Optional<String> mark =
-        fingerprint.flatMap(
-            read ->
-                notesFirst
-                    .flatMap(Answer::facts)
-                    .map(ids -> read + "\n" + String.join(" ", ids)));
+        fingerprint.flatMap(read ->
+            notesFirst.flatMap(Answer::facts).map(ids -> read + "\n" + String.join(" ", ids)));
     Optional<ReviewFacts> kept = kept(reviewRequestUrl, mark);
     if (kept.isPresent()) {
       log.atInfo()

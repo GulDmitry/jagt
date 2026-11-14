@@ -46,11 +46,10 @@ class DeployConflictStandTest {
       assertThat(stand.record().histories().values())
           .as(outcome.describe())
           .singleElement()
-          .satisfies(
-              history ->
-                  assertThat(history)
-                      .extracting(RunRecord.Step::status)
-                      .contains(TaskStatus.DEPLOY_CONFLICT));
+          .satisfies(history ->
+              assertThat(history)
+                  .extracting(RunRecord.Step::status)
+                  .contains(TaskStatus.DEPLOY_CONFLICT));
       assertThat(stand.violations()).as(outcome.describe()).isEmpty();
       stand.passed();
     }

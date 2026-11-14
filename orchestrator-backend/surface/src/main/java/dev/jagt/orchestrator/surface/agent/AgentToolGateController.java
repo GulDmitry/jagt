@@ -69,14 +69,14 @@ public class AgentToolGateController {
             .findByWorktree(cwd)
             .map(owner -> remoteOf(owner.getValue()))
             .orElse(Remote.ORIGIN);
-    return toolGate.refusal(call.command(), taskBranch, request.getLocalPort(), remote)
-        .map(
-            reason -> {
-              stateService.updateTask(
-                  Objects.requireNonNull(taskBranch), task -> task.refused(Guard.SESSION_LINE));
-              log.atInfo().setMessage("session line refused").addKeyValue("task", taskBranch).log();
-              return denied(reason);
-            })
+    return toolGate
+        .refusal(call.command(), taskBranch, request.getLocalPort(), remote)
+        .map(reason -> {
+          stateService.updateTask(
+              Objects.requireNonNull(taskBranch), task -> task.refused(Guard.SESSION_LINE));
+          log.atInfo().setMessage("session line refused").addKeyValue("task", taskBranch).log();
+          return denied(reason);
+        })
         .orElseGet(() -> ResponseEntity.noContent().build());
   }
 
@@ -91,21 +91,18 @@ public class AgentToolGateController {
   private ResponseEntity<Map<String, Object>> planFirst(@Nullable String cwd, ToolCall call) {
     return stateService
         .findByWorktree(cwd)
-        .flatMap(
-            owner ->
-                PlanFirst.refusal(owner.getValue(), call.file())
-                    .map(
-                        reason -> {
-                          stateService.updateTask(
-                              owner.getKey(), task -> task.refused(Guard.PLAN_FIRST));
-                          log.atInfo()
-                              .setMessage("write refused")
-                              .addKeyValue("task", owner.getKey())
-                              .addKeyValue("cause", "plan not approved")
-                              .addKeyValue("file", call.file())
-                              .log();
-                          return denied(reason);
-                        }))
+        .flatMap(owner ->
+            PlanFirst.refusal(owner.getValue(), call.file())
+                .map(reason -> {
+                  stateService.updateTask(owner.getKey(), task -> task.refused(Guard.PLAN_FIRST));
+                  log.atInfo()
+                      .setMessage("write refused")
+                      .addKeyValue("task", owner.getKey())
+                      .addKeyValue("cause", "plan not approved")
+                      .addKeyValue("file", call.file())
+                      .log();
+                  return denied(reason);
+                }))
         .orElseGet(() -> ResponseEntity.noContent().build());
   }
 

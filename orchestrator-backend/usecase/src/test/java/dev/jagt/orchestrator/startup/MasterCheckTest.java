@@ -72,11 +72,10 @@ class MasterCheckTest {
 
     assertThat(realCheck.problems())
         .singleElement()
-        .satisfies(
-            problem -> {
-              assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mode");
-              assertThat(problem.text()).startsWith("orchestrator.roles.master.mode: 'supervise'");
-            });
+        .satisfies(problem -> {
+          assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mode");
+          assertThat(problem.text()).startsWith("orchestrator.roles.master.mode: 'supervise'");
+        });
   }
 
   @Test
@@ -90,8 +89,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt()
-      throws Exception {
+  void refusesMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
     when(configService.load())
@@ -106,8 +104,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesTheRetiredNameRatherThanSilentlyGivingTheMasterEveryStep()
-      throws Exception {
+  void refusesTheRetiredNameRatherThanSilentlyGivingTheMasterEveryStep() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
     when(configService.load())
@@ -226,8 +223,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void acceptsMasterModelWhenTheConfigListsModelsForRuntimeListingNone()
-      throws Exception {
+  void acceptsMasterModelWhenTheConfigListsModelsForRuntimeListingNone() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
     when(configService.load())

@@ -159,8 +159,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void keysTheEntryByTheRealPathOfWorktreeReachedThroughLink(@TempDir Path home)
-      throws Exception {
+  void keysTheEntryByTheRealPathOfWorktreeReachedThroughLink(@TempDir Path home) throws Exception {
     Path real = Files.createDirectory(home.resolve("real"));
     Path link = Files.createSymbolicLink(home.resolve("link"), real);
     Path config = home.resolve(".claude.json");

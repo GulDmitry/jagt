@@ -94,13 +94,9 @@ class HeadlessClaudeTest {
   void readWhoseCommandStoppedWithJagtIsNoFailure() {
     runner.failing(new Processes.Stopped(List.of("claude")));
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () ->
-                claude.read(
-                    "Read ABC-42.",
-                    TicketRead.SCHEMA.json(),
-                    "ABC-42",
-                    AssistantCallKind.TICKET_READ))
+    org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            claude.read(
+                "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ))
         .isInstanceOf(Processes.Stopped.class);
   }
 
@@ -137,13 +133,9 @@ class HeadlessClaudeTest {
             .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () ->
-                claude.read(
-                    "Read ABC-42.",
-                    TicketRead.SCHEMA.json(),
-                    "ABC-42",
-                    AssistantCallKind.TICKET_READ))
+    org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            claude.read(
+                "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ))
         .isInstanceOf(dev.jagt.orchestrator.port.AssistantUnavailable.class);
   }
 
@@ -606,11 +598,8 @@ class HeadlessClaudeTest {
 
       assertThat(log.events())
           .filteredOn(event -> "assistant read".equals(event.getMessage()))
-          .flatExtracting(
-              event ->
-                  event.getKeyValuePairs().stream()
-                      .map(pair -> pair.key + "=" + pair.value)
-                      .toList())
+          .flatExtracting(event ->
+              event.getKeyValuePairs().stream().map(pair -> pair.key + "=" + pair.value).toList())
           .contains("ref=ABC-42", expected);
     }
   }

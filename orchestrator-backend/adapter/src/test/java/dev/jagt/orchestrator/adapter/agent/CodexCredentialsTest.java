@@ -30,7 +30,7 @@ class CodexCredentialsTest {
         .isEqualTo(
             new OauthCredential.Token(
                 "h.eyJleHAiOjE4OTM0NTYwMDAsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X"
-                + "2FjY291bnRfaWQiOiJhY2N0LTQyIn19.s",
+                    + "2FjY291bnRfaWQiOiJhY2N0LTQyIn19.s",
                 "acct-42"));
   }
 
@@ -93,7 +93,7 @@ class CodexCredentialsTest {
         .isEqualTo(
             new OauthCredential.Token(
                 "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjd"
-                + "C03In19.s",
+                    + "C03In19.s",
                 "acct-1"));
   }
 
@@ -110,7 +110,7 @@ class CodexCredentialsTest {
         .isEqualTo(
             new OauthCredential.Token(
                 "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjd"
-                + "C03In19",
+                    + "C03In19",
                 "acct-7"));
   }
 

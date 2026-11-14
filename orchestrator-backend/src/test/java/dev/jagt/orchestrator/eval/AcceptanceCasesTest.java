@@ -16,13 +16,12 @@ class AcceptanceCasesTest {
 
     assertThat(cases)
         .hasSize(17)
-        .allSatisfy(
-            loaded ->
-                assertThat(loaded.expect().rows().keySet())
-                    .containsExactlyInAnyOrderElementsOf(
-                        loaded.ticket().criteria().stream()
-                            .map(AcceptanceCase.Criterion::id)
-                            .toList()));
+        .allSatisfy(loaded ->
+            assertThat(loaded.expect().rows().keySet())
+                .containsExactlyInAnyOrderElementsOf(
+                    loaded.ticket().criteria().stream()
+                        .map(AcceptanceCase.Criterion::id)
+                        .toList()));
   }
 
   @Test

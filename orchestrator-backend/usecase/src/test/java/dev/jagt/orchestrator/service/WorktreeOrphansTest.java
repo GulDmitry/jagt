@@ -71,8 +71,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void findsLeftoverWorktreeAndCountsTheSecretsStillSittingInIt()
-      throws IOException {
+  void findsLeftoverWorktreeAndCountsTheSecretsStillSittingInIt() throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
     Files.createDirectories(orphan.resolve("app"));
     Files.writeString(orphan.resolve("app").resolve(".env"), "TOKEN=secret");
@@ -92,12 +91,11 @@ class WorktreeOrphansTest {
 
     assertThat(listed)
         .singleElement()
-        .satisfies(
-            found -> {
-              assertThat(found.path()).isEqualTo(orphan);
-              assertThat(found.projectKey()).isEqualTo("demo");
-              assertThat(found.secretFiles()).isEqualTo(2);
-            });
+        .satisfies(found -> {
+          assertThat(found.path()).isEqualTo(orphan);
+          assertThat(found.projectKey()).isEqualTo("demo");
+          assertThat(found.secretFiles()).isEqualTo(2);
+        });
   }
 
   @Test
@@ -117,8 +115,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void countsSecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere()
-      throws IOException {
+  void countsSecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere() throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-42-demo"));
     Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
 
@@ -161,8 +158,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void deletesTheOrphanItIsNamedForEvenWhereItHoldsCopiedSecret()
-      throws IOException {
+  void deletesTheOrphanItIsNamedForEvenWhereItHoldsCopiedSecret() throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
     Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
 
@@ -269,8 +265,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void reportsDeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive()
-      throws IOException {
+  void reportsDeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive() throws IOException {
     Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
     Path residue = Files.createDirectories(root.resolve("ABC-41-deploy"));
     Files.createDirectories(residue.resolve(".idea"));
@@ -283,8 +278,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void reportsDeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted()
-      throws IOException {
+  void reportsDeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted() throws IOException {
     final Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
     Path unregistered = Files.createDirectories(root.resolve("ABC-41-deploy"));
     Files.writeString(
@@ -300,8 +294,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void leavesTheDeployDirectoryOfLiveTaskWhileItHoldsRealCheckout()
-      throws IOException {
+  void leavesTheDeployDirectoryOfLiveTaskWhileItHoldsRealCheckout() throws IOException {
     Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
     Files.createDirectories(root.resolve("ABC-41-deploy").resolve(".git"));
     state.putTask(
@@ -311,8 +304,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void stillFindsLeftoverWhenLiveTaskHasNotCutWorktreeInOneOfItsRepositories()
-      throws IOException {
+  void stillFindsLeftoverWhenLiveTaskHasNotCutWorktreeInOneOfItsRepositories() throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
     state.putTask(
         "ABC-41",

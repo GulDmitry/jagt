@@ -119,16 +119,15 @@ public class ShipService {
 
   private List<Target> targets(TaskState task, ConfigService.ConfigFile config) {
     return task.repos().stream()
-        .map(
-            repo ->
-                new Target(
-                    Objects.requireNonNull(repo.project()),
-                    Objects.requireNonNull(repo.worktreePath()),
-                    WorktreeChanges.targetBranch(
-                        task, configService.project(Objects.requireNonNull(repo.project()))),
-                    repo.hasReviewRequest(),
-                    !config.hasNoCodeHost(repo.project()),
-                    !configService.project(repo.project()).gitRemote().local()))
+        .map(repo ->
+            new Target(
+                Objects.requireNonNull(repo.project()),
+                Objects.requireNonNull(repo.worktreePath()),
+                WorktreeChanges.targetBranch(
+                    task, configService.project(Objects.requireNonNull(repo.project()))),
+                repo.hasReviewRequest(),
+                !config.hasNoCodeHost(repo.project()),
+                !configService.project(repo.project()).gitRemote().local()))
         .toList();
   }
 
@@ -151,7 +150,7 @@ public class ShipService {
           + THREADS;
     }
     return "If review_replies.md exists, post a drafted reply ONLY where the note its block answers"
-               + " is by an author matching (case-insensitive) any of: "
+        + " is by an author matching (case-insensitive) any of: "
         + String.join(", ", config.codeReview().reviewReplyAuthorsOrEmpty())
         + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones."
         + THREADS;
@@ -198,17 +197,16 @@ public class ShipService {
 
   private static String listed(List<Target> targets) {
     StringBuilder lines = new StringBuilder();
-    targets.forEach(
-        target ->
-            lines
-                .append("- ")
-                .append(target.project())
-                .append(": ")
-                .append(target.worktreePath())
-                .append(", merges into ")
-                .append(target.targetBranch())
-                .append(requestLine(target))
-                .append('\n'));
+    targets.forEach(target ->
+        lines
+            .append("- ")
+            .append(target.project())
+            .append(": ")
+            .append(target.worktreePath())
+            .append(", merges into ")
+            .append(target.targetBranch())
+            .append(requestLine(target))
+            .append('\n'));
     return lines.toString();
   }
 

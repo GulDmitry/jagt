@@ -179,10 +179,9 @@ public class ProjectSetup {
     Path real = real(path);
     return configService.load().projects().entrySet().stream()
         .filter(project -> !project.getKey().equals(own))
-        .anyMatch(
-            project ->
-                real(Path.of(expand(project.getValue().path())).toAbsolutePath().normalize())
-                    .equals(real));
+        .anyMatch(project ->
+            real(Path.of(expand(project.getValue().path())).toAbsolutePath().normalize())
+                .equals(real));
   }
 
   /**

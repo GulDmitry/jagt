@@ -66,17 +66,16 @@ public class CheckerRecords {
       Files.write(
           paths.acceptanceVerdicts(),
           kept.entrySet().stream()
-              .map(
-                  entry ->
-                      entry.getKey()
-                          + TAB
-                          + entry.getValue().digest()
-                          + TAB
-                          + entry.getValue().sha()
-                          + TAB
-                          + entry.getValue().ending()
-                          + TAB
-                          + entry.getValue().at())
+              .map(entry ->
+                  entry.getKey()
+                      + TAB
+                      + entry.getValue().digest()
+                      + TAB
+                      + entry.getValue().sha()
+                      + TAB
+                      + entry.getValue().ending()
+                      + TAB
+                      + entry.getValue().at())
               .toList());
     } catch (IOException unwritten) {
       log.atWarn()

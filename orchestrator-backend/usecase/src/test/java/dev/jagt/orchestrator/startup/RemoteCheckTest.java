@@ -80,13 +80,11 @@ class RemoteCheckTest {
 
     assertThat(check.problems())
         .singleElement()
-        .satisfies(
-            problem -> {
-              assertThat(problem.key()).isEqualTo("orchestrator.projects.shop.remote");
-              assertThat(problem.text())
-                  .contains(
-                      "orchestrator.projects.shop.remote", "orchestrator.projects.shop.codeHost");
-            });
+        .satisfies(problem -> {
+          assertThat(problem.key()).isEqualTo("orchestrator.projects.shop.remote");
+          assertThat(problem.text())
+              .contains("orchestrator.projects.shop.remote", "orchestrator.projects.shop.codeHost");
+        });
   }
 
   @Test

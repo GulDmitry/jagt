@@ -42,8 +42,7 @@ class PointCatalogueTest {
             .build();
 
     assertThat(PointCatalogue.of(task, List.of(), StopHold.NONE))
-        .containsExactly(
-            new Standing(Point.REQUEST_OPENED, "https://host/a/3\nhttps://host/b/7"));
+        .containsExactly(new Standing(Point.REQUEST_OPENED, "https://host/a/3\nhttps://host/b/7"));
   }
 
   @Test
@@ -252,8 +251,7 @@ class PointCatalogueTest {
 
     assertThat(PointCatalogue.of(task, List.of(), StopHold.NONE))
         .containsExactly(
-            new Standing(
-                Point.AUTO_REVIEW, "AUTO_REVIEW_WINDOW=900;AUTO_REVIEW_UNREADABLE=2"));
+            new Standing(Point.AUTO_REVIEW, "AUTO_REVIEW_WINDOW=900;AUTO_REVIEW_UNREADABLE=2"));
   }
 
   @Test
@@ -264,8 +262,7 @@ class PointCatalogueTest {
             .build();
 
     assertThat(PointCatalogue.of(task, List.of(), StopHold.NONE))
-        .containsExactly(
-            new Standing(Point.AUTO_REVIEW, "CONFLICT_REQUEST_GONE=https://host/a/3"));
+        .containsExactly(new Standing(Point.AUTO_REVIEW, "CONFLICT_REQUEST_GONE=https://host/a/3"));
   }
 
   @Test

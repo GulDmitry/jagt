@@ -34,10 +34,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Autowired
   BoardPopupsAndTabsTest(
-      BreakableJob breakable,
-      StateService state,
-      Jobs jobs,
-      PlanBaseline planBaseline) {
+      BreakableJob breakable, StateService state, Jobs jobs, PlanBaseline planBaseline) {
     super(breakable, state);
     this.jobs = jobs;
     this.planBaseline = planBaseline;
@@ -459,11 +456,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void taskWaitingOnTheHumanThatBrokeWearsRedBadgeAndItsHistoryReadsInWords() {
-    state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_FAILED)
-            .message("lint red")
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).message("lint red").build());
     Page page = openBoard();
 
     assertThat(page.locator("#tasks .row .badge.problem")).hasCount(1);
@@ -530,11 +523,10 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1"))
         .thenReturn(Optional.of("compiling"))
-        .thenAnswer(
-            call -> {
-              release.await();
-              return Optional.of("tests pass");
-            });
+        .thenAnswer(call -> {
+          release.await();
+          return Optional.of("tests pass");
+        });
     Page page = openBoard();
     page.locator("#pane .tabs button[data-tab=session]").click();
     assertThat(page.locator("#pane .session .screen")).hasText("compiling");

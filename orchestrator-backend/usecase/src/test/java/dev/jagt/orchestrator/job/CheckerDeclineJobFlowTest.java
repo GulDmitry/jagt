@@ -62,8 +62,7 @@ class CheckerDeclineJobFlowTest {
   @Test
   void endsTheCheckDeclinedAndAsksNobodyWhereAcceptanceHasNoDispute() {
     AcceptanceEnding ending =
-        outcomes
-            .declined("ABC-42", new AcceptanceDecline("proj@0123456789abcdef", "", ""), false);
+        outcomes.declined("ABC-42", new AcceptanceDecline("proj@0123456789abcdef", "", ""), false);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.DECLINED);
     assertThat(state.task("ABC-42").orElseThrow().report()).isEqualTo(AgentReport.PLAIN);
@@ -72,11 +71,10 @@ class CheckerDeclineJobFlowTest {
   @Test
   void putsFirstDisputeAsQuestionWhichTheMasterInActAnswersBeforeTheHuman() {
     AcceptanceEnding ending =
-        outcomes
-            .declined(
-                "ABC-42",
-                new AcceptanceDecline("proj@0123456789abcdef", "", "GET /list still unsorted"),
-                false);
+        outcomes.declined(
+            "ABC-42",
+            new AcceptanceDecline("proj@0123456789abcdef", "", "GET /list still unsorted"),
+            false);
 
     TaskState asked = state.task("ABC-42").orElseThrow();
     assertThat(ending).isEqualTo(AcceptanceEnding.DISPUTED);
@@ -88,12 +86,10 @@ class CheckerDeclineJobFlowTest {
   @Test
   void putsSecondDisputeWhereOnlyTheHumanAnswersIt() {
     AcceptanceEnding ending =
-        outcomes
-            .declined(
-                "ABC-42",
-                new AcceptanceDecline(
-                    "proj@0123456789abcdef", "", "still unsorted after the answer"),
-                true);
+        outcomes.declined(
+            "ABC-42",
+            new AcceptanceDecline("proj@0123456789abcdef", "", "still unsorted after the answer"),
+            true);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.ESCALATED);
     assertThat(state.task("ABC-42").orElseThrow().report()).isEqualTo(AgentReport.PERMISSION);
@@ -102,8 +98,7 @@ class CheckerDeclineJobFlowTest {
   @Test
   void dropsDisputeOnShaThatIsNoLongerTheDeployTip() {
     AcceptanceEnding ending =
-        outcomes
-            .declined("ABC-42", new AcceptanceDecline("proj@fedcba9876543210", "", "x"), false);
+        outcomes.declined("ABC-42", new AcceptanceDecline("proj@fedcba9876543210", "", "x"), false);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.DROPPED);
     assertThat(state.task("ABC-42").orElseThrow().report()).isEqualTo(AgentReport.PLAIN);

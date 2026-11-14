@@ -37,13 +37,8 @@ public final class ContextRelays {
 
   private List<String> steps(String text) {
     return Arrays.stream(Step.values())
-        .filter(
-            step ->
-                brief
-                    .section(step)
-                    .filter(body -> !body.isBlank())
-                    .filter(text::contains)
-                    .isPresent())
+        .filter(step ->
+            brief.section(step).filter(body -> !body.isBlank()).filter(text::contains).isPresent())
         .map(Step::id)
         .toList();
   }

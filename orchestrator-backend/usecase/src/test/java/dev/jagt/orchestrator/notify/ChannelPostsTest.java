@@ -170,16 +170,15 @@ class ChannelPostsTest {
       assertThat(log.events())
           .filteredOn(event -> "notification not delivered".equals(event.getMessage()))
           .singleElement()
-          .satisfies(
-              event ->
-                  assertThat(event.getKeyValuePairs())
-                      .extracting(pair -> pair.key + "=" + pair.value)
-                      .containsExactly(
-                          "channel=team",
-                          "point=deployed",
-                          "task=ABC-42",
-                          "cause=HTTP 500",
-                          "effect=tried again until it lands"));
+          .satisfies(event ->
+              assertThat(event.getKeyValuePairs())
+                  .extracting(pair -> pair.key + "=" + pair.value)
+                  .containsExactly(
+                      "channel=team",
+                      "point=deployed",
+                      "task=ABC-42",
+                      "cause=HTTP 500",
+                      "effect=tried again until it lands"));
     }
   }
 

@@ -139,9 +139,8 @@ class JudgeModeFlowTest {
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");
 
       assertThat(
-              flow.awaitTask(
-                      task ->
-                          task.message() != null && task.message().contains("keep v2 beside v3?"))
+              flow.awaitTask(task ->
+                      task.message() != null && task.message().contains("keep v2 beside v3?"))
                   .report())
           .isEqualTo(AgentReport.QUESTION);
     }

@@ -154,11 +154,10 @@ class FlowEngineTest {
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
         .asInstanceOf(type(Refusal.class))
         .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.NO_SUCH_TASK))
-        .satisfies(
-            refusal ->
-                assertThat(refusal)
-                    .hasMessageContaining("No task ABC-1")
-                    .hasMessageContaining("may have been closed"));
+        .satisfies(refusal ->
+            assertThat(refusal)
+                .hasMessageContaining("No task ABC-1")
+                .hasMessageContaining("may have been closed"));
   }
 
   @Test
@@ -194,8 +193,7 @@ class FlowEngineTest {
   void refusesLineTypedForVerbThatTakesNone() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
-    FlowEngine engine =
-        new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
+    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
 
     assertThatThrownBy(() -> engine.runLine("ABC-1", TaskAction.SHIP, "ls -la"))
         .isInstanceOf(Refusal.class)
@@ -254,18 +252,16 @@ class FlowEngineTest {
         .asInstanceOf(type(Refusal.class))
         .satisfies(
             refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE))
-        .satisfies(
-            refusal ->
-                assertThat(refusal)
-                    .hasMessageContaining("Deploy is not available for ABC-1")
-                    .hasMessageContaining("IN_PROGRESS"));
+        .satisfies(refusal ->
+            assertThat(refusal)
+                .hasMessageContaining("Deploy is not available for ABC-1")
+                .hasMessageContaining("IN_PROGRESS"));
   }
 
   @Test
   void movesTheTaskToTheStatusTheRulesGiveForAnOutcomeThatWorked() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(reviewPending));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
         new FlowEngine(
             stateService,
@@ -447,15 +443,10 @@ class FlowEngineTest {
   @Test
   void failsLoudlyWhenAnActionTheRulesAllowHasNoCapabilityDeclared() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(reviewPending));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
         new FlowEngine(
-            stateService,
-            new Capabilities(List.of(), List.of()),
-            facts,
-            Clock.systemUTC(),
-            rules);
+            stateService, new Capabilities(List.of(), List.of()), facts, Clock.systemUTC(), rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
         .isInstanceOf(IllegalStateException.class)
@@ -465,8 +456,7 @@ class FlowEngineTest {
   @Test
   void keepsTheTaskMessageWhenTheOutcomeMovedItWithoutStampingOne() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(reviewPending));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
         new FlowEngine(
             stateService,
@@ -491,16 +481,9 @@ class FlowEngineTest {
   @Test
   void shipsStuckTaskAgainOnlyWhenItsAgentIsGoneAsTheProbeAnswersAtTheMomentOfTheRun() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(shipping));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenReturn(true);
-    FlowEngine engine =
-        new FlowEngine(
-            stateService,
-            neverRunShip,
-            facts,
-            Clock.systemUTC(),
-            rules);
+    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .asInstanceOf(type(Refusal.class))
@@ -511,8 +494,7 @@ class FlowEngineTest {
   @Test
   void shipsStuckTaskAgainWhenTheProbeSaysItsAgentIsGone() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(shipping));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenReturn(false);
     FlowEngine engine =
         new FlowEngine(
@@ -530,16 +512,9 @@ class FlowEngineTest {
   @Test
   void refusesToShipStuckTaskWhoseSessionWindowCouldNotBeRead() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(shipping));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenThrow(new AgentPresence.Unread("tmux timed out"));
-    FlowEngine engine =
-        new FlowEngine(
-            stateService,
-            neverRunShip,
-            facts,
-            Clock.systemUTC(),
-            rules);
+    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .asInstanceOf(type(Refusal.class))

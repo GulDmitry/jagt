@@ -33,7 +33,7 @@ class OpenCodeEventsTest {
   void countsReasoningTokensAndCacheWritesAsTheModelsOwnWork() {
     String line =
         "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":10,\"output\":5,\"r"
-        + "easoning\":7,"
+            + "easoning\":7,"
             + "\"cache\":{\"read\":3,\"write\":2}}}}";
 
     OpenCodeEvents events = OpenCodeEvents.parse(line);

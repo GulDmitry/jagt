@@ -324,13 +324,12 @@ public class WorktreeInspection {
                         "-z",
                         mergeBase(projectPath, worktree, baseBranch)),
                     List.of("git", "ls-files", "--others", "--exclude-standard", "-z"))
-                .flatMap(
-                    command ->
-                        Arrays.stream(
-                            git.run(worktree, command)
-                                .expectSuccess(command.get(1) + " in " + worktree)
-                                .stdout()
-                                .split("\0")))
+                .flatMap(command ->
+                    Arrays.stream(
+                        git.run(worktree, command)
+                            .expectSuccess(command.get(1) + " in " + worktree)
+                            .stdout()
+                            .split("\0")))
                 .filter(path -> !path.isEmpty() && !generated.contains(path))
                 .distinct()
                 .toList());

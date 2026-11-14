@@ -10,14 +10,11 @@ public final class AcceptanceRoleYml {
 
   public static String of(String environment, String landed, RoleOptions.Flows flows) {
     String command =
-        flows.command().stream()
-            .map(word -> "\"" + word + "\"")
-            .collect(Collectors.joining(", "));
-    return
-        """
-        environments: [{url: "%s", landed: "%s"}]
-        flows: {driver: "%s", path: "%s", command: [%s]}
-        """
-            .formatted(environment, landed, flows.driver(), flows.path(), command);
+        flows.command().stream().map(word -> "\"" + word + "\"").collect(Collectors.joining(", "));
+    return """
+    environments: [{url: "%s", landed: "%s"}]
+    flows: {driver: "%s", path: "%s", command: [%s]}
+    """
+        .formatted(environment, landed, flows.driver(), flows.path(), command);
   }
 }

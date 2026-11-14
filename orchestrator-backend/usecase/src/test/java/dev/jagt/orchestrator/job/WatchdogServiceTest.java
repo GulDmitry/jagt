@@ -71,8 +71,7 @@ class WatchdogServiceTest {
   @Test
   void readsTheSessionOfTaskWhoseStatusIdlesByDesign() {
     state.putTask(
-        "ABC-1",
-        watchedTask().withStatus(TaskStatus.REVIEW_PENDING).withLastActive(0).build());
+        "ABC-1", watchedTask().withStatus(TaskStatus.REVIEW_PENDING).withLastActive(0).build());
 
     watchdog.run();
 
@@ -122,8 +121,7 @@ class WatchdogServiceTest {
   void writesNothingOnTheTicksOfTaskThatKeepsMoving() {
     state.putTask("ABC-1", watchedTask().withLastActive(0).build());
     AtomicInteger writes = new AtomicInteger();
-    StateService counted =
-        stateService().withRoot(root).build(event -> writes.incrementAndGet());
+    StateService counted = stateService().withRoot(root).build(event -> writes.incrementAndGet());
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 300_000, null));
     WatchdogService counting =
@@ -180,12 +178,10 @@ class WatchdogServiceTest {
     void givenWindowReadAsNotGoneThatRestartsTheSession() {
       state.putTask("ABC-1", watchedTask().withLastActive(now).build());
       when(probe.read(anyString(), any(), anyLong(), anyLong()))
-          .thenAnswer(
-              read -> {
-                state.updateTask("ABC-1", reducer::sessionStartedOver);
-                return new SessionSign.Read(
-                    Session.Window.State.DEAD_SHELL, 0, 0, now, 300_000, null);
-              });
+          .thenAnswer(read -> {
+            state.updateTask("ABC-1", reducer::sessionStartedOver);
+            return new SessionSign.Read(Session.Window.State.DEAD_SHELL, 0, 0, now, 300_000, null);
+          });
     }
 
     @Test
@@ -408,8 +404,7 @@ class WatchdogServiceTest {
           state.updateTask(
               "ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 2_000));
           atFiveHundred.run();
-          state.updateTask(
-              "ABC-1", task -> reducer.signed(task, new SessionSign.Called(), 3_000));
+          state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Called(), 3_000));
           atFiveHundred.run();
           state.updateTask(
               "ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 4_000));

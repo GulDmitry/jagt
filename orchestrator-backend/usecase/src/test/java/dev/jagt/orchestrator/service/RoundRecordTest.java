@@ -31,8 +31,7 @@ import org.mockito.ArgumentCaptor;
 
 class RoundRecordTest {
 
-  private final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService stateService = mock(StateService.class);
   private final TaskStops stops = mock(TaskStops.class);
@@ -91,90 +90,57 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(
-            stamped
-                .getValue()
-                .apply(reducer, polling)
-                .checksUnread())
+    assertThat(stamped.getValue().apply(reducer, polling).checksUnread())
         .containsExactly(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden"));
   }
 
   @Test
   void keepsAnEarlierRoundsVerdictFlaggedWhenThisSweepCouldNotReadTheChecks() {
-    when(stateService.task("ABC-1"))
-        .thenReturn(
-            Optional.of(
-                failing));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(failing));
 
     roundRecord.record(
         "ABC-1",
         "shop",
-        new ReviewFacts(
-            openRequest,
-            new ReviewFacts.Pipeline("unknown", "", ""),
-            noDiscussion),
+        new ReviewFacts(openRequest, new ReviewFacts.Pipeline("unknown", "", ""), noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    TaskState after =
-        stamped
-            .getValue()
-            .apply(reducer,
-                failing);
+    TaskState after = stamped.getValue().apply(reducer, failing);
     assertThat(after.pipelineStatus()).isEqualTo("failed");
     assertThat(after.pipelineUnread()).isTrue();
   }
 
   @Test
   void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(polling));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling));
 
     roundRecord.record(
         "ABC-1",
         "shop",
-        new ReviewFacts(
-            approvedRequest,
-            new ReviewFacts.Pipeline("success", "", ""),
-            noDiscussion),
+        new ReviewFacts(approvedRequest, new ReviewFacts.Pipeline("success", "", ""), noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(
-            stamped
-                .getValue()
-                .apply(reducer, polling)
-                .approved())
-        .isTrue();
+    assertThat(stamped.getValue().apply(reducer, polling).approved()).isTrue();
   }
 
   @Test
   void keepsWhatTheHostSaidAboutTheChecksOnTheTask() {
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(polling));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling));
 
     roundRecord.record(
         "ABC-1",
         "shop",
-        new ReviewFacts(
-            openRequest,
-            new ReviewFacts.Pipeline("SUCCEEDED", "", ""),
-            noDiscussion),
+        new ReviewFacts(openRequest, new ReviewFacts.Pipeline("SUCCEEDED", "", ""), noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(
-            stamped
-                .getValue()
-                .apply(reducer, polling)
-                .pipelineStatus())
-        .isEqualTo("SUCCEEDED");
+    assertThat(stamped.getValue().apply(reducer, polling).pipelineStatus()).isEqualTo("SUCCEEDED");
   }
 
   @Test
   void keepsWhenTheHostSaysTheRequestWasOpened() {
-    when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(polling));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling));
 
     roundRecord.record(
         "ABC-1",
@@ -186,11 +152,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(
-            stamped
-                .getValue()
-                .apply(reducer, polling)
-                .requestOpenedAt())
+    assertThat(stamped.getValue().apply(reducer, polling).requestOpenedAt())
         .isEqualTo(1_700_000_000_000L);
   }
 
@@ -208,10 +170,7 @@ class RoundRecordTest {
     roundRecord.record(
         "ABC-1",
         "shop",
-        new ReviewFacts(
-            openRequest,
-            new ReviewFacts.Pipeline("running", "", ""),
-            noDiscussion),
+        new ReviewFacts(openRequest, new ReviewFacts.Pipeline("running", "", ""), noDiscussion),
         "");
 
     verify(stateService, never()).reduce(eq("ABC-1"), any());
@@ -238,11 +197,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(
-            stamped
-                .getValue()
-                .apply(reducer, polling)
-                .requestOpenedAt())
+    assertThat(stamped.getValue().apply(reducer, polling).requestOpenedAt())
         .isEqualTo(1_700_000_500_000L);
   }
 
@@ -283,25 +238,15 @@ class RoundRecordTest {
 
   @Test
   void writesOnlyTheChecksOfReadThatListedThemWithoutJudgingOrStopping() {
-    when(stateService.task("ABC-1"))
-        .thenReturn(
-            Optional.of(
-                failing));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(failing));
 
     roundRecord.recordListed(
         "ABC-1",
-        new ReviewFacts(
-            approvedRequest,
-            new ReviewFacts.Pipeline("success", "", ""),
-            noDiscussion),
+        new ReviewFacts(approvedRequest, new ReviewFacts.Pipeline("success", "", ""), noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    TaskState after =
-        stamped
-            .getValue()
-            .apply(reducer,
-                failing);
+    TaskState after = stamped.getValue().apply(reducer, failing);
     assertThat(after.pipelineStatus()).isEqualTo("success");
     assertThat(after.approved()).isTrue();
     verifyNoInteractions(stops, causes);
@@ -325,11 +270,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(
-            stamped
-                .getValue()
-                .apply(reducer, polling)
-                .pipelineUrl())
+    assertThat(stamped.getValue().apply(reducer, polling).pipelineUrl())
         .isEqualTo("https://host.invalid/p/9");
   }
 
@@ -359,10 +300,7 @@ class RoundRecordTest {
   void writesNothingForReadThatListedNoChecks() {
     roundRecord.recordListed(
         "ABC-1",
-        new ReviewFacts(
-            openRequest,
-            new ReviewFacts.Pipeline("unknown", "", ""),
-            noDiscussion),
+        new ReviewFacts(openRequest, new ReviewFacts.Pipeline("unknown", "", ""), noDiscussion),
         "");
 
     verifyNoInteractions(stateService, stops, causes);

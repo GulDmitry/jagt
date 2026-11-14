@@ -171,10 +171,9 @@ class StopTriagePanelTest {
     List<StatusChange> steps =
         new ArrayList<>(
             IntStream.range(0, 13)
-                .mapToObj(
-                    index ->
-                        new StatusChange(
-                            TaskStatus.IN_PROGRESS, 1_000_000L * index, ActionOrigin.BOARD))
+                .mapToObj(index ->
+                    new StatusChange(
+                        TaskStatus.IN_PROGRESS, 1_000_000L * index, ActionOrigin.BOARD))
                 .toList());
     steps.set(12, new StatusChange(TaskStatus.VERIFYING, 90_000_000L, null).because("probes red"));
     TaskState task =

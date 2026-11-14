@@ -258,10 +258,9 @@ class StepRelayTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
         .thenThrow(new Error("jagt died"));
-    assertThatThrownBy(
-            () ->
-                admittingRelay.relay(
-                    "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
+    assertThatThrownBy(() ->
+            admittingRelay.relay(
+                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
         .isInstanceOf(Error.class);
 
     boolean again =
@@ -280,10 +279,9 @@ class StepRelayTest {
     when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
         .thenThrow(new IllegalStateException("window closed"))
         .thenReturn("written");
-    assertThatThrownBy(
-            () ->
-                admittingRelay.relay(
-                    "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
+    assertThatThrownBy(() ->
+            admittingRelay.relay(
+                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
         .isInstanceOf(IllegalStateException.class);
 
     boolean again =
@@ -301,10 +299,9 @@ class StepRelayTest {
     when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
         .thenThrow(new IllegalStateException("window closed"));
 
-    assertThatThrownBy(
-            () ->
-                admittingRelay.relay(
-                    "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
+    assertThatThrownBy(() ->
+            admittingRelay.relay(
+                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
         .isInstanceOf(IllegalStateException.class);
 
     verify(door).undelivered("ABC-42", "deploy", "java.lang.IllegalStateException: window closed");
@@ -551,8 +548,7 @@ class StepRelayTest {
     void twoRoundsWereSent() throws Exception {
       Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
       state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-      relay.relayRound(
-          "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
+      relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
       relay.relayRound(
           "ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
     }

@@ -156,18 +156,15 @@ class ConflictStallTest {
 
       assertThat(log.events())
           .singleElement()
-          .satisfies(
-              event -> {
-                assertThat(event.getMessage()).isEqualTo("revert conflict stalled");
-                assertThat(event.getKeyValuePairs())
-                    .anySatisfy(
-                        pair -> {
-                          assertThat(pair.key).isEqualTo("fix");
-                          assertThat(String.valueOf(pair.value))
-                              .isEqualTo(
-                                  "resolve it in the revert worktree, git add, then revert ABC-42");
-                        });
-              });
+          .satisfies(event -> {
+            assertThat(event.getMessage()).isEqualTo("revert conflict stalled");
+            assertThat(event.getKeyValuePairs())
+                .anySatisfy(pair -> {
+                  assertThat(pair.key).isEqualTo("fix");
+                  assertThat(String.valueOf(pair.value))
+                      .isEqualTo("resolve it in the revert worktree, git add, then revert ABC-42");
+                });
+          });
     }
   }
 }

@@ -19,27 +19,26 @@ public final class LegalTransitions implements Invariant {
   public List<Violation> check(RunRecord run) {
     List<Violation> violations = new ArrayList<>();
     run.histories()
-        .forEach(
-            (task, steps) -> {
-              for (int i = 1; i < steps.size(); i++) {
-                RunRecord.Step from = steps.get(i - 1);
-                RunRecord.Step to = steps.get(i);
-                if (!moves.allows(from.status(), to.status())) {
-                  violations.add(
-                      new Violation(
-                          NAME,
-                          to.at(),
-                          "state.json history of "
-                              + task
-                              + ": "
-                              + from.status()
-                              + " -> "
-                              + to.status()
-                              + " by "
-                              + to.origin()));
-                }
-              }
-            });
+        .forEach((task, steps) -> {
+          for (int i = 1; i < steps.size(); i++) {
+            RunRecord.Step from = steps.get(i - 1);
+            RunRecord.Step to = steps.get(i);
+            if (!moves.allows(from.status(), to.status())) {
+              violations.add(
+                  new Violation(
+                      NAME,
+                      to.at(),
+                      "state.json history of "
+                          + task
+                          + ": "
+                          + from.status()
+                          + " -> "
+                          + to.status()
+                          + " by "
+                          + to.origin()));
+            }
+          }
+        });
     Map<String, RunRecord.Sample> last = new HashMap<>();
     for (RunRecord.Sample sample : run.timeline().samples()) {
       RunRecord.Sample before = last.put(sample.task(), sample);

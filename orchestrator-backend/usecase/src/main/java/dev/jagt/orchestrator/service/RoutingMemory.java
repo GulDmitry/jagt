@@ -243,13 +243,12 @@ public class RoutingMemory {
     List<String> kept =
         rules.entrySet().stream()
             .filter(entry -> !dropped.contains(entry.getKey()))
-            .map(
-                entry ->
-                    entry.getKey()
-                        + SEPARATOR
-                        + entry.getValue().project()
-                        + USES
-                        + entry.getValue().uses())
+            .map(entry ->
+                entry.getKey()
+                    + SEPARATOR
+                    + entry.getValue().project()
+                    + USES
+                    + entry.getValue().uses())
             .collect(Collectors.toCollection(ArrayList::new));
     // The history is bounded too: a file nothing ever drops is one nobody opens.
     retired.stream().skip(Math.max(0, retired.size() - MAX_RULES)).forEach(kept::add);

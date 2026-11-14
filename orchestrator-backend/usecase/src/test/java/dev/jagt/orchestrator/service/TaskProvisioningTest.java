@@ -58,19 +58,16 @@ class TaskProvisioningTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(
-            new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     provisioning = new TaskProvisioning(config, state, worktrees, sessions, Clock.systemUTC());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(List.of(TestNewRepoBuilder.proj().build()));
+    when(worktrees.cut(any(), any(), any())).thenReturn(List.of(TestNewRepoBuilder.proj().build()));
   }
 
   @Test
   void rejectsUnknownModeBeforeCuttingAnything() {
-    assertThatThrownBy(
-            () ->
-                provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("bogus").build()))
+    assertThatThrownBy(() ->
+            provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("bogus").build()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown mode");
     verifyNoInteractions(worktrees);
@@ -103,9 +100,7 @@ class TaskProvisioningTest {
 
   @Test
   void bornTrustingWhatGitObeyedAsItsWorktreesWereCut() {
-    List<NewRepo> cut =
-        List.of(
-            TestNewRepoBuilder.proj().withWorktree(Path.of("/wt")).build());
+    List<NewRepo> cut = List.of(TestNewRepoBuilder.proj().withWorktree(Path.of("/wt")).build());
     when(worktrees.cut(any(), any(), any())).thenReturn(cut);
     when(worktrees.trust(cut))
         .thenReturn(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
@@ -121,9 +116,7 @@ class TaskProvisioningTest {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                TestNewRepoBuilder.proj().withWorktree(Path.of("/two")).build()));
+        .thenReturn(List.of(TestNewRepoBuilder.proj().withWorktree(Path.of("/two")).build()));
 
     provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
@@ -134,8 +127,7 @@ class TaskProvisioningTest {
   void aliasesTicketStartingWithEyeWithTheDottedEyeWhateverTheMachineLocale() {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
-            List.of(
-                TestNewRepoBuilder.proj().withWorktree(Path.of("/INF-2-proj")).build()));
+            List.of(TestNewRepoBuilder.proj().withWorktree(Path.of("/INF-2-proj")).build()));
 
     provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
 
@@ -162,8 +154,7 @@ class TaskProvisioningTest {
   void leavesTheBaseBranchUnsetWhenTheHumanNamedNone() {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
-            List.of(
-                TestNewRepoBuilder.proj().withWorktree(Path.of("/ABC-4-proj")).build()));
+            List.of(TestNewRepoBuilder.proj().withWorktree(Path.of("/ABC-4-proj")).build()));
 
     provisioning.initializeTask(NewTask.builder("ABC-4", "proj").build());
 

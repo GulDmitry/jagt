@@ -109,17 +109,16 @@ public class ConfigCheck implements StartupCheck {
     return configService.declaredKeys().stream()
         .filter(RETIRED_KEYS::containsKey)
         .sorted()
-        .map(
-            key ->
-                new Problem(
-                    "orchestrator." + key,
-                    "orchestrator."
-                        + key
-                        + " is no longer read: "
-                        + RETIRED_KEYS.get(key)
-                        + ". Remove it from "
-                        + paths.configFile()
-                        + "."))
+        .map(key ->
+            new Problem(
+                "orchestrator." + key,
+                "orchestrator."
+                    + key
+                    + " is no longer read: "
+                    + RETIRED_KEYS.get(key)
+                    + ". Remove it from "
+                    + paths.configFile()
+                    + "."))
         .toList();
   }
 
@@ -144,21 +143,20 @@ public class ConfigCheck implements StartupCheck {
     return configService.declaredKeys("roles", Checkers.ACCEPTANCE).stream()
         .filter(FOLDER_OPTIONS::contains)
         .sorted()
-        .map(
-            key ->
-                new Problem(
-                    "orchestrator." + role + "." + key,
-                    "orchestrator."
-                        + role
-                        + "."
-                        + key
-                        + " is no longer read: write `"
-                        + key
-                        + "` in roles/"
-                        + Checkers.ACCEPTANCE
-                        + "/role.yml, and keep only `enabled` in "
-                        + paths.configFile()
-                        + "."))
+        .map(key ->
+            new Problem(
+                "orchestrator." + role + "." + key,
+                "orchestrator."
+                    + role
+                    + "."
+                    + key
+                    + " is no longer read: write `"
+                    + key
+                    + "` in roles/"
+                    + Checkers.ACCEPTANCE
+                    + "/role.yml, and keep only `enabled` in "
+                    + paths.configFile()
+                    + "."))
         .toList();
   }
 
@@ -185,12 +183,11 @@ public class ConfigCheck implements StartupCheck {
     if (session != null && !session.isBlank()) {
       sessions
           .unaddressable(session)
-          .ifPresent(
-              why ->
-                  problems.add(
-                      new Problem(
-                          "orchestrator.viewer.tmuxSession",
-                          "viewer.tmuxSession '" + session + "' " + why + ". Pick another name.")));
+          .ifPresent(why ->
+              problems.add(
+                  new Problem(
+                      "orchestrator.viewer.tmuxSession",
+                      "viewer.tmuxSession '" + session + "' " + why + ". Pick another name.")));
     }
     String viewMode = config.viewer().viewMode();
     if (viewMode != null

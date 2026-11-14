@@ -212,10 +212,8 @@ abstract class MasterVerdictEvalTest {
             .toList();
     assertThat(heard)
         .describedAs("calls heard: %s", heard)
-        .anyMatch(
-            call ->
-                call.cwd() != null
-                    && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
+        .anyMatch(call ->
+            call.cwd() != null && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
   }
 
   private void handsBackVerdict(MasterCase round, String taskId, TaskState task, Path worktree) {

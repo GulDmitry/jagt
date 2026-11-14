@@ -125,9 +125,8 @@ class AbstractKittyTerminalDriverTest {
     verify(runner, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
     String socket = "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-agents");
     assertThat(commands.getAllValues())
-        .anySatisfy(
-            command ->
-                assertThat(command).containsSequence("@", "--to", socket, "launch", "--type=tab"));
+        .anySatisfy(command ->
+            assertThat(command).containsSequence("@", "--to", socket, "launch", "--type=tab"));
   }
 
   @Test

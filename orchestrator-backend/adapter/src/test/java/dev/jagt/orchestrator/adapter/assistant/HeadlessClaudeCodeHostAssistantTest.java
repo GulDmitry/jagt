@@ -29,11 +29,10 @@ class HeadlessClaudeCodeHostAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.contains(
-                    "\"pipelineStatus\":{\"type\":\"string\",\"enum\":"
-                        + "[\"success\",\"failed\",\"running\",\"none\",\"unknown\"]}"));
+        .anyMatch(argument ->
+            argument.contains(
+                "\"pipelineStatus\":{\"type\":\"string\",\"enum\":"
+                    + "[\"success\",\"failed\",\"running\",\"none\",\"unknown\"]}"));
   }
 
   @Test
@@ -43,10 +42,9 @@ class HeadlessClaudeCodeHostAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.contains("LIST this request's pipelines")
-                    && argument.contains("none ONLY when that listing came back EMPTY"));
+        .anyMatch(argument ->
+            argument.contains("LIST this request's pipelines")
+                && argument.contains("none ONLY when that listing came back EMPTY"));
   }
 
   @Test
@@ -56,10 +54,9 @@ class HeadlessClaudeCodeHostAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.contains("A bridge or trigger job is never that job")
-                    && argument.contains("read its verdict with that tool's own MCP"));
+        .anyMatch(argument ->
+            argument.contains("A bridge or trigger job is never that job")
+                && argument.contains("read its verdict with that tool's own MCP"));
   }
 
   @Test
@@ -69,11 +66,10 @@ class HeadlessClaudeCodeHostAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.contains("A log or verdict you could not read" + " fails nothing")
-                    && argument.contains("behind a discovery or category tool")
-                    && argument.contains("never a word of your own about what you could not"));
+        .anyMatch(argument ->
+            argument.contains("A log or verdict you could not read" + " fails nothing")
+                && argument.contains("behind a discovery or category tool")
+                && argument.contains("never a word of your own about what you could not"));
   }
 
   @Test
@@ -83,14 +79,13 @@ class HeadlessClaudeCodeHostAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.contains(
-                        "ONE entry per DISCUSSION THREAD still awaiting an answer, never one per"
-                            + " note")
-                    && argument.contains("keep EVERY note in it, oldest first")
-                    && argument.contains(
-                        "never drop a note because an earlier one already answers it"));
+        .anyMatch(argument ->
+            argument.contains(
+                    "ONE entry per DISCUSSION THREAD still awaiting an answer, never one per"
+                        + " note")
+                && argument.contains("keep EVERY note in it, oldest first")
+                && argument.contains(
+                    "never drop a note because an earlier one already answers it"));
   }
 
   @Test

@@ -44,15 +44,13 @@ public final class WorktreeSnapshots {
     state
         .path("tasks")
         .properties()
-        .forEach(
-            task -> {
-              String worktree =
-                  task.getValue().path("repos").path(0).path("worktreePath").asString("");
-              if (!worktree.isEmpty()) {
-                take(task.getKey(), Path.of(worktree), REVIEW);
-                SESSION_FILES.forEach(name -> take(task.getKey(), Path.of(worktree), name));
-              }
-            });
+        .forEach(task -> {
+          String worktree = task.getValue().path("repos").path(0).path("worktreePath").asString("");
+          if (!worktree.isEmpty()) {
+            take(task.getKey(), Path.of(worktree), REVIEW);
+            SESSION_FILES.forEach(name -> take(task.getKey(), Path.of(worktree), name));
+          }
+        });
   }
 
   private void take(String task, Path worktree, String name) {

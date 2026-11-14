@@ -232,8 +232,7 @@ class DeployServiceTest {
           .isInstanceOf(Refusal.class)
           .hasMessageContaining("waits on the session's fix in /ABC-1-deploy");
 
-      assertThat(state.task("ABC-1").orElseThrow().status())
-          .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
       assertThat(state.task("ABC-1").orElseThrow().message())
           .startsWith("red pipeline on the deploy commit");
       verify(git, never()).mergeIntoAndPush(any(), anyString(), anyString());
@@ -446,8 +445,7 @@ class DeployServiceTest {
           reducer.deployStepped(
               apiAndWebTask().withStatus(TaskStatus.DEPLOY_CONFLICT).build(),
               new DeployStep.Opened(
-                  List.of(
-                      Deployment.Target.of("api", "dev"), Deployment.Target.of("web", "dev"))),
+                  List.of(Deployment.Target.of("api", "dev"), Deployment.Target.of("web", "dev"))),
               1L);
       TaskState pushed = reducer.deployStepped(opened, new DeployStep.Pushed("api", 2L), 2L);
       state.putTask(

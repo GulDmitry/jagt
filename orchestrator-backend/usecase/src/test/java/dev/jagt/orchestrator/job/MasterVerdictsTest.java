@@ -268,13 +268,12 @@ class MasterVerdictsTest {
     state.putTask("ABC-1", reviewPending);
     state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(2_000)));
 
-    assertThatThrownBy(
-            () ->
-                verdicts.answered(
-                    "ABC-1",
-                    reviewPending,
-                    "keep v2?",
-                    new MasterPanel.Decision("keep v2 beside v3", "")))
+    assertThatThrownBy(() ->
+            verdicts.answered(
+                "ABC-1",
+                reviewPending,
+                "keep v2?",
+                new MasterPanel.Decision("keep v2 beside v3", "")))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
@@ -301,15 +300,14 @@ class MasterVerdictsTest {
   void leavesTaskThatMovedOnWhenTheSessionCouldNotBeTold() throws Exception {
     state.putTask("ABC-1", reviewPending);
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
-        .thenAnswer(
-            told -> {
-              state.updateTask(
-                  "ABC-1",
-                  live ->
-                      live.withStatus(TaskStatus.SHIPPING, null, 7_000)
-                          .withTurn(new Turn("ship", 9, "d", 7_000, Map.of(), List.of())));
-              throw new IllegalStateException("no window");
-            });
+        .thenAnswer(told -> {
+          state.updateTask(
+              "ABC-1",
+              live ->
+                  live.withStatus(TaskStatus.SHIPPING, null, 7_000)
+                      .withTurn(new Turn("ship", 9, "d", 7_000, Map.of(), List.of())));
+          throw new IllegalStateException("no window");
+        });
 
     assertThatThrownBy(
             () -> verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting))
@@ -341,12 +339,11 @@ class MasterVerdictsTest {
     state.putTask("ABC-1", reviewPending);
     state.putTask("ABC-2", reviewPending);
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
-        .thenAnswer(
-            told ->
-                CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other))
-                        .get(2, TimeUnit.SECONDS)
-                    ? "told"
-                    : "not told");
+        .thenAnswer(told ->
+            CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other))
+                    .get(2, TimeUnit.SECONDS)
+                ? "told"
+                : "not told");
 
     boolean moved = verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting);
 
@@ -503,7 +500,12 @@ class MasterVerdictsTest {
     "the session reported the same each time,plan 1,plan 1,plan 1,plan 1,false,true"
   })
   void fourthReturnOfTheSameFindingsDependsOnWhatTheSessionReported(
-      String situation, String first, String second, String third, String fourth, boolean moved,
+      String situation,
+      String first,
+      String second,
+      String third,
+      String fourth,
+      boolean moved,
       boolean stopped)
       throws Exception {
     state.putTask("ABC-1", reviewPending);

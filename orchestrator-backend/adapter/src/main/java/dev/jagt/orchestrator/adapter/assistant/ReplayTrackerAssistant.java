@@ -29,8 +29,7 @@ public class ReplayTrackerAssistant implements TrackerAssistant {
   @Override
   public Answer<String> readTicketText(String ticketRef) {
     Answer<String> read =
-        answer(AssistantCallKind.TICKET_TEXT, ticketRef)
-            .map(HeadlessClaudeTrackerAssistant::text);
+        answer(AssistantCallKind.TICKET_TEXT, ticketRef).map(HeadlessClaudeTrackerAssistant::text);
     return new Answer<>(
         read.facts().filter(text -> !text.isEmpty()), read.usage(), read.failure(), read.refused());
   }

@@ -95,11 +95,7 @@ class DeployConflictsTest {
             .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it"))
             .deployment(
                 new Deployment(
-                    1,
-                    List.of(
-                        web.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))),
-                    0,
-                    null))
+                    1, List.of(web.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))), 0, null))
             .build());
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
 
@@ -114,11 +110,7 @@ class DeployConflictsTest {
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
             .deployment(
                 new Deployment(
-                    1,
-                    List.of(
-                        web.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))),
-                    0,
-                    null))
+                    1, List.of(web.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))), 0, null))
             .build();
 
     var conflicts = service.waiting("ABC-1", task);
@@ -136,9 +128,7 @@ class DeployConflictsTest {
             .deployment(
                 new Deployment(
                     1,
-                    List.of(
-                        web
-                            .withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))),
+                    List.of(web.withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))),
                     0,
                     null))
             .build());
@@ -162,8 +152,7 @@ class DeployConflictsTest {
                 new Deployment(
                     1,
                     List.of(
-                        web
-                            .withMerge("cafebabe1234")
+                        web.withMerge("cafebabe1234")
                             .withConflict(Conflict.of(Deployment.Cause.REVERT, 1))),
                     0,
                     null))

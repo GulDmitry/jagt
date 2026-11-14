@@ -218,9 +218,7 @@ class TaskStopsTest {
     state.putTask("ABC-42", polling);
     ReviewFacts round =
         new ReviewFacts(
-            openRequest,
-            running,
-            new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
+            openRequest, running, new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
 
     TaskStops.Relay first = stops.round("ABC-42", round, "brief", "");
     TaskStops.Relay again = stops.round("ABC-42", round, "brief", "");
@@ -431,9 +429,7 @@ class TaskStopsTest {
     "PACE,GONE,true"
   })
   void endsStopOnRefusedReadOnlyWhereTheRequestIsGone(
-      TaskStop.Trigger trigger,
-      ReviewSweepService.SweepResult.Kind refusal,
-      boolean stands) {
+      TaskStop.Trigger trigger, ReviewSweepService.SweepResult.Kind refusal, boolean stands) {
     state.putTask("ABC-42", polling);
     stops.stop("ABC-42", trigger, "host down");
 
@@ -479,10 +475,9 @@ class TaskStopsTest {
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .history(
                 IntStream.range(0, 20)
-                    .mapToObj(
-                        i ->
-                            new StatusChange(
-                                TaskStatus.CI_POLLING, 99_000_000 + i, ActionOrigin.MASTER))
+                    .mapToObj(i ->
+                        new StatusChange(
+                            TaskStatus.CI_POLLING, 99_000_000 + i, ActionOrigin.MASTER))
                     .toList())
             .build());
 
@@ -497,8 +492,7 @@ class TaskStopsTest {
   @ParameterizedTest
   @MethodSource("endsOnTheConditionThatEndsTheTrigger")
   void returnsTheStopAnEndingConditionEnded(
-      TaskStop.Trigger trigger,
-      Function<TaskStops, Optional<TaskStop>> ending) {
+      TaskStop.Trigger trigger, Function<TaskStops, Optional<TaskStop>> ending) {
     state.putTask("ABC-42", polling);
     stops.stop("ABC-42", trigger, "down");
 
@@ -560,9 +554,7 @@ class TaskStopsTest {
     state.putTask("ABC-42", polling);
     ReviewFacts round =
         new ReviewFacts(
-            openRequest,
-            running,
-            new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
+            openRequest, running, new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
     stops.round("ABC-42", round, "brief 1", "");
 
     TaskStops.Relay again = stops.round("ABC-42", round, "brief 2", "");

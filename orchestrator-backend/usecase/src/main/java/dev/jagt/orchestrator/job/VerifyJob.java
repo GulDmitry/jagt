@@ -113,9 +113,8 @@ public class VerifyJob implements TaskJob {
   private boolean stillThisRound(String taskId, TaskState taken, Step step) {
     Optional<TaskState> now = stateService.task(taskId);
     boolean same =
-        now.filter(
-                task ->
-                    task.status() == taken.status() && task.statusSince() == taken.statusSince())
+        now.filter(task ->
+                task.status() == taken.status() && task.statusSince() == taken.statusSince())
             .isPresent();
     if (!same) {
       log.atInfo()
@@ -154,16 +153,14 @@ public class VerifyJob implements TaskJob {
       return;
     }
     if (told) {
-      key.ifPresent(
-          failing ->
-              stateService.reduce(
-                  taskId,
-                  (reducer, current) ->
-                      reducer.told(
-                          reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing),
-                          ToldOnce.Kind.VERIFY_OUTPUT,
-                          facts.substring(
-                              0, Math.min(facts.length(), TaskStops.MAX_EVIDENCE + 1)))));
+      key.ifPresent(failing ->
+          stateService.reduce(
+              taskId,
+              (reducer, current) ->
+                  reducer.told(
+                      reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing),
+                      ToldOnce.Kind.VERIFY_OUTPUT,
+                      facts.substring(0, Math.min(facts.length(), TaskStops.MAX_EVIDENCE + 1)))));
     } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
       return;
     }

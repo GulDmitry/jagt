@@ -72,15 +72,14 @@ final class TaskNotes {
         ? Optional.empty()
         : nextModel(notes)
             .filter(name -> !models.contains(name))
-            .map(
-                name ->
-                    Artifact.NOTES.fileName()
-                        + " names the model '"
-                        + name
-                        + "', which "
-                        + agentName
-                        + " does not offer: one of "
-                        + String.join(", ", models));
+            .map(name ->
+                Artifact.NOTES.fileName()
+                    + " names the model '"
+                    + name
+                    + "', which "
+                    + agentName
+                    + " does not offer: one of "
+                    + String.join(", ", models));
   }
 
   static Optional<String> agentFileOwed(Path worktree, int added) {

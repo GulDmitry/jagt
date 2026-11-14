@@ -45,16 +45,14 @@ class HumanPaths {
     }
     return changes
         .paths(task)
-        .map(
-            paths ->
-                paths.entrySet().stream()
-                    .flatMap(
-                        repo ->
-                            WorktreeFiles.firstMatching(
-                                kept.getOrDefault(repo.getKey(), List.of()), repo.getValue())
-                                .map(path -> repo.getKey() + "/" + path)
-                                .stream())
-                    .findFirst())
+        .map(paths ->
+            paths.entrySet().stream()
+                .flatMap(repo ->
+                    WorktreeFiles.firstMatching(
+                        kept.getOrDefault(repo.getKey(), List.of()), repo.getValue())
+                        .map(path -> repo.getKey() + "/" + path)
+                        .stream())
+                .findFirst())
         .orElse(Optional.of(UNREAD));
   }
 }

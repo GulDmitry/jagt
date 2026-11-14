@@ -46,7 +46,7 @@ public class CheckerDeclineJob implements TaskJob {
   @Override
   public String describe() {
     return "read the session's answer to an acceptance round that changed nothing back to"
-               + " acceptance";
+        + " acceptance";
   }
 
   @Override

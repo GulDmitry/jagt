@@ -43,18 +43,16 @@ class TaskReducerProperties {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.of(next)
                           .filter(moved -> moved.status() != task.status())
-                          .filter(
-                              moved ->
-                                  task.status() == TaskStatus.DEPLOY_CONFLICT
-                                      || Optional.ofNullable(task.deployment())
-                                          .flatMap(Deployment::conflictedTarget)
-                                          .isEmpty())
-                          .ifPresent(
-                              moved ->
-                                  assertThat(
-                                          Optional.ofNullable(moved.deployment())
-                                              .flatMap(Deployment::conflictedTarget))
-                                      .isEmpty());
+                          .filter(moved ->
+                              task.status() == TaskStatus.DEPLOY_CONFLICT
+                                  || Optional.ofNullable(task.deployment())
+                                      .flatMap(Deployment::conflictedTarget)
+                                      .isEmpty())
+                          .ifPresent(moved ->
+                              assertThat(
+                                      Optional.ofNullable(moved.deployment())
+                                          .flatMap(Deployment::conflictedTarget))
+                                  .isEmpty());
                       return next;
                     },
                     (left, right) -> right))
@@ -71,11 +69,10 @@ class TaskReducerProperties {
                     (task, move) -> {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.ofNullable(task.stop())
-                          .filter(
-                              stop ->
-                                  !(move instanceof TaskMove.Lifted)
-                                      && !(move instanceof TaskMove.StopEnded ended
-                                          && ended.ends() == stop.trigger().ends()))
+                          .filter(stop ->
+                              !(move instanceof TaskMove.Lifted)
+                                  && !(move instanceof TaskMove.StopEnded ended
+                                      && ended.ends() == stop.trigger().ends()))
                           .ifPresent(stop -> assertThat(next.stop()).isEqualTo(stop));
                       return next;
                     },
@@ -114,15 +111,13 @@ class TaskReducerProperties {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.of(task)
                           .filter(before -> before.report().asks())
-                          .filter(
-                              before ->
-                                  !(move instanceof TaskMove.Said
-                                      || move instanceof TaskMove.Stamped
-                                      || move instanceof TaskMove.Verified))
-                          .filter(
-                              before ->
-                                  !(move instanceof TaskMove.DeployRead
-                                      && next.status() != before.status()))
+                          .filter(before ->
+                              !(move instanceof TaskMove.Said
+                                  || move instanceof TaskMove.Stamped
+                                  || move instanceof TaskMove.Verified))
+                          .filter(before ->
+                              !(move instanceof TaskMove.DeployRead
+                                  && next.status() != before.status()))
                           .ifPresent(
                               before -> assertThat(next.report()).isEqualTo(before.report()));
                       return next;
@@ -161,14 +156,11 @@ class TaskReducerProperties {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.of(next)
                           .filter(moved -> RequestPhase.of(moved) == RequestPhase.MERGED)
-                          .ifPresent(
-                              moved ->
-                                  assertThat(
-                                          rules.allows(
-                                              moved.status(),
-                                              TaskAction.SHIP,
-                                              Facts.projected(moved)))
-                                      .isFalse());
+                          .ifPresent(moved ->
+                              assertThat(
+                                      rules.allows(
+                                          moved.status(), TaskAction.SHIP, Facts.projected(moved)))
+                                  .isFalse());
                       return next;
                     },
                     (left, right) -> right))
@@ -186,9 +178,8 @@ class TaskReducerProperties {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.of(move)
                           .filter(seen -> seen instanceof TaskMove.HeadSeen head && head.moved())
-                          .ifPresent(
-                              seen ->
-                                  assertThat(InfraPhase.of(next)).isNotEqualTo(InfraPhase.ARMED));
+                          .ifPresent(seen ->
+                              assertThat(InfraPhase.of(next)).isNotEqualTo(InfraPhase.ARMED));
                       return next;
                     },
                     (left, right) -> right))
@@ -206,12 +197,11 @@ class TaskReducerProperties {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.of(chart.effects(Phases.of(task), move))
                           .filter(List::isEmpty)
-                          .ifPresent(
-                              none -> {
-                                assertThat(next.status()).isEqualTo(task.status());
-                                assertThat(next.deployment()).isEqualTo(task.deployment());
-                                assertThat(next.stop()).isEqualTo(task.stop());
-                              });
+                          .ifPresent(none -> {
+                            assertThat(next.status()).isEqualTo(task.status());
+                            assertThat(next.deployment()).isEqualTo(task.deployment());
+                            assertThat(next.stop()).isEqualTo(task.stop());
+                          });
                       return next;
                     },
                     (left, right) -> right))
@@ -229,27 +219,24 @@ class TaskReducerProperties {
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       long id = task.turnOrNone().id();
                       Optional.of(move)
-                          .filter(
-                              m ->
-                                  m instanceof TaskMove.Relayed
-                                      || m instanceof TaskMove.TurnClosed
-                                      || (m instanceof TaskMove.Checked.ReadEnded ended
-                                          && ended.holds()))
+                          .filter(m ->
+                              m instanceof TaskMove.Relayed
+                                  || m instanceof TaskMove.TurnClosed
+                                  || (m instanceof TaskMove.Checked.ReadEnded ended
+                                      && ended.holds()))
                           .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
                       Optional.of(move)
                           .filter(m -> m instanceof TaskMove.TurnRestored _)
-                          .ifPresent(
-                              m ->
-                                  assertThat(next.turnOrNone())
-                                      .isEqualTo(((TaskMove.TurnRestored) m).before()));
+                          .ifPresent(m ->
+                              assertThat(next.turnOrNone())
+                                  .isEqualTo(((TaskMove.TurnRestored) m).before()));
                       Optional.of(move)
-                          .filter(
-                              m ->
-                                  !(m instanceof TaskMove.Relayed
-                                      || m instanceof TaskMove.TurnClosed
-                                      || m instanceof TaskMove.TurnRestored
-                                      || (m instanceof TaskMove.Checked.ReadEnded ended
-                                          && ended.holds())))
+                          .filter(m ->
+                              !(m instanceof TaskMove.Relayed
+                                  || m instanceof TaskMove.TurnClosed
+                                  || m instanceof TaskMove.TurnRestored
+                                  || (m instanceof TaskMove.Checked.ReadEnded ended
+                                      && ended.holds())))
                           .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
                       return next;
                     },
@@ -356,20 +343,19 @@ class TaskReducerProperties {
                           reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
                       Optional.of(next)
                           .filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
-                          .ifPresent(
-                              moved ->
-                                  assertThat(
-                                          Turns.next(
-                                                  moved.status(),
-                                                  moved.report(),
-                                                  false,
-                                                  new Checkers(new TaskChart(Composition.builtIn()))
-                                                      .of(moved),
-                                                  Arbiter.Profile.OFF)
-                                              .equals(new Turn.Holder.Role("acceptance")))
-                                      .isEqualTo(
-                                          CheckerPhase.of(moved, Checkers.ACCEPTANCE)
-                                              == CheckerPhase.READING));
+                          .ifPresent(moved ->
+                              assertThat(
+                                      Turns.next(
+                                              moved.status(),
+                                              moved.report(),
+                                              false,
+                                              new Checkers(new TaskChart(Composition.builtIn()))
+                                                  .of(moved),
+                                              Arbiter.Profile.OFF)
+                                          .equals(new Turn.Holder.Role("acceptance")))
+                                  .isEqualTo(
+                                      CheckerPhase.of(moved, Checkers.ACCEPTANCE)
+                                          == CheckerPhase.READING));
                       return next;
                     },
                     (left, right) -> right))
@@ -387,19 +373,16 @@ class TaskReducerProperties {
                       TaskMove move = reducer.resolved(task, raw);
                       TaskState next = reducer.reduce(task, move, "step", true, 1_000);
                       Optional.of(next)
-                          .filter(
-                              moved ->
-                                  MasterPhase.of(moved) != MasterPhase.LEFT
-                                      && FlowRules.readByTheMaster(moved.status()))
-                          .ifPresent(
-                              moved -> {
-                                TaskState read =
-                                    reducer.masterSealed(
-                                        moved, "fingerprint", moved.turnOrNone().id());
-                                assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
-                                assertThat(MasterPhase.of(reducer.masterVerdictGone(read)))
-                                    .isEqualTo(MasterPhase.STANDS_IN);
-                              });
+                          .filter(moved ->
+                              MasterPhase.of(moved) != MasterPhase.LEFT
+                                  && FlowRules.readByTheMaster(moved.status()))
+                          .ifPresent(moved -> {
+                            TaskState read =
+                                reducer.masterSealed(moved, "fingerprint", moved.turnOrNone().id());
+                            assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
+                            assertThat(MasterPhase.of(reducer.masterVerdictGone(read)))
+                                .isEqualTo(MasterPhase.STANDS_IN);
+                          });
                       return next;
                     },
                     (left, right) -> right))
@@ -468,17 +451,16 @@ class TaskReducerProperties {
             turn,
             trust,
             repos)
-        .as(
-            (status, recorded, standing, gate, report, held, git, held2) ->
-                TaskState.builder("api", "/wt", status)
-                    .deployment(recorded)
-                    .stop(standing)
-                    .planGate(gate)
-                    .report(report)
-                    .turn(held)
-                    .gitTrust(git)
-                    .repos(held2)
-                    .build())
+        .as((status, recorded, standing, gate, report, held, git, held2) ->
+            TaskState.builder("api", "/wt", status)
+                .deployment(recorded)
+                .stop(standing)
+                .planGate(gate)
+                .report(report)
+                .turn(held)
+                .gitTrust(git)
+                .repos(held2)
+                .build())
         .flatMap(task -> retries.map(held -> task.toBuilder().infraRetries(held).build()));
   }
 
@@ -492,10 +474,9 @@ class TaskReducerProperties {
     Arbitrary<TaskMove> move =
         Arbitraries.oneOf(
             Arbitraries.of(TaskAction.class)
-                .flatMap(
-                    action ->
-                        Arbitraries.of(Outcome.Kind.class)
-                            .map(outcome -> new TaskMove.Ran(action, outcome))),
+                .flatMap(action ->
+                    Arbitraries.of(Outcome.Kind.class)
+                        .map(outcome -> new TaskMove.Ran(action, outcome))),
             status.flatMap(to -> flag.map(owed -> new TaskMove.Reported(to, owed))),
             status.map(TaskMove.Read::new),
             flag.map(TaskMove.DeployRead::new),
@@ -553,14 +534,13 @@ class TaskReducerProperties {
                         3))),
             Arbitraries.just(new TaskMove.ChecksUnread(new ChecksUnread(500, "no listing"))),
             flag.map(TaskMove.ApprovalRead::new),
-            flag.map(
-                owed ->
-                    new TaskMove.RequestLinked(
-                        Map.of("api", "https://host.example/2"),
-                        "https://host.example/2",
-                        owed,
-                        false,
-                        false)),
+            flag.map(owed ->
+                new TaskMove.RequestLinked(
+                    Map.of("api", "https://host.example/2"),
+                    "https://host.example/2",
+                    owed,
+                    false,
+                    false)),
             flag.map(merged -> new TaskMove.MergedByGit("api", merged, false)),
             Arbitraries.just(new TaskMove.MergedByHost("api", false)),
             Arbitraries.just(new TaskMove.RepoAttached(TaskRepo.of("registry", "/wt-registry"))),
@@ -568,10 +548,9 @@ class TaskReducerProperties {
                 new TaskMove.RepoLeft("api", RequestPhase.NONE, TaskMove.ConflictDrop.NONE)),
             Arbitraries.just(new TaskMove.GitRepoJoined(GitTrust.of(Map.of("c", "3")))),
             Arbitraries.of("", "d")
-                .map(
-                    digest ->
-                        new TaskMove.TurnRestored(
-                            new Turn("ship", 2, digest, 500, Map.of(), List.of()))));
+                .map(digest ->
+                    new TaskMove.TurnRestored(
+                        new Turn("ship", 2, digest, 500, Map.of(), List.of()))));
     return move.list().ofMaxSize(50);
   }
 }

@@ -60,20 +60,19 @@ public final class PlanRepositories {
     } else {
       projects.stream()
           .filter(project -> !listed.contains(project))
-          .forEach(
-              project ->
-                  violations.add(
-                      new Violation(
-                          FIELD,
-                          "list `"
-                              + project
-                              + "` under `"
-                              + HEADING
-                              + "` as `- [changed] "
-                              + project
-                              + "` or `- [unaffected: <why>] "
-                              + project
-                              + "`")));
+          .forEach(project ->
+              violations.add(
+                  new Violation(
+                      FIELD,
+                      "list `"
+                          + project
+                          + "` under `"
+                          + HEADING
+                          + "` as `- [changed] "
+                          + project
+                          + "` or `- [unaffected: <why>] "
+                          + project
+                          + "`")));
     }
     return List.copyOf(violations);
   }

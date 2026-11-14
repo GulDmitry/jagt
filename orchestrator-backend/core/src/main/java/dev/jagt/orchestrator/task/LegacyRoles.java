@@ -19,12 +19,11 @@ final class LegacyRoles {
       @Nullable Map<String, RoleRecord> roles, @Nullable RoleRecord qa) {
     Map<String, RoleRecord> read = new TreeMap<>();
     if (roles != null) {
-      roles.forEach(
-          (id, record) -> {
-            if (record != null) {
-              read.put(id, record);
-            }
-          });
+      roles.forEach((id, record) -> {
+        if (record != null) {
+          read.put(id, record);
+        }
+      });
     }
     RoleRecord renamed = read.remove(QA);
     if (renamed != null) {

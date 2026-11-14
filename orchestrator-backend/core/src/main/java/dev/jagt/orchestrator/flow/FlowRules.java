@@ -38,8 +38,7 @@ public final class FlowRules {
    * The status this outcome leads a task in {@code from} to, or empty to leave the task where it
    * is.
    */
-  public Optional<TaskStatus> next(
-      TaskStatus from, TaskAction action, Outcome.Kind outcome) {
+  public Optional<TaskStatus> next(TaskStatus from, TaskAction action, Outcome.Kind outcome) {
     return outcome == Outcome.Kind.GONE
         ? Optional.empty()
         : chart.land(from, new TaskMove.Ran(action, outcome));
@@ -190,9 +189,7 @@ public final class FlowRules {
 
   /** A verified hand-back reaches the human; a failed one goes back to its session. */
   public TaskStatus verified(boolean passed) {
-    return chart
-        .land(TaskStatus.VERIFYING, new TaskMove.Verified(passed))
-        .orElseThrow();
+    return chart.land(TaskStatus.VERIFYING, new TaskMove.Verified(passed)).orElseThrow();
   }
 
   /** A session handed findings, an answer or a go is at work again. */

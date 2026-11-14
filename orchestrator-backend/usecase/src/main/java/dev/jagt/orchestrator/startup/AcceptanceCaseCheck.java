@@ -34,8 +34,7 @@ public class AcceptanceCaseCheck implements StartupCheck {
     return Stream.concat(
             files
                 .book()
-                .problems(
-                    files.steps(), files.casesFile(), checkers.installed(), Checkers.SHIPPED)
+                .problems(files.steps(), files.casesFile(), checkers.installed(), Checkers.SHIPPED)
                 .stream(),
             files.unreadable().stream())
         .toList();

@@ -111,8 +111,7 @@ public final class FailurePage implements AutoCloseable {
   private boolean ours(HttpExchange exchange) {
     String host = exchange.getRequestHeaders().getFirst("Host");
     String origin = exchange.getRequestHeaders().getFirst("Origin");
-    boolean loopback =
-        ("127.0.0.1:" + port()).equals(host) || ("localhost:" + port()).equals(host);
+    boolean loopback = ("127.0.0.1:" + port()).equals(host) || ("localhost:" + port()).equals(host);
     return loopback && (origin == null || ("http://" + host).equals(origin));
   }
 

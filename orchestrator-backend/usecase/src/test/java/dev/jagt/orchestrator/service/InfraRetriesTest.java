@@ -25,8 +25,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class InfraRetriesTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
   private static final InfraRetry SENT_FIRST =
@@ -67,7 +66,8 @@ class InfraRetriesTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString())),
-                reducer, event -> {});
+        reducer,
+        event -> {});
   }
 
   private static InfraRetries retries(StateService state) {
@@ -137,10 +137,7 @@ class InfraRetriesTest {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .infraRetries(
-                List.of(
-                    SENT_FIRST,
-                    SENT_SECOND))
+            .infraRetries(List.of(SENT_FIRST, SENT_SECOND))
             .build());
 
     Optional<InfraRetry> armed =
@@ -161,11 +158,7 @@ class InfraRetriesTest {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .infraRetries(
-                List.of(
-                    SENT_FIRST,
-                    SENT_SECOND,
-                    SENT_THIRD))
+            .infraRetries(List.of(SENT_FIRST, SENT_SECOND, SENT_THIRD))
             .build());
 
     Optional<InfraRetry> armed =

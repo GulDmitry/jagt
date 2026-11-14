@@ -80,7 +80,9 @@ public class AgentStatusReports {
                 (was, next) ->
                     closed(
                         signed(
-                            stateService.reducer().repoAsked(
+                            stateService
+                                .reducer()
+                                .repoAsked(
                                     planned(was, linked(was, next, url, requestsByProject)),
                                     said.needsProject())
                                 .judged(said.switches())),
@@ -305,11 +307,10 @@ public class AgentStatusReports {
             && (requestsByProject.isEmpty()
                 ? url.equals(next.mrUrl())
                 : requestsByProject.entrySet().stream()
-                    .allMatch(
-                        request ->
-                            next.reviewRequestOf(request.getKey())
-                                .filter(request.getValue()::equals)
-                                .isPresent()));
+                    .allMatch(request ->
+                        next.reviewRequestOf(request.getKey())
+                            .filter(request.getValue()::equals)
+                            .isPresent()));
     boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
     long now = next.lastActiveTimestamp();
     return stateService

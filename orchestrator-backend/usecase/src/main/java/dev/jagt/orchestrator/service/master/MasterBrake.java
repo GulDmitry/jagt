@@ -58,13 +58,12 @@ public class MasterBrake {
     }
     Map<String, TaskState> tasks = written.tasks();
     List<Ending> endings = new ArrayList<>();
-    tasks.forEach(
-        (id, task) -> {
-          if (movedByTheMaster(task)) {
-            endings.addAll(endings(id, task, seen.getOrDefault(id, new Seen(0, 0))));
-          }
-          seen.put(id, Seen.of(task));
-        });
+    tasks.forEach((id, task) -> {
+      if (movedByTheMaster(task)) {
+        endings.addAll(endings(id, task, seen.getOrDefault(id, new Seen(0, 0))));
+      }
+      seen.put(id, Seen.of(task));
+    });
     seen.keySet().retainAll(tasks.keySet());
     endings.stream().sorted(Comparator.comparingLong(Ending::at)).forEach(this::count);
   }

@@ -27,10 +27,11 @@ class CommandPipelineTest {
   private final ReachLedger reach = new ReachLedger();
   private final CommandPipeline command = new CommandPipeline(processes, reach);
   private final HostSettings host =
-      hostSettings().withKey("orchestrator.projects.shop.codeHost")
-            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
-            .withRetryCommand(List.of("/bin/ci-rerun", "{pipeline}"))
-            .build();
+      hostSettings()
+          .withKey("orchestrator.projects.shop.codeHost")
+          .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+          .withRetryCommand(List.of("/bin/ci-rerun", "{pipeline}"))
+          .build();
 
   @Test
   void theStatePrintedForTheCommitIsTheCommitsPipeline() {
@@ -81,7 +82,8 @@ class CommandPipelineTest {
   @Test
   void commandExitingSeventySevenIsSignedOutAndTheProjectsLoginCommandIsTheFix() {
     HostSettings withLogin =
-        hostSettings().withKey("orchestrator.codeHost")
+        hostSettings()
+            .withKey("orchestrator.codeHost")
             .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
             .withLoginCommand(List.of("ci-login", "--web"))
             .build();
@@ -107,7 +109,8 @@ class CommandPipelineTest {
   @Test
   void commandNotInstalledIsLostReachWithNoCommandToFixIt() {
     HostSettings uninstalled =
-        hostSettings().withKey("orchestrator.codeHost")
+        hostSettings()
+            .withKey("orchestrator.codeHost")
             .withPipelineCommand(List.of("no-such-ci-program", "{sha}"))
             .build();
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
@@ -133,9 +136,7 @@ class CommandPipelineTest {
 
   @Test
   void projectWithoutPipelineCommandIsUnreadWithoutRunningAnything() {
-    HostSettings bare =
-        hostSettings().withKey("orchestrator.codeHost")
-            .build();
+    HostSettings bare = hostSettings().withKey("orchestrator.codeHost").build();
 
     Answer<CommitPipeline> answer = command.onCommit(bare, "git@anywhere:shop/web.git", "0123abc");
 
@@ -160,7 +161,8 @@ class CommandPipelineTest {
   @Test
   void withoutRetryCommandNothingIsReRun() {
     HostSettings noRetry =
-        hostSettings().withKey("orchestrator.codeHost")
+        hostSettings()
+            .withKey("orchestrator.codeHost")
             .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
             .build();
 
@@ -172,7 +174,8 @@ class CommandPipelineTest {
   @Test
   void startupRefusesCommandWhoseProgramIsNowhereNamingTheKey() {
     HostSettings missing =
-        hostSettings().withKey("orchestrator.codeHost")
+        hostSettings()
+            .withKey("orchestrator.codeHost")
             .withPipelineCommand(List.of("no-such-ci-program", "{sha}"))
             .build();
 
@@ -183,9 +186,7 @@ class CommandPipelineTest {
 
   @Test
   void startupRefusesCommandHostWithoutPipelineCommand() {
-    HostSettings bare =
-        hostSettings().withKey("orchestrator.codeHost")
-            .build();
+    HostSettings bare = hostSettings().withKey("orchestrator.codeHost").build();
 
     assertThat(command.problems(bare))
         .extracting(Problem::key)
@@ -195,7 +196,8 @@ class CommandPipelineTest {
   @Test
   void theCloseCommandGetsTheRequestAddress() {
     HostSettings closing =
-        hostSettings().withKey("orchestrator.codeHost")
+        hostSettings()
+            .withKey("orchestrator.codeHost")
             .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
             .withCloseCommand(List.of("/bin/ci-close", "{request}"))
             .build();
@@ -230,7 +232,8 @@ class CommandPipelineTest {
 
   @Test
   void theNotesCommandPrintsTheRequestsNoteIdsOnePerLine() {
-    HostSettings noting = hostSettings()
+    HostSettings noting =
+        hostSettings()
             .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
             .withNotesCommand(List.of("/bin/ci-notes", "{request}"))
             .build();
@@ -249,7 +252,8 @@ class CommandPipelineTest {
 
   @Test
   void failingNotesCommandLeavesTheNoteIdsUnknownNamingTheKey() {
-    HostSettings noting = hostSettings()
+    HostSettings noting =
+        hostSettings()
             .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
             .withNotesCommand(List.of("/bin/ci-notes", "{request}"))
             .build();

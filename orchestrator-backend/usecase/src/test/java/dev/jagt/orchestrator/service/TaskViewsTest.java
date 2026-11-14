@@ -134,9 +134,7 @@ class TaskViewsTest {
     when(stateService.tasks()).thenReturn(Map.of("ABC-1", task));
     when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
     TaskViews ready =
-        TestTaskViewsBuilder.defaults()
-            .withScenariosReady(true)
-            .build(stateService, configService);
+        TestTaskViewsBuilder.defaults().withScenariosReady(true).build(stateService, configService);
 
     assertThat(ready.listing()).contains("pause,done,scenarios,focus");
   }

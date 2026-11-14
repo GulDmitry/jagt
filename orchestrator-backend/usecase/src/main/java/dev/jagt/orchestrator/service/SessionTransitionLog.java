@@ -35,14 +35,13 @@ public class SessionTransitionLog {
   synchronized void observe(StateWritten written) {
     written.previous().forEach((id, task) -> seen.putIfAbsent(id, Seen.of(task)));
     Map<String, TaskState> tasks = written.tasks();
-    tasks.forEach(
-        (id, task) -> {
-          Seen now = Seen.of(task);
-          Seen before = seen.put(id, now);
-          if (before != null) {
-            report(id, before, now, task.session().halt());
-          }
-        });
+    tasks.forEach((id, task) -> {
+      Seen now = Seen.of(task);
+      Seen before = seen.put(id, now);
+      if (before != null) {
+        report(id, before, now, task.session().halt());
+      }
+    });
     seen.keySet().retainAll(tasks.keySet());
   }
 

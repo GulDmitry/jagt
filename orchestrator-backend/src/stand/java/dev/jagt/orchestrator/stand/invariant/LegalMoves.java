@@ -17,21 +17,20 @@ public final class LegalMoves {
 
   private static final List<Facts> EVERY_FACT =
       IntStream.range(0, 64)
-          .mapToObj(
-              bits ->
-                  Facts.defaults()
-                      .withDelivery(
-                          Facts.Delivery.defaults()
-                              .withHasReviewRequest(bit(bits, 0))
-                              .withLiveDeploy(bit(bits, 1)))
-                      .withHold(
-                          Facts.Hold.defaults()
-                              .withAgentLive(() -> bit(bits, 2))
-                              .withStopped(bit(bits, 4)))
-                      .withWorkspace(
-                          Facts.Workspace.defaults()
-                              .withGitStateChanged(bit(bits, 3))
-                              .withRepoRequested(bit(bits, 5))))
+          .mapToObj(bits ->
+              Facts.defaults()
+                  .withDelivery(
+                      Facts.Delivery.defaults()
+                          .withHasReviewRequest(bit(bits, 0))
+                          .withLiveDeploy(bit(bits, 1)))
+                  .withHold(
+                      Facts.Hold.defaults()
+                          .withAgentLive(() -> bit(bits, 2))
+                          .withStopped(bit(bits, 4)))
+                  .withWorkspace(
+                      Facts.Workspace.defaults()
+                          .withGitStateChanged(bit(bits, 3))
+                          .withRepoRequested(bit(bits, 5))))
           .toList();
 
   private final FlowRules rules;
@@ -60,8 +59,7 @@ public final class LegalMoves {
 
   private boolean byAction(TaskStatus from, TaskStatus to) {
     for (TaskAction action : TaskAction.values()) {
-      boolean allowed =
-          EVERY_FACT.stream().anyMatch(facts -> rules.allows(from, action, facts));
+      boolean allowed = EVERY_FACT.stream().anyMatch(facts -> rules.allows(from, action, facts));
       for (Outcome.Kind kind : Outcome.Kind.values()) {
         if (allowed && rules.next(from, action, kind).equals(Optional.of(to))) {
           return true;

@@ -113,12 +113,7 @@ class MasterStopJobTest {
   static Stream<Arguments> answeredCases() {
     return Stream.of(
         arguments(
-            "lift: the master lifts it",
-            masterStopJob(),
-            false,
-            times(1),
-            atLeast(0),
-            atLeast(0)),
+            "lift: the master lifts it", masterStopJob(), false, times(1), atLeast(0), atLeast(0)),
         arguments(
             "return: the session is told the instruction and the task stays at work",
             masterStopJob()

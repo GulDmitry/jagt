@@ -56,10 +56,7 @@ public final class RoleConfigOrigins {
           options.model().isEmpty() ? role.model() : options.model(),
           names(folder.resolve(ROLE_YML), "model") ? ROLE_YML : DIST);
       report(
-          role.id(),
-          "environments",
-          options.environments().size(),
-          origin(folder, "environments"));
+          role.id(), "environments", options.environments().size(), origin(folder, "environments"));
     }
   }
 

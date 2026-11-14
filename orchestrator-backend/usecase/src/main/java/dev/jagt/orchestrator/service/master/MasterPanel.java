@@ -121,10 +121,9 @@ public class MasterPanel {
       String round = shared + "\n\n" + quote(taskId, task, read.get());
       List<RoundReviewer.Round> rounds =
           roles.stream()
-              .map(
-                  role ->
-                      new RoundReviewer.Round(
-                          round, prompt(role), worktrees, role.modelOr(config.modelOrInherited())))
+              .map(role ->
+                  new RoundReviewer.Round(
+                      round, prompt(role), worktrees, role.modelOr(config.modelOrInherited())))
               .toList();
       try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
         // Started together, every role writes the round to the cache; after the first, the rest
@@ -168,8 +167,7 @@ public class MasterPanel {
         .addKeyValue("alias", task.alias())
         .addKeyValue("trigger", "plan")
         .addKeyValue(
-            "fingerprint",
-            quotes.planFingerprint(task, quotes.inputs(taskId, task).orElse("")))
+            "fingerprint", quotes.planFingerprint(task, quotes.inputs(taskId, task).orElse("")))
         .log();
     Optional<RoundRead> read = quotes.plan(taskId, task);
     Judgement judged =
@@ -322,29 +320,26 @@ public class MasterPanel {
   static String verdictFile(String taskId, List<MasterReview.Read> reads, List<Role> skipped) {
     Verdict verdict = Verdict.of(new Review(0, "", "", "", reads));
     StringBuilder file = new StringBuilder("# " + taskId + " — master review\n\n");
-    skipped.forEach(
-        role ->
-            file.append("# skipped [")
-                .append(role.name())
-                .append("] no changed path matches ")
-                .append(String.join(", ", role.applies()))
-                .append('\n'));
+    skipped.forEach(role ->
+        file.append("# skipped [")
+            .append(role.name())
+            .append("] no changed path matches ")
+            .append(String.join(", ", role.applies()))
+            .append('\n'));
     verdict
         .advice()
         .forEach(said -> file.append("# advice ").append(said.line().substring(2)).append('\n'));
     reads.stream()
         .filter(read -> read.judgement().failure().isBlank())
-        .forEach(
-            read ->
-                read.judgement().premises().stream()
-                    .filter(p -> p.provenBy().isBlank())
-                    .forEach(
-                        p ->
-                            file.append("# unproven [")
-                                .append(read.role())
-                                .append("] ")
-                                .append(OneLine.of(p.claim()))
-                                .append('\n')));
+        .forEach(read ->
+            read.judgement().premises().stream()
+                .filter(p -> p.provenBy().isBlank())
+                .forEach(p ->
+                    file.append("# unproven [")
+                        .append(read.role())
+                        .append("] ")
+                        .append(OneLine.of(p.claim()))
+                        .append('\n')));
     verdict.findings().forEach(said -> file.append(said.line()).append('\n'));
     return switch (verdict.kind()) {
       case QUESTION -> {
@@ -445,8 +440,8 @@ public class MasterPanel {
         + (task.probes().isEmpty()
             ? ""
             : "The acceptance probes jagt read from it; once it holds, jagt runs them itself before"
-                  + " any round reaches review, and a red one returns the round:\n"
-                  + "<probes>\n"
+                + " any round reaches review, and a red one returns the round:\n"
+                + "<probes>\n"
                 + task.probes().stream().map(Probe::toString).collect(Collectors.joining("\n"))
                 + "\n</probes>\n")
         + (read.notes().isBlank()
@@ -537,8 +532,8 @@ public class MasterPanel {
     return decided.isBlank()
         ? ""
         : "Settled in earlier rounds, and binding unless the human's own words below say otherwise"
-              + " or the session proves one wrong: reopen one only for a blocking reason or that"
-              + " proof. A decision after which the task did not move is no settlement.\n"
+            + " or the session proves one wrong: reopen one only for a blocking reason or that"
+            + " proof. A decision after which the task did not move is no settlement.\n"
             + decided
             + "\n";
   }
@@ -598,8 +593,8 @@ public class MasterPanel {
         + " the ticket.\n"
         + (decides
             ? "8. You stand in for the human: never answer question. Where the ticket or the code"
-                  + " leaves something open, decide it as they would, by both briefs and the"
-                  + " codebase. Write the decision as a finding.\n"
+                + " leaves something open, decide it as they would, by both briefs and the"
+                + " codebase. Write the decision as a finding.\n"
             : "")
         + "</rules>\n"
         + "<output_format>\n"

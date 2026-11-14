@@ -28,26 +28,24 @@ class StopReads {
         Pipeline pipeline = Pipeline.of(round.facts().pipeline().status());
         stops
             .endOnRead(taskId, pipeline)
-            .ifPresent(
-                stop ->
-                    log.atInfo()
-                        .setMessage("stop voided by read")
-                        .addKeyValue("task", taskId)
-                        .addKeyValue("trigger", stop.trigger())
-                        .addKeyValue("pipeline", pipeline)
-                        .log());
+            .ifPresent(stop ->
+                log.atInfo()
+                    .setMessage("stop voided by read")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("trigger", stop.trigger())
+                    .addKeyValue("pipeline", pipeline)
+                    .log());
       }
       case RoundReading.Refused refused ->
           stops
               .endOnRefusal(taskId, refused.result().kind(), refused.request())
-              .ifPresent(
-                  stop ->
-                      log.atInfo()
-                          .setMessage("stop voided by read")
-                          .addKeyValue("task", taskId)
-                          .addKeyValue("trigger", stop.trigger())
-                          .addKeyValue("request", "gone")
-                          .log());
+              .ifPresent(stop ->
+                  log.atInfo()
+                      .setMessage("stop voided by read")
+                      .addKeyValue("task", taskId)
+                      .addKeyValue("trigger", stop.trigger())
+                      .addKeyValue("request", "gone")
+                      .log());
     }
   }
 }

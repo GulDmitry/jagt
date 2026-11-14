@@ -12,8 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 class InstalledRolesTest {
 
   @Test
-  void folderWithBriefAndNoRoleFileIsReaderAndNeverChecker(@TempDir Path root)
-      throws Exception {
+  void folderWithBriefAndNoRoleFileIsReaderAndNeverChecker(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/shipped"));
     Files.writeString(root.resolve("roles/shipped/brief.md.dist"), "a brief\n");
     Files.createDirectories(root.resolve("roles/copied"));

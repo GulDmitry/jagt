@@ -226,11 +226,10 @@ class MasterAnswerJobTest {
               .singleElement()
               .actual();
       assertThat(unusable.getKeyValuePairs())
-          .anySatisfy(
-              pair -> {
-                assertThat(pair.key).isEqualTo("cause");
-                assertThat(pair.value).isEqualTo("the worktree could not be listed");
-              });
+          .anySatisfy(pair -> {
+            assertThat(pair.key).isEqualTo("cause");
+            assertThat(pair.value).isEqualTo("the worktree could not be listed");
+          });
     }
   }
 

@@ -118,10 +118,11 @@ public class ChannelPosts {
             hostOf(address, message),
             List.of(),
             address.name() + " cannot tell " + message.point() + ": " + cause));
-    var _ = retries.schedule(
-        () -> delivery.execute(() -> attempt(key, attempt + 1)),
-        backoff(attempt),
-        TimeUnit.SECONDS);
+    var _ =
+        retries.schedule(
+            () -> delivery.execute(() -> attempt(key, attempt + 1)),
+            backoff(attempt),
+            TimeUnit.SECONDS);
   }
 
   static long backoff(int attempt) {

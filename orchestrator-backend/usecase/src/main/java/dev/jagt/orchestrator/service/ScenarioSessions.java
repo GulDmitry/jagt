@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * The interactive acceptance session of a project, in the workspace the role writes, with the
- * write and shell reach its read has. Its ending is logged by its window.
+ * The interactive acceptance session of a project, in the workspace the role writes, with the write
+ * and shell reach its read has. Its ending is logged by its window.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,10 +29,9 @@ public class ScenarioSessions {
     }
     CheckerReader.Workspace workspace =
         CheckerReach.workspace(options)
-            .orElseThrow(
-                () ->
-                    Refusal.byState(
-                        "acceptance holds no workspace: `workspace: none` in " + settings.file()));
+            .orElseThrow(() ->
+                Refusal.byState(
+                    "acceptance holds no workspace: `workspace: none` in " + settings.file()));
     return windows.open(project, options.model(), prompt(project, loaded), workspace);
   }
 

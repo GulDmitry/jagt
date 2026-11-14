@@ -212,5 +212,4 @@ public class MasterVerdicts {
 
   private static final String REPEAT = " [repeat]";
   private static final String NOT_OPENED = "Not opened: only the human opens a task.";
-
 }

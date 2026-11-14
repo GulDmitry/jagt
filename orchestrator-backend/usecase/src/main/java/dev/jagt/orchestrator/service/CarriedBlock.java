@@ -41,17 +41,15 @@ public class CarriedBlock {
             .append('\n');
     runtime
         .conversationTail(worktree, MAX_CONVERSATION_CHARS, Set.of(AgentSessions.NUDGE))
-        .ifPresent(
-            tail ->
-                carried.append("### Its last words, newest last\n").append(tail).append("\n\n"));
+        .ifPresent(tail ->
+            carried.append("### Its last words, newest last\n").append(tail).append("\n\n"));
     runtime
         .sessionLogOf(worktree)
-        .ifPresent(
-            log ->
-                carried
-                    .append("### Whole transcript, to grep as a last resort\n")
-                    .append(log)
-                    .append('\n'));
+        .ifPresent(log ->
+            carried
+                .append("### Whole transcript, to grep as a last resort\n")
+                .append(log)
+                .append('\n'));
     return carried.toString();
   }
 

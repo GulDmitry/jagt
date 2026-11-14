@@ -31,11 +31,10 @@ public class SpecFold implements CapabilityInterceptor {
   public Outcome around(String taskId, Supplier<Outcome> work) {
     stateService
         .task(taskId)
-        .ifPresent(
-            task ->
-                task.repos().stream()
-                    .map(TaskRepo::worktreePath)
-                    .forEach(worktree -> specs.fold(Path.of(worktree), taskId)));
+        .ifPresent(task ->
+            task.repos().stream()
+                .map(TaskRepo::worktreePath)
+                .forEach(worktree -> specs.fold(Path.of(worktree), taskId)));
     return work.get();
   }
 }

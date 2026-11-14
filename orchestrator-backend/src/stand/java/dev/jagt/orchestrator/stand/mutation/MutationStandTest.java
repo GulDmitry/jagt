@@ -50,25 +50,24 @@ class MutationStandTest {
                   : script);
 
       RunRecord record = stand.record();
-      SoftAssertions.assertSoftly(
-          soft -> {
-            soft.assertThat(
-                    MutationProgress.lacking(
-                        mutation.kind(),
-                        outcome,
-                        record.history("ABC-5"),
-                        record.misses().size(),
-                        stand.store().awaitsTheReviewer(),
-                        new MutationProgress.Conflict(
-                            conflictRelayed(record),
-                            applied.expectsDeployConflict(),
-                            mutation.relaysIn(mode))))
-                .as(mutation.holds() + "\n" + outcome.describe())
-                .isEmpty();
-            soft.assertThat(stand.violations())
-                .as(mutation.holds() + "\n" + outcome.describe())
-                .isEmpty();
-          });
+      SoftAssertions.assertSoftly(soft -> {
+        soft.assertThat(
+                MutationProgress.lacking(
+                    mutation.kind(),
+                    outcome,
+                    record.history("ABC-5"),
+                    record.misses().size(),
+                    stand.store().awaitsTheReviewer(),
+                    new MutationProgress.Conflict(
+                        conflictRelayed(record),
+                        applied.expectsDeployConflict(),
+                        mutation.relaysIn(mode))))
+            .as(mutation.holds() + "\n" + outcome.describe())
+            .isEmpty();
+        soft.assertThat(stand.violations())
+            .as(mutation.holds() + "\n" + outcome.describe())
+            .isEmpty();
+      });
       stand.passed();
     }
   }

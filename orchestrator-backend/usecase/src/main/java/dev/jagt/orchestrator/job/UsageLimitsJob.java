@@ -57,12 +57,11 @@ public class UsageLimitsJob implements Job {
   public void run() {
     limits
         .refresh(clock.instant())
-        .ifPresent(
-            reading -> {
-              if (reading.answer()
-                  instanceof SubscriptionUsage.Read(SubscriptionUsage.Snapshot snapshot)) {
-                alerts.after(snapshot, reading.at()).forEach(notifications::send);
-              }
-            });
+        .ifPresent(reading -> {
+          if (reading.answer()
+              instanceof SubscriptionUsage.Read(SubscriptionUsage.Snapshot snapshot)) {
+            alerts.after(snapshot, reading.at()).forEach(notifications::send);
+          }
+        });
   }
 }

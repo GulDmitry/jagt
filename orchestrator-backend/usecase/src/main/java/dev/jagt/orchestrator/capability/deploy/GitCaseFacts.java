@@ -115,7 +115,8 @@ public class GitCaseFacts {
   }
 
   private Optional<String> divergence(Path projectPath, Remote remote, String branch) {
-    if (remote.local() || !exists(projectPath, remote.trackingRef(branch))
+    if (remote.local()
+        || !exists(projectPath, remote.trackingRef(branch))
         || !exists(projectPath, "refs/heads/" + branch)) {
       return Optional.empty();
     }
@@ -158,8 +159,7 @@ public class GitCaseFacts {
   }
 
   private boolean exists(Path projectPath, String ref) {
-    return git.run(projectPath, List.of("git", "rev-parse", "--verify", "--quiet", ref))
-            .exitCode()
+    return git.run(projectPath, List.of("git", "rev-parse", "--verify", "--quiet", ref)).exitCode()
         == 0;
   }
 

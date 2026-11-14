@@ -235,10 +235,7 @@ class RoundQuotesTest {
   void callsRereadOfTheSameInputsRetryAndChangedDiffChange() {
     state.putTask("a1", pending);
     reviews.write(
-        "a1",
-        pending,
-        new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()),
-        "");
+        "a1", pending, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()), "");
     TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
     String sameInputs = quotes.trigger(task, "in1");

@@ -85,14 +85,13 @@ final class MasterEvalWorkspace {
     }
     try (var walk = Files.walk(root())) {
       walk.sorted(java.util.Comparator.reverseOrder())
-          .forEach(
-              path -> {
-                try {
-                  Files.deleteIfExists(path);
-                } catch (IOException leftBehind) {
-                  throw new java.io.UncheckedIOException(leftBehind);
-                }
-              });
+          .forEach(path -> {
+            try {
+              Files.deleteIfExists(path);
+            } catch (IOException leftBehind) {
+              throw new java.io.UncheckedIOException(leftBehind);
+            }
+          });
     }
   }
 
@@ -157,5 +156,4 @@ final class MasterEvalWorkspace {
       Files.writeString(target, file.getValue());
     }
   }
-
 }

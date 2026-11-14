@@ -189,8 +189,7 @@ class TaskLaunchesTest {
   @Test
   void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
     when(placement.read("ABC-1")).thenReturn(widgetRead);
-    when(placement.place(eq("ABC-1"), any(), any()))
-        .thenReturn(widgetInDemo);
+    when(placement.place(eq("ABC-1"), any(), any())).thenReturn(widgetInDemo);
 
     launches.ticket(
         LaunchRequest.of("ABC-1")
@@ -225,8 +224,7 @@ class TaskLaunchesTest {
   @Test
   void carriesTheModeTheHumanAskedForThroughToTheAgent() {
     when(placement.read("ABC-1")).thenReturn(widgetRead);
-    when(placement.place(eq("ABC-1"), any(), any()))
-        .thenReturn(widgetInDemo);
+    when(placement.place(eq("ABC-1"), any(), any())).thenReturn(widgetInDemo);
 
     launches.ticket(
         LaunchRequest.of("ABC-1").withProject("demo").withMode("plan"), List.of("demo"));
@@ -238,8 +236,7 @@ class TaskLaunchesTest {
   @Test
   void carriesTheHumansBranchStrategyThroughToTheWorktreeCut() {
     when(placement.read("ABC-1")).thenReturn(widgetRead);
-    when(placement.place(eq("ABC-1"), any(), any()))
-        .thenReturn(widgetInDemo);
+    when(placement.place(eq("ABC-1"), any(), any())).thenReturn(widgetInDemo);
 
     launches.ticket(
         LaunchRequest.of("ABC-1").withProject("demo").withStrategy("recreate"), List.of("demo"));
@@ -251,8 +248,7 @@ class TaskLaunchesTest {
   @Test
   void carriesTheHumansBaseBranchThroughToTheWorktreeCut() {
     when(placement.read("ABC-1")).thenReturn(widgetRead);
-    when(placement.place(eq("ABC-1"), any(), any()))
-        .thenReturn(widgetInDemo);
+    when(placement.place(eq("ABC-1"), any(), any())).thenReturn(widgetInDemo);
 
     launches.ticket(
         LaunchRequest.of("ABC-1").withProject("demo").withBaseBranch("feature/parent"),
@@ -310,8 +306,7 @@ class TaskLaunchesTest {
   @Test
   void answersTheTaskItCreatedWithWhatProvisioningSaidForTicket() {
     when(placement.read("ABC-1")).thenReturn(widgetRead);
-    when(placement.place(eq("ABC-1"), any(), any()))
-        .thenReturn(widgetInDemo);
+    when(placement.place(eq("ABC-1"), any(), any())).thenReturn(widgetInDemo);
     when(provisioning.initializeTask(any())).thenReturn("started");
 
     Launched launched =
@@ -323,15 +318,11 @@ class TaskLaunchesTest {
   @Test
   void answersTheTaskItCreatedForAnItemTheCallerAlreadyRead() {
     when(worktrees.strategyForExisting("ABC-1", "demo")).thenReturn(BranchStrategy.FRESH);
-    when(placement.place(eq("ABC-1"), any(), any()))
-        .thenReturn(widgetInDemo);
+    when(placement.place(eq("ABC-1"), any(), any())).thenReturn(widgetInDemo);
     when(provisioning.initializeTask(any())).thenReturn("started");
 
     Launched launched =
-        launches.ticket(
-            LaunchRequest.of("ABC-1").withProject("demo"),
-            List.of("demo"),
-            widgetRead);
+        launches.ticket(LaunchRequest.of("ABC-1").withProject("demo"), List.of("demo"), widgetRead);
 
     assertThat(launched).isEqualTo(Launched.created("ABC-1", "started"));
   }

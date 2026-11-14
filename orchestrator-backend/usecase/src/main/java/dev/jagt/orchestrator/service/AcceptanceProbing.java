@@ -41,7 +41,8 @@ public class AcceptanceProbing {
   private Probe probe(String taskBranch, Path worktree, Remote remote, Probe probe) {
     return switch (probe.kind()) {
       case COMMAND ->
-          toolGate.refusal(String.join(" ", probe.words()), taskBranch, boardPort, remote)
+          toolGate
+              .refusal(String.join(" ", probe.words()), taskBranch, boardPort, remote)
               .map(refused -> probe.probed(false, refused))
               .orElseGet(() -> run(worktree, probe, probe.words()));
       case REF ->

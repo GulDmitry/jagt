@@ -11,9 +11,8 @@ public record CostPerAcceptedTask(int shipped, int finished, double spentUsd, bo
   public static CostPerAcceptedTask over(List<FinishedTask> tasks, long weekStart) {
     var week =
         tasks.stream()
-            .filter(
-                task ->
-                    task.finishedAt() >= weekStart && task.finishedAt() < weekStart + WEEK_MILLIS)
+            .filter(task ->
+                task.finishedAt() >= weekStart && task.finishedAt() < weekStart + WEEK_MILLIS)
             .toList();
     double spent =
         week.stream()

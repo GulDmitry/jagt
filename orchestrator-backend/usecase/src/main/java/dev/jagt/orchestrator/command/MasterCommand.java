@@ -82,15 +82,14 @@ public class MasterCommand implements GlobalCommand {
   private String lesson() {
     return record
         .latestDisagreement()
-        .map(
-            differed ->
-                "\n  lesson:    "
-                    + differed.task()
-                    + (differed.passed()
-                        ? " passed, then you reverted it"
-                        : " failed, then you deployed it")
-                    + " — to teach the Master, run /master-lesson with its master-review.md, what"
-                    + " you said and why")
+        .map(differed ->
+            "\n  lesson:    "
+                + differed.task()
+                + (differed.passed()
+                    ? " passed, then you reverted it"
+                    : " failed, then you deployed it")
+                + " — to teach the Master, run /master-lesson with its master-review.md, what"
+                + " you said and why")
         .orElse("");
   }
 

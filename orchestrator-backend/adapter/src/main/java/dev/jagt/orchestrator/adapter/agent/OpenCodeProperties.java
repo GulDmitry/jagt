@@ -20,9 +20,8 @@ public record OpenCodeProperties(
     model = model == null ? "" : model.strip();
     Map<String, String> stripped = new LinkedHashMap<>();
     if (reads != null) {
-      reads.forEach(
-          (role, readModel) ->
-              stripped.put(role.strip(), readModel == null ? "" : readModel.strip()));
+      reads.forEach((role, readModel) ->
+          stripped.put(role.strip(), readModel == null ? "" : readModel.strip()));
     }
     reads = Map.copyOf(stripped);
   }

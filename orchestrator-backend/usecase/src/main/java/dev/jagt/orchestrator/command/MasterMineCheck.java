@@ -34,11 +34,9 @@ public class MasterMineCheck implements StartupCheck {
     List<String> words = words();
     return master.mineOrDefault().stream()
         .filter(named -> !words.contains(named.strip().toLowerCase(Locale.ROOT)))
-        .map(
-            named ->
-                new Problem(
-                    MINE,
-                    "orchestrator.roles.master.mine: '" + named + "' is not one of " + words))
+        .map(named ->
+            new Problem(
+                MINE, "orchestrator.roles.master.mine: '" + named + "' is not one of " + words))
         .toList();
   }
 

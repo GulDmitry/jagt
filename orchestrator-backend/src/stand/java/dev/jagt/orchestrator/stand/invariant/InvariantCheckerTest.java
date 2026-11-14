@@ -52,11 +52,10 @@ class InvariantCheckerTest {
 
     assertThat(violations)
         .singleElement()
-        .satisfies(
-            violation -> {
-              assertThat(violation.invariant()).isEqualTo(invariant);
-              assertThat(violation.at()).isEqualTo(at);
-              assertThat(violation.evidence()).contains(evidence);
-            });
+        .satisfies(violation -> {
+          assertThat(violation.invariant()).isEqualTo(invariant);
+          assertThat(violation.at()).isEqualTo(at);
+          assertThat(violation.evidence()).contains(evidence);
+        });
   }
 }

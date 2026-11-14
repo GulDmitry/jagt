@@ -137,7 +137,11 @@ class RoundBriefTest {
 
     String brief =
         RoundBrief.of(
-            "http://mr/1", new ReviewFacts(open, green, quotedPattern), "success", "", sessionBrief);
+            "http://mr/1",
+            new ReviewFacts(open, green, quotedPattern),
+            "success",
+            "",
+            sessionBrief);
 
     assertThat(brief)
         .contains("what you answer is its NEWEST note")
@@ -151,7 +155,11 @@ class RoundBriefTest {
 
     String brief =
         RoundBrief.of(
-            "http://mr/1", new ReviewFacts(open, green, quotedPattern), "success", "", sessionBrief);
+            "http://mr/1",
+            new ReviewFacts(open, green, quotedPattern),
+            "success",
+            "",
+            sessionBrief);
 
     assertThat(brief)
         .contains(
@@ -166,7 +174,11 @@ class RoundBriefTest {
 
     String brief =
         RoundBrief.of(
-            "http://mr/1", new ReviewFacts(open, green, quotedPattern), "success", "", sessionBrief);
+            "http://mr/1",
+            new ReviewFacts(open, green, quotedPattern),
+            "success",
+            "",
+            sessionBrief);
 
     assertThat(brief)
         .contains(
@@ -195,7 +207,8 @@ class RoundBriefTest {
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
     String brief =
-        RoundBrief.of("http://mr/1", new ReviewFacts(open, red, silent), "failed", "", sessionBrief);
+        RoundBrief.of(
+            "http://mr/1", new ReviewFacts(open, red, silent), "failed", "", sessionBrief);
 
     assertThat(brief)
         .contains("When the build is fixed locally, set status REVIEW_PENDING (outcome=progress).");
@@ -227,7 +240,8 @@ class RoundBriefTest {
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
     String brief =
-        RoundBrief.of("http://mr/1", new ReviewFacts(open, red, silent), "failed", "", sessionBrief);
+        RoundBrief.of(
+            "http://mr/1", new ReviewFacts(open, red, silent), "failed", "", sessionBrief);
 
     assertThat(brief)
         .contains("Reproduce it with the command that job ran")

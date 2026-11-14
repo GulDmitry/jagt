@@ -56,13 +56,12 @@ public record GitTrust(Map<String, String> recorded, @With @Nullable String chan
     Map<String, String> how = new LinkedHashMap<>();
     entries.stream()
         .filter(entry -> !Objects.equals(recorded.get(entry), read.get(entry)))
-        .forEach(
-            entry ->
-                how.put(
-                    entry,
-                    !recorded.containsKey(entry)
-                        ? "added"
-                        : !read.containsKey(entry) ? "removed" : "changed"));
+        .forEach(entry ->
+            how.put(
+                entry,
+                !recorded.containsKey(entry)
+                    ? "added"
+                    : !read.containsKey(entry) ? "removed" : "changed"));
     return how;
   }
 }

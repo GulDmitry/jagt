@@ -156,11 +156,10 @@ public final class ToolGate {
 
   private static Optional<String> cutsWorktree(String command) {
     if (Stream.of(SEPARATORS.split(command))
-        .anyMatch(
-            segment ->
-                subcommandIn(segment, "worktree")
-                    .filter(words -> !words.isEmpty() && "add".equals(bare(words.get(0))))
-                    .isPresent())) {
+        .anyMatch(segment ->
+            subcommandIn(segment, "worktree")
+                .filter(words -> !words.isEmpty() && "add".equals(bare(words.get(0))))
+                .isPresent())) {
       return Optional.of(
           "jagt refuses creating a worktree from a session: a repository the task lacks is asked"
               + " for with update_agent_status outcome=question and needsProject set to its project"
@@ -176,10 +175,8 @@ public final class ToolGate {
             .matcher(line.replace("\\\n", " ").replace("''", "").replace("\"\"", ""))
             .replaceAll("\"$1\"");
     return Stream.of(SEPARATORS.split(escapesQuoted))
-        .map(
-            segment ->
-                subcommandIn(segment, "push")
-                    .flatMap(push -> refuse(push, taskBranch, headIsTheTask)))
+        .map(segment ->
+            subcommandIn(segment, "push").flatMap(push -> refuse(push, taskBranch, headIsTheTask)))
         .flatMap(Optional::stream)
         .findFirst();
   }
@@ -263,15 +260,14 @@ public final class ToolGate {
     return refspecs.stream()
         .filter(refspec -> !writes(refspec, taskBranch, headIsTheTask))
         .findFirst()
-        .map(
-            refspec ->
-                "jagt refuses this push: "
-                    + destinationOf(refspec)
-                    + " is not this task's"
-                    + " branch. Only "
-                    + taskBranch
-                    + " may be pushed from here — a shared branch is written"
-                    + " by the human's `deploy`.");
+        .map(refspec ->
+            "jagt refuses this push: "
+                + destinationOf(refspec)
+                + " is not this task's"
+                + " branch. Only "
+                + taskBranch
+                + " may be pushed from here — a shared branch is written"
+                + " by the human's `deploy`.");
   }
 
   /**

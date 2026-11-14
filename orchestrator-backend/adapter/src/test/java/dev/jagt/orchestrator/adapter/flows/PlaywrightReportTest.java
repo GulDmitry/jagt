@@ -24,11 +24,10 @@ class PlaywrightReportTest {
 
     assertThat(results)
         .singleElement()
-        .satisfies(
-            r -> {
-              assertThat(r.verdict()).isEqualTo(Verdict.PASSED);
-              assertThat(r.evidence()).containsExactly(REPORT);
-            });
+        .satisfies(r -> {
+          assertThat(r.verdict()).isEqualTo(Verdict.PASSED);
+          assertThat(r.evidence()).containsExactly(REPORT);
+        });
   }
 
   @Test
@@ -44,13 +43,12 @@ class PlaywrightReportTest {
 
     assertThat(results)
         .singleElement()
-        .satisfies(
-            r -> {
-              assertThat(r.verdict()).isEqualTo(Verdict.FAILED);
-              assertThat(r.reason()).isEqualTo("failed: alpha search @AC-2");
-              assertThat(r.evidence())
-                  .containsExactly(REPORT, Path.of("/wt/acceptance/artifacts/trace.zip"));
-            });
+        .satisfies(r -> {
+          assertThat(r.verdict()).isEqualTo(Verdict.FAILED);
+          assertThat(r.reason()).isEqualTo("failed: alpha search @AC-2");
+          assertThat(r.evidence())
+              .containsExactly(REPORT, Path.of("/wt/acceptance/artifacts/trace.zip"));
+        });
   }
 
   @Test
@@ -65,11 +63,10 @@ class PlaywrightReportTest {
 
     assertThat(results)
         .singleElement()
-        .satisfies(
-            r -> {
-              assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
-              assertThat(r.reason()).isEqualTo("flaky or skipped: alpha export");
-            });
+        .satisfies(r -> {
+          assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
+          assertThat(r.reason()).isEqualTo("flaky or skipped: alpha export");
+        });
   }
 
   @Test
@@ -97,11 +94,10 @@ class PlaywrightReportTest {
 
     assertThat(results)
         .singleElement()
-        .satisfies(
-            r -> {
-              assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
-              assertThat(r.reason()).isEqualTo("no spec carries this flow");
-            });
+        .satisfies(r -> {
+          assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
+          assertThat(r.reason()).isEqualTo("no spec carries this flow");
+        });
   }
 
   @Test

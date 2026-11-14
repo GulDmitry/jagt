@@ -56,11 +56,10 @@ class AssistantBreaker {
                 .build());
     breaker
         .getEventPublisher()
-        .onStateTransition(
-            event ->
-                transitioned(
-                    event.getStateTransition().getFromState(),
-                    event.getStateTransition().getToState()));
+        .onStateTransition(event ->
+            transitioned(
+                event.getStateTransition().getFromState(),
+                event.getStateTransition().getToState()));
   }
 
   void admit() {

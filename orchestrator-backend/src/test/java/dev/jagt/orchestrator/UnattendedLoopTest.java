@@ -43,11 +43,9 @@ class UnattendedLoopTest {
 
     assertThat(
             UNATTENDED.stream()
-                .filter(
-                    path ->
-                        writers.stream()
-                            .anyMatch(
-                                writer -> read(path).contains("private final " + writer + " ")))
+                .filter(path ->
+                    writers.stream()
+                        .anyMatch(writer -> read(path).contains("private final " + writer + " ")))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -64,9 +62,8 @@ class UnattendedLoopTest {
   @Test
   void readsEveryFileItClaimsToCheck() {
     assertThat(UNATTENDED)
-        .allSatisfy(
-            path ->
-                assertThat(Files.isRegularFile(path)).describedAs("source file %s", path).isTrue());
+        .allSatisfy(path ->
+            assertThat(Files.isRegularFile(path)).describedAs("source file %s", path).isTrue());
   }
 
   private static String read(Path path) {

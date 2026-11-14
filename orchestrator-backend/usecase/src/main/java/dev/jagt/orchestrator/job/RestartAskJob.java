@@ -38,7 +38,7 @@ public class RestartAskJob implements TaskJob {
   @Override
   public String describe() {
     return "ask each warm running session holding an open turn and writing while jagt was down to"
-               + " repeat its last report, once after a start";
+        + " repeat its last report, once after a start";
   }
 
   @Override

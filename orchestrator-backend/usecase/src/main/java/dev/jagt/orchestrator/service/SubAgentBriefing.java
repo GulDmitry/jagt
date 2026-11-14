@@ -89,23 +89,22 @@ public class SubAgentBriefing {
   }
 
   private static String scratch(Object... values) {
-    return
-        """
-        <role>
-        You are the jagt worker agent for task %s, in a scratch folder. No preamble.
-        </role>
+    return """
+    <role>
+    You are the jagt worker agent for task %s, in a scratch folder. No preamble.
+    </role>
 
-        <task>
-        - Task ID: %s
-        - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
-        - Read the ticket, its labels and its description, then decide which projects the change touches.
-        - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
-          `jagt.yml` or not (`list_projects` names those that are).
-        - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
-        - `task_request.md`, if present: the request the task opened with, never overwritten.
-        </task>
+    <task>
+    - Task ID: %s
+    - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
+    - Read the ticket, its labels and its description, then decide which projects the change touches.
+    - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
+      `jagt.yml` or not (`list_projects` names those that are).
+    - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+    - `task_request.md`, if present: the request the task opened with, never overwritten.
+    </task>
 
-        """
+    """
         .formatted(values);
   }
 
@@ -118,40 +117,38 @@ public class SubAgentBriefing {
       """;
 
   private static String task(Object... values) {
-    return
-        """
-        <role>
-        You are the jagt worker agent for task %s, in this Git worktree. No preamble.
-        </role>
+    return """
+    <role>
+    You are the jagt worker agent for task %s, in this Git worktree. No preamble.
+    </role>
 
-        <task>
-        - Task ID: %s (also your Git branch)
-        - Project: %s (base repository: %s, base branch: %s)
-        - Remote: %s (your code-host project)
-        - Worktree (your CWD): %s
-        %s
-        - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
-        - `task_request.md`, if present: the request the task opened with, never overwritten.
-        </task>
+    <task>
+    - Task ID: %s (also your Git branch)
+    - Project: %s (base repository: %s, base branch: %s)
+    - Remote: %s (your code-host project)
+    - Worktree (your CWD): %s
+    %s
+    - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+    - `task_request.md`, if present: the request the task opened with, never overwritten.
+    </task>
 
-        """
+    """
         .formatted(values);
   }
 
   /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
   private static String hardSafety(Object... values) {
-    return
-        """
-        <hard_safety>
-        No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
-        `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
-        when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
-        after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
-        to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
-        it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
-        Never push another branch, nor hand the human a push.
-        </hard_safety>\
-        """
+    return """
+    <hard_safety>
+    No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
+    `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
+    when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
+    after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
+    to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
+    it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
+    Never push another branch, nor hand the human a push.
+    </hard_safety>\
+    """
         .formatted(values);
   }
 
@@ -223,14 +220,11 @@ public class SubAgentBriefing {
   private static String deployBranches(List<NewRepo> repos) {
     List<NewRepo> deployed =
         repos.stream()
-            .filter(
-                repo ->
-                    repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
+            .filter(repo ->
+                repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
             .toList();
-    String named = named(
-            deployed,
-            repos.size(),
-            repo -> Objects.requireNonNull(repo.config().deployBranch()));
+    String named =
+        named(deployed, repos.size(), repo -> Objects.requireNonNull(repo.config().deployBranch()));
     return switch (deployed.size()) {
       case 0 -> "";
       case 1 -> " The deploy branch " + named + " is jagt's `deploy` alone.";
@@ -241,12 +235,8 @@ public class SubAgentBriefing {
   private static String named(
       List<NewRepo> repos, int ofTheTask, Function<NewRepo, String> branch) {
     return repos.stream()
-        .map(
-            repo ->
-                "`"
-                    + branch.apply(repo)
-                    + "`"
-                    + (ofTheTask == 1 ? "" : " (" + repo.project() + ")"))
+        .map(repo ->
+            "`" + branch.apply(repo) + "`" + (ofTheTask == 1 ? "" : " (" + repo.project() + ")"))
         .collect(Collectors.joining(", "));
   }
 
@@ -270,15 +260,14 @@ public class SubAgentBriefing {
     String siblings =
         repos.stream()
             .filter(repo -> !repo.project().equals(mine.project()))
-            .map(
-                repo ->
-                    "  - "
-                        + repo.project()
-                        + ": "
-                        + repo.worktreePath()
-                        + " (cut from "
-                        + repo.baseBranch()
-                        + ")")
+            .map(repo ->
+                "  - "
+                    + repo.project()
+                    + ": "
+                    + repo.worktreePath()
+                    + " (cut from "
+                    + repo.baseBranch()
+                    + ")")
             .collect(Collectors.joining("\n"));
     return siblings.isBlank()
         ? "- This task works in this repository only."

@@ -12,11 +12,10 @@ public class PortGuard
   @Override
   public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
     refusal(event.getEnvironment())
-        .ifPresent(
-            line -> {
-              Console.problem(line);
-              System.exit(1);
-            });
+        .ifPresent(line -> {
+          Console.problem(line);
+          System.exit(1);
+        });
   }
 
   Optional<String> refusal(ConfigurableEnvironment environment) {

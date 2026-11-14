@@ -100,15 +100,14 @@ class ReplayMovesTest {
         new ReplayMoves(new McpEndpoint("http://127.0.0.1:1/mcp"), mock(Processes.class));
     Thread.currentThread().interrupt();
 
-    assertThatThrownBy(
-            () ->
-                moves.make(
-                    worktree,
-                    new RecordingLine.Called(
-                        "ABC-1",
-                        1,
-                        "update_agent_status",
-                        JsonMapper.builder().build().createObjectNode())))
+    assertThatThrownBy(() ->
+            moves.make(
+                worktree,
+                new RecordingLine.Called(
+                    "ABC-1",
+                    1,
+                    "update_agent_status",
+                    JsonMapper.builder().build().createObjectNode())))
         .isInstanceOf(IllegalStateException.class);
 
     assertThat(Thread.interrupted()).isTrue();

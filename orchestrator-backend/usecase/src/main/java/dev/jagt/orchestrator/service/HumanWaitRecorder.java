@@ -34,8 +34,9 @@ public class HumanWaitRecorder {
 
   @EventListener
   void sweep(StateWritten written) {
-    written.tasks().forEach(
-        (id, task) -> {
+    written
+        .tasks()
+        .forEach((id, task) -> {
           if (!task.equals(
               HumanWaits.noted(task, holder(task), rounds.judged(task), clock.millis()))) {
             note(id);
@@ -55,16 +56,15 @@ public class HumanWaitRecorder {
         });
     ended
         .get()
-        .ifPresent(
-            wait ->
-                log.atInfo()
-                    .setMessage("human wait closed")
-                    .addKeyValue("task", id)
-                    .addKeyValue("why", wait.why())
-                    .addKeyValue("since", wait.since())
-                    .addKeyValue("until", wait.until())
-                    .addKeyValue("millis", wait.until() - wait.since())
-                    .log());
+        .ifPresent(wait ->
+            log.atInfo()
+                .setMessage("human wait closed")
+                .addKeyValue("task", id)
+                .addKeyValue("why", wait.why())
+                .addKeyValue("since", wait.since())
+                .addKeyValue("until", wait.until())
+                .addKeyValue("millis", wait.until() - wait.since())
+                .log());
   }
 
   private Holder holder(TaskState task) {

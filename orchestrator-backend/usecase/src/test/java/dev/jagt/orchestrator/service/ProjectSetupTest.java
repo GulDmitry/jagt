@@ -34,8 +34,7 @@ class ProjectSetupTest {
   @TempDir Path root;
 
   private final Processes git = mock(Processes.class);
-  private final Processes bareGit =
-      mock(Processes.class, call -> new Processes.Result(1, "", ""));
+  private final Processes bareGit = mock(Processes.class, call -> new Processes.Result(1, "", ""));
 
   private Path configFile;
   private OrchestratorPaths paths;
@@ -85,16 +84,16 @@ class ProjectSetupTest {
   @Test
   void addsTheEntryUnderProjectsAndKeepsEveryOtherLineAsItWas() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            # mine
-            orchestrator:
-              projects:
-                web:
-                  path: /srv/web
-                  baseBranch: origin/main
-              keepAwake: false   # stays
-            """);
+        configFile,
+        """
+        # mine
+        orchestrator:
+          projects:
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+          keepAwake: false   # stays
+        """);
     String answer =
         setup.add(
             new ProjectSetup.Entry(
@@ -135,11 +134,10 @@ class ProjectSetupTest {
     doReturn(new Processes.Result(128, "", "not a git repository"))
         .when(git)
         .run(any(), any(), anyList());
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "notes", folder.toString(), "origin/main", null, null, null, null, null)))
+    assertThatThrownBy(() ->
+            setup.add(
+                new ProjectSetup.Entry(
+                    "notes", folder.toString(), "origin/main", null, null, null, null, null)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("not a git repository");
     assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
@@ -148,14 +146,13 @@ class ProjectSetupTest {
   @Test
   void refusesKeyAnotherProjectAlreadyHolds() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:
-              projects:
-                billing: {path: /srv/other, baseBranch: origin/main}
-            """);
-    assertThatThrownBy(() -> setup.add(billingEntry))
-        .isInstanceOf(IllegalArgumentException.class);
+        configFile,
+        """
+        orchestrator:
+          projects:
+            billing: {path: /srv/other, baseBranch: origin/main}
+        """);
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
     assertThat(Files.readString(configFile))
         .isEqualTo(
             """
@@ -169,17 +166,17 @@ class ProjectSetupTest {
   void addsUnderTheOrchestratorsProjectsAtTheIndentItsEntriesUseAndNotUnderTheTrackers()
       throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:   # mine
-                tracker:
-                    projects:
-                        - ABC
+        configFile,
+        """
+        orchestrator:   # mine
+            tracker:
                 projects:
-                    web:
-                        path: /srv/web
-                        baseBranch: origin/main
-            """);
+                    - ABC
+            projects:
+                web:
+                    path: /srv/web
+                    baseBranch: origin/main
+        """);
 
     setup.add(billingEntry);
 
@@ -228,11 +225,10 @@ class ProjectSetupTest {
 
   @Test
   void refusesDeployBranchEqualToTheBaseBranchAndLeavesTheFileUnchanged() throws Exception {
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", "main", null, null, null, null)))
+    assertThatThrownBy(() ->
+            setup.add(
+                new ProjectSetup.Entry(
+                    "billing", repo.toString(), "origin/main", "main", null, null, null, null)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("jagt never writes to the base branch");
     assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
@@ -508,9 +504,9 @@ class ProjectSetupTest {
 
   @Test
   void readsRepositoryAnotherProjectAlreadyPointsAtAsNotReady() throws Exception {
-    Files.writeString(configFile, "orchestrator:\n  projects:\n    web: {path: \""
-                + repo
-                + "\", baseBranch: origin/main}\n");
+    Files.writeString(
+        configFile,
+        "orchestrator:\n  projects:\n    web: {path: \"" + repo + "\", baseBranch: origin/main}\n");
 
     ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -531,14 +527,14 @@ class ProjectSetupTest {
   @Test
   void addsAtTheIndentTheExistingEntriesUseWhenItIsNotTwiceTheMapsOwn() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:
-              projects:
-                 web:
-                    path: /srv/web
-                    baseBranch: origin/main
-            """);
+        configFile,
+        """
+        orchestrator:
+          projects:
+             web:
+                path: /srv/web
+                baseBranch: origin/main
+        """);
 
     setup.add(billingEntry);
 
@@ -567,24 +563,24 @@ class ProjectSetupTest {
   void editRewritesTheManagedKeysOfOneBlockAndKeepsItsOtherKeysAndEveryOtherLine()
       throws Exception {
     Files.writeString(
-            configFile,
-            """
-            # mine
-            orchestrator:
-              projects:
-                billing:
-                  # why
-                  path: /old/path
-                  baseBranch: origin/main
-                  codeHost: github
-                  verifyCommand:
-                    - ./gradlew
-                    - test
-                web:
-                  path: /srv/web
-                  baseBranch: origin/main
-              keepAwake: false   # stays
-            """);
+        configFile,
+        """
+        # mine
+        orchestrator:
+          projects:
+            billing:
+              # why
+              path: /old/path
+              baseBranch: origin/main
+              codeHost: github
+              verifyCommand:
+                - ./gradlew
+                - test
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+          keepAwake: false   # stays
+        """);
     String answer =
         setup.edit(
             new ProjectSetup.Entry(
@@ -622,9 +618,11 @@ class ProjectSetupTest {
 
   @Test
   void editKeepsTheProjectsOwnPathWhereItIsUnchanged() throws Exception {
-    Files.writeString(configFile, "orchestrator:\n  projects:\n    billing:\n      path: \""
-                + repo
-                + "\"\n      baseBranch: origin/main\n");
+    Files.writeString(
+        configFile,
+        "orchestrator:\n  projects:\n    billing:\n      path: \""
+            + repo
+            + "\"\n      baseBranch: origin/main\n");
     String answer =
         setup.edit(
             new ProjectSetup.Entry(
@@ -653,10 +651,7 @@ class ProjectSetupTest {
             + repo
             + "\"\n      baseBranch: origin/main\n";
     Files.writeString(configFile, before);
-    assertThatThrownBy(
-            () ->
-                setup.edit(
-                    billingEntry))
+    assertThatThrownBy(() -> setup.edit(billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("a project already points here");
     assertThat(Files.readString(configFile)).isEqualTo(before);
@@ -665,18 +660,15 @@ class ProjectSetupTest {
   @Test
   void editRefusesProjectTheFileDoesNotHold() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:
-              projects:
-                web:
-                  path: /srv/web
-                  baseBranch: origin/main
-            """);
-    assertThatThrownBy(
-            () ->
-                setup.edit(
-                    billingEntry))
+        configFile,
+        """
+        orchestrator:
+          projects:
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+        """);
+    assertThatThrownBy(() -> setup.edit(billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No project billing");
   }
@@ -686,10 +678,7 @@ class ProjectSetupTest {
     String before =
         "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n";
     Files.writeString(configFile, before);
-    assertThatThrownBy(
-            () ->
-                setup.edit(
-                    billingEntry))
+    assertThatThrownBy(() -> setup.edit(billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("written inline");
     assertThat(Files.readString(configFile)).isEqualTo(before);
@@ -698,21 +687,21 @@ class ProjectSetupTest {
   @Test
   void removeDeletesOneBlockAndLeavesTheCommentOfTheNextOne() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:
-              projects:
-                billing:
-                  path: /srv/billing
-                  baseBranch: origin/main
-                  labels: [BILL]
+        configFile,
+        """
+        orchestrator:
+          projects:
+            billing:
+              path: /srv/billing
+              baseBranch: origin/main
+              labels: [BILL]
 
-                # the web one
-                web:
-                  path: /srv/web
-                  baseBranch: origin/main
-              keepAwake: false   # stays
-            """);
+            # the web one
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+          keepAwake: false   # stays
+        """);
     String answer = setup.remove("billing");
 
     assertThat(answer).isEqualTo("Removed billing from jagt.yml");
@@ -733,17 +722,17 @@ class ProjectSetupTest {
   @Test
   void removeDeletesTheLastBlockOfTheFileWhereTheSectionEndsTheFile() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:
-              projects:
-                web:
-                  path: /srv/web
-                  baseBranch: origin/main
-                billing:
-                  path: /srv/billing
-                  baseBranch: origin/main
-            """);
+        configFile,
+        """
+        orchestrator:
+          projects:
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+            billing:
+              path: /srv/billing
+              baseBranch: origin/main
+        """);
     setup.remove("billing");
 
     assertThat(Files.readString(configFile))
@@ -796,18 +785,18 @@ class ProjectSetupTest {
   @Test
   void entryServesOneProjectsManagedKeysAndRefusesKeyJagtYmlDoesNotHold() throws Exception {
     Files.writeString(
-            configFile,
-            """
-            orchestrator:
-              projects:
-                billing:
-                  path: /srv/billing
-                  baseBranch: origin/main
-                  deployBranch: dev
-                  about: the invoicing backend
-                  labels: [bill, pay]
-                  humanPaths: ["**/auth/**"]
-            """);
+        configFile,
+        """
+        orchestrator:
+          projects:
+            billing:
+              path: /srv/billing
+              baseBranch: origin/main
+              deployBranch: dev
+              about: the invoicing backend
+              labels: [bill, pay]
+              humanPaths: ["**/auth/**"]
+        """);
     assertThat(setup.entry("billing"))
         .isEqualTo(
             new ProjectSetup.Entry(

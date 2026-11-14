@@ -24,11 +24,7 @@ final class LegacyQa {
     }
     RoleRecord read =
         new RoleRecord(
-            reading(turn, status),
-            mark(turn, PASSED),
-            mark(turn, DIGEST),
-            mark(turn, ROWS),
-            "");
+            reading(turn, status), mark(turn, PASSED), mark(turn, DIGEST), mark(turn, ROWS), "");
     return read.isEmpty() ? null : read;
   }
 

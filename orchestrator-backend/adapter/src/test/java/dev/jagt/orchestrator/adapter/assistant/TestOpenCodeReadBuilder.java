@@ -11,8 +11,7 @@ public record TestOpenCodeReadBuilder(
     Path cwd, String schema, List<String> shell, List<String> refuseRead, boolean git) {
 
   public static TestOpenCodeReadBuilder openCodeRead() {
-    return new TestOpenCodeReadBuilder(
-        Path.of("/wt"), "{}", List.of("git log*"), List.of(), true);
+    return new TestOpenCodeReadBuilder(Path.of("/wt"), "{}", List.of("git log*"), List.of(), true);
   }
 
   public OpenCodeRead build() {

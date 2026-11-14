@@ -56,11 +56,10 @@ class CommandReferenceTest {
     assertThat(CommandReference.verbs(List.of(SPEND)))
         .filteredOn(verb -> verb.id().equals("spend"))
         .singleElement()
-        .satisfies(
-            verb -> {
-              assertThat(verb.report()).isTrue();
-              assertThat(verb.takesTask()).isFalse();
-            });
+        .satisfies(verb -> {
+          assertThat(verb.report()).isTrue();
+          assertThat(verb.takesTask()).isFalse();
+        });
   }
 
   @Test

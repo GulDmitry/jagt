@@ -50,36 +50,34 @@ public class RemoteCheck implements StartupCheck {
       return config
           .codeHostNamed(key)
           .filter(kind -> !ProjectConfig.NO_CODE_HOST.equalsIgnoreCase(kind))
-          .map(
-              kind ->
-                  List.of(
-                      new Problem(
-                          remoteKey,
-                          remoteKey
-                              + " is none, and "
-                              + codeHostKey(project, key)
-                              + " is '"
-                              + kind
-                              + "': a repository with no remote has no code"
-                              + " host. Set that codeHost to none, or give the project a remote.")))
+          .map(kind ->
+              List.of(
+                  new Problem(
+                      remoteKey,
+                      remoteKey
+                          + " is none, and "
+                          + codeHostKey(project, key)
+                          + " is '"
+                          + kind
+                          + "': a repository with no remote has no code"
+                          + " host. Set that codeHost to none, or give the project a remote.")))
           .orElse(List.of());
     }
     return listed(project)
         .filter(names -> !names.contains(remote.name()))
-        .map(
-            names ->
-                List.of(
-                    new Problem(
-                        remoteKey,
-                        remoteKey
-                            + " '"
-                            + remote.name()
-                            + "' is not a remote of "
-                            + project.path()
-                            + " (git lists "
-                            + (names.isEmpty() ? "none" : String.join(", ", names))
-                            + "). Name one of them, or set it to none for a repository kept on this"
-                            + " machine.")))
+        .map(names ->
+            List.of(
+                new Problem(
+                    remoteKey,
+                    remoteKey
+                        + " '"
+                        + remote.name()
+                        + "' is not a remote of "
+                        + project.path()
+                        + " (git lists "
+                        + (names.isEmpty() ? "none" : String.join(", ", names))
+                        + "). Name one of them, or set it to none for a repository kept on this"
+                        + " machine.")))
         .orElse(List.of());
   }
 

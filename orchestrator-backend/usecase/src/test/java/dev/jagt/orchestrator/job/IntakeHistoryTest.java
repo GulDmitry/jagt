@@ -85,11 +85,10 @@ class IntakeHistoryTest {
 
     verify(notifications)
         .send(
-            argThat(
-                sent ->
-                    "intake cannot start ABC-42".equals(sent.title())
-                        && "nothing routes it — start it with the board's `do ABC-42 <project>`"
-                            .equals(sent.body())));
+            argThat(sent ->
+                "intake cannot start ABC-42".equals(sent.title())
+                    && "nothing routes it — start it with the board's `do ABC-42 <project>`"
+                        .equals(sent.body())));
   }
 
   @Test

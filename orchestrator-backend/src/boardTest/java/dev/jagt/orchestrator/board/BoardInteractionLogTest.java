@@ -29,9 +29,7 @@ class BoardInteractionLogTest extends BoardPageContext {
     when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
     Page page = openLiveBoard();
 
-    page.waitForResponse(
-        "**/api/interactions",
-        () -> button(page, "Focus").click());
+    page.waitForResponse("**/api/interactions", () -> button(page, "Focus").click());
 
     org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
         .contains("\"control\":\"action:focus\",\"status\":\"IN_PROGRESS\"")

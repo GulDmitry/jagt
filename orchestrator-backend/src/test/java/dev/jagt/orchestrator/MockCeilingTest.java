@@ -20,7 +20,7 @@ class MockCeilingTest {
   private static final Pattern A_MOCK =
       Pattern.compile(
           "mock\\(\\s*([A-Z]\\w*)\\.class|@Mock(?:itoBean)?\\b[^;]*?\\b([A-Z]\\w*)(?:<[^>]*>)?"
-          + "\\s+\\w+\\s*[;=]");
+              + "\\s+\\w+\\s*[;=]");
 
   @Test
   void testWiresTheCollaboratorCeilingOfMocksAtMost() {
@@ -37,10 +37,9 @@ class MockCeilingTest {
     Set<String> shared = mocked(parts[0]);
     return Arrays.stream(parts)
         .skip(1)
-        .map(
-            body ->
-                Stream.concat(shared.stream(), mocked(body).stream())
-                    .collect(Collectors.toCollection(TreeSet::new)))
+        .map(body ->
+            Stream.concat(shared.stream(), mocked(body).stream())
+                .collect(Collectors.toCollection(TreeSet::new)))
         .filter(mocks -> mocks.size() > CollaboratorCeilingTest.CEILING)
         .map(mocks -> test.getFileName() + " " + mocks)
         .distinct();

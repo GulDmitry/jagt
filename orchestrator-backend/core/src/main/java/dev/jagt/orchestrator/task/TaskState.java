@@ -549,10 +549,8 @@ public record TaskState(
         .filter(Objects::nonNull)
         .filter(urlByProject::containsKey)
         .findFirst()
-        .map(
-            project ->
-                linked.withReviewRound(
-                    project, Objects.requireNonNull(urlByProject.get(project)), now))
+        .map(project ->
+            linked.withReviewRound(project, Objects.requireNonNull(urlByProject.get(project)), now))
         .orElse(linked);
   }
 

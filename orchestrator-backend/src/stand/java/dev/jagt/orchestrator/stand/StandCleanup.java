@@ -51,12 +51,11 @@ public final class StandCleanup {
     String port = "--server.port=" + marker.port();
     return ProcessHandle.of(marker.jagtPid())
         .filter(ProcessHandle::isAlive)
-        .filter(
-            handle ->
-                handle
-                    .info()
-                    .arguments()
-                    .map(arguments -> java.util.List.of(arguments).contains(port))
-                    .orElse(false));
+        .filter(handle ->
+            handle
+                .info()
+                .arguments()
+                .map(arguments -> java.util.List.of(arguments).contains(port))
+                .orElse(false));
   }
 }

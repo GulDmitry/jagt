@@ -66,8 +66,7 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(root.resolve("repo")));
-    assertThat(check.problems())
-        .isEmpty();
+    assertThat(check.problems()).isEmpty();
   }
 
   @Test
@@ -79,8 +78,8 @@ class ConfigCheckTest {
 
   @ParameterizedTest
   @MethodSource
-  void namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(
-      String key, String expected) throws Exception {
+  void namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(String key, String expected)
+      throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -91,9 +90,7 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(key, root.resolve("repo")));
-    assertThat(check.problems())
-        .extracting(Problem::key)
-        .containsExactly(expected);
+    assertThat(check.problems()).extracting(Problem::key).containsExactly(expected);
   }
 
   static Stream<Arguments> namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt() {
@@ -118,8 +115,8 @@ class ConfigCheckTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"qa: { enabled: true }", "roles: { qa: { enabled: true } }"})
-  void refusesTheStartNamingRolesAcceptanceWhereTheRoleIsStillWrittenAsQa(
-      String key) throws Exception {
+  void refusesTheStartNamingRolesAcceptanceWhereTheRoleIsStillWrittenAsQa(String key)
+      throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -141,9 +138,7 @@ class ConfigCheckTest {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.createDirectories(root.resolve("plain-dir"));
     Files.writeString(root.resolve("jagt.yml"), config.replace("$ROOT", root.toString()));
-    assertThat(check.problems())
-        .extracting(Problem::key)
-        .containsExactly(expected);
+    assertThat(check.problems()).extracting(Problem::key).containsExactly(expected);
   }
 
   static Stream<Arguments> namesWhatConfiguredProjectWouldFailOn() {
@@ -195,16 +190,14 @@ class ConfigCheckTest {
   }
 
   @Test
-  void saysTheOldConfigFileIsNoLongerReadWhereNoJagtYmlTookItsPlace()
-      throws Exception {
+  void saysTheOldConfigFileIsNoLongerReadWhereNoJagtYmlTookItsPlace() throws Exception {
     Files.writeString(root.resolve("config.json"), "{}");
     assertThat(check.problems())
         .singleElement()
-        .satisfies(
-            problem -> {
-              assertThat(problem.key()).isEqualTo("orchestrator.config-file");
-              assertThat(problem.text()).contains("config.json is no longer read");
-            });
+        .satisfies(problem -> {
+          assertThat(problem.key()).isEqualTo("orchestrator.config-file");
+          assertThat(problem.text()).contains("config.json is no longer read");
+        });
   }
 
   @Test
@@ -219,8 +212,7 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(root.resolve("repo")));
-    assertThat(check.problems())
-        .isEmpty();
+    assertThat(check.problems()).isEmpty();
   }
 
   @Test
@@ -243,8 +235,7 @@ class ConfigCheckTest {
   }
 
   @Test
-  void refusesConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames()
-      throws Exception {
+  void refusesConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames() throws Exception {
     Path shadowing =
         Files.writeString(
             Files.createDirectories(root.resolve("config")).resolve("application.yml"),

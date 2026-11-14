@@ -123,16 +123,15 @@ class ReadOnlyTools {
               Stream.of(
                       "audit", "clear", "create", "delete", "remove", "rename", "replace", "send",
                       "start", "submit", "update", "upload", "write")
-                  .flatMap(
-                      verb ->
-                          Stream.of(
-                              "mcp__*__*_" + verb,
-                              "mcp__*__*_" + verb + "_*",
-                              "mcp__*__*-" + verb + "*",
-                              "mcp__*__*"
-                                  + Character.toUpperCase(verb.charAt(0))
-                                  + verb.substring(1)
-                                  + "*")))
+                  .flatMap(verb ->
+                      Stream.of(
+                          "mcp__*__*_" + verb,
+                          "mcp__*__*_" + verb + "_*",
+                          "mcp__*__*-" + verb + "*",
+                          "mcp__*__*"
+                              + Character.toUpperCase(verb.charAt(0))
+                              + verb.substring(1)
+                              + "*")))
           .toList();
 
   private static final Pattern BARE_SERVER = Pattern.compile("mcp__(?!.*__)[^*]+");

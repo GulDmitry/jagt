@@ -67,10 +67,10 @@ class CaseDoorTest {
             new StopPolicy(
                 task -> master.profile(),
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new StopLog(new JsonMapper(), paths))),
+                new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+            Clock.systemUTC(),
+            new FlowRules(new TaskChart(Composition.builtIn()))));
   }
 
   @Test
@@ -92,8 +92,8 @@ class CaseDoorTest {
     "DONE, done",
     "REMOVE_REPO, remove-repo"
   })
-  void letsTheMasterPressVerbOnceReservedForHumanWhereCaseAllowsIt(
-      TaskAction action, String move) throws Exception {
+  void letsTheMasterPressVerbOnceReservedForHumanWhereCaseAllowsIt(TaskAction action, String move)
+      throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
@@ -115,8 +115,7 @@ class CaseDoorTest {
     "APPROVE_PLAN, plan",
     "ADD_REPO, repo"
   })
-  void refusesTheMasterVerbItsHumanKeepsInMine(
-      TaskAction action, String mine) {
+  void refusesTheMasterVerbItsHumanKeepsInMine(TaskAction action, String mine) {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door =
         doorOver(
@@ -176,8 +175,7 @@ class CaseDoorTest {
   }
 
   @Test
-  void takesNoChangesFromShipTheMasterPressedOnCleanPushedTree()
-      throws Exception {
+  void takesNoChangesFromShipTheMasterPressedOnCleanPushedTree() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
@@ -205,8 +203,8 @@ class CaseDoorTest {
 
   @ParameterizedTest
   @CsvSource({"LIFT, lift", "ESCALATE, escalate"})
-  void refusesTheMasterLiftOnceItsOneLiftSinceTheHumansLastIsSpent(
-      TaskAction action, String move) throws Exception {
+  void refusesTheMasterLiftOnceItsOneLiftSinceTheHumansLastIsSpent(TaskAction action, String move)
+      throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),

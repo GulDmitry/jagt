@@ -97,13 +97,12 @@ public class ChosenCodeHost implements CodeHost {
         .filter(driver -> driver.id().equals(choice.kind()))
         .findFirst()
         .map(driver -> question.apply(driver, choice.host()))
-        .orElseGet(
-            () ->
-                Answer.failed(
-                    TokenUsage.NONE,
-                    choice.host().selectedBy()
-                        + ": '"
-                        + choice.kind()
-                        + "' is not a code host jagt knows"));
+        .orElseGet(() ->
+            Answer.failed(
+                TokenUsage.NONE,
+                choice.host().selectedBy()
+                    + ": '"
+                    + choice.kind()
+                    + "' is not a code host jagt knows"));
   }
 }

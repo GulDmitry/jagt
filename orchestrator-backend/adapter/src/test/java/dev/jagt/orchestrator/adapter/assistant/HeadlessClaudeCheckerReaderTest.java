@@ -65,10 +65,9 @@ class HeadlessClaudeCheckerReaderTest {
     assertThat(argv.get(argv.indexOf("--tools") + 1)).isEqualTo("Read,Grep,Glob,Bash,WebFetch");
     assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
         .contains("WebFetch", "Bash(curl -sS:*)", "Bash(git log:*)")
-        .noneMatch(
-            tool ->
-                tool.startsWith("Write")
-                    || (tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)")));
+        .noneMatch(tool ->
+            tool.startsWith("Write")
+                || (tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)")));
     assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
         .contains("Write", "Edit", "Bash(git * --output*)");
   }

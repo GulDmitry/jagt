@@ -23,8 +23,7 @@ class FlowRulesTest {
 
   @ParameterizedTest
   @CsvSource({"REVERTED,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
-  void holdsItsLineAgainstReportOnlyWhereTheStatusFactIsTheHumans(
-      TaskStatus status, boolean held) {
+  void holdsItsLineAgainstReportOnlyWhereTheStatusFactIsTheHumans(TaskStatus status, boolean held) {
     assertThat(FlowRules.holdsItsLine(status)).isEqualTo(held);
   }
 
@@ -93,8 +92,7 @@ class FlowRulesTest {
 
   @Test
   void movesAnApprovedPlanBackToWorkOnceTheSessionIsTold() {
-    assertThat(
-            rules.next(TaskStatus.PLAN_PENDING, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED))
+    assertThat(rules.next(TaskStatus.PLAN_PENDING, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED))
         .contains(TaskStatus.IN_PROGRESS);
   }
 
@@ -357,11 +355,10 @@ class FlowRulesTest {
             .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true))
             .withHold(
                 Facts.Hold.defaults()
-                    .withAgentLive(
-                        () -> {
-                          probed.set(true);
-                          return true;
-                        })));
+                    .withAgentLive(() -> {
+                      probed.set(true);
+                      return true;
+                    })));
 
     assertThat(probed).isFalse();
   }
@@ -480,8 +477,7 @@ class FlowRulesTest {
 
   @ParameterizedTest
   @CsvSource({"PLAN_PENDING,true", "REVIEW_PENDING,true", "VERIFYING,false"})
-  void theMasterReadsPlanOrHandBackButNotRoundStillBeingVerified(
-      TaskStatus status, boolean read) {
+  void theMasterReadsPlanOrHandBackButNotRoundStillBeingVerified(TaskStatus status, boolean read) {
     assertThat(FlowRules.readByTheMaster(status)).isEqualTo(read);
   }
 
@@ -583,8 +579,7 @@ class FlowRulesTest {
                 TaskStatus.IN_PROGRESS,
                 TaskAction.ESCALATE,
                 Facts.defaults()
-                    .withHold(
-                        Facts.Hold.defaults().withStopped(stopped).withTierAbove(tierAbove))))
+                    .withHold(Facts.Hold.defaults().withStopped(stopped).withTierAbove(tierAbove))))
         .isEqualTo(offered);
   }
 
@@ -831,8 +826,7 @@ class FlowRulesTest {
       value = TaskStatus.class,
       names = {"IN_PROGRESS", "REVIEW_PENDING", "REVIEWED", "DEPLOYED"})
   void leavesTheStatusWhereItIsWhenRepositoryIsRemoved(TaskStatus status) {
-    assertThat(rules.next(status, TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED))
-        .contains(status);
+    assertThat(rules.next(status, TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)).contains(status);
   }
 
   @Test
@@ -844,8 +838,7 @@ class FlowRulesTest {
   void movesDeployReadOnlyOnRedTheCodeOwnsAndOnlyOnDeployedTask() {
     assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, true))
         .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, false))
-        .isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, false)).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(rules.deployReadLands(TaskStatus.IN_PROGRESS, true))
         .isEqualTo(TaskStatus.IN_PROGRESS);
   }

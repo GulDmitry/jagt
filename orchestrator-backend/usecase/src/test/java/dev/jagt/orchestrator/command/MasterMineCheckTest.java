@@ -46,11 +46,10 @@ class MasterMineCheckTest {
 
     assertThat(new MasterMineCheck(configService, new GlobalCommands(List.of())).problems())
         .singleElement()
-        .satisfies(
-            problem -> {
-              assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mine");
-              assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
-            });
+        .satisfies(problem -> {
+          assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mine");
+          assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
+        });
   }
 
   @Test

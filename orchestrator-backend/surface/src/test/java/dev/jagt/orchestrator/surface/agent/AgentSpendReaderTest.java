@@ -57,8 +57,7 @@ class AgentSpendReaderTest {
   void dropsWindowAnotherReportHasAlreadyBooked(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, "x".repeat(400));
-    when(stateService.task("ABC-42"))
-        .thenReturn(Optional.of(inProgress));
+    when(stateService.task("ABC-42")).thenReturn(Optional.of(inProgress));
     when(sessionLog.spent(eq(log), eq(0L), anyLong()))
         .thenReturn(new SessionLog.Spent(TokenUsage.ofCall(7, 0, 20, 0), 400));
     TaskState bookedMeanwhile =
@@ -92,8 +91,7 @@ class AgentSpendReaderTest {
   }
 
   @Test
-  void keepsMarkPerLogSoTwoLiveSessionsDoNotRecountEachOther(@TempDir Path dir)
-      throws IOException {
+  void keepsMarkPerLogSoTwoLiveSessionsDoNotRecountEachOther(@TempDir Path dir) throws IOException {
     Path second = dir.resolve("second.jsonl");
     Files.writeString(second, "x".repeat(120));
     TaskState afterFirst =

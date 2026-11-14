@@ -103,13 +103,12 @@ class RingsTest {
 
     assertThat(
             javaFilesIn(inner, false)
-                .filter(
-                    path ->
-                        Pattern.compile("\\b[A-Z]\\w+")
-                            .matcher(SourceRoots.read(path))
-                            .results()
-                            .map(MatchResult::group)
-                            .anyMatch(outerTypes::contains))
+                .filter(path ->
+                    Pattern.compile("\\b[A-Z]\\w+")
+                        .matcher(SourceRoots.read(path))
+                        .results()
+                        .map(MatchResult::group)
+                        .anyMatch(outerTypes::contains))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -118,14 +117,13 @@ class RingsTest {
   void theStatechartImportsNothingButTheJdk() {
     assertThat(
             javaFilesIn("statechart", true)
-                .filter(
-                    path ->
-                        Pattern.compile(
-                                "^import (?:static )?"
-                                    + "(?!java\\.|dev\\.jagt\\.statechart\\.|org\\.jspecify\\.)",
-                                Pattern.MULTILINE)
-                            .matcher(SourceRoots.read(path))
-                            .find())
+                .filter(path ->
+                    Pattern.compile(
+                            "^import (?:static )?"
+                                + "(?!java\\.|dev\\.jagt\\.statechart\\.|org\\.jspecify\\.)",
+                            Pattern.MULTILINE)
+                        .matcher(SourceRoots.read(path))
+                        .find())
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -133,9 +131,8 @@ class RingsTest {
   @Test
   void readsEveryRingItClaimsToCheck() {
     assertThat(ROOTS)
-        .allSatisfy(
-            root ->
-                assertThat(Files.isDirectory(root)).describedAs("source root %s", root).isTrue());
+        .allSatisfy(root ->
+            assertThat(Files.isDirectory(root)).describedAs("source root %s", root).isTrue());
     assertThat(
             List.of(
                 "flow",
@@ -151,11 +148,8 @@ class RingsTest {
                 "adapter",
                 "config",
                 "startup"))
-        .allSatisfy(
-            ring ->
-                assertThat(sources(ring).count())
-                    .describedAs("java files in %s", ring)
-                    .isPositive());
+        .allSatisfy(ring ->
+            assertThat(sources(ring).count()).describedAs("java files in %s", ring).isPositive());
   }
 
   @Test
@@ -176,8 +170,7 @@ class RingsTest {
     assertThat(
             filesOutsideTheEdge(true)
                 .filter(
-                    path ->
-                        osOnly.stream().anyMatch(name -> SourceRoots.read(path).contains(name)))
+                    path -> osOnly.stream().anyMatch(name -> SourceRoots.read(path).contains(name)))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -202,15 +195,14 @@ class RingsTest {
 
     assertThat(
             filesOutsideTheEdge(false)
-                .filter(
-                    path ->
-                        vendors.stream()
-                            .anyMatch(
-                                keysNamingVendorByDesign
-                                        .matcher(SourceRoots.read(path))
-                                        .replaceAll("")
-                                        .toLowerCase(Locale.ROOT)
-                                    ::contains))
+                .filter(path ->
+                    vendors.stream()
+                        .anyMatch(
+                            keysNamingVendorByDesign
+                                    .matcher(SourceRoots.read(path))
+                                    .replaceAll("")
+                                    .toLowerCase(Locale.ROOT)
+                                ::contains))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -256,5 +248,4 @@ class RingsTest {
         .filter(root -> !mainOnly || !SourceRoots.isTest(root))
         .flatMap(SourceRoots::javaFilesUnder);
   }
-
 }

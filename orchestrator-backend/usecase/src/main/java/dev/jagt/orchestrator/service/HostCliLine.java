@@ -69,11 +69,10 @@ final class HostCliLine {
     commands = hosts.stream().map(CodeHostCommands::command).sorted().toList();
     hostCli =
         Pattern.compile("(\\S*/)?(" + String.join("|", commands) + ")", Pattern.CASE_INSENSITIVE);
-    hosts.forEach(
-        host -> {
-          groups.addAll(host.groups());
-          host.reads().forEach((group, verbs) -> hostReads.merge(group, verbs, HostCliLine::union));
-        });
+    hosts.forEach(host -> {
+      groups.addAll(host.groups());
+      host.reads().forEach((group, verbs) -> hostReads.merge(group, verbs, HostCliLine::union));
+    });
   }
 
   /** The CLIs' words, sorted. */

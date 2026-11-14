@@ -85,11 +85,10 @@ class IntakeJobTest {
     when(candidates.waiting(any())).thenReturn(Optional.of(List.of(ready)));
     AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
     when(starts.start(ready))
-        .thenAnswer(
-            call -> {
-              openedBy.set(OriginContext.current());
-              return true;
-            });
+        .thenAnswer(call -> {
+          openedBy.set(OriginContext.current());
+          return true;
+        });
 
     job.run();
 

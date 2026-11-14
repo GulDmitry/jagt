@@ -37,15 +37,14 @@ public class MasterCaseCheck implements StartupCheck {
     return Stream.concat(
             cases.book().problems(MasterMove.pressed(), MasterCases.FILE, List.of()).stream(),
             sessionCases.book().unnamed(MasterMove.relayed(), CaseBook.By.MASTER).stream()
-                .map(
-                    step ->
-                        new Problem(
-                            SessionCases.FILE,
-                            SessionCases.FILE
-                                + ": no case by master sends the"
-                                + " Master's move '"
-                                + step
-                                + "' — add one, or the Master never makes it")))
+                .map(step ->
+                    new Problem(
+                        SessionCases.FILE,
+                        SessionCases.FILE
+                            + ": no case by master sends the"
+                            + " Master's move '"
+                            + step
+                            + "' — add one, or the Master never makes it")))
         .toList();
   }
 

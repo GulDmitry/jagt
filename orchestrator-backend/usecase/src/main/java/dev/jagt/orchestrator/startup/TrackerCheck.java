@@ -41,17 +41,16 @@ public class TrackerCheck implements StartupCheck {
     List<Problem> problems = new ArrayList<>();
     tracker
         .missing()
-        .forEach(
-            key ->
-                problems.add(
-                    new Problem(
-                        "orchestrator.tracker." + key,
-                        "orchestrator.tracker."
-                            + key
-                            + ": mode is '"
-                            + tracker.modeOrOff().id()
-                            + "' and this is blank,"
-                            + " so that end would never recognise anything")));
+        .forEach(key ->
+            problems.add(
+                new Problem(
+                    "orchestrator.tracker." + key,
+                    "orchestrator.tracker."
+                        + key
+                        + ": mode is '"
+                        + tracker.modeOrOff().id()
+                        + "' and this is blank,"
+                        + " so that end would never recognise anything")));
     if ("none".equals(workflow.id()) && !tracker.missing().contains("workflow")) {
       problems.add(
           new Problem(

@@ -50,26 +50,24 @@ class IdeProject {
     boolean reverting = Facts.revertConflicted(task);
     return deployTargets
         .stopped(task)
-        .filter(
-            target ->
-                reverting
-                    ? gitDeploy.hasRevertWorktree(target.path(), taskId)
-                    : gitDeploy.hasDeployWorktree(target.path(), taskId))
-        .map(
-            target -> {
-              Path worktree =
-                  reverting
-                      ? GitDeploy.revertWorktreePath(target.path(), taskId)
-                      : GitDeploy.deployWorktreePath(target.path(), taskId);
-              editorDriver.open(worktree);
-              return "Opened the "
-                  + (reverting ? "revert" : "deploy")
-                  + " worktree "
-                  + worktree
-                  + " — resolve there (`git add`), then `"
-                  + (reverting ? "revert " : "deploy ")
-                  + taskId
-                  + "` again.";
-            });
+        .filter(target ->
+            reverting
+                ? gitDeploy.hasRevertWorktree(target.path(), taskId)
+                : gitDeploy.hasDeployWorktree(target.path(), taskId))
+        .map(target -> {
+          Path worktree =
+              reverting
+                  ? GitDeploy.revertWorktreePath(target.path(), taskId)
+                  : GitDeploy.deployWorktreePath(target.path(), taskId);
+          editorDriver.open(worktree);
+          return "Opened the "
+              + (reverting ? "revert" : "deploy")
+              + " worktree "
+              + worktree
+              + " — resolve there (`git add`), then `"
+              + (reverting ? "revert " : "deploy ")
+              + taskId
+              + "` again.";
+        });
   }
 }

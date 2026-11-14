@@ -34,8 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanPlacementTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
 
@@ -54,7 +53,8 @@ class PlanPlacementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     placement = new PlanPlacement(state, new TaskArtifacts(state), config, worktrees, retired);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }
@@ -68,15 +68,13 @@ class PlanPlacementTest {
     Files.writeString(scratch.resolve("task_request.md"), "split the mailer");
     Files.createDirectories(root.resolve("ABC-9-api"));
     List<NewRepo> cut =
-        List.of(
-            TestNewRepoBuilder.api(root).build(), TestNewRepoBuilder.web(root).build());
+        List.of(TestNewRepoBuilder.api(root).build(), TestNewRepoBuilder.web(root).build());
     when(worktrees.place(any(), any(), any()))
-        .thenAnswer(
-            call -> {
-              Consumer<List<NewRepo>> registration = call.getArgument(2);
-              registration.accept(cut);
-              return cut;
-            });
+        .thenAnswer(call -> {
+          Consumer<List<NewRepo>> registration = call.getArgument(2);
+          registration.accept(cut);
+          return cut;
+        });
     TaskRepo scratchRepo = TaskRepo.of(null, scratch.toString());
     state.putTask(
         "ABC-9",
@@ -103,12 +101,11 @@ class PlanPlacementTest {
     Files.createDirectories(root.resolve("ABC-9-api"));
     List<NewRepo> cut = List.of(TestNewRepoBuilder.api(root).build());
     when(worktrees.place(any(), any(), any()))
-        .thenAnswer(
-            call -> {
-              Consumer<List<NewRepo>> registration = call.getArgument(2);
-              registration.accept(cut);
-              return cut;
-            });
+        .thenAnswer(call -> {
+          Consumer<List<NewRepo>> registration = call.getArgument(2);
+          registration.accept(cut);
+          return cut;
+        });
     GitTrust trust = GitTrust.of(Map.of("core.hooksPath", "hooks"));
     when(worktrees.trust(cut)).thenReturn(trust);
     state.putTask(
@@ -129,12 +126,11 @@ class PlanPlacementTest {
     List<NewRepo> cut =
         List.of(TestNewRepoBuilder.api(root).withBaseBranch("feature/parent").build());
     when(worktrees.place(any(), any(), any()))
-        .thenAnswer(
-            call -> {
-              Consumer<List<NewRepo>> registration = call.getArgument(2);
-              registration.accept(cut);
-              return cut;
-            });
+        .thenAnswer(call -> {
+          Consumer<List<NewRepo>> registration = call.getArgument(2);
+          registration.accept(cut);
+          return cut;
+        });
     state.putTask(
         "ABC-9",
         TaskState.builder(List.of(TaskRepo.of(null, scratch.toString())), TaskStatus.PLAN_PENDING)

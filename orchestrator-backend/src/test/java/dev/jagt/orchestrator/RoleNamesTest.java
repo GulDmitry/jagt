@@ -33,26 +33,20 @@ class RoleNamesTest {
     Map<String, List<String>> modules = new LinkedHashMap<>();
     modules.put("arbiter", RoleModules.ARBITER);
     roleFolderIds()
-        .forEach(
-            id ->
-                modules.put(
-                    id.toLowerCase(Locale.ROOT),
-                    id.equals(Arbiter.ID)
-                        ? RoleModules.ARBITER
-                        : RoleModules.CHECKERS.getOrDefault(id, List.of())));
+        .forEach(id ->
+            modules.put(
+                id.toLowerCase(Locale.ROOT),
+                id.equals(Arbiter.ID)
+                    ? RoleModules.ARBITER
+                    : RoleModules.CHECKERS.getOrDefault(id, List.of())));
 
     assertThat(
             MainClasses.CODE.stream()
-                .filter(
-                    type ->
-                        modules.entrySet().stream()
-                            .anyMatch(
-                                role ->
-                                    type.getSimpleName()
-                                            .toLowerCase(Locale.ROOT)
-                                            .startsWith(role.getKey())
-                                        && role.getValue().stream()
-                                            .noneMatch(type.getName()::startsWith)))
+                .filter(type ->
+                    modules.entrySet().stream()
+                        .anyMatch(role ->
+                            type.getSimpleName().toLowerCase(Locale.ROOT).startsWith(role.getKey())
+                                && role.getValue().stream().noneMatch(type.getName()::startsWith)))
                 .map(JavaClass::getName)
                 .filter(name -> !ALLOWED.containsKey(name)))
         .isEmpty();
@@ -62,9 +56,8 @@ class RoleNamesTest {
   void anAllowedNameIsClassThatStillExists() {
     assertThat(
             ALLOWED.keySet().stream()
-                .filter(
-                    name ->
-                        MainClasses.CODE.stream().noneMatch(type -> type.getName().equals(name))))
+                .filter(name ->
+                    MainClasses.CODE.stream().noneMatch(type -> type.getName().equals(name))))
         .isEmpty();
   }
 
@@ -74,10 +67,9 @@ class RoleNamesTest {
       assertThat(
               folders
                   .filter(Files::isDirectory)
-                  .filter(
-                      folder ->
-                          Files.exists(folder.resolve("brief.md.dist"))
-                              || Files.exists(folder.resolve("role.yml.dist")))
+                  .filter(folder ->
+                      Files.exists(folder.resolve("brief.md.dist"))
+                          || Files.exists(folder.resolve("role.yml.dist")))
                   .filter(folder -> !Files.exists(folder.resolve("design.md")))
                   .map(folder -> folder.getFileName().toString()))
           .isEmpty();

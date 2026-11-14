@@ -59,14 +59,13 @@ public class WorktreeOrphanScanner implements Job {
       return;
     }
     int secrets = left.stream().mapToInt(WorktreeOrphans.Orphan::secretFiles).sum();
-    left.forEach(
-        orphan ->
-            log.atWarn()
-                .setMessage("worktree orphaned")
-                .addKeyValue("path", orphan.path())
-                .addKeyValue("secrets", orphan.secretFiles())
-                .addKeyValue("owner", "none")
-                .log());
+    left.forEach(orphan ->
+        log.atWarn()
+            .setMessage("worktree orphaned")
+            .addKeyValue("path", orphan.path())
+            .addKeyValue("secrets", orphan.secretFiles())
+            .addKeyValue("owner", "none")
+            .log());
     notifications.send(
         Notification.housekeeping(
             Point.HOUSEKEEPING.id(),

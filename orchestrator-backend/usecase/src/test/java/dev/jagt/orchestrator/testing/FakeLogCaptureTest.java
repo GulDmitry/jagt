@@ -24,25 +24,23 @@ class FakeLogCaptureTest {
     ExecutorService threads = Executors.newFixedThreadPool(2);
     try {
       Future<List<String>> seenByFirst =
-          threads.submit(
-              () -> {
-                try (FakeLogCapture capture = new FakeLogCapture(SHARED.getName())) {
-                  bothCapturing.await();
-                  SHARED.warn("first logged");
-                  bothLogged.await();
-                  return capture.events().stream().map(ILoggingEvent::getMessage).toList();
-                }
-              });
+          threads.submit(() -> {
+            try (FakeLogCapture capture = new FakeLogCapture(SHARED.getName())) {
+              bothCapturing.await();
+              SHARED.warn("first logged");
+              bothLogged.await();
+              return capture.events().stream().map(ILoggingEvent::getMessage).toList();
+            }
+          });
       Future<List<String>> seenBySecond =
-          threads.submit(
-              () -> {
-                try (FakeLogCapture capture = new FakeLogCapture(SHARED.getName())) {
-                  bothCapturing.await();
-                  SHARED.warn("second logged");
-                  bothLogged.await();
-                  return capture.events().stream().map(ILoggingEvent::getMessage).toList();
-                }
-              });
+          threads.submit(() -> {
+            try (FakeLogCapture capture = new FakeLogCapture(SHARED.getName())) {
+              bothCapturing.await();
+              SHARED.warn("second logged");
+              bothLogged.await();
+              return capture.events().stream().map(ILoggingEvent::getMessage).toList();
+            }
+          });
 
       assertThat(seenByFirst.get()).containsExactly("first logged");
       assertThat(seenBySecond.get()).containsExactly("second logged");

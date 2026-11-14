@@ -34,11 +34,8 @@ class TextBudgetTest {
   @Test
   void decisionIsOneRecordOfFiftyLines() {
     assertThat(decisions())
-        .allSatisfy(
-            record ->
-                assertThat(lines(record))
-                    .describedAs("%s", record)
-                    .hasSizeLessThanOrEqualTo(RECORD));
+        .allSatisfy(record ->
+            assertThat(lines(record)).describedAs("%s", record).hasSizeLessThanOrEqualTo(RECORD));
   }
 
   @Test
@@ -51,21 +48,19 @@ class TextBudgetTest {
   @Test
   void pageReadWholeStaysUnderTwoHundredLines() {
     assertThat(pages())
-        .allSatisfy(
-            page ->
-                assertThat(lines(page))
-                    .describedAs("%s%s", page, prompt(page))
-                    .hasSizeLessThanOrEqualTo(PAGE));
+        .allSatisfy(page ->
+            assertThat(lines(page))
+                .describedAs("%s%s", page, prompt(page))
+                .hasSizeLessThanOrEqualTo(PAGE));
   }
 
   @Test
   void stepOfTheSessionBriefStaysUnderTwoHundredLines() {
     assertThat(STEP.split(String.join("\n", lines(SESSION_BRIEF))))
-        .allSatisfy(
-            step ->
-                assertThat(step.lines().count())
-                    .describedAs("%s%s", step.lines().findFirst().orElse(""), PROMPT_RULE)
-                    .isLessThanOrEqualTo(PAGE));
+        .allSatisfy(step ->
+            assertThat(step.lines().count())
+                .describedAs("%s%s", step.lines().findFirst().orElse(""), PROMPT_RULE)
+                .isLessThanOrEqualTo(PAGE));
   }
 
   @Test
@@ -82,11 +77,10 @@ class TextBudgetTest {
                     markdownIn(Path.of("../docs/rules")),
                     List.of(MAP_FILE, SESSION_BRIEF))
                 .flatMap(List::stream)
-                .flatMap(
-                    text ->
-                        lines(text).stream()
-                            .filter(line -> line.length() > WIDTH && !line.startsWith("|"))
-                            .map(line -> text.getFileName() + ": " + line)))
+                .flatMap(text ->
+                    lines(text).stream()
+                        .filter(line -> line.length() > WIDTH && !line.startsWith("|"))
+                        .map(line -> text.getFileName() + ": " + line)))
         .isEmpty();
   }
 
@@ -103,13 +97,11 @@ class TextBudgetTest {
 
     assertThat(
             read.stream()
-                .flatMap(
-                    document ->
-                        sentences(document).stream()
-                            .filter(sentence -> sentence.split("\\s+").length > 25)
-                            .map(
-                                sentence ->
-                                    document.getFileName() + ": " + sentence + prompt(document))))
+                .flatMap(document ->
+                    sentences(document).stream()
+                        .filter(sentence -> sentence.split("\\s+").length > 25)
+                        .map(sentence ->
+                            document.getFileName() + ": " + sentence + prompt(document))))
         .isEmpty();
   }
 
@@ -183,9 +175,8 @@ class TextBudgetTest {
     }
     blocks.add(block.toString());
     return blocks.stream()
-        .map(
-            text ->
-                text.replaceAll("`[^`]*`", "CODE").replaceAll("\\[([^\\]]*)\\]\\([^)]*\\)", "$1"))
+        .map(text ->
+            text.replaceAll("`[^`]*`", "CODE").replaceAll("\\[([^\\]]*)\\]\\([^)]*\\)", "$1"))
         .flatMap(text -> Arrays.stream(text.split("(?<=[.!?;:])\\s+| · ")))
         .map(String::strip)
         .filter(sentence -> !sentence.isEmpty())

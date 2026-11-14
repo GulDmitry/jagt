@@ -76,7 +76,8 @@ class SessionWakesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(Objects.requireNonNull(file.getParent()).toString())
                     .withStateFile(file.toString())),
-            reducer, event -> {});
+            reducer,
+            event -> {});
     return new SessionWakes(
         state,
         new TaskTurns(state, at(now), new Checkers(new TaskChart(Composition.builtIn()))),

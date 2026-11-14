@@ -141,7 +141,7 @@ class ProviderFaultTest {
             new Processes.Result(
                 1,
                 "{\"is_error\":true,\"terminal_reason\":\"api_error\",\"api_error_status\":401,\""
-                + "result\":\"bad"
+                    + "result\":\"bad"
                     + " key\"}",
                 ""));
 

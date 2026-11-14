@@ -33,8 +33,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class ConflictFinishTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final CommandService commands = mock(CommandService.class);
   private final TaskStops stops = mock(TaskStops.class);
@@ -96,7 +95,7 @@ class ConflictFinishTest {
     }
 
     @Test
-      void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped() {
+    void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped() {
       ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
 
       finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -110,7 +109,7 @@ class ConflictFinishTest {
     }
 
     @Test
-      void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped() {
+    void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped() {
       new ConflictFinish(commands, stops, state, Clock.systemUTC())
           .press("ABC-42", Path.of("/src/ABC-42-deploy"));
       new ConflictFinish(commands, stops, state, Clock.systemUTC())

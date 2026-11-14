@@ -58,8 +58,7 @@ class RepoRemoval {
         + (closed ? ", its request closed" : "");
   }
 
-  private void close(
-      String taskId, String project, @Nullable String remoteUrl, String requestUrl) {
+  private void close(String taskId, String project, @Nullable String remoteUrl, String requestUrl) {
     Answer<String> closed = codeHost.closeRequest(project, remoteUrl, requestUrl);
     if (closed.facts().isEmpty()) {
       throw new IllegalStateException(

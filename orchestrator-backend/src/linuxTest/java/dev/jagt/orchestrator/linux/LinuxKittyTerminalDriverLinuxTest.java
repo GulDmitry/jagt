@@ -135,14 +135,13 @@ class LinuxKittyTerminalDriverLinuxTest {
     await("the instance holding the socket is gone")
         .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(250))
-        .until(
-            () ->
-                runner
-                        .run(
-                            null,
-                            PROBE_CUT_OFF_SINCE_A_DEAD_SOCKET_BLOCKS,
-                            List.of("pgrep", "-f", socketPath))
-                        .exitCode()
-                    != 0);
+        .until(() ->
+            runner
+                    .run(
+                        null,
+                        PROBE_CUT_OFF_SINCE_A_DEAD_SOCKET_BLOCKS,
+                        List.of("pgrep", "-f", socketPath))
+                    .exitCode()
+                != 0);
   }
 }

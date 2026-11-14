@@ -117,9 +117,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void thePaletteRunsRetiredVerbItselfInsteadOfPayingTheModelForIt() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_POLLING)
-            .mrUrl("https://host/x/merge_requests/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host/x/merge_requests/7").build());
     when(commands.execute("ABC-1", TaskAction.SWEEP, null))
         .thenReturn("sweep ABC-1: checks success");
 
@@ -274,9 +272,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     ask(page, "resume https://host.example/mr/42");
 
     assertThat(page.locator("#toasts .toast")).hasText("Resumed ABC-9 on its existing branch");
-    assertThat(
-            button(page, "Resume"))
-        .hasCount(0);
+    assertThat(button(page, "Resume")).hasCount(0);
   }
 
   @Test
@@ -449,11 +445,10 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void secondCommandEnterDuringSlowLaunchStartsNoSecondTask() {
     CountDownLatch release = new CountDownLatch(1);
     when(launcher.launch(any()))
-        .thenAnswer(
-            call -> {
-              release.await();
-              return Launched.created("ABC-9", "Started ABC-9.");
-            });
+        .thenAnswer(call -> {
+          release.await();
+          return Launched.created("ABC-9", "Started ABC-9.");
+        });
     Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");

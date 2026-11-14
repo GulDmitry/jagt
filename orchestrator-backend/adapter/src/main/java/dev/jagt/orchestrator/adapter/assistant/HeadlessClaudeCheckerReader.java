@@ -100,16 +100,15 @@ public class HeadlessClaudeCheckerReader {
         run.reach().startIn(run.worktree()),
         TIMEOUT,
         cmd,
-            new ReadScope(
-                    Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream())
-                        .toList(),
-                    tools,
-                    scope.git(),
-                    List.of(),
-                    scope.fetch() ? run.reach().urls() : List.of(),
-                    BrowserTools.navigating(scope.mcp()),
-                    BrowserTools.looking(scope.mcp()))
-                .withWorkspace(run.reach().workspace()),
+        new ReadScope(
+                Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
+                tools,
+                scope.git(),
+                List.of(),
+                scope.fetch() ? run.reach().urls() : List.of(),
+                BrowserTools.navigating(scope.mcp()),
+                BrowserTools.looking(scope.mcp()))
+            .withWorkspace(run.reach().workspace()),
         AssistantCallKind.ACCEPTANCE_CHECK,
         run.worktree().toString());
   }

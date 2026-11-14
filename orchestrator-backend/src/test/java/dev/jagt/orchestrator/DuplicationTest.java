@@ -22,25 +22,22 @@ class DuplicationTest {
     CPDConfiguration configuration = new CPDConfiguration();
     configuration.setOnlyRecognizeLanguage(LanguageRegistry.CPD.getLanguageById("java"));
     configuration.setMinimumTileSize(MINIMUM_TOKENS);
-    SourceRoots.javaFiles()
-        .forEach(configuration::addInputPath);
+    SourceRoots.javaFiles().forEach(configuration::addInputPath);
     List<String> duplicates = new ArrayList<>();
 
     try (CpdAnalysis cpd = CpdAnalysis.create(configuration)) {
-      cpd.performAnalysis(
-          (CPDReport report) -> {
-            assertThat(report.getProcessingErrors()).isEmpty();
-            report
-                .getMatches()
-                .forEach(
-                    match ->
-                        duplicates.add(
-                            match.getTokenCount()
-                                + " tokens: "
-                                + StreamSupport.stream(match.spliterator(), false)
-                                    .map(DuplicationTest::place)
-                                    .toList()));
-          });
+      cpd.performAnalysis((CPDReport report) -> {
+        assertThat(report.getProcessingErrors()).isEmpty();
+        report
+            .getMatches()
+            .forEach(match ->
+                duplicates.add(
+                    match.getTokenCount()
+                        + " tokens: "
+                        + StreamSupport.stream(match.spliterator(), false)
+                            .map(DuplicationTest::place)
+                            .toList()));
+      });
     }
 
     assertThat(String.join(System.lineSeparator(), duplicates)).isEmpty();

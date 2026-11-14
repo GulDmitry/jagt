@@ -43,12 +43,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 class CheckerDeclineJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final ConfigFile ON =
-      ConfigFile.defaults()
-          .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
+      ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
   private static TaskState declined(long reportedAt) {
     return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -104,8 +102,7 @@ class CheckerDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
 
-    job
-        .run("ABC-42", declined(System.currentTimeMillis() + 1000));
+    job.run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
     verify(outcomes).declined(eq("ABC-42"), eq(accepted), eq(false));
   }
@@ -114,8 +111,7 @@ class CheckerDeclineJobTest {
   void readsNothingBeforeTheSessionRepliedToTheRound() {
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
 
-    job
-        .run("ABC-42", declined(1));
+    job.run("ABC-42", declined(1));
 
     verify(reader, never()).decline(any(), any(), any(), any());
   }
@@ -124,8 +120,7 @@ class CheckerDeclineJobTest {
   void readsNothingOnceTheDisputeWentToTheHuman() {
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.ESCALATED);
 
-    job
-        .run("ABC-42", declined(System.currentTimeMillis() + 1000));
+    job.run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
     verify(reader, never()).decline(any(), any(), any(), any());
   }
@@ -138,8 +133,7 @@ class CheckerDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(disputed), TokenUsage.NONE));
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.DISPUTED);
 
-    job
-        .run("ABC-42", declined(System.currentTimeMillis() + 1000));
+    job.run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
     verify(outcomes).declined(eq("ABC-42"), eq(disputed), eq(true));
   }
@@ -151,11 +145,9 @@ class CheckerDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
     TaskState reading =
-        reducer.relayed(
-            declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
+        reducer.relayed(declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
 
-    job
-        .run("ABC-42", reading);
+    job.run("ABC-42", reading);
 
     verify(reader).decline(eq("ABC-42"), eq(AcceptanceVerdict.AGAIN), any(), any());
   }
@@ -187,8 +179,7 @@ class CheckerDeclineJobTest {
                 Session.startedOver(Session.defaults())
                     .withReportedAt(System.currentTimeMillis() + 1000));
 
-    job
-        .run("ABC-42", legacy);
+    job.run("ABC-42", legacy);
 
     verify(reader).decline(eq("ABC-42"), eq(AcceptanceVerdict.AGAIN), any(), any());
   }

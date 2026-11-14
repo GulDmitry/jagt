@@ -42,23 +42,21 @@ public class StopTriagePanel {
       List<String> lines = new ArrayList<>();
       task.history().stream()
           .skip(Math.max(0, task.history().size() - STEPS))
-          .forEach(
-              step ->
-                  lines.add(
-                      Instant.ofEpochMilli(step.at())
-                          + " "
-                          + step.status()
-                          + (step.origin() == null ? "" : " by " + step.origin())
-                          + (step.why() == null ? "" : ": " + step.why())));
+          .forEach(step ->
+              lines.add(
+                  Instant.ofEpochMilli(step.at())
+                      + " "
+                      + step.status()
+                      + (step.origin() == null ? "" : " by " + step.origin())
+                      + (step.why() == null ? "" : ": " + step.why())));
       task.trailOrNone()
           .rounds()
-          .forEach(
-              round ->
-                  lines.add(
-                      Instant.ofEpochMilli(round.at())
-                          + " round, threads "
-                          + round.threads()
-                          + (round.failing().isBlank() ? "" : ", failing " + round.failing())));
+          .forEach(round ->
+              lines.add(
+                  Instant.ofEpochMilli(round.at())
+                      + " round, threads "
+                      + round.threads()
+                      + (round.failing().isBlank() ? "" : ", failing " + round.failing())));
       String worktrees =
           task.repos().stream().map(TaskRepo::worktreePath).filter(Objects::nonNull).toList()
               + ", base "

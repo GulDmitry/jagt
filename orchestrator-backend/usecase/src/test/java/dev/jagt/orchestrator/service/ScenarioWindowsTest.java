@@ -97,8 +97,11 @@ class ScenarioWindowsTest {
             SessionHost.WindowState.MISSING,
             SessionHost.WindowState.MISSING);
 
-    assertThat(ended).singleElement().satisfies(e -> assertThat(e.getKeyValuePairs())
-        .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=gone")));
+    assertThat(ended)
+        .singleElement()
+        .satisfies(e ->
+            assertThat(e.getKeyValuePairs())
+                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=gone")));
   }
 
   @Test
@@ -109,9 +112,12 @@ class ScenarioWindowsTest {
     List<ILoggingEvent> ended =
         watched("p1", SessionHost.WindowState.AGENT_RUNNING, SessionHost.WindowState.DEAD_SHELL);
 
-    assertThat(ended).singleElement().satisfies(e -> assertThat(e.getKeyValuePairs())
-        .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=finished"))
-        .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("cause=Goodbye")));
+    assertThat(ended)
+        .singleElement()
+        .satisfies(e ->
+            assertThat(e.getKeyValuePairs())
+                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=finished"))
+                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("cause=Goodbye")));
   }
 
   @Test
@@ -133,8 +139,11 @@ class ScenarioWindowsTest {
 
     List<ILoggingEvent> ended = watched("p3", SessionHost.WindowState.DEAD_SHELL);
 
-    assertThat(ended).singleElement().satisfies(e -> assertThat(e.getKeyValuePairs())
-        .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=failed")));
+    assertThat(ended)
+        .singleElement()
+        .satisfies(e ->
+            assertThat(e.getKeyValuePairs())
+                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=failed")));
   }
 
   @Test

@@ -17,9 +17,7 @@ public record TaskPress(String taskId, String verb, String project, String line)
     return Schema.of(description)
         .required("taskId", "string", "Task id or its short alias (p1, s2, …).")
         .choiceRequired("verb", VERBS, null)
-        .text(
-            "project",
-            "The project an `add-repo` or `remove-repo` names; otherwise left out.")
+        .text("project", "The project an `add-repo` or `remove-repo` names; otherwise left out.")
         .text("line", "The one line `run` types into the session; otherwise left out.");
   }
 

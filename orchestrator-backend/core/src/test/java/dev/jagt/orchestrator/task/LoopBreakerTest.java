@@ -33,11 +33,10 @@ class LoopBreakerTest {
     var stop = breaker.afterRound(watch, List.of(), 5);
 
     assertThat(stop)
-        .hasValueSatisfying(
-            it -> {
-              assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.STALLED);
-              assertThat(it.evidence()).contains("threads per round: 10, 10, 10, 11");
-            });
+        .hasValueSatisfying(it -> {
+          assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.STALLED);
+          assertThat(it.evidence()).contains("threads per round: 10, 10, 10, 11");
+        });
   }
 
   @Test
@@ -99,13 +98,12 @@ class LoopBreakerTest {
     var stop = breaker.beforeShip(watch, fourShips, 5_000);
 
     assertThat(stop)
-        .hasValueSatisfying(
-            it -> {
-              assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.SHIPS);
-              assertThat(it.evidence())
-                  .contains("ships without a new note in 24h: 4")
-                  .contains("threads per round: 5, 6, 5, 6, 5");
-            });
+        .hasValueSatisfying(it -> {
+          assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.SHIPS);
+          assertThat(it.evidence())
+              .contains("ships without a new note in 24h: 4")
+              .contains("threads per round: 5, 6, 5, 6, 5");
+        });
   }
 
   @Test
@@ -310,11 +308,9 @@ class LoopBreakerTest {
             .beforeRound("round-not-ready", turn, RoundTrail.none(), 3);
 
     assertThat(stop)
-        .hasValueSatisfying(
-            it ->
-                assertThat(it.evidence())
-                    .isEqualTo(
-                        "round-not-ready sent 2 rounds running in 24h; the next one was not"));
+        .hasValueSatisfying(it ->
+            assertThat(it.evidence())
+                .isEqualTo("round-not-ready sent 2 rounds running in 24h; the next one was not"));
   }
 
   @Test
@@ -355,12 +351,11 @@ class LoopBreakerTest {
     var stop = breaker.beforeMove(history, RoundTrail.none(), 3_100_000);
 
     assertThat(stop)
-        .hasValueSatisfying(
-            it -> {
-              assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.PACE);
-              assertThat(it.evidence())
-                  .isEqualTo("20 unattended moves in 1h; the next one was not made");
-            });
+        .hasValueSatisfying(it -> {
+          assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.PACE);
+          assertThat(it.evidence())
+              .isEqualTo("20 unattended moves in 1h; the next one was not made");
+        });
   }
 
   @ParameterizedTest

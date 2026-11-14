@@ -61,9 +61,8 @@ class StepsWithinCasesTest {
 
     assertThat(violations)
         .singleElement()
-        .satisfies(
-            violation ->
-                assertThat(violation.evidence()).startsWith("round-not-ready at IN_PROGRESS"));
+        .satisfies(violation ->
+            assertThat(violation.evidence()).startsWith("round-not-ready at IN_PROGRESS"));
   }
 
   @Test
@@ -78,8 +77,7 @@ class StepsWithinCasesTest {
 
     assertThat(violations)
         .singleElement()
-        .satisfies(
-            violation ->
-                assertThat(violation.evidence()).startsWith("round-not-ready at IN_PROGRESS"));
+        .satisfies(violation ->
+            assertThat(violation.evidence()).startsWith("round-not-ready at IN_PROGRESS"));
   }
 }

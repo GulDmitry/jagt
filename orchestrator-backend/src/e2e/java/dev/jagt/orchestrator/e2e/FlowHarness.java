@@ -96,9 +96,7 @@ final class FlowHarness {
   }
 
   boolean asked() {
-    return !mockingDetails(context.getBean(Assistants.class).reviewer())
-        .getInvocations()
-        .isEmpty();
+    return !mockingDetails(context.getBean(Assistants.class).reviewer()).getInvocations().isEmpty();
   }
 
   void awaitVerificationSentBack() {

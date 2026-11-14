@@ -37,13 +37,12 @@ public class StartupValidation {
     }
     checks.stream()
         .flatMap(check -> check.notes().stream())
-        .forEach(
-            note ->
-                log.atWarn()
-                    .setMessage("start goes on without")
-                    .addKeyValue("what", note.key())
-                    .addKeyValue("cause", note.text())
-                    .log());
+        .forEach(note ->
+            log.atWarn()
+                .setMessage("start goes on without")
+                .addKeyValue("what", note.key())
+                .addKeyValue("cause", note.text())
+                .log());
   }
 
   /**

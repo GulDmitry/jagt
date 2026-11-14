@@ -31,8 +31,7 @@ class SessionLedgerTest {
   void writesTheSignOnTheTask() {
     Clock clock = Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC);
 
-    new SessionLedger(state, clock)
-        .record("ABC-1", null, new SessionSign.WorkStarted());
+    new SessionLedger(state, clock).record("ABC-1", null, new SessionSign.WorkStarted());
 
     assertThat(state.task("ABC-1").orElseThrow().session().workStartedAt()).isEqualTo(7_000);
   }

@@ -124,22 +124,20 @@ public final class ReadGate {
 
   private static boolean workspaceCommand(CheckerReader.Workspace workspace, String command) {
     return workspace.commands().stream()
-        .anyMatch(
-            shell ->
-                command.equals(shell)
-                    || (command.startsWith(shell + " ")
-                        && !SHELL_META.matcher(command.substring(shell.length())).find()));
+        .anyMatch(shell ->
+            command.equals(shell)
+                || (command.startsWith(shell + " ")
+                    && !SHELL_META.matcher(command.substring(shell.length())).find()));
   }
 
   private static Optional<String> fetchRefusal(ReadScope read, String url) {
     boolean listed =
         read.fetchable().stream()
-            .anyMatch(
-                environment ->
-                    url.equals(environment)
-                        || (url.startsWith(environment)
-                            && "/?#".indexOf(url.charAt(environment.length())) >= 0)
-                        || (url.startsWith(environment) && environment.endsWith("/")));
+            .anyMatch(environment ->
+                url.equals(environment)
+                    || (url.startsWith(environment)
+                        && "/?#".indexOf(url.charAt(environment.length())) >= 0)
+                    || (url.startsWith(environment) && environment.endsWith("/")));
     return listed
         ? Optional.empty()
         : Optional.of(

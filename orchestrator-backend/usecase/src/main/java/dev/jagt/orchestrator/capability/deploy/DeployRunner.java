@@ -116,8 +116,7 @@ public class DeployRunner {
       stateService.reduce(
           taskId,
           (reducer, t) ->
-              reducer.deployStepped(
-                  t, new DeployStep.Blocked(target.project()), clock.millis()));
+              reducer.deployStepped(t, new DeployStep.Blocked(target.project()), clock.millis()));
       landing.obstacle = landing.obstacle == null ? e : landing.obstacle;
     } catch (GitDeploy.MergeConflictException e) {
       return handBackConflict(taskId, targets, at, e);
@@ -143,7 +142,7 @@ public class DeployRunner {
         landed.isEmpty()
             ? " never started: " + obstacle.getMessage()
             : " could not start while the shared deploy worktree path held another repository's"
-                  + " checkout. Run `deploy "
+                + " checkout. Run `deploy "
                 + taskId
                 + "` again.";
     return Outcome.partial(
@@ -230,29 +229,24 @@ public class DeployRunner {
     List<String> landed =
         targets.stream()
             .filter(target -> merged.containsKey(target.project()))
-            .map(
-                target ->
-                    target.project()
-                        + " into "
-                        + target.deployBranch()
-                        + " ("
-                        + GitDeploy.shortSha(merged.get(target.project()))
-                        + ")")
+            .map(target ->
+                target.project()
+                    + " into "
+                    + target.deployBranch()
+                    + " ("
+                    + GitDeploy.shortSha(merged.get(target.project()))
+                    + ")")
             .toList();
     // A resumed sequence merged only its tail; the whole picture is what the human is owed.
     List<Deployment.Target> recorded = Objects.requireNonNull(task.deployment()).targets();
     List<String> earlier =
         targets.subList(0, from).stream()
-            .map(
-                target ->
-                    target.project()
-                        + " ("
-                        + GitDeploy.shortSha(
-                            recorded
-                                .get(task.deployment().indexOf(target.project()))
-                                .landing()
-                                .merge())
-                        + ")")
+            .map(target ->
+                target.project()
+                    + " ("
+                    + GitDeploy.shortSha(
+                        recorded.get(task.deployment().indexOf(target.project())).landing().merge())
+                    + ")")
             .toList();
     String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
     String idle = nothingToDo.isEmpty() ? "" : ", nothing to deploy in " + names(nothingToDo);

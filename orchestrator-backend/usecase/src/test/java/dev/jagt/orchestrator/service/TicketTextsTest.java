@@ -61,14 +61,11 @@ class TicketTextsTest {
     KeptTicketTexts kept = new KeptTicketTexts(orchestratorPaths().withRoot(root).build());
     when(assistants.tracker().readTicketText("ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Widget layout is off"), TokenUsage.NONE));
-    new TicketTexts(assistants, usage, kept)
-        .read("ABC-42", "ABC-42", 1_000L);
+    new TicketTexts(assistants, usage, kept).read("ABC-42", "ABC-42", 1_000L);
 
     TicketTexts restarted =
         new TicketTexts(
-            assistants,
-            usage,
-            new KeptTicketTexts(orchestratorPaths().withRoot(root).build()));
+            assistants, usage, new KeptTicketTexts(orchestratorPaths().withRoot(root).build()));
 
     assertThat(restarted.readSince("ABC-42", 9_000L)).isTrue();
     assertThat(restarted.of("ABC-42")).contains("Widget layout is off");

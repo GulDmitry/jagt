@@ -550,9 +550,7 @@ class YourMoveJobTest {
 
     verify(notifications, times(1))
         .send(
-            argThat(
-                sent ->
-                    "needs input".equals(sent.title())
-                        && sent.body().contains("another repository")));
+            argThat(sent ->
+                "needs input".equals(sent.title()) && sent.body().contains("another repository")));
   }
 }

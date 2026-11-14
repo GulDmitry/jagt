@@ -74,9 +74,8 @@ public class FlowEngine {
     TaskCapability capability =
         capabilities
             .of(action)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException("No capability declared for `" + action.id() + "`"));
+            .orElseThrow(() ->
+                new IllegalStateException("No capability declared for `" + action.id() + "`"));
     if (project != null) {
       named(taskId, task, action, project, capability);
     }
@@ -86,8 +85,7 @@ public class FlowEngine {
       }
       capability.vetLine(line);
     }
-    return apply(
-        taskId, task.status(), action, wrapped(taskId, action, capability, project, line));
+    return apply(taskId, task.status(), action, wrapped(taskId, action, capability, project, line));
   }
 
   private void named(
@@ -175,10 +173,7 @@ public class FlowEngine {
             .withSeveralRepos(task.repos().size() > 1),
         Facts.Reach.defaults()
             .withScenarios(
-                capabilities
-                    .of(TaskAction.SCENARIOS)
-                    .map(TaskCapability::offered)
-                    .orElse(false))
+                capabilities.of(TaskAction.SCENARIOS).map(TaskCapability::offered).orElse(false))
             .withShellEscape(
                 capabilities.of(TaskAction.RUN).map(TaskCapability::offered).orElse(false)));
   }

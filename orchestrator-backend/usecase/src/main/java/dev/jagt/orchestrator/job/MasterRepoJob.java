@@ -48,23 +48,22 @@ public class MasterRepoJob implements Job {
     }
     stateService
         .tasks()
-        .forEach(
-            (taskId, task) -> {
-              String request = task.repoRequest();
-              String pressed = task.turnOrNone().mark(PRESSED);
-              if (request == null) {
-                if (pressed != null) {
-                  turns.unmark(taskId, PRESSED);
-                }
-                return;
-              }
-              // Once per request, kept on the task: a refused press is not repeated, nor after a
-              // restart.
-              if (task.status() == TaskStatus.DONE || task.stopped() || request.equals(pressed)) {
-                return;
-              }
-              turns.mark(taskId, PRESSED, request);
-              press.execute(taskId, TaskAction.ADD_REPO);
-            });
+        .forEach((taskId, task) -> {
+          String request = task.repoRequest();
+          String pressed = task.turnOrNone().mark(PRESSED);
+          if (request == null) {
+            if (pressed != null) {
+              turns.unmark(taskId, PRESSED);
+            }
+            return;
+          }
+          // Once per request, kept on the task: a refused press is not repeated, nor after a
+          // restart.
+          if (task.status() == TaskStatus.DONE || task.stopped() || request.equals(pressed)) {
+            return;
+          }
+          turns.mark(taskId, PRESSED, request);
+          press.execute(taskId, TaskAction.ADD_REPO);
+        });
   }
 }

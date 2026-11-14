@@ -221,16 +221,15 @@ class McpProtocolServiceTest {
       assertThat(log.events())
           .filteredOn(event -> "mcp tool called".equals(event.getMessage()))
           .singleElement()
-          .satisfies(
-              event ->
-                  assertThat(event.getKeyValuePairs())
-                      .extracting(pair -> pair.key + "=" + pair.value)
-                      .containsExactly(
-                          "task=ABC-1",
-                          "tool=note",
-                          "turn=1",
-                          "step=ship",
-                          "arguments={\"why\":\"pushed\"}"));
+          .satisfies(event ->
+              assertThat(event.getKeyValuePairs())
+                  .extracting(pair -> pair.key + "=" + pair.value)
+                  .containsExactly(
+                      "task=ABC-1",
+                      "tool=note",
+                      "turn=1",
+                      "step=ship",
+                      "arguments={\"why\":\"pushed\"}"));
     }
   }
 
@@ -394,14 +393,10 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .build());
-    McpProtocolService protocol = new McpProtocolService(
-            mapper,
-            state,
-            Clock.systemUTC(),
-            List.of(new DeployTools(mock(CommandService.class))));
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -421,10 +416,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper,
-            state,
-            Clock.systemUTC(),
-            List.of(new DeployTools(mock(CommandService.class))));
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -449,9 +441,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .build());
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
     CallerScope scope = new CallerScope(state);
     McpProtocolService protocol =
         new McpProtocolService(
@@ -516,7 +506,8 @@ class McpProtocolServiceTest {
             .lastActiveTimestamp(lastActive)
             .alias("a1")
             .build());
-    McpProtocolService protocol = new McpProtocolService(
+    McpProtocolService protocol =
+        new McpProtocolService(
             mapper, state, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC), List.of());
 
     protocol.handle(
@@ -557,7 +548,8 @@ class McpProtocolServiceTest {
             .lastActiveTimestamp(85_000)
             .alias("a1")
             .build());
-    McpProtocolService protocol = new McpProtocolService(
+    McpProtocolService protocol =
+        new McpProtocolService(
             mapper, state, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC), List.of());
 
     protocol.handle(
@@ -617,10 +609,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper,
-            state,
-            Clock.systemUTC(),
-            List.of(new DeployTools(mock(CommandService.class))));
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode response =
         protocol

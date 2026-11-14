@@ -97,8 +97,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
     public record NotificationsConfig(
-        @Nullable Map<String, ChannelDef> channels,
-        @Nullable Map<String, List<RouteDef>> points) {
+        @Nullable Map<String, ChannelDef> channels, @Nullable Map<String, List<RouteDef>> points) {
 
       public static NotificationsConfig defaults() {
         return new NotificationsConfig(null, null);
@@ -431,13 +430,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       public List<Path> allowWritePaths(Path home) {
         return allowWriteOrEmpty().stream()
             .map(String::strip)
-            .map(
-                entry ->
-                    entry.equals("~")
-                        ? home
-                        : entry.startsWith("~/")
-                            ? home.resolve(entry.substring(2))
-                            : Path.of(entry))
+            .map(entry ->
+                entry.equals("~")
+                    ? home
+                    : entry.startsWith("~/") ? home.resolve(entry.substring(2)) : Path.of(entry))
             .toList();
       }
 
@@ -886,14 +882,12 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     Stream.of(layers)
         .filter(Map.class::isInstance)
         .map(Map.class::cast)
-        .forEach(
-            layer ->
-                layer.forEach(
-                    (key, value) -> {
-                      if (value != null) {
-                        merged.put(key, value);
-                      }
-                    }));
+        .forEach(layer ->
+            layer.forEach((key, value) -> {
+              if (value != null) {
+                merged.put(key, value);
+              }
+            }));
     return merged;
   }
 

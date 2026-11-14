@@ -20,10 +20,8 @@ class HeldTimeTest {
     List<StatusChange> history =
         new ArrayList<>(List.of(new StatusChange(TaskStatus.NEW, NOW - 100 * HOUR, null)));
     IntStream.range(1, 50)
-        .forEach(
-            step ->
-                history.add(
-                    new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null)));
+        .forEach(step ->
+            history.add(new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null)));
 
     long held = HeldTime.byOwner(history, NOW).values().stream().mapToLong(Long::longValue).sum();
 

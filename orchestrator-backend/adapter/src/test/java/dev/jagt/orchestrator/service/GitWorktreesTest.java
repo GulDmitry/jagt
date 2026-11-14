@@ -41,10 +41,9 @@ class GitWorktreesTest {
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
     GitRepos.git(runner, repo, "branch", "ABC-1");
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("recreate")
         .hasMessageContaining("resume");
@@ -195,10 +194,9 @@ class GitWorktreesTest {
     GitRepos.git(runner, repo, "commit", "-qam", "local");
     GitRepos.git(runner, repo, "checkout", "-q", "main");
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("diverged");
     assertThat(dir.resolve("wt")).doesNotExist();
@@ -210,10 +208,9 @@ class GitWorktreesTest {
     GitRepos.shipRelease(runner, repo);
     GitRepos.refusePushes(runner, repo, dir);
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("push was refused")
         .hasMessageContaining("the rebase was undone");
@@ -228,10 +225,9 @@ class GitWorktreesTest {
     GitRepos.shipRelease(runner, repo);
     GitRepos.refusePushes(runner, repo, dir);
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("push was refused");
     assertThat(dir.resolve("wt")).doesNotExist();
@@ -277,9 +273,7 @@ class GitWorktreesTest {
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
-    assertThat(
-            GitRepos.git(runner, dir.resolve("wt"), "status", "--porcelain")
-                .stdout())
+    assertThat(GitRepos.git(runner, dir.resolve("wt"), "status", "--porcelain").stdout())
         .contains("UU f.txt");
     assertThat(
             GitRepos.git(
@@ -330,10 +324,9 @@ class GitWorktreesTest {
     GitRepos.git(runner, repo, "checkout", "-qb", "ABC-1");
     Files.writeString(repo.resolve("f.txt"), "work nobody committed");
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("uncommitted changes");
     assertThat(dir.resolve("wt")).doesNotExist();
@@ -368,10 +361,9 @@ class GitWorktreesTest {
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
     GitRepos.git(runner, repo, "checkout", "-qb", "ABC-1");
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class);
     assertThat(
             runner
@@ -420,14 +412,13 @@ class GitWorktreesTest {
 
     Path fileEvenRootCannotCreateUnder = Files.writeString(dir.resolve("in-the-way"), "");
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo,
-                    fileEvenRootCannotCreateUnder.resolve("wt"),
-                    "ABC-1",
-                    "origin/main",
-                    BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo,
+                fileEvenRootCannotCreateUnder.resolve("wt"),
+                "ABC-1",
+                "origin/main",
+                BranchStrategy.RESUME))
         .isInstanceOf(RuntimeException.class);
 
     assertThat(
@@ -485,14 +476,9 @@ class GitWorktreesTest {
     GitRepos.git(runner, repo, "checkout", "-qb", "ABC-1");
     Path notDirectory = Files.writeString(dir.resolve("in-the-way"), "");
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo,
-                    notDirectory.resolve("wt"),
-                    "ABC-1",
-                    "origin/main",
-                    BranchStrategy.RECREATE))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, notDirectory.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE))
         .isInstanceOf(RuntimeException.class);
 
     assertThat(
@@ -513,10 +499,9 @@ class GitWorktreesTest {
         Duration.ofSeconds(30),
         List.of("git", "worktree", "add", "-q", dir.resolve("elsewhere").toString(), "ABC-1"));
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("elsewhere")
         .hasMessageContaining("free it there");
@@ -610,8 +595,7 @@ class GitWorktreesTest {
     String stopped = git.reattach(repo, "ABC-1");
 
     assertThat(stopped).isNull();
-    assertThat(
-            GitRepos.git(runner, repo, "branch", "--show-current").stdout().strip())
+    assertThat(GitRepos.git(runner, repo, "branch", "--show-current").stdout().strip())
         .isEqualTo("ABC-1");
   }
 
@@ -626,9 +610,7 @@ class GitWorktreesTest {
     String stopped = git.reattach(repo, "ABC-1");
 
     assertThat(stopped).isNull();
-    assertThat(
-            GitRepos.git(runner, repo, "branch", "--show-current").stdout().strip())
-        .isEmpty();
+    assertThat(GitRepos.git(runner, repo, "branch", "--show-current").stdout().strip()).isEmpty();
   }
 
   @Test
@@ -654,8 +636,7 @@ class GitWorktreesTest {
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
     assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("base");
-    assertThat(GitRepos.git(runner, repo, "worktree", "list").stdout())
-        .doesNotContain("gone");
+    assertThat(GitRepos.git(runner, repo, "worktree", "list").stdout()).doesNotContain("gone");
   }
 
   @Test
@@ -695,10 +676,9 @@ class GitWorktreesTest {
     Files.writeString(hook, "#!/bin/sh\nexit 1\n");
     Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
 
-    assertThatThrownBy(
-            () ->
-                git.createWorktree(
-                    repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            git.createWorktree(
+                repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Rebasing 'ABC-1' onto origin/main failed");
   }
@@ -739,8 +719,7 @@ class GitWorktreesTest {
 
     git.removeWorktree(repo, dir.resolve("wt"), "ABC-1");
 
-    assertThat(GitRepos.git(runner, repo, "worktree", "list").stdout())
-        .doesNotContain("wt");
+    assertThat(GitRepos.git(runner, repo, "worktree", "list").stdout()).doesNotContain("wt");
     assertThat(git.branchExists(repo, "ABC-1")).isFalse();
   }
 
@@ -840,14 +819,9 @@ class GitWorktreesTest {
     Path notDirectory = Files.writeString(dir.resolve("in-the-way"), "");
 
     Throwable failure =
-        catchThrowable(
-            () ->
-                git.createWorktree(
-                    repo,
-                    notDirectory.resolve("wt"),
-                    "ABC-1",
-                    "origin/main",
-                    BranchStrategy.RECREATE));
+        catchThrowable(() ->
+            git.createWorktree(
+                repo, notDirectory.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE));
 
     assertThat(failure).isInstanceOf(RuntimeException.class).hasNoSuppressedExceptions();
   }

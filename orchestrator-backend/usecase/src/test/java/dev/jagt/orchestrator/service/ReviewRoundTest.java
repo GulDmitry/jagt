@@ -38,8 +38,7 @@ class ReviewRoundTest {
               new ReviewFacts(
                   new ReviewFacts.Request(true, false, false, false, 7),
                   new ReviewFacts.Pipeline("success", "", ""),
-                  new ReviewFacts.Discussion(
-                      List.of("rename x"), List.of(), List.of("101187")))),
+                  new ReviewFacts.Discussion(List.of("rename x"), List.of(), List.of("101187")))),
           TokenUsage.NONE);
   private final Answer<ReviewFacts> renamedSecond =
       new Answer<>(
@@ -47,8 +46,7 @@ class ReviewRoundTest {
               new ReviewFacts(
                   new ReviewFacts.Request(true, false, false, false, 7),
                   new ReviewFacts.Pipeline("success", "", ""),
-                  new ReviewFacts.Discussion(
-                      List.of("rename x"), List.of(), List.of("101219")))),
+                  new ReviewFacts.Discussion(List.of("rename x"), List.of(), List.of("101219")))),
           TokenUsage.NONE);
   private final Answer<String> openAtEight =
       new Answer<>(Optional.of("OPEN 2026-11-09T08:00:00Z abc123"), TokenUsage.NONE);
@@ -63,10 +61,7 @@ class ReviewRoundTest {
 
   @Test
   void readsTheSameRoundTwiceWhereTheModelWroteOtherNoteIdsButTheHostGivesTheSame() {
-    when(reader.read("ABC-1", "http://mr/1"))
-        .thenReturn(
-            renamedFirst)
-        .thenReturn(renamedSecond);
+    when(reader.read("ABC-1", "http://mr/1")).thenReturn(renamedFirst).thenReturn(renamedSecond);
     when(host.requestFingerprint("proj", "http://mr/1")).thenReturn(Answer.unavailable());
     when(host.unresolvedNotes("proj", "http://mr/1"))
         .thenReturn(new Answer<>(Optional.of(List.of("301")), TokenUsage.NONE));
@@ -80,9 +75,7 @@ class ReviewRoundTest {
 
   @Test
   void carriesNoNoteIdWhereTheHostCouldNotBeAsked() {
-    when(reader.read("ABC-1", "http://mr/1"))
-        .thenReturn(
-            renamedFirst);
+    when(reader.read("ABC-1", "http://mr/1")).thenReturn(renamedFirst);
     when(host.requestFingerprint("proj", "http://mr/1")).thenReturn(Answer.unavailable());
     when(host.unresolvedNotes("proj", "http://mr/1"))
         .thenReturn(Answer.failed(TokenUsage.NONE, "gh exited 1"));
@@ -121,8 +114,7 @@ class ReviewRoundTest {
                         new ReviewFacts.Pipeline("success", "", ""),
                         new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
                 new TokenUsage(1, 900, 0, 40, 0.06)));
-    when(host.requestFingerprint("proj", "http://mr/1"))
-        .thenReturn(openAtEight);
+    when(host.requestFingerprint("proj", "http://mr/1")).thenReturn(openAtEight);
 
     OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> round.read("ABC-1", "proj", "http://mr/1"));
     Answer<ReviewFacts> second =
@@ -148,8 +140,7 @@ class ReviewRoundTest {
 
   @Test
   void readsTheRequestAgainWhenPollFindsNewNoteUnderAnUnchangedFingerprint() {
-    when(host.requestFingerprint("proj", "http://mr/1"))
-        .thenReturn(openAtEight);
+    when(host.requestFingerprint("proj", "http://mr/1")).thenReturn(openAtEight);
     when(host.unresolvedNotes("proj", "http://mr/1"))
         .thenReturn(noNotes)
         .thenReturn(new Answer<>(Optional.of(List.of("301")), TokenUsage.NONE));
@@ -174,8 +165,7 @@ class ReviewRoundTest {
 
   @Test
   void readsAnUnchangedRequestAgainWhenHumanAsksForTheSweep() {
-    when(host.requestFingerprint("proj", "http://mr/1"))
-        .thenReturn(openAtEight);
+    when(host.requestFingerprint("proj", "http://mr/1")).thenReturn(openAtEight);
 
     OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> round.read("ABC-1", "proj", "http://mr/1"));
     OriginContext.as(ActionOrigin.BOARD, () -> round.read("ABC-1", "proj", "http://mr/1"));

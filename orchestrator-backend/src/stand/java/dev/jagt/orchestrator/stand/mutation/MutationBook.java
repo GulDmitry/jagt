@@ -60,12 +60,11 @@ public record MutationBook(List<Mutation> mutations) {
     return Arrays.stream(names.split(","))
         .map(String::strip)
         .filter(name -> !name.isEmpty())
-        .map(
-            name ->
-                mutations.stream()
-                    .filter(m -> m.name().equals(name))
-                    .findFirst()
-                    .orElseThrow(() -> new StandFailure("mutations.md holds no mutation " + name)))
+        .map(name ->
+            mutations.stream()
+                .filter(m -> m.name().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new StandFailure("mutations.md holds no mutation " + name)))
         .toList();
   }
 
@@ -74,13 +73,12 @@ public record MutationBook(List<Mutation> mutations) {
         Arrays.stream(Mutation.Kind.values())
             .filter(k -> k.name().toLowerCase(Locale.ROOT).equals(keys.getOrDefault("kind", "")))
             .findFirst()
-            .orElseThrow(
-                () ->
-                    fault(
-                        name,
-                        "has kind '"
-                            + keys.getOrDefault("kind", "")
-                            + "', which is not ticket, world or attack"));
+            .orElseThrow(() ->
+                fault(
+                    name,
+                    "has kind '"
+                        + keys.getOrDefault("kind", "")
+                        + "', which is not ticket, world or attack"));
     Mutation mutation =
         new Mutation(
             name,

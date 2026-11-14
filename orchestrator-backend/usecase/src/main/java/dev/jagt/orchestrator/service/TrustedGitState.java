@@ -34,8 +34,7 @@ public class TrustedGitState {
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
     Map<String, String> now = read(task);
     stateService.reduce(
-        taskId,
-        (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
+        taskId, (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
     return task.gitTrust() != null
         && task.gitTrust().changed() != null
         && task.report() == AgentReport.QUESTION;
@@ -63,24 +62,20 @@ public class TrustedGitState {
         ? Optional.empty()
         : Optional.of(
             new TaskDiff.RepoDiff(
-                "git config and hooks",
-                "trusted",
-                cut ? text.substring(0, MAX_CHARS) : text,
-                cut));
+                "git config and hooks", "trusted", cut ? text.substring(0, MAX_CHARS) : text, cut));
   }
 
   private static String describe(Map<String, String> changes, Map<String, String> contents) {
     StringBuilder text = new StringBuilder();
-    changes.forEach(
-        (entry, how) -> {
-          text.append("@@ ").append(entry).append(' ').append(how).append('\n');
-          if (!how.equals("removed")) {
-            contents
-                .getOrDefault(entry, "")
-                .lines()
-                .forEach(line -> text.append('+').append(line).append('\n'));
-          }
-        });
+    changes.forEach((entry, how) -> {
+      text.append("@@ ").append(entry).append(' ').append(how).append('\n');
+      if (!how.equals("removed")) {
+        contents
+            .getOrDefault(entry, "")
+            .lines()
+            .forEach(line -> text.append('+').append(line).append('\n'));
+      }
+    });
     return text.toString();
   }
 
@@ -120,8 +115,7 @@ public class TrustedGitState {
     }
     if (trusted == null) {
       stateService.reduce(
-          taskId,
-          (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
+          taskId, (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
       return Optional.empty();
     }
     List<String> differences = trusted.differences(now);

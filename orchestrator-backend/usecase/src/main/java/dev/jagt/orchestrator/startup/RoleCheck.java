@@ -65,14 +65,13 @@ public class RoleCheck implements StartupCheck {
     List<String> installed = roles.definitions().stream().map(RoleDefinition::id).toList();
     List<String> named = Stream.concat(installed.stream(), roles.readers().stream()).toList();
     return config.load().unknownRoles(named).stream()
-        .map(
-            id ->
-                new Problem(
-                    "roles." + id,
-                    "orchestrator.roles."
-                        + id
-                        + " names no installed role; the installed ones are "
-                        + installed))
+        .map(id ->
+            new Problem(
+                "roles." + id,
+                "orchestrator.roles."
+                    + id
+                    + " names no installed role; the installed ones are "
+                    + installed))
         .toList();
   }
 

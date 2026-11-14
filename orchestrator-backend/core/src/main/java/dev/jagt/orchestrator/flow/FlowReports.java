@@ -118,11 +118,10 @@ public class FlowReports {
         });
     Optional<String> why =
         Optional.ofNullable(refused.get())
-            .or(
-                () ->
-                    FlowRules.reportable(status)
-                        ? Optional.empty()
-                        : rules.refusedReport(status, status));
+            .or(() ->
+                FlowRules.reportable(status)
+                    ? Optional.empty()
+                    : rules.refusedReport(status, status));
     if (why.isPresent()) {
       throw Refusal.byState(why.get());
     }
@@ -345,12 +344,8 @@ public class FlowReports {
     return tasks
         .task(taskId)
         .map(TaskState::deployment)
-        .map(
-            deployment ->
-                deployment.targets().stream()
-                    .mapToInt(Deployment.Target::unreadReads)
-                    .max()
-                    .orElse(0))
+        .map(deployment ->
+            deployment.targets().stream().mapToInt(Deployment.Target::unreadReads).max().orElse(0))
         .orElse(0);
   }
 

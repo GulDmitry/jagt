@@ -54,8 +54,7 @@ class PlanApprovalLeavesTest {
   void anApprovedPlanTakesItsUnaffectedRepositoriesOutOfTheTask() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
 
-    new PlanApproval(state, relay, door, plan)
-        .approve("ABC-1", "The human read plan.md");
+    new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     verify(plan).leave("ABC-1");
   }
@@ -64,8 +63,7 @@ class PlanApprovalLeavesTest {
   void refusedApprovalTakesNoRepositoryOutOfTheTask() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
 
-    new PlanApproval(state, relay, door, plan)
-        .approve("ABC-1", "The human read plan.md");
+    new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     verify(plan, never()).leave("ABC-1");
   }

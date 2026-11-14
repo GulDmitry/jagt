@@ -24,15 +24,14 @@ class GitStateGuardTest {
         .thenReturn(Optional.of("core.fsmonitor in /r/.git/config added"));
     List<String> ran = new ArrayList<>();
 
-    assertThatThrownBy(
-            () ->
-                new GitStateGuard(TaskAction.DEPLOY, trusted)
-                    .around(
-                        "ABC-42",
-                        () -> {
-                          ran.add("deploy");
-                          return Outcome.ok("deployed");
-                        }))
+    assertThatThrownBy(() ->
+            new GitStateGuard(TaskAction.DEPLOY, trusted)
+                .around(
+                    "ABC-42",
+                    () -> {
+                      ran.add("deploy");
+                      return Outcome.ok("deployed");
+                    }))
         .isInstanceOf(Refusal.class)
         .hasMessage("deploy ABC-42 refused: core.fsmonitor in /r/.git/config added");
     assertThat(ran).isEmpty();

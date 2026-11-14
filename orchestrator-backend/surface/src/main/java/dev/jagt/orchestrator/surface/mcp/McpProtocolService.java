@@ -119,10 +119,9 @@ public class McpProtocolService implements McpToolRegistry {
   private @Nullable String keepAlive(@Nullable String callerCwd) {
     var caller = stateService.findByWorktree(callerCwd);
     long now = clock.millis();
-    caller.ifPresent(
-        entry -> {
-          KeepAlive.beat(stateService, entry, new SessionSign.Called(), now);
-        });
+    caller.ifPresent(entry -> {
+      KeepAlive.beat(stateService, entry, new SessionSign.Called(), now);
+    });
     return caller.map(Map.Entry::getKey).orElse(null);
   }
 
@@ -143,16 +142,15 @@ public class McpProtocolService implements McpToolRegistry {
     ArrayNode list = result.putArray("tools");
     tools.values().stream()
         .filter(spec -> spec.audience().admits(callerTaskId))
-        .forEach(
-            spec -> {
-              ObjectNode tool = list.addObject();
-              tool.put("name", spec.name());
-              tool.put("description", spec.schema().path("description").asString(""));
-              tool.putObject("annotations").put("readOnlyHint", spec.effect() == Effect.REPORTS);
-              ObjectNode schema = (ObjectNode) spec.schema().deepCopy();
-              schema.remove("description");
-              tool.set("inputSchema", schema);
-            });
+        .forEach(spec -> {
+          ObjectNode tool = list.addObject();
+          tool.put("name", spec.name());
+          tool.put("description", spec.schema().path("description").asString(""));
+          tool.putObject("annotations").put("readOnlyHint", spec.effect() == Effect.REPORTS);
+          ObjectNode schema = (ObjectNode) spec.schema().deepCopy();
+          schema.remove("description");
+          tool.set("inputSchema", schema);
+        });
     return result;
   }
 

@@ -136,21 +136,20 @@ public final class StandShell {
 
   public static String windows(Path root) {
     return sockets(root).stream()
-        .map(
-            socket ->
-                run(
-                        root,
-                        List.of(
-                            "tmux",
-                            "-S",
-                            socket.toString(),
-                            "list-windows",
-                            "-a",
-                            "-F",
-                            "#{window_name}"))
-                    .output()
-                    .strip()
-                    .replace('\n', ' '))
+        .map(socket ->
+            run(
+                    root,
+                    List.of(
+                        "tmux",
+                        "-S",
+                        socket.toString(),
+                        "list-windows",
+                        "-a",
+                        "-F",
+                        "#{window_name}"))
+                .output()
+                .strip()
+                .replace('\n', ' '))
         .collect(Collectors.joining(" "));
   }
 
@@ -172,26 +171,25 @@ public final class StandShell {
       windows
           .lines()
           .map(line -> line.split(" ", 2))
-          .forEach(
-              window ->
-                  screens
-                      .append("=== ")
-                      .append(String.join(" ", window))
-                      .append('\n')
-                      .append(
-                          run(
-                                  root,
-                                  List.of(
-                                      "tmux",
-                                      "-S",
-                                      socket.toString(),
-                                      "capture-pane",
-                                      "-p",
-                                      "-S",
-                                      "-300",
-                                      "-t",
-                                      window[0]))
-                              .output()));
+          .forEach(window ->
+              screens
+                  .append("=== ")
+                  .append(String.join(" ", window))
+                  .append('\n')
+                  .append(
+                      run(
+                              root,
+                              List.of(
+                                  "tmux",
+                                  "-S",
+                                  socket.toString(),
+                                  "capture-pane",
+                                  "-p",
+                                  "-S",
+                                  "-300",
+                                  "-t",
+                                  window[0]))
+                          .output()));
     }
     return screens.toString();
   }

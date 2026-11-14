@@ -42,11 +42,10 @@ class LaunchdSupervisorTest {
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(processes, org.mockito.Mockito.atLeastOnce()).run(isNull(), any(), command.capture());
     assertThat(command.getAllValues())
-        .anySatisfy(
-            line ->
-                assertThat(line)
-                    .contains("bootstrap", "gui/501")
-                    .anyMatch(word -> word.endsWith("launchctl")));
+        .anySatisfy(line ->
+            assertThat(line)
+                .contains("bootstrap", "gui/501")
+                .anyMatch(word -> word.endsWith("launchctl")));
   }
 
   @Test

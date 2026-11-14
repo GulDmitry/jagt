@@ -19,13 +19,12 @@ class KindsTest {
     assertThat(
             topLevel()
                 .filter(type -> kind(type).equals("service"))
-                .filter(
-                    type -> {
-                      Set<String> readers = readers(type);
-                      return readers.size() == 1
-                          && !readers.contains("service")
-                          && !readers.contains("surface");
-                    })
+                .filter(type -> {
+                  Set<String> readers = readers(type);
+                  return readers.size() == 1
+                      && !readers.contains("service")
+                      && !readers.contains("surface");
+                })
                 .map(type -> type.getSimpleName() + " " + readers(type)))
         .isEmpty();
   }
@@ -36,12 +35,11 @@ class KindsTest {
             topLevel()
                 .filter(type -> USE_CASES.contains(kind(type)) && !kind(type).equals("service"))
                 .filter(type -> !FACES.contains(type.getSimpleName()))
-                .filter(
-                    type ->
-                        readers(type).stream()
-                            .map(reader -> reader.split("/", 0)[0])
-                            .anyMatch(
-                                reader -> USE_CASES.contains(reader) && !reader.equals(kind(type))))
+                .filter(type ->
+                    readers(type).stream()
+                        .map(reader -> reader.split("/", 0)[0])
+                        .anyMatch(
+                            reader -> USE_CASES.contains(reader) && !reader.equals(kind(type))))
                 .map(type -> type.getSimpleName() + " " + readers(type)))
         .isEmpty();
   }

@@ -27,8 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MergedReadJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void taskIsShippedAndPolledAgainWhenTheBaseWasResetUnderItsMergedRequest(@TempDir Path root) {
@@ -39,7 +38,8 @@ class MergedReadJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)

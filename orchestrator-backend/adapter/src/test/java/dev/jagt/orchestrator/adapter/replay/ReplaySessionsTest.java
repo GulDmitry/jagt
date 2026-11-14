@@ -234,9 +234,7 @@ class ReplaySessionsTest {
             {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
             """);
     when(tasks.task("ABC-1")).thenReturn(Optional.of(newTask));
-    sessions =
-        new ReplaySessions(
-            new Recording(file.toString()), tasks, moves, checkers);
+    sessions = new ReplaySessions(new Recording(file.toString()), tasks, moves, checkers);
 
     sessions.start();
 

@@ -125,15 +125,14 @@ class TrustedGitStateTest {
     Optional<TaskDiff.RepoDiff> shown = trusted.changes("ABC-42");
 
     assertThat(shown)
-        .hasValueSatisfying(
-            diff ->
-                assertThat(diff.diff())
-                    .isEqualTo(
-                        """
-                        @@ /r/.git/hooks/pre-push removed
-                        @@ core.fsmonitor in /r/.git/config added
-                        +/tmp/x
-                        """));
+        .hasValueSatisfying(diff ->
+            assertThat(diff.diff())
+                .isEqualTo(
+                    """
+                    @@ /r/.git/hooks/pre-push removed
+                    @@ core.fsmonitor in /r/.git/config added
+                    +/tmp/x
+                    """));
   }
 
   @Test
@@ -176,8 +175,7 @@ class TrustedGitStateTest {
   @Test
   void refusesToShowChangesOfTaskThatDoesNotExist() {
 
-    assertThatThrownBy(() -> trusted.changes("ABC-42"))
-        .isInstanceOf(Refusal.class);
+    assertThatThrownBy(() -> trusted.changes("ABC-42")).isInstanceOf(Refusal.class);
   }
 
   @Test
@@ -194,8 +192,7 @@ class TrustedGitStateTest {
   @Test
   void refusesToTrustTaskThatDoesNotExist() {
 
-    assertThatThrownBy(() -> trusted.trust("ABC-42"))
-        .isInstanceOf(Refusal.class);
+    assertThatThrownBy(() -> trusted.trust("ABC-42")).isInstanceOf(Refusal.class);
   }
 
   @Test

@@ -46,7 +46,8 @@ class PlanApprovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -61,8 +62,7 @@ class PlanApprovalTest {
         .thenReturn(true);
 
     boolean told =
-        new PlanApproval(state, relay, door, plan)
-            .approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
@@ -82,8 +82,7 @@ class PlanApprovalTest {
         .thenReturn(false);
 
     boolean told =
-        new PlanApproval(state, relay, door, plan)
-            .approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
   }
@@ -92,8 +91,7 @@ class PlanApprovalTest {
   void leavesThePlanGateClosedWhereNoMasterCaseAllowsTheApproval() {
 
     boolean told =
-        new PlanApproval(state, relay, door, plan)
-            .approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);

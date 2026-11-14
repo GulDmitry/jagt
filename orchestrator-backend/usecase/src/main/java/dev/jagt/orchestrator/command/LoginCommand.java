@@ -38,10 +38,8 @@ public class LoginCommand implements GlobalCommand {
         reach.standing().stream()
             .filter(one -> !one.fix().isEmpty())
             .findFirst()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "no login is waiting: jagt reaches what it reads"));
+            .orElseThrow(() ->
+                new IllegalArgumentException("no login is waiting: jagt reaches what it reads"));
     List<String> fix = lost.fix();
     String session = sessions.sessionName(configService.load().viewer().session());
     sessions.openCommandWindow(session, session, OpenedWindows.LOGIN, fix);

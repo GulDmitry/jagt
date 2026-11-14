@@ -112,7 +112,7 @@ class TokenUsageTest {
         new JsonMapper()
             .readValue(
                 "{\"calls\":2,\"inputTokens\":300,\"cachedInputTokens\":0,\"outputTokens\":0,\"co"
-                + "stUsd\":0.5,"
+                    + "stUsd\":0.5,"
                     + "\"coldStarts\":0,\"warmStarts\":0}",
                 TokenUsage.class);
 

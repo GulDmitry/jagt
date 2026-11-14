@@ -150,8 +150,7 @@ class MasterPanelTest {
                         .probed(true, "exit 0")))
             .build();
 
-    String prompt =
-        MasterPanel.quote("ABC-1", task, emptyRead);
+    String prompt = MasterPanel.quote("ABC-1", task, emptyRead);
 
     assertThat(prompt).contains("<probes>\ncommand ./gradlew test — passed\nexit 0\n</probes>");
   }
@@ -164,14 +163,7 @@ class MasterPanelTest {
             .build();
 
     String prompt =
-        MasterPanel.planPrompt(
-            "ABC-1",
-            task,
-            "judge hard",
-            "1. tag v1",
-            emptyRead,
-            false,
-            true);
+        MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. tag v1", emptyRead, false, true);
 
     assertThat(prompt).contains("<probes>\nref refs/tags/v1\n</probes>");
   }
@@ -202,13 +194,7 @@ class MasterPanelTest {
 
     String prompt =
         MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "1. add the v3 route",
-            emptyRead,
-            false,
-            false);
+            "ABC-1", planPending, "judge hard", "1. add the v3 route", emptyRead, false, false);
 
     assertThat(prompt).doesNotContain("tracker tools").contains("The ticket was not read");
   }
@@ -218,13 +204,7 @@ class MasterPanelTest {
 
     String prompt =
         MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "1. add the v3 route",
-            emptyRead,
-            false,
-            true);
+            "ABC-1", planPending, "judge hard", "1. add the v3 route", emptyRead, false, true);
 
     assertThat(prompt)
         .contains("Read the ticket with your MCP tools")
@@ -236,13 +216,7 @@ class MasterPanelTest {
 
     String prompt =
         MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "1. add the v3 route",
-            emptyRead,
-            false,
-            true);
+            "ABC-1", planPending, "judge hard", "1. add the v3 route", emptyRead, false, true);
 
     assertThat(prompt).contains("`--no-ext-diff --no-textconv`", "`git -C <worktree>`");
   }
@@ -318,11 +292,7 @@ class MasterPanelTest {
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            judge);
+    panel.review("ABC-1", reviewPending, judge);
 
     ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
     verify(reviews, times(2)).review(eq("ABC-1"), round.capture());
@@ -344,22 +314,16 @@ class MasterPanelTest {
                 """));
     CountDownLatch developerStarted = new CountDownLatch(1);
     when(reviews.review(eq("ABC-1"), argThat(round -> round.prompt().contains("chaplain"))))
-        .thenAnswer(
-            call ->
-                Judgement.failed(
-                    "developer started: " + developerStarted.await(300, TimeUnit.MILLISECONDS)));
+        .thenAnswer(call ->
+            Judgement.failed(
+                "developer started: " + developerStarted.await(300, TimeUnit.MILLISECONDS)));
     when(reviews.review(eq("ABC-1"), argThat(round -> round.prompt().contains("developer"))))
-        .thenAnswer(
-            call -> {
-              developerStarted.countDown();
-              return Judgement.failed("stopped");
-            });
+        .thenAnswer(call -> {
+          developerStarted.countDown();
+          return Judgement.failed("stopped");
+        });
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            judge);
+    panel.review("ABC-1", reviewPending, judge);
 
     assertThat(worktree.resolve(MasterReview.FILE)).content().contains("developer started: false");
   }
@@ -435,13 +399,7 @@ class MasterPanelTest {
 
     String prompt =
         MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "1. add the v3 route",
-            emptyRead,
-            false,
-            true);
+            "ABC-1", planPending, "judge hard", "1. add the v3 route", emptyRead, false, true);
 
     assertThat(prompt)
         .contains(
@@ -458,13 +416,7 @@ class MasterPanelTest {
 
     String prompt =
         MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "1. add the v3 route",
-            emptyRead,
-            false,
-            true);
+            "ABC-1", planPending, "judge hard", "1. add the v3 route", emptyRead, false, true);
 
     assertThat(prompt)
         .contains(
@@ -583,11 +535,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            act);
+    panel.review("ABC-1", reviewPending, act);
 
     verify(reviews, never()).review(any(), any());
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -601,13 +549,7 @@ class MasterPanelTest {
         .thenReturn(Optional.of("| role | question |\n| QA | is it tested |"));
     when(reviews.review(eq("ABC-1"), any())).thenThrow(new Processes.Stopped(List.of("claude")));
 
-    assertThatThrownBy(
-            () ->
-                panel
-                    .review(
-                        "ABC-1",
-                        reviewPending,
-                        judge))
+    assertThatThrownBy(() -> panel.review("ABC-1", reviewPending, judge))
         .isInstanceOf(Processes.Stopped.class);
 
     assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
@@ -691,11 +633,7 @@ class MasterPanelTest {
                 """));
     when(quotes.paths(reviewPending)).thenReturn(Optional.of(List.of("src/Main.java")));
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            judge);
+    panel.review("ABC-1", reviewPending, judge);
 
     verify(reviews, times(1)).review(eq("ABC-1"), argThat(round -> round.prompt().contains("QA")));
     verify(reviews, never())
@@ -731,11 +669,7 @@ class MasterPanelTest {
                 """));
     when(quotes.paths(reviewPending)).thenReturn(Optional.empty());
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            judge);
+    panel.review("ABC-1", reviewPending, judge);
 
     verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
   }
@@ -748,11 +682,7 @@ class MasterPanelTest {
                 "| role | question | applies |\n| designer | is the mark worth it | static/** |"));
     when(quotes.paths(reviewPending)).thenReturn(Optional.of(List.of("src/Main.java")));
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            judge);
+    panel.review("ABC-1", reviewPending, judge);
 
     verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
   }
@@ -882,10 +812,7 @@ class MasterPanelTest {
         MasterPanel.verdictFile(
             "ABC-42",
             MasterPanel.reads(
-                TWO,
-                List.of(
-                    Judgement.failed("no tracker tool in this session"),
-                    ready)),
+                TWO, List.of(Judgement.failed("no tracker tool in this session"), ready)),
             List.of());
 
     assertThat(file)
@@ -901,12 +828,7 @@ class MasterPanelTest {
   void writesNothingAndAsksNoReviewerWhereTheBriefCouldNotBeRead() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.empty());
 
-    boolean written =
-        panel
-            .review(
-                "ABC-1",
-                reviewPending,
-                act);
+    boolean written = panel.review("ABC-1", reviewPending, act);
 
     assertThat(written).isFalse();
     verify(reviews, never()).review(any(), any());
@@ -917,12 +839,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
 
-    boolean written =
-        panel
-            .review(
-                "ABC-1",
-                reviewPending,
-                act);
+    boolean written = panel.review("ABC-1", reviewPending, act);
 
     assertThat(written).isTrue();
     assertThat(worktree.resolve(MasterReview.FILE)).exists();
@@ -936,12 +853,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
-    boolean written =
-        panel
-            .review(
-                "ABC-1",
-                task,
-                act);
+    boolean written = panel.review("ABC-1", task, act);
 
     assertThat(written).isFalse();
   }
@@ -950,31 +862,19 @@ class MasterPanelTest {
   void writesNothingForPlanWhereTheBriefCouldNotBeRead() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.empty());
 
-    boolean written =
-        panel
-            .plan(
-                "ABC-1",
-                planPending,
-                act);
+    boolean written = panel.plan("ABC-1", planPending, act);
 
     assertThat(written).isFalse();
     assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
   }
 
   @Test
-  void writesReadyVerdictForPlanThePlannerFoundNothingWrongWith()
-      throws Exception {
+  void writesReadyVerdictForPlanThePlannerFoundNothingWrongWith() throws Exception {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(quotes.plan("ABC-1", planPending))
-        .thenReturn(Optional.of(emptyRead));
+    when(quotes.plan("ABC-1", planPending)).thenReturn(Optional.of(emptyRead));
     when(quotes.planFile(planPending)).thenReturn("1. add the v3 route");
 
-    boolean written =
-        panel
-            .plan(
-                "ABC-1",
-                planPending,
-                act);
+    boolean written = panel.plan("ABC-1", planPending, act);
 
     assertThat(written).isTrue();
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -987,11 +887,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
     when(quotes.plan("ABC-1", planPending)).thenReturn(Optional.empty());
 
-    panel
-        .plan(
-            "ABC-1",
-            planPending,
-            act);
+    panel.plan("ABC-1", planPending, act);
 
     verify(reviews, never()).review(any(), any());
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -1013,13 +909,7 @@ class MasterPanelTest {
                 "do proj drop the old keys"));
 
     MasterPanel.Answer decision =
-        panel
-            .answer(
-                "ABC-1",
-                inProgress,
-                "outcome=question — keep v2?",
-                act,
-                false);
+        panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
 
     assertThat(decision)
         .isEqualTo(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys"));
@@ -1032,13 +922,7 @@ class MasterPanelTest {
         .thenReturn(new Judgement("", "answer", List.of(), "", List.of(), ""));
 
     MasterPanel.Answer decision =
-        panel
-            .answer(
-                "ABC-1",
-                inProgress,
-                "outcome=question — keep v2?",
-                act,
-                false);
+        panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
 
     assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
   }
@@ -1057,13 +941,7 @@ class MasterPanelTest {
                 ""));
 
     MasterPanel.Answer decision =
-        panel
-            .answer(
-                "ABC-1",
-                inProgress,
-                "outcome=question — keep v2?",
-                act,
-                false);
+        panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
 
     assertThat(decision).isEqualTo(new MasterPanel.Undecided("stopped"));
   }
@@ -1074,13 +952,7 @@ class MasterPanelTest {
     when(quotes.question(inProgress)).thenReturn(Optional.empty());
 
     MasterPanel.Answer decision =
-        panel
-            .answer(
-                "ABC-1",
-                inProgress,
-                "outcome=question — keep v2?",
-                act,
-                false);
+        panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
 
     assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
     verify(reviews, never()).review(any(), any());
@@ -1106,14 +978,7 @@ class MasterPanelTest {
   void holdsPlanReaderToTheFactThatTheSessionWroteNoPlan() {
 
     String prompt =
-        MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "",
-            emptyRead,
-            false,
-            true);
+        MasterPanel.planPrompt("ABC-1", planPending, "judge hard", "", emptyRead, false, true);
 
     assertThat(prompt)
         .contains("The session wrote no plan.md: that alone is not ready.")
@@ -1125,13 +990,7 @@ class MasterPanelTest {
 
     String prompt =
         MasterPanel.planPrompt(
-            "ABC-1",
-            planPending,
-            "judge hard",
-            "1. add the v3 route",
-            emptyRead,
-            true,
-            true);
+            "ABC-1", planPending, "judge hard", "1. add the v3 route", emptyRead, true, true);
 
     assertThat(prompt).contains("never answer question");
   }
@@ -1163,8 +1022,7 @@ class MasterPanelTest {
             .ticketUrl("https://tracker.example/ABC-1")
             .build();
 
-    String prompt =
-        MasterPanel.quote("ABC-1", task, emptyRead);
+    String prompt = MasterPanel.quote("ABC-1", task, emptyRead);
 
     assertThat(prompt)
         .contains("ticket https://tracker.example/ABC-1.")
@@ -1176,12 +1034,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(quotes.carried("ABC-1", reviewPending, "")).thenReturn(true);
 
-    boolean written =
-        panel
-            .review(
-                "ABC-1",
-                reviewPending,
-                act);
+    boolean written = panel.review("ABC-1", reviewPending, act);
 
     assertThat(written).isTrue();
     verify(reviews, never()).review(any(), any());
@@ -1197,11 +1050,7 @@ class MasterPanelTest {
     when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
     try (FakeLogCapture log = new FakeLogCapture(MasterPanel.class)) {
 
-      panel
-          .review(
-              "ABC-1",
-              reviewPending,
-              act);
+      panel.review("ABC-1", reviewPending, act);
 
       assertThat(log.events())
           .filteredOn(event -> "master review asked".equals(event.getMessage()))
@@ -1219,11 +1068,7 @@ class MasterPanelTest {
     when(quotes.plan("ABC-1", planPending)).thenReturn(Optional.empty());
     try (FakeLogCapture log = new FakeLogCapture(MasterPanel.class)) {
 
-      panel
-          .plan(
-              "ABC-1",
-              planPending,
-              act);
+      panel.plan("ABC-1", planPending, act);
 
       assertThat(log.events())
           .filteredOn(event -> "master review asked".equals(event.getMessage()))
@@ -1238,11 +1083,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(reviews.review(eq("ABC-1"), any())).thenThrow(new IllegalStateException("cli gone"));
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            act);
+    panel.review("ABC-1", reviewPending, act);
 
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
         .contains(
@@ -1258,17 +1099,12 @@ class MasterPanelTest {
             .build()
             .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(emptyRead));
+    when(quotes.round("ABC-1", task)).thenReturn(Optional.of(emptyRead));
     when(quotes.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
     state.putTask("ABC-1", task);
 
-    panel
-        .review(
-            "ABC-1",
-            task,
-            act);
+    panel.review("ABC-1", task, act);
 
     assertThat(stored.of(state.task("ABC-1").orElseThrow()))
         .get()
@@ -1284,11 +1120,7 @@ class MasterPanelTest {
 
     state.putTask("ABC-1", reviewPending);
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            act);
+    panel.review("ABC-1", reviewPending, act);
 
     assertThat(stored.of(state.task("ABC-1").orElseThrow()))
         .get()
@@ -1300,19 +1132,13 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     CountDownLatch stillReviewing = new CountDownLatch(1);
     when(reviews.review(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              stillReviewing.await(2, TimeUnit.SECONDS);
-              return ready;
-            });
+        .thenAnswer(call -> {
+          stillReviewing.await(2, TimeUnit.SECONDS);
+          return ready;
+        });
     Thread.currentThread().interrupt();
 
-    boolean written =
-        panel
-            .review(
-                "ABC-1",
-                reviewPending,
-                act);
+    boolean written = panel.review("ABC-1", reviewPending, act);
 
     assertThat(Thread.interrupted()).isTrue();
     assertThat(written).isFalse();
@@ -1327,12 +1153,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
     when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
 
-    boolean written =
-        panel
-            .plan(
-                "ABC-1",
-                task,
-                act);
+    boolean written = panel.plan("ABC-1", task, act);
 
     assertThat(written).isFalse();
   }
@@ -1385,17 +1206,10 @@ class MasterPanelTest {
   void namesEveryWorktreeOfTheTaskToTheMasterAnsweringQuestion() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(quotes.question(task))
-        .thenReturn(Optional.of(emptyRead));
+    when(quotes.question(task)).thenReturn(Optional.of(emptyRead));
     when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-    panel
-        .answer(
-            "ABC-1",
-            task,
-            "keep v2?",
-            act,
-            false);
+    panel.answer("ABC-1", task, "keep v2?", act, false);
 
     ArgumentCaptor<RoundReviewer.Round> asked = ArgumentCaptor.captor();
     verify(reviews).review(eq("ABC-1"), asked.capture());
@@ -1413,11 +1227,7 @@ class MasterPanelTest {
                 | developer | is the code right |\
                 """));
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            judge);
+    panel.review("ABC-1", reviewPending, judge);
 
     verify(quotes, never()).paths(reviewPending);
   }

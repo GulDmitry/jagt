@@ -19,75 +19,68 @@ class ClaudeHookJsonTest {
 
   @Test
   void theContextsMapperReadsClaudeHookPayloadWhenClaudeIsTheDefaultAgent() {
-    runner.run(
-        context -> {
-          var said =
-              context
-                  .getBean(JsonMapper.class)
-                  .readValue(
-                      "{\"transcript_path\": \"/tmp/s.jsonl\", \"prompt\": \"go on\","
-                          + " \"tool_name\": \"Bash\"}",
-                      SessionHookReport.class);
+    runner.run(context -> {
+      var said =
+          context
+              .getBean(JsonMapper.class)
+              .readValue(
+                  "{\"transcript_path\": \"/tmp/s.jsonl\", \"prompt\": \"go on\","
+                      + " \"tool_name\": \"Bash\"}",
+                  SessionHookReport.class);
 
-          assertThat(said.transcriptPath()).isEqualTo("/tmp/s.jsonl");
-          assertThat(said.turn().prompt()).isEqualTo("go on");
-          assertThat(said.turn().toolName()).isEqualTo("Bash");
-        });
+      assertThat(said.transcriptPath()).isEqualTo("/tmp/s.jsonl");
+      assertThat(said.turn().prompt()).isEqualTo("go on");
+      assertThat(said.turn().toolName()).isEqualTo("Bash");
+    });
   }
 
   @Test
   void bindsNoClaudeFieldNamesWhenAnotherAgentIsConfigured() {
     runner
         .withPropertyValues("orchestrator.agent.cli=codex")
-        .run(
-            context ->
-                assertThat(context)
-                    .doesNotHaveBean("claudeHookReportModule")
-                    .doesNotHaveBean("claudeToolCallModule"));
+        .run(context ->
+            assertThat(context)
+                .doesNotHaveBean("claudeHookReportModule")
+                .doesNotHaveBean("claudeToolCallModule"));
   }
 
   @Test
   void theContextsMapperReadsClaudeToolCallAsShellCommand() {
-    runner.run(
-        context -> {
-          var call =
-              context
-                  .getBean(JsonMapper.class)
-                  .readValue(
-                      "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"git push\"},"
-                          + " \"cwd\": \"/wt\"}",
-                      ToolCall.class);
+    runner.run(context -> {
+      var call =
+          context
+              .getBean(JsonMapper.class)
+              .readValue(
+                  "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"git push\"},"
+                      + " \"cwd\": \"/wt\"}",
+                  ToolCall.class);
 
-          assertThat(call).isEqualTo(new ToolCall("Bash", "git push", null));
-        });
+      assertThat(call).isEqualTo(new ToolCall("Bash", "git push", null));
+    });
   }
 
   @Test
   void theContextsMapperReadsNotebookPathAsTheFileOfClaudeToolCall() {
-    runner.run(
-        context -> {
-          var call =
-              context
-                  .getBean(JsonMapper.class)
-                  .readValue(
-                      "{\"tool_name\": \"NotebookEdit\", \"tool_input\": {\"notebook_path\":"
-                          + " \"/wt/a.ipynb\"}}",
-                      ToolCall.class);
+    runner.run(context -> {
+      var call =
+          context
+              .getBean(JsonMapper.class)
+              .readValue(
+                  "{\"tool_name\": \"NotebookEdit\", \"tool_input\": {\"notebook_path\":"
+                      + " \"/wt/a.ipynb\"}}",
+                  ToolCall.class);
 
-          assertThat(call).isEqualTo(new ToolCall("NotebookEdit", null, "/wt/a.ipynb"));
-        });
+      assertThat(call).isEqualTo(new ToolCall("NotebookEdit", null, "/wt/a.ipynb"));
+    });
   }
 
   @Test
   void theContextsMapperReadsClaudeToolCallWithNoInputAsNamingNeitherCommandNorFile() {
-    runner.run(
-        context -> {
-          var call =
-              context
-                  .getBean(JsonMapper.class)
-                  .readValue("{\"tool_name\": \"Read\"}", ToolCall.class);
+    runner.run(context -> {
+      var call =
+          context.getBean(JsonMapper.class).readValue("{\"tool_name\": \"Read\"}", ToolCall.class);
 
-          assertThat(call).isEqualTo(new ToolCall("Read", null, null));
-        });
+      assertThat(call).isEqualTo(new ToolCall("Read", null, null));
+    });
   }
 }

@@ -36,33 +36,31 @@ class StandRunLogTest {
 
     assertThat(kept)
         .singleElement()
-        .satisfies(
-            file ->
-                assertThat(Files.readString(file))
-                    .contains(
-                        "\"passed\" : false",
-                        "NoForcePush",
-                        "\"wallSeconds\" : 93",
-                        "unknown: no usage file",
-                        "\"source\" : \"live\""));
+        .satisfies(file ->
+            assertThat(Files.readString(file))
+                .contains(
+                    "\"passed\" : false",
+                    "NoForcePush",
+                    "\"wallSeconds\" : 93",
+                    "unknown: no usage file",
+                    "\"source\" : \"live\""));
   }
 
   @Test
   void theOldestRunsFoldAwayPastTheCeiling(@TempDir Path dir) throws Exception {
     IntStream.rangeClosed(1, StandRunLog.KEPT + 1)
-        .forEach(
-            n ->
-                StandRunLog.keep(
-                    dir,
-                    new StandRunLog.Entry(
-                        Instant.ofEpochMilli(n),
-                        "plan",
-                        "judge",
-                        "live",
-                        new StandRunLog.Verdict(true, "reached", "", List.of()),
-                        1,
-                        new StandSpend("unknown: no usage file", Map.of())),
-                    "jagt-stand-1-" + n));
+        .forEach(n ->
+            StandRunLog.keep(
+                dir,
+                new StandRunLog.Entry(
+                    Instant.ofEpochMilli(n),
+                    "plan",
+                    "judge",
+                    "live",
+                    new StandRunLog.Verdict(true, "reached", "", List.of()),
+                    1,
+                    new StandSpend("unknown: no usage file", Map.of())),
+                "jagt-stand-1-" + n));
 
     List<String> kept;
     try (Stream<Path> stream = Files.list(dir)) {

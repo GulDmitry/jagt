@@ -45,12 +45,11 @@ public class MasterPresses {
             .orElseThrow(() -> new Refusal(Refusal.Code.STATE, "No command " + verb + "."));
     command
         .whyNotTheMaster()
-        .ifPresent(
-            reason -> {
-              throw new Refusal(
-                  Refusal.Code.ACTION_NOT_AVAILABLE,
-                  command.id() + " is never the Master's: " + reason + ".");
-            });
+        .ifPresent(reason -> {
+          throw new Refusal(
+              Refusal.Code.ACTION_NOT_AVAILABLE,
+              command.id() + " is never the Master's: " + reason + ".");
+        });
     if (configService.load().master().profile().keeps(verb)) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,

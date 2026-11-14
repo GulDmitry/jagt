@@ -70,7 +70,6 @@ class OpenedWindowsTest {
     when(host.sessionName(any())).thenReturn("jagt");
     when(host.nudgeTaskWindow("jagt", "login", "y")).thenReturn(false);
 
-    assertThatThrownBy(() -> windows.say("login", "y"))
-        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> windows.say("login", "y")).isInstanceOf(IllegalStateException.class);
   }
 }

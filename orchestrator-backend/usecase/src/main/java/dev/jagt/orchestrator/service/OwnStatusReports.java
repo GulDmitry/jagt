@@ -33,27 +33,24 @@ public class OwnStatusReports {
             .flatMap(status -> stateService.task(taskId));
     handedBack
         .flatMap(due::invalid)
-        .ifPresent(
-            invalid -> {
-              throw new IllegalArgumentException(invalid);
-            });
+        .ifPresent(invalid -> {
+          throw new IllegalArgumentException(invalid);
+        });
     handedBack
         .flatMap(task -> due.owed(taskId, task))
-        .ifPresent(
-            owed -> {
-              throw Refusal.byState(owed);
-            });
+        .ifPresent(owed -> {
+          throw Refusal.byState(owed);
+        });
     accepted
         .filter(reply -> !door.takes(taskId, reply.status(), reply.claimed()))
-        .ifPresent(
-            reply -> {
-              // Closed, so the session's next report is not refused for the same step again.
-              effects.refused(taskId);
-              throw Refusal.byState(
-                  "jagt refuses this report: no case takes it as a reply to the step you were sent,"
-                      + " so it was not applied and the task is stopped for the human. End your"
-                      + " turn.");
-            });
+        .ifPresent(reply -> {
+          // Closed, so the session's next report is not refused for the same step again.
+          effects.refused(taskId);
+          throw Refusal.byState(
+              "jagt refuses this report: no case takes it as a reply to the step you were sent,"
+                  + " so it was not applied and the task is stopped for the human. End your"
+                  + " turn.");
+        });
     String answer = statusReports.report(said, taskId);
     effects.after(said, taskId);
     accepted.ifPresent(reported -> effects.linked(reported, taskId));

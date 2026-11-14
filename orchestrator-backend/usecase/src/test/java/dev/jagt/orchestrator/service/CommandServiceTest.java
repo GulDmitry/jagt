@@ -106,10 +106,8 @@ class CommandServiceTest {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CommandService guarded = new CommandService(flow, door);
 
-    assertThatThrownBy(
-            () ->
-                OriginContext.as(
-                    ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DONE)))
+    assertThatThrownBy(() ->
+            OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DONE)))
         .isInstanceOf(Refusal.class)
         .hasMessage("Done is kept for the human: mine names it.");
   }

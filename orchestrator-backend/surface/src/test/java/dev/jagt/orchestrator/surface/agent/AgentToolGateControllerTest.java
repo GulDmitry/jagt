@@ -92,11 +92,10 @@ class AgentToolGateControllerTest {
                         .lastActiveTimestamp(100_000)
                         .build())));
 
-    controller
-        .gate(
-            "/wt/ABC-1-proj",
-            new ToolCall("Bash", "git push origin dev", null),
-            new MockHttpServletRequest());
+    controller.gate(
+        "/wt/ABC-1-proj",
+        new ToolCall("Bash", "git push origin dev", null),
+        new MockHttpServletRequest());
 
     ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).updateTask(eq("ABC-1"), write.capture());
@@ -114,11 +113,10 @@ class AgentToolGateControllerTest {
         .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     var answered =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall("Bash", "git push origin ABC-1", null),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall("Bash", "git push origin ABC-1", null),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
   }
@@ -128,11 +126,10 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
-        controller
-            .gate(
-                "/elsewhere",
-                new ToolCall("Bash", "git push origin dev", null),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/elsewhere",
+            new ToolCall("Bash", "git push origin dev", null),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
   }
@@ -143,20 +140,17 @@ class AgentToolGateControllerTest {
         .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     var answered =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall("Read", "git push origin dev", null),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall("Read", "git push origin dev", null),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
   }
 
   @Test
   void answersCallWithNoPayloadWithNothing() {
-    var answered =
-        controller
-            .gate("/wt/ABC-1-proj", null, new MockHttpServletRequest());
+    var answered = controller.gate("/wt/ABC-1-proj", null, new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
   }
@@ -174,11 +168,10 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var answered =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall("Write", null, "/wt/ABC-1-proj/src/Foo.java"),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall("Write", null, "/wt/ABC-1-proj/src/Foo.java"),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).extractingByKey("denied").asString().contains("plan first");
     ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
@@ -204,17 +197,15 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var plan =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall(tool, null, "/wt/ABC-1-proj/plan.md"),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall(tool, null, "/wt/ABC-1-proj/plan.md"),
+            new MockHttpServletRequest());
     var visual =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall(tool, null, "/wt/ABC-1-proj/task_visual.md"),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall(tool, null, "/wt/ABC-1-proj/task_visual.md"),
+            new MockHttpServletRequest());
 
     assertThat(plan.getBody()).isNull();
     assertThat(visual.getBody()).isNull();
@@ -232,11 +223,10 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var answered =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall("NotebookEdit", null, "/wt/ABC-1-proj/analysis.ipynb"),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall("NotebookEdit", null, "/wt/ABC-1-proj/analysis.ipynb"),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNotNull();
   }
@@ -247,11 +237,10 @@ class AgentToolGateControllerTest {
         .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     var answered =
-        controller
-            .gate(
-                "/wt/ABC-1-proj",
-                new ToolCall("Edit", null, "/wt/ABC-1-proj/src/Foo.java"),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/wt/ABC-1-proj",
+            new ToolCall("Edit", null, "/wt/ABC-1-proj/src/Foo.java"),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
   }
@@ -261,11 +250,10 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
-        controller
-            .gate(
-                "/elsewhere",
-                new ToolCall("Write", null, "/elsewhere/Foo.java"),
-                new MockHttpServletRequest());
+        controller.gate(
+            "/elsewhere",
+            new ToolCall("Write", null, "/elsewhere/Foo.java"),
+            new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
   }
@@ -279,11 +267,10 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(Optional.of(Map.entry("ABC-1", held)));
 
-    controller
-        .gate(
-            "/wt/ABC-1-proj",
-            new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
-            new MockHttpServletRequest());
+    controller.gate(
+        "/wt/ABC-1-proj",
+        new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
+        new MockHttpServletRequest());
 
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
@@ -301,11 +288,10 @@ class AgentToolGateControllerTest {
                         .lastActiveTimestamp(95_000)
                         .build())));
 
-    controller
-        .gate(
-            "/wt/ABC-1-proj",
-            new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
-            new MockHttpServletRequest());
+    controller.gate(
+        "/wt/ABC-1-proj",
+        new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
+        new MockHttpServletRequest());
 
     verify(stateService, never()).reduce(any(), any());
   }

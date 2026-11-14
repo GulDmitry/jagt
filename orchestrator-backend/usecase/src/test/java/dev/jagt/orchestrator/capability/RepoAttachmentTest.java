@@ -39,8 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RepoAttachmentTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
 
@@ -68,8 +67,7 @@ class RepoAttachmentTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(
-            new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     attachment = new RepoAttachment(config, state, worktrees, relay);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }

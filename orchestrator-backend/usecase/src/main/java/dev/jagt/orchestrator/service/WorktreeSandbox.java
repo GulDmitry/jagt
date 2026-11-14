@@ -24,11 +24,10 @@ final class WorktreeSandbox {
 
   static Sandbox of(SandboxConfig config, List<NewRepo> repos, Path home, Path tempDir) {
     Set<Path> writable = new LinkedHashSet<>();
-    repos.forEach(
-        repo -> {
-          writable.add(real(repo.worktreePath()));
-          writable.add(real(repo.gitCommonDir()));
-        });
+    repos.forEach(repo -> {
+      writable.add(real(repo.worktreePath()));
+      writable.add(real(repo.gitCommonDir()));
+    });
     return of(config, writable, home, tempDir);
   }
 

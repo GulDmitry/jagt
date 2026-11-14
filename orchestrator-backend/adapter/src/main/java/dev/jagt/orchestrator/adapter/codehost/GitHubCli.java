@@ -75,31 +75,29 @@ public class GitHubCli implements CodeHostDriver {
   @Override
   public Answer<List<FailedJob>> failedJobs(HostSettings host, String pipelineUrl) {
     return HostAddress.ofPipeline(pipelineUrl, MARKER, false)
-        .map(
-            address ->
-                cli.parsed(
-                    cli.run(
-                        address.hostname(),
-                        List.of(
-                            "run",
-                            "view",
-                            address.id(),
-                            "--json",
-                            "conclusion,jobs",
-                            "-R",
-                            repository(address))),
-                    output -> jobs(address, output)))
+        .map(address ->
+            cli.parsed(
+                cli.run(
+                    address.hostname(),
+                    List.of(
+                        "run",
+                        "view",
+                        address.id(),
+                        "--json",
+                        "conclusion,jobs",
+                        "-R",
+                        repository(address))),
+                output -> jobs(address, output)))
         .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
   public Answer<String> retryFailed(HostSettings host, String pipelineUrl) {
     return HostAddress.ofPipeline(pipelineUrl, MARKER, false)
-        .map(
-            address ->
-                cli.run(
-                    address.hostname(),
-                    List.of("run", "rerun", address.id(), "--failed", "-R", repository(address))))
+        .map(address ->
+            cli.run(
+                address.hostname(),
+                List.of("run", "rerun", address.id(), "--failed", "-R", repository(address))))
         .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
@@ -113,44 +111,41 @@ public class GitHubCli implements CodeHostDriver {
   @Override
   public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false)
-        .map(
-            address ->
-                cli.parsed(
-                    cli.run(
+        .map(address ->
+            cli.parsed(
+                cli.run(
+                    address.hostname(),
+                    List.of(
+                        "api",
+                        "graphql",
+                        "--hostname",
                         address.hostname(),
-                        List.of(
-                            "api",
-                            "graphql",
-                            "--hostname",
-                            address.hostname(),
-                            "-f",
-                            "query=" + THREADS_QUERY,
-                            "-f",
-                            "owner=" + address.project().split("/", 2)[0],
-                            "-f",
-                            "name="
-                                + address.project().substring(address.project().indexOf('/') + 1),
-                            "-F",
-                            "number=" + address.id())),
-                    GitHubCli::unresolved))
+                        "-f",
+                        "query=" + THREADS_QUERY,
+                        "-f",
+                        "owner=" + address.project().split("/", 2)[0],
+                        "-f",
+                        "name=" + address.project().substring(address.project().indexOf('/') + 1),
+                        "-F",
+                        "number=" + address.id())),
+                GitHubCli::unresolved))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override
   public Answer<String> requestFingerprint(HostSettings host, String requestUrl) {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false)
-        .map(
-            address ->
-                cli.run(
-                    address.hostname(),
-                    List.of(
-                        "pr",
-                        "view",
-                        requestUrl.strip(),
-                        "--json",
-                        REQUEST_FIELDS,
-                        "--jq",
-                        FINGERPRINT)))
+        .map(address ->
+            cli.run(
+                address.hostname(),
+                List.of(
+                    "pr",
+                    "view",
+                    requestUrl.strip(),
+                    "--json",
+                    REQUEST_FIELDS,
+                    "--jq",
+                    FINGERPRINT)))
         .map(read -> read.map(String::strip))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
@@ -158,23 +153,22 @@ public class GitHubCli implements CodeHostDriver {
   @Override
   public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
     return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), false)
-        .map(
-            address ->
-                cli.parsed(
-                    cli.run(
-                        address.hostname(),
-                        List.of(
-                            "run",
-                            "list",
-                            "--commit",
-                            address.id(),
-                            "--json",
-                            "status,conclusion,url",
-                            "--limit",
-                            "100",
-                            "-R",
-                            repository(address))),
-                    GitHubCli::pipeline))
+        .map(address ->
+            cli.parsed(
+                cli.run(
+                    address.hostname(),
+                    List.of(
+                        "run",
+                        "list",
+                        "--commit",
+                        address.id(),
+                        "--json",
+                        "status,conclusion,url",
+                        "--limit",
+                        "100",
+                        "-R",
+                        repository(address))),
+                GitHubCli::pipeline))
         .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
   }
 
@@ -182,44 +176,43 @@ public class GitHubCli implements CodeHostDriver {
   public Answer<CommitPipeline> onBranchSince(
       HostSettings host, String remoteUrl, String branch, String sha) {
     return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), false)
-        .map(
-            address ->
-                HostCli.then(
-                    cli.parsed(
-                        cli.run(
-                            address.hostname(),
-                            List.of(
-                                "run",
-                                "list",
-                                "--branch",
-                                branch,
-                                "--json",
-                                "status,conclusion,url,headSha",
-                                "--limit",
-                                "100",
-                                "-R",
-                                repository(address))),
-                        GitHubCli::newest),
-                    newest ->
-                        newest.since(
-                            cli,
-                            sha,
-                            () ->
-                                cli.run(
+        .map(address ->
+            HostCli.then(
+                cli.parsed(
+                    cli.run(
+                        address.hostname(),
+                        List.of(
+                            "run",
+                            "list",
+                            "--branch",
+                            branch,
+                            "--json",
+                            "status,conclusion,url,headSha",
+                            "--limit",
+                            "100",
+                            "-R",
+                            repository(address))),
+                    GitHubCli::newest),
+                newest ->
+                    newest.since(
+                        cli,
+                        sha,
+                        () ->
+                            cli.run(
+                                address.hostname(),
+                                List.of(
+                                    "api",
+                                    "--hostname",
                                     address.hostname(),
-                                    List.of(
-                                        "api",
-                                        "--hostname",
-                                        address.hostname(),
-                                        "repos/"
-                                            + address.project()
-                                            + "/compare/"
-                                            + sha
-                                            + "..."
-                                            + newest.sha(),
-                                        "--jq",
-                                        ".status")),
-                            status -> AHEAD.contains(status.strip()))))
+                                    "repos/"
+                                        + address.project()
+                                        + "/compare/"
+                                        + sha
+                                        + "..."
+                                        + newest.sha(),
+                                    "--jq",
+                                    ".status")),
+                        status -> AHEAD.contains(status.strip()))))
         .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
   }
 
@@ -240,16 +233,15 @@ public class GitHubCli implements CodeHostDriver {
         .path("pullRequest")
         .path("reviewThreads")
         .path("nodes")
-        .forEach(
-            thread -> {
-              JsonNode newest = thread.path("comments").path("nodes").path(0);
-              String author = newest.path("author").path("login").asString("");
-              if (!thread.path("isResolved").asBoolean(false)
-                  && !newest.isMissingNode()
-                  && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
-                ids.add(newest.path("databaseId").asString(""));
-              }
-            });
+        .forEach(thread -> {
+          JsonNode newest = thread.path("comments").path("nodes").path(0);
+          String author = newest.path("author").path("login").asString("");
+          if (!thread.path("isResolved").asBoolean(false)
+              && !newest.isMissingNode()
+              && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+            ids.add(newest.path("databaseId").asString(""));
+          }
+        });
     return ids;
   }
 
@@ -297,18 +289,17 @@ public class GitHubCli implements CodeHostDriver {
     }
     List<FailedJob> jobs = new ArrayList<>();
     run.path("jobs")
-        .forEach(
-            job -> {
-              String conclusion = job.path("conclusion").asString("");
-              if (!conclusion.isBlank() && !RAN_FINE.contains(conclusion)) {
-                jobs.add(
-                    new FailedJob(
-                        job.path("databaseId").asString(""),
-                        job.path("name").asString(""),
-                        conclusion,
-                        false));
-              }
-            });
+        .forEach(job -> {
+          String conclusion = job.path("conclusion").asString("");
+          if (!conclusion.isBlank() && !RAN_FINE.contains(conclusion)) {
+            jobs.add(
+                new FailedJob(
+                    job.path("databaseId").asString(""),
+                    job.path("name").asString(""),
+                    conclusion,
+                    false));
+          }
+        });
     return jobs;
   }
 }

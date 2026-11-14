@@ -239,8 +239,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void refusesReplyNoCaseOfTheOpenTurnsStepTakesAndAppliesNothing()
-      throws Exception {
+  void refusesReplyNoCaseOfTheOpenTurnsStepTakesAndAppliesNothing() throws Exception {
 
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
@@ -254,8 +253,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void recordsRefusedReplyWithTheStepWhatCameAndWhatTheCasesTake()
-      throws Exception {
+  void recordsRefusedReplyWithTheStepWhatCameAndWhatTheCasesTake() throws Exception {
 
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);

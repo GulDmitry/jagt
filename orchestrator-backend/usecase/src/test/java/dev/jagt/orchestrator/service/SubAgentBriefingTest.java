@@ -68,8 +68,7 @@ class SubAgentBriefingTest {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains(
@@ -77,8 +76,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesLogicHardToFollowFromItsCodeAsWorthPictureWhenVisualizeIsOn()
-      throws Exception {
+  void namesLogicHardToFollowFromItsCodeAsWorthPictureWhenVisualizeIsOn() throws Exception {
 
     String briefing =
         agent.of(
@@ -96,11 +94,9 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void grantsTheRebaseOntoTheMovedTargetWithLeaseAndStillForbidsForceAndMerge()
-      throws Exception {
+  void grantsTheRebaseOntoTheMovedTargetWithLeaseAndStillForbidsForceAndMerge() throws Exception {
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains(
@@ -123,7 +119,8 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(blank.toString()))), scenarios)
+                        OrchestratorProperties.defaults().withRoot(blank.toString()))),
+                scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -135,7 +132,8 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(absent.toString()))), scenarios)
+                        OrchestratorProperties.defaults().withRoot(absent.toString()))),
+                scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -148,27 +146,23 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesTheDeployBranchAsJagtsAloneSoTheAgentNeverMergesIntoIt()
-      throws Exception {
+  void namesTheDeployBranchAsJagtsAloneSoTheAgentNeverMergesIntoIt() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).contains("The deploy branch `dev` is jagt's `deploy` alone.");
   }
 
   @Test
-  void listsTheDeployWorktreeConflictIsHandedOverInAsTheSessionsOwn()
-      throws Exception {
+  void listsTheDeployWorktreeConflictIsHandedOverInAsTheSessionsOwn() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains(
@@ -204,8 +198,7 @@ class SubAgentBriefingTest {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web, api), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web, api), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("The base branches `origin/main` (web), `origin/develop` (api) are read-only.");
@@ -227,8 +220,7 @@ class SubAgentBriefingTest {
             "git@host:g/web.git",
             true);
 
-    String briefing =
-        agent.of(plainTask, repo, List.of(repo), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, repo, List.of(repo), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("deploy branch");
   }
@@ -254,8 +246,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tellsTheSessionToPlanFirstWhenTheTaskWasOpenedInPlanMode()
-      throws Exception {
+  void tellsTheSessionToPlanFirstWhenTheTaskWasOpenedInPlanMode() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -273,8 +264,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void saysNothingOfPlanningFirstWhenTheTaskWasOpenedInAutoMode()
-      throws Exception {
+  void saysNothingOfPlanningFirstWhenTheTaskWasOpenedInAutoMode() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -297,21 +287,18 @@ class SubAgentBriefingTest {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("AUTOPLAN");
   }
 
   @Test
-  void namesTheOtherWorktreesOfTaskAndNotTheOneTheAgentRunsIn()
-      throws Exception {
+  void namesTheOtherWorktreesOfTaskAndNotTheOneTheAgentRunsIn() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web, api), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web, api), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("- This task ALSO works in these worktrees")
@@ -325,8 +312,7 @@ class SubAgentBriefingTest {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("- This task works in this repository only.")
@@ -350,8 +336,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tablesAndCallsBetweenServersAreAlwaysWorthPictureWhenVisualizeIsOn()
-      throws Exception {
+  void tablesAndCallsBetweenServersAreAlwaysWorthPictureWhenVisualizeIsOn() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -368,8 +353,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void warnsThatSemicolonEndsMermaidStatementWhenVisualizeIsOn()
-      throws Exception {
+  void warnsThatSemicolonEndsMermaidStatementWhenVisualizeIsOn() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -386,8 +370,7 @@ class SubAgentBriefingTest {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("VISUALIZE").doesNotContain("task_visual.md");
   }
@@ -412,8 +395,7 @@ class SubAgentBriefingTest {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("DIAGNOSE");
   }
@@ -424,8 +406,7 @@ class SubAgentBriefingTest {
     Files.writeString(
         root.resolve("roles/session/brief.md"), "## context\n\n<rules>\n1. Work.\n</rules>\n");
 
-    String briefing =
-        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
+    String briefing = agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).contains("1. Work.", "<hard_safety>", "push only to `ABC-42`");
   }
@@ -453,8 +434,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tellsTaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan()
-      throws Exception {
+  void tellsTaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -462,7 +442,8 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
+                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                scenarios)
             .ofScratch(
                 NewTask.unplacedBuilder("ABC-42").mode("plan").build(),
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),
@@ -507,8 +488,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void endsTheScratchBriefingWithTheScenariosLineWhenThereIsOne()
-      throws Exception {
+  void endsTheScratchBriefingWithTheScenariosLineWhenThereIsOne() throws Exception {
     TicketScenarios found = mock(TicketScenarios.class);
     when(found.briefingLine("ABC-42")).thenReturn("\n\n<scenarios>rows</scenarios>");
 

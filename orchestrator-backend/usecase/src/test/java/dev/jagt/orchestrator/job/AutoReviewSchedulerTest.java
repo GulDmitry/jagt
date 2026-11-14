@@ -144,10 +144,8 @@ class AutoReviewSchedulerTest {
   void sweepsNothingWhereTheTaskMadeTwentyUnattendedMovesInTheHour() {
     List<StatusChange> moves =
         java.util.stream.IntStream.range(0, 20)
-            .mapToObj(
-                i ->
-                    new StatusChange(
-                        TaskStatus.CI_POLLING, now - 1_000L - i, ActionOrigin.AUTO_REVIEW))
+            .mapToObj(i ->
+                new StatusChange(TaskStatus.CI_POLLING, now - 1_000L - i, ActionOrigin.AUTO_REVIEW))
             .toList();
     state.putTask(
         "ABC-1",

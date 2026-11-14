@@ -17,13 +17,12 @@ public sealed interface DeployStep {
           .withPressedAt(now)
           .withTargets(
               targets.stream()
-                  .map(
-                      target ->
-                          deployment.targets().stream()
-                              .filter(earlier -> earlier.project().equals(target.project()))
-                              .findFirst()
-                              .map(target::carrying)
-                              .orElse(target))
+                  .map(target ->
+                      deployment.targets().stream()
+                          .filter(earlier -> earlier.project().equals(target.project()))
+                          .findFirst()
+                          .map(target::carrying)
+                          .orElse(target))
                   .toList());
     }
   }

@@ -56,12 +56,11 @@ public class CheckerWaitJob implements TaskJob {
     records
         .latest(taskId)
         .filter(record -> record.ending() == AcceptanceEnding.WAITING)
-        .ifPresent(
-            record -> {
-              if (!environments.isEmpty() && environments.stream().allMatch(this::answers)) {
-                records.released(taskId, record.digest());
-              }
-            });
+        .ifPresent(record -> {
+          if (!environments.isEmpty() && environments.stream().allMatch(this::answers)) {
+            records.released(taskId, record.digest());
+          }
+        });
   }
 
   private boolean answers(Environment environment) {

@@ -28,10 +28,9 @@ class EvalQuorumTest {
                 () -> {},
                 () -> {}));
 
-    assertThatCode(
-            () ->
-                new EvalQuorum(3, 2, null)
-                    .hold("flaky", EvalSpend.UNMETERED, () -> answers.poll().execute()))
+    assertThatCode(() ->
+            new EvalQuorum(3, 2, null)
+                .hold("flaky", EvalSpend.UNMETERED, () -> answers.poll().execute()))
         .doesNotThrowAnyException();
   }
 
@@ -48,10 +47,9 @@ class EvalQuorumTest {
                   throw new AssertionError("judge said second");
                 }));
 
-    assertThatThrownBy(
-            () ->
-                new EvalQuorum(3, 2, null)
-                    .hold("broken", EvalSpend.UNMETERED, () -> answers.poll().execute()))
+    assertThatThrownBy(() ->
+            new EvalQuorum(3, 2, null)
+                .hold("broken", EvalSpend.UNMETERED, () -> answers.poll().execute()))
         .isInstanceOf(AssertionError.class)
         .hasMessageContaining("judge said first")
         .hasMessageContaining("judge said second");
@@ -80,10 +78,9 @@ class EvalQuorumTest {
                 },
                 () -> {}));
 
-    assertThatThrownBy(
-            () ->
-                new EvalQuorum(3, 2, file)
-                    .hold("mixed", EvalSpend.UNMETERED, () -> answers.poll().execute()))
+    assertThatThrownBy(() ->
+            new EvalQuorum(3, 2, file)
+                .hold("mixed", EvalSpend.UNMETERED, () -> answers.poll().execute()))
         .isInstanceOf(AssertionError.class);
 
     assertThat(Files.readAllLines(file))

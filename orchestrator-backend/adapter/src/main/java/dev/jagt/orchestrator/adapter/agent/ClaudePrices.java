@@ -34,8 +34,10 @@ enum ClaudePrices {
   private static final Pattern DATE_SUFFIX = Pattern.compile("-\\d{8}$");
 
   private final String model;
+
   @Getter(AccessLevel.PACKAGE)
   private final String checked;
+
   private final Rate standard;
   private final Rate longContext;
   private final long longContextAbove;

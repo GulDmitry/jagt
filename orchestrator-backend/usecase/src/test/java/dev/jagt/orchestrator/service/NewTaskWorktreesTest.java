@@ -79,8 +79,7 @@ class NewTaskWorktreesTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(
-            new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     worktrees = new NewTaskWorktrees(config, state, git, setup);
     oneProject =
         ConfigService.ConfigFile.defaults()
@@ -174,12 +173,11 @@ class NewTaskWorktreesTest {
   @ParameterizedTest
   @ValueSource(strings = {"../escape", "a b", "-lead", "feature/", "feature//x", "x.lock"})
   void rejectsTaskIdBeforeTouchingGitWhenGitWouldRefuseItAsBranch(String unsafeTaskId) {
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder(unsafeTaskId, "proj").build(),
-                    ConfigService.ConfigFile.defaults(),
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder(unsafeTaskId, "proj").build(),
+                ConfigService.ConfigFile.defaults(),
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("is not a branch name");
     verifyNoInteractions(git);
@@ -199,12 +197,11 @@ class NewTaskWorktreesTest {
                         "refs/heads/dev",
                         List.of())));
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder(taskId, "proj").baseBranch(baseBranch).build(),
-                    configured,
-                    BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder(taskId, "proj").baseBranch(baseBranch).build(),
+                configured,
+                BranchStrategy.RESUME))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("would be the shared branch");
     verifyNoInteractions(git);
@@ -213,12 +210,11 @@ class NewTaskWorktreesTest {
   @Test
   void refusesBaseBranchGitWouldReadAsAnOptionBeforeTouchingGit() {
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-42", "proj").baseBranch("--upload-pack=touch").build(),
-                    oneProject,
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-42", "proj").baseBranch("--upload-pack=touch").build(),
+                oneProject,
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("is not a branch name: it starts with '-'");
     verifyNoInteractions(git);
@@ -245,12 +241,11 @@ class NewTaskWorktreesTest {
         "feature/ABC-42",
         TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("f1").build());
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("feature-ABC-42", "proj").build(),
-                    ConfigService.ConfigFile.defaults(),
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("feature-ABC-42", "proj").build(),
+                ConfigService.ConfigFile.defaults(),
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("both become the directory feature-ABC-42");
   }
@@ -265,12 +260,11 @@ class NewTaskWorktreesTest {
         "T17":{},"T18":{},"T19":{},"T20":{},"T21":{},"T22":{},"T23":{},"T24":{}}}\
         """);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-99", "proj").build(),
-                    ConfigService.ConfigFile.defaults(),
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-99", "proj").build(),
+                ConfigService.ConfigFile.defaults(),
+                BranchStrategy.FRESH))
         .isInstanceOfSatisfying(
             Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
         .hasMessageContaining("24 tasks are already open");
@@ -301,10 +295,9 @@ class NewTaskWorktreesTest {
   void removesFreshWorktreeAndBranchWhenContextSetupFailsAfterCheckout() {
     doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-9", "proj").build(), oneProject, BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-9", "proj").build(), oneProject, BranchStrategy.FRESH))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(root.resolve("repo"), root.resolve("ABC-9-proj"), "ABC-9");
@@ -314,10 +307,9 @@ class NewTaskWorktreesTest {
   void keepsResumedBranchWhenTheUnwindRemovesItsWorktree() {
     doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-4", "proj").build(), oneProject, BranchStrategy.RESUME))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-4", "proj").build(), oneProject, BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(root.resolve("repo"), root.resolve("ABC-4-proj"), null);
@@ -356,12 +348,11 @@ class NewTaskWorktreesTest {
         .when(setup)
         .fill(any(), any(), any());
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-8", "api").alsoIn(List.of("web")).build(),
-                    apiWeb,
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-8", "api").alsoIn(List.of("web")).build(),
+                apiWeb,
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(root.resolve("api-repo"), root.resolve("ABC-8-api"), "ABC-8");
@@ -378,12 +369,11 @@ class NewTaskWorktreesTest {
                     new ProjectConfig(
                         root.resolve("api-repo").toString(), "origin/main", null, List.of())));
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-6", "api").alsoIn(List.of("nope")).build(),
-                    configured,
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-6", "api").alsoIn(List.of("nope")).build(),
+                configured,
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown project 'nope'");
 
@@ -441,12 +431,11 @@ class NewTaskWorktreesTest {
   void refusesBaseBranchOriginDoesNotHaveBeforeCreatingAnything() {
     when(git.remoteBranchExists(any(), eq("feature/typo"))).thenReturn(false);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-5", "proj").baseBranch("feature/typo").build(),
-                    oneProject,
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-5", "proj").baseBranch("feature/typo").build(),
+                oneProject,
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("does not exist on proj's origin");
 
@@ -458,15 +447,14 @@ class NewTaskWorktreesTest {
     when(git.remoteBranchExists(root.resolve("api-repo"), "feature/parent")).thenReturn(true);
     when(git.remoteBranchExists(root.resolve("web-repo"), "feature/parent")).thenReturn(false);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-3", "api")
-                        .alsoIn(List.of("web"))
-                        .baseBranch("feature/parent")
-                        .build(),
-                    apiWeb,
-                    BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-3", "api")
+                    .alsoIn(List.of("web"))
+                    .baseBranch("feature/parent")
+                    .build(),
+                apiWeb,
+                BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("does not exist on web's origin");
 
@@ -531,10 +519,9 @@ class NewTaskWorktreesTest {
                     new ProjectConfig(
                         root.resolve("repo").toString(), "origin/main", null, List.of())));
 
-    assertThatThrownBy(
-            () ->
-                worktrees.cut(
-                    NewTask.builder("ABC-42", "bad key").build(), configured, BranchStrategy.FRESH))
+    assertThatThrownBy(() ->
+            worktrees.cut(
+                NewTask.builder("ABC-42", "bad key").build(), configured, BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Argument 'projectKey' must match");
     verifyNoInteractions(git);
@@ -615,12 +602,8 @@ class NewTaskWorktreesTest {
         .attach(
             any(),
             eq(added),
-            argThat(
-                all ->
-                    all.stream()
-                        .map(NewRepo::project)
-                        .toList()
-                        .equals(List.of("api", "registry"))));
+            argThat(all ->
+                all.stream().map(NewRepo::project).toList().equals(List.of("api", "registry"))));
   }
 
   @Test
@@ -730,10 +713,9 @@ class NewTaskWorktreesTest {
   void refusesScratchFolderForTaskNameAnotherTaskHolds() {
     state.putTask("ABC-9", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).build());
 
-    assertThatThrownBy(
-            () ->
-                worktrees.scratch(
-                    NewTask.unplacedBuilder("ABC-9").build(), ConfigService.ConfigFile.defaults()))
+    assertThatThrownBy(() ->
+            worktrees.scratch(
+                NewTask.unplacedBuilder("ABC-9").build(), ConfigService.ConfigFile.defaults()))
         .isInstanceOf(Refusal.class);
     verifyNoInteractions(setup);
   }
@@ -744,9 +726,7 @@ class NewTaskWorktreesTest {
 
     List<NewRepo> placed =
         worktrees.place(
-            NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
-            apiWebDev,
-            repos -> {});
+            NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), apiWebDev, repos -> {});
 
     assertThat(placed)
         .extracting(NewRepo::project, NewRepo::primary)
@@ -790,12 +770,11 @@ class NewTaskWorktreesTest {
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of())));
     when(config.load()).thenReturn(configured);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.place(
-                    NewTask.builder("ABC-9", "api").alsoIn(List.of("billing")).build(),
-                    configured,
-                    repos -> {}))
+    assertThatThrownBy(() ->
+            worktrees.place(
+                NewTask.builder("ABC-9", "api").alsoIn(List.of("billing")).build(),
+                configured,
+                repos -> {}))
         .isInstanceOfSatisfying(
             Unplaceable.class,
             unplaceable -> assertThat(unplaceable.projects()).containsExactly("billing"));
@@ -808,15 +787,14 @@ class NewTaskWorktreesTest {
     when(config.load()).thenReturn(apiWebDev);
     when(git.remoteBranchExists(Path.of("/api"), "feature/parent")).thenReturn(true);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.place(
-                    NewTask.builder("ABC-9", "api")
-                        .alsoIn(List.of("web"))
-                        .baseBranch("feature/parent")
-                        .build(),
-                    apiWebDev,
-                    repos -> {}))
+    assertThatThrownBy(() ->
+            worktrees.place(
+                NewTask.builder("ABC-9", "api")
+                    .alsoIn(List.of("web"))
+                    .baseBranch("feature/parent")
+                    .build(),
+                apiWebDev,
+                repos -> {}))
         .isInstanceOfSatisfying(
             Unplaceable.class,
             unplaceable -> assertThat(unplaceable.projects()).containsExactly("web"));
@@ -832,12 +810,11 @@ class NewTaskWorktreesTest {
         .createWorktree(
             Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9", "origin/main", BranchStrategy.FRESH);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.place(
-                    NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
-                    apiWebDev,
-                    repos -> {}))
+    assertThatThrownBy(() ->
+            worktrees.place(
+                NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
+                apiWebDev,
+                repos -> {}))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9");
@@ -848,14 +825,13 @@ class NewTaskWorktreesTest {
   void removesEveryWorktreeWhereTheRegistrationFailsWhenPlacing() {
     when(config.load()).thenReturn(apiWebDev);
 
-    assertThatThrownBy(
-            () ->
-                worktrees.place(
-                    NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
-                    apiWebDev,
-                    repos -> {
-                      throw new IllegalStateException("state not written");
-                    }))
+    assertThatThrownBy(() ->
+            worktrees.place(
+                NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
+                apiWebDev,
+                repos -> {
+                  throw new IllegalStateException("state not written");
+                }))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9");

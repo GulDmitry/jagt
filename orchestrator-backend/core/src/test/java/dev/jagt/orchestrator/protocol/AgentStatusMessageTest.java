@@ -38,12 +38,11 @@ class AgentStatusMessageTest {
 
     assertThat(said.reportViolations(MessageContext.NONE))
         .singleElement()
-        .satisfies(
-            violation ->
-                assertThat(violation.expected())
-                    .isEqualTo(
-                        "one of [PLAN_PENDING, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING,"
-                            + " CI_FAILED]"));
+        .satisfies(violation ->
+            assertThat(violation.expected())
+                .isEqualTo(
+                    "one of [PLAN_PENDING, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING,"
+                        + " CI_FAILED]"));
   }
 
   @Test
@@ -152,10 +151,9 @@ class AgentStatusMessageTest {
                 new MessageContext(List.of("api", "web"), false, java.util.List.of())))
         .singleElement()
         .satisfies(violation -> assertThat(violation.field()).isEqualTo("reviewRequests"))
-        .satisfies(
-            violation ->
-                assertThat(violation.expected())
-                    .isEqualTo("project 'nope' is not on this task; its projects are [api, web]"));
+        .satisfies(violation ->
+            assertThat(violation.expected())
+                .isEqualTo("project 'nope' is not on this task; its projects are [api, web]"));
   }
 
   @Test
@@ -315,13 +313,10 @@ class AgentStatusMessageTest {
 
     assertThat(said.reportViolations(context))
         .singleElement()
-        .satisfies(
-            violation -> {
-              assertThat(violation.field()).isEqualTo("needsProject");
-              assertThat(violation.expected())
-                  .contains("not configured")
-                  .contains("[api, registry]");
-            });
+        .satisfies(violation -> {
+          assertThat(violation.field()).isEqualTo("needsProject");
+          assertThat(violation.expected()).contains("not configured").contains("[api, registry]");
+        });
   }
 
   @Test
@@ -339,11 +334,10 @@ class AgentStatusMessageTest {
 
     assertThat(said.reportViolations(context))
         .singleElement()
-        .satisfies(
-            violation -> {
-              assertThat(violation.field()).isEqualTo("needsProject");
-              assertThat(violation.expected()).contains("already on this task").contains("[api]");
-            });
+        .satisfies(violation -> {
+          assertThat(violation.field()).isEqualTo("needsProject");
+          assertThat(violation.expected()).contains("already on this task").contains("[api]");
+        });
   }
 
   @Test

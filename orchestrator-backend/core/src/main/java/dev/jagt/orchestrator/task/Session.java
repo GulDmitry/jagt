@@ -12,8 +12,7 @@ import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * What a task's session has signed: times in millis, 0 meaning never (a file holding the old ask
- * flag reads as not asked); {@code halt} null while
- * nothing has stopped it.
+ * flag reads as not asked); {@code halt} null while nothing has stopped it.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

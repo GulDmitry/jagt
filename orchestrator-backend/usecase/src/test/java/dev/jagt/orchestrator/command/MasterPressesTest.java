@@ -50,11 +50,10 @@ class MasterPressesTest {
   void pressesVerbOnTaskAsTheMasterAndAnswersWhatTheDoorSaid() {
     AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     when(commands.execute("ABC-42", TaskAction.REMOVE_REPO, "api"))
-        .thenAnswer(
-            call -> {
-              seen.set(OriginContext.current());
-              return "removed api";
-            });
+        .thenAnswer(call -> {
+          seen.set(OriginContext.current());
+          return "removed api";
+        });
     MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
 
     String answered = presses.press("ABC-42", "remove-repo", "api", null);
@@ -133,9 +132,7 @@ class MasterPressesTest {
   void neverOpensTaskForTheMasterWithDo() {
     MasterPresses presses =
         new MasterPresses(
-            commands,
-            new GlobalCommands(List.of(new DoCommand(mock(TaskLauncher.class)))),
-            config);
+            commands, new GlobalCommands(List.of(new DoCommand(mock(TaskLauncher.class)))), config);
 
     assertThatThrownBy(() -> presses.run("do", "ABC-42"))
         .isInstanceOfSatisfying(

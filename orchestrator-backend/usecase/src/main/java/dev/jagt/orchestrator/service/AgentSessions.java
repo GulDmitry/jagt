@@ -245,10 +245,9 @@ public class AgentSessions implements SessionLines {
         hosting
             .runtime()
             .shellEscape()
-            .orElseThrow(
-                () ->
-                    Refusal.byState(
-                        hosting.runtime().displayName() + " has no shell escape to run a line"));
+            .orElseThrow(() ->
+                Refusal.byState(
+                    hosting.runtime().displayName() + " has no shell escape to run a line"));
     typed(agentSession(configService.load(), id), id, escape + line);
     log.atInfo()
         .setMessage("line run in agent")
@@ -270,11 +269,10 @@ public class AgentSessions implements SessionLines {
               + " — restart the agent, then say it again.");
     }
     undelivered(session, id, text)
-        .ifPresent(
-            cause -> {
-              throw new IllegalStateException(
-                  "The line was typed into " + id + "'s window, but " + cause + ".");
-            });
+        .ifPresent(cause -> {
+          throw new IllegalStateException(
+              "The line was typed into " + id + "'s window, but " + cause + ".");
+        });
   }
 
   public String press(String taskId, SessionHost.Key key) {
@@ -367,9 +365,8 @@ public class AgentSessions implements SessionLines {
       }
       if (hosting.host().nudgeTaskWindow(session, taskId, NUDGE)) {
         return undelivered(session, taskId, NUDGE)
-            .map(
-                cause ->
-                    "Instructions written to task_context.md, but the nudge failed: " + cause + ".")
+            .map(cause ->
+                "Instructions written to task_context.md, but the nudge failed: " + cause + ".")
             .orElse(
                 "Instructions written to task_context.md and the agent was nudged to re-read"
                     + " them.");
@@ -512,31 +509,29 @@ public class AgentSessions implements SessionLines {
         .addKeyValue("alias", alias)
         .addKeyValue("cause", "the human is typing in the agent's window")
         .log();
-    Thread.startVirtualThread(
-        () -> {
-          try {
-            while (running(session, taskId) && composing(session, taskId)) {
-              Thread.sleep(DRAFT_POLL);
-            }
-            stateService
-                .task(taskId)
-                .ifPresent(
-                    task -> {
-                      ConfigService.ConfigFile config = configService.load();
-                      if (cold(task, config)) {
-                        startFreshWhenFree(
-                            taskId, task, config, "conversation idle past its cache lifetime");
-                      } else if (running(session, taskId)
-                          && hosting.host().nudgeTaskWindow(session, taskId, NUDGE)) {
-                        undelivered(session, taskId, NUDGE);
-                      }
-                    });
-          } catch (InterruptedException stopped) {
-            Thread.currentThread().interrupt();
-          } finally {
-            draftWaits.remove(taskId);
-          }
-        });
+    Thread.startVirtualThread(() -> {
+      try {
+        while (running(session, taskId) && composing(session, taskId)) {
+          Thread.sleep(DRAFT_POLL);
+        }
+        stateService
+            .task(taskId)
+            .ifPresent(task -> {
+              ConfigService.ConfigFile config = configService.load();
+              if (cold(task, config)) {
+                startFreshWhenFree(
+                    taskId, task, config, "conversation idle past its cache lifetime");
+              } else if (running(session, taskId)
+                  && hosting.host().nudgeTaskWindow(session, taskId, NUDGE)) {
+                undelivered(session, taskId, NUDGE);
+              }
+            });
+      } catch (InterruptedException stopped) {
+        Thread.currentThread().interrupt();
+      } finally {
+        draftWaits.remove(taskId);
+      }
+    });
   }
 
   /**
@@ -608,13 +603,9 @@ public class AgentSessions implements SessionLines {
       if (unsent && cold(id)) {
         stateService
             .task(id)
-            .ifPresent(
-                task ->
-                    startFreshWhenFree(
-                        id,
-                        task,
-                        configService.load(),
-                        "conversation idle past its cache lifetime"));
+            .ifPresent(task ->
+                startFreshWhenFree(
+                    id, task, configService.load(), "conversation idle past its cache lifetime"));
         return false;
       }
       return unsent && hosting.host().submitTaskWindow(session, id);
@@ -660,9 +651,8 @@ public class AgentSessions implements SessionLines {
   private boolean humanTurnOpen(String taskId) {
     return stateService
         .task(taskId)
-        .filter(
-            task ->
-                hosting.runtime().humanExchangeOpen(Path.of(task.worktreePath()), Set.of(NUDGE)))
+        .filter(task ->
+            hosting.runtime().humanExchangeOpen(Path.of(task.worktreePath()), Set.of(NUDGE)))
         .isPresent();
   }
 

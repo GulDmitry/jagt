@@ -36,9 +36,7 @@ class BoardActionsTest extends BoardPageContext {
   void revertingAsksFirstAndSaysOnlyTheLastDeployComesOut() throws Exception {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.DEPLOYED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.DEPLOYED).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
     CompletableFuture<String> asked = dismissedDialogMessage(page);
@@ -154,16 +152,13 @@ class BoardActionsTest extends BoardPageContext {
     void startSweepingTheFirstTask() {
       state.putTask(
           "ABC-1",
-          alphaTask("ABC-1", TaskStatus.CI_POLLING)
-              .mrUrl("https://host.example/mr/7")
-              .build());
+          alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
       sweeping = new CountDownLatch(1);
       when(commands.execute("ABC-1", TaskAction.SWEEP, null))
-          .thenAnswer(
-              invocation -> {
-                sweeping.await(10, TimeUnit.SECONDS);
-                return "sweep ABC-1: checks success";
-              });
+          .thenAnswer(invocation -> {
+            sweeping.await(10, TimeUnit.SECONDS);
+            return "sweep ABC-1: checks success";
+          });
     }
 
     @Test

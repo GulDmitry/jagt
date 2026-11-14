@@ -73,9 +73,7 @@ class CommandMappingEvalTest {
 
   @Autowired
   CommandMappingEvalTest(
-      StateService stateService,
-      PaletteContext board,
-      CommandAssistant assistant) {
+      StateService stateService, PaletteContext board, CommandAssistant assistant) {
     this.stateService = stateService;
     this.board = board;
     this.assistant = assistant;
@@ -91,8 +89,7 @@ class CommandMappingEvalTest {
             .build());
     stateService.putTask(
         "ABC-42",
-        TaskState.builder(
-                "shop", workspace.resolve("ABC-42").toString(), TaskStatus.REVIEW_PENDING)
+        TaskState.builder("shop", workspace.resolve("ABC-42").toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .title("Login form rejects a valid e-mail")
             .mrUrl("https://example.invalid/shop/merge_requests/1")
@@ -112,10 +109,7 @@ class CommandMappingEvalTest {
             .mrUrl("https://example.invalid/shop/merge_requests/3")
             .deployment(
                 new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("shop", "dev").withMerge("c0ffee1")),
-                    1,
-                    null))
+                    1, List.of(Deployment.Target.of("shop", "dev").withMerge("c0ffee1")), 1, null))
             .build());
   }
 

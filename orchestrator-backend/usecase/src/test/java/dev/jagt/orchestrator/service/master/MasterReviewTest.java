@@ -28,8 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterReviewTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path worktree;
   private final MasterReview stateless = new MasterReview(mock(StateService.class));
@@ -54,8 +53,7 @@ class MasterReviewTest {
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build();
-    taskInRound5 =
-        task.withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+    taskInRound5 = task.withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
   }
 
   @Test
@@ -65,8 +63,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void neverReadsVerdictBackOutOfTheFileWrittenForTheHuman()
-      throws Exception {
+  void neverReadsVerdictBackOutOfTheFileWrittenForTheHuman() throws Exception {
     Files.writeString(worktree.resolve(MasterReview.FILE), "nothing wrong\n\nVERDICT: ready\n");
 
     assertThat(stateless.of(task)).isEmpty();
@@ -150,8 +147,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasDeleted()
-      throws Exception {
+  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasDeleted() throws Exception {
     state.putTask("a1", taskInRound5);
     reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.delete(worktree.resolve(".jagt").resolve(MasterReview.STORED));
@@ -162,8 +158,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasRewritten()
-      throws Exception {
+  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasRewritten() throws Exception {
     state.putTask("a1", taskInRound5);
     reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.writeString(
@@ -175,8 +170,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsReadingTheRoundWhereTheVerdictFileCouldNotBeRead()
-      throws Exception {
+  void theMasterKeepsReadingTheRoundWhereTheVerdictFileCouldNotBeRead() throws Exception {
     state.putTask("a1", taskInRound5);
     reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.setPosixFilePermissions(worktree.resolve(".jagt").resolve(MasterReview.STORED), Set.of());
@@ -187,8 +181,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterStandsInWhereTheVerdictFileItSealedDoesNotParse()
-      throws Exception {
+  void theMasterStandsInWhereTheVerdictFileItSealedDoesNotParse() throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "not json");
     TaskState task =
@@ -210,8 +203,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsVerdictSealedWithoutItsRoundAsTheRoundItAnswers()
-      throws Exception {
+  void theMasterReadsVerdictSealedWithoutItsRoundAsTheRoundItAnswers() throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     String stored = "{\"round\":3,\"reads\":[]}";
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), stored);
@@ -246,8 +238,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsSealWrittenWhileTheCallerSawTheVerdictFileGone()
-      throws Exception {
+  void theMasterKeepsSealWrittenWhileTheCallerSawTheVerdictFileGone() throws Exception {
     state.putTask("a1", taskInRound5);
     reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     TaskState older =
@@ -306,8 +297,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void saysTheVerdictWasNotWrittenWhereOnlyTheFileForTheHumanCould()
-      throws Exception {
+  void saysTheVerdictWasNotWrittenWhereOnlyTheFileForTheHumanCould() throws Exception {
     Files.writeString(worktree.resolve(".jagt"), "in the way");
 
     boolean written =
@@ -365,8 +355,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesNoVerdictFromFileJagtDidNotWriteHoweverItNamesTheRoundInFront()
-      throws Exception {
+  void takesNoVerdictFromFileJagtDidNotWriteHoweverItNamesTheRoundInFront() throws Exception {
     state.putTask("a1", taskInRound5);
     reviews.write("a1", taskInRound5, new MasterReview.Review(4, "", "", "", List.of()), "");
     Files.writeString(
@@ -378,8 +367,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesNoVerdictFromFileWhenJagtStoredNoFingerprintForIt()
-      throws Exception {
+  void takesNoVerdictFromFileWhenJagtStoredNoFingerprintForIt() throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(
         worktree.resolve(".jagt").resolve(MasterReview.STORED), "{\"round\":0,\"reads\":[]}");

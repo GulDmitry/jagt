@@ -27,10 +27,7 @@ public record TestMasterAnswerJobBuilder(@Nullable List<String> mine) {
   }
 
   public MasterAnswerJob build(
-      StateService state,
-      ConfigService config,
-      MasterPanel panel,
-      MasterVerdicts verdicts) {
+      StateService state, ConfigService config, MasterPanel panel, MasterVerdicts verdicts) {
     return new MasterAnswerJob(
         state,
         config,

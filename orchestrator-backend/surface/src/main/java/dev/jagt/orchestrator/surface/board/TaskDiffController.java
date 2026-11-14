@@ -20,9 +20,6 @@ public class TaskDiffController {
 
   @GetMapping("/tasks/diff")
   public List<TaskDiff.RepoDiff> diff(@RequestParam("task") String taskId) {
-    return Stream.concat(
-            diff.read(taskId).stream(),
-            trusted.changes(taskId).stream())
-        .toList();
+    return Stream.concat(diff.read(taskId).stream(), trusted.changes(taskId).stream()).toList();
   }
 }

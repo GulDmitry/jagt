@@ -25,42 +25,38 @@ public final class SwitchJudgements {
 
   public static List<Violation> violations(Map<String, String> given, List<String> owed) {
     List<Violation> found = new ArrayList<>();
-    given.forEach(
-        (name, answer) -> {
-          if (!NAMES.contains(key(name))) {
-            found.add(new Violation(FIELD, "no switch '" + name + "'; the switches are " + NAMES));
-          } else if (!ANSWER.matcher(answer.strip()).matches()) {
-            found.add(
-                new Violation(
-                    FIELD, name + " answers `yes — <why>` or `no — <why>`, not '" + answer + "'"));
-          }
-        });
+    given.forEach((name, answer) -> {
+      if (!NAMES.contains(key(name))) {
+        found.add(new Violation(FIELD, "no switch '" + name + "'; the switches are " + NAMES));
+      } else if (!ANSWER.matcher(answer.strip()).matches()) {
+        found.add(
+            new Violation(
+                FIELD, name + " answers `yes — <why>` or `no — <why>`, not '" + answer + "'"));
+      }
+    });
     owed.stream()
         .filter(name -> given.keySet().stream().noneMatch(key -> key(key).equals(name)))
-        .forEach(
-            name ->
-                found.add(
-                    new Violation(
-                        FIELD,
-                        "answer "
-                            + name
-                            + " with `yes — <why>` or `no — <why>`: it is on, and this report"
-                            + " carries your judgement of it")));
+        .forEach(name ->
+            found.add(
+                new Violation(
+                    FIELD,
+                    "answer "
+                        + name
+                        + " with `yes — <why>` or `no — <why>`: it is on, and this report"
+                        + " carries your judgement of it")));
     return List.copyOf(found);
   }
 
   /** The well-formed answers of known switches, spelled one way. */
   public static Map<String, String> normalised(Map<String, String> given) {
     Map<String, String> judged = new LinkedHashMap<>();
-    given.forEach(
-        (name, answer) -> {
-          Matcher match = ANSWER.matcher(answer.strip());
-          if (NAMES.contains(key(name)) && match.matches()) {
-            judged.put(
-                key(name),
-                match.group(1).toLowerCase(Locale.ROOT) + " — " + match.group(2).strip());
-          }
-        });
+    given.forEach((name, answer) -> {
+      Matcher match = ANSWER.matcher(answer.strip());
+      if (NAMES.contains(key(name)) && match.matches()) {
+        judged.put(
+            key(name), match.group(1).toLowerCase(Locale.ROOT) + " — " + match.group(2).strip());
+      }
+    });
     return Map.copyOf(judged);
   }
 

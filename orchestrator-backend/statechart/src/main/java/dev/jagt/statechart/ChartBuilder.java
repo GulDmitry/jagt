@@ -80,14 +80,13 @@ public final class ChartBuilder<E, X, F> {
   public Chart<E, X, F> build() {
     List<Stored<F>> stored =
         regions.stream()
-            .map(
-                region ->
-                    new Stored<>(
-                        region.name(),
-                        region.type(),
-                        region.initial(),
-                        region.finals(),
-                        Map.<Enum<?>, List<F>>copyOf(exits.getOrDefault(region.name(), Map.of()))))
+            .map(region ->
+                new Stored<>(
+                    region.name(),
+                    region.type(),
+                    region.initial(),
+                    region.finals(),
+                    Map.<Enum<?>, List<F>>copyOf(exits.getOrDefault(region.name(), Map.of()))))
             .toList();
     List<String> names = new ArrayList<>(regions.stream().map(Pending::name).toList());
     derived.forEach(region -> names.add(region.name()));

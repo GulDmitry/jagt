@@ -44,9 +44,7 @@ class TicketPrefetchJobTest {
   private final TicketTexts tickets =
       new TicketTexts(
           assistants,
-          new UsageTracker(
-              state,
-              new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
+          new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
           new KeptTicketTexts(paths));
   private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
@@ -135,14 +133,13 @@ class TicketPrefetchJobTest {
     TicketTexts restartedTickets =
         new TicketTexts(
             afterRestartAssistants,
-            new UsageTracker(
-                state,
-                new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
+            new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
             new KeptTicketTexts(paths));
 
     new TicketPrefetchJob(config, restartedTickets).runOn(tasks);
 
-    verify(afterRestartAssistants.tracker(), never()).readTicketText("https://tracker.example/ABC-45");
+    verify(afterRestartAssistants.tracker(), never())
+        .readTicketText("https://tracker.example/ABC-45");
     assertThat(restartedTickets.of("ABC-45")).contains("Summary: accept v3 calls");
   }
 }

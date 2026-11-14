@@ -18,20 +18,35 @@ public record TestNewRepoBuilder(
 
   public static TestNewRepoBuilder api(Path root) {
     return new TestNewRepoBuilder(
-        "api", Path.of("/api"), root.resolve("ABC-9-api"), root.resolve(".git"), "origin/main",
-        "dev", true);
+        "api",
+        Path.of("/api"),
+        root.resolve("ABC-9-api"),
+        root.resolve(".git"),
+        "origin/main",
+        "dev",
+        true);
   }
 
   public static TestNewRepoBuilder proj() {
     return new TestNewRepoBuilder(
-        "proj", Path.of("/repo"), Path.of("/ABC-1-proj"), Path.of("/git"), "origin/main", "main",
+        "proj",
+        Path.of("/repo"),
+        Path.of("/ABC-1-proj"),
+        Path.of("/git"),
+        "origin/main",
+        "main",
         true);
   }
 
   public static TestNewRepoBuilder web(Path root) {
     return new TestNewRepoBuilder(
-        "web", Path.of("/web"), root.resolve("ABC-9-web"), root.resolve(".git"), "origin/main",
-        "dev", false);
+        "web",
+        Path.of("/web"),
+        root.resolve("ABC-9-web"),
+        root.resolve(".git"),
+        "origin/main",
+        "dev",
+        false);
   }
 
   public NewRepo build() {

@@ -22,13 +22,12 @@ final class Reflog {
     return StateFiles.lines(log)
         .map(ENTRY::matcher)
         .filter(Matcher::matches)
-        .map(
-            entry ->
-                new RunRecord.RefUpdate(
-                    entry.group(1),
-                    entry.group(2),
-                    Instant.ofEpochSecond(Long.parseLong(entry.group(3))),
-                    entry.group()))
+        .map(entry ->
+            new RunRecord.RefUpdate(
+                entry.group(1),
+                entry.group(2),
+                Instant.ofEpochSecond(Long.parseLong(entry.group(3))),
+                entry.group()))
         .toList();
   }
 }

@@ -115,8 +115,7 @@ class TaskRetirementTest {
   }
 
   @Test
-  void leavesNeitherTicketTextNorPlanBaselineForLaterTaskOnTheSameId()
-      throws java.io.IOException {
+  void leavesNeitherTicketTextNorPlanBaselineForLaterTaskOnTheSameId() throws java.io.IOException {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     java.nio.file.Files.createDirectories(paths.ticketTexts());

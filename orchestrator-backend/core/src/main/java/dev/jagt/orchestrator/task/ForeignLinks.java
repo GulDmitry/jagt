@@ -37,12 +37,11 @@ public final class ForeignLinks {
             : byProject;
     Map<String, String> kept = new LinkedHashMap<>();
     List<Foreign> foreign = new ArrayList<>();
-    asked.forEach(
-        (project, link) ->
-            foreignRemote(task, project, link)
-                .ifPresentOrElse(
-                    remote -> foreign.add(new Foreign(project, link, remote)),
-                    () -> kept.put(project, link)));
+    asked.forEach((project, link) ->
+        foreignRemote(task, project, link)
+            .ifPresentOrElse(
+                remote -> foreign.add(new Foreign(project, link, remote)),
+                () -> kept.put(project, link)));
     if (foreign.isEmpty()) {
       return new Judged(byProject, url, List.of());
     }

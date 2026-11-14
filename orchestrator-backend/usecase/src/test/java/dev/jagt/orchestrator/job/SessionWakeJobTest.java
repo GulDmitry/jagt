@@ -40,11 +40,10 @@ class SessionWakeJobTest {
   void holdsBackSessionWhoseWindowHoldsAnUnsentDraft() {
     when(sessions.composing("ABC-42")).thenReturn(true);
     when(wakes.takeDue(any()))
-        .thenAnswer(
-            call ->
-                ((Predicate<String>) call.getArgument(0)).test("ABC-42")
-                    ? List.of()
-                    : List.of(new SessionWakes.Due("ABC-42", Step.WAKE, Standing.ABSENT)));
+        .thenAnswer(call ->
+            ((Predicate<String>) call.getArgument(0)).test("ABC-42")
+                ? List.of()
+                : List.of(new SessionWakes.Due("ABC-42", Step.WAKE, Standing.ABSENT)));
 
     new SessionWakeJob(wakes, sessions, relay).run();
 

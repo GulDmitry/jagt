@@ -34,8 +34,7 @@ class RemoveRepoCapabilityTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final RepoRemoval removal = mock(RepoRemoval.class);
 
@@ -81,7 +80,8 @@ class RemoveRepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask(
         "ABC-7",
         TaskState.builder(
@@ -113,7 +113,8 @@ class RemoveRepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask(
         "ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEWED).alias("a1").build());
     FlowEngine engine =

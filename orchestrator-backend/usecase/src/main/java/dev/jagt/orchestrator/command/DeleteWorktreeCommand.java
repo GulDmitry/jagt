@@ -35,8 +35,7 @@ public class DeleteWorktreeCommand implements GlobalCommand {
   public String run(String tail) {
     String name = tail.strip();
     if (name.isEmpty()) {
-      throw new IllegalArgumentException(
-          "usage: delete-worktree <name> — `worktrees` lists them");
+      throw new IllegalArgumentException("usage: delete-worktree <name> — `worktrees` lists them");
     }
     return orphans.delete(name);
   }

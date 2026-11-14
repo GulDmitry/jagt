@@ -158,11 +158,10 @@ public final class WorktreeFiles {
         .stream()
             .filter(glob -> glob != null && !glob.isBlank())
             .map(String::strip)
-            .flatMap(
-                glob ->
-                    glob.startsWith("**/")
-                        ? Stream.of(glob, glob.substring("**/".length()))
-                        : Stream.of(glob))
+            .flatMap(glob ->
+                glob.startsWith("**/")
+                    ? Stream.of(glob, glob.substring("**/".length()))
+                    : Stream.of(glob))
             .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob))
             .toList();
   }
@@ -234,15 +233,14 @@ public final class WorktreeFiles {
       return;
     }
     try (var files = Files.walk(source)) {
-      files.forEach(
-          from -> {
-            Path to = target.resolve(source.relativize(from));
-            if (Files.isDirectory(from)) {
-              mkdirs(to);
-            } else {
-              copyAbsent(from, to);
-            }
-          });
+      files.forEach(from -> {
+        Path to = target.resolve(source.relativize(from));
+        if (Files.isDirectory(from)) {
+          mkdirs(to);
+        } else {
+          copyAbsent(from, to);
+        }
+      });
     } catch (IOException e) {
       log.atWarn()
           .setMessage("file copy failed")

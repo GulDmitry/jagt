@@ -13,27 +13,31 @@ class CostPerAcceptedTaskTest {
   @Test
   void countsWhatFailedAndStoppedTaskCostButOnlyShippedTaskAsAccepted() {
     var shipped =
-        finishedTask().withId("ABC-1")
+        finishedTask()
+            .withId("ABC-1")
             .withStatusAt(50L)
             .withFinishedAt(100L)
             .withSpend(new FinishedTask.Spend(0, 2.0, null, null))
             .build();
     var failed =
-        finishedTask().withId("ABC-2")
+        finishedTask()
+            .withId("ABC-2")
             .withStatus(TaskStatus.NEW)
             .withStatusAt(50L)
             .withFinishedAt(100L)
             .withSpend(new FinishedTask.Spend(0, 3.0, null, null))
             .build();
     var unread =
-        finishedTask().withId("ABC-3")
+        finishedTask()
+            .withId("ABC-3")
             .withStatus(TaskStatus.NEW)
             .withStatusAt(50L)
             .withFinishedAt(100L)
             .withSpend(new FinishedTask.Spend(0, null, null, null))
             .build();
     var lastWeek =
-        finishedTask().withId("ABC-4")
+        finishedTask()
+            .withId("ABC-4")
             .withStatusAt(50L)
             .withFinishedAt(WEEK + 100L)
             .withSpend(new FinishedTask.Spend(0, 9.0, null, null))
@@ -45,16 +49,16 @@ class CostPerAcceptedTaskTest {
 
   @Test
   void weekRunsFromItsFirstInstantUpToButNotIncludingTheNextWeeksFirst() {
-    var first =
-        finishedTask().withId("ABC-1")
-            .build();
+    var first = finishedTask().withId("ABC-1").build();
     var second =
-        finishedTask().withId("ABC-3")
+        finishedTask()
+            .withId("ABC-3")
             .withFinishedAt(11L)
             .withSpend(new FinishedTask.Spend(0, 2.0, null, null))
             .build();
     var next =
-        finishedTask().withId("ABC-2")
+        finishedTask()
+            .withId("ABC-2")
             .withFinishedAt(10L + WEEK)
             .withSpend(new FinishedTask.Spend(0, 8.0, null, null))
             .build();
@@ -65,11 +69,10 @@ class CostPerAcceptedTaskTest {
 
   @Test
   void isAnExactNumberOnlyWhereEveryCostIsKnownAndPriced() {
-    var known =
-        finishedTask().withId("ABC-1")
-            .build();
+    var known = finishedTask().withId("ABC-1").build();
     var unpriced =
-        finishedTask().withId("ABC-2")
+        finishedTask()
+            .withId("ABC-2")
             .withSpend(new FinishedTask.Spend(0, 1.0, null, TokenUsage.ofUnpricedCall(10, 0, 10)))
             .build();
 
@@ -80,7 +83,8 @@ class CostPerAcceptedTaskTest {
   @Test
   void namesNoNumberWhereNothingShippedInTheWeek() {
     var failed =
-        finishedTask().withId("ABC-2")
+        finishedTask()
+            .withId("ABC-2")
             .withStatus(TaskStatus.NEW)
             .withStatusAt(50L)
             .withFinishedAt(100L)

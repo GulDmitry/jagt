@@ -164,10 +164,10 @@ public final class TaskChart {
   /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
   boolean offers(TaskStatus status, TaskAction action, Facts facts) {
     return chart.takes(
-            LIFECYCLE,
-            Objects.requireNonNull(starts.get(status)),
-            new ChartFacts(false, Map.of(), facts),
-            new TaskMove.Offers(action));
+        LIFECYCLE,
+        Objects.requireNonNull(starts.get(status)),
+        new ChartFacts(false, Map.of(), facts),
+        new TaskMove.Offers(action));
   }
 
   private static Configuration configurationOf(
@@ -543,10 +543,8 @@ public final class TaskChart {
             DeployPhase.HANDED,
             "conflicted repository left",
             move -> move instanceof TaskMove.RepoLeft left && left.leavesTheRecord())
-        .emitFor(
-            move ->
-                new TaskEffect.Deploys(
-                    new DeployStep.Dropped(((TaskMove.RepoLeft) move).project())))
+        .emitFor(move ->
+            new TaskEffect.Deploys(new DeployStep.Dropped(((TaskMove.RepoLeft) move).project())))
         .to(DeployPhase.LANDING);
     chart
         .onMatching(
@@ -554,10 +552,9 @@ public final class TaskChart {
             DeployPhase.HANDED,
             "conflict left",
             move -> !(move instanceof TaskMove.DeployStepped))
-        .when(
-            (others, move) ->
-                others.get(LIFECYCLE) == DEPLOY_CONFLICT
-                    && land(DEPLOY_CONFLICT, move).filter(to -> to != DEPLOY_CONFLICT).isPresent())
+        .when((others, move) ->
+            others.get(LIFECYCLE) == DEPLOY_CONFLICT
+                && land(DEPLOY_CONFLICT, move).filter(to -> to != DEPLOY_CONFLICT).isPresent())
         .emit(new TaskEffect.Deploys(new DeployStep.Cleared()))
         .to(DeployPhase.LANDING);
     deployed(
@@ -590,10 +587,8 @@ public final class TaskChart {
               move ->
                   move instanceof TaskMove.Signed signed
                       && signed.sign() instanceof SessionSign.WorkStarted)
-          .when(
-              (others, move) ->
-                  others.get(REPORT) == AgentReport.PERMISSION
-                      && others.get(ASK) == AskStamp.STAMPED)
+          .when((others, move) ->
+              others.get(REPORT) == AgentReport.PERMISSION && others.get(ASK) == AskStamp.STAMPED)
           .emitFor(move -> new TaskEffect.Signs(((TaskMove.Signed) move).sign()))
           .raise(new TaskMove.Stamped(AgentReport.PLAIN))
           .to(SessionPhase.WORKING);
@@ -681,10 +676,9 @@ public final class TaskChart {
     for (RepoPhase from : RepoPhase.values()) {
       chart
           .onMatching(REPO, from, "placed", move -> move instanceof TaskMove.Placed)
-          .emitFor(
-              move ->
-                  new TaskEffect.Places(
-                      ((TaskMove.Placed) move).repos(), ((TaskMove.Placed) move).baseBranch()))
+          .emitFor(move ->
+              new TaskEffect.Places(
+                  ((TaskMove.Placed) move).repos(), ((TaskMove.Placed) move).baseBranch()))
           .to(RepoPhase.NONE);
     }
     chart
@@ -1110,12 +1104,11 @@ public final class TaskChart {
     EdgeBuilder<TaskMove, ChartFacts, TaskEffect, TurnKind> relayed =
         chart
             .onMatching(TURN, from, "relayed", move -> move instanceof TaskMove.Relayed)
-            .emitFor(
-                move ->
-                    new TaskEffect.OpensTurn(
-                        ((TaskMove.Relayed) move).step(),
-                        ((TaskMove.Relayed) move).digest(),
-                        ((TaskMove.Relayed) move).answered()));
+            .emitFor(move ->
+                new TaskEffect.OpensTurn(
+                    ((TaskMove.Relayed) move).step(),
+                    ((TaskMove.Relayed) move).digest(),
+                    ((TaskMove.Relayed) move).answered()));
     if (from == TurnKind.OPEN) {
       relayed.stay();
     } else {
@@ -1123,8 +1116,7 @@ public final class TaskChart {
     }
   }
 
-  private void becomes(
-      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
+  private void becomes(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
     for (AgentReport means : AgentReport.values()) {
       if (means != from) {
         said(
@@ -1145,8 +1137,7 @@ public final class TaskChart {
     }
   }
 
-  private void clears(
-      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
+  private void clears(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
     said(
         chart,
         from,
@@ -1208,31 +1199,28 @@ public final class TaskChart {
         Outcome.Kind.RELAYED,
         IN_PROGRESS,
         EnumSet.complementOf(EnumSet.of(PLAN_PENDING, DEPLOYED, DEPLOY_CONFLICT, REVERTED, DONE)));
-    TaskOffers.REMOVE_REPO_FROM.forEach(
-        status ->
-            edge(
-                chart,
-                status,
-                "remove-repo RELAYED",
-                new TaskMove.Ran(TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)::equals,
-                status));
-    TaskOffers.HAND_OFF_FROM.forEach(
-        status ->
-            edge(
-                chart,
-                status,
-                "hand-off RELAYED",
-                new TaskMove.Ran(TaskAction.HAND_OFF, Outcome.Kind.RELAYED)::equals,
-                status));
+    TaskOffers.REMOVE_REPO_FROM.forEach(status ->
+        edge(
+            chart,
+            status,
+            "remove-repo RELAYED",
+            new TaskMove.Ran(TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)::equals,
+            status));
+    TaskOffers.HAND_OFF_FROM.forEach(status ->
+        edge(
+            chart,
+            status,
+            "hand-off RELAYED",
+            new TaskMove.Ran(TaskAction.HAND_OFF, Outcome.Kind.RELAYED)::equals,
+            status));
     EnumSet.of(DEPLOYED, DEPLOY_CONFLICT)
-        .forEach(
-            status ->
-                edge(
-                    chart,
-                    status,
-                    "revert RELAYED",
-                    new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.RELAYED)::equals,
-                    status));
+        .forEach(status ->
+            edge(
+                chart,
+                status,
+                "revert RELAYED",
+                new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.RELAYED)::equals,
+                status));
     ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, TaskOffers.DEPLOY_FROM);
     ran(chart, TaskAction.DEPLOY, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, TaskOffers.DEPLOY_FROM);
     ran(chart, TaskAction.REVERT, Outcome.Kind.OK, REVERTED, OPEN);

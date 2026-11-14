@@ -43,15 +43,13 @@ class PlaywrightRunnerTest {
   @Test
   void flowsAreUnprovableNotFailedWhenTheCommandCannotStart(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
-    Flows flows =
-        new Flows("playwright", "/flows", List.of("no-such-tool"), Duration.ofMinutes(2));
+    Flows flows = new Flows("playwright", "/flows", List.of("no-such-tool"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenThrow(
             new IllegalStateException("Failed to start command", new IOException("missing")));
 
     List<FlowResult> results =
-        new PlaywrightRunner(processes)
-            .run(flows, worktree, List.of("AC-1", "AC-2"), STAGE);
+        new PlaywrightRunner(processes).run(flows, worktree, List.of("AC-1", "AC-2"), STAGE);
 
     assertThat(results)
         .extracting(FlowResult::verdict)
@@ -61,8 +59,7 @@ class PlaywrightRunnerTest {
   @Test
   void flowsAreUnprovableWhenTheCommandPrintsNoJsonReport(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
-    Flows flows =
-        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
+    Flows flows = new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(1, "", "browser missing"));
 
@@ -80,8 +77,7 @@ class PlaywrightRunnerTest {
         "{\"suites\":[{\"specs\":[{\"title\":\"alpha\",\"tags\":[\"AC-1\"],"
             + "\"tests\":[{\"status\":\"expected\",\"results\":[]}]}]}]}";
     Processes processes = mock(Processes.class);
-    Flows flows =
-        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
+    Flows flows = new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, json, ""));
 
@@ -108,8 +104,7 @@ class PlaywrightRunnerTest {
   @Test
   void flowIdsAreEscapedIntoOneAlternationForTheGrep(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
-    Flows flows =
-        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
+    Flows flows = new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "{\"suites\":[]}", ""));
 
@@ -123,8 +118,7 @@ class PlaywrightRunnerTest {
   @Test
   void noFlowsRunNothing(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
-    Flows flows =
-        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
+    Flows flows = new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
 
     List<FlowResult> results =
         new PlaywrightRunner(processes).run(flows, worktree, List.of(), STAGE);

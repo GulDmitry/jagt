@@ -37,15 +37,14 @@ public record ClaudeToolScope(String tools, List<String> allow, List<String> ref
             workspace.isPresent()
                 ? List.of("NotebookEdit")
                 : List.of("Write", "Edit", "NotebookEdit"));
-    workspace.ifPresent(
-        held -> {
-          tools.addAll(List.of("Write", "Edit"));
-          allow.addAll(List.of("Write(/" + held.root() + "/**)", "Edit(/" + held.root() + "/**)"));
-          held.commands().forEach(command -> allow.add(bash(command + "*")));
-          if (shell.isEmpty()) {
-            tools.add("Bash");
-          }
-        });
+    workspace.ifPresent(held -> {
+      tools.addAll(List.of("Write", "Edit"));
+      allow.addAll(List.of("Write(/" + held.root() + "/**)", "Edit(/" + held.root() + "/**)"));
+      held.commands().forEach(command -> allow.add(bash(command + "*")));
+      if (shell.isEmpty()) {
+        tools.add("Bash");
+      }
+    });
     refuseShell.forEach(glob -> refuse.add(bash(glob)));
     refuseRead.forEach(glob -> refuse.add("Read(" + glob + ")"));
     return new ClaudeToolScope(String.join(",", tools), allow, refuse);

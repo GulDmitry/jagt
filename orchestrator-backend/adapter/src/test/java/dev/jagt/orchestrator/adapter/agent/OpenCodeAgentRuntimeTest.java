@@ -59,9 +59,7 @@ class OpenCodeAgentRuntimeTest {
     worktree.toFile().mkdirs();
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigFile.defaults());
-    openCodeRuntime()
-        .build(config)
-        .provisionWorktree(AgentWorktree.of(worktree, root));
+    openCodeRuntime().build(config).provisionWorktree(AgentWorktree.of(worktree, root));
     JsonNode written =
         new JsonMapper().readTree(worktree.resolve(".jagt/opencode/opencode.json").toFile());
     assertThat(written.path("permission").path("edit").asString()).isEqualTo("allow");
@@ -80,8 +78,7 @@ class OpenCodeAgentRuntimeTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigFile.defaults());
     openCodeRuntime()
-        .withProperties(
-            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()))
+        .withProperties(new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()))
         .build(config)
         .provisionWorktree(AgentWorktree.of(worktree, root));
     JsonNode written =

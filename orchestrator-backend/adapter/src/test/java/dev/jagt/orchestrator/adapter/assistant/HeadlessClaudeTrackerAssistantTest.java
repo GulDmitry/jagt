@@ -33,11 +33,10 @@ class HeadlessClaudeTrackerAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.contains(
-                    "gets one the host's own listing of reachable sites answered, never one"
-                        + " recalled or guessed"));
+        .anyMatch(argument ->
+            argument.contains(
+                "gets one the host's own listing of reachable sites answered, never one"
+                    + " recalled or guessed"));
   }
 
   @Test
@@ -112,17 +111,16 @@ class HeadlessClaudeTrackerAssistantTest {
 
     List<String> command = runner.command();
     assertThat(command)
-        .anyMatch(
-            argument ->
-                argument.endsWith(
-                    """
+        .anyMatch(argument ->
+            argument.endsWith(
+                """
 
 
-                    Your last answer was refused:
-                    - the url was empty
-                    - the key was lowercase
-                    Answer again, fixing every one of those.\
-                    """));
+                Your last answer was refused:
+                - the url was empty
+                - the key was lowercase
+                Answer again, fixing every one of those.\
+                """));
   }
 
   @Test

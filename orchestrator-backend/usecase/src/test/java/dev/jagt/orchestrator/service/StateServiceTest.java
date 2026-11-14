@@ -37,10 +37,9 @@ class StateServiceTest {
     StateService state =
         stateService()
             .withRoot(root)
-            .build(
-                written ->
-                    seenByListener.add(
-                        written.tasks().keySet() + " on disk: " + Files.exists(stateFile)));
+            .build(written ->
+                seenByListener.add(
+                    written.tasks().keySet() + " on disk: " + Files.exists(stateFile)));
 
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
@@ -49,8 +48,7 @@ class StateServiceTest {
 
   @Test
   void clearsRequestItsRepositorysRemoteDoesNotHoldOnTheFirstRead(@TempDir Path root) {
-    StateService writer =
-        stateService().withRoot(root).build();
+    StateService writer = stateService().withRoot(root).build();
     writer.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -62,8 +60,7 @@ class StateServiceTest {
                         "git@host:team/proj.git",
                         "https://host/other/proj/-/merge_requests/9")))
             .build());
-    StateService reader =
-        stateService().withRoot(root).build();
+    StateService reader = stateService().withRoot(root).build();
 
     TaskState read = reader.task("ABC-1").orElseThrow();
 
@@ -74,8 +71,7 @@ class StateServiceTest {
   void resolvesCallerFromAnyRepositoryItsTaskWorksIn(@TempDir Path root) throws IOException {
     Path api = Files.createDirectories(root.resolve("ABC-1-alpha"));
     Path client = Files.createDirectories(root.resolve("ABC-1-beta"));
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -105,9 +101,7 @@ class StateServiceTest {
         """
             .formatted(worktree));
 
-    assertThat(
-            stateService().withRoot(root).build()
-                .findByWorktree(worktree.toString()))
+    assertThat(stateService().withRoot(root).build().findByWorktree(worktree.toString()))
         .get()
         .extracting(Map.Entry::getKey)
         .isEqualTo("ABC-2");
@@ -116,8 +110,7 @@ class StateServiceTest {
   @Test
   void staysQuietWhenMutationChangedNothing(@TempDir Path root) {
     AtomicInteger changes = new AtomicInteger();
-    StateService state =
-        stateService().withRoot(root).build(written -> changes.incrementAndGet());
+    StateService state = stateService().withRoot(root).build(written -> changes.incrementAndGet());
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     boolean found = state.updateTask("NOPE-1", task -> task.touched(2_000));
@@ -129,8 +122,7 @@ class StateServiceTest {
   @Test
   void reportsEveryKindOfChangeIncludingRemoval(@TempDir Path root) {
     AtomicInteger changes = new AtomicInteger();
-    StateService state =
-        stateService().withRoot(root).build(written -> changes.incrementAndGet());
+    StateService state = stateService().withRoot(root).build(written -> changes.incrementAndGet());
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.IN_PROGRESS, "working", 2_000));
@@ -142,8 +134,7 @@ class StateServiceTest {
   @Test
   void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root)
       throws IOException {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.putTask("ABC-2", fresh);
@@ -158,15 +149,12 @@ class StateServiceTest {
   void recoversEveryTaskFromTheBackupWhenTheStateFileIsUnreadable(@TempDir Path root)
       throws IOException {
     Path stateFile = root.resolve("state.json");
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", polling);
     state.putTask("ABC-2", fresh);
     Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
 
-    var tasks =
-        stateService().withRoot(root).build()
-            .tasks();
+    var tasks = stateService().withRoot(root).build().tasks();
 
     assertThat(tasks).containsOnlyKeys("ABC-1");
     assertThat(Files.exists(root.resolve("state.json.corrupt"))).isTrue();
@@ -177,19 +165,14 @@ class StateServiceTest {
   void putsTheRecoveredTasksBackSoTheNextReaderStillFindsThem(@TempDir Path root)
       throws IOException {
     Path stateFile = root.resolve("state.json");
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", polling);
     state.putTask("ABC-2", fresh);
     Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
 
-    stateService().withRoot(root).build()
-        .tasks();
+    stateService().withRoot(root).build().tasks();
 
-    assertThat(
-            stateService().withRoot(root).build()
-                .tasks())
-        .containsOnlyKeys("ABC-1");
+    assertThat(stateService().withRoot(root).build().tasks()).containsOnlyKeys("ABC-1");
   }
 
   @Test
@@ -198,10 +181,7 @@ class StateServiceTest {
     Path stateFile = root.resolve("state.json");
     Files.writeString(stateFile, "this is not json");
 
-    assertThatThrownBy(
-            () ->
-                stateService().withRoot(root).build()
-                    .tasks())
+    assertThatThrownBy(() -> stateService().withRoot(root).build().tasks())
         .isInstanceOf(UncheckedIOException.class)
         .hasMessageContaining("no usable backup");
   }
@@ -213,10 +193,7 @@ class StateServiceTest {
     Files.writeString(stateFile, "this is not json");
     Files.writeString(root.resolve("state.json.bak"), "neither is this");
 
-    assertThatThrownBy(
-            () ->
-                stateService().withRoot(root).build()
-                    .tasks())
+    assertThatThrownBy(() -> stateService().withRoot(root).build().tasks())
         .isInstanceOf(UncheckedIOException.class)
         .hasMessageContaining("no usable backup");
     assertThat(Files.readString(stateFile)).isEqualTo("this is not json");
@@ -231,8 +208,7 @@ class StateServiceTest {
     Files.writeString(
         Files.createDirectories(root.resolve("state.json.corrupt")).resolve("occupant"), "");
     Files.writeString(root.resolve("state.json.bak"), "{\"tasks\":{}}");
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
 
     assertThatThrownBy(
             () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build()))
@@ -247,8 +223,7 @@ class StateServiceTest {
   @Test
   void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     FileTime written = Files.getLastModifiedTime(stateFile);
     Files.writeString(stateFile, "x".repeat((int) Files.size(stateFile)));
@@ -260,8 +235,7 @@ class StateServiceTest {
   @Test
   void picksUpStateFileThatSomethingElseRewrote(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     Files.writeString(
@@ -275,8 +249,7 @@ class StateServiceTest {
 
   @Test
   void keepsItsOwnCopyWhenCallerMutatesTheTasksItWasHanded(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.tasks().clear();
@@ -287,8 +260,7 @@ class StateServiceTest {
   @Test
   void writesOnlyRealStateForTaskThatHasSpentTokens(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -311,8 +283,7 @@ class StateServiceTest {
         {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"CI_POLLING",
         "lastActiveTimestamp":123,"alias":"a1","mrUrl":"http://mr/1"}}}\
         """);
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
 
     var task = state.task("ABC-1").orElseThrow();
 
@@ -326,8 +297,7 @@ class StateServiceTest {
   @Test
   void resolvesCallerTaskWhenCallerReportsPhysicalPathOfSymlinkedWorktree(@TempDir Path root)
       throws IOException {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.NEW).alias("a1").build());
     String physicalCallerCwd = root.toRealPath().toString();
@@ -339,8 +309,7 @@ class StateServiceTest {
 
   @Test
   void recordsWhoAskedForEachStepTaskTakes(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     OriginContext.as(
@@ -357,8 +326,7 @@ class StateServiceTest {
 
   @Test
   void recordsTheReasonOnTheStepItsRequestTook(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
@@ -377,8 +345,7 @@ class StateServiceTest {
 
   @Test
   void keepsReasonGivenWithNoStepOffTheEarlierStep(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
@@ -399,8 +366,7 @@ class StateServiceTest {
         {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"NEW","alias":"a1",
         "history":[{"status":"NEW","at":1000,"origin":"BOARD"}]}}}\
         """);
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
 
     assertThat(state.task("ABC-1").orElseThrow().history())
         .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD));
@@ -408,8 +374,7 @@ class StateServiceTest {
 
   @Test
   void leavesTheEarlierStepAloneWhenKeepAliveChangesNothing(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     OriginContext.as(
         ActionOrigin.BOARD,
         () ->
@@ -434,8 +399,7 @@ class StateServiceTest {
         {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"APPROVED","alias":"a1",
         "lastActiveTimestamp":1000}}}\
         """);
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
 
     OriginContext.as(
         ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
@@ -447,8 +411,7 @@ class StateServiceTest {
 
   @Test
   void appliesAnUpdateToAnExistingTaskAndSaysSo(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     boolean updated =
@@ -460,8 +423,7 @@ class StateServiceTest {
 
   @Test
   void saysSoWhenAnUpdateNamesNoTask(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
 
     assertThat(
             state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished", 2_000)))
@@ -470,8 +432,7 @@ class StateServiceTest {
 
   @Test
   void resolvesAnAliasToItsOwnTaskIgnoringCase(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.NEW).alias("a1").build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.NEW).alias("a2").build());
 
@@ -483,8 +444,7 @@ class StateServiceTest {
       throws IOException {
     Path first = Files.createDirectories(root.resolve("ABC-1"));
     Path second = Files.createDirectories(root.resolve("ABC-2"));
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", first.toString(), TaskStatus.NEW).build());
     state.putTask("ABC-2", TaskState.builder("proj", second.toString(), TaskStatus.NEW).build());
 
@@ -503,8 +463,7 @@ class StateServiceTest {
         {"tasks":{"ABC-2":{"project":"proj","worktreePath":"/wt","status":"NEW","alias":"a2"}}}\
         """;
     Files.writeString(stateFile, written);
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     FileTime stamp = Files.getLastModifiedTime(stateFile);
     state.tasks();
     Files.writeString(stateFile, "x".repeat(written.length()));
@@ -515,8 +474,7 @@ class StateServiceTest {
 
   @Test
   void forgetsTaskWhenItIsRemoved(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
     boolean removed = state.removeTask("ABC-1");
@@ -527,8 +485,7 @@ class StateServiceTest {
 
   @Test
   void saysNothingWasRemovedWhereTheTaskIsNotThere(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
     boolean removed = state.removeTask("ABC-9");
@@ -539,8 +496,7 @@ class StateServiceTest {
 
   @Test
   void findsNoTaskForDirectoryThatIsNoWorktreeAndDoesNotExist(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt/gone", TaskStatus.DONE).build());
 
     assertThat(state.findByWorktree("/elsewhere/gone")).isEmpty();
@@ -548,8 +504,7 @@ class StateServiceTest {
 
   @Test
   void reduceHandsTheStoredTaskToTheUpdateAndSaysWhetherTheTaskWasThere(@TempDir Path root) {
-    StateService state =
-        stateService().withRoot(root).build();
+    StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
 
     boolean found = state.reduce("ABC-1", (taskReducer, task) -> task);

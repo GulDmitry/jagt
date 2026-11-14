@@ -65,9 +65,7 @@ public class TaskStops {
   }
 
   private static String bounded(String evidence) {
-    return evidence.length() <= MAX_EVIDENCE
-        ? evidence
-        : evidence.substring(0, MAX_EVIDENCE) + CUT;
+    return evidence.length() <= MAX_EVIDENCE ? evidence : evidence.substring(0, MAX_EVIDENCE) + CUT;
   }
 
   /** A pause the human ordered in words, held to the same offer as their press. */
@@ -95,9 +93,8 @@ public class TaskStops {
             task ->
                 breaker
                     .beforeRound(step, task.turnOrNone(), task.trailOrNone(), clock.millis())
-                    .or(
-                        () ->
-                            breaker.beforeMove(task.history(), task.trailOrNone(), clock.millis())))
+                    .or(() ->
+                        breaker.beforeMove(task.history(), task.trailOrNone(), clock.millis())))
         .isEmpty();
   }
 
@@ -286,8 +283,7 @@ public class TaskStops {
     stateService.reduce(
         taskId,
         (reducer, task) -> {
-          TaskState after =
-              disproves ? reducer.ended(task, ends, request, clock.millis()) : task;
+          TaskState after = disproves ? reducer.ended(task, ends, request, clock.millis()) : task;
           if (task.stopped() && !after.stopped()) {
             ended.set(task.stop());
           }
@@ -326,11 +322,10 @@ public class TaskStops {
           return after;
         });
     Optional.ofNullable(tripped.get())
-        .ifPresent(
-            stop ->
-                policy
-                    .announcements()
-                    .announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));
+        .ifPresent(stop ->
+            policy
+                .announcements()
+                .announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));
     return Optional.ofNullable(standing.get());
   }
 

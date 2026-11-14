@@ -75,9 +75,8 @@ public class UsageStatsRenderer {
         tasks.entrySet().stream()
             .filter(e -> !e.getValue().agentSpendOrNone().usageOrNone().isNone())
             .sorted(
-                Comparator.comparingLong(
-                        (Map.Entry<String, TaskState> e) ->
-                            e.getValue().agentSpendOrNone().usageOrNone().total())
+                Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
+                        e.getValue().agentSpendOrNone().usageOrNone().total())
                     .reversed())
             .toList();
     if (!agents.isEmpty()) {
@@ -160,14 +159,13 @@ public class UsageStatsRenderer {
   static String costPerAccepted(CostPerAcceptedTask week) {
     String counts = "(" + week.shipped() + " shipped of " + week.finished() + " finished)";
     return week.perAccepted()
-        .map(
-            cost ->
-                String.format(
-                    Locale.ROOT,
-                    "cost per accepted task, last 7 days: %s%.2f USD %s%n",
-                    week.lowerBound() ? "≥ " : "",
-                    cost,
-                    counts))
+        .map(cost ->
+            String.format(
+                Locale.ROOT,
+                "cost per accepted task, last 7 days: %s%.2f USD %s%n",
+                week.lowerBound() ? "≥ " : "",
+                cost,
+                counts))
         .orElse("cost per accepted task, last 7 days: unknown " + counts + "\n");
   }
 
@@ -189,23 +187,20 @@ public class UsageStatsRenderer {
                 .append(String.format(LIMIT_ROW, "WINDOW", "USED", "RESETS"));
         snapshot
             .windows()
-            .forEach(
-                window ->
-                    out.append(
-                        String.format(
-                            LIMIT_ROW,
-                            window.name(),
-                            String.format(Locale.ROOT, "%.0f%%", window.percentUsed()),
-                            window
-                                .resetsAt()
-                                .map(at -> AT.format(at.atZone(ZoneOffset.UTC)))
-                                .orElse("-"))));
+            .forEach(window ->
+                out.append(
+                    String.format(
+                        LIMIT_ROW,
+                        window.name(),
+                        String.format(Locale.ROOT, "%.0f%%", window.percentUsed()),
+                        window
+                            .resetsAt()
+                            .map(at -> AT.format(at.atZone(ZoneOffset.UTC)))
+                            .orElse("-"))));
         snapshot
             .paid()
-            .ifPresent(
-                paid ->
-                    out.append(
-                        String.format(LIMIT_ROW, "paid usage", "", UsageLimits.spent(paid))));
+            .ifPresent(paid ->
+                out.append(String.format(LIMIT_ROW, "paid usage", "", UsageLimits.spent(paid))));
         yield out.append('\n').toString();
       }
     };

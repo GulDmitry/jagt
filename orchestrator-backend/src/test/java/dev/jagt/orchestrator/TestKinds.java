@@ -122,12 +122,10 @@ final class TestKinds {
   }
 
   private static boolean extendsMainType(JavaClass type) {
-    return Stream.concat(
-            type.getAllRawSuperclasses().stream(), type.getAllRawInterfaces().stream())
-        .anyMatch(
-            parent ->
-                location(parent).contains(CLASSES + "main/")
-                    || !parent.getPackageName().startsWith("dev.jagt"));
+    return Stream.concat(type.getAllRawSuperclasses().stream(), type.getAllRawInterfaces().stream())
+        .anyMatch(parent ->
+            location(parent).contains(CLASSES + "main/")
+                || !parent.getPackageName().startsWith("dev.jagt"));
   }
 
   static DescribedPredicate<JavaClass> testBuilders() {

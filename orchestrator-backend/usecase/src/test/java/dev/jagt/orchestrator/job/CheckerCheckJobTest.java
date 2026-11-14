@@ -108,9 +108,7 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
     TaskState task = askedDeploy().build();
 
-    checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
-        .run("ABC-42", task);
+    checkerCheckJob().build(config, paths, reader, outcomes, Clock.systemUTC()).run("ABC-42", task);
 
     verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet));
   }
@@ -144,10 +142,9 @@ class CheckerCheckJobTest {
             eq("ABC-42"),
             eq("again"),
             eq("digest"),
-            argThat(
-                run ->
-                    run.prompt().contains("The same check on the same sha")
-                        && run.sha().equals("proj@0123456789abcdef")));
+            argThat(run ->
+                run.prompt().contains("The same check on the same sha")
+                    && run.sha().equals("proj@0123456789abcdef")));
   }
 
   @Test

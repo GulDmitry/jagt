@@ -27,8 +27,7 @@ class ChannelsCheckDistRoutesTest {
   void shippedExampleRoutesTodaysBannersAndPassesTheStartCheck() {
     Path dist = Path.of("../../jagt.yml.dist").toAbsolutePath().normalize();
     OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults().withConfigFile(dist.toString()));
+        new OrchestratorPaths(OrchestratorProperties.defaults().withConfigFile(dist.toString()));
     ConfigService config =
         new ConfigService(
             paths,

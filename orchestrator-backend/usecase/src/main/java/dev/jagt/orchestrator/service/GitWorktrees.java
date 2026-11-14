@@ -393,11 +393,8 @@ public class GitWorktrees {
   /** Whether a rebase is standing in the worktree: git keeps one under a directory of its own. */
   private boolean rebaseStanding(Path worktreePath) {
     return List.of("rebase-merge", "rebase-apply").stream()
-        .map(
-            kept ->
-                git.run(worktreePath, List.of("git", "rev-parse", "--git-path", kept))
-                    .stdout()
-                    .strip())
+        .map(kept ->
+            git.run(worktreePath, List.of("git", "rev-parse", "--git-path", kept)).stdout().strip())
         .anyMatch(path -> !path.isBlank() && Files.exists(worktreePath.resolve(path)));
   }
 

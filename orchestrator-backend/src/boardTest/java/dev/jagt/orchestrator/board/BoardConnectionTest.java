@@ -305,12 +305,11 @@ class BoardConnectionTest extends BoardPageContext {
                     .setContentType("text/event-stream")
                     .setBody("event:open\ndata:another-run\n\n")));
     List<String> loads = new java.util.concurrent.CopyOnWriteArrayList<>();
-    page.onRequest(
-        request -> {
-          if (request.isNavigationRequest()) {
-            loads.add(request.url());
-          }
-        });
+    page.onRequest(request -> {
+      if (request.isNavigationRequest()) {
+        loads.add(request.url());
+      }
+    });
 
     page.clock().runFor(50_500);
     page.waitForRequest("**/api/events", () -> page.clock().runFor(1_000));

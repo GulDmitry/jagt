@@ -46,11 +46,10 @@ final class HumanCopy {
 
   private static CaseBook cases(Path root, List<String> names, CaseBook.Shape shape) {
     return read(root, names).stream()
-        .map(
-            file ->
-                shape == CaseBook.Shape.STEPS
-                    ? CaseBook.parse(file.file(), file.text())
-                    : CaseBook.parseMoves(file.file(), file.text()))
+        .map(file ->
+            shape == CaseBook.Shape.STEPS
+                ? CaseBook.parse(file.file(), file.text())
+                : CaseBook.parseMoves(file.file(), file.text()))
         .reduce(CaseBook::over)
         .orElseGet(() -> CaseBook.empty(shape))
         .failing(unreadable(root, names));

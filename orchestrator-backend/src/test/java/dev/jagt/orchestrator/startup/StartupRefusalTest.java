@@ -22,17 +22,16 @@ class StartupRefusalTest {
         Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
 
-    assertThatThrownBy(
-            () ->
-                new SpringApplicationBuilder(OrchestratorApplication.class)
-                    .run(
-                        "--server.port=0",
-                        "--orchestrator.open-terminal-window=false",
-                        "--orchestrator.root=" + root,
-                        "--spring.config.import=",
-                        "--orchestrator.config-file=" + root.resolve("jagt.yml"),
-                        "--orchestrator.state-file=" + root.resolve("state.json"),
-                        "--logging.file.name=" + root.resolve("jagt.log")))
+    assertThatThrownBy(() ->
+            new SpringApplicationBuilder(OrchestratorApplication.class)
+                .run(
+                    "--server.port=0",
+                    "--orchestrator.open-terminal-window=false",
+                    "--orchestrator.root=" + root,
+                    "--spring.config.import=",
+                    "--orchestrator.config-file=" + root.resolve("jagt.yml"),
+                    "--orchestrator.state-file=" + root.resolve("state.json"),
+                    "--logging.file.name=" + root.resolve("jagt.log")))
         .isInstanceOf(Misconfigured.class)
         .hasMessageContaining("defines no projects");
   }

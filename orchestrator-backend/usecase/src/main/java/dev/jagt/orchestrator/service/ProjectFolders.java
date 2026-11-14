@@ -33,9 +33,8 @@ public class ProjectFolders {
     try (Stream<Path> children = Files.list(Path.of(expanded.substring(0, slash + 1)))) {
       return children
           .filter(Files::isDirectory)
-          .map(
-              child ->
-                  new Folder(child.getFileName().toString(), Files.exists(child.resolve(".git"))))
+          .map(child ->
+              new Folder(child.getFileName().toString(), Files.exists(child.resolve(".git"))))
           .filter(folder -> folder.name().toLowerCase(Locale.ROOT).startsWith(prefix))
           .filter(folder -> prefix.startsWith(".") || !folder.name().startsWith("."))
           .sorted(

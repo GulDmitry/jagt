@@ -50,8 +50,7 @@ class FileTrackerAssistantTest {
     Files.writeString(file, content);
     when(configService.load())
         .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(TrackerConfig.defaults().withFile(file.toString())));
+            ConfigFile.defaults().withTracker(TrackerConfig.defaults().withFile(file.toString())));
     return file;
   }
 

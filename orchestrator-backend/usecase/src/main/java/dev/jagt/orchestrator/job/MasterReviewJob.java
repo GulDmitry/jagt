@@ -60,30 +60,28 @@ public class MasterReviewJob implements Job {
     Map<String, Optional<MasterReview.Verdict>> read = new HashMap<>();
     stateService
         .tasks()
-        .forEach(
-            (taskId, task) -> {
-              if (!FlowRules.readByTheMaster(task.status()) || task.stopped()) {
-                return;
-              }
-              reviews.settle(taskId, task);
-              Optional<MasterReview.Verdict> verdict = reviews.of(task);
-              read.put(taskId, verdict);
-              verdict
-                  .filter(written -> written.answers(task))
-                  .ifPresent(written -> act(taskId, task, written, config));
-            });
+        .forEach((taskId, task) -> {
+          if (!FlowRules.readByTheMaster(task.status()) || task.stopped()) {
+            return;
+          }
+          reviews.settle(taskId, task);
+          Optional<MasterReview.Verdict> verdict = reviews.of(task);
+          read.put(taskId, verdict);
+          verdict
+              .filter(written -> written.answers(task))
+              .ifPresent(written -> act(taskId, task, written, config));
+        });
     boolean questionsAnswered = config.may(MasterRight.ANSWER);
     // Asked LAST: a round holds this thread until every role answered, and verdicts already written
     // go first.
     stateService.tasks().entrySet().stream()
-        .filter(
-            entry ->
-                reviewable(
-                    entry.getValue(),
-                    read.getOrDefault(entry.getKey(), Optional.empty())
-                        .filter(written -> written.answers(entry.getValue()))
-                        .isPresent(),
-                    questionsAnswered))
+        .filter(entry ->
+            reviewable(
+                entry.getValue(),
+                read.getOrDefault(entry.getKey(), Optional.empty())
+                    .filter(written -> written.answers(entry.getValue()))
+                    .isPresent(),
+                questionsAnswered))
         .findFirst()
         .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));
   }

@@ -30,20 +30,18 @@ final class StateFiles {
         .readTree(state.toFile())
         .path("tasks")
         .properties()
-        .forEach(
-            task -> {
-              List<RunRecord.Step> steps = new ArrayList<>();
-              task.getValue()
-                  .path("history")
-                  .forEach(
-                      step ->
-                          steps.add(
-                              new RunRecord.Step(
-                                  TaskStatus.valueOf(step.path("status").asString()),
-                                  Instant.ofEpochMilli(step.path("at").asLong()),
-                                  step.path("origin").asString(""))));
-              histories.put(task.getKey(), List.copyOf(steps));
-            });
+        .forEach(task -> {
+          List<RunRecord.Step> steps = new ArrayList<>();
+          task.getValue()
+              .path("history")
+              .forEach(step ->
+                  steps.add(
+                      new RunRecord.Step(
+                          TaskStatus.valueOf(step.path("status").asString()),
+                          Instant.ofEpochMilli(step.path("at").asLong()),
+                          step.path("origin").asString(""))));
+          histories.put(task.getKey(), List.copyOf(steps));
+        });
     return histories;
   }
 

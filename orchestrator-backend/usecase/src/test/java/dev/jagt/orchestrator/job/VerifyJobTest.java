@@ -137,16 +137,14 @@ class VerifyJobTest {
     @Test
     void keepsTaskStoppedAtItsRoundCeilingInVerifyingInsteadOfReportingTheRunFailed() {
       when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class)))
-          .thenAnswer(
-              stopsTheTask -> {
-                state.updateTask(
-                    "ABC-1",
-                    task ->
-                        task.withStop(
-                            new TaskStop(
-                                TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds running")));
-                return false;
-              });
+          .thenAnswer(stopsTheTask -> {
+            state.updateTask(
+                "ABC-1",
+                task ->
+                    task.withStop(
+                        new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds running")));
+            return false;
+          });
 
       job.runOn(state.tasks());
 
@@ -218,12 +216,10 @@ class VerifyJobTest {
     @Test
     void dropsFailedProbesWhenTheHumanShippedTheTaskMeanwhile() {
       when(verification.probed(eq("ABC-42"), any()))
-          .thenAnswer(
-              shipped -> {
-                state.updateTask(
-                    "ABC-42", task -> task.withStatus(TaskStatus.CI_POLLING, null, 5L));
-                return List.of(failed);
-              });
+          .thenAnswer(shipped -> {
+            state.updateTask("ABC-42", task -> task.withStatus(TaskStatus.CI_POLLING, null, 5L));
+            return List.of(failed);
+          });
 
       job.runOn(state.tasks());
 

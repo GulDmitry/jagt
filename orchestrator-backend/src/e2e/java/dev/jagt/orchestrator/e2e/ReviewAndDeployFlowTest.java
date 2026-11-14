@@ -189,11 +189,7 @@ class ReviewAndDeployFlowTest {
 
     assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
     assertThat(
-            Objects.requireNonNull(flow.task().deployment())
-                .targets()
-                .getFirst()
-                .landing()
-                .merge())
+            Objects.requireNonNull(flow.task().deployment()).targets().getFirst().landing().merge())
         .isNotBlank();
     assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
         .contains("Merge branch '" + TASK + "' into dev");

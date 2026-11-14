@@ -55,7 +55,12 @@ public final class EvalStats {
 
   public static void record(
       @Nullable Path file,
-      String name, boolean passed, int runs, double seconds, OptionalDouble costUsd, int stalled) {
+      String name,
+      boolean passed,
+      int runs,
+      double seconds,
+      OptionalDouble costUsd,
+      int stalled) {
     if (file == null) {
       return;
     }

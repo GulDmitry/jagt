@@ -65,17 +65,16 @@ public class SessionWakes {
     List<Due> due = new ArrayList<>();
     stateService.tasks().entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
-        .forEach(
-            entry -> {
-              Optional<Wake> wake = wakeOf(entry.getValue()).filter(pending -> pending.at() <= now);
-              if (wake.isEmpty() || entry.getValue().paused() || held.test(entry.getKey())) {
-                return;
-              }
-              turns.unmark(entry.getKey(), Wake.MARK);
-              if (wake.get().turn() == entry.getValue().turnOrNone().id()) {
-                due.add(new Due(entry.getKey(), wake.get().step(), Standing.of(entry.getValue())));
-              }
-            });
+        .forEach(entry -> {
+          Optional<Wake> wake = wakeOf(entry.getValue()).filter(pending -> pending.at() <= now);
+          if (wake.isEmpty() || entry.getValue().paused() || held.test(entry.getKey())) {
+            return;
+          }
+          turns.unmark(entry.getKey(), Wake.MARK);
+          if (wake.get().turn() == entry.getValue().turnOrNone().id()) {
+            due.add(new Due(entry.getKey(), wake.get().step(), Standing.of(entry.getValue())));
+          }
+        });
     return due;
   }
 

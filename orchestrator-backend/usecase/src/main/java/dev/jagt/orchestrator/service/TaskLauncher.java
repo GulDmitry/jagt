@@ -36,14 +36,12 @@ public class TaskLauncher {
 
   public Launched launch(LaunchRequest request) {
     return unusable(request)
-        .orElseGet(
-            () ->
-                request.ref() != null
-                    // An unknown project is settled before the read, not after paying for one.
-                    ? launches.ticket(
-                        request,
-                        request.project() != null ? resolveProjects(request.project()) : null)
-                    : launches.written(request, resolveProjects(request.project())));
+        .orElseGet(() ->
+            request.ref() != null
+                // An unknown project is settled before the read, not after paying for one.
+                ? launches.ticket(
+                    request, request.project() != null ? resolveProjects(request.project()) : null)
+                : launches.written(request, resolveProjects(request.project())));
   }
 
   /** {@code read} is the item's facts already read and paid for, as intake reads them. */

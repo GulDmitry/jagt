@@ -204,11 +204,10 @@ public record AgentStatusMessage(
           new Violation("reviewRequests", "given instead of reviewRequestUrl, never beside it"));
     }
     notWebLinks()
-        .forEach(
-            link ->
-                found.add(
-                    new Violation(
-                        "reviewRequestUrl", "an http(s) link the human can open, not " + link)));
+        .forEach(link ->
+            found.add(
+                new Violation(
+                    "reviewRequestUrl", "an http(s) link the human can open, not " + link)));
     List<String> projectsOnTask = context.projectsOnTask();
     if (parsedStatus() == TaskStatus.CI_POLLING && link(projectsOnTask) == null) {
       found.add(
@@ -217,15 +216,14 @@ public record AgentStatusMessage(
               "required with CI_POLLING: the board is where the human follows the round"));
     }
     unknownProjects(projectsOnTask)
-        .forEach(
-            key ->
-                found.add(
-                    new Violation(
-                        "reviewRequests",
-                        "project '"
-                            + key
-                            + "' is not on this task; its projects are "
-                            + projectsOnTask)));
+        .forEach(key ->
+            found.add(
+                new Violation(
+                    "reviewRequests",
+                    "project '"
+                        + key
+                        + "' is not on this task; its projects are "
+                        + projectsOnTask)));
     needsProjectViolation(context).ifPresent(found::add);
     return List.copyOf(found);
   }

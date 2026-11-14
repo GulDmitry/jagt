@@ -102,18 +102,16 @@ class ProcessRunnerTest {
     try {
       await()
           .atMost(Duration.ofSeconds(10))
-          .untilAsserted(
-              () ->
-                  assertThat(
-                          runner
-                              .run(
-                                  null,
-                                  Duration.ofSeconds(5),
-                                  List.of(
-                                      "ps", "-o", "comm=", "-p", String.valueOf(launched.pid())))
-                              .stdout()
-                              .strip())
-                      .isEqualTo("sleep"));
+          .untilAsserted(() ->
+              assertThat(
+                      runner
+                          .run(
+                              null,
+                              Duration.ofSeconds(5),
+                              List.of("ps", "-o", "comm=", "-p", String.valueOf(launched.pid())))
+                          .stdout()
+                          .strip())
+                  .isEqualTo("sleep"));
     } finally {
       launched.destroyForcibly();
     }
@@ -123,13 +121,12 @@ class ProcessRunnerTest {
   void killsWhatTimedOutCommandSpawnedSoNoChildOutlivesIt(@TempDir Path dir) throws Exception {
     Path childPid = dir.resolve("pid");
 
-    assertThatThrownBy(
-            () ->
-                new ProcessRunner()
-                    .run(
-                        null,
-                        Duration.ofMillis(500),
-                        List.of("sh", "-c", "sleep 30 & echo $! > " + childPid + "; wait")))
+    assertThatThrownBy(() ->
+            new ProcessRunner()
+                .run(
+                    null,
+                    Duration.ofMillis(500),
+                    List.of("sh", "-c", "sleep 30 & echo $! > " + childPid + "; wait")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("timed out");
 
@@ -144,16 +141,14 @@ class ProcessRunnerTest {
     Path pid = dir.resolve("pid");
     AtomicReference<Throwable> ended = new AtomicReference<>();
     Thread caller =
-        Thread.startVirtualThread(
-            () ->
-                ended.set(
-                    catchThrowable(
-                        () ->
-                            new ProcessRunner()
-                                .run(
-                                    null,
-                                    Duration.ofSeconds(30),
-                                    List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
+        Thread.startVirtualThread(() ->
+            ended.set(
+                catchThrowable(() ->
+                    new ProcessRunner()
+                        .run(
+                            null,
+                            Duration.ofSeconds(30),
+                            List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(5))
@@ -172,15 +167,13 @@ class ProcessRunnerTest {
     ProcessRunner runner = new ProcessRunner();
     Path pid = dir.resolve("pid");
     AtomicReference<Throwable> ended = new AtomicReference<>();
-    Thread.startVirtualThread(
-        () ->
-            ended.set(
-                catchThrowable(
-                    () ->
-                        runner.run(
-                            null,
-                            Duration.ofSeconds(30),
-                            List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
+    Thread.startVirtualThread(() ->
+        ended.set(
+            catchThrowable(() ->
+                runner.run(
+                    null,
+                    Duration.ofSeconds(30),
+                    List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .atMost(Duration.ofSeconds(5))
         .until(() -> Files.exists(pid) && Files.readString(pid).endsWith("\n"));
@@ -200,15 +193,13 @@ class ProcessRunnerTest {
     Path pid = dir.resolve("pid");
     AtomicReference<Throwable> answered = new AtomicReference<>();
     Thread caller =
-        Thread.startVirtualThread(
-            () ->
-                answered.set(
-                    catchThrowable(
-                        () ->
-                            runner.run(
-                                null,
-                                Duration.ofSeconds(30),
-                                List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
+        Thread.startVirtualThread(() ->
+            answered.set(
+                catchThrowable(() ->
+                    runner.run(
+                        null,
+                        Duration.ofSeconds(30),
+                        List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(5))
@@ -328,10 +319,8 @@ class ProcessRunnerTest {
 
   @Test
   void namesTheCommandThatCouldNotStart() {
-    assertThatThrownBy(
-            () ->
-                new ProcessRunner()
-                    .run(null, Duration.ofSeconds(5), List.of("jagt-no-such-binary")))
+    assertThatThrownBy(() ->
+            new ProcessRunner().run(null, Duration.ofSeconds(5), List.of("jagt-no-such-binary")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Failed to start command: jagt-no-such-binary");
   }
@@ -342,18 +331,16 @@ class ProcessRunnerTest {
     AtomicBoolean stillInterrupted = new AtomicBoolean();
     AtomicReference<Throwable> ended = new AtomicReference<>();
     Thread caller =
-        Thread.startVirtualThread(
-            () -> {
-              ended.set(
-                  catchThrowable(
-                      () ->
-                          new ProcessRunner()
-                              .run(
-                                  null,
-                                  Duration.ofSeconds(30),
-                                  List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
-              stillInterrupted.set(Thread.currentThread().isInterrupted());
-            });
+        Thread.startVirtualThread(() -> {
+          ended.set(
+              catchThrowable(() ->
+                  new ProcessRunner()
+                      .run(
+                          null,
+                          Duration.ofSeconds(30),
+                          List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
+          stillInterrupted.set(Thread.currentThread().isInterrupted());
+        });
     await()
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(5))

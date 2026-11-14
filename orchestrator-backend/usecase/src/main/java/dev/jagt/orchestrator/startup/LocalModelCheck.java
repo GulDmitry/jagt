@@ -39,15 +39,11 @@ public class LocalModelCheck implements StartupCheck {
     }
     local.kinds().stream()
         .filter(AssistantCallKind::readsTools)
-        .forEach(
-            kind ->
-                found.add(
-                    new Problem(
-                        KINDS,
-                        KINDS
-                            + ": "
-                            + kind
-                            + " reads tools, which a local endpoint does not offer")));
+        .forEach(kind ->
+            found.add(
+                new Problem(
+                    KINDS,
+                    KINDS + ": " + kind + " reads tools, which a local endpoint does not offer")));
     return found;
   }
 

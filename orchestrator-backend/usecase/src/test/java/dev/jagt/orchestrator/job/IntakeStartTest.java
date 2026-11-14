@@ -84,11 +84,10 @@ class IntakeStartTest {
               .singleElement()
               .actual();
       assertThat(failed.getKeyValuePairs())
-          .anySatisfy(
-              pair -> {
-                assertThat(pair.key).isEqualTo("cause");
-                assertThat(pair.value).isEqualTo("NullPointerException");
-              });
+          .anySatisfy(pair -> {
+            assertThat(pair.key).isEqualTo("cause");
+            assertThat(pair.value).isEqualTo("NullPointerException");
+          });
       assertThat(failed.getThrowableProxy()).isNotNull();
     }
   }

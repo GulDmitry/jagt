@@ -56,8 +56,7 @@ public class TeamsWorkflowChannel implements ChannelDriver {
         HttpRequest.newBuilder(target)
             .timeout(TIMEOUT)
             .header("Content-Type", "application/json")
-            .POST(
-                HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(envelope(message))))
+            .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(envelope(message))))
             .build();
     int status = send(request, target.getHost());
     if (status >= 300) {

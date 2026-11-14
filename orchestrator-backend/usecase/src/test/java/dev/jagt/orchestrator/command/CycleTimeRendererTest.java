@@ -207,8 +207,10 @@ class CycleTimeRendererTest {
   void leavesTaskWithoutHistoryOutOfTheTableAndTheAverage() {
     Map<String, TaskState> tasks =
         Map.of(
-            "ABC-1", pollingSince3h,
-            "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).history(List.of()).build());
+            "ABC-1",
+            pollingSince3h,
+            "ABC-2",
+            TaskState.builder("proj", "/wt", TaskStatus.NEW).history(List.of()).build());
 
     String out = new CycleTimeRenderer().render(tasks, NOW);
 
@@ -252,20 +254,15 @@ class CycleTimeRendererTest {
           TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
               .history(
                   IntStream.range(0, 50)
-                      .mapToObj(
-                          step ->
-                              new StatusChange(
-                                  TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
+                      .mapToObj(step ->
+                          new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
                       .toList())
               .build();
     }
 
     @Test
     void marksTheFiguresAsFloorsForTaskWhoseOldestStepsHaveAgedOut() {
-      String out =
-          new CycleTimeRenderer()
-              .render(
-                  Map.of("ABC-1", pollingFiftyTimes), NOW);
+      String out = new CycleTimeRenderer().render(Map.of("ABC-1", pollingFiftyTimes), NOW);
 
       assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
           .contains("2d+")

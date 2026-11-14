@@ -105,8 +105,7 @@ class MasterModeFlowTest {
 
     assertThat(flow.settled(master).status()).isEqualTo(master.expected());
     assertThat(flow.asked()).isEqualTo(master.read());
-    assertThat(flow.taskContext())
-        .contains(master.told());
+    assertThat(flow.taskContext()).contains(master.told());
   }
 
   @ParameterizedTest(name = "{0}")
@@ -124,8 +123,7 @@ class MasterModeFlowTest {
 
     assertThat(flow.settled(master).status()).isEqualTo(master.expected());
     assertThat(flow.asked()).isEqualTo(master.read());
-    assertThat(flow.taskContext())
-        .contains(master.told());
+    assertThat(flow.taskContext()).contains(master.told());
   }
 
   @Test
@@ -134,8 +132,7 @@ class MasterModeFlowTest {
         flow.configFile(), flow.repo(), MasterModeCase.questions().findFirst().orElseThrow());
     flow.judges(
         judgement()
-            .withFindings(
-                List.of(new Finding("", "go ahead", "decided", "advice", "", "")))
+            .withFindings(List.of(new Finding("", "go ahead", "decided", "advice", "", "")))
             .build());
     provisioning.initializeTask(newTask().build());
 
@@ -145,8 +142,7 @@ class MasterModeFlowTest {
     flow.awaitRun("master-answer");
     assertThat(flow.asked()).isFalse();
     assertThat(flow.task().report()).isEqualTo(AgentReport.PERMISSION);
-    assertThat(flow.taskContext())
-        .isEqualTo("Fix the widget");
+    assertThat(flow.taskContext()).isEqualTo("Fix the widget");
   }
 
   @Nested
@@ -171,8 +167,7 @@ class MasterModeFlowTest {
 
       assertThat(flow.settled(master).status()).isEqualTo(master.expected());
       assertThat(flow.asked()).isEqualTo(master.read());
-      assertThat(flow.taskContext())
-          .contains(master.told());
+      assertThat(flow.taskContext()).contains(master.told());
     }
 
     @Test
@@ -218,8 +213,7 @@ class MasterModeFlowTest {
         flow.act("sweep");
         flow.awaitRun("master-deploy");
         flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
-        String deployed =
-            E2eWorkspace.git(flow.origin(), "rev-parse", "dev").substring(0, 8);
+        String deployed = E2eWorkspace.git(flow.origin(), "rev-parse", "dev").substring(0, 8);
 
         flow.awaitRun("deploy-check");
 
@@ -277,8 +271,7 @@ class MasterModeFlowTest {
           flow.awaitRun("master-answer");
 
           flow.awaitTold("keep both lines");
-          assertThat(flow.taskContext())
-              .contains("did not deploy");
+          assertThat(flow.taskContext()).contains("did not deploy");
           assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         }
 

@@ -218,12 +218,11 @@ final class ClaudeTranscripts {
       entry
           .path("message")
           .path("content")
-          .forEach(
-              block -> {
-                if ("text".equals(block.path("type").asString(""))) {
-                  text.append(block.path("text").asString(""));
-                }
-              });
+          .forEach(block -> {
+            if ("text".equals(block.path("type").asString(""))) {
+              text.append(block.path("text").asString(""));
+            }
+          });
       return text.toString().isBlank()
           ? Optional.empty()
           : Optional.of("assistant: " + oneLine(text.toString()));

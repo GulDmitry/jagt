@@ -31,8 +31,7 @@ public class LogTail {
   private final ObjectMapper mapper;
   private final Path file;
 
-  public LogTail(
-      ObjectMapper mapper, @Value("${logging.file.name:jagt-backend.log}") String file) {
+  public LogTail(ObjectMapper mapper, @Value("${logging.file.name:jagt-backend.log}") String file) {
     this.mapper = mapper;
     this.file = Path.of(file).toAbsolutePath().normalize();
   }
@@ -78,16 +77,10 @@ public class LogTail {
           .append(entry.path("log").path("level").asString("?"))
           .append(' ')
           .append(entry.path("message").asString(""));
-      entry
-          .properties()
-          .stream()
+      entry.properties().stream()
           .filter(field -> !FRAMING.contains(field.getKey()))
-          .forEach(
-              field ->
-                  text.append(' ')
-                      .append(field.getKey())
-                      .append('=')
-                      .append(shown(field.getValue())));
+          .forEach(field ->
+              text.append(' ').append(field.getKey()).append('=').append(shown(field.getValue())));
       return text.toString();
     } catch (RuntimeException notAnEntry) {
       return line;

@@ -157,8 +157,7 @@ abstract class BoardPageContext {
 
   void putReviewTask(String key) {
     state.putTask(
-        key,
-        alphaTask(key, TaskStatus.REVIEW_PENDING).mrUrl("https://host.example/mr/7").build());
+        key, alphaTask(key, TaskStatus.REVIEW_PENDING).mrUrl("https://host.example/mr/7").build());
   }
 
   void ask(Page page, String question) {
@@ -174,11 +173,10 @@ abstract class BoardPageContext {
 
   CompletableFuture<String> dismissedDialogMessage(Page page) {
     CompletableFuture<String> asked = new CompletableFuture<>();
-    page.onDialog(
-        dialog -> {
-          asked.complete(dialog.message());
-          dialog.dismiss();
-        });
+    page.onDialog(dialog -> {
+      asked.complete(dialog.message());
+      dialog.dismiss();
+    });
     return asked;
   }
 

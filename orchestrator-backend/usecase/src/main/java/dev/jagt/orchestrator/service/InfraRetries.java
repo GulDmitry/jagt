@@ -49,16 +49,15 @@ public class InfraRetries {
           Optional<InfraRetry> next =
               properties
                   .before(sent.size())
-                  .map(
-                      wait ->
-                          InfraRetry.armed(
-                              clock.millis() + wait.toMillis(),
-                              project,
-                              pipelineUrl,
-                              jobs,
-                              reason,
-                              sent.size() + 1,
-                              properties.backoff().size()));
+                  .map(wait ->
+                      InfraRetry.armed(
+                          clock.millis() + wait.toMillis(),
+                          project,
+                          pipelineUrl,
+                          jobs,
+                          reason,
+                          sent.size() + 1,
+                          properties.backoff().size()));
           armed.set(next);
           return next.map(retry -> reducer.infraArmed(task, retry)).orElse(task);
         });
@@ -86,11 +85,10 @@ public class InfraRetries {
     Map<String, InfraRetry> due = new LinkedHashMap<>();
     stateService.tasks().entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
-        .forEach(
-            task ->
-                InfraRetry.pending(task.getValue().infraRetries())
-                    .filter(retry -> retry.at() <= now)
-                    .ifPresent(retry -> due.put(task.getKey(), retry)));
+        .forEach(task ->
+            InfraRetry.pending(task.getValue().infraRetries())
+                .filter(retry -> retry.at() <= now)
+                .ifPresent(retry -> due.put(task.getKey(), retry)));
     return due;
   }
 
@@ -112,12 +110,11 @@ public class InfraRetries {
   public boolean stillWaiting(String taskId) {
     return stateService
         .task(taskId)
-        .filter(
-            task ->
-                !task.stopped()
-                    && (FlowRules.checkedWhereItLanded(task.status())
-                        || (FlowRules.waitsOnTheHost(task.status())
-                            && Pipeline.of(task.checksRead()) == Pipeline.RED)))
+        .filter(task ->
+            !task.stopped()
+                && (FlowRules.checkedWhereItLanded(task.status())
+                    || (FlowRules.waitsOnTheHost(task.status())
+                        && Pipeline.of(task.checksRead()) == Pipeline.RED)))
         .isPresent();
   }
 

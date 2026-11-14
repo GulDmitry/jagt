@@ -22,10 +22,9 @@ class StopGuardTest {
     when(stops.stopped("ABC-42")).thenReturn(true);
     StopGuard guard = new StopGuard(TaskAction.SHIP, stops);
 
-    assertThatThrownBy(
-            () ->
-                OriginContext.as(
-                    ActionOrigin.MASTER, () -> guard.around("ABC-42", () -> Outcome.ok("shipped"))))
+    assertThatThrownBy(() ->
+            OriginContext.as(
+                ActionOrigin.MASTER, () -> guard.around("ABC-42", () -> Outcome.ok("shipped"))))
         .isInstanceOf(Refusal.class);
   }
 

@@ -86,15 +86,14 @@ final class AcceptanceEvalWorkspace {
   static String ticket(AcceptanceCase deployed, String environmentUrl, String sha) {
     String criteria =
         deployed.ticket().criteria().stream()
-            .map(
-                criterion ->
-                    "- "
-                        + criterion.id()
-                        + ": "
-                        + criterion.text()
-                        + (criterion.testable()
-                            ? ""
-                            : " (a non-functional wish, no threshold is named)"))
+            .map(criterion ->
+                "- "
+                    + criterion.id()
+                    + ": "
+                    + criterion.text()
+                    + (criterion.testable()
+                        ? ""
+                        : " (a non-functional wish, no threshold is named)"))
             .collect(Collectors.joining("\n"));
     String landed =
         switch (deployed.landing().deploy().landed()) {
@@ -118,15 +117,14 @@ final class AcceptanceEvalWorkspace {
         .forEach(call -> pages.add(String.valueOf(call)));
     String served =
         pages.stream()
-            .map(
-                page -> {
-                  int space = page.indexOf(' ');
-                  return "- "
-                      + page.substring(0, space)
-                      + " "
-                      + environmentUrl
-                      + page.substring(space + 1);
-                })
+            .map(page -> {
+              int space = page.indexOf(' ');
+              return "- "
+                  + page.substring(0, space)
+                  + " "
+                  + environmentUrl
+                  + page.substring(space + 1);
+            })
             .collect(Collectors.joining("\n"));
     return "\n\nThe ticket "
         + deployed.ticket().key()
@@ -148,8 +146,7 @@ final class AcceptanceEvalWorkspace {
       throws IOException {
     Path folder = root().resolve("roles/acceptance");
     Files.createDirectories(folder);
-    Files.writeString(
-        folder.resolve("role.yml"), AcceptanceRoleYml.of(environment, landed, flows));
+    Files.writeString(folder.resolve("role.yml"), AcceptanceRoleYml.of(environment, landed, flows));
   }
 
   static void writeConfig(Path configFile, Path projectPath) throws IOException {

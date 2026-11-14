@@ -24,9 +24,8 @@ public class HandBackDue {
 
   public Optional<String> invalid(TaskState task) {
     return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.NOTES.fileName()))
-        .flatMap(
-            notes ->
-                TaskNotes.unknownModel(notes, offeredModels.agentName(), offeredModels.names()));
+        .flatMap(notes ->
+            TaskNotes.unknownModel(notes, offeredModels.agentName(), offeredModels.names()));
   }
 
   public Optional<String> owed(String taskId, TaskState task) {
@@ -37,22 +36,18 @@ public class HandBackDue {
     return task.trailOrNone().rounds().stream()
         .reduce((first, second) -> second)
         .filter(round -> round.threads() > 0)
-        .filter(
-            round ->
-                task.history().stream()
-                    .noneMatch(
-                        step -> step.status() == TaskStatus.SHIPPING && step.at() > round.at()))
-        .filter(
-            round ->
-                olderThan(
-                    round.at(), Path.of(task.worktreePath()).resolve(Artifact.REPLIES.fileName())))
-        .map(
-            round ->
-                round.threads()
-                    + " thread(s) were relayed and "
-                    + Artifact.REPLIES.fileName()
-                    + " was not written since: write a block for each thread awaiting your answer,"
-                    + " whatever the checks say, then hand back");
+        .filter(round ->
+            task.history().stream()
+                .noneMatch(step -> step.status() == TaskStatus.SHIPPING && step.at() > round.at()))
+        .filter(round ->
+            olderThan(
+                round.at(), Path.of(task.worktreePath()).resolve(Artifact.REPLIES.fileName())))
+        .map(round ->
+            round.threads()
+                + " thread(s) were relayed and "
+                + Artifact.REPLIES.fileName()
+                + " was not written since: write a block for each thread awaiting your answer,"
+                + " whatever the checks say, then hand back");
   }
 
   private static boolean olderThan(long relayedAt, Path file) {
@@ -74,24 +69,22 @@ public class HandBackDue {
   private Optional<String> notesOwed(TaskState task) {
     Path worktree = Path.of(task.worktreePath());
     return TaskNotes.owed(worktree)
-        .or(
-            () ->
-                worktreeChanges
-                    .agentFileLinesAdded(task)
-                    .map(added -> TaskNotes.agentFileOwed(worktree, added))
-                    .orElse(
-                        Optional.of(
-                            "jagt could not count the lines this task added to the project's agent"
-                                + " file")));
+        .or(() ->
+            worktreeChanges
+                .agentFileLinesAdded(task)
+                .map(added -> TaskNotes.agentFileOwed(worktree, added))
+                .orElse(
+                    Optional.of(
+                        "jagt could not count the lines this task added to the project's agent"
+                            + " file")));
   }
 
   private Optional<String> specsOwed(String taskId, TaskState task) {
     return task.repos().stream()
-        .map(
-            repo ->
-                specs
-                    .owed(Path.of(repo.worktreePath()), taskId)
-                    .map(owed -> "[" + repo.project() + "] " + owed))
+        .map(repo ->
+            specs
+                .owed(Path.of(repo.worktreePath()), taskId)
+                .map(owed -> "[" + repo.project() + "] " + owed))
         .flatMap(Optional::stream)
         .findFirst();
   }

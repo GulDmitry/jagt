@@ -32,17 +32,15 @@ public final class TimelineFile {
       StateFiles.lines(file)
           .map(line -> line.split(" "))
           .filter(words -> words.length >= 3)
-          .forEach(
-              words -> {
-                Instant at = Instant.parse(words[0]);
-                String line = String.join(" ", words);
-                if (!words[1].equals(STAND)) {
-                  samples.add(
-                      new RunRecord.Sample(at, words[1], TaskStatus.valueOf(words[2]), line));
-                } else if (words[2].equals(WROTE_DEPLOY_BRANCH) && words.length >= 4) {
-                  wrote.add(words[3]);
-                }
-              });
+          .forEach(words -> {
+            Instant at = Instant.parse(words[0]);
+            String line = String.join(" ", words);
+            if (!words[1].equals(STAND)) {
+              samples.add(new RunRecord.Sample(at, words[1], TaskStatus.valueOf(words[2]), line));
+            } else if (words[2].equals(WROTE_DEPLOY_BRANCH) && words.length >= 4) {
+              wrote.add(words[3]);
+            }
+          });
     }
     return new RunRecord.Timeline(List.copyOf(samples), List.of(), Set.copyOf(wrote));
   }

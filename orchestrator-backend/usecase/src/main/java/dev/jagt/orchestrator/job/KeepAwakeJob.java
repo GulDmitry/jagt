@@ -25,7 +25,7 @@ public class KeepAwakeJob implements Job {
   @Override
   public String describe() {
     return "keep the machine awake while the Master acts, auto-review polls or the tracker hands"
-               + " out work";
+        + " out work";
   }
 
   @Override

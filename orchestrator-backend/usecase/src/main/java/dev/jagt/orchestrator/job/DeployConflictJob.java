@@ -63,11 +63,10 @@ public class DeployConflictJob implements TaskJob {
   public void runOn(Map<String, TaskState> tasks) {
     hostReadAt
         .keySet()
-        .removeIf(
-            taskId ->
-                !Optional.ofNullable(tasks.get(taskId))
-                    .map(task -> FlowRules.conflictedInTheDeployWorktree(task.status()))
-                    .orElse(false));
+        .removeIf(taskId ->
+            !Optional.ofNullable(tasks.get(taskId))
+                .map(task -> FlowRules.conflictedInTheDeployWorktree(task.status()))
+                .orElse(false));
     TaskJob.super.runOn(tasks);
   }
 

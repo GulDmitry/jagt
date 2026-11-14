@@ -31,7 +31,7 @@ public class SessionAliveJob implements TaskJob {
   @Override
   public String describe() {
     return "look for the window of a task stopped because a step never landed, and end the stop"
-               + " once it runs";
+        + " once it runs";
   }
 
   @Override
@@ -59,14 +59,13 @@ public class SessionAliveJob implements TaskJob {
       if (agents.agentLive(taskId)) {
         stops
             .endOnSessionAlive(taskId)
-            .ifPresent(
-                stop ->
-                    log.atInfo()
-                        .setMessage("stop voided by read")
-                        .addKeyValue("task", taskId)
-                        .addKeyValue("trigger", stop.trigger())
-                        .addKeyValue("read", "session alive")
-                        .log());
+            .ifPresent(stop ->
+                log.atInfo()
+                    .setMessage("stop voided by read")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("trigger", stop.trigger())
+                    .addKeyValue("read", "session alive")
+                    .log());
       }
     } catch (AgentPresence.Unread unread) {
       log.atDebug()

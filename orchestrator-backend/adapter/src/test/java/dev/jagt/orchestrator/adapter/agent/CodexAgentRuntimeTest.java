@@ -20,8 +20,7 @@ class CodexAgentRuntimeTest {
   void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
-        root.resolve("roles/session/brief.md"),
-        "## start\n\nRead AGENTS.md and work\n");
+        root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
     assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))

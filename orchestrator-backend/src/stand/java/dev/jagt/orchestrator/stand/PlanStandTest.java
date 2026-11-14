@@ -18,8 +18,7 @@ class PlanStandTest {
   @ParameterizedTest(allowZeroInvocations = true)
   @MethodSource("runs")
   @Execution(ExecutionMode.CONCURRENT)
-  void ticketOpenedPlanFirstIsPlannedApprovedAndDeployed(StandMode mode, int run)
-      throws Exception {
+  void ticketOpenedPlanFirstIsPlannedApprovedAndDeployed(StandMode mode, int run) throws Exception {
     try (StandRun stand = StandRun.start("plan", mode)) {
       stand
           .store()
@@ -38,12 +37,11 @@ class PlanStandTest {
       assertThat(stand.record().histories().values())
           .as(outcome.describe())
           .singleElement()
-          .satisfies(
-              history ->
-                  assertThat(history)
-                      .extracting(RunRecord.Step::status)
-                      .containsSubsequence(
-                          TaskStatus.PLAN_PENDING, TaskStatus.IN_PROGRESS, TaskStatus.DEPLOYED));
+          .satisfies(history ->
+              assertThat(history)
+                  .extracting(RunRecord.Step::status)
+                  .containsSubsequence(
+                      TaskStatus.PLAN_PENDING, TaskStatus.IN_PROGRESS, TaskStatus.DEPLOYED));
       assertThat(stand.project().deployBranchFile("check.sh"))
           .as(outcome.describe())
           .contains("--shout");

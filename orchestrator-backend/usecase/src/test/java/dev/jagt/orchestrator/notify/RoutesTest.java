@@ -62,8 +62,7 @@ class RoutesTest {
   void skipsRouteNamingChannelThatIsNotDeclared() {
     NotificationsConfig notifications =
         new NotificationsConfig(
-            Map.of(),
-            Map.of("deployed", List.of(new RouteDef("ghost", "t", "x"))));
+            Map.of(), Map.of("deployed", List.of(new RouteDef("ghost", "t", "x"))));
 
     assertThat(routesOf(notifications).of("deployed")).isEmpty();
   }

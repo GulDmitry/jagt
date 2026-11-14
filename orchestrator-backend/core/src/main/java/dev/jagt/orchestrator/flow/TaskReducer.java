@@ -88,8 +88,7 @@ public final class TaskReducer {
    * {@code task} with the stop that ends on {@code ends} cleared, where it was counted on {@code
    * request} or none.
    */
-  public TaskState ended(
-      TaskState task, TaskStop.Trigger.Ends ends, String request, long now) {
+  public TaskState ended(TaskState task, TaskStop.Trigger.Ends ends, String request, long now) {
     TaskStop standing = task.stop();
     return standing == null || !standing.countedOnOrNone(request)
         ? task
@@ -237,8 +236,7 @@ public final class TaskReducer {
    * {@code task} that {@code role} sent a round on, the deploy's asked {@code digest} and the
    * {@code rows} it carried.
    */
-  public TaskState checkerRoundSent(
-      TaskState task, String role, String digest, String rows) {
+  public TaskState checkerRoundSent(TaskState task, String role, String digest, String rows) {
     return step(task, resolved(task, new TaskMove.Checked.RoundSent(role, digest, rows, false)), 0);
   }
 
@@ -251,8 +249,7 @@ public final class TaskReducer {
    * {@code task} whose session was handed the turn {@code step} opens; a turn already open is
    * replaced.
    */
-  public TaskState relayed(
-      TaskState task, String step, String digest, String answered, long now) {
+  public TaskState relayed(TaskState task, String step, String digest, String answered, long now) {
     return step(task, new TaskMove.Relayed(step, digest, answered), now);
   }
 
@@ -334,8 +331,7 @@ public final class TaskReducer {
   }
 
   /** {@code task} holding {@code repos} in place of the scratch folder it planned in. */
-  public TaskState placed(
-      TaskState task, List<TaskRepo> repos, @Nullable String baseBranch) {
+  public TaskState placed(TaskState task, List<TaskRepo> repos, @Nullable String baseBranch) {
     return step(task, new TaskMove.Placed(repos, baseBranch), 0);
   }
 

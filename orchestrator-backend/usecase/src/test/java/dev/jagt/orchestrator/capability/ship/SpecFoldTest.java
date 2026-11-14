@@ -52,14 +52,13 @@ class SpecFoldTest {
         .when(specs)
         .fold(Path.of("/wt/api"), "ABC-42");
 
-    assertThatThrownBy(
-            () ->
-                new SpecFold(state, specs)
-                    .around(
-                        "ABC-42",
-                        () -> {
-                          throw new AssertionError("shipped");
-                        }))
+    assertThatThrownBy(() ->
+            new SpecFold(state, specs)
+                .around(
+                    "ABC-42",
+                    () -> {
+                      throw new AssertionError("shipped");
+                    }))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("openspec/changes/abc-42 does not validate");
   }

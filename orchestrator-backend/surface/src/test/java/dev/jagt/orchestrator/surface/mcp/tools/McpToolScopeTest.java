@@ -76,10 +76,9 @@ class McpToolScopeTest {
     new DeployTools(commands).declare(registered);
     ToolHandler handler = registered.handlers.get(tool);
 
-    assertThatThrownBy(
-            () ->
-                Objects.requireNonNull(handler)
-                    .call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
+    assertThatThrownBy(() ->
+            Objects.requireNonNull(handler)
+                .call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(tool + " is Master-only");
     verifyNoInteractions(commands);
@@ -134,19 +133,15 @@ class McpToolScopeTest {
     OwnStatusReports ownReports = mock(OwnStatusReports.class);
     Registered registered = new Registered();
     new StatusTools(
-            statusReports,
-            ownReports,
-            new CallerScope(stateService),
-            mock(Notifications.class))
+            statusReports, ownReports, new CallerScope(stateService), mock(Notifications.class))
         .declare(registered);
     ToolHandler handler = registered.handlers.get("update_agent_status");
 
-    assertThatThrownBy(
-            () ->
-                Objects.requireNonNull(handler)
-                    .call(
-                        new JsonMapper().readTree("{\"status\":\"DONE\",\"taskId\":\"OTHER-1\"}"),
-                        "MINE-1"))
+    assertThatThrownBy(() ->
+            Objects.requireNonNull(handler)
+                .call(
+                    new JsonMapper().readTree("{\"status\":\"DONE\",\"taskId\":\"OTHER-1\"}"),
+                    "MINE-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("only act on their own task");
     verifyNoInteractions(statusReports, ownReports);
@@ -211,12 +206,11 @@ class McpToolScopeTest {
         .declare(registered);
     ToolHandler handler = registered.handlers.get("initialize_task");
 
-    assertThatThrownBy(
-            () ->
-                Objects.requireNonNull(handler)
-                    .call(
-                        new JsonMapper().readTree("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"),
-                        "ABC-1"))
+    assertThatThrownBy(() ->
+            Objects.requireNonNull(handler)
+                .call(
+                    new JsonMapper().readTree("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"),
+                    "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("initialize_task is Master-only");
     verifyNoInteractions(provisioning);
@@ -256,14 +250,12 @@ class McpToolScopeTest {
     new SessionTools(sessions, mock(CommandService.class)).declare(registered);
     ToolHandler handler = registered.handlers.get(tool);
 
-    assertThatThrownBy(
-            () ->
-                Objects.requireNonNull(handler)
-                    .call(
-                        new JsonMapper()
-                            .readTree(
-                                "{\"taskId\":\"MINE-1\",\"instructions\":\"commit and push\"}"),
-                        "MINE-1"))
+    assertThatThrownBy(() ->
+            Objects.requireNonNull(handler)
+                .call(
+                    new JsonMapper()
+                        .readTree("{\"taskId\":\"MINE-1\",\"instructions\":\"commit and push\"}"),
+                    "MINE-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(tool + " is Master-only");
     verifyNoInteractions(sessions);
@@ -424,12 +416,11 @@ class McpToolScopeTest {
     new PressTools(presses).declare(registered);
     ToolHandler handler = registered.handlers.get(tool);
 
-    assertThatThrownBy(
-            () ->
-                Objects.requireNonNull(handler)
-                    .call(
-                        new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"done\"}"),
-                        "MINE-1"))
+    assertThatThrownBy(() ->
+            Objects.requireNonNull(handler)
+                .call(
+                    new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"done\"}"),
+                    "MINE-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(tool + " is Master-only");
     verifyNoInteractions(presses);
@@ -461,12 +452,10 @@ class McpToolScopeTest {
     new PressTools(presses).declare(registered);
     ToolHandler handler = registered.handlers.get("press_task");
 
-    assertThatThrownBy(
-            () ->
-                Objects.requireNonNull(handler)
-                    .call(
-                        new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"explode\"}"),
-                        null))
+    assertThatThrownBy(() ->
+            Objects.requireNonNull(handler)
+                .call(
+                    new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"explode\"}"), null))
         .isInstanceOf(IllegalArgumentException.class);
     verifyNoInteractions(presses);
   }

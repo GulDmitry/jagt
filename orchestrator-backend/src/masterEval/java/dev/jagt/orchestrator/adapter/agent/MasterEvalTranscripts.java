@@ -23,18 +23,17 @@ public final class MasterEvalTranscripts {
     Files.createDirectories(dir);
     List<String> lines =
         said.stream()
-            .map(
-                text ->
-                    JSON.writeValueAsString(
-                        Map.of(
-                            "type",
-                            "user",
-                            "entrypoint",
-                            "cli",
-                            "origin",
-                            Map.of("kind", "human"),
-                            "message",
-                            Map.of("content", text))))
+            .map(text ->
+                JSON.writeValueAsString(
+                    Map.of(
+                        "type",
+                        "user",
+                        "entrypoint",
+                        "cli",
+                        "origin",
+                        Map.of("kind", "human"),
+                        "message",
+                        Map.of("content", text))))
             .toList();
     Files.write(dir.resolve("eval-session.jsonl"), lines);
   }

@@ -26,11 +26,10 @@ public class TaskAliasFeed {
   }
 
   private static void remember(Map<String, TaskState> tasks) {
-    tasks.forEach(
-        (id, task) -> {
-          if (task.alias() != null) {
-            TaskAliasLogFilter.remember(id, task.alias());
-          }
-        });
+    tasks.forEach((id, task) -> {
+      if (task.alias() != null) {
+        TaskAliasLogFilter.remember(id, task.alias());
+      }
+    });
   }
 }

@@ -47,14 +47,14 @@ class OpenCodeCheckerReader {
     String prompt = run.shared().isBlank() ? run.prompt() : run.shared() + "\n\n" + run.prompt();
     OpenCodeScope scope =
         OpenCodeScope.of(
-            tools.shell(),
-            tools.refuseShell(),
-            tools.refuseRead(),
-            tools.fetch(),
-            tools.git(),
-            Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
-            run.reach().urls())
-        .withWorkspace(run.reach().workspace());
+                tools.shell(),
+                tools.refuseShell(),
+                tools.refuseRead(),
+                tools.fetch(),
+                tools.git(),
+                Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
+                run.reach().urls())
+            .withWorkspace(run.reach().workspace());
     return headless.run(
         new OpenCodeRead(
             run.reach().startIn(run.worktree()),

@@ -96,14 +96,13 @@ class MasterPlanVerdictsTest {
             live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
                 .withTurn(new Turn("plan", 6, "d", 6_000, Map.of(), List.of())));
 
-    assertThatThrownBy(
-            () ->
-                verdicts.holds(
-                    "ABC-1",
-                    read,
-                    new MasterReview.Verdict(
-                        MasterReview.Kind.READY, List.of(), List.of(), List.of(), 0, ""),
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
+    assertThatThrownBy(() ->
+            verdicts.holds(
+                "ABC-1",
+                read,
+                new MasterReview.Verdict(
+                    MasterReview.Kind.READY, List.of(), List.of(), List.of(), 0, ""),
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());

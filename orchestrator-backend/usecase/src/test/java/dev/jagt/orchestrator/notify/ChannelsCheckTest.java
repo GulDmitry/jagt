@@ -36,8 +36,8 @@ class ChannelsCheckTest {
   private final StandardEnvironment environment = new StandardEnvironment();
   private final OrchestratorPaths paths =
       new OrchestratorPaths(
-          OrchestratorProperties.defaults().withConfigFile(
-              Path.of("build.gradle").toAbsolutePath().toString()));
+          OrchestratorProperties.defaults()
+              .withConfigFile(Path.of("build.gradle").toAbsolutePath().toString()));
 
   private ChannelsCheck checkOf(
       Map<String, ChannelDef> channels, Map<String, List<RouteDef>> points) {
@@ -48,8 +48,7 @@ class ChannelsCheckTest {
     when(roles.points()).thenReturn(Points.builtIn());
     when(config.load())
         .thenReturn(
-            ConfigFile.defaults()
-                .withNotifications(new NotificationsConfig(channels, points)));
+            ConfigFile.defaults().withNotifications(new NotificationsConfig(channels, points)));
     return new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment, paths);
   }
 

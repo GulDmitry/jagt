@@ -179,10 +179,9 @@ class CaseBookTest {
 
     assertThat(book.faults())
         .singleElement()
-        .satisfies(
-            fault ->
-                assertThat(fault.text())
-                    .isEqualTo("roles/session/cases.md: case wake is written twice"));
+        .satisfies(fault ->
+            assertThat(fault.text())
+                .isEqualTo("roles/session/cases.md: case wake is written twice"));
   }
 
   @Test
@@ -213,11 +212,9 @@ class CaseBookTest {
 
     assertThat(book.faults())
         .singleElement()
-        .satisfies(
-            fault ->
-                assertThat(fault.text())
-                    .startsWith(
-                        "roles/session/cases.md: case wake has replies: '" + replies + "'"));
+        .satisfies(fault ->
+            assertThat(fault.text())
+                .startsWith("roles/session/cases.md: case wake has replies: '" + replies + "'"));
   }
 
   @Test

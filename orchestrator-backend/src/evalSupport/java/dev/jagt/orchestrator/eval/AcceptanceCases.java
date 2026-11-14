@@ -22,12 +22,11 @@ public final class AcceptanceCases {
     List<AcceptanceCase.Criterion> criteria =
         Yamls.list(ticket.get("criteria")).stream()
             .map(Yamls::map)
-            .map(
-                criterion ->
-                    new AcceptanceCase.Criterion(
-                        Yamls.text(criterion.get("id")),
-                        Yamls.text(criterion.get("text")),
-                        !Boolean.FALSE.equals(criterion.get("testable"))))
+            .map(criterion ->
+                new AcceptanceCase.Criterion(
+                    Yamls.text(criterion.get("id")),
+                    Yamls.text(criterion.get("text")),
+                    !Boolean.FALSE.equals(criterion.get("testable"))))
             .toList();
     Map<String, Status> rows = new LinkedHashMap<>();
     Yamls.map(expect.get("rows"))

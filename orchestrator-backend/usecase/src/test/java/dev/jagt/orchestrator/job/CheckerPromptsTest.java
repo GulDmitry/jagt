@@ -40,8 +40,7 @@ class CheckerPromptsTest {
   @Test
   void runMayFetchEachEnvironmentUrlAndItsLandedProbeAndNothingElse() {
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.reach().urls())
         .containsExactly(
@@ -53,8 +52,7 @@ class CheckerPromptsTest {
   @Test
   void theRunIsToldEachEnvironmentAndWhatProvesItsChangeUp() {
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
         .contains(
@@ -67,17 +65,14 @@ class CheckerPromptsTest {
   void runMayReadTheFlowsRepositoryItIsToldToName() {
 
     CheckerReader.Run run =
-        prompts
-            .accept(
-                "ABC-42",
-                "/wt",
-                "abc123",
-                RoleOptions.defaults()
-                    .withFlows(
-                        RoleOptions.Flows.defaults()
-                            .withDriver("playwright")
-                            .withPath("/flows/repo")),
-                AcceptanceVerdict.ACCEPT);
+        prompts.accept(
+            "ABC-42",
+            "/wt",
+            "abc123",
+            RoleOptions.defaults()
+                .withFlows(
+                    RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows/repo")),
+            AcceptanceVerdict.ACCEPT);
 
     assertThat(run.reach().paths()).containsExactly(Path.of("/flows/repo"));
   }
@@ -105,8 +100,7 @@ class CheckerPromptsTest {
             .withFlows(RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows"));
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
         .contains(
@@ -121,8 +115,7 @@ class CheckerPromptsTest {
             .withFlows(RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows"));
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
         .contains("jagt runs each flow you name on that URL after your answer")
@@ -135,8 +128,7 @@ class CheckerPromptsTest {
         RoleOptions.defaults().withFlows(RoleOptions.Flows.defaults().withPath("/flows"));
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt()).doesNotContain("Flows:");
   }
@@ -157,8 +149,7 @@ class CheckerPromptsTest {
             .withWorkspace(workspace.toString());
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(workspace).isDirectory();
     assertThat(run.reach().workspace().orElseThrow().commands())
@@ -177,8 +168,7 @@ class CheckerPromptsTest {
             .withWorkspace(root.resolve("ws").toString());
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
         .contains(
@@ -192,8 +182,7 @@ class CheckerPromptsTest {
     RoleOptions acceptance = RoleOptions.defaults().withWorkspace(root.resolve("ws").toString());
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
         .contains(
@@ -205,8 +194,7 @@ class CheckerPromptsTest {
   void noWorkspaceLineWhereNoWorkspaceIsHeld() {
 
     CheckerReader.Run run =
-        prompts
-            .accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt()).doesNotContain("Workspace:");
   }

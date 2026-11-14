@@ -38,15 +38,14 @@ public class WorktreeSetup {
    * edit.
    */
   public void attach(NewTask request, NewRepo added, List<NewRepo> repos) {
-    repos.forEach(
-        repo ->
-            fill(
-                request,
-                repo,
-                repos,
-                repo.equals(added)
-                    ? agentRuntime.systemKnowledgeFile(repo.worktreePath())
-                    : agentRuntime.briefedFile(repo.worktreePath())));
+    repos.forEach(repo ->
+        fill(
+            request,
+            repo,
+            repos,
+            repo.equals(added)
+                ? agentRuntime.systemKnowledgeFile(repo.worktreePath())
+                : agentRuntime.briefedFile(repo.worktreePath())));
     agentRuntime.admit(repos.get(0).worktreePath(), added.worktreePath());
   }
 

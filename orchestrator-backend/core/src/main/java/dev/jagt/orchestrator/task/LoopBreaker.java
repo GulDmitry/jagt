@@ -114,10 +114,9 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour,
         history.stream().filter(step -> step.status() == TaskStatus.SHIPPING).toList();
     return IntStream.range(0, ships.size())
         .filter(i -> ships.get(i).at() > from)
-        .filter(
-            i ->
-                !broughtNewNote(trail.rounds(), ships.get(i).at())
-                    && !newWork(trail.rounds(), ships, i))
+        .filter(i ->
+            !broughtNewNote(trail.rounds(), ships.get(i).at())
+                && !newWork(trail.rounds(), ships, i))
         .count();
   }
 

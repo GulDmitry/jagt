@@ -21,23 +21,21 @@ public class RoundQuotes {
   Optional<MasterPanel.RoundRead> round(String taskId, TaskState task) {
     return facts
         .humanSaid(task)
-        .map(
-            said ->
-                new MasterPanel.RoundRead(
-                    facts.ask(taskId, task),
-                    facts.diff(task),
-                    decisions.of(task),
-                    said,
-                    facts.notes(task)));
+        .map(said ->
+            new MasterPanel.RoundRead(
+                facts.ask(taskId, task),
+                facts.diff(task),
+                decisions.of(task),
+                said,
+                facts.notes(task)));
   }
 
   Optional<MasterPanel.RoundRead> plan(String taskId, TaskState task) {
     return facts
         .humanSaid(task)
-        .map(
-            said ->
-                new MasterPanel.RoundRead(
-                    facts.ask(taskId, task), "", decisions.of(task), said, facts.notes(task)));
+        .map(said ->
+            new MasterPanel.RoundRead(
+                facts.ask(taskId, task), "", decisions.of(task), said, facts.notes(task)));
   }
 
   Optional<MasterPanel.RoundRead> question(TaskState task) {
@@ -63,19 +61,18 @@ public class RoundQuotes {
   Optional<String> inputs(String taskId, TaskState task) {
     return facts
         .humanSaid(task)
-        .map(
-            said ->
-                Turn.digestOf(
-                        String.join(
-                            "\u0000",
-                            facts.request(task),
-                            String.join("\n", said),
-                            facts.notes(task),
-                            task.probes().stream()
-                                .map(Probe::result)
-                                .collect(Collectors.joining("\n"))))
-                    + ":"
-                    + facts.ticket(taskId).map(Turn::digestOf).orElse(""));
+        .map(said ->
+            Turn.digestOf(
+                    String.join(
+                        "\u0000",
+                        facts.request(task),
+                        String.join("\n", said),
+                        facts.notes(task),
+                        task.probes().stream()
+                            .map(Probe::result)
+                            .collect(Collectors.joining("\n"))))
+                + ":"
+                + facts.ticket(taskId).map(Turn::digestOf).orElse(""));
   }
 
   /** What one round was asked about, to tell two asks of an unchanged round apart in the log. */
@@ -96,11 +93,8 @@ public class RoundQuotes {
     Optional<String> own = facts.ownDiff(task);
     return reviews
         .stored(task)
-        .map(
-            review ->
-                own.isPresent() && review.sameRound(task, own.get(), inputs)
-                    ? "retry"
-                    : "changed")
+        .map(review ->
+            own.isPresent() && review.sameRound(task, own.get(), inputs) ? "retry" : "changed")
         .orElse("first");
   }
 

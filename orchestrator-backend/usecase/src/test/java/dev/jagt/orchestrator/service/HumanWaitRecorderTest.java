@@ -89,10 +89,9 @@ class HumanWaitRecorderTest {
       assertThat(state.task("ABC-77").orElseThrow().waits())
           .containsExactly(new HumanWait(5_000, 5_000, Why.QUESTION));
       assertThat(log.events())
-          .filteredOn(
-              event ->
-                  "human wait closed".equals(event.getMessage())
-                      && event.getKeyValuePairs().contains(new KeyValuePair("task", "ABC-77")))
+          .filteredOn(event ->
+              "human wait closed".equals(event.getMessage())
+                  && event.getKeyValuePairs().contains(new KeyValuePair("task", "ABC-77")))
           .singleElement()
           .extracting(ILoggingEvent::getKeyValuePairs)
           .asInstanceOf(InstanceOfAssertFactories.LIST)
@@ -105,10 +104,7 @@ class HumanWaitRecorderTest {
 
   @Test
   void keepsAnIntervalOpenAcrossRestartWhileTheHumanStillHoldsTheTurn() {
-    new StateService(new JsonMapper(), paths, reducer, event -> {})
-        .putTask(
-            "ABC-42",
-            holding);
+    new StateService(new JsonMapper(), paths, reducer, event -> {}).putTask("ABC-42", holding);
     state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
     context.refresh();
 
@@ -120,10 +116,7 @@ class HumanWaitRecorderTest {
 
   @Test
   void closesAnIntervalAfterRestartOnceTheTurnHasLeftTheHuman() {
-    new StateService(new JsonMapper(), paths, reducer, event -> {})
-        .putTask(
-            "ABC-42",
-            left);
+    new StateService(new JsonMapper(), paths, reducer, event -> {}).putTask("ABC-42", left);
     state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
     context.refresh();
 

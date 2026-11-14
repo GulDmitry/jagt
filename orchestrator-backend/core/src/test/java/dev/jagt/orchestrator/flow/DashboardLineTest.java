@@ -19,8 +19,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class DashboardLineTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @ParameterizedTest
   @CsvSource(
@@ -161,10 +160,8 @@ class DashboardLineTest {
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_000);
     TaskState seen =
-        reducer.deployStepped(
-            red, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
-    TaskState stalled =
-        reducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
+        reducer.deployStepped(red, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
+    TaskState stalled = reducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
     assertThat(DashboardLine.forTask(stalled, null).text()).contains("stopped moving");
 
     TaskState left = reducer.repoLeft(stalled, "beta");

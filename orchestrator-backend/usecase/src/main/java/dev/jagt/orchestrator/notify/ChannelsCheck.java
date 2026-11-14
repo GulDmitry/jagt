@@ -62,9 +62,8 @@ public class ChannelsCheck implements StartupCheck {
     notifications.channelDefs().forEach((name, def) -> problems.addAll(channelProblems(name, def)));
     notifications
         .routeDefs()
-        .forEach(
-            (id, routes) ->
-                routes.forEach(route -> problems.addAll(routeProblems(notifications, id, route))));
+        .forEach((id, routes) ->
+            routes.forEach(route -> problems.addAll(routeProblems(notifications, id, route))));
     return problems;
   }
 
@@ -196,8 +195,7 @@ public class ChannelsCheck implements StartupCheck {
   }
 
   private boolean needsSecret(String kind) {
-    return drivers.stream()
-        .anyMatch(driver -> driver.kind().equals(kind) && driver.needsSecret());
+    return drivers.stream().anyMatch(driver -> driver.kind().equals(kind) && driver.needsSecret());
   }
 
   private List<String> kinds() {

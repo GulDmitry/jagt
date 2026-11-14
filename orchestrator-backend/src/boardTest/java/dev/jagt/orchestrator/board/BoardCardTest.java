@@ -47,10 +47,7 @@ class BoardCardTest extends BoardPageContext {
   @Test
   void flaggedCardStaysFlaggedAfterTheBoardIsReloaded() {
     state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
-            .title("Widget layout is off")
-            .build());
+        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title("Widget layout is off").build());
     Page page = openLiveBoard();
 
     page.locator("article button.flag").click();
@@ -78,9 +75,7 @@ class BoardCardTest extends BoardPageContext {
   void offersTheRequestUnagedWhileNoReadHasSaidWhenItWasOpened() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_POLLING)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -91,9 +86,7 @@ class BoardCardTest extends BoardPageContext {
   void opensTheReviewRequestFromTheAgeItIsWearing() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_POLLING)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -168,9 +161,7 @@ class BoardCardTest extends BoardPageContext {
   void showsTheStatusInWordsWithItsOwnAgeInsideTheSameChip() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_POLLING)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -280,11 +271,7 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void cardColoursItsLineByTheKindTheServerNamesNotByItsWords() {
-    state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_FAILED)
-            .message("lint red")
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).message("lint red").build());
     state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.DEPLOY_CONFLICT).build());
 
     Page page = openLiveBoard();
@@ -316,14 +303,10 @@ class BoardCardTest extends BoardPageContext {
   void interruptsForBlockedTaskAndOnlyOffersTheNextMoveForOneThatCanWait() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_FAILED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.CI_FAILED).mrUrl("https://host.example/mr/7").build());
     state.putTask(
         "ABC-2",
-        alphaTask("ABC-2", TaskStatus.APPROVED)
-            .mrUrl("https://host.example/mr/8")
-            .build());
+        alphaTask("ABC-2", TaskStatus.APPROVED).mrUrl("https://host.example/mr/8").build());
 
     Page page = openLiveBoard();
 
@@ -337,9 +320,7 @@ class BoardCardTest extends BoardPageContext {
   void asksForNothingOnCardWhoseChangeIsAlreadyDeployed() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.DEPLOYED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.DEPLOYED).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -436,10 +417,7 @@ class BoardCardTest extends BoardPageContext {
   @Test
   void titleWithNoPlaceToBreakStillStaysInsideTheCard() {
     state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
-            .title("w".repeat(150))
-            .build());
+        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title("w".repeat(150)).build());
 
     Page page = openLiveBoard();
     Object spills =
@@ -497,9 +475,7 @@ class BoardCardTest extends BoardPageContext {
   void cardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.APPROVED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.APPROVED).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -559,9 +535,7 @@ class BoardCardTest extends BoardPageContext {
   void hoveringTheRevertButtonShowsThatItTakesOnlyTheLastDeployBackOut() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.DEPLOYED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.DEPLOYED).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
     button(page, "Revert").hover();
@@ -622,9 +596,7 @@ class BoardCardTest extends BoardPageContext {
   void tipBeingReadStaysOpenInItsNewWordsWhenRepaintRebuildsItsCard() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.APPROVED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.APPROVED).mrUrl("https://host.example/mr/7").build());
     Page page = openLiveBoard();
     page.locator("article .badge").focus();
     assertThat(page.locator("#tip")).containsText("approved: deploy or done");
@@ -788,9 +760,7 @@ class BoardCardTest extends BoardPageContext {
   void requestNoReadHasSeenYetWearsNoVerdictAndSaysSoOnHover() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_POLLING)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -871,9 +841,7 @@ class BoardCardTest extends BoardPageContext {
   void theDeployVerbIsPlainWhileNothingOfTheTaskIsLive() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.APPROVED)
-            .mrUrl("https://host.example/mr/7")
-            .build());
+        alphaTask("ABC-1", TaskStatus.APPROVED).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
 
@@ -899,7 +867,8 @@ class BoardCardTest extends BoardPageContext {
   void stoppedCardAsksToLiftTheStopWithItsReasonAndHoldsTheEvidenceInTheSameHover() {
     state.putTask(
         "ABC-42",
-        alphaTask("ABC-42", TaskStatus.CI_POLLING).alias("a1")
+        alphaTask("ABC-42", TaskStatus.CI_POLLING)
+            .alias("a1")
             .mrUrl("https://host.example/mr/7")
             .stop(
                 new dev.jagt.orchestrator.task.TaskStop(
@@ -925,7 +894,8 @@ class BoardCardTest extends BoardPageContext {
   void triagedStopCarriesItsReadAsTheLastLineOfTheHover() {
     state.putTask(
         "ABC-42",
-        alphaTask("ABC-42", TaskStatus.CI_POLLING).alias("a1")
+        alphaTask("ABC-42", TaskStatus.CI_POLLING)
+            .alias("a1")
             .mrUrl("https://host.example/mr/7")
             .stop(
                 new dev.jagt.orchestrator.task.TaskStop(

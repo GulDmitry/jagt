@@ -36,7 +36,7 @@ public class LaunchExits implements TaskJob {
   @Override
   public String describe() {
     return "tell an agent that exited before its first report, with the last lines it printed, or"
-               + " waits at a prompt jagt never answers";
+        + " waits at a prompt jagt never answers";
   }
 
   @Override
@@ -59,12 +59,10 @@ public class LaunchExits implements TaskJob {
                 sessions
                     .unansweredPrompt(taskId)
                     .filter(cause -> !task.report().asks())
-                    .ifPresent(
-                        cause -> {
-                          ledger.sign(
-                              taskId,
-                              new SessionSign.Asked(cause, SessionSign.Asked.Channel.SCREEN));
-                          watchdog.check(taskId);
-                        }));
+                    .ifPresent(cause -> {
+                      ledger.sign(
+                          taskId, new SessionSign.Asked(cause, SessionSign.Asked.Channel.SCREEN));
+                      watchdog.check(taskId);
+                    }));
   }
 }

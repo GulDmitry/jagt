@@ -11,6 +11,7 @@ public enum StandMode {
 
   @SuppressWarnings("ImmutableEnumChecker") // checker knows only Guava sets; Set.of is unmodifiable
   private final Set<String> humanVerbs;
+
   private final boolean humanEndsTheRun;
 
   StandMode(Set<String> humanVerbs, boolean humanEndsTheRun) {

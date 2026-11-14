@@ -69,40 +69,36 @@ class UsageAlerts {
     for (Window window : snapshot.windows()) {
       String period = periodOf(window.resetsAt());
       crossed("window|" + window.name(), window.percentUsed(), thresholds, period)
-          .ifPresent(
-              level ->
-                  due.add(
-                      Notification.usage(
-                          Point.USAGE.id(),
-                          window.name() + " window at " + level + "%",
-                          window
-                              .resetsAt()
-                              .map(at -> "resets " + AT.format(at.atZone(ZoneOffset.UTC)))
-                              .orElse("no reset reported"))));
+          .ifPresent(level ->
+              due.add(
+                  Notification.usage(
+                      Point.USAGE.id(),
+                      window.name() + " window at " + level + "%",
+                      window
+                          .resetsAt()
+                          .map(at -> "resets " + AT.format(at.atZone(ZoneOffset.UTC)))
+                          .orElse("no reset reported"))));
     }
     snapshot
         .paid()
-        .ifPresent(
-            paid -> {
-              spendingSince(snapshot, paid, now)
-                  .ifPresent(
-                      period -> {
-                        if (!period.equals(firedIn.put(PAID_START, period))) {
-                          due.add(
-                              Notification.usage(
-                                  Point.USAGE.id(), "paid usage started", UsageLimits.spent(paid)));
-                        }
-                      });
-              percentOfLimit(paid)
-                  .flatMap(percent -> crossed("paid", percent, paidThresholds, NO_PERIOD))
-                  .ifPresent(
-                      level ->
-                          due.add(
-                              Notification.usage(
-                                  Point.USAGE.id(),
-                                  "paid usage at " + level + "% of its limit",
-                                  UsageLimits.spent(paid))));
-            });
+        .ifPresent(paid -> {
+          spendingSince(snapshot, paid, now)
+              .ifPresent(period -> {
+                if (!period.equals(firedIn.put(PAID_START, period))) {
+                  due.add(
+                      Notification.usage(
+                          Point.USAGE.id(), "paid usage started", UsageLimits.spent(paid)));
+                }
+              });
+          percentOfLimit(paid)
+              .flatMap(percent -> crossed("paid", percent, paidThresholds, NO_PERIOD))
+              .ifPresent(level ->
+                  due.add(
+                      Notification.usage(
+                          Point.USAGE.id(),
+                          "paid usage at " + level + "% of its limit",
+                          UsageLimits.spent(paid))));
+        });
     previous = snapshot.paid().orElse(null);
     return due;
   }

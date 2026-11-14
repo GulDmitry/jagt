@@ -58,9 +58,7 @@ class MergedRequestsTest {
 
   @Test
   void requestReadsNotMergedAgainWhenGitNoLongerFindsItsHeadInTheTarget() {
-    state.putTask(
-        "ABC-42",
-        reviewed.withMerged("proj", true));
+    state.putTask("ABC-42", reviewed.withMerged("proj", true));
 
     boolean none = requests.refresh("ABC-42");
 
@@ -70,9 +68,7 @@ class MergedRequestsTest {
 
   @Test
   void requestStaysMergedWhereTheHostSaidSoAndGitSeesNoMergeCommit() {
-    state.putTask(
-        "ABC-42",
-        reviewed.withMergedByHost("proj"));
+    state.putTask("ABC-42", reviewed.withMergedByHost("proj"));
 
     boolean none = requests.refresh("ABC-42");
 
@@ -90,9 +86,7 @@ class MergedRequestsTest {
 
   @Test
   void requestStaysMergedWhenGitCannotBeRead() {
-    state.putTask(
-        "ABC-42",
-        reviewed.withMerged("proj", true));
+    state.putTask("ABC-42", reviewed.withMerged("proj", true));
     when(inspection.mergedIntoTarget(any(), any(), any()))
         .thenThrow(new IllegalStateException("fetch failed"));
 
@@ -131,8 +125,7 @@ class MergedRequestsTest {
     TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
     when(departure.leave("ABC-42", web, "its request was closed on the host")).thenReturn(true);
 
-    boolean left =
-        requests.hostSaidClosed("ABC-42", web);
+    boolean left = requests.hostSaidClosed("ABC-42", web);
 
     assertThat(left).isTrue();
   }
@@ -143,8 +136,7 @@ class MergedRequestsTest {
     when(departure.leave("ABC-42", primary, "its request was closed on the host"))
         .thenReturn(false);
 
-    boolean left =
-        requests.hostSaidClosed("ABC-42", primary);
+    boolean left = requests.hostSaidClosed("ABC-42", primary);
 
     assertThat(left).isFalse();
   }

@@ -96,13 +96,12 @@ public final class FakeProcesses implements Processes {
     return rules.reversed().stream()
         .filter(rule -> rule.matches(command))
         .findFirst()
-        .map(
-            rule ->
-                rule.results()
-                    .get(
-                        Math.min(
-                            (int) earlier.stream().filter(rule::matches).count(),
-                            rule.results().size() - 1)))
+        .map(rule ->
+            rule.results()
+                .get(
+                    Math.min(
+                        (int) earlier.stream().filter(rule::matches).count(),
+                        rule.results().size() - 1)))
         .orElse(UNANSWERED);
   }
 }

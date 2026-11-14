@@ -55,11 +55,10 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
       return;
     }
     try {
-      broadcaster.execute(
-          () -> {
-            broadcastQueued.set(false);
-            broadcast();
-          });
+      broadcaster.execute(() -> {
+        broadcastQueued.set(false);
+        broadcast();
+      });
     } catch (RejectedExecutionException e) {
       broadcastQueued.set(false);
       log.atDebug()

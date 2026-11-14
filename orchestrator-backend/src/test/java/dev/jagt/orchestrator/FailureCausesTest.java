@@ -16,8 +16,7 @@ class FailureCausesTest {
     Pattern messageAsCause =
         Pattern.compile("addKeyValue\\(\\s*\"cause\",[^;]*?\\.getMessage\\(\\)");
 
-    assertThat(
-            SourceRoots.javaFiles().filter(path -> messageAsCause.matcher(read(path)).find()))
+    assertThat(SourceRoots.javaFiles().filter(path -> messageAsCause.matcher(read(path)).find()))
         .isEmpty();
   }
 

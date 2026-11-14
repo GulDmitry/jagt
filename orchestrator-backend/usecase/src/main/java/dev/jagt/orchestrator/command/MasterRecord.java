@@ -92,11 +92,8 @@ public class MasterRecord {
     Map<String, ProjectConfig> projects = configService.load().projects();
     return task.identity().projects().stream()
         .map(projects::get)
-        .allMatch(
-            project ->
-                project != null
-                    && project.deployBranch() != null
-                    && !project.deployBranch().isBlank());
+        .allMatch(project ->
+            project != null && project.deployBranch() != null && !project.deployBranch().isBlank());
   }
 
   private static int count(List<FinishedTask> tasks, Predicate<FinishedTask> which) {

@@ -35,21 +35,19 @@ class SiteTest {
 
     List<String> broken =
         pages.entrySet().stream()
-            .flatMap(
-                page ->
-                    TARGET
-                        .matcher(page.getValue())
-                        .results()
-                        .map(link -> link.group(1).replaceFirst("#.*", ""))
-                        .filter(target -> !target.isEmpty())
-                        .filter(target -> !target.equals(REPOSITORY))
-                        .filter(
-                            target ->
-                                !Files.exists(
-                                    target.startsWith(BLOB)
-                                        ? Path.of("..", target.substring(BLOB.length()))
-                                        : SITE.resolve(target)))
-                        .map(target -> page.getKey() + " -> " + target))
+            .flatMap(page ->
+                TARGET
+                    .matcher(page.getValue())
+                    .results()
+                    .map(link -> link.group(1).replaceFirst("#.*", ""))
+                    .filter(target -> !target.isEmpty())
+                    .filter(target -> !target.equals(REPOSITORY))
+                    .filter(target ->
+                        !Files.exists(
+                            target.startsWith(BLOB)
+                                ? Path.of("..", target.substring(BLOB.length()))
+                                : SITE.resolve(target)))
+                    .map(target -> page.getKey() + " -> " + target))
             .toList();
 
     assertThat(pages).isNotEmpty();
@@ -83,13 +81,12 @@ class SiteTest {
         pages.values().stream()
             .map(html -> NOT_SOURCED_BY_KIND.matcher(html).replaceAll("<br>"))
             .flatMap(html -> Arrays.stream(html.split("<[^>]*>")))
-            .map(
-                text ->
-                    text.replace("&amp;", "&")
-                        .replace("&lt;", "<")
-                        .replace("&gt;", ">")
-                        .replaceAll("\\s+", " ")
-                        .trim())
+            .map(text ->
+                text.replace("&amp;", "&")
+                    .replace("&lt;", "<")
+                    .replace("&gt;", ">")
+                    .replaceAll("\\s+", " ")
+                    .trim())
             .filter(text -> !text.isEmpty())
             .filter(text -> !sources.contains(text))
             .toList();

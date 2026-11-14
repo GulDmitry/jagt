@@ -407,18 +407,16 @@ class MoveTest {
   void namesTheHumanAsTheOwnerOfExactlyTheStatusesThatWaitForOne() {
     var waitingOnYou =
         Arrays.stream(TaskStatus.values())
-            .filter(
-                status ->
-                    Move.forTask(
-                                rules,
-                                status,
-                                Facts.defaults()
-                                    .withDelivery(
-                                        Facts.Delivery.defaults().withHasReviewRequest(true)),
-                                RoundState.NONE,
-                                false)
-                            .owner()
-                        == Owner.YOU)
+            .filter(status ->
+                Move.forTask(
+                            rules,
+                            status,
+                            Facts.defaults()
+                                .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+                            RoundState.NONE,
+                            false)
+                        .owner()
+                    == Owner.YOU)
             .toList();
 
     assertThat(waitingOnYou)

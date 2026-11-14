@@ -33,27 +33,24 @@ final class E2eWorkspace {
     await()
         .atMost(Duration.ofSeconds(10))
         .pollInterval(Duration.ofMillis(100))
-        .until(
-            () -> {
-              try {
-                jobs.runNow(job);
-                return true;
-              } catch (IllegalStateException running) {
-                return false;
-              }
-            });
+        .until(() -> {
+          try {
+            jobs.runNow(job);
+            return true;
+          } catch (IllegalStateException running) {
+            return false;
+          }
+        });
     await()
         .atMost(Duration.ofSeconds(60))
         .pollInterval(Duration.ofMillis(100))
-        .until(
-            () ->
-                jobs.statuses(since).stream()
-                    .filter(status -> status.id().equals(job))
-                    .anyMatch(
-                        status ->
-                            !status.running()
-                                && status.lastStartedAt() != null
-                                && status.lastStartedAt() >= since));
+        .until(() ->
+            jobs.statuses(since).stream()
+                .filter(status -> status.id().equals(job))
+                .anyMatch(status ->
+                    !status.running()
+                        && status.lastStartedAt() != null
+                        && status.lastStartedAt() >= since));
   }
 
   static void createRepositoryWithOrigin(Path origin, Path repo) throws Exception {
@@ -134,12 +131,11 @@ final class E2eWorkspace {
     Files.createDirectories(configFile.getParent());
     String configured =
         projects.entrySet().stream()
-            .map(
-                project ->
-                    """
-                    %s: { path: "%s", baseBranch: origin/main, deployBranch: dev }\
-                    """
-                        .formatted(project.getKey(), project.getValue()))
+            .map(project ->
+                """
+                %s: { path: "%s", baseBranch: origin/main, deployBranch: dev }\
+                """
+                    .formatted(project.getKey(), project.getValue()))
             .collect(Collectors.joining("\n    "));
     Files.writeString(
         configFile,
@@ -276,14 +272,13 @@ final class E2eWorkspace {
     try {
       Process process = new ProcessBuilder(full).redirectErrorStream(true).start();
       var output = new CompletableFuture<String>();
-      Thread.startVirtualThread(
-          () -> {
-            try {
-              output.complete(new String(process.getInputStream().readAllBytes(), UTF_8));
-            } catch (IOException unreadable) {
-              output.complete("");
-            }
-          });
+      Thread.startVirtualThread(() -> {
+        try {
+          output.complete(new String(process.getInputStream().readAllBytes(), UTF_8));
+        } catch (IOException unreadable) {
+          output.complete("");
+        }
+      });
       if (!process.waitFor(10, TimeUnit.SECONDS)) {
         process.descendants().forEach(ProcessHandle::destroyForcibly);
         process.destroyForcibly();

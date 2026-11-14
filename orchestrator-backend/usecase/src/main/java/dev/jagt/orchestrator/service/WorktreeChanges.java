@@ -109,18 +109,17 @@ public class WorktreeChanges {
    */
   public boolean anythingNewToShip(TaskState task) {
     return placed(task).stream()
-        .anyMatch(
-            repo -> {
-              Path worktree = Path.of(Objects.requireNonNull(repo.worktreePath()));
-              Path project = projectPath(Objects.requireNonNull(repo.project()));
-              try {
-                return inspection.hasUncommittedChanges(project, worktree)
-                    || inspection.unpublished(project, worktree);
-              } catch (RuntimeException e) {
-                warn(repo.worktreePath(), e);
-                return true;
-              }
-            });
+        .anyMatch(repo -> {
+          Path worktree = Path.of(Objects.requireNonNull(repo.worktreePath()));
+          Path project = projectPath(Objects.requireNonNull(repo.project()));
+          try {
+            return inspection.hasUncommittedChanges(project, worktree)
+                || inspection.unpublished(project, worktree);
+          } catch (RuntimeException e) {
+            warn(repo.worktreePath(), e);
+            return true;
+          }
+        });
   }
 
   /**

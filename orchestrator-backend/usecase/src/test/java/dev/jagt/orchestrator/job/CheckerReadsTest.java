@@ -71,7 +71,8 @@ class CheckerReadsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-        reducer, event -> {});
+        reducer,
+        event -> {});
   }
 
   @Test
@@ -81,18 +82,17 @@ class CheckerReadsTest {
     List<Turn.Holder> whileReading = new ArrayList<>();
     CheckerReader reader = mock(CheckerReader.class);
     when(reader.read(any()))
-        .thenAnswer(
-            call -> {
-              TaskState task = state.task("ABC-42").orElseThrow();
-              whileReading.add(
-                  Turns.next(
-                      task.status(),
-                      task.report(),
-                      task.stopped(),
-                      new Checkers(new TaskChart(Composition.builtIn())).of(task),
-                      Arbiter.Profile.OFF));
-              return new Answer<>(Optional.empty(), TokenUsage.NONE);
-            });
+        .thenAnswer(call -> {
+          TaskState task = state.task("ABC-42").orElseThrow();
+          whileReading.add(
+              Turns.next(
+                  task.status(),
+                  task.report(),
+                  task.stopped(),
+                  new Checkers(new TaskChart(Composition.builtIn())).of(task),
+                  Arbiter.Profile.OFF));
+          return new Answer<>(Optional.empty(), TokenUsage.NONE);
+        });
 
     new CheckerReads(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),

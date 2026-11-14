@@ -98,15 +98,14 @@ public final class Schema {
     item.put("type", "object");
     ObjectNode props = item.putObject("properties");
     ArrayNode names = item.putArray("required");
-    fields.forEach(
-        field -> {
-          ObjectNode property = props.putObject(field).put("type", "string");
-          if (choices.containsKey(field)) {
-            ArrayNode allowed = property.putArray("enum");
-            choices.get(field).forEach(value -> allowed.add(String.valueOf(value)));
-          }
-          names.add(field);
-        });
+    fields.forEach(field -> {
+      ObjectNode property = props.putObject(field).put("type", "string");
+      if (choices.containsKey(field)) {
+        ArrayNode allowed = property.putArray("enum");
+        choices.get(field).forEach(value -> allowed.add(String.valueOf(value)));
+      }
+      names.add(field);
+    });
     return this;
   }
 
@@ -116,11 +115,10 @@ public final class Schema {
     field.putObject("additionalProperties").put("type", "string");
     if (!examples.isEmpty()) {
       ArrayNode shown = field.putArray("examples");
-      examples.forEach(
-          example -> {
-            ObjectNode entry = shown.addObject();
-            example.forEach(entry::put);
-          });
+      examples.forEach(example -> {
+        ObjectNode entry = shown.addObject();
+        example.forEach(entry::put);
+      });
     }
     return this;
   }

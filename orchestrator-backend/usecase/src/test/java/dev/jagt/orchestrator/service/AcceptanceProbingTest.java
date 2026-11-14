@@ -51,19 +51,17 @@ class AcceptanceProbingTest {
         .thenReturn(
             new Processes.Result(1, "line 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
 
-    List<Probe> probed =
-        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
+    List<Probe> probed = probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed)
         .singleElement()
-        .satisfies(
-            probe -> {
-              assertThat(probe.failed()).isTrue();
-              assertThat(probe.excerpt())
-                  .startsWith("exit 1")
-                  .endsWith("BUILD FAILED")
-                  .doesNotContain("line 1");
-            });
+        .satisfies(probe -> {
+          assertThat(probe.failed()).isTrue();
+          assertThat(probe.excerpt())
+              .startsWith("exit 1")
+              .endsWith("BUILD FAILED")
+              .doesNotContain("line 1");
+        });
   }
 
   @Test
@@ -80,11 +78,10 @@ class AcceptanceProbingTest {
 
     assertThat(probed)
         .singleElement()
-        .satisfies(
-            probe -> {
-              assertThat(probe.failed()).isTrue();
-              assertThat(probe.excerpt()).contains("jagt refuses");
-            });
+        .satisfies(probe -> {
+          assertThat(probe.failed()).isTrue();
+          assertThat(probe.excerpt()).contains("jagt refuses");
+        });
     verifyNoInteractions(processes);
   }
 
@@ -120,16 +117,14 @@ class AcceptanceProbingTest {
     when(processes.run(any(), any(), anyMap(), any()))
         .thenThrow(new IllegalStateException("Command timed out after PT5M: ./gradlew test"));
 
-    List<Probe> probed =
-        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
+    List<Probe> probed = probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed)
         .singleElement()
-        .satisfies(
-            probe -> {
-              assertThat(probe.failed()).isTrue();
-              assertThat(probe.excerpt()).contains("timed out");
-            });
+        .satisfies(probe -> {
+          assertThat(probe.failed()).isTrue();
+          assertThat(probe.excerpt()).contains("timed out");
+        });
   }
 
   @Test
@@ -174,8 +169,7 @@ class AcceptanceProbingTest {
     when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
         .thenReturn(new Processes.Result(1, "a" + "b".repeat(2_000), ""));
 
-    List<Probe> probed =
-        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
+    List<Probe> probed = probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed)
         .singleElement()
@@ -188,8 +182,7 @@ class AcceptanceProbingTest {
     when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
         .thenReturn(new Processes.Result(1, "", ""));
 
-    List<Probe> probed =
-        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
+    List<Probe> probed = probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("exit 1");
   }

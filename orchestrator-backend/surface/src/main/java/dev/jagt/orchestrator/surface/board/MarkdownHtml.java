@@ -61,15 +61,14 @@ final class MarkdownHtml {
         .extensions(TABLES)
         .escapeHtml(true)
         .sanitizeUrls(true)
-        .attributeProviderFactory(
-            context ->
-                (node, tag, attributes) -> {
-                  if (removed.contains(node)) {
-                    attributes.put("class", "removed");
-                  } else if (!tag.equals("code") && marked(node, change)) {
-                    attributes.put("class", "changed");
-                  }
-                })
+        .attributeProviderFactory(context ->
+            (node, tag, attributes) -> {
+              if (removed.contains(node)) {
+                attributes.put("class", "removed");
+              } else if (!tag.equals("code") && marked(node, change)) {
+                attributes.put("class", "changed");
+              }
+            })
         .build()
         .render(document);
   }

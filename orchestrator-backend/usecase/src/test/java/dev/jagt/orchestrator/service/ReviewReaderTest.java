@@ -43,8 +43,7 @@ class ReviewReaderTest {
                         quiet)),
                 TokenUsage.NONE));
 
-    var facts =
-        paid.read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
+    var facts = paid.read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
     assertThat(facts.facts())
         .contains(
@@ -98,8 +97,7 @@ class ReviewReaderTest {
             new Answer<>(
                 Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "t")), TokenUsage.NONE));
 
-    var read =
-        paid.readRequest("https://other.example.com/g/p/-/merge_requests/7");
+    var read = paid.readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "t"));
   }

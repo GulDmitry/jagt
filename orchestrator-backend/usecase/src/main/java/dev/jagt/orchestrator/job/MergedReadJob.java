@@ -27,7 +27,7 @@ public class MergedReadJob implements TaskJob {
   @Override
   public String describe() {
     return "read again the requests git found merged, and let ship and auto-review resume where the"
-               + " merge is gone";
+        + " merge is gone";
   }
 
   @Override

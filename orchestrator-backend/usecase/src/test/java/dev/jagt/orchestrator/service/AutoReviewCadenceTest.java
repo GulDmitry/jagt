@@ -161,8 +161,7 @@ class AutoReviewCadenceTest {
 
   @ParameterizedTest
   @CsvSource({"24,60", "36,150", "48,240", "100,240"})
-  void reviewedTaskIsPolledAgainOnGrowingIntervalPastItsWindow(
-      int hoursOut, int expectedMinutes) {
+  void reviewedTaskIsPolledAgainOnGrowingIntervalPastItsWindow(int hoursOut, int expectedMinutes) {
     long shipped = 1_000_000_000_000L;
     long now = shipped + Duration.ofHours(hoursOut).toMillis();
     TaskState task =

@@ -95,8 +95,7 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
     when(agentRuntime.displayName()).thenReturn("Claude");
-    reviewPending =
-        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build();
+    reviewPending = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build();
     inProgress = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     idleInProgress =
         inProgress.withSession(
@@ -929,8 +928,7 @@ class AgentSessionsTest {
     @BeforeEach
     void theLineSitsInTheAgentsInput() {
       state.putTask("ABC-1", inProgress);
-      when(tmux.taskWindowState("jagt", "ABC-1"))
-          .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+      when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
       when(tmux.nudgeTaskWindow("jagt", "ABC-1", "use the cache")).thenReturn(true);
       when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> use the cache"));
       when(agentRuntime.draft("> use the cache")).thenReturn(Optional.of("use the cache"));
@@ -1021,11 +1019,10 @@ class AgentSessionsTest {
     state.putTask("ABC-1", inProgress);
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", "use the cache"))
-        .thenAnswer(
-            call -> {
-              Thread.currentThread().interrupt();
-              return true;
-            });
+        .thenAnswer(call -> {
+          Thread.currentThread().interrupt();
+          return true;
+        });
 
     Throwable refused = catchThrowable(() -> sessions.say("ABC-1", "use the cache"));
     boolean stopKept = Thread.interrupted();
@@ -1122,17 +1119,15 @@ class AgentSessionsTest {
 
     @BeforeEach
     void theHumanSitsInTheAgentsWindow() {
-      state.putTask(
-          "ABC-1", reviewPending.withSession(Session.defaults().withMovedAt(5_000)));
+      state.putTask("ABC-1", reviewPending.withSession(Session.defaults().withMovedAt(5_000)));
       when(tmux.taskWindowState("jagt", "ABC-1"))
-          .thenAnswer(
-              call -> {
-                if (windowUnreadable.get()) {
-                  throw new SessionHost.WindowsUnreadable(
-                      "tmux list-windows jagt failed (exit 1): server timed out");
-                }
-                return window.get();
-              });
+          .thenAnswer(call -> {
+            if (windowUnreadable.get()) {
+              throw new SessionHost.WindowsUnreadable(
+                  "tmux list-windows jagt failed (exit 1): server timed out");
+            }
+            return window.get();
+          });
       when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
       when(agentRuntime.holdsDraft("typed")).thenAnswer(call -> typing.get());
       when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE)))
@@ -1382,14 +1377,13 @@ class AgentSessionsTest {
       assertThat(log.events())
           .filteredOn(event -> "line run in agent".equals(event.getMessage()))
           .singleElement()
-          .satisfies(
-              event -> {
-                assertThat(event.getKeyValuePairs())
-                    .extracting(pair -> pair.key + "=" + pair.value)
-                    .contains("chars=12");
-                assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
-                    .doesNotContain("hunter2");
-              });
+          .satisfies(event -> {
+            assertThat(event.getKeyValuePairs())
+                .extracting(pair -> pair.key + "=" + pair.value)
+                .contains("chars=12");
+            assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
+                .doesNotContain("hunter2");
+          });
     }
   }
 }

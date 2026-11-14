@@ -115,25 +115,23 @@ public class StateService implements ReducingStore {
   }
 
   public void putTask(String taskId, TaskState state) {
-    mutate(
-        file -> {
-          file.tasks().put(taskId, stamped(file.tasks().get(taskId), state));
-          return file;
-        });
+    mutate(file -> {
+      file.tasks().put(taskId, stamped(file.tasks().get(taskId), state));
+      return file;
+    });
   }
 
   @Override
   public boolean updateTask(String taskId, UnaryOperator<TaskState> update) {
     AtomicBoolean found = new AtomicBoolean();
-    mutate(
-        file -> {
-          TaskState current = file.tasks().get(taskId);
-          if (current != null) {
-            file.tasks().put(taskId, stamped(current, update.apply(current)));
-            found.set(true);
-          }
-          return file;
-        });
+    mutate(file -> {
+      TaskState current = file.tasks().get(taskId);
+      if (current != null) {
+        file.tasks().put(taskId, stamped(current, update.apply(current)));
+        found.set(true);
+      }
+      return file;
+    });
     return found.get();
   }
 
@@ -154,11 +152,10 @@ public class StateService implements ReducingStore {
 
   public boolean removeTask(String taskId) {
     AtomicBoolean found = new AtomicBoolean();
-    mutate(
-        file -> {
-          found.set(file.tasks().remove(taskId) != null);
-          return file;
-        });
+    mutate(file -> {
+      found.set(file.tasks().remove(taskId) != null);
+      return file;
+    });
     return found.get();
   }
 
@@ -313,15 +310,14 @@ public class StateService implements ReducingStore {
 
   private static TaskState withoutForeignRequests(String taskId, TaskState task) {
     ForeignLinks.foreignIn(task)
-        .forEach(
-            foreign ->
-                log.atInfo()
-                    .setMessage("foreign request cleared")
-                    .addKeyValue("task", taskId)
-                    .addKeyValue("project", foreign.project())
-                    .addKeyValue("request", foreign.url())
-                    .addKeyValue("cause", "not under the repository's remote")
-                    .log());
+        .forEach(foreign ->
+            log.atInfo()
+                .setMessage("foreign request cleared")
+                .addKeyValue("task", taskId)
+                .addKeyValue("project", foreign.project())
+                .addKeyValue("request", foreign.url())
+                .addKeyValue("cause", "not under the repository's remote")
+                .log());
     return ForeignLinks.cleared(task);
   }
 

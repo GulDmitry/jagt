@@ -92,9 +92,8 @@ class CaseCheckTest {
 
     assertThat(check.problems())
         .extracting(Problem::text)
-        .anySatisfy(
-            text ->
-                assertThat(text).startsWith("roles/session/cases.md: case wake has at: 'WAITING'"));
+        .anySatisfy(text ->
+            assertThat(text).startsWith("roles/session/cases.md: case wake has at: 'WAITING'"));
   }
 
   @Nested
@@ -112,8 +111,7 @@ class CaseCheckTest {
 
     @Test
     void passesTheShippedCasesAgainstTheShippedBrief() throws Exception {
-      assertThat(check.problems())
-          .isEmpty();
+      assertThat(check.problems()).isEmpty();
     }
 
     @Test

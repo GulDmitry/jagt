@@ -17,16 +17,14 @@ public final class StepsWithinCases implements Invariant {
   @Override
   public List<Violation> check(RunRecord run) {
     return run.timeline().relays().stream()
-        .flatMap(
-            relay ->
-                relay.steps().stream()
-                    .filter(step -> !book.sends(step, opened(run, relay)))
-                    .map(
-                        step ->
-                            new Violation(
-                                NAME,
-                                relay.at(),
-                                step + " at " + opened(run, relay) + ": " + relay.line())))
+        .flatMap(relay ->
+            relay.steps().stream()
+                .filter(step -> !book.sends(step, opened(run, relay)))
+                .map(step ->
+                    new Violation(
+                        NAME,
+                        relay.at(),
+                        step + " at " + opened(run, relay) + ": " + relay.line())))
         .toList();
   }
 

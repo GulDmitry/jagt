@@ -16,11 +16,10 @@ class StandSlotsTest {
     CountDownLatch started = new CountDownLatch(1);
     Thread third =
         Thread.ofVirtual()
-            .start(
-                () -> {
-                  slots.take();
-                  started.countDown();
-                });
+            .start(() -> {
+              slots.take();
+              started.countDown();
+            });
 
     boolean startedWhileFull = started.await(300, TimeUnit.MILLISECONDS);
     slots.free();

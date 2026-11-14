@@ -36,13 +36,12 @@ class CognitiveComplexityTest {
 
       assertThat(report.getProcessingErrors()).isEmpty();
       assertThat(report.getViolations())
-          .extracting(
-              violation ->
-                  violation.getFileId().getFileName()
-                      + ":"
-                      + violation.getBeginLine()
-                      + " "
-                      + violation.getDescription().replaceFirst(", current threshold.*", ""))
+          .extracting(violation ->
+              violation.getFileId().getFileName()
+                  + ":"
+                  + violation.getBeginLine()
+                  + " "
+                  + violation.getDescription().replaceFirst(", current threshold.*", ""))
           .isEmpty();
     }
   }

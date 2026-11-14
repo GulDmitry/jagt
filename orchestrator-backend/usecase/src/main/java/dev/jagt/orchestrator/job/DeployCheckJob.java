@@ -81,14 +81,13 @@ public class DeployCheckJob implements TaskJob {
       return;
     }
     landed(taskId, task)
-        .ifPresent(
-            landed -> {
-              if (!asked(task, Turn.digestOf(landed))) {
-                settle(taskId, task, landed);
-              } else if (!bareOf(task).isEmpty()) {
-                readLate(taskId, task);
-              }
-            });
+        .ifPresent(landed -> {
+          if (!asked(task, Turn.digestOf(landed))) {
+            settle(taskId, task, landed);
+          } else if (!bareOf(task).isEmpty()) {
+            readLate(taskId, task);
+          }
+        });
   }
 
   /**
@@ -100,13 +99,12 @@ public class DeployCheckJob implements TaskJob {
     if (counted(taskId, task, reading) == 0) {
       stops
           .endOnDeployRead(taskId)
-          .ifPresent(
-              stop ->
-                  log.atInfo()
-                      .setMessage("stop voided by read")
-                      .addKeyValue("task", taskId)
-                      .addKeyValue("trigger", stop.trigger())
-                      .log());
+          .ifPresent(stop ->
+              log.atInfo()
+                  .setMessage("stop voided by read")
+                  .addKeyValue("task", taskId)
+                  .addKeyValue("trigger", stop.trigger())
+                  .log());
     }
   }
 

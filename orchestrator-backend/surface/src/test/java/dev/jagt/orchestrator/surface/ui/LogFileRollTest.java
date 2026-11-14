@@ -58,9 +58,8 @@ class LogFileRollTest {
     Files.writeString(previous, "the day before");
     Files.setLastModifiedTime(previous, FileTime.from(Instant.parse("2100-03-04T05:06:07Z")));
 
-    new LogFileRoll(
-        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-        System.err).start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
+        .start(log);
 
     assertThat(root.resolve("jagt.log.2100-03-04-050607")).content().isEqualTo("the day before");
     assertThat(previous).content().contains("yesterday");
@@ -78,9 +77,8 @@ class LogFileRollTest {
     Files.writeString(recent, "fresh");
     Files.setLastModifiedTime(recent, FileTime.from(Instant.parse("2026-10-28T12:00:00Z")));
 
-    new LogFileRoll(
-        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-        System.err).start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
+        .start(log);
 
     assertThat(old).doesNotExist();
     assertThat(recent).exists();
@@ -101,9 +99,8 @@ class LogFileRollTest {
         sparseArchive(
             root.resolve("jagt.log.2026-01-03-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
-    new LogFileRoll(
-        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-        System.err).start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
+        .start(log);
 
     assertThat(oldest).doesNotExist();
     assertThat(middle).exists();
@@ -121,9 +118,8 @@ class LogFileRollTest {
         sparseArchive(
             root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
-    new LogFileRoll(
-        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-        System.err).start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
+        .start(log);
 
     assertThat(older).exists();
     assertThat(newer).exists();
@@ -189,8 +185,7 @@ class LogFileRollTest {
       occupied.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
       boolean rolled =
           new LogFileRoll(
-              Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-              System.err)
+                  Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
               .apply(
                   new MockEnvironment()
                       .withProperty("logging.file.name", log.toString())
@@ -209,8 +204,7 @@ class LogFileRollTest {
 
     boolean rolled =
         new LogFileRoll(
-            Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-            System.err)
+                Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
             .apply(
                 new MockEnvironment()
                     .withProperty("logging.file.name", log.toString())
@@ -250,8 +244,7 @@ class LogFileRollTest {
   void rollsNothingWhenNoLogFileIsConfigured() {
     assertThat(
             new LogFileRoll(
-                Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-                System.err)
+                    Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
                 .apply(new MockEnvironment()))
         .isFalse();
   }
@@ -260,8 +253,7 @@ class LogFileRollTest {
   void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {
     assertThat(
             new LogFileRoll(
-                Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
-                System.err)
+                    Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
                 .getOrder())
         .isGreaterThan(new EnvironmentPostProcessorApplicationListener().getOrder())
         .isLessThan(new LoggingApplicationListener().getOrder());

@@ -76,11 +76,10 @@ record CheckerRegion(CheckerRole role) implements Role {
               CheckerPhase.READING,
               "deployed change left, " + under + " beneath",
               move -> !endsTurn(move))
-          .when(
-              (others, move) ->
-                  others.get(beneath()) == under
-                      && others.get(TaskChart.LIFECYCLE) == DEPLOYED
-                      && landing.land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
+          .when((others, move) ->
+              others.get(beneath()) == under
+                  && others.get(TaskChart.LIFECYCLE) == DEPLOYED
+                  && landing.land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
           .emit(new TaskEffect.ClosesCheckerRead(id()))
           .to(under);
     }
@@ -152,10 +151,9 @@ record CheckerRegion(CheckerRole role) implements Role {
   public void declareLifecycleEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart
         .onMatching(TaskChart.LIFECYCLE, IN_PROGRESS, id() + " round declined", this::declinesRound)
-        .when(
-            (others, move) ->
-                others.get(region()) == CheckerPhase.ROUND_OPEN
-                    && others.get(TaskChart.TURN) == TurnKind.OPEN)
+        .when((others, move) ->
+            others.get(region()) == CheckerPhase.ROUND_OPEN
+                && others.get(TaskChart.TURN) == TurnKind.OPEN)
         .emit(new TaskEffect.DeclinesRound(id()))
         .to(DEPLOYED);
   }

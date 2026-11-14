@@ -162,9 +162,7 @@ class ProjectRoutingTest {
 
   @Test
   void showsTheRouterOnlyThePlacementsSomethingConfirmed() {
-    when(finished.all())
-        .thenReturn(
-            List.of(quoteImportByApi, guessedByRouter));
+    when(finished.all()).thenReturn(List.of(quoteImportByApi, guessedByRouter));
 
     routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
@@ -214,9 +212,7 @@ class ProjectRoutingTest {
   @Test
   void retiresTheRuleHumanHasJustContradicted() {
     memory.remember("ABC items about quote import", "web");
-    when(finished.all())
-        .thenReturn(
-            List.of(quoteImportByRouter));
+    when(finished.all()).thenReturn(List.of(quoteImportByRouter));
     when(assistants
             .routing()
             .staleRule("ABC-42", "api", List.of("ABC items about quote import -> web")))
@@ -231,9 +227,7 @@ class ProjectRoutingTest {
   @Test
   void asksNothingWhereTheRouterHadNeverPlacedThatItemItself() {
     memory.remember("ABC items about quote import", "web");
-    when(finished.all())
-        .thenReturn(
-            List.of(quoteImportByHuman));
+    when(finished.all()).thenReturn(List.of(quoteImportByHuman));
 
     routing.placedByHand("ABC-42", "api");
 
@@ -254,9 +248,7 @@ class ProjectRoutingTest {
   @Test
   void asksNothingWhereOnlyAnotherItemWasPlacedByTheRouter() {
     memory.remember("ABC items about quote import", "web");
-    when(finished.all())
-        .thenReturn(
-            List.of(quoteImportByHuman, otherByRouter));
+    when(finished.all()).thenReturn(List.of(quoteImportByHuman, otherByRouter));
 
     routing.placedByHand("ABC-42", "api");
 

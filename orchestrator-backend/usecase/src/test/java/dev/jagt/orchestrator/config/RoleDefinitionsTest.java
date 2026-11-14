@@ -123,52 +123,49 @@ class RoleDefinitionsTest {
 
   @Test
   void refusesPointKindTheVocabularyDoesNotHold() {
-    assertThatThrownBy(
-            () ->
-                RoleDefinitions.compile(
-                    """
-                    id: x
-                    name: X
-                    model: m
-                    trigger: [deployed]
-                    oncePer: deploy
-                    outcomes: [round]
-                    points: [exploded]
-                    """))
+    assertThatThrownBy(() ->
+            RoleDefinitions.compile(
+                """
+                id: x
+                name: X
+                model: m
+                trigger: [deployed]
+                oncePer: deploy
+                outcomes: [round]
+                points: [exploded]
+                """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("exploded");
   }
 
   @Test
   void refusesTriggerWordTheVocabularyDoesNotHold() {
-    assertThatThrownBy(
-            () ->
-                RoleDefinitions.compile(
-                    """
-                    id: x
-                    name: X
-                    model: m
-                    trigger: [whenever]
-                    oncePer: deploy
-                    outcomes: [round]
-                    """))
+    assertThatThrownBy(() ->
+            RoleDefinitions.compile(
+                """
+                id: x
+                name: X
+                model: m
+                trigger: [whenever]
+                oncePer: deploy
+                outcomes: [round]
+                """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("whenever");
   }
 
   @Test
   void checkerTriggerWithoutDeployedIsRefused() {
-    assertThatThrownBy(
-            () ->
-                RoleDefinitions.compile(
-                    """
-                    id: x
-                    name: X
-                    model: m
-                    trigger: [pipelines-green]
-                    oncePer: deploy
-                    outcomes: [round]
-                    """))
+    assertThatThrownBy(() ->
+            RoleDefinitions.compile(
+                """
+                id: x
+                name: X
+                model: m
+                trigger: [pipelines-green]
+                oncePer: deploy
+                outcomes: [round]
+                """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("deployed");
   }
@@ -176,13 +173,12 @@ class RoleDefinitionsTest {
   @ParameterizedTest
   @ValueSource(strings = {"cli: [Read]", "allow: [Read]", "refuse: [Write]"})
   void refusesToolsKeyThatMovedNamingTheNewOnes(String oldKey) {
-    assertThatThrownBy(
-            () ->
-                RoleDefinitions.compile(
-                    "id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
-                        + "oncePer: deploy\noutcomes: [round]\ntools:\n  "
-                        + oldKey
-                        + "\n"))
+    assertThatThrownBy(() ->
+            RoleDefinitions.compile(
+                "id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
+                    + "oncePer: deploy\noutcomes: [round]\ntools:\n  "
+                    + oldKey
+                    + "\n"))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("tools.shell")
         .hasMessageContaining("tools.refuseShell")
@@ -192,17 +188,16 @@ class RoleDefinitionsTest {
 
   @Test
   void refusesRoleWhoseReadHasNoOutcome() {
-    assertThatThrownBy(
-            () ->
-                RoleDefinitions.compile(
-                    """
-                    id: x
-                    name: X
-                    model: m
-                    trigger: [deployed]
-                    oncePer: deploy
-                    outcomes: []
-                    """))
+    assertThatThrownBy(() ->
+            RoleDefinitions.compile(
+                """
+                id: x
+                name: X
+                model: m
+                trigger: [deployed]
+                oncePer: deploy
+                outcomes: []
+                """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("no exit");
   }

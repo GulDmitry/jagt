@@ -39,9 +39,8 @@ class SwitchJudgementsTest {
 
     assertThat(violations)
         .singleElement()
-        .satisfies(
-            violation ->
-                assertThat(violation.expected()).contains("autoplan").contains("yes — <why>"));
+        .satisfies(violation ->
+            assertThat(violation.expected()).contains("autoplan").contains("yes — <why>"));
   }
 
   @Test

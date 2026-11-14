@@ -33,8 +33,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class RequestClosedReadTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
   private final ReviewReader reader = mock(ReviewReader.class);

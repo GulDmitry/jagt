@@ -843,12 +843,11 @@ class TaskStateTest {
                 TaskState.class);
 
     assertThat(legacy.currentConflict())
-        .hasValueSatisfying(
-            conflict -> {
-              assertThat(conflict.progress()).isEqualTo(new Conflict.Progress(7, 0, "d"));
-              assertThat(conflict.told()).isEqualTo(new Conflict.Told(8, "stuck"));
-              assertThat(conflict.movedAt()).isEqualTo(6);
-            });
+        .hasValueSatisfying(conflict -> {
+          assertThat(conflict.progress()).isEqualTo(new Conflict.Progress(7, 0, "d"));
+          assertThat(conflict.told()).isEqualTo(new Conflict.Told(8, "stuck"));
+          assertThat(conflict.movedAt()).isEqualTo(6);
+        });
   }
 
   @Test
@@ -903,11 +902,10 @@ class TaskStateTest {
                 TaskState.class);
 
     assertThat(Objects.requireNonNull(old.deployment()).conflictedTarget())
-        .hasValueSatisfying(
-            target -> {
-              assertThat(target.project()).isEqualTo("java");
-              assertThat(Objects.requireNonNull(target.progress().conflict()).since()).isEqualTo(3);
-            });
+        .hasValueSatisfying(target -> {
+          assertThat(target.project()).isEqualTo("java");
+          assertThat(Objects.requireNonNull(target.progress().conflict()).since()).isEqualTo(3);
+        });
   }
 
   @Test

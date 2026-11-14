@@ -62,38 +62,34 @@ public class AutoReviewScheduler implements Job {
     long now = clock.millis();
     var tasks = stateService.tasks();
     SweepFetches fetches = SweepFetches.create();
-    tasks.forEach(
-        (taskId, task) -> {
-          // A task the poller has no business with any more re-arms its pings.
-          if (!cadence.polls(task)) {
-            ToldOnce told = task.toldOrNone();
-            if (told.has(ToldOnce.Kind.AUTO_REVIEW_WINDOW)
-                || told.has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE)) {
-              stateService.reduce(
-                  taskId,
-                  (reducer, t) ->
-                      reducer.untold(
-                          t,
-                          ToldOnce.Kind.AUTO_REVIEW_WINDOW,
-                          ToldOnce.Kind.AUTO_REVIEW_UNREADABLE));
-            }
-            return;
+    tasks.forEach((taskId, task) -> {
+      // A task the poller has no business with any more re-arms its pings.
+      if (!cadence.polls(task)) {
+        ToldOnce told = task.toldOrNone();
+        if (told.has(ToldOnce.Kind.AUTO_REVIEW_WINDOW)
+            || told.has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE)) {
+          stateService.reduce(
+              taskId,
+              (reducer, t) ->
+                  reducer.untold(
+                      t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE));
+        }
+        return;
+      }
+      switch (decide(task, cadence, now)) {
+        case WINDOW_ELAPSED -> {
+          // Keyed by the WINDOW: another round starts a new one without ever leaving
+          // CI_POLLING.
+          String window = String.valueOf(task.mrCreatedAt());
+          if (!task.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_WINDOW, window)) {
+            stateService.reduce(
+                taskId, (reducer, t) -> reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
           }
-          switch (decide(task, cadence, now)) {
-            case WINDOW_ELAPSED -> {
-              // Keyed by the WINDOW: another round starts a new one without ever leaving
-              // CI_POLLING.
-              String window = String.valueOf(task.mrCreatedAt());
-              if (!task.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_WINDOW, window)) {
-                stateService.reduce(
-                    taskId,
-                    (reducer, t) -> reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
-              }
-            }
-            case POLL -> poll(taskId, task.alias(), task.mrCreatedAt(), fetches);
-            default -> {}
-          }
-        });
+        }
+        case POLL -> poll(taskId, task.alias(), task.mrCreatedAt(), fetches);
+        default -> {}
+      }
+    });
   }
 
   /** Pure poll decision, taken from the WATCH every human surface shows. */

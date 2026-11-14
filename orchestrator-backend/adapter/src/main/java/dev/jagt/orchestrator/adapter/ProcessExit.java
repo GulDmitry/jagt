@@ -22,15 +22,14 @@ public class ProcessExit implements Exit {
     log.atInfo().setMessage("jagt exits").addKeyValue("graceMs", GRACE.toMillis()).log();
     Thread.ofPlatform()
         .name("jagt-exit")
-        .start(
-            () -> {
-              try {
-                Thread.sleep(GRACE);
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-              }
-              System.exit(SpringApplication.exit(context, () -> 0));
-            });
+        .start(() -> {
+          try {
+            Thread.sleep(GRACE);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          System.exit(SpringApplication.exit(context, () -> 0));
+        });
   }
 }

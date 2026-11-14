@@ -27,12 +27,11 @@ final class Validation {
         .map(Edge::region)
         .distinct()
         .filter(name -> !storedNames.contains(name))
-        .forEach(
-            name ->
-                problems.add(
-                    derivedNames.contains(name)
-                        ? "derived region " + name + " has a transition"
-                        : "transition on unknown region " + name));
+        .forEach(name ->
+            problems.add(
+                derivedNames.contains(name)
+                    ? "derived region " + name + " has a transition"
+                    : "transition on unknown region " + name));
     stored.forEach(region -> problems.addAll(problemsOf(region, transitions)));
     return problems;
   }
@@ -42,16 +41,15 @@ final class Validation {
         transitions.stream().filter(t -> t.region().equals(region.name())).toList();
     Set<Enum<?>> reached = reachable(region.initial(), own);
     return region.states().stream()
-        .flatMap(
-            state ->
-                Stream.of(
-                    !region.finals().contains(state)
-                            && own.stream().noneMatch(t -> t.from().equals(state))
-                        ? "state " + region.name() + "." + state.name() + " has no way out"
-                        : "",
-                    reached.contains(state)
-                        ? ""
-                        : "state " + region.name() + "." + state.name() + " is unreachable"))
+        .flatMap(state ->
+            Stream.of(
+                !region.finals().contains(state)
+                        && own.stream().noneMatch(t -> t.from().equals(state))
+                    ? "state " + region.name() + "." + state.name() + " has no way out"
+                    : "",
+                reached.contains(state)
+                    ? ""
+                    : "state " + region.name() + "." + state.name() + " is unreachable"))
         .filter(problem -> !problem.isEmpty())
         .toList();
   }

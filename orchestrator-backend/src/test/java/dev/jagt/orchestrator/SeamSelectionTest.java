@@ -39,34 +39,30 @@ class SeamSelectionTest {
     Map<String, Set<String>> direct = new HashMap<>();
     Set<String> concrete = new HashSet<>();
     sourcesUnder(Path.of("adapter/src/main/java"))
-        .forEach(
-            file -> {
-              String source = read(file);
-              Matcher header = HEADER.matcher(source.replaceAll("(?s)/\\*.*?\\*/", ""));
-              if (header.find() && header.group(1).equals("class")) {
-                String name = header.group(2);
-                sources.put(name, source);
-                supers.put(name, header.group(3));
-                direct.put(name, interfaces(header.group(4)));
-                if (!header.group(0).contains("abstract")) {
-                  concrete.add(name);
-                }
-              }
-            });
-    concrete.forEach(
-        name ->
-            portsOf(name, supers, direct).stream()
-                .filter(ports::contains)
-                .forEach(
-                    port -> adapters.computeIfAbsent(port, key -> new ArrayList<>()).add(name)));
+        .forEach(file -> {
+          String source = read(file);
+          Matcher header = HEADER.matcher(source.replaceAll("(?s)/\\*.*?\\*/", ""));
+          if (header.find() && header.group(1).equals("class")) {
+            String name = header.group(2);
+            sources.put(name, source);
+            supers.put(name, header.group(3));
+            direct.put(name, interfaces(header.group(4)));
+            if (!header.group(0).contains("abstract")) {
+              concrete.add(name);
+            }
+          }
+        });
+    concrete.forEach(name ->
+        portsOf(name, supers, direct).stream()
+            .filter(ports::contains)
+            .forEach(port -> adapters.computeIfAbsent(port, key -> new ArrayList<>()).add(name)));
 
     List<String> unselected =
         adapters.entrySet().stream()
             .filter(port -> port.getValue().size() > 1 && !RUN_TOGETHER.contains(port.getKey()))
             .flatMap(port -> port.getValue().stream().map(name -> port.getKey() + " <- " + name))
-            .filter(
-                line ->
-                    !SELECTED.matcher(sources.get(line.substring(line.indexOf("<- ") + 3))).find())
+            .filter(line ->
+                !SELECTED.matcher(sources.get(line.substring(line.indexOf("<- ") + 3))).find())
             .sorted()
             .toList();
 

@@ -142,15 +142,12 @@ public record TaskView(
       String id, TaskState task, Map<String, String> deployBranches) {
     List<String> targets =
         task.repos().stream()
-            .map(
-                repo -> {
-                  String branch = deployBranches.get(repo.project());
-                  return repo.project()
-                      + " → "
-                      + (branch == null || branch.isBlank()
-                          ? "no deployBranch in jagt.yml"
-                          : branch);
-                })
+            .map(repo -> {
+              String branch = deployBranches.get(repo.project());
+              return repo.project()
+                  + " → "
+                  + (branch == null || branch.isBlank() ? "no deployBranch in jagt.yml" : branch);
+            })
             .toList();
     Map<String, String> confirmations = new LinkedHashMap<>();
     for (TaskAction action : TaskAction.values()) {
@@ -312,8 +309,7 @@ public record TaskView(
       Map<String, String> deployBranches) {
     boolean draftedReplies = round.draftedReplies();
     Stop stop = Stop.of(task.stop());
-    Facts projected =
-        Facts.projected(task).withReach(round.reach());
+    Facts projected = Facts.projected(task).withReach(round.reach());
     AutoReviewWatch watch = autoReview == null ? AutoReviewWatch.none() : autoReview;
     Move move =
         Move.forTask(
@@ -329,19 +325,17 @@ public record TaskView(
     List<ActionView> actions =
         move.actions().stream()
             .filter(action -> !action.typed())
-            .map(
-                action ->
-                    new ActionView(
-                        action.id(),
-                        action.label(),
-                        action.hint(),
-                        action.key(),
-                        new ActionView.Emphasis(
-                            action == move.primary() && move.owner() == Owner.YOU,
-                            deployed && action == TaskAction.DEPLOY,
-                            action.readOnly()),
-                        new ActionView.Placement(
-                            action.group().id(), action.onRow(), action.apart())))
+            .map(action ->
+                new ActionView(
+                    action.id(),
+                    action.label(),
+                    action.hint(),
+                    action.key(),
+                    new ActionView.Emphasis(
+                        action == move.primary() && move.owner() == Owner.YOU,
+                        deployed && action == TaskAction.DEPLOY,
+                        action.readOnly()),
+                    new ActionView.Placement(action.group().id(), action.onRow(), action.apart())))
             .toList();
     return new TaskView(
         new Identity(
@@ -359,14 +353,13 @@ public record TaskView(
             move.attention(),
             task.statusSince(),
             task.history().stream()
-                .map(
-                    change ->
-                        new Step(
-                            change.status(),
-                            change.status().label(),
-                            change.at(),
-                            change.origin(),
-                            change.why()))
+                .map(change ->
+                    new Step(
+                        change.status(),
+                        change.status().label(),
+                        change.at(),
+                        change.origin(),
+                        change.why()))
                 .toList(),
             stop),
         new Ask(

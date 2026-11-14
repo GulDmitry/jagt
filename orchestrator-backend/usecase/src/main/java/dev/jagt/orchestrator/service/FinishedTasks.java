@@ -70,17 +70,16 @@ public class FinishedTasks {
   public Optional<FinishedTask> record(String taskId) {
     return stateService
         .task(taskId)
-        .map(
-            task -> {
-              FinishedTask finished =
-                  FinishedTask.of(
-                      taskId,
-                      task,
-                      clock.millis(),
-                      reviews.of(task).map(MasterReview.Verdict::said).orElse(null));
-              append(finished);
-              return finished;
-            });
+        .map(task -> {
+          FinishedTask finished =
+              FinishedTask.of(
+                  taskId,
+                  task,
+                  clock.millis(),
+                  reviews.of(task).map(MasterReview.Verdict::said).orElse(null));
+          append(finished);
+          return finished;
+        });
   }
 
   /**

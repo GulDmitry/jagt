@@ -32,13 +32,11 @@ public final class MutationRuns {
       MutationBook book, String names, long seed, String modes, int runs) {
     List<Mutation> chosen = names.isBlank() ? List.of(book.pick(seed)) : book.named(names);
     return chosen.stream()
-        .flatMap(
-            mutation ->
-                StandMode.selected(modes).stream()
-                    .flatMap(
-                        mode ->
-                            IntStream.rangeClosed(1, runs)
-                                .mapToObj(index -> new Run(mutation, seed, mode, index))))
+        .flatMap(mutation ->
+            StandMode.selected(modes).stream()
+                .flatMap(mode ->
+                    IntStream.rangeClosed(1, runs)
+                        .mapToObj(index -> new Run(mutation, seed, mode, index))))
         .toList();
   }
 }

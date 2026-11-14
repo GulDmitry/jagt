@@ -29,9 +29,8 @@ public class Routes {
     List<Routed> routed = new ArrayList<>();
     for (RouteDef route : notifications.routeDefs().getOrDefault(point, List.of())) {
       address(notifications, route.channel())
-          .ifPresent(
-              channel ->
-                  routed.add(new Routed(channel, orEmpty(route.title()), orEmpty(route.text()))));
+          .ifPresent(channel ->
+              routed.add(new Routed(channel, orEmpty(route.title()), orEmpty(route.text()))));
     }
     return routed;
   }

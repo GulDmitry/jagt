@@ -314,8 +314,7 @@ class RevertServiceTest {
 
     @Test
     void leavesTheOtherRepositoryLiveWhenThePickedMergeIsOneOfSeveral() {
-      when(facts.mergeCandidates(Path.of("/repo/api"), "dev", "ABC-1"))
-          .thenReturn(List.of(listed));
+      when(facts.mergeCandidates(Path.of("/repo/api"), "dev", "ABC-1")).thenReturn(List.of(listed));
 
       Outcome outcome = service.revertPicked("a1", "aaaaaaa");
 

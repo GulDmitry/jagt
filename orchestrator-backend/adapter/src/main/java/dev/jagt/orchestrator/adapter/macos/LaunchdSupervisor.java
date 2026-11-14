@@ -71,8 +71,7 @@ public class LaunchdSupervisor implements Supervisor {
       return new Supervision.Refused("nothing is installed: press `supervise` first");
     }
     try {
-      processes.runDetached(
-          null, List.of(launchctl(), "kickstart", "-k", domain() + "/" + LABEL));
+      processes.runDetached(null, List.of(launchctl(), "kickstart", "-k", domain() + "/" + LABEL));
       return new Supervision.Done("restarting: the board reloads once it answers");
     } catch (RuntimeException e) {
       return failed("restart", e);
@@ -111,8 +110,11 @@ public class LaunchdSupervisor implements Supervisor {
         "<dict>",
         "  <key>Label</key><string>" + LABEL + "</string>",
         "  <key>ProgramArguments</key>",
-        "  <array><string>" + escaped(java) + "</string><string>-jar</string><string>"
-            + escaped(jar.toString()) + "</string></array>",
+        "  <array><string>"
+            + escaped(java)
+            + "</string><string>-jar</string><string>"
+            + escaped(jar.toString())
+            + "</string></array>",
         "  <key>WorkingDirectory</key><string>"
             + escaped(host.workingDir().toString())
             + "</string>",

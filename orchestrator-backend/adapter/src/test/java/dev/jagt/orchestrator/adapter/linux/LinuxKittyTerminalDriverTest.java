@@ -44,14 +44,13 @@ class LinuxKittyTerminalDriverTest {
   void leavesRaisingTheWindowToTheWindowManager() {
     ProcessRunner runner = mock(ProcessRunner.class);
 
-    assertThatCode(
-            () ->
-                new LinuxKittyTerminalDriver(
-                        runner,
-                        OrchestratorProperties.defaults(),
-                        new KittyOptions("kitty", ""),
-                        Clock.systemUTC())
-                    .bringToFront())
+    assertThatCode(() ->
+            new LinuxKittyTerminalDriver(
+                    runner,
+                    OrchestratorProperties.defaults(),
+                    new KittyOptions("kitty", ""),
+                    Clock.systemUTC())
+                .bringToFront())
         .doesNotThrowAnyException();
     verifyNoInteractions(runner);
   }

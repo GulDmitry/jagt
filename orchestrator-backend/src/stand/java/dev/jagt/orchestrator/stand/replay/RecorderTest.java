@@ -17,20 +17,18 @@ class RecorderTest {
     List<RecordingLine> recorded = Recorder.record(root, Duration.ofSeconds(5));
 
     assertThat(recorded)
-        .extracting(
-            line ->
-                switch (line) {
-                  case RecordingLine.Read read -> "read " + read.kind();
-                  case RecordingLine.Called called ->
-                      "call " + called.turn() + " " + called.arguments().path("status").asString();
-                  case RecordingLine.Wrote wrote ->
-                      "tree " + wrote.turn() + " " + wrote.files().keySet();
-                  case RecordingLine.Opened opened -> "turn " + opened.turn() + " " + opened.step();
-                  case RecordingLine.Judged judged ->
-                      "verdict " + judged.round() + " " + judged.role();
-                  case RecordingLine.Pushed pushed -> "push " + pushed.turn();
-                  case RecordingLine.Answered answered -> "answer " + answered.question();
-                })
+        .extracting(line ->
+            switch (line) {
+              case RecordingLine.Read read -> "read " + read.kind();
+              case RecordingLine.Called called ->
+                  "call " + called.turn() + " " + called.arguments().path("status").asString();
+              case RecordingLine.Wrote wrote ->
+                  "tree " + wrote.turn() + " " + wrote.files().keySet();
+              case RecordingLine.Opened opened -> "turn " + opened.turn() + " " + opened.step();
+              case RecordingLine.Judged judged -> "verdict " + judged.round() + " " + judged.role();
+              case RecordingLine.Pushed pushed -> "push " + pushed.turn();
+              case RecordingLine.Answered answered -> "answer " + answered.question();
+            })
         .containsExactly(
             "read TICKET_READ",
             "call 0 IN_PROGRESS",

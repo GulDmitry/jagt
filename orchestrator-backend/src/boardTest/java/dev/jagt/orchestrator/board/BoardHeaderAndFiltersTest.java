@@ -195,11 +195,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void rowTitleThatFitsItsRowShowsNoHover() {
-    state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
-            .title("Short")
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title("Short").build());
     Page page = openBoard();
 
     page.locator("#tasks .row-title").hover();
@@ -210,11 +206,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Test
   void theOpenTaskShowsItsWholeLine() {
     String reason = "a merge conflict in a file whose path runs on ".repeat(4);
-    state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.DEPLOY_CONFLICT)
-            .message(reason)
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.DEPLOY_CONFLICT).message(reason).build());
 
     Page page = openLiveBoard();
 
@@ -255,10 +247,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Test
   void saysThatFiltersAreHidingEverythingRatherThanShowingBlankBoard() {
     state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
-            .title("Widget layout is off")
-            .build());
+        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title("Widget layout is off").build());
 
     Page page = openLiveBoard();
     page.locator("#filter").fill("nothing matches this");
@@ -283,15 +272,10 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Test
   void narrowsTheBoardToWhateverMatchesTheTypedText() {
     state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
-            .title("Widget layout is off")
-            .build());
+        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title("Widget layout is off").build());
     state.putTask(
         "ABC-2",
-        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
-            .title("Invoice totals are wrong")
-            .build());
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS).title("Invoice totals are wrong").build());
 
     Page page = openLiveBoard();
     page.locator("#filter").fill("invoice");
@@ -378,19 +362,13 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     jobs.runNow("breakable");
     page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
     state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
-            .lastActiveTimestamp(now)
-            .build());
+        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).lastActiveTimestamp(now).build());
     page.locator("#jobs-pulse").hover();
     assertThat(page.locator("#tip")).containsText("next run: 11m");
 
     page.clock().setFixedTime(now - Duration.ofSeconds(330).toMillis());
     state.putTask(
-        "ABC-2",
-        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
-            .lastActiveTimestamp(now)
-            .build());
+        "ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).lastActiveTimestamp(now).build());
 
     assertThat(page.locator("#tasks .row")).hasCount(2);
     assertThat(page.locator("#tip")).containsText("next run: 6m");

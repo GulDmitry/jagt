@@ -44,11 +44,10 @@ class RoleFolderReachTest {
 
     assertThat(reach.standing())
         .singleElement()
-        .satisfies(
-            lost -> {
-              assertThat(lost.host()).isEqualTo("roles/acceptance/role.yml");
-              assertThat(lost.said()).contains(said);
-            });
+        .satisfies(lost -> {
+          assertThat(lost.host()).isEqualTo("roles/acceptance/role.yml");
+          assertThat(lost.said()).contains(said);
+        });
   }
 
   @Test

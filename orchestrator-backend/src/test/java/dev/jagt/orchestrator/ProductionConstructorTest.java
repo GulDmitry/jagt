@@ -49,10 +49,9 @@ class ProductionConstructorTest {
         "is never called from main",
         constructor ->
             constructor.getCallsOfSelf().stream()
-                .allMatch(
-                    call ->
-                        call.getOrigin() instanceof JavaConstructor
-                            && call.getOriginOwner().equals(constructor.getOwner())));
+                .allMatch(call ->
+                    call.getOrigin() instanceof JavaConstructor
+                        && call.getOriginOwner().equals(constructor.getOwner())));
   }
 
   private static boolean springOrRecordOwns(JavaConstructor constructor) {

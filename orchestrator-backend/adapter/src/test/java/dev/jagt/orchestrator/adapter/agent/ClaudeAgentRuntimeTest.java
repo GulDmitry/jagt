@@ -32,8 +32,7 @@ class ClaudeAgentRuntimeTest {
   void launchesTheClaudeCliWithTheBootstrapPromptQuoted(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
-        root.resolve("roles/session/brief.md"),
-        "## start\n\nRead AGENTS.md and work\n");
+        root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
@@ -147,7 +146,8 @@ class ClaudeAgentRuntimeTest {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
 
-    claudeRuntime().build(Clock.systemUTC())
+    claudeRuntime()
+        .build(Clock.systemUTC())
         .provisionWorktree(
             AgentWorktree.of(worktree, root)
                 .withSandbox(
@@ -172,9 +172,10 @@ class ClaudeAgentRuntimeTest {
 
     AgentRuntime.Admission admission = runtime.admit(worktree, deploy);
 
-    var permissions = new JsonMapper()
-        .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-        .path("permissions");
+    var permissions =
+        new JsonMapper()
+            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+            .path("permissions");
     List<String> allow = new ArrayList<>();
     permissions.path("allow").forEach(n -> allow.add(n.asString("")));
     List<String> directories = new ArrayList<>();
@@ -213,9 +214,10 @@ class ClaudeAgentRuntimeTest {
 
     runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
 
-    var permissions = new JsonMapper()
-        .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-        .path("permissions");
+    var permissions =
+        new JsonMapper()
+            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+            .path("permissions");
     List<String> allow = new ArrayList<>();
     permissions.path("allow").forEach(n -> allow.add(n.asString("")));
     assertThat(allow).contains("Read(//src/ABC-1-deploy/**)", "Edit(//src/ABC-1-deploy/**)");
@@ -424,8 +426,9 @@ class ClaudeAgentRuntimeTest {
         .build(Clock.systemUTC())
         .provisionWorktree(AgentWorktree.of(worktree, root));
 
-    var settings = new JsonMapper()
-        .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")));
+    var settings =
+        new JsonMapper()
+            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")));
     assertThat(settings.path("outputStyle").asString("")).isEqualTo("team:Engineer");
     assertThat(settings.path("enabledPlugins").path("lsp@market").asBoolean(true)).isFalse();
   }
@@ -794,8 +797,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void isNotPastTheCacheLifetimeAtTheMomentItsLastActivityExactlyFillsIt() {
-    var runtime =
-        claudeRuntime().build(Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+    var runtime = claudeRuntime().build(Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
     assertThat(runtime.pastCacheLifetime(0L, Duration.ofSeconds(1))).isFalse();
     assertThat(runtime.pastCacheLifetime(0L, Duration.ofMillis(999L))).isTrue();
@@ -811,10 +813,11 @@ class ClaudeAgentRuntimeTest {
     runtime.admit(worktree, deploy);
     runtime.admit(worktree, deploy);
 
-    var allow = new JsonMapper()
-        .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-        .path("permissions")
-        .path("allow");
+    var allow =
+        new JsonMapper()
+            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+            .path("permissions")
+            .path("allow");
     List<String> reads = new ArrayList<>();
     allow.forEach(n -> reads.add(n.asString("")));
     assertThat(reads).filteredOn(rule -> rule.startsWith("Read(/")).hasSize(1);
@@ -885,17 +888,14 @@ class ClaudeAgentRuntimeTest {
     void provision() throws Exception {
       worktree = root.resolve("ABC-1-proj");
       worktree.toFile().mkdirs();
-      claudeRuntime()
-          .build(Clock.systemUTC())
-          .provisionWorktree(AgentWorktree.of(worktree, root));
+      claudeRuntime().build(Clock.systemUTC()).provisionWorktree(AgentWorktree.of(worktree, root));
       settings =
           new JsonMapper()
               .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")));
     }
 
     @Test
-    void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller()
-        throws Exception {
+    void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller() throws Exception {
       var config =
           new JsonMapper()
               .readTree(Files.readString(worktree.resolve(".mcp.json")))
@@ -913,8 +913,7 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void aliasesClaudeMdToTheSharedSystemKnowledgeFileSoOnlyOneCopyExists()
-        throws Exception {
+    void aliasesClaudeMdToTheSharedSystemKnowledgeFileSoOnlyOneCopyExists() throws Exception {
       Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "system knowledge");
 
       assertThat(Files.readString(worktree.resolve("CLAUDE.md"))).isEqualTo("system knowledge");
@@ -949,24 +948,16 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void reportsTurnEndedOnAnApiErrorThroughItsOwnUnmatchedEvent()
-        throws Exception {
-      var hook = settings
-          .path("hooks")
-          .path("StopFailure")
-          .path(0);
+    void reportsTurnEndedOnAnApiErrorThroughItsOwnUnmatchedEvent() throws Exception {
+      var hook = settings.path("hooks").path("StopFailure").path(0);
       assertThat(hook.has("matcher")).isFalse();
       assertThat(hook.path("hooks").path(0).path("command").asString(""))
           .contains("/api/agent/session/turn-failure", worktree.toString());
     }
 
     @Test
-    void reportsPermissionPromptThroughItsOwnEventToTheEndpointAnsweringNothing()
-        throws Exception {
-      var hook = settings
-          .path("hooks")
-          .path("PermissionRequest")
-          .path(0);
+    void reportsPermissionPromptThroughItsOwnEventToTheEndpointAnsweringNothing() throws Exception {
+      var hook = settings.path("hooks").path("PermissionRequest").path(0);
       assertThat(hook.has("matcher")).isFalse();
       assertThat(hook.path("hooks").path(0).path("command").asString(""))
           .contains("/api/agent/session/permission", worktree.toString());
@@ -974,10 +965,7 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void writesTheGateAsHookOnTheShellAndTheFileWritingTools() throws Exception {
-      var gate = settings
-          .path("hooks")
-          .path("PreToolUse")
-          .path(0);
+      var gate = settings.path("hooks").path("PreToolUse").path(0);
       assertThat(gate.path("matcher").asString(""))
           .isEqualTo("Bash|Edit|Write|MultiEdit|NotebookEdit");
       assertThat(gate.path("hooks").path(0).path("command").asString(""))
@@ -985,11 +973,8 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void asksJagtBeforeTypedPromptReachesTheModelAndWaitsLongerForTheAnswer()
-        throws Exception {
-      var hook = settings
-          .path("hooks")
-          .path("UserPromptSubmit");
+    void asksJagtBeforeTypedPromptReachesTheModelAndWaitsLongerForTheAnswer() throws Exception {
+      var hook = settings.path("hooks").path("UserPromptSubmit");
       assertThat(hook).hasSize(1);
       assertThat(hook.path(0).path("hooks").path(0).path("command").asString(""))
           .contains("/api/agent/session/prompt", "-m 10", worktree.toString());
@@ -1017,8 +1002,7 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void writesTheBriefingBesideTheRepositorysOwnClaudeMdInsteadOfReplacingIt()
-        throws Exception {
+    void writesTheBriefingBesideTheRepositorysOwnClaudeMdInsteadOfReplacingIt() throws Exception {
       assertThat(briefing).isEqualTo(worktree.resolve("CLAUDE.local.md"));
       assertThat(Files.readString(worktree.resolve("CLAUDE.md"))).isEqualTo("project rules");
     }

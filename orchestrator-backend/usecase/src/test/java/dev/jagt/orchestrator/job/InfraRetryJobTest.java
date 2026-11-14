@@ -45,8 +45,7 @@ class InfraRetryJobTest {
 
   @Test
   void reRunsPipelineWhoseFailedJobsStillDiedOnInfrastructure() {
-    when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
-        .thenReturn(diedOnInfrastructure);
+    when(pipelines.failedJobs("shop", "https://host.invalid/p/1")).thenReturn(diedOnInfrastructure);
     when(pipelines.retryFailed("shop", "https://host.invalid/p/1"))
         .thenReturn(new Answer<>(Optional.of("pending"), TokenUsage.NONE));
 
@@ -117,8 +116,7 @@ class InfraRetryJobTest {
 
   @Test
   void stopsTheTaskWithTheHostsOwnWordsWhenItRefusesTheRetry() {
-    when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
-        .thenReturn(diedOnInfrastructure);
+    when(pipelines.failedJobs("shop", "https://host.invalid/p/1")).thenReturn(diedOnInfrastructure);
     when(pipelines.retryFailed("shop", "https://host.invalid/p/1"))
         .thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1: 403 Forbidden"));
 

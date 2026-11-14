@@ -20,10 +20,9 @@ public record GitStateGuard(TaskAction action, TrustedGitState trusted)
   public Outcome around(String taskId, Supplier<Outcome> work) {
     trusted
         .distrust(taskId)
-        .ifPresent(
-            why -> {
-              throw Refusal.byState(action.id() + " " + taskId + " refused: " + why);
-            });
+        .ifPresent(why -> {
+          throw Refusal.byState(action.id() + " " + taskId + " refused: " + why);
+        });
     return work.get();
   }
 }

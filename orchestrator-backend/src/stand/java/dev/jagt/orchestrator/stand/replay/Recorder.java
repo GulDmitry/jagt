@@ -70,15 +70,13 @@ public final class Recorder {
     Map<String, JsonNode> read = new LinkedHashMap<>();
     snapshots.stream()
         .filter(snapshot -> snapshot.has("review"))
-        .filter(
-            snapshot ->
-                !snapshot
-                    .path("review")
-                    .path("reads")
-                    .equals(
-                        read.put(
-                            snapshot.path("task").asString(),
-                            snapshot.path("review").path("reads"))))
+        .filter(snapshot ->
+            !snapshot
+                .path("review")
+                .path("reads")
+                .equals(
+                    read.put(
+                        snapshot.path("task").asString(), snapshot.path("review").path("reads"))))
         .forEach(snapshot -> judged(snapshot, lines));
     answered(snapshots, lines);
     return lines;
@@ -92,21 +90,18 @@ public final class Recorder {
     Map<String, Integer> seen = new HashMap<>();
     snapshots.stream()
         .filter(Recorder::decisions)
-        .forEach(
-            snapshot -> {
-              List<String> written = snapshot.path("content").asString().lines().toList();
-              written
-                  .subList(seen.getOrDefault(snapshot.path("task").asString(), 0), written.size())
-                  .stream()
-                  .filter(line -> line.startsWith(ASKED))
-                  .forEach(
-                      line -> {
-                        String[] parts = line.substring(ASKED.length()).split(DECIDED, 2);
-                        lines.add(
-                            new RecordingLine.Answered(parts[0], parts.length > 1 ? parts[1] : ""));
-                      });
-              seen.put(snapshot.path("task").asString(), written.size());
-            });
+        .forEach(snapshot -> {
+          List<String> written = snapshot.path("content").asString().lines().toList();
+          written
+              .subList(seen.getOrDefault(snapshot.path("task").asString(), 0), written.size())
+              .stream()
+              .filter(line -> line.startsWith(ASKED))
+              .forEach(line -> {
+                String[] parts = line.substring(ASKED.length()).split(DECIDED, 2);
+                lines.add(new RecordingLine.Answered(parts[0], parts.length > 1 ? parts[1] : ""));
+              });
+          seen.put(snapshot.path("task").asString(), written.size());
+        });
   }
 
   private static Optional<RecordingLine> moveOf(BackendEvents.Event event) {
@@ -199,13 +194,12 @@ public final class Recorder {
     JsonNode review = snapshot.path("review");
     review
         .path("reads")
-        .forEach(
-            read ->
-                lines.add(
-                    new RecordingLine.Judged(
-                        review.path("round").asLong(),
-                        read.path("role").asString(""),
-                        JSON.treeToValue(read.path("judgement"), Judgement.class))));
+        .forEach(read ->
+            lines.add(
+                new RecordingLine.Judged(
+                    review.path("round").asLong(),
+                    read.path("role").asString(""),
+                    JSON.treeToValue(read.path("judgement"), Judgement.class))));
   }
 
   private static List<JsonNode> snapshots(Path file) {

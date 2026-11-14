@@ -108,10 +108,9 @@ class SessionBriefContractTest {
         .contains("/repo/ABC-42-deploy", "`git merge`")
         .doesNotContain("rebase", "cherry-pick", "--force", "--amend", "reset --hard");
     assertThat(brief.lines())
-        .anySatisfy(
-            line ->
-                assertThat(line)
-                    .contains("/repo/ABC-42-deploy", "yours", "is not a `git merge` of yours"));
+        .anySatisfy(line ->
+            assertThat(line)
+                .contains("/repo/ABC-42-deploy", "yours", "is not a `git merge` of yours"));
   }
 
   @Test

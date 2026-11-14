@@ -134,8 +134,7 @@ class StopTriageJobTest {
   @Test
   void pausedTaskIsNotRead() {
     state.updateTask(
-        "ABC-42",
-        task -> task.withStop(new TaskStop(TaskStop.Trigger.PAUSE, 5, "you paused it")));
+        "ABC-42", task -> task.withStop(new TaskStop(TaskStop.Trigger.PAUSE, 5, "you paused it")));
 
     stopTriageJob().build(config, panel, state, paths, Clock.systemUTC()).runOn(state.tasks());
 

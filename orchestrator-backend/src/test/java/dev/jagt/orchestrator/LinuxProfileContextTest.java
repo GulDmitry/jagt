@@ -40,9 +40,7 @@ class LinuxProfileContextTest {
 
   @Autowired
   LinuxProfileContextTest(
-      UserNotifier userNotifier,
-      TerminalDriver terminalDriver,
-      ApplicationContext context) {
+      UserNotifier userNotifier, TerminalDriver terminalDriver, ApplicationContext context) {
     this.userNotifier = userNotifier;
     this.terminalDriver = terminalDriver;
     this.context = context;

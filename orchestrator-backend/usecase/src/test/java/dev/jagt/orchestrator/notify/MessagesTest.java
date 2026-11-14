@@ -193,7 +193,6 @@ class MessagesTest {
         new Messages(new BoardUrl("8290"), mock(NextMove.class))
             .of(new Routed(DESKTOP, "t", "x"), stopped, Optional.empty());
 
-    assertThat(message)
-        .isEqualTo(new ChannelMessage("stopped", "ABC-42", "p3", "t", "x"));
+    assertThat(message).isEqualTo(new ChannelMessage("stopped", "ABC-42", "p3", "t", "x"));
   }
 }

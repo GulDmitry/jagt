@@ -26,7 +26,7 @@ public class ProjectCommand implements GlobalCommand {
   @Override
   public String hint() {
     return "add a repository to jagt.yml as a project, its entry read from the repository, change"
-               + " one or remove one";
+        + " one or remove one";
   }
 
   @Override

@@ -12,13 +12,12 @@ public interface WorldEvent {
     return world ->
         world
             .openRequest()
-            .map(
-                request -> {
-                  int id = request.path("id").asInt();
-                  world.store().addThread(id, "greet.sh", 2, body);
-                  world.note("reviewer thread on merge request " + id + ": " + body);
-                  return true;
-                })
+            .map(request -> {
+              int id = request.path("id").asInt();
+              world.store().addThread(id, "greet.sh", 2, body);
+              world.note("reviewer thread on merge request " + id + ": " + body);
+              return true;
+            })
             .orElse(false);
   }
 
@@ -26,15 +25,14 @@ public interface WorldEvent {
     return world ->
         world
             .openRequest()
-            .map(
-                request -> {
-                  String sha =
-                      world
-                          .project()
-                          .commitOnDeployBranch(world.scratch("outsider"), file, content, message);
-                  world.note(TimelineFile.wroteLine(sha));
-                  return true;
-                })
+            .map(request -> {
+              String sha =
+                  world
+                      .project()
+                      .commitOnDeployBranch(world.scratch("outsider"), file, content, message);
+              world.note(TimelineFile.wroteLine(sha));
+              return true;
+            })
             .orElse(false);
   }
 
@@ -74,13 +72,12 @@ public interface WorldEvent {
         world
             .openRequest()
             .filter(open -> open.path("pipeline").asString().equals("running"))
-            .ifPresent(
-                open -> {
-                  request = open.path("id").asInt();
-                  head = world.project().head(source(open));
-                  world.store().setPipeline(request, "failed");
-                  world.note("pipeline of merge request " + request + " set failed");
-                });
+            .ifPresent(open -> {
+              request = open.path("id").asInt();
+              head = world.project().head(source(open));
+              world.store().setPipeline(request, "failed");
+              world.note("pipeline of merge request " + request + " set failed");
+            });
         return false;
       }
 

@@ -93,28 +93,26 @@ public class CheckerPrompts {
                 : "");
   }
 
-  private static String workspaceLine(
-      RoleOptions acceptance, String worktree, String sha) {
+  private static String workspaceLine(RoleOptions acceptance, String worktree, String sha) {
     return acceptance
         .workspacePath()
-        .map(
-            root ->
-                "\nWorkspace: "
-                    + root
-                    + ", your working directory. The change's repository is "
-                    + worktree
-                    + ": read git there with `git -C "
-                    + worktree
-                    + " show --no-ext-diff --no-textconv "
-                    + sha
-                    + "`, never in the workspace."
-                    + (acceptance.flows().command().isEmpty()
-                        ? " No flows command is set."
-                        : " Run a flow as `BASE_URL=<environment> "
-                            + String.join(" ", acceptance.flows().command())
-                            + " <file>`.")
-                    + " In `flows` name each flow you wrote or ran with its `id` and the"
-                    + " `criterion` of the row it checks, in `environment` the URL.")
+        .map(root ->
+            "\nWorkspace: "
+                + root
+                + ", your working directory. The change's repository is "
+                + worktree
+                + ": read git there with `git -C "
+                + worktree
+                + " show --no-ext-diff --no-textconv "
+                + sha
+                + "`, never in the workspace."
+                + (acceptance.flows().command().isEmpty()
+                    ? " No flows command is set."
+                    : " Run a flow as `BASE_URL=<environment> "
+                        + String.join(" ", acceptance.flows().command())
+                        + " <file>`.")
+                + " In `flows` name each flow you wrote or ran with its `id` and the"
+                + " `criterion` of the row it checks, in `environment` the URL.")
         .orElse("");
   }
 

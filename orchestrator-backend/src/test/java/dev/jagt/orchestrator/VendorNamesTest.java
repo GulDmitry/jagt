@@ -39,8 +39,7 @@ class VendorNamesTest {
               SERVICE + "WorktreeNoise.java gradle", "a build tool's directory; iteration 2"));
 
   @Test
-  void
-      namesNoVendorOfAnAgentTerminalEditorCodeHostTrackerBuildToolOrModelOutsideTheAdapters() {
+  void namesNoVendorOfAnAgentTerminalEditorCodeHostTrackerBuildToolOrModelOutsideTheAdapters() {
     List<String> named =
         namings().filter(naming -> !ALLOWED.containsKey(naming.key())).map(Naming::where).toList();
 
@@ -68,13 +67,12 @@ class VendorNamesTest {
   private static Stream<Naming> namings() {
     return SourceRoots.mainJavaFiles()
         .filter(file -> !file.startsWith("adapter"))
-        .flatMap(
-            file -> {
-              List<String> lines = lines(file);
-              return IntStream.range(0, lines.size())
-                  .boxed()
-                  .flatMap(i -> words(lines.get(i)).map(word -> new Naming(file, i + 1, word)));
-            });
+        .flatMap(file -> {
+          List<String> lines = lines(file);
+          return IntStream.range(0, lines.size())
+              .boxed()
+              .flatMap(i -> words(lines.get(i)).map(word -> new Naming(file, i + 1, word)));
+        });
   }
 
   private static Stream<String> words(String line) {

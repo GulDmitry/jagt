@@ -26,14 +26,13 @@ class DocLinksTest {
   void everyRelativeLinkReachesFile() {
     List<String> broken =
         documents().stream()
-            .flatMap(
-                document ->
-                    LINK.matcher(withoutCodeBlocks(document))
-                        .results()
-                        .map(link -> link.group(1))
-                        .filter(target -> !target.matches("[a-z]+:.*"))
-                        .filter(target -> !Files.exists(document.resolveSibling(target)))
-                        .map(target -> document + " -> " + target))
+            .flatMap(document ->
+                LINK.matcher(withoutCodeBlocks(document))
+                    .results()
+                    .map(link -> link.group(1))
+                    .filter(target -> !target.matches("[a-z]+:.*"))
+                    .filter(target -> !Files.exists(document.resolveSibling(target)))
+                    .map(target -> document + " -> " + target))
             .toList();
 
     assertThat(broken).isEmpty();
@@ -43,21 +42,19 @@ class DocLinksTest {
   void everyAnchoredLinkReachesHeading() {
     List<String> broken =
         documents().stream()
-            .flatMap(
-                document ->
-                    ANCHORED_LINK
-                        .matcher(withoutCodeBlocks(document))
-                        .results()
-                        .filter(link -> !link.group(1).matches("[a-z]+:.*"))
-                        .filter(
-                            link ->
-                                !headingSlugs(
-                                        document.resolveSibling(
-                                            link.group(1).isEmpty()
-                                                ? document.getFileName().toString()
-                                                : link.group(1)))
-                                    .contains(link.group(2)))
-                        .map(link -> document + " -> " + link.group(1) + "#" + link.group(2)))
+            .flatMap(document ->
+                ANCHORED_LINK
+                    .matcher(withoutCodeBlocks(document))
+                    .results()
+                    .filter(link -> !link.group(1).matches("[a-z]+:.*"))
+                    .filter(link ->
+                        !headingSlugs(
+                                document.resolveSibling(
+                                    link.group(1).isEmpty()
+                                        ? document.getFileName().toString()
+                                        : link.group(1)))
+                            .contains(link.group(2)))
+                    .map(link -> document + " -> " + link.group(1) + "#" + link.group(2)))
             .toList();
 
     assertThat(broken).isEmpty();
@@ -122,13 +119,12 @@ class DocLinksTest {
     return withoutCodeBlocks(document)
         .lines()
         .filter(line -> line.matches("#{1,6} .*"))
-        .map(
-            line ->
-                line.replaceFirst("#+ ", "")
-                    .trim()
-                    .toLowerCase(Locale.ROOT)
-                    .replaceAll("[^\\p{L}\\p{N} _-]", "")
-                    .replace(' ', '-'))
+        .map(line ->
+            line.replaceFirst("#+ ", "")
+                .trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N} _-]", "")
+                .replace(' ', '-'))
         .toList();
   }
 
@@ -143,5 +139,4 @@ class DocLinksTest {
       throw new UncheckedIOException(e);
     }
   }
-
 }

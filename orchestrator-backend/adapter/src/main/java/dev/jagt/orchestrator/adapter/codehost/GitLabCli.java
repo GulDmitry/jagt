@@ -65,98 +65,89 @@ public class GitLabCli implements CodeHostDriver {
   @Override
   public Answer<List<FailedJob>> failedJobs(HostSettings host, String pipelineUrl) {
     return HostAddress.ofPipeline(pipelineUrl, MARKER, true)
-        .map(
-            address ->
-                cli.parsed(
-                    cli.run(
-                        address.hostname(),
-                        api(
-                            address,
-                            "/pipelines/" + address.id() + "/jobs?scope[]=failed&per_page=100")),
-                    GitLabCli::jobs))
+        .map(address ->
+            cli.parsed(
+                cli.run(
+                    address.hostname(),
+                    api(
+                        address,
+                        "/pipelines/" + address.id() + "/jobs?scope[]=failed&per_page=100")),
+                GitLabCli::jobs))
         .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
   public Answer<String> retryFailed(HostSettings host, String pipelineUrl) {
     return HostAddress.ofPipeline(pipelineUrl, MARKER, true)
-        .map(
-            address ->
-                cli.run(
-                    address.hostname(),
-                    api(address, "-X", "POST", "/pipelines/" + address.id() + "/retry")))
+        .map(address ->
+            cli.run(
+                address.hostname(),
+                api(address, "-X", "POST", "/pipelines/" + address.id() + "/retry")))
         .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
   public Answer<String> closeRequest(HostSettings host, String requestUrl) {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, true)
-        .map(
-            address ->
-                cli.run(
-                    address.hostname(),
-                    List.of(
-                        "mr",
-                        "close",
-                        address.id(),
-                        "-R",
-                        address.hostname() + "/" + address.project())))
+        .map(address ->
+            cli.run(
+                address.hostname(),
+                List.of(
+                    "mr",
+                    "close",
+                    address.id(),
+                    "-R",
+                    address.hostname() + "/" + address.project())))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override
   public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, true)
-        .map(
-            address ->
-                HostCli.then(
+        .map(address ->
+            HostCli.then(
+                cli.parsed(
+                    cli.run(
+                        address.hostname(),
+                        List.of("api", "--hostname", address.hostname(), "user")),
+                    output -> JSON.readTree(output).path("username").asString("")),
+                me ->
                     cli.parsed(
                         cli.run(
                             address.hostname(),
-                            List.of("api", "--hostname", address.hostname(), "user")),
-                        output -> JSON.readTree(output).path("username").asString("")),
-                    me ->
-                        cli.parsed(
-                            cli.run(
-                                address.hostname(),
-                                api(
-                                    address,
-                                    "/merge_requests/"
-                                        + address.id()
-                                        + "/discussions?per_page=100")),
-                            output -> unresolved(output, me))))
+                            api(
+                                address,
+                                "/merge_requests/" + address.id() + "/discussions?per_page=100")),
+                        output -> unresolved(output, me))))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override
   public Answer<String> requestFingerprint(HostSettings host, String requestUrl) {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, true)
-        .map(
-            address ->
-                HostCli.then(
+        .map(address ->
+            HostCli.then(
+                cli.parsed(
+                    cli.run(address.hostname(), api(address, "/merge_requests/" + address.id())),
+                    GitLabCli::requestState),
+                request ->
                     cli.parsed(
                         cli.run(
-                            address.hostname(), api(address, "/merge_requests/" + address.id())),
-                        GitLabCli::requestState),
-                    request ->
-                        cli.parsed(
-                            cli.run(
-                                address.hostname(),
-                                api(address, "/merge_requests/" + address.id() + "/approvals")),
-                            output -> request + approvers(output))))
+                            address.hostname(),
+                            api(address, "/merge_requests/" + address.id() + "/approvals")),
+                        output -> request + approvers(output))))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override
   public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
     return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), true)
-        .map(
-            address ->
-                cli.parsed(
-                    cli.run(
-                        address.hostname(),
-                        api(address, "/pipelines?sha=" + address.id() + "&per_page=1")),
-                    GitLabCli::pipeline))
+        .map(address ->
+            cli.parsed(
+                cli.run(
+                    address.hostname(),
+                    api(address, "/pipelines?sha=" + address.id() + "&per_page=1")),
+                GitLabCli::pipeline))
         .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
   }
 
@@ -166,32 +157,31 @@ public class GitLabCli implements CodeHostDriver {
     // Any source, as onCommit reads its commit's newest: a scheduled or API pipeline runs the
     // branch's CI too.
     return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), true)
-        .map(
-            address ->
-                HostCli.then(
-                    cli.parsed(
-                        cli.run(
-                            address.hostname(),
-                            api(
-                                address,
-                                "/pipelines?ref="
-                                    + URLEncoder.encode(branch, StandardCharsets.UTF_8)
-                                    + "&scope=finished&per_page=1")),
-                        GitLabCli::newest),
-                    newest ->
-                        newest.since(
-                            cli,
-                            sha,
-                            () ->
-                                cli.run(
-                                    address.hostname(),
-                                    api(
-                                        address,
-                                        "/repository/merge_base?refs[]="
-                                            + sha
-                                            + "&refs[]="
-                                            + newest.sha())),
-                            base -> JSON.readTree(base).path("id").asString("").startsWith(sha))))
+        .map(address ->
+            HostCli.then(
+                cli.parsed(
+                    cli.run(
+                        address.hostname(),
+                        api(
+                            address,
+                            "/pipelines?ref="
+                                + URLEncoder.encode(branch, StandardCharsets.UTF_8)
+                                + "&scope=finished&per_page=1")),
+                    GitLabCli::newest),
+                newest ->
+                    newest.since(
+                        cli,
+                        sha,
+                        () ->
+                            cli.run(
+                                address.hostname(),
+                                api(
+                                    address,
+                                    "/repository/merge_base?refs[]="
+                                        + sha
+                                        + "&refs[]="
+                                        + newest.sha())),
+                        base -> JSON.readTree(base).path("id").asString("").startsWith(sha))))
         .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
   }
 
@@ -229,21 +219,19 @@ public class GitLabCli implements CodeHostDriver {
   private static List<String> unresolved(String output, String me) {
     List<String> ids = new ArrayList<>();
     JSON.readTree(output)
-        .forEach(
-            discussion -> {
-              JsonNode notes = discussion.path("notes");
-              boolean open = false;
-              for (JsonNode note : notes) {
-                open |=
-                    note.path("resolvable").asBoolean(false)
-                        && !note.path("resolved").asBoolean(false);
-              }
-              JsonNode newest = notes.path(notes.size() - 1);
-              String author = newest.path("author").path("username").asString("");
-              if (open && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
-                ids.add(newest.path("id").asString(""));
-              }
-            });
+        .forEach(discussion -> {
+          JsonNode notes = discussion.path("notes");
+          boolean open = false;
+          for (JsonNode note : notes) {
+            open |=
+                note.path("resolvable").asBoolean(false) && !note.path("resolved").asBoolean(false);
+          }
+          JsonNode newest = notes.path(notes.size() - 1);
+          String author = newest.path("author").path("username").asString("");
+          if (open && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+            ids.add(newest.path("id").asString(""));
+          }
+        });
     return ids;
   }
 
@@ -264,9 +252,8 @@ public class GitLabCli implements CodeHostDriver {
     StringBuilder approvers = new StringBuilder(" approved by");
     JSON.readTree(output)
         .path("approved_by")
-        .forEach(
-            approval ->
-                approvers.append(' ').append(approval.path("user").path("username").asString("")));
+        .forEach(approval ->
+            approvers.append(' ').append(approval.path("user").path("username").asString("")));
     return approvers.toString();
   }
 
@@ -287,16 +274,15 @@ public class GitLabCli implements CodeHostDriver {
   private static List<FailedJob> jobs(String output) {
     List<FailedJob> jobs = new ArrayList<>();
     JSON.readTree(output)
-        .forEach(
-            job -> {
-              String reason = job.path("failure_reason").asString("");
-              jobs.add(
-                  new FailedJob(
-                      job.path("id").asString(""),
-                      job.path("name").asString(""),
-                      reason,
-                      INFRASTRUCTURE.contains(reason)));
-            });
+        .forEach(job -> {
+          String reason = job.path("failure_reason").asString("");
+          jobs.add(
+              new FailedJob(
+                  job.path("id").asString(""),
+                  job.path("name").asString(""),
+                  reason,
+                  INFRASTRUCTURE.contains(reason)));
+        });
     return jobs;
   }
 }

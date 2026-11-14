@@ -68,12 +68,8 @@ class TriageEvalTest {
     registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
     registry.add("orchestrator.assistant.max-cost-usd", () -> "0.10");
     registry.add("orchestrator.root", () -> ROOT.toString());
-    registry.add(
-        "orchestrator.config-file",
-        () -> ROOT.resolve("jagt.yml").toString());
-    registry.add(
-        "orchestrator.state-file",
-        () -> ROOT.resolve("state.json").toString());
+    registry.add("orchestrator.config-file", () -> ROOT.resolve("jagt.yml").toString());
+    registry.add("orchestrator.state-file", () -> ROOT.resolve("state.json").toString());
   }
 
   private static Path throwawayRoot() {

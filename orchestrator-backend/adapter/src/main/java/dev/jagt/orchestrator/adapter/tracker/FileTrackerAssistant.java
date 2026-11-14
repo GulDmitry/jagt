@@ -40,11 +40,10 @@ public class FileTrackerAssistant implements TrackerAssistant {
     }
     Path file = file();
     return items(file)
-        .map(
-            items ->
-                MarkdownItems.find(items, ticketRef)
-                    .map(item -> fact(item, file))
-                    .orElseGet(() -> elsewhere.readTicket(ticketRef, corrections)))
+        .map(items ->
+            MarkdownItems.find(items, ticketRef)
+                .map(item -> fact(item, file))
+                .orElseGet(() -> elsewhere.readTicket(ticketRef, corrections)))
         .orElseGet(Answer::unavailable);
   }
 
@@ -54,21 +53,18 @@ public class FileTrackerAssistant implements TrackerAssistant {
       return elsewhere.readTicketText(ticketRef);
     }
     return items(file())
-        .map(
-            items ->
-                MarkdownItems.find(items, ticketRef)
-                    .map(item -> new Answer<>(Optional.of(item.text()), TokenUsage.NONE))
-                    .orElseGet(() -> elsewhere.readTicketText(ticketRef)))
+        .map(items ->
+            MarkdownItems.find(items, ticketRef)
+                .map(item -> new Answer<>(Optional.of(item.text()), TokenUsage.NONE))
+                .orElseGet(() -> elsewhere.readTicketText(ticketRef)))
         .orElseGet(Answer::unavailable);
   }
 
   @Override
   public Answer<List<String>> findCandidates(String query) {
     return items(file())
-        .map(
-            items ->
-                new Answer<>(
-                    Optional.of(items.stream().map(Item::key).toList()), TokenUsage.NONE))
+        .map(items ->
+            new Answer<>(Optional.of(items.stream().map(Item::key).toList()), TokenUsage.NONE))
         .orElseGet(Answer::unavailable);
   }
 

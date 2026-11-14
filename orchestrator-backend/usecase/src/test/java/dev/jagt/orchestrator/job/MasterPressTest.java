@@ -44,8 +44,7 @@ class MasterPressTest {
   void masterPressOverAnEmptyState() {
     state = stateService().withRoot(root).build();
     press =
-        new MasterPress(
-            commands, humanPaths, stops, taskTurns().build(state, Clock.systemUTC()));
+        new MasterPress(commands, humanPaths, stops, taskTurns().build(state, Clock.systemUTC()));
   }
 
   @Test

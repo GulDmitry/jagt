@@ -162,12 +162,11 @@ public class StepRelay {
     FlowReports.Claimed claimed =
         claim
             .write()
-            .apply(
-                task -> {
-                  TaskState written = opening.apply(task);
-                  opened.set(written.turnOrNone());
-                  return written;
-                });
+            .apply(task -> {
+              TaskState written = opening.apply(task);
+              opened.set(written.turnOrNone());
+              return written;
+            });
     if (claimed == FlowReports.Claimed.MOVED_ON) {
       throw dropped(taskId, step.id(), claim);
     }

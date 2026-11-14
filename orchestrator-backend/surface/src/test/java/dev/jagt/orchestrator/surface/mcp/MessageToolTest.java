@@ -104,10 +104,9 @@ class MessageToolTest {
               return "ran";
             });
 
-    assertThatThrownBy(
-            () ->
-                tool.call(
-                    mapper.readTree("{\"status\":\"IN_PROGRESS\",\"task_id\":\"ABC-9\"}"), "ABC-1"))
+    assertThatThrownBy(() ->
+            tool.call(
+                mapper.readTree("{\"status\":\"IN_PROGRESS\",\"task_id\":\"ABC-9\"}"), "ABC-1"))
         .hasMessageContaining("task_id: not a field; did you mean taskId?");
     assertThat(ran).isFalse();
   }

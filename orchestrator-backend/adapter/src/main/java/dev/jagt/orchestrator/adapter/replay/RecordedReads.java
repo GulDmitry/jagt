@@ -25,11 +25,8 @@ public class RecordedReads {
     recording.lines().stream()
         .filter(RecordingLine.Read.class::isInstance)
         .map(RecordingLine.Read.class::cast)
-        .forEach(
-            read ->
-                answers
-                    .computeIfAbsent(read.kind(), kind -> new ArrayDeque<>())
-                    .add(read.answer()));
+        .forEach(read ->
+            answers.computeIfAbsent(read.kind(), kind -> new ArrayDeque<>()).add(read.answer()));
   }
 
   /** Empty where the run never made this read: the replay diverges there. */

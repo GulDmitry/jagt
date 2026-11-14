@@ -146,13 +146,7 @@ class RoundRelayTest {
             .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships"))
             .build());
 
-    SweepResult result =
-        relay.relay(
-            "ABC-42",
-            "https://host/mr/1",
-            noted,
-            "running",
-            "");
+    SweepResult result = relay.relay("ABC-42", "https://host/mr/1", noted, "running", "");
 
     assertThat(result.kind()).isEqualTo(SweepResult.Kind.STOPPED);
     verify(sessions, never()).relayFresh(anyString(), anyString());
@@ -245,13 +239,7 @@ class RoundRelayTest {
     RoundRelay relay = new RoundRelay(mock(TaskStops.class), steps, door, brief);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
 
-    SweepResult result =
-        relay.relay(
-            "ABC-42",
-            "https://host/mr/1",
-            noted,
-            "running",
-            "");
+    SweepResult result = relay.relay("ABC-42", "https://host/mr/1", noted, "running", "");
 
     assertThat(result.kind()).isEqualTo(SweepResult.Kind.REFUSED);
     verify(sessions, never()).relayFresh(anyString(), anyString());
