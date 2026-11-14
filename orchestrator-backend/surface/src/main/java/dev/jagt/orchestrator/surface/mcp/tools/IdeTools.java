@@ -5,10 +5,10 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.message.IdeOpen;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.Audience;
-import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
+import dev.jagt.orchestrator.surface.mcp.refusal.CallerScope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

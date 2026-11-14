@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.service.project.ProjectFolders;
 import dev.jagt.orchestrator.service.project.ProjectRemoval;
 import dev.jagt.orchestrator.service.project.ProjectSetup;
-import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
+import dev.jagt.orchestrator.surface.board.task.TaskCommandsController.ActionResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;

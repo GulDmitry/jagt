@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.protocol.message.Message;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.presence.KeepAlive;
+import dev.jagt.orchestrator.surface.mcp.refusal.ToolFailure;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Turn;

@@ -11,7 +11,7 @@ import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.surface.board.PaletteContext;
+import dev.jagt.orchestrator.surface.board.task.PaletteContext;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;

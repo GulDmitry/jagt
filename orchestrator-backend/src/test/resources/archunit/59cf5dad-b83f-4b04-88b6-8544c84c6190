@@ -24,6 +24,6 @@ dev.jagt.orchestrator.service.TestCaseDoorBuilder
 dev.jagt.orchestrator.service.TestStateServiceBuilder
 dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder
 dev.jagt.orchestrator.service.task.TestTaskViewsBuilder
-dev.jagt.orchestrator.surface.board.TestPaletteContextBuilder
-dev.jagt.orchestrator.surface.board.TestStateServiceBuilder
+dev.jagt.orchestrator.surface.board.task.TestPaletteContextBuilder
+dev.jagt.orchestrator.surface.board.task.TestStateServiceBuilder
 dev.jagt.orchestrator.surface.mcp.TestStateServiceBuilder

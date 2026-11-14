@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.surface.mcp.refusal.ToolFailure;
+import dev.jagt.orchestrator.surface.mcp.refusal.ToolRefusal;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;

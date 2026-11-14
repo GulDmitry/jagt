@@ -195,7 +195,7 @@ Method <dev.jagt.orchestrator.service.master.MasterReview$Review.withOwnDiff(jav
 Method <dev.jagt.orchestrator.service.master.MasterReview$Review.withReads(java.util.List)> does not satisfy be called from main in (MasterReview.java:201)
 Method <dev.jagt.orchestrator.service.master.MasterReview$Review.withReport(java.lang.String)> does not satisfy be called from main in (MasterReview.java:199)
 Method <dev.jagt.orchestrator.service.master.MasterReview$Verdict.ready()> does not satisfy be called from main in (MasterReview.java:332)
-Method <dev.jagt.orchestrator.surface.board.MarkdownHtml.render(java.lang.String)> does not satisfy be called from main in (MarkdownHtml.java:37)
+Method <dev.jagt.orchestrator.surface.board.task.MarkdownHtml.render(java.lang.String)> does not satisfy be called from main in (MarkdownHtml.java:37)
 Method <dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict$Flows.withEnvironment(java.lang.String)> does not satisfy be called from main in (AcceptanceVerdict.java:17)
 Method <dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict$Flows.withNamed(java.util.List)> does not satisfy be called from main in (AcceptanceVerdict.java:17)
 Method <dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.withFlows(dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict$Flows)> does not satisfy be called from main in (AcceptanceVerdict.java:98)

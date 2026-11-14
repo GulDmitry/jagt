@@ -17,7 +17,7 @@ import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.scenario.OpenedWindows;
-import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
+import dev.jagt.orchestrator.surface.board.task.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskState.TaskStateBuilder;
 import dev.jagt.orchestrator.task.TaskStatus;

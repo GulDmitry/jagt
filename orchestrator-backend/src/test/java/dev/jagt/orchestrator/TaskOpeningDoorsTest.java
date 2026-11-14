@@ -16,9 +16,11 @@ class TaskOpeningDoorsTest {
         .and()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.command.ResumeCommand")
         .and()
-        .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.surface.board.TaskCommandsController")
+        .doNotHaveFullyQualifiedName(
+            "dev.jagt.orchestrator.surface.board.task.TaskCommandsController")
         .and()
-        .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch")
+        .doNotHaveFullyQualifiedName(
+            "dev.jagt.orchestrator.surface.board.task.NaturalLanguageDispatch")
         .and()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.job.tracker.IntakeStart")
         .should()

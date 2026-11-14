@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.report.AgentStatusReports;
 import dev.jagt.orchestrator.service.report.OwnStatusReports;
+import dev.jagt.orchestrator.surface.mcp.refusal.CallerScope;
 import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
 import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
 import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;

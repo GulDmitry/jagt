@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.protocol.message.Message;
 import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.surface.mcp.refusal.ToolFailure;
+import dev.jagt.orchestrator.surface.mcp.refusal.ToolRefusal;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
