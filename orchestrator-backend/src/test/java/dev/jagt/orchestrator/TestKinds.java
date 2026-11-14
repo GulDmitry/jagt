@@ -28,6 +28,7 @@ final class TestKinds {
           "org.springframework.context.annotation.Bean",
           "org.springframework.test.context.DynamicPropertySource");
   private static final String CLASSES = "/build/classes/java/";
+  private static final String COMPONENT = "org.springframework.stereotype.Component";
   private static final Set<String> OUTSIDE_VALUES =
       Set.of(
           "java.time.Clock.systemUTC",
@@ -158,5 +159,22 @@ final class TestKinds {
 
   static boolean holdsBranchOrLoop(Path source) {
     return BRANCH_OR_LOOP.matcher(SourceRoots.read(source)).find();
+  }
+
+  static ArchCondition<JavaClass> wireOneComponentAtMost() {
+    return new ArchCondition<>("construct one Spring component at most") {
+      @Override
+      public void check(JavaClass builder, ConditionEvents events) {
+        long components =
+            builder.getConstructorCallsFromSelf().stream()
+                .map(call -> call.getTargetOwner())
+                .filter(type -> type.isMetaAnnotatedWith(COMPONENT))
+                .distinct()
+                .count();
+        if (components > 1) {
+          events.add(SimpleConditionEvent.violated(builder, builder.getName()));
+        }
+      }
+    };
   }
 }

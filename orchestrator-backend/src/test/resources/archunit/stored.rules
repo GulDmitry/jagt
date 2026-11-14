@@ -1,5 +1,6 @@
 #
-#Sat Nov 14 09:48:39 UTC 2026
+#Sat Nov 14 09:52:30 UTC 2026
+classes\ that\ Test<Thing>Builders\ should\ construct\ one\ Spring\ component\ at\ most=59cf5dad-b83f-4b04-88b6-8544c84c6190
 classes\ that\ top-level\ in\ a\ test\ source\ set\ should\ be\ a\ test,\ a\ Test<Thing>Builder\ record,\ a\ fake\ or\ a\ scanner=81a059bc-c636-4f9c-b922-3115e925acbf
 fields\ should\ not\ be\ annotated\ with\ @Autowired=c97a611a-0eb1-4787-8f7d-893590917040
 methods\ that\ are\ declared\ in\ classes\ that\ a\ test\ class\ should\ be\ a\ test,\ its\ setup\ or\ its\ arguments=810148ef-a56b-4e8e-a5ab-d635e66c135e
