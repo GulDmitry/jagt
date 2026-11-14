@@ -1,6 +1,4 @@
 dev.jagt.orchestrator.adapter.codehost.ToolGateTest
-dev.jagt.orchestrator.adapter.tracker.FileTrackerCompositionTest
-dev.jagt.orchestrator.capability.ship.ShipRepliesTest
 dev.jagt.orchestrator.command.SupervisorCommandsTest
 dev.jagt.orchestrator.config.CheckerSchemaTest
 dev.jagt.orchestrator.flow.DeclinedRoundTest
@@ -11,15 +9,11 @@ dev.jagt.orchestrator.flow.StoppedDeployCardTest
 dev.jagt.orchestrator.job.AcceptanceCheckJobTest
 dev.jagt.orchestrator.job.AcceptanceDeclineFlowTest
 dev.jagt.orchestrator.job.AcceptanceDeclineJobTest
-dev.jagt.orchestrator.job.AcceptanceOutcomesTest
-dev.jagt.orchestrator.job.AcceptancePromptsTest
 dev.jagt.orchestrator.job.AcceptanceReadsTest
 dev.jagt.orchestrator.job.AcceptanceRoundFlowTest
-dev.jagt.orchestrator.job.AcceptanceWaitJobTest
 dev.jagt.orchestrator.job.SessionBriefContractTest
 dev.jagt.orchestrator.notify.DistRoutesTest
 dev.jagt.orchestrator.port.ValuesTest
-dev.jagt.orchestrator.protocol.PressMessagesTest
 dev.jagt.orchestrator.protocol.ReadAnswerTest
 dev.jagt.orchestrator.protocol.ToolMessageTest
 dev.jagt.orchestrator.service.GitCaseFactsTest
@@ -30,4 +24,3 @@ dev.jagt.orchestrator.surface.mcp.tools.McpToolScopeTest
 dev.jagt.orchestrator.task.ModesTest
 dev.jagt.orchestrator.task.PipelineUrlTest
 dev.jagt.orchestrator.task.RoutingTest
-dev.jagt.orchestrator.task.StateFileCompatibilityTest

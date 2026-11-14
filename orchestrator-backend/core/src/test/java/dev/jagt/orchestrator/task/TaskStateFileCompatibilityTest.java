@@ -6,7 +6,7 @@ import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
-class StateFileCompatibilityTest {
+class TaskStateFileCompatibilityTest {
 
   @Test
   void stateFileWrittenBeforeRolesLoadsWithTheQaRolesPassAsAcceptancesAndTheMastersSeal() {

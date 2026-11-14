@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-class FileTrackerCompositionTest {
+class FileTrackerAssistantCompositionTest {
 
   private final ApplicationContextRunner runner =
       new ApplicationContextRunner()

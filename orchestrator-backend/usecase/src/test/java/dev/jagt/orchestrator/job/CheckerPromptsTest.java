@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class AcceptancePromptsTest {
+class CheckerPromptsTest {
 
   @TempDir Path root;
   private final RoleOptions devAndStage =

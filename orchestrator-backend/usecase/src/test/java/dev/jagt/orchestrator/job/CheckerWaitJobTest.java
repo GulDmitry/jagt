@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class AcceptanceWaitJobTest {
+class CheckerWaitJobTest {
 
   private static final ConfigFile ON =
       ConfigFile.defaults()

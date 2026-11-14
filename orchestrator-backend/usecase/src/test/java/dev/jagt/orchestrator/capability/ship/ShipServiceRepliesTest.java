@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class ShipRepliesTest {
+class ShipServiceRepliesTest {
 
   @Test
   void forbidsTheMasterFromAnsweringPersonWhereThatRightWasWithheld() {
