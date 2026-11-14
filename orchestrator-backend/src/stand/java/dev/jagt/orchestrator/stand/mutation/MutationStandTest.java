@@ -59,7 +59,8 @@ class MutationStandTest {
                     record.misses().size(),
                     stand.store().awaitsTheReviewer(),
                     new MutationProgress.Conflict(
-                        conflictRelayed(record),
+                        record.timeline().relays().stream()
+                            .anyMatch(relay -> relay.steps().contains("conflict")),
                         applied.expectsDeployConflict(),
                         mutation.relaysIn(mode))))
             .as(mutation.holds() + "\n" + outcome.describe())
@@ -70,11 +71,6 @@ class MutationStandTest {
       });
       stand.passed();
     }
-  }
-
-  private static boolean conflictRelayed(RunRecord record) {
-    return record.timeline().relays().stream()
-        .anyMatch(relay -> relay.steps().contains("conflict"));
   }
 
   static Stream<Arguments> runs() {

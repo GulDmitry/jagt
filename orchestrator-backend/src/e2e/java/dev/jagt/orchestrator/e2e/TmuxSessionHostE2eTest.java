@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -37,16 +38,25 @@ class TmuxSessionHostE2eTest {
   private final Processes processes = spy(new ProcessRunner());
   private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
-  private TmuxSessionHost hostIn(Path root) {
+  private final List<String> listWindows =
+      List.of("tmux", "list-windows", "-t", "=" + SESSION, "-F", "#{window_name}");
+
+  @TempDir Path root;
+
+  private SessionHost host;
+
+  @BeforeEach
+  void startHostInTheTempRoot() {
     when(agentRuntime.launchCommand(any(), anyBoolean())).thenReturn("sleep 30");
     OrchestratorProperties orchestrator =
         OrchestratorProperties.defaults().withRoot(root.toString());
-    return new TmuxSessionHost(
-        processes,
-        new TmuxReads(processes, ToolchainProperties.defaults().withTmuxCommand("tmux")),
-        new OrchestratorPaths(orchestrator),
-        mock(TerminalDriver.class),
-        agentRuntime);
+    host =
+        new TmuxSessionHost(
+            processes,
+            new TmuxReads(processes, ToolchainProperties.defaults().withTmuxCommand("tmux")),
+            new OrchestratorPaths(orchestrator),
+            mock(TerminalDriver.class),
+            agentRuntime);
   }
 
   @AfterEach
@@ -56,40 +66,38 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void leavesOneWindowPerTaskWhenTheSameTaskIsStartedTwice(@TempDir Path root) {
-    SessionHost host = hostIn(root);
-
+  void leavesOneWindowPerTaskWhenTheSameTaskIsStartedTwice() {
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
 
-    assertThat(windowNames()).containsOnlyOnce("ABC-1");
+    assertThat(processes.run(null, Duration.ofSeconds(10), listWindows).stdout().lines().toList())
+        .containsOnlyOnce("ABC-1");
   }
 
   @Test
-  void killsOnlyTheNamedTasksWindowsAndSaysHowMany(@TempDir Path root) {
-    SessionHost host = hostIn(root);
+  void killsOnlyTheNamedTasksWindowsAndSaysHowMany() {
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     host.openTaskWindow(SESSION, "jagt", "ABC-2", "a2", root, false, "");
 
     int killed = host.killTaskWindows(SESSION, "ABC-1");
 
     assertThat(killed).isEqualTo(1);
-    assertThat(windowNames()).contains("ABC-2").doesNotContain("ABC-1");
+    assertThat(processes.run(null, Duration.ofSeconds(10), listWindows).stdout().lines().toList())
+        .contains("ABC-2")
+        .doesNotContain("ABC-1");
   }
 
   @Test
-  void keepsOneFeedWindowFollowingTheFileHoweverOftenItIsKept(@TempDir Path root) {
-    SessionHost host = hostIn(root);
-
+  void keepsOneFeedWindowFollowingTheFileHoweverOftenItIsKept() {
     host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
     host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
 
-    assertThat(windowNames()).containsOnlyOnce("master");
+    assertThat(processes.run(null, Duration.ofSeconds(10), listWindows).stdout().lines().toList())
+        .containsOnlyOnce("master");
   }
 
   @Test
-  void keepsFeedWindowThatIsAlreadyThereInThreeCommands(@TempDir Path root) {
-    SessionHost host = hostIn(root);
+  void keepsFeedWindowThatIsAlreadyThereInThreeCommands() {
     host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
     clearInvocations(processes);
 
@@ -99,8 +107,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void readsRunningAgentInTwoCommands(@TempDir Path root) {
-    SessionHost host = hostIn(root);
+  void readsRunningAgentInTwoCommands() {
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     clearInvocations(processes);
 
@@ -111,8 +118,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void readsWindowsLastActivityInOneCommand(@TempDir Path root) {
-    SessionHost host = hostIn(root);
+  void readsWindowsLastActivityInOneCommand() {
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     clearInvocations(processes);
 
@@ -123,16 +129,14 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void reportsWindowThatWasNeverOpenedAsMissing(@TempDir Path root) {
-    SessionHost host = hostIn(root);
+  void reportsWindowThatWasNeverOpenedAsMissing() {
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
 
     assertThat(host.taskWindowState(SESSION, "ABC-9")).isEqualTo(SessionHost.WindowState.MISSING);
   }
 
   @Test
-  void showsLongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole(@TempDir Path root) {
-    SessionHost host = hostIn(root);
+  void showsLongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole() {
     host.openTaskWindow(SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, false, "");
 
     String shown =
@@ -151,17 +155,7 @@ class TmuxSessionHostE2eTest {
             .strip();
 
     assertThat(shown).contains("abcservice… (a1)").doesNotContain("1234567890");
-    assertThat(windowNames()).contains("abcservice-1234567890-xyz");
-  }
-
-  private List<String> windowNames() {
-    return processes
-        .run(
-            null,
-            Duration.ofSeconds(10),
-            List.of("tmux", "list-windows", "-t", "=" + SESSION, "-F", "#{window_name}"))
-        .stdout()
-        .lines()
-        .toList();
+    assertThat(processes.run(null, Duration.ofSeconds(10), listWindows).stdout().lines().toList())
+        .contains("abcservice-1234567890-xyz");
   }
 }

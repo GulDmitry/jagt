@@ -5,8 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;
@@ -16,167 +20,188 @@ class StandHostTest {
 
   @TempDir Path directory;
 
+  private final HttpClient client = HttpClient.newHttpClient();
+  private StandHost host;
+  private HttpRequest.Builder mcp;
+
+  @BeforeEach
+  void startHost() throws Exception {
+    host = new StandHost(directory).start();
+    mcp =
+        HttpRequest.newBuilder(URI.create(host.mcpUrl()))
+            .header("Content-Type", "application/json");
+  }
+
+  @AfterEach
+  void stopHost() {
+    host.close();
+  }
+
   @Test
   void answersInitializeWithItsNameAndTheRequestedProtocolVersion() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      HttpResponse<String> response =
-          post(
-              host,
-              "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVe"
-                  + "rsion\":\"2024-11-05\"}}");
+    HttpResponse<String> response =
+        client.send(
+            mcp.POST(
+                    BodyPublishers.ofString(
+                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":"
+                            + "{\"protocolVersion\":\"2024-11-05\"}}"))
+                .build(),
+            BodyHandlers.ofString());
 
-      JsonNode result = JsonMapper.builder().build().readTree(response.body()).path("result");
-      assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("stand-host");
-      assertThat(result.path("protocolVersion").asString()).isEqualTo("2024-11-05");
-      assertThat(result.path("capabilities").has("tools")).isTrue();
-    }
+    JsonNode result = JsonMapper.builder().build().readTree(response.body()).path("result");
+    assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("stand-host");
+    assertThat(result.path("protocolVersion").asString()).isEqualTo("2024-11-05");
+    assertThat(result.path("capabilities").has("tools")).isTrue();
   }
 
   @Test
   void acceptsTheInitializedNotificationWithoutBody() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      HttpResponse<String> response =
-          post(host, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}");
+    HttpResponse<String> response =
+        client.send(
+            mcp.POST(
+                    BodyPublishers.ofString(
+                        "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"))
+                .build(),
+            BodyHandlers.ofString());
 
-      assertThat(response.statusCode()).isEqualTo(202);
-      assertThat(response.body()).isEmpty();
-    }
+    assertThat(response.statusCode()).isEqualTo(202);
+    assertThat(response.body()).isEmpty();
   }
 
   @Test
   void answersAnUnknownMethodWithMethodNotFound() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      HttpResponse<String> response =
-          post(host, "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"nope\"}");
+    HttpResponse<String> response =
+        client.send(
+            mcp.POST(BodyPublishers.ofString("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"nope\"}"))
+                .build(),
+            BodyHandlers.ofString());
 
-      JsonNode error = JsonMapper.builder().build().readTree(response.body()).path("error");
-      assertThat(error.path("code").asInt()).isEqualTo(-32601);
-    }
+    JsonNode error = JsonMapper.builder().build().readTree(response.body()).path("error");
+    assertThat(error.path("code").asInt()).isEqualTo(-32601);
   }
 
   @Test
   void keepsOneRequestWhenTheSameBranchIsCreatedTwice() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      String create =
-          "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"create_"
-              + "merge_request\","
-              + "\"arguments\":{\"source_branch\":\"feature/abc-42\",\"target_branch\":\"main\",\"t"
-              + "itle\":\"ABC-42\","
-              + "\"description\":\"d\"}}}";
-      post(host, create);
-      post(host, create);
+    HttpRequest create =
+        mcp.POST(
+                BodyPublishers.ofString(
+                    "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":"
+                        + "{\"name\":\"create_merge_request\",\"arguments\":"
+                        + "{\"source_branch\":\"feature/abc-42\",\"target_branch\":\"main\","
+                        + "\"title\":\"ABC-42\",\"description\":\"d\"}}}"))
+            .build();
+    client.send(create, BodyHandlers.ofString());
+    client.send(create, BodyHandlers.ofString());
 
-      String list =
-          post(
-                  host,
-                  "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\",\"params\":{\"name\":"
-                      + "\"list_merge_requests\",\"arguments\":{\"source_branch\":\"feature/abc-42"
-                      + "\"}}}")
-              .body();
-      String text =
-          JsonMapper.builder()
-              .build()
-              .readTree(list)
-              .path("result")
-              .path("content")
-              .get(0)
-              .path("text")
-              .asString();
-      assertThat(JsonMapper.builder().build().readTree(text).size()).isEqualTo(1);
-    }
+    String list =
+        client
+            .send(
+                mcp.POST(
+                        BodyPublishers.ofString(
+                            "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\",\"params\":"
+                                + "{\"name\":\"list_merge_requests\",\"arguments\":"
+                                + "{\"source_branch\":\"feature/abc-42\"}}}"))
+                    .build(),
+                BodyHandlers.ofString())
+            .body();
+    String text =
+        JsonMapper.builder()
+            .build()
+            .readTree(list)
+            .path("result")
+            .path("content")
+            .get(0)
+            .path("text")
+            .asString();
+    assertThat(JsonMapper.builder().build().readTree(text).size()).isEqualTo(1);
   }
 
   @Test
   void resolvesThreadTheScenarioAddedAndReadsItBack() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
-      host.store().addThread(1, "src/A.java", 7, "rename this");
+    host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
+    host.store().addThread(1, "src/A.java", 7, "rename this");
 
-      HttpResponse<String> before =
-          post(
-              host,
-              "{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\",\"params\":"
-                  + "{\"name\":\"get_merge_request\",\"arguments\":{\"id_or_url\":\""
-                  + host.baseUrl()
-                  + "/requests/1\"}}}");
-      post(
-          host,
-          "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\",\"params\":{\"name\":\"resolve"
-              + "_thread\","
-              + "\"arguments\":{\"id\":1,\"thread_id\":1}}}");
+    HttpResponse<String> before =
+        client.send(
+            mcp.POST(
+                    BodyPublishers.ofString(
+                        "{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\",\"params\":"
+                            + "{\"name\":\"get_merge_request\",\"arguments\":{\"id_or_url\":\""
+                            + host.baseUrl()
+                            + "/requests/1\"}}}"))
+                .build(),
+            BodyHandlers.ofString());
+    client.send(
+        mcp.POST(
+                BodyPublishers.ofString(
+                    "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\",\"params\":"
+                        + "{\"name\":\"resolve_thread\","
+                        + "\"arguments\":{\"id\":1,\"thread_id\":1}}}"))
+            .build(),
+        BodyHandlers.ofString());
 
-      assertThat(before.body()).contains("rename this").contains("reviewer");
-      assertThat(host.store().request(1).path("threads").get(0).path("resolved").asBoolean())
-          .isTrue();
-    }
+    assertThat(before.body()).contains("rename this").contains("reviewer");
+    assertThat(host.store().request(1).path("threads").get(0).path("resolved").asBoolean())
+        .isTrue();
   }
 
   @Test
   void listsThePipelineOfRequestWithItsStatusAndBranch() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
-      host.store().setPipeline(1, "success");
+    host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
+    host.store().setPipeline(1, "success");
 
-      String answer =
-          post(
-                  host,
-                  "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":"
-                      + "{\"name\":\"list_merge_request_pipelines\",\"arguments\":{\"id\":1}}}")
-              .body();
+    String answer =
+        client
+            .send(
+                mcp.POST(
+                        BodyPublishers.ofString(
+                            "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":"
+                                + "{\"name\":\"list_merge_request_pipelines\","
+                                + "\"arguments\":{\"id\":1}}}"))
+                    .build(),
+                BodyHandlers.ofString())
+            .body();
 
-      String text =
-          JsonMapper.builder()
-              .build()
-              .readTree(answer)
-              .path("result")
-              .path("content")
-              .get(0)
-              .path("text")
-              .asString();
-      JsonNode pipelines = JsonMapper.builder().build().readTree(text);
-      assertThat(pipelines.size()).isEqualTo(1);
-      assertThat(pipelines.get(0).path("status").asString()).isEqualTo("success");
-      assertThat(pipelines.get(0).path("ref").asString()).isEqualTo("feature/abc-42");
-      assertThat(pipelines.get(0).path("id").asInt()).isEqualTo(1);
-    }
+    String text =
+        JsonMapper.builder()
+            .build()
+            .readTree(answer)
+            .path("result")
+            .path("content")
+            .get(0)
+            .path("text")
+            .asString();
+    JsonNode pipelines = JsonMapper.builder().build().readTree(text);
+    assertThat(pipelines.size()).isEqualTo(1);
+    assertThat(pipelines.get(0).path("status").asString()).isEqualTo("success");
+    assertThat(pipelines.get(0).path("ref").asString()).isEqualTo("feature/abc-42");
+    assertThat(pipelines.get(0).path("id").asInt()).isEqualTo(1);
   }
 
   @Test
   void failsAnUnknownToolAsToolError() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      HttpResponse<String> response =
-          post(
-              host,
-              "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
-                  + "\"params\":{\"name\":\"merge_everything\",\"arguments\":{}}}");
+    HttpResponse<String> response =
+        client.send(
+            mcp.POST(
+                    BodyPublishers.ofString(
+                        "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+                            + "\"params\":{\"name\":\"merge_everything\",\"arguments\":{}}}"))
+                .build(),
+            BodyHandlers.ofString());
 
-      JsonNode result = JsonMapper.builder().build().readTree(response.body()).path("result");
-      assertThat(result.path("isError").asBoolean()).isTrue();
-      assertThat(result.path("content").get(0).path("text").asString())
-          .contains("unknown tool merge_everything");
-    }
+    JsonNode result = JsonMapper.builder().build().readTree(response.body()).path("result");
+    assertThat(result.path("isError").asBoolean()).isTrue();
+    assertThat(result.path("content").get(0).path("text").asString())
+        .contains("unknown tool merge_everything");
   }
 
   @Test
   void servesTheDeployedGreetingAtItsAppUrl() throws Exception {
-    try (StandHost host = new StandHost(directory).start()) {
-      HttpResponse<String> response =
-          HttpClient.newHttpClient()
-              .send(
-                  HttpRequest.newBuilder(URI.create(host.appUrl())).build(),
-                  HttpResponse.BodyHandlers.ofString());
+    HttpResponse<String> response =
+        client.send(
+            HttpRequest.newBuilder(URI.create(host.appUrl())).build(), BodyHandlers.ofString());
 
-      assertThat(response.statusCode()).isEqualTo(200);
-      assertThat(response.body()).contains("Hello, World");
-    }
-  }
-
-  private static HttpResponse<String> post(StandHost host, String body) throws Exception {
-    HttpRequest request =
-        HttpRequest.newBuilder(URI.create(host.mcpUrl()))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build();
-    return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).contains("Hello, World");
   }
 }

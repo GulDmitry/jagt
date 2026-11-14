@@ -42,19 +42,12 @@ class StandRecordingsTest {
   @Test
   void leavesFileThatIsNoRecordingOfRun(@TempDir Path dir) throws Exception {
     Files.writeString(dir.resolve("notes.txt"), "kept\n");
-    IntStream.rangeClosed(1, StandRecordings.KEPT + 1)
-        .forEach(pid -> StandRecordingsTest.write(dir, pid));
+    for (int pid = 1; pid <= StandRecordings.KEPT + 1; pid++) {
+      Files.writeString(dir.resolve("plan-act-jagt-stand-" + pid + "-1.jsonl"), "\n");
+    }
 
     StandRecordings.fold(dir);
 
     assertThat(dir.resolve("notes.txt")).exists();
-  }
-
-  private static void write(Path dir, int pid) {
-    try {
-      Files.writeString(dir.resolve("plan-act-jagt-stand-" + pid + "-1.jsonl"), "\n");
-    } catch (java.io.IOException e) {
-      throw new java.io.UncheckedIOException(e);
-    }
   }
 }
