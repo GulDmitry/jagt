@@ -85,6 +85,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L21 | a test captures a logger while a parallel test still initialises SLF4J → logging is initialised once when the test launcher opens, so no test is handed a substitute logger | seen 2026-11-13: `FakeLogCaptureTest` red on a `SubstituteLogger` cast under `test --rerun-tasks` | none: a JVM-start race |
 | L22 | a role folder holds a link whose target is absent where the suite runs → every test task seeds its root with the role's regular files alone, never following a link | seen 2026-11-14: `scripts/linux-suite.sh` failed every test task on a workspace `node_modules` link to a host path | none: the container suite with such a link present |
 | L23 | a test's provider is named by a bare `@MethodSource` (JUnit's own default `""`, the test method's name) → `NoHelperMethodTest` reads it as that provider, never as a helper method | seen 2026-11-14: two providers in `ConfigCheckTest` had to name themselves explicitly to pass the rule | `NoHelperMethodTest` over `ConfigCheckTest` |
+| L24 | the linux suite runs in its container on the host's checkout → Gradle's project state stays in container-only volumes, so the next host run reads no `/jagt` path | seen 2026-11-14: a host `:test` failed in `spotlessJava` on targets under `/jagt/orchestrator-backend` | none: `scripts/linux-suite.sh test`, then a host `:test` without `--rerun-tasks` |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

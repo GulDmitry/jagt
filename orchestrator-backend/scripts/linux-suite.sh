@@ -33,9 +33,18 @@ docker volume create "$CACHE_VOLUME" >/dev/null
 
 # The display, the session bus and the notification daemon come from with-linux-desktop.sh — the same script
 # a CI job runs, so what is verified here is what CI verifies.
+# Gradle's project state records absolute paths, so the container's own lives in anonymous volumes, never on the host.
+STATE_MOUNTS=()
+for project in "$BACKEND_DIR"/build.gradle "$BACKEND_DIR"/*/build.gradle; do
+    dir="/jagt/${project#"$REPO_ROOT"/}"
+    dir="${dir%/build.gradle}"
+    STATE_MOUNTS+=(-v "$dir/build" -v "$dir/.gradle")
+done
+
 echo "==> running: ${TASKS[*]}"
 docker run --rm \
     -v "$REPO_ROOT:/jagt" \
+    "${STATE_MOUNTS[@]}" \
     -v "$CACHE_VOLUME:/gradle-home" \
     "$IMAGE" scripts/with-linux-desktop.sh ./gradlew --no-daemon "${TASKS[@]}"
 echo "==> done"
