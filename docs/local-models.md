@@ -45,6 +45,9 @@ once ([0135](decisions/0135-tool-less-reads-may-call-a-local-model-directly.md))
 (`opencode.reads`, [0138](decisions/0138-a-read-may-run-on-opencode.md)) stay for a machine whose model passes
 `roleEval -ProleCli=opencode`.
 
+`assistant.local.minConfidence` (0..1, default 0 = accept all) sends an answer whose tokens' joint probability
+(llama-server logprobs) is lower to the cloud; the confidence is logged at DEBUG as `confidence`.
+
 Every local model misses the same rows: "get going on ABC-99" (answers `none`), "send it for review" and the deploy row (answer `ship`).
 
 An acceptance read on the 9B hit the 10-minute cap after 2 of 12 cases, both wrong:

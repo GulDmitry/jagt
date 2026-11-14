@@ -149,6 +149,7 @@ orchestrator:
     #   endpoint: http://127.0.0.1:8080/v1   # blank = off; llama-server, LM Studio and Ollama all serve /v1/chat/completions
     #   model: unsloth/Qwen3.5-9B-GGUF:Q4_K_M   # as the server lists it at /v1/models; per memory size: docs/local-models.md
     #   timeout: 20s                         # per call; a failed or late call is asked of the cloud once
+    #   minConfidence: 0                     # 0..1: an answer whose tokens' joint probability is lower goes to the cloud; 0 = accept all
     #   kinds: [COMMAND_MAP]                 # only COMMAND_MAP reads no tool; the default stays cloud until `promptEval` shows parity
 
   # ── The roles ──────────────────────────────────────────────────────────────────────────────────────────────

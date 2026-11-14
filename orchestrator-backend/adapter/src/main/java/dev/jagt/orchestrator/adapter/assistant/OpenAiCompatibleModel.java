@@ -14,6 +14,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -52,9 +53,16 @@ class OpenAiCompatibleModel {
       JsonNode answer =
           mapper.readTree(
               body.path("choices").path(0).path("message").path("content").asString(""));
-      return answer.isObject()
-          ? new Answer<>(Optional.of(answer), usage)
-          : failed(usage, label, kind, "content is not an object");
+      if (!answer.isObject()) {
+        return failed(usage, label, kind, "content is not an object");
+      }
+      OptionalDouble confidence = confidenceOf(body);
+      Optional<String> doubt = doubtOf(confidence);
+      if (doubt.isPresent()) {
+        return failed(usage, label, kind, doubt.get());
+      }
+      confidence.ifPresent(value -> logConfidence(label, kind, value));
+      return new Answer<>(Optional.of(answer), usage);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       return failed(usage, label, kind, "interrupted");
@@ -68,6 +76,7 @@ class OpenAiCompatibleModel {
     body.put("model", local.model());
     body.put("temperature", 0);
     body.put("max_tokens", MAX_TOKENS);
+    body.put("logprobs", true);
     body.putArray("messages").addObject().put("role", "user").put("content", prompt);
     body.putObject("response_format")
         .put("type", "json_schema")
@@ -80,6 +89,40 @@ class OpenAiCompatibleModel {
         .header("Content-Type", "application/json")
         .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
         .build();
+  }
+
+  private static OptionalDouble confidenceOf(JsonNode body) {
+    JsonNode tokens = body.path("choices").path(0).path("logprobs").path("content");
+    if (!tokens.isArray() || tokens.isEmpty()) {
+      return OptionalDouble.empty();
+    }
+    double sum = 0;
+    for (JsonNode token : tokens) {
+      sum += token.path("logprob").asDouble(0);
+    }
+    return OptionalDouble.of(Math.exp(sum));
+  }
+
+  private Optional<String> doubtOf(OptionalDouble confidence) {
+    double threshold = local.minConfidence();
+    if (threshold <= 0) {
+      return Optional.empty();
+    }
+    if (confidence.isEmpty()) {
+      return Optional.of("no logprobs in the response, confidence unknown");
+    }
+    return confidence.getAsDouble() < threshold
+        ? Optional.of("confidence %.3f below %s".formatted(confidence.getAsDouble(), threshold))
+        : Optional.empty();
+  }
+
+  private void logConfidence(String label, AssistantCallKind kind, double confidence) {
+    log.atDebug()
+        .setMessage("local model answered")
+        .addKeyValue("ref", label)
+        .addKeyValue("kind", kind)
+        .addKeyValue("confidence", confidence)
+        .log();
   }
 
   private static TokenUsage usageOf(JsonNode body) {

@@ -136,4 +136,86 @@ class OpenAiCompatibleModelTest {
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.usage()).isEqualTo(TokenUsage.NONE);
   }
+
+  @Test
+  void asksTheServerForLogprobs() throws IOException {
+    reply = "{\"choices\":[{\"message\":{\"content\":\"{}\"}}]}";
+
+    model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(sent.get()).contains("\"logprobs\":true");
+  }
+
+  @Test
+  void acceptsTheAnswerWhereItsConfidenceReachesTheThreshold() throws IOException {
+    reply =
+        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
+            + "\"logprobs\":{\"content\":[{\"logprob\":-0.05},{\"logprob\":-0.05}]}}]}";
+
+    var answer =
+        modelWithMinConfidence(0.8)
+            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(answer.facts().orElseThrow().path("command").asString("")).isEqualTo("ship");
+  }
+
+  @Test
+  void acceptsTheAnswerWhereItsConfidenceEqualsTheThreshold() throws IOException {
+    reply =
+        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
+            + "\"logprobs\":{\"content\":[{\"logprob\":0.0}]}}]}";
+
+    var answer =
+        modelWithMinConfidence(1)
+            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(answer.facts()).isPresent();
+  }
+
+  @Test
+  void refusesTheAnswerWhereItsConfidenceIsBelowTheThreshold() throws IOException {
+    reply =
+        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
+            + "\"logprobs\":{\"content\":[{\"logprob\":-0.5},{\"logprob\":-0.5}]}}]}";
+
+    var answer =
+        modelWithMinConfidence(0.8)
+            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).isEqualTo("confidence 0.368 below 0.8");
+  }
+
+  @Test
+  void refusesTheAnswerWithNoLogprobsWhereTheThresholdIsSet() throws IOException {
+    reply = "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"}}]}";
+
+    var answer =
+        modelWithMinConfidence(0.8)
+            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).contains("no logprobs");
+  }
+
+  @Test
+  void acceptsAnyConfidenceWhereTheThresholdIsZero() throws IOException {
+    reply =
+        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
+            + "\"logprobs\":{\"content\":[{\"logprob\":-9.0}]}}]}";
+
+    var answer = model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(answer.facts()).isPresent();
+  }
+
+  private OpenAiCompatibleModel modelWithMinConfidence(double minConfidence) {
+    return new OpenAiCompatibleModel(
+        LocalModelProperties.off()
+            .withEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
+            .withModel("qwen")
+            .withTimeout(Duration.ofSeconds(5))
+            .withMinConfidence(minConfidence),
+        usageTracker);
+  }
 }
