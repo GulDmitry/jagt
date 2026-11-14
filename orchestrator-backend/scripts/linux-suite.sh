@@ -47,11 +47,17 @@ DROP_ROOT='[[ $(stat -c %u /gradle-home) == 1000 ]] || chown -R 1000:1000 /gradl
 chown 1000:1000 /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
 exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME=/home/ubuntu "$@"'
 
+# A linked worktree's .git points at its main checkout's git dir by absolute path, so that dir is mounted there too.
+GIT_MOUNTS=()
+GIT_COMMON_DIR="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir)"
+if [[ "$GIT_COMMON_DIR" != "$REPO_ROOT/.git" ]]; then GIT_MOUNTS=(-v "$GIT_COMMON_DIR:$GIT_COMMON_DIR"); fi
+
 echo "==> running: ${TASKS[*]}"
 # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
 docker run --rm --init \
     -v "$REPO_ROOT:/jagt" \
     "${STATE_MOUNTS[@]}" \
+    ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"} \
     -v "$CACHE_VOLUME:/gradle-home" \
     "$IMAGE" bash -c "$DROP_ROOT" - scripts/with-linux-desktop.sh ./gradlew --no-daemon "${TASKS[@]}"
 echo "==> done"

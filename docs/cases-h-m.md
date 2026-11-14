@@ -91,6 +91,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L26 | a test feeds a parser made-up pids and the code under test kills what it parsed → the pids are ones no OS hands out, so no live process is signalled | seen 2026-11-14: `scripts/linux-suite.sh test` lost its Gradle daemon, pid 100 or 200 under root in the container | `LsofWorktreeProcessesTest` |
 | L27 | the linux suite's container kills a timed-out command → an init reaps its orphan, so the child reads as gone, not as a live zombie | seen 2026-11-14: `ProcessRunnerTest` red in `scripts/linux-suite.sh`, PID 1 a shell that never reaps | `ProcessRunnerTest` |
 | L28 | the linux suite's container runs a test refusing an unreadable or unwritable path → the suites run as the image's non-root user, so file modes refuse as on a host | seen 2026-11-14: nine permission tests red in `scripts/linux-suite.sh test`, root ignoring file modes | `WorkspaceCheckTest`, `LogTailTest` |
+| L29 | the linux suite runs from a linked worktree → its main checkout's git dir is mounted at its own path, so the build reads git | seen 2026-11-14: `jagt.pitest` failed on git exit 128, the suite ran only from a clone | `scripts/linux-suite.sh` from a linked worktree |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
