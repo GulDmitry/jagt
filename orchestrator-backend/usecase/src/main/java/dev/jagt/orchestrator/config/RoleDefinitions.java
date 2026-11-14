@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.config;
 
-import dev.jagt.orchestrator.flow.RolePointKind;
+import dev.jagt.orchestrator.flow.role.RolePointKind;
 import dev.jagt.orchestrator.protocol.Schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;

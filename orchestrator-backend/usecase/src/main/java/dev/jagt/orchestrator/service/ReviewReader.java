@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
-import dev.jagt.orchestrator.protocol.RetryPolicy;
-import dev.jagt.orchestrator.protocol.ReviewRead;
-import dev.jagt.orchestrator.task.MergeRequestFacts;
-import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.protocol.read.RetryPolicy;
+import dev.jagt.orchestrator.protocol.read.ReviewRead;
+import dev.jagt.orchestrator.task.review.MergeRequestFacts;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;

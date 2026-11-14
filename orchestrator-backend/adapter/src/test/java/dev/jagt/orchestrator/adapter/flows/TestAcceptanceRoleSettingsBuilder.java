@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RoleSettings;

@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.port.RequestlessShip;
+import dev.jagt.orchestrator.port.codehost.RequestlessShip;
 import dev.jagt.orchestrator.task.TaskState;
 
 /** What a task's facts read from outside its stored state: its agent's window, its ship. */

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp;
 
 import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.NoArguments;
+import dev.jagt.orchestrator.protocol.message.NoArguments;
 
 record ThrowingMcpTools(RuntimeException failure) implements McpTools {
 

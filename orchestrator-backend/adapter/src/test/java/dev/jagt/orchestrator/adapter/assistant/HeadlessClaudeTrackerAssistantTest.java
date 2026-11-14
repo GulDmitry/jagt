@@ -6,10 +6,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

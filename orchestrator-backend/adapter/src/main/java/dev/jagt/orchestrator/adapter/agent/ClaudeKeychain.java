@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.Executables;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;

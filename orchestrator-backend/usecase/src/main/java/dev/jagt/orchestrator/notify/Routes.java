@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.port.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig.ChannelDef;

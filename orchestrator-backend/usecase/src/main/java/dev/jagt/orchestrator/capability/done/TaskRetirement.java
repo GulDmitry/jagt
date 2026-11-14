@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.capability.done;
 
 import dev.jagt.orchestrator.capability.TaskViewer;
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;

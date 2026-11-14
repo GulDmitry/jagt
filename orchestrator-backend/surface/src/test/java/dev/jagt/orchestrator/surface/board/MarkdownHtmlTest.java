@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.LineChange;
+import dev.jagt.orchestrator.port.worktree.LineChange;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

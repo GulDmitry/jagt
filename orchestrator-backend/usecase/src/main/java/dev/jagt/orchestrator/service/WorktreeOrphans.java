@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskName;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;

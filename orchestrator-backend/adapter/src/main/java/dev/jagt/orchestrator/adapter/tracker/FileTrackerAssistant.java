@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.adapter.tracker;
 
 import dev.jagt.orchestrator.adapter.tracker.MarkdownItems.Item;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.TrackerAssistant;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -1,0 +1,31 @@
+package dev.jagt.orchestrator.protocol.message;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.Schema;
+import dev.jagt.orchestrator.protocol.Violation;
+import java.util.List;
+
+/** Something a human is to be told now, outside any task's own line. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record UserNotice(String title, String message) implements Message {
+
+  public static final Schema SCHEMA =
+      Schema.of(
+              "Send an OS push notification to the human (e.g. 'review round addressed — ABC-123')."
+                  + " Never for a question: that is update_agent_status with outcome=question.")
+          .text("title", "Defaults to 'jagt'.")
+          .required("message", "string", "One line, for a banner that is read in passing.");
+
+  public UserNotice {
+    title = title == null || title.isBlank() ? null : title;
+    message = message == null || message.isBlank() ? null : message;
+  }
+
+  @Override
+  public List<Violation> violations(MessageContext context) {
+    return message == null
+        ? List.of(new Violation("message", "required: a banner with no line says nothing"))
+        : List.of();
+  }
+}

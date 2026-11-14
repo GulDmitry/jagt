@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.WorktreeContainers;
-import dev.jagt.orchestrator.port.WorktreeProcesses;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
+import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

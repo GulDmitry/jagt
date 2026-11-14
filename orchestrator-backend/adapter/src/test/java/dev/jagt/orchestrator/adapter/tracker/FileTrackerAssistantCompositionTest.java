@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter.tracker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.port.assistant.TrackerAssistant;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

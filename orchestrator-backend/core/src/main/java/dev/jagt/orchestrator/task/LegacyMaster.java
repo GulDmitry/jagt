@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

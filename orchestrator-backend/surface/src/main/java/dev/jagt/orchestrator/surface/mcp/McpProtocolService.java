@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.protocol.Message;
+import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
+import dev.jagt.orchestrator.protocol.message.Message;
 import dev.jagt.orchestrator.service.KeepAlive;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;

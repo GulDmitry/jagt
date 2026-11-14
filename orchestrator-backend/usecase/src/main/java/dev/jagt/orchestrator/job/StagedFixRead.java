@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.ConflictEnding;
+import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.master.MasterMode;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

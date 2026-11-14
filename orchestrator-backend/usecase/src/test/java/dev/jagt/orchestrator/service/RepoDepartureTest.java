@@ -12,12 +12,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.GitTrust;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

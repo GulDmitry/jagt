@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.port.LineChange;
-import dev.jagt.orchestrator.port.LineDiff;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.port.worktree.LineChange;
+import dev.jagt.orchestrator.port.worktree.LineDiff;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

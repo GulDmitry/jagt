@@ -7,9 +7,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

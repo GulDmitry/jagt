@@ -9,12 +9,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.task.launch.LaunchRequest;
+import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

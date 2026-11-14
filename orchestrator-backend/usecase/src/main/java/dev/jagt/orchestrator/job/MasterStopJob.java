@@ -1,17 +1,17 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.StopHold;
-import dev.jagt.orchestrator.flow.StopKind;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.StopHold;
+import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterStopAnswer;
 import dev.jagt.orchestrator.service.master.MasterStopPanel;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

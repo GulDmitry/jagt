@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.startup;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.Causes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;

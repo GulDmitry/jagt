@@ -4,6 +4,7 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import dev.jagt.orchestrator.protocol.message.Message;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

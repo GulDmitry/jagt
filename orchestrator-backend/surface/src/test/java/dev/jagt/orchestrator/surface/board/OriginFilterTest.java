@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.surface.board;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import jakarta.servlet.FilterChain;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;

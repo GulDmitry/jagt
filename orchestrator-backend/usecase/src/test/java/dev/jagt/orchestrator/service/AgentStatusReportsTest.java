@@ -15,21 +15,21 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.Session;
-import dev.jagt.orchestrator.task.StatusChange;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.session.Session;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.StatusChange;
+import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,16 +73,16 @@ class AgentStatusReportsTest {
           .withProjects(
               Map.of(
                   "proj",
-                  new dev.jagt.orchestrator.task.ProjectConfig(
+                  new dev.jagt.orchestrator.task.repo.ProjectConfig(
                       "/repo", "origin/main", "dev", List.of())));
   private final ConfigService.ConfigFile withRegistry =
       projOnly.withProjects(
           Map.of(
               "proj",
-              new dev.jagt.orchestrator.task.ProjectConfig(
+              new dev.jagt.orchestrator.task.repo.ProjectConfig(
                   "/repo", "origin/main", "dev", List.of()),
               "registry",
-              new dev.jagt.orchestrator.task.ProjectConfig(
+              new dev.jagt.orchestrator.task.repo.ProjectConfig(
                   "/reg", "origin/main", "dev", List.of())));
 
   @TempDir Path root;

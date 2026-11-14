@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.port.Supervisor;
+import dev.jagt.orchestrator.port.host.Supervisor;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

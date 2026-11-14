@@ -1,20 +1,20 @@
 package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.config.MasterMove;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.MasterRight;
-import dev.jagt.orchestrator.task.ReviewRequestTitle;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.task.review.ReviewRequestTitle;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;

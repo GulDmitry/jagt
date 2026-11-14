@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.TicketTexts;
 import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

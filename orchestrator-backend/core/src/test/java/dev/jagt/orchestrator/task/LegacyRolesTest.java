@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;

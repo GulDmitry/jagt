@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.AcceptanceDecline;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

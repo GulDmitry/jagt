@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.util.List;
 import lombok.With;
 import org.jspecify.annotations.Nullable;

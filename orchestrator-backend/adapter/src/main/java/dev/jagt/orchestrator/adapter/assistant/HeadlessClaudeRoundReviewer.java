@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.protocol.RoundRead;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.protocol.read.RoundRead;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

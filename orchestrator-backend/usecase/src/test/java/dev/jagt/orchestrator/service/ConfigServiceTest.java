@@ -12,13 +12,13 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBrake;
-import dev.jagt.orchestrator.task.MasterMode;
-import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.task.master.MasterMode;
+import dev.jagt.orchestrator.task.master.MasterRight;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -716,14 +716,15 @@ class ConfigServiceTest {
             .withProjects(
                 java.util.Map.of(
                     "demo",
-                    new dev.jagt.orchestrator.task.ProjectConfig(
-                        new dev.jagt.orchestrator.task.ProjectConfig.Repository(
+                    new dev.jagt.orchestrator.task.repo.ProjectConfig(
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Repository(
                             "/repo", List.of(), null, List.of()),
-                        new dev.jagt.orchestrator.task.ProjectConfig.Branches(
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Branches(
                             "origin/main", "dev", null),
-                        new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
                             own, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                        new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Verify(
+                            List.of(), null))));
 
     assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
   }

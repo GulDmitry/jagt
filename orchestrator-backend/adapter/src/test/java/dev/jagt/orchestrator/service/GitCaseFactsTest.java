@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.capability.deploy.GitCaseFacts;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

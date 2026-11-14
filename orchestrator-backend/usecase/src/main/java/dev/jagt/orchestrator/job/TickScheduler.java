@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.port.ReadScope;
+import dev.jagt.orchestrator.port.terminal.ReadScope;
 import java.util.concurrent.ScheduledFuture;
 import org.jspecify.annotations.Nullable;
 import org.springframework.scheduling.Trigger;

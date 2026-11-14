@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.flow.Point;
-import dev.jagt.orchestrator.flow.SessionPhase;
-import dev.jagt.orchestrator.flow.StopHold;
-import dev.jagt.orchestrator.task.Conflict;
-import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.flow.role.Point;
+import dev.jagt.orchestrator.flow.session.SessionPhase;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.ToldOnce;
+import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

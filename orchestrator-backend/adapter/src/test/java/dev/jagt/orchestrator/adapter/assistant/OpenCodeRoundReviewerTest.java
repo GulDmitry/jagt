@@ -8,10 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.RoundReviewer;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
 import java.nio.file.Path;

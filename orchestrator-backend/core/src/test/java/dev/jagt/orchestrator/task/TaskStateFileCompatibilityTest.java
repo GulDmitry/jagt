@@ -2,6 +2,10 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;

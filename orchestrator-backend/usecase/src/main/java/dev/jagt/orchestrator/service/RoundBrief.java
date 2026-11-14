@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.task.Outside;
-import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.task.text.Outside;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.ArrayList;
 import java.util.List;
 

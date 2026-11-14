@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.nio.file.Path;
 import java.util.Optional;
 

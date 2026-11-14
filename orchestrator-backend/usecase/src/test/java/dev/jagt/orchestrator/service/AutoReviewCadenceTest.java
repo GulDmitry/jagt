@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.AutoReviewWatch;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.review.AutoReviewWatch;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

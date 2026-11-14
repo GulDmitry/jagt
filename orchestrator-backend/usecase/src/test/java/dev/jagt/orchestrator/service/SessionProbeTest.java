@@ -9,12 +9,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.SessionHost;
-import dev.jagt.orchestrator.task.Session;
+import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.session.Session;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;

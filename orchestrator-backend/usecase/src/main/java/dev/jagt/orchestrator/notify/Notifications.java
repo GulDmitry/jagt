@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.notify;
 
 import dev.jagt.orchestrator.notify.Routes.Routed;
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.NotificationSink;
 import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.port.channel.Notification;
+import dev.jagt.orchestrator.port.channel.NotificationSink;
 import dev.jagt.orchestrator.task.TaskState;
 import java.util.Optional;
 import org.springframework.stereotype.Component;

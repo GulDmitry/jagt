@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.config.LocalModelProperties;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

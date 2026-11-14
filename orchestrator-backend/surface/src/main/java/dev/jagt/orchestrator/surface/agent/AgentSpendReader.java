@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.port.SessionLog;
+import dev.jagt.orchestrator.port.agent.SessionLog;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.AgentSpend;
+import dev.jagt.orchestrator.task.usage.AgentSpend;
 import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

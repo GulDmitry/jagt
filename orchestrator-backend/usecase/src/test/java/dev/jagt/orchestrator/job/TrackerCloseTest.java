@@ -7,14 +7,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

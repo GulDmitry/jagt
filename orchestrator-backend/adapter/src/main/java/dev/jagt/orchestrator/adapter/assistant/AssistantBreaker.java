@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.AssistantUnavailable;
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.assistant.AssistantUnavailable;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig.SlidingWindowType;

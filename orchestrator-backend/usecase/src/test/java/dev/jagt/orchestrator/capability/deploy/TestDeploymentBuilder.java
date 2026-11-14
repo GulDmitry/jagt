@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.task.Conflict;
-import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.util.List;
 import lombok.With;
 

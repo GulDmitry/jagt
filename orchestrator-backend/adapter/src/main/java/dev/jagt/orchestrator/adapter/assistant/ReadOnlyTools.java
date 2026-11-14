@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

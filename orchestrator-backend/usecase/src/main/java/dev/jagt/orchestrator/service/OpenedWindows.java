@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.SessionHost;
-import dev.jagt.orchestrator.task.Ansi;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.task.text.Ansi;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

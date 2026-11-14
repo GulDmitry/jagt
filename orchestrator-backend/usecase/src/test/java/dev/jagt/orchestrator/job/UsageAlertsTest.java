@@ -3,10 +3,10 @@ package dev.jagt.orchestrator.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Snapshot;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Window;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Paid;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Snapshot;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Window;
+import dev.jagt.orchestrator.port.channel.Notification;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.Instant;

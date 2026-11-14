@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.Owner;
+import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
-import dev.jagt.orchestrator.task.Guard;
+import dev.jagt.orchestrator.task.stop.Guard;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;

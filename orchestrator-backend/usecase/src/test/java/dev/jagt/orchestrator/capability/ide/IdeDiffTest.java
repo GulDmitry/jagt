@@ -7,14 +7,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.EditorDriver;
+import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DiffBases;
 import dev.jagt.orchestrator.service.DiffCheckouts;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

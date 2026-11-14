@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
-import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.review.AutoReviewWatch;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.port;
 
-import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
 import org.jspecify.annotations.Nullable;
 
 /**

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

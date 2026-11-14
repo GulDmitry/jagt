@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.capability.trust;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskCapability;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskCapability;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TrustedGitState;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

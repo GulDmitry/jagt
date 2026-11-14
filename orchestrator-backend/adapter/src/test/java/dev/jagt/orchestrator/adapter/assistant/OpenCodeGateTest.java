@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.io.IOException;

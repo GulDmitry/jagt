@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

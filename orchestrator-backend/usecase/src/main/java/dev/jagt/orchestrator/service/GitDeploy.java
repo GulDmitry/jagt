@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Conflict;
-import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.Remote;
-import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;

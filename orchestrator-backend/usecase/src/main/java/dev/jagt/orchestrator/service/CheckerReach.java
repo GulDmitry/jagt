@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.RoleOptions;
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

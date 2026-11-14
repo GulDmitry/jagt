@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.launch.LaunchRequest;
+import dev.jagt.orchestrator.task.launch.Launched;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

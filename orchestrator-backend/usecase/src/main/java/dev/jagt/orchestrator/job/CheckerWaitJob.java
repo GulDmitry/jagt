@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.RoleOptions.Environment;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.StopKind;
-import dev.jagt.orchestrator.flow.Watch;
-import dev.jagt.orchestrator.port.EnvironmentProbe;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.StopKind;
+import dev.jagt.orchestrator.port.assistant.EnvironmentProbe;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

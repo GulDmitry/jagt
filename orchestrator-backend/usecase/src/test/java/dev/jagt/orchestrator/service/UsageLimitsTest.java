@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

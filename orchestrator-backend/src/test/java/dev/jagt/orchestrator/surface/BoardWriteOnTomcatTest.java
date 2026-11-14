@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.surface;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.eval.ShippedRoot;
-import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.port.channel.UserNotifier;
+import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.Locale;
 
 /**

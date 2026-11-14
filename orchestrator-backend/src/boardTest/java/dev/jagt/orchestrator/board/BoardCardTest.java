@@ -8,11 +8,11 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -871,8 +871,8 @@ class BoardCardTest extends BoardPageContext {
             .alias("a1")
             .mrUrl("https://host.example/mr/7")
             .stop(
-                new dev.jagt.orchestrator.task.TaskStop(
-                    dev.jagt.orchestrator.task.TaskStop.Trigger.SHIPS,
+                new dev.jagt.orchestrator.task.stop.TaskStop(
+                    dev.jagt.orchestrator.task.stop.TaskStop.Trigger.SHIPS,
                     1_700_000_000_000L,
                     "a ship asked past 3 without a new note"))
             .build());
@@ -898,16 +898,16 @@ class BoardCardTest extends BoardPageContext {
             .alias("a1")
             .mrUrl("https://host.example/mr/7")
             .stop(
-                new dev.jagt.orchestrator.task.TaskStop(
-                        dev.jagt.orchestrator.task.TaskStop.Trigger.SHIPS,
+                new dev.jagt.orchestrator.task.stop.TaskStop(
+                        dev.jagt.orchestrator.task.stop.TaskStop.Trigger.SHIPS,
                         1_700_000_000_000L,
                         "a ship asked past 3 without a new note")
                     .withTriage(
-                        new dev.jagt.orchestrator.task.StopTriage(
-                            dev.jagt.orchestrator.task.StopTriage.Who.JAGT,
+                        new dev.jagt.orchestrator.task.stop.StopTriage(
+                            dev.jagt.orchestrator.task.stop.StopTriage.Who.JAGT,
                             "ships counted past a merge",
                             "H",
-                            dev.jagt.orchestrator.task.StopTriage.Lift.SAFE,
+                            dev.jagt.orchestrator.task.stop.StopTriage.Lift.SAFE,
                             "request merged",
                             "")))
             .build());

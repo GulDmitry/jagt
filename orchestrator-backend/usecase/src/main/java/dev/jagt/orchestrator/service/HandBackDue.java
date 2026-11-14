@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Specs;
-import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.port.worktree.Specs;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

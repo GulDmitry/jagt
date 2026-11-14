@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TurnKind;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.List;
 import lombok.With;
 

@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelDriver;
-import dev.jagt.orchestrator.port.ChannelMessage;
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelDriver;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.Causes;
 import java.util.List;
 import java.util.Map;

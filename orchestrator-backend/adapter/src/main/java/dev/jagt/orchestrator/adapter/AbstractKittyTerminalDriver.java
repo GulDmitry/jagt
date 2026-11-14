@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
-import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import java.nio.file.Path;
 import java.time.Clock;

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
 import java.util.Map;
 import lombok.With;

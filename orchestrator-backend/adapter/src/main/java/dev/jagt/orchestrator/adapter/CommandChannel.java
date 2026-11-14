@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.adapter;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelDriver;
-import dev.jagt.orchestrator.port.ChannelMessage;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelDriver;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

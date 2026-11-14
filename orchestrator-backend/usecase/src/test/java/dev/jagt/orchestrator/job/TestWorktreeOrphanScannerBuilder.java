@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.GitCommands;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.WorktreeOrphans;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

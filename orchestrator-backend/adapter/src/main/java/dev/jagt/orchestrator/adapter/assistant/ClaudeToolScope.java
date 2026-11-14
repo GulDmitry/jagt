@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

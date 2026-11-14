@@ -7,10 +7,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Exit;
-import dev.jagt.orchestrator.port.Host;
-import dev.jagt.orchestrator.port.Supervisor;
-import dev.jagt.orchestrator.port.Supervisor.Supervision;
+import dev.jagt.orchestrator.port.host.Exit;
+import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.host.Supervisor;
+import dev.jagt.orchestrator.port.host.Supervisor.Supervision;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

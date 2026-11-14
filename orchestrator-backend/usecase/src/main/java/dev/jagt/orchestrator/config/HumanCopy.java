@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.config;
 
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

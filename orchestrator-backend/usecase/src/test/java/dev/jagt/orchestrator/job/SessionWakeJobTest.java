@@ -7,11 +7,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.SessionWakes;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.List;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;

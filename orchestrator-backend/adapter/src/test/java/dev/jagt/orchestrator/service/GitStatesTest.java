@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.task.repo.GitTrust;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;

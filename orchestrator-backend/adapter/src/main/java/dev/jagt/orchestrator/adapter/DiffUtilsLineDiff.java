@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter;
 
 import com.github.difflib.DiffUtils;
 import com.github.difflib.patch.AbstractDelta;
-import dev.jagt.orchestrator.port.LineChange;
-import dev.jagt.orchestrator.port.LineDiff;
+import dev.jagt.orchestrator.port.worktree.LineChange;
+import dev.jagt.orchestrator.port.worktree.LineDiff;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

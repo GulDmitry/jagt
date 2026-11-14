@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

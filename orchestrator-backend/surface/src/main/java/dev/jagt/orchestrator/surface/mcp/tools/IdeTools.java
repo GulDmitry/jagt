@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.protocol.IdeOpen;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.message.IdeOpen;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;

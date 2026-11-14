@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.util.List;
 import lombok.With;
 

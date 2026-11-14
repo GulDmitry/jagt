@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.config;
 
 import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;

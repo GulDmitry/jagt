@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;

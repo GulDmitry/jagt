@@ -1,0 +1,13 @@
+package dev.jagt.orchestrator.task.launch;
+
+/**
+ * Two written rules saying one thing: {@code duplicate} is the wording that goes, {@code none}
+ * where no two do.
+ */
+public record RulePair(String kept, String duplicate) {
+
+  public RulePair {
+    kept = kept.strip();
+    duplicate = duplicate.strip();
+  }
+}

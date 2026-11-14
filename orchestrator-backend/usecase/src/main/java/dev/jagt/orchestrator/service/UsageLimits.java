@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;

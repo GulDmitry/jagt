@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

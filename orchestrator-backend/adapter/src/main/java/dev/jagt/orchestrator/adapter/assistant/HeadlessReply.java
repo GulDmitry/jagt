@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 

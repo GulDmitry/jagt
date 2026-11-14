@@ -2,8 +2,8 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.flow.Point;
-import dev.jagt.orchestrator.flow.Points;
+import dev.jagt.orchestrator.flow.role.Point;
+import dev.jagt.orchestrator.flow.role.Points;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

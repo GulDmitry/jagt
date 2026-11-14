@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.StateService;
 import java.time.Clock;
 import java.time.Duration;

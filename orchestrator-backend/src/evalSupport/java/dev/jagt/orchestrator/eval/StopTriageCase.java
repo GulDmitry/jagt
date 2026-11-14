@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.eval;
 
-import dev.jagt.orchestrator.task.StopTriage;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.stop.StopTriage;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 
 public record StopTriageCase(
     String name,

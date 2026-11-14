@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.KeptTicketTexts;
@@ -20,7 +20,7 @@ import dev.jagt.orchestrator.service.UsageLedger;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Map;

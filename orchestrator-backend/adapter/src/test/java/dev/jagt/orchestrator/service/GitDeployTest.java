@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.Conflict;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -861,7 +861,7 @@ class GitDeployTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
                 stopped -> {}));
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -879,7 +879,7 @@ class GitDeployTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
                 stopped -> {}));
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");

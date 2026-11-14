@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TurnKind;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

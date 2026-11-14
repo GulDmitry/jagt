@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Window;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Paid;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Window;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;

@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

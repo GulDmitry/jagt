@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sun.net.httpserver.HttpServer;
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelMessage;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;

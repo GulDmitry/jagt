@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommandAssistant;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.CommandAssistant;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.Optional;
 
 record FakeProposingCommandAssistant(CommandProposal proposal) implements CommandAssistant {

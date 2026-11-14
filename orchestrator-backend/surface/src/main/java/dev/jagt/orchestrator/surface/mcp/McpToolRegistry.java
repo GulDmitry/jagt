@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
+import dev.jagt.orchestrator.protocol.message.Message;
 import java.util.function.BiFunction;
 import org.jspecify.annotations.Nullable;
 

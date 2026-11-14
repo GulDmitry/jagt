@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.RoundReviewer.Premise;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;

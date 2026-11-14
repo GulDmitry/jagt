@@ -5,12 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.StatusChange;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

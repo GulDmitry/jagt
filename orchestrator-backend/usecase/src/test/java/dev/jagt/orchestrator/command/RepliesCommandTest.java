@@ -5,13 +5,13 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskView;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.flow.view.RoundState;
+import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.review.AutoReviewWatch;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

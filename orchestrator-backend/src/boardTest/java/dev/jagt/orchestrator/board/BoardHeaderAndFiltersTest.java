@@ -8,12 +8,12 @@ import static org.mockito.Mockito.verify;
 
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;

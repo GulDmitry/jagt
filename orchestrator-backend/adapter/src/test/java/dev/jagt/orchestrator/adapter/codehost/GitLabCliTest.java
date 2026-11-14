@@ -11,11 +11,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ReachLedger;
-import dev.jagt.orchestrator.task.FailedJob;
+import dev.jagt.orchestrator.task.deploy.FailedJob;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -71,7 +71,7 @@ class GitLabCliTest {
             "shop",
             "orchestrator.codeHost",
             Path.of("/repo"),
-            new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
+            new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
                 null,
                 "gitlab.corp.invalid",
                 List.of(),

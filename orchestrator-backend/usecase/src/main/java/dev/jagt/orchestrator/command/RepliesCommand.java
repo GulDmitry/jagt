@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.flow.view.TaskView;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

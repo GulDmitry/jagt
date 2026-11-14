@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Path;
 import java.util.Locale;
 

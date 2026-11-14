@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 

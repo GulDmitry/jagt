@@ -9,12 +9,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.launch.LaunchRequest;
+import dev.jagt.orchestrator.task.launch.Launched;
 import org.junit.jupiter.api.Test;
 
 class TaskCommandsControllerTest {

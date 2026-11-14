@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.flow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.acceptance.RoleRecord;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

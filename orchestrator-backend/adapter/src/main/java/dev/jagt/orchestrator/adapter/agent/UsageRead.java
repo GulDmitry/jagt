@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage.Answer;
-import dev.jagt.orchestrator.port.SubscriptionUsage.NoSubscription;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Unreadable;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Answer;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.NoSubscription;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Unreadable;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.Function;

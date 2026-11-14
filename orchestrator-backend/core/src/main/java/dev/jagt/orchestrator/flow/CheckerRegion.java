@@ -3,8 +3,11 @@ package dev.jagt.orchestrator.flow;
 import static dev.jagt.orchestrator.task.TaskStatus.DEPLOYED;
 import static dev.jagt.orchestrator.task.TaskStatus.IN_PROGRESS;
 
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
-import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.flow.role.CheckerRole;
+import dev.jagt.orchestrator.flow.role.RolePointKind;
+import dev.jagt.orchestrator.flow.session.TurnKind;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.statechart.ChartBuilder;
 import dev.jagt.statechart.RegionId;
 import java.util.EnumSet;

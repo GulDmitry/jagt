@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.task.InfraRetry;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
+import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;

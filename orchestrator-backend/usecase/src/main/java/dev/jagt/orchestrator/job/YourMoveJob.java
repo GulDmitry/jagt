@@ -1,18 +1,18 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.Owner;
-import dev.jagt.orchestrator.flow.Point;
-import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.role.Point;
+import dev.jagt.orchestrator.flow.view.Owner;
+import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.channel.Notification;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

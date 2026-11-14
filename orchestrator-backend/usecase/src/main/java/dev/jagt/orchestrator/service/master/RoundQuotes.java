@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

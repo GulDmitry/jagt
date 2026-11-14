@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskView;
-import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
 import java.util.List;
 import java.util.Locale;

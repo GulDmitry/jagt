@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.port.CommandAssistant;
-import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.assistant.CommandAssistant;
+import dev.jagt.orchestrator.port.assistant.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.launch.LaunchRequest;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;

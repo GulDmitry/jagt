@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import dev.jagt.orchestrator.task.GitRemote;
+import dev.jagt.orchestrator.task.repo.GitRemote;
 import java.net.URI;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;

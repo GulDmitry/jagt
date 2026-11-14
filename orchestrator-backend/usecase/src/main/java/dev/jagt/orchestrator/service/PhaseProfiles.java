@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.task.TaskState;
 
 @FunctionalInterface

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.sun.net.httpserver.HttpServer;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;

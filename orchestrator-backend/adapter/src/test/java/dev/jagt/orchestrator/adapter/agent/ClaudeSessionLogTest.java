@@ -4,8 +4,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import dev.jagt.orchestrator.port.SessionLog;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.agent.SessionLog;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;

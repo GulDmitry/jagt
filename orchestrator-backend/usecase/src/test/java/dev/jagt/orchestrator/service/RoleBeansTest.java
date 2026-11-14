@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

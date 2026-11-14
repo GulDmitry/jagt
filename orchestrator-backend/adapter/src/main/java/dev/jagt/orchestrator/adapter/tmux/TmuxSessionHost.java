@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.SessionHost;
-import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.WorktreeHooks;
 import java.nio.file.Path;

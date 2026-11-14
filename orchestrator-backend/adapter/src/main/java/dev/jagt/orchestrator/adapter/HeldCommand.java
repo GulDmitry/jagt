@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 

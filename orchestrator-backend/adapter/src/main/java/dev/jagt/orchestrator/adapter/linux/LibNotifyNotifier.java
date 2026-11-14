@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.adapter.linux;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
-import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.port.channel.UserNotifier;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;

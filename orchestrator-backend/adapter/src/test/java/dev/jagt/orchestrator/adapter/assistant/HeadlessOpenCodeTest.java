@@ -11,11 +11,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

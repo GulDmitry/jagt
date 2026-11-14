@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;

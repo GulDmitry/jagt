@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TicketReader;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

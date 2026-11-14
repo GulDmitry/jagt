@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.CodeHostCommands;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.port.codehost.CodeHostCommands;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

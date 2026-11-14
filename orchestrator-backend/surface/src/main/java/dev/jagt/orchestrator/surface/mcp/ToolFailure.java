@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 

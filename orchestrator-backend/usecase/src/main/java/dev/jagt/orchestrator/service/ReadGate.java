@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.io.IOException;
 import java.nio.file.Path;

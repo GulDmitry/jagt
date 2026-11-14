@@ -1,19 +1,19 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.Verification;
-import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.ToldOnce;
+import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;

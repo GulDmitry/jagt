@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.protocol.PlanRepositories;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.GitTrust;
-import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.protocol.plan.PlanRepositories;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.startup;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
-import dev.jagt.orchestrator.task.TrackerMode;
+import dev.jagt.orchestrator.task.launch.TrackerMode;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

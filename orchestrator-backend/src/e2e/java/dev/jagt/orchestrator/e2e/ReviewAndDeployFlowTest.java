@@ -13,9 +13,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.flow.TaskView;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.flow.view.TaskView;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
@@ -23,14 +23,14 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.surface.mcp.MasterToken;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.MergeRequestFacts;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.review.MergeRequestFacts;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -239,7 +239,7 @@ class ReviewAndDeployFlowTest {
       assertThat(E2eWorkspace.git(flow.webOrigin(), "log", "-1", "--format=%s", TASK))
           .contains(TASK + " " + TITLE);
       assertThat(flow.task().repos())
-          .extracting(dev.jagt.orchestrator.task.TaskRepo::mrUrl)
+          .extracting(dev.jagt.orchestrator.task.repo.TaskRepo::mrUrl)
           .containsExactly(flow.request(), flow.webRequest());
       assertThat(flow.task().history())
           .extracting(StatusChange::status)

@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter.codehost;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommitPipeline;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ class NoCodeHostTest {
           "shop",
           "orchestrator.codeHost",
           Path.of("/repo"),
-          new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
+          new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
               null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
   @Test

@@ -4,7 +4,9 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import dev.jagt.orchestrator.task.BranchStrategy;
+import dev.jagt.orchestrator.protocol.message.Message;
+import dev.jagt.orchestrator.protocol.message.SessionStart;
+import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;

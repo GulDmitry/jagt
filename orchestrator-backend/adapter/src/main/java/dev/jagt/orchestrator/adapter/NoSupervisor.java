@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.port.Supervisor;
+import dev.jagt.orchestrator.port.host.Supervisor;
 import java.nio.file.Path;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

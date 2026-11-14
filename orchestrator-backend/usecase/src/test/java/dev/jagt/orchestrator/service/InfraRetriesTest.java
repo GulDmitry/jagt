@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.InfraWaitProperties;
-import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.InfraRetry;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;

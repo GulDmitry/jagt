@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

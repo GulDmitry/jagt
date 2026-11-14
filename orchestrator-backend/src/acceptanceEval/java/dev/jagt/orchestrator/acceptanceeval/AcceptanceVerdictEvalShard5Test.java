@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.acceptanceeval;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.job.CheckerFlows;
 import dev.jagt.orchestrator.job.CheckerPrompts;
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.springframework.beans.factory.annotation.Autowired;
 

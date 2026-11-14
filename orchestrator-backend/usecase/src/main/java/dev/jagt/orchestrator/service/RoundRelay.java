@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
-import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.task.turn.Step;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

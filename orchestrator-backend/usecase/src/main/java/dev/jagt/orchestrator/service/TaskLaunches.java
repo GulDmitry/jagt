@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.BranchStrategy;
-import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.Outside;
-import dev.jagt.orchestrator.task.TaskName;
-import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.task.launch.LaunchRequest;
+import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.task.text.Outside;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

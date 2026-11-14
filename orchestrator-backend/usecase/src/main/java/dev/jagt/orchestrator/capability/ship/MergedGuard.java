@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.capability.ship;
 
-import dev.jagt.orchestrator.flow.CapabilityInterceptor;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.CapabilityInterceptor;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.MergedRequests;
 import java.util.function.Supplier;
 

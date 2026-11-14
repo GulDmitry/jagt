@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
-import dev.jagt.orchestrator.port.SubscriptionUsage.Window;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Paid;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Window;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

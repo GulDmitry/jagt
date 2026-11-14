@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

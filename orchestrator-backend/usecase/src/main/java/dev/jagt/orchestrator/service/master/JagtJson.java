@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.task.AtomicFiles;
+import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

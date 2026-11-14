@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.adapter.Executables;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.OneLine;
-import dev.jagt.orchestrator.task.FailedJob;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.deploy.FailedJob;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

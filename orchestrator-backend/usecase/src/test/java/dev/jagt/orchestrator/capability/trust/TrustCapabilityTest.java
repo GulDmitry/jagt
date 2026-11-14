@@ -6,12 +6,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TrustedGitState;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.Step;
 import org.junit.jupiter.api.Test;
 
 class TrustCapabilityTest {

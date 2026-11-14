@@ -14,10 +14,10 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.WorktreeContainers;
-import dev.jagt.orchestrator.port.WorktreeProcesses;
-import dev.jagt.orchestrator.task.BranchStrategy;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
+import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
+import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -837,7 +837,7 @@ class GitWorktreesTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                path -> Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
                 stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
@@ -860,7 +860,7 @@ class GitWorktreesTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> Optional.of(new dev.jagt.orchestrator.task.Remote("upstream")),
+                path -> Optional.of(new dev.jagt.orchestrator.task.repo.Remote("upstream")),
                 stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "upstream/main", BranchStrategy.FRESH);

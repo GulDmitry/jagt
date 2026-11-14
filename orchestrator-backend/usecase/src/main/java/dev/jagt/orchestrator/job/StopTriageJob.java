@@ -1,16 +1,16 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.StopHold;
-import dev.jagt.orchestrator.flow.StopKind;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.StopHold;
+import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.PhaseProfiles;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.triage.StopTriageFailed;
 import dev.jagt.orchestrator.service.triage.StopTriagePanel;
-import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.stop.StopTriage;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

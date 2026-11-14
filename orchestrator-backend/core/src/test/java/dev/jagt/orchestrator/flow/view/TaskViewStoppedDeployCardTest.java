@@ -1,0 +1,38 @@
+package dev.jagt.orchestrator.flow.view;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.review.AutoReviewWatch;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class TaskViewStoppedDeployCardTest {
+
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
+  @Test
+  void asksForTheLiftOfStopThatOutlivedTheHumansDeploy() {
+    TaskState deployed =
+        TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
+            .stop(new TaskStop(TaskStop.Trigger.MISS, 5, "no case"))
+            .build()
+            .withStatus(TaskStatus.DEPLOYED, "deployed", true, 2_000);
+
+    TaskView view =
+        TaskView.of(
+            rules,
+            "ABC-42",
+            deployed,
+            RoundState.of(deployed.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
+
+    assertThat(view.ask()).isEqualTo("lift the stop — no case for this step");
+  }
+}

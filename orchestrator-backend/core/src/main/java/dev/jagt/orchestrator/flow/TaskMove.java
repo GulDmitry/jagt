@@ -1,12 +1,19 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.GitTrust;
-import dev.jagt.orchestrator.task.InfraRetry;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.deploy.DeployStep;
+import dev.jagt.orchestrator.flow.deploy.InfraPhase;
+import dev.jagt.orchestrator.flow.repo.RequestPhase;
+import dev.jagt.orchestrator.flow.role.MasterPhase;
+import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -195,7 +202,7 @@ sealed interface TaskMove {
   record ChecksRead(String hostStatus, String tip, boolean onHead) implements TaskMove {}
 
   /** A round that could not list the checks. */
-  record ChecksUnread(dev.jagt.orchestrator.task.ChecksUnread read) implements TaskMove {}
+  record ChecksUnread(dev.jagt.orchestrator.task.deploy.ChecksUnread read) implements TaskMove {}
 
   /** What the host said of the approval. */
   record ApprovalRead(boolean approved) implements TaskMove {}

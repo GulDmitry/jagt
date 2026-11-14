@@ -3,7 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.JavaClass;
-import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.role.Arbiter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -19,7 +19,7 @@ class RoleNamesTest {
 
   private static final Map<String, String> ALLOWED =
       Map.of(
-          "dev.jagt.orchestrator.port.AcceptanceRunner",
+          "dev.jagt.orchestrator.port.worktree.AcceptanceRunner",
               "runs the flows a plan's acceptance criteria name, whichever role asks",
           "dev.jagt.orchestrator.service.AcceptanceProbing",
               "probes a plan's acceptance criteria, before any role checks the deploy",

@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Clock;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;
 import lombok.With;

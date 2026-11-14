@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.config.RoleOptions;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;

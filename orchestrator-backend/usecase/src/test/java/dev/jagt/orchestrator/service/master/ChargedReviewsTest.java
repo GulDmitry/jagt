@@ -8,13 +8,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;

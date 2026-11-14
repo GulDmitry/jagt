@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskMovedOn;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

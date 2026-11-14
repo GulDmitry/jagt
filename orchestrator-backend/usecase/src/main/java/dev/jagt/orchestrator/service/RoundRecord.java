@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.task.ChecksUnread;
-import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.deploy.ChecksUnread;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;

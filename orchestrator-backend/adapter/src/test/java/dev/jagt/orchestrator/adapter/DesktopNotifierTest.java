@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelMessage;
-import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
+import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.BoardUrl;
 import java.util.List;
 import org.junit.jupiter.api.Test;

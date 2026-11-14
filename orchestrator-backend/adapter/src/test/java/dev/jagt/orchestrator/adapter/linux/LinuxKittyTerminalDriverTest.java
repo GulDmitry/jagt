@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import java.time.Clock;
 import org.junit.jupiter.api.Test;
 

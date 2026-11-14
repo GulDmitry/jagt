@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.CodeHostCommands;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.port.codehost.CodeHostCommands;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

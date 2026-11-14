@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ScenarioSessions;
 import java.util.List;

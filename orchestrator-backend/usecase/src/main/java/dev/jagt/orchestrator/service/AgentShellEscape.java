@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.ShellEscapeReach;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.reach.ShellEscapeReach;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

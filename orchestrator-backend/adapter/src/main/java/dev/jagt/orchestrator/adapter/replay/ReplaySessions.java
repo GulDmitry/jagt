@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.Turn;
 import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;

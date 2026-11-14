@@ -10,10 +10,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.capability.Capabilities;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskCapability;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;

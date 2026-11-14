@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.ReadScope;
-import dev.jagt.orchestrator.port.SessionHost.WindowsUnreadable;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.terminal.ReadScope;
+import dev.jagt.orchestrator.port.terminal.SessionHost.WindowsUnreadable;
 import dev.jagt.orchestrator.service.OneLine;
 import java.time.Duration;
 import java.util.ArrayList;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import java.util.List;
 import lombok.With;
 import org.jspecify.annotations.Nullable;

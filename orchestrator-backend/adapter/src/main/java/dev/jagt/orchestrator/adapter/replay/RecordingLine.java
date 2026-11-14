@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.replay;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import java.util.List;
 import java.util.Map;
 import tools.jackson.databind.JsonNode;

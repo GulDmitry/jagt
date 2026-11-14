@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter.flows;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
-import dev.jagt.orchestrator.port.AcceptanceRunner.Verdict;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.Verdict;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;

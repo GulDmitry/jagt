@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.task.AtomicFiles;
-import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

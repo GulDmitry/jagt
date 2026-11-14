@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.replay;
 
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

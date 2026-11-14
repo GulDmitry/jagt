@@ -1,17 +1,17 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.port.ToolGateEnvelope;
-import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
+import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.KeepAlive;
 import dev.jagt.orchestrator.service.PlanFirst;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.ToolGate;
-import dev.jagt.orchestrator.task.Guard;
-import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.Remote;
+import dev.jagt.orchestrator.task.stop.Guard;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.util.Map;

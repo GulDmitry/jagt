@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 

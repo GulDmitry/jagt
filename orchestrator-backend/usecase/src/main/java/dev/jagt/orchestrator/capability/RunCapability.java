@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.capability;
 
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskCapability;
-import dev.jagt.orchestrator.port.ShellEscapeReach;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskCapability;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.reach.ShellEscapeReach;
 import dev.jagt.orchestrator.service.AgentSessions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

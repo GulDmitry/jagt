@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.AcceptanceEnding;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
-import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Status;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -196,7 +196,8 @@ class AcceptanceScoreTest {
 
     AcceptanceJudgement judged =
         AcceptanceJudgement.ofDecline(
-            expected, new dev.jagt.orchestrator.task.AcceptanceDecline("abc1234", "", ""));
+            expected,
+            new dev.jagt.orchestrator.task.acceptance.AcceptanceDecline("abc1234", "", ""));
 
     assertThat(judged.ending()).isEqualTo(AcceptanceEnding.DECLINED);
     assertThat(judged.rows()).containsEntry("C1", Status.MET);

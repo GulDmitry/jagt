@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.task.Conflict;
+import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Path;
 import lombok.With;
 import org.jspecify.annotations.Nullable;

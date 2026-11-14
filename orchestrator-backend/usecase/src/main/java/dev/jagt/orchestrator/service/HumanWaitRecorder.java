@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.HumanWaits;
-import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.flow.session.HumanWaits;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
-import dev.jagt.orchestrator.task.HumanWait;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn.Holder;
+import dev.jagt.orchestrator.task.turn.HumanWait;
+import dev.jagt.orchestrator.task.turn.Turn.Holder;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;

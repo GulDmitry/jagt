@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

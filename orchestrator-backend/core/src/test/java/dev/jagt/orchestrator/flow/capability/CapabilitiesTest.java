@@ -1,0 +1,101 @@
+package dev.jagt.orchestrator.flow.capability;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class CapabilitiesTest {
+
+  private static final class Declared implements TaskCapability {
+    private final TaskAction action;
+    private final int priority;
+    private final String says;
+
+    Declared(TaskAction action, int priority, String says) {
+      this.action = action;
+      this.priority = priority;
+      this.says = says;
+    }
+
+    @Override
+    public TaskAction action() {
+      return action;
+    }
+
+    @Override
+    public int priority() {
+      return priority;
+    }
+
+    @Override
+    public Outcome run(String taskId) {
+      return Outcome.ok(says);
+    }
+  }
+
+  @Test
+  void theHigherRankingClaimantIsTheOneAnActionReaches() {
+    Capabilities capabilities =
+        new Capabilities(
+            List.of(
+                new Declared(TaskAction.DEPLOY, 0, "the built-in deploy"),
+                new Declared(TaskAction.DEPLOY, 10, "the install's own deploy")),
+            List.of());
+
+    assertThat(capabilities.of(TaskAction.DEPLOY).orElseThrow().run("ABC-1").message())
+        .isEqualTo("the install's own deploy");
+  }
+
+  @Test
+  void picksTheHigherRankingClaimantWhicheverOrderTheInstallDeclaredThemIn() {
+    Capabilities capabilities =
+        new Capabilities(
+            List.of(
+                new Declared(TaskAction.SHIP, 10, "the install's own ship"),
+                new Declared(TaskAction.SHIP, 0, "the built-in ship")),
+            List.of());
+
+    assertThat(capabilities.of(TaskAction.SHIP).orElseThrow().run("ABC-1").message())
+        .isEqualTo("the install's own ship");
+  }
+
+  @Test
+  void anActionNobodyClaimsResolvesToNothingRatherThanToSomethingElse() {
+    Capabilities capabilities =
+        new Capabilities(List.of(new Declared(TaskAction.FOCUS, 0, "focused")), List.of());
+
+    assertThat(capabilities.of(TaskAction.REVERT)).isEmpty();
+  }
+
+  private record Wrapping(TaskAction action, int order) implements CapabilityInterceptor {
+
+    @Override
+    public Outcome around(String taskId, java.util.function.Supplier<Outcome> work) {
+      return work.get();
+    }
+  }
+
+  @Test
+  void wrapsAnActionOnlyInTheInterceptorsDeclaredForItInTheirOrder() {
+    Wrapping late = new Wrapping(TaskAction.DEPLOY, 20);
+    Wrapping early = new Wrapping(TaskAction.DEPLOY, 10);
+    Wrapping other = new Wrapping(TaskAction.SHIP, 0);
+    Capabilities capabilities = new Capabilities(List.of(), List.of(late, other, early));
+
+    assertThat(capabilities.around(TaskAction.DEPLOY)).containsExactly(early, late);
+  }
+
+  @Test
+  void namesWhoTookOverAnActionFromWhom() {
+    Capabilities capabilities =
+        new Capabilities(
+            List.of(
+                new Declared(TaskAction.DEPLOY, 0, "the built-in deploy"),
+                new Declared(TaskAction.DEPLOY, 10, "the install's own deploy")),
+            List.of());
+
+    assertThat(capabilities.takeovers())
+        .containsExactly("Declared takes over `deploy` from Declared");
+  }
+}

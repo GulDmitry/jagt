@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.port.channel.UserNotifier;
+import dev.jagt.orchestrator.port.terminal.EditorDriver;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

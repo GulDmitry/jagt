@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import dev.jagt.orchestrator.task.turn.ToldOnce;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 

@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Facts;
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Path;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

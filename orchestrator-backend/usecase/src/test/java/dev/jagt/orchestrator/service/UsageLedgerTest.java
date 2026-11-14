@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;

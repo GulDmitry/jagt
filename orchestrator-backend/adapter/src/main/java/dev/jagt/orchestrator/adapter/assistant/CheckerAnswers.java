@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.task.AcceptanceDecline;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

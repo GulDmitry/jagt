@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.EnumSet;
 import java.util.List;

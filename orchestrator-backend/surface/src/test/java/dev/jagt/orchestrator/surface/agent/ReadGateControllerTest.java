@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.util.List;

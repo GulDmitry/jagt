@@ -10,12 +10,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.SessionLog;
+import dev.jagt.orchestrator.port.agent.SessionLog;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.AgentSpend;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.AgentSpend;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

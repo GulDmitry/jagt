@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.service.StateService;
 import java.time.Clock;

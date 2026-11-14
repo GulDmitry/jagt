@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.eval;
 
-import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Status;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiPredicate;

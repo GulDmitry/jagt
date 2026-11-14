@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

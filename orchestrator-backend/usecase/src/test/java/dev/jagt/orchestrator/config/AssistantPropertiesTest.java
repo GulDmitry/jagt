@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

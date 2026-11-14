@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.util.List;
 import lombok.With;
 

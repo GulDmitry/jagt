@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.SessionHost;
-import dev.jagt.orchestrator.task.Session;
+import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.session.Session;
 import java.nio.file.Path;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;

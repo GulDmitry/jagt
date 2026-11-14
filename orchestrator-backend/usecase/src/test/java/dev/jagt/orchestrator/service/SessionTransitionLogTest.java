@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
-import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

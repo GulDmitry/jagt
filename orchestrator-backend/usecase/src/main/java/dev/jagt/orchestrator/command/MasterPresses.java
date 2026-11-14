@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;

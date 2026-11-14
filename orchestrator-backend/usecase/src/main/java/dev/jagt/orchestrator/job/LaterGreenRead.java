@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.ConflictEnding;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.task.TaskState;

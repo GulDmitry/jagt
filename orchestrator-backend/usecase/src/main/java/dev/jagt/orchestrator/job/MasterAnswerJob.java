@@ -1,18 +1,18 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
+import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;

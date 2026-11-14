@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.config.RoleOptions;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

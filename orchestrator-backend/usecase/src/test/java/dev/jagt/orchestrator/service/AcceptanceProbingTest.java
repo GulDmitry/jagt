@@ -9,9 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
-import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.AgentSessions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

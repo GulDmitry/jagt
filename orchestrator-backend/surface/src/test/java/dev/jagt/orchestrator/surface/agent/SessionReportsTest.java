@@ -7,12 +7,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.SessionProbe;
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 

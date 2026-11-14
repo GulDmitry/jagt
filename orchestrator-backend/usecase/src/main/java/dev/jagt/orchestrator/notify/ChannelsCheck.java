@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.notify;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.flow.Point;
-import dev.jagt.orchestrator.flow.Points;
-import dev.jagt.orchestrator.port.ChannelDriver;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.flow.role.Point;
+import dev.jagt.orchestrator.flow.role.Points;
+import dev.jagt.orchestrator.port.channel.ChannelDriver;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig.ChannelDef;

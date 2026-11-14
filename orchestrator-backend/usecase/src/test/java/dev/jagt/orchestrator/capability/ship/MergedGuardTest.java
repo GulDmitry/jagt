@@ -6,14 +6,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;

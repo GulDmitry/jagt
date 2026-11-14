@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter.macos;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.HeldCommand;
-import dev.jagt.orchestrator.port.KeepAwake;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.KeepAwake;
+import dev.jagt.orchestrator.port.host.Processes;
 import jakarta.annotation.PreDestroy;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

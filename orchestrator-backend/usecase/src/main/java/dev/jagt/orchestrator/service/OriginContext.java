@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 

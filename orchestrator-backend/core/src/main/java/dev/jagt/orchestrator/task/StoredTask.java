@@ -2,6 +2,18 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import dev.jagt.orchestrator.task.acceptance.RoleRecord;
+import dev.jagt.orchestrator.task.deploy.ChecksUnread;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.review.RoundTrail;
+import dev.jagt.orchestrator.task.session.Session;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.HumanWait;
+import dev.jagt.orchestrator.task.turn.StatusChange;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

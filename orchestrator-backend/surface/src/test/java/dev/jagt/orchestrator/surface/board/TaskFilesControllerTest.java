@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.LineChange;
+import dev.jagt.orchestrator.port.worktree.LineChange;
 import dev.jagt.orchestrator.service.PlanBaseline;
 import dev.jagt.orchestrator.service.TaskArtifacts;
 import java.util.List;

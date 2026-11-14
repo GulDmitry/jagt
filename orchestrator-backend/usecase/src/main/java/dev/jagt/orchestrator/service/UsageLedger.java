@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.AtomicFiles;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.text.AtomicFiles;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

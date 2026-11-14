@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

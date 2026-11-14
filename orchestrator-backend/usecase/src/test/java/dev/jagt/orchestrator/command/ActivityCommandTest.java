@@ -6,9 +6,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

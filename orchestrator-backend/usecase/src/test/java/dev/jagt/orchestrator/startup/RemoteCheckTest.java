@@ -8,8 +8,8 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.time.Duration;
 import java.util.Map;

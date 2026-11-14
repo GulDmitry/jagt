@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.agent;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
 import dev.jagt.orchestrator.service.ReadGate;
 import dev.jagt.orchestrator.service.ReadScopes;
 import java.util.Map;

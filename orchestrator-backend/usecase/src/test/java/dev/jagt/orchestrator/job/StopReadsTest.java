@@ -8,12 +8,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.RoundReading;
 import dev.jagt.orchestrator.service.RoundRecord;
 import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

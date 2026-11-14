@@ -10,9 +10,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.Host;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;

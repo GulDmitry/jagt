@@ -9,10 +9,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.WorktreeProcesses;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
 import dev.jagt.orchestrator.service.OneLine;
 import java.io.IOException;
 import java.nio.file.Path;

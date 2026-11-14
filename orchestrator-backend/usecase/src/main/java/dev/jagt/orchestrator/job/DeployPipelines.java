@@ -1,18 +1,18 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.flow.RedCause;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHost;
-import dev.jagt.orchestrator.port.CommitPipeline;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
+import dev.jagt.orchestrator.flow.deploy.RedCause;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CodeHost;
+import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.RedCauses;
-import dev.jagt.orchestrator.task.DeployRedLine;
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.deploy.DeployRedLine;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;

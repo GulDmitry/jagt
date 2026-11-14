@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

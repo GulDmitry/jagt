@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.service.GitCommands;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.board;
 
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskState.TaskStateBuilder;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.With;

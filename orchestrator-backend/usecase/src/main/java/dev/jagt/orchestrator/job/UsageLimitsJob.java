@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import dev.jagt.orchestrator.service.UsageLimits;
 import java.time.Clock;
 import java.time.Duration;

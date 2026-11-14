@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.Master;
+import dev.jagt.orchestrator.task.master.Master;
 
 /** One thing written to what the Master left on a task. */
 sealed interface MasterNote {

@@ -6,10 +6,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ScenarioSessions;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

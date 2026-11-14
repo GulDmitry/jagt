@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.task.FailedJob;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.task.deploy.FailedJob;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;
 

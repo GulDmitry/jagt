@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.protocol.RetryPolicy;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.protocol.Violation;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.protocol.read.RetryPolicy;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;

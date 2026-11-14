@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.stand.replay;
 
 import dev.jagt.orchestrator.stand.StandFailure;
-import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

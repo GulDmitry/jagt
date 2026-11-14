@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Point;
+import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Host;
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.Supervisor;
+import dev.jagt.orchestrator.port.channel.Notification;
+import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.host.Supervisor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

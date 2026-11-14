@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.RequestlessShip;
+import dev.jagt.orchestrator.port.codehost.RequestlessShip;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.Objects;

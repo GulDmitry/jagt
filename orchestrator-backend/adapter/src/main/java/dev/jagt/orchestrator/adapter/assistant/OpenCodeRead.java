@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.nio.file.Path;
 import java.time.Duration;
 

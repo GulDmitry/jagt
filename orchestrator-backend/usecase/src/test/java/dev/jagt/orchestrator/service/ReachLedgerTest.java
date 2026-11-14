@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

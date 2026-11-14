@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;

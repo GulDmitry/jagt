@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;

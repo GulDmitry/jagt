@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.flow.SessionPhase;
+import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

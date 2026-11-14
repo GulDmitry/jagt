@@ -6,10 +6,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;

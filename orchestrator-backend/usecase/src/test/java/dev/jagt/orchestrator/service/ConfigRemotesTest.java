@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

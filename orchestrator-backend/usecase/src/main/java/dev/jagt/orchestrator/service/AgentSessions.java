@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.SessionPhase;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.SessionHost;
-import dev.jagt.orchestrator.task.Ansi;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.ModelTier;
-import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.flow.session.SessionPhase;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.text.Ansi;
+import dev.jagt.orchestrator.task.usage.ModelTier;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;

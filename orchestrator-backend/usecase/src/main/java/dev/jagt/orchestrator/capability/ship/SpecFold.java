@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.capability.ship;
 
-import dev.jagt.orchestrator.flow.CapabilityInterceptor;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.port.Specs;
+import dev.jagt.orchestrator.flow.capability.CapabilityInterceptor;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.port.worktree.Specs;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;

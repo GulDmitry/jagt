@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
 import java.time.Duration;

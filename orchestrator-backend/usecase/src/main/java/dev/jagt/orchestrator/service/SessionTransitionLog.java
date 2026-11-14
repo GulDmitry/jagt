@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.SessionPhase;
+import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
-import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.session.Session;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Optional;

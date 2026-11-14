@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

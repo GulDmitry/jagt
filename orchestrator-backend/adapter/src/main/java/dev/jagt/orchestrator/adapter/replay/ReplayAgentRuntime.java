@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.replay;
 
 import dev.jagt.orchestrator.adapter.agent.AbstractAgentRuntime;
-import dev.jagt.orchestrator.port.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

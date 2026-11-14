@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.SessionLog;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.agent.SessionLog;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

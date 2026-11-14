@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.AgentSessions;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

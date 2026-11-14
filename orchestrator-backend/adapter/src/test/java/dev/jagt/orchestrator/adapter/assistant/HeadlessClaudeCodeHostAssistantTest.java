@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
 import java.util.List;
 import org.junit.jupiter.api.Test;

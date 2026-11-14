@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.Remote;
 
 /** What a session resumed on an open review request is told to do, and not to do. */
 public final class ResumeInstructions {

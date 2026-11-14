@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.NewTaskMessage;
-import dev.jagt.orchestrator.protocol.NoArguments;
+import dev.jagt.orchestrator.protocol.message.NoArguments;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
-import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.launch.NewTask;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

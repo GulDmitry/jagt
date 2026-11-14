@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;

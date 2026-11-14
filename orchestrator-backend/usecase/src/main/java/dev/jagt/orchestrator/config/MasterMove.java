@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.config;
 
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;

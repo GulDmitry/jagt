@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.AcceptanceEnding;
-import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Status;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;

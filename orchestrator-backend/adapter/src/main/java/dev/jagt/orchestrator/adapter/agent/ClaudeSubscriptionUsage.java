@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import java.net.URI;
 import java.time.Clock;
 import java.util.Map;

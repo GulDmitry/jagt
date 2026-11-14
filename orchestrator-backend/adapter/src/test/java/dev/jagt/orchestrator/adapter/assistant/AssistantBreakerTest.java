@@ -7,8 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.AssistantUnavailable;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.assistant.AssistantUnavailable;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ReachLedger;
 import java.time.Clock;
 import java.time.Duration;

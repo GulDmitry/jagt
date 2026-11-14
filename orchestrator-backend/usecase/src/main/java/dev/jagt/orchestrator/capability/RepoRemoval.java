@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.capability;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.service.RepoDeparture;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;

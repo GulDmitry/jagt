@@ -4,9 +4,9 @@ import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.Turn;
 import org.junit.jupiter.api.Test;
 
 class FlowDoorsTest {
@@ -143,7 +143,7 @@ class FlowDoorsTest {
             dev.jagt.orchestrator.task.TaskState.class,
             "withRole",
             String.class,
-            dev.jagt.orchestrator.task.RoleRecord.class)
+            dev.jagt.orchestrator.task.acceptance.RoleRecord.class)
         .check(MainClasses.CODE);
   }
 
@@ -158,7 +158,7 @@ class FlowDoorsTest {
         .callMethod(
             dev.jagt.orchestrator.task.TaskState.class,
             "withMaster",
-            dev.jagt.orchestrator.task.Master.class)
+            dev.jagt.orchestrator.task.master.Master.class)
         .check(MainClasses.CODE);
   }
 
@@ -234,7 +234,7 @@ class FlowDoorsTest {
         .and()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
         .and()
-        .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.Session")
+        .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.session.Session")
         .should()
         .callMethodWhere(target(name("withHalt")))
         .orShould()

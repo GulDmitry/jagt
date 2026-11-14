@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.stand.invariant;
 
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
 
 public final class MissStopsTheMaster implements Invariant {

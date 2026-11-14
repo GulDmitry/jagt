@@ -6,12 +6,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Point;
+import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.notify.Routes.Routed;
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelMessage;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
+import dev.jagt.orchestrator.port.channel.Notification;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;

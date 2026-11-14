@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.RoundState;
-import dev.jagt.orchestrator.protocol.PlanCriteria;
-import dev.jagt.orchestrator.protocol.PlanProbes;
-import dev.jagt.orchestrator.protocol.PlanRepositories;
+import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.protocol.Violation;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.Probe;
+import dev.jagt.orchestrator.protocol.plan.PlanCriteria;
+import dev.jagt.orchestrator.protocol.plan.PlanProbes;
+import dev.jagt.orchestrator.protocol.plan.PlanRepositories;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.plan.Probe;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

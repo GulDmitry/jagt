@@ -14,15 +14,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

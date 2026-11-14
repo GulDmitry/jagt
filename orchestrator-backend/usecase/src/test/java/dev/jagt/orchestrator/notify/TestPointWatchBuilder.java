@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.notify;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.port.NotificationSink;
+import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.port.channel.NotificationSink;
 import dev.jagt.orchestrator.service.InstalledRoles;
 import dev.jagt.orchestrator.service.StateService;
 import java.nio.file.Path;

@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.RoundReviewer.Premise;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
 import dev.jagt.orchestrator.service.master.MasterReview.Read;
 import dev.jagt.orchestrator.service.master.MasterReview.Review;
 import java.nio.file.Files;

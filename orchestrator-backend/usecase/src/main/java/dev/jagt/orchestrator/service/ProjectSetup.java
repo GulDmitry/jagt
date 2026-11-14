@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
-import dev.jagt.orchestrator.port.BuildTools;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.AtomicFiles;
-import dev.jagt.orchestrator.task.GitRemote;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.BuildTools;
+import dev.jagt.orchestrator.task.repo.GitRemote;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;

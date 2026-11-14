@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.testing;
 
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Duration;

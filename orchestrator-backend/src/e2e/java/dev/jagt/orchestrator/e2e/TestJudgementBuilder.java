@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import java.util.List;
 import lombok.With;
 

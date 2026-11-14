@@ -6,13 +6,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
-import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

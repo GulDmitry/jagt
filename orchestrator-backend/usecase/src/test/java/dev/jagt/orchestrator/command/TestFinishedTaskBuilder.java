@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.task.FinishedTask;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.List;
 import java.util.Map;
 import lombok.With;

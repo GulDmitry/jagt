@@ -5,10 +5,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

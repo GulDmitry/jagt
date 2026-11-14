@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
 import java.util.Locale;
 import java.util.Map;
 import org.springframework.stereotype.Component;

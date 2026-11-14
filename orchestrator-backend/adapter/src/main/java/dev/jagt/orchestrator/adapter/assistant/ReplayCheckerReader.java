@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.replay.RecordedReads;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.task.AcceptanceDecline;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.SessionLog;
+import dev.jagt.orchestrator.port.agent.SessionLog;
 import java.nio.file.Path;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;

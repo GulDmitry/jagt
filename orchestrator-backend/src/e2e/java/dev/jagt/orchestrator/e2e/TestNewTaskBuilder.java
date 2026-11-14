@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.launch.NewTask;
 import java.util.List;
 import lombok.With;
 

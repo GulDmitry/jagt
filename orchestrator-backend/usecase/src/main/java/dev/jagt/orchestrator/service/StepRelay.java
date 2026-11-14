@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;

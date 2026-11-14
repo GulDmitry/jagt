@@ -1,13 +1,15 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.GitTrust;
-import dev.jagt.orchestrator.task.InfraRetry;
-import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.flow.deploy.DeployStep;
+import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -88,7 +90,8 @@ sealed interface TaskEffect {
 
   record ReadsChecks(String hostStatus, String tip) implements TaskEffect {}
 
-  record FailsToReadChecks(dev.jagt.orchestrator.task.ChecksUnread read) implements TaskEffect {}
+  record FailsToReadChecks(dev.jagt.orchestrator.task.deploy.ChecksUnread read)
+      implements TaskEffect {}
 
   record ReadsApproval(boolean approved) implements TaskEffect {}
 

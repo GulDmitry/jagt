@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import org.junit.jupiter.api.Test;
 
 class ToolchainCheckTest {

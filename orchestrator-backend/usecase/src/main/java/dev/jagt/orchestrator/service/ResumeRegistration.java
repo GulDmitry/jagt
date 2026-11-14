@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
-import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.Remote;
-import dev.jagt.orchestrator.task.ReviewRequestTitle;
-import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.repo.Remote;
+import dev.jagt.orchestrator.task.review.ReviewRequestTitle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

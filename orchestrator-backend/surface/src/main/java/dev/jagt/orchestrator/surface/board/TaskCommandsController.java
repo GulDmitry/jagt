@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.launch.LaunchRequest;
+import dev.jagt.orchestrator.task.launch.Launched;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.bind.annotation.PathVariable;

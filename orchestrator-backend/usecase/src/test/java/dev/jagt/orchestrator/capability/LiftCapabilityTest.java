@@ -4,11 +4,11 @@ import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService
 import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.nio.file.Path;
 import java.time.Clock;
 import org.junit.jupiter.api.Test;

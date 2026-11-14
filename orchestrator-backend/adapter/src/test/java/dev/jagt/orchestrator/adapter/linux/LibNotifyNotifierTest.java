@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;

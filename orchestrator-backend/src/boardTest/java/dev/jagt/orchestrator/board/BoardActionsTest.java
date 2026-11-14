@@ -11,8 +11,8 @@ import static org.mockito.Mockito.when;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -82,9 +82,9 @@ class BoardActionsTest extends BoardPageContext {
         "ABC-1",
         TaskState.builder(
                 List.of(
-                    dev.jagt.orchestrator.task.TaskRepo.of(
+                    dev.jagt.orchestrator.task.repo.TaskRepo.of(
                         "alpha", root.resolve("ABC-1-alpha").toString()),
-                    new dev.jagt.orchestrator.task.TaskRepo(
+                    new dev.jagt.orchestrator.task.repo.TaskRepo(
                         "beta",
                         root.resolve("ABC-1-beta").toString(),
                         null,

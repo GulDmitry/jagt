@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.ProjectCards;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.ProjectConfig.Branches;
-import dev.jagt.orchestrator.task.ProjectConfig.CodeHost;
-import dev.jagt.orchestrator.task.ProjectConfig.Repository;
-import dev.jagt.orchestrator.task.ProjectConfig.Verify;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig.Branches;
+import dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost;
+import dev.jagt.orchestrator.task.repo.ProjectConfig.Repository;
+import dev.jagt.orchestrator.task.repo.ProjectConfig.Verify;
 import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

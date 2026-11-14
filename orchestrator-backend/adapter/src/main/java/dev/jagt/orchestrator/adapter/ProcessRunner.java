@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.OneLine;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;

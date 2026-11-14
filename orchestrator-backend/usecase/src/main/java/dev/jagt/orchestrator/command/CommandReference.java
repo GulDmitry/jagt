@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;

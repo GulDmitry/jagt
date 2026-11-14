@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.config.LocalModelProperties;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ReachLedger;
 import java.io.IOException;
 import java.time.Duration;

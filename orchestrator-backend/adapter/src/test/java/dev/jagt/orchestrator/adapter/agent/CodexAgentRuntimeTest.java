@@ -4,10 +4,10 @@ import static dev.jagt.orchestrator.adapter.agent.TestCodexRuntimeBuilder.codexR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.AgentWorktree;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.Sandbox;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.Sandbox;
+import dev.jagt.orchestrator.port.host.Problem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

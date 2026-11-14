@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Violation;
+import dev.jagt.orchestrator.protocol.message.Message;
 import dev.jagt.orchestrator.service.OriginContext;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;

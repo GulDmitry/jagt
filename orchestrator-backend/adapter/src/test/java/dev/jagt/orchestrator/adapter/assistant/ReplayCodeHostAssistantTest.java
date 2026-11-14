@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.replay.RecordedReads;
 import dev.jagt.orchestrator.adapter.replay.Recording;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.MergeRequestFacts;
-import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.task.review.MergeRequestFacts;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

@@ -4,10 +4,10 @@ import static dev.jagt.orchestrator.adapter.agent.TestClaudeRuntimeBuilder.claud
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.AgentWorktree;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.port.Sandbox;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.Sandbox;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;

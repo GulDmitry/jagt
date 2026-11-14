@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.port.LineChange;
+import dev.jagt.orchestrator.port.worktree.LineChange;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

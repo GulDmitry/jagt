@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.stand.invariant;
 
-import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.ArrayDeque;
 import java.util.Deque;

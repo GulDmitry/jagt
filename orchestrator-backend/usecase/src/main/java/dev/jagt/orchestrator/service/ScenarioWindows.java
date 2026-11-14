@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;

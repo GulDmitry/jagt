@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp;
 
 import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.NoArguments;
+import dev.jagt.orchestrator.protocol.message.NoArguments;
 
 record AnsweringMcpTools(String name, Effect effect, String about, String answer)
     implements McpTools {

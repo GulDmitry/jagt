@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.RoleOptions;
-import dev.jagt.orchestrator.port.ScenarioReach;
+import dev.jagt.orchestrator.port.reach.ScenarioReach;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

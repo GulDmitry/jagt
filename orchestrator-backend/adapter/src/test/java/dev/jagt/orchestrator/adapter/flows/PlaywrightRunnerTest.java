@@ -11,9 +11,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.RoleOptions.Flows;
-import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
-import dev.jagt.orchestrator.port.AcceptanceRunner.Verdict;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.Verdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

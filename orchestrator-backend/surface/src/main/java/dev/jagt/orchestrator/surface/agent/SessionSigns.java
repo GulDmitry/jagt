@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.job.WatchdogService;
 import dev.jagt.orchestrator.service.SessionLedger;
 import java.nio.file.Path;

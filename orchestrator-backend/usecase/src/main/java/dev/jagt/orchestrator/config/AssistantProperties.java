@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.config;
 
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

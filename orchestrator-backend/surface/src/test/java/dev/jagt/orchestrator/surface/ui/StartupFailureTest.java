@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.ui;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.startup.Misconfigured;
 import java.util.List;
 import org.junit.jupiter.api.Test;

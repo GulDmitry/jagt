@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.GitRemote;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.GitRemote;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;

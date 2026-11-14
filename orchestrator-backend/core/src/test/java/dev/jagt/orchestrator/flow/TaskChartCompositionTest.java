@@ -3,8 +3,11 @@ package dev.jagt.orchestrator.flow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.role.CheckerRole;
+import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.statechart.Chart;
 import java.util.HashMap;
 import java.util.List;

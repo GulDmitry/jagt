@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskView;
-import dev.jagt.orchestrator.port.CommandAssistant;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.TaskView;
+import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import java.util.Arrays;

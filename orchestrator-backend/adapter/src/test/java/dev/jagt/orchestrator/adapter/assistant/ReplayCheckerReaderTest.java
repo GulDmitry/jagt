@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.replay.RecordedReads;
 import dev.jagt.orchestrator.adapter.replay.Recording;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

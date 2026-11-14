@@ -2,7 +2,7 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.task.master.MasterRight;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

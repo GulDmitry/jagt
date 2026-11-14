@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.master.MasterRight;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

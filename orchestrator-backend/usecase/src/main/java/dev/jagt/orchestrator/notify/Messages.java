@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.notify;
 
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.notify.Routes.Routed;
-import dev.jagt.orchestrator.port.ChannelMessage;
-import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
+import dev.jagt.orchestrator.port.channel.Notification;
 import dev.jagt.orchestrator.service.BoardUrl;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;

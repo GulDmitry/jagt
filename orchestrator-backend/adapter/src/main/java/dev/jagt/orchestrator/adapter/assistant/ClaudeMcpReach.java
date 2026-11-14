@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.job.Job;
-import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.Reach;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.reach.Reach;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

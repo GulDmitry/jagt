@@ -8,13 +8,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

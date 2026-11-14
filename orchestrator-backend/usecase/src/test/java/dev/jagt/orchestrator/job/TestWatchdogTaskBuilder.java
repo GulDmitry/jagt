@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
 

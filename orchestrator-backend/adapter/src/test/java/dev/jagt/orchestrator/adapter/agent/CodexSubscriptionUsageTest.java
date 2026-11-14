@@ -8,7 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import java.time.Clock;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

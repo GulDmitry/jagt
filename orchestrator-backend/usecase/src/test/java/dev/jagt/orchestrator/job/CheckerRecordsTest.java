@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.task.AcceptanceEnding;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;

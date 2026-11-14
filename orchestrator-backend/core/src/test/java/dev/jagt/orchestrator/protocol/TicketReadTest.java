@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
 import org.junit.jupiter.api.Test;
 
 class TicketReadTest {

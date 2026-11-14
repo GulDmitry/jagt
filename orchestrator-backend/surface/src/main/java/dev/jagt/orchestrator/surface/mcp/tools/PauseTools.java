@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.PauseOrder;
+import dev.jagt.orchestrator.protocol.message.PauseOrder;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;

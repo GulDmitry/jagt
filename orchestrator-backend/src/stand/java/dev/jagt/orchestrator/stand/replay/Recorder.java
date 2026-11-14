@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.stand.replay;
 
 import dev.jagt.orchestrator.adapter.replay.Recording;
 import dev.jagt.orchestrator.adapter.replay.RecordingLine;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.stand.StandFailure;
 import dev.jagt.orchestrator.stand.StandShell;
 import dev.jagt.orchestrator.stand.invariant.RunRecord;
-import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

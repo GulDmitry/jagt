@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.flow.role.CheckerRole;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

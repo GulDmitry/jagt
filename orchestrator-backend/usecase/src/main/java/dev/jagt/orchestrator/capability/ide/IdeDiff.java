@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.capability.ide;
 
-import dev.jagt.orchestrator.port.EditorDriver;
+import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.service.DiffBases;
 import dev.jagt.orchestrator.service.DiffCheckouts;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;

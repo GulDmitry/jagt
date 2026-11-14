@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

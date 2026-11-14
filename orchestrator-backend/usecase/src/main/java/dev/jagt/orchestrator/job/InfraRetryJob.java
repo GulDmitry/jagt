@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.RedCause;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.flow.deploy.RedCause;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.InfraRetries;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.FailedJob;
-import dev.jagt.orchestrator.task.InfraRetry;
+import dev.jagt.orchestrator.task.deploy.FailedJob;
+import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Host;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.host.Processes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;

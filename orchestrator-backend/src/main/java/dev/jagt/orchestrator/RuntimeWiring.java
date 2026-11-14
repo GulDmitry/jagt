@@ -2,9 +2,9 @@ package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.TickScheduler;
-import dev.jagt.orchestrator.port.ReadScope;
 import dev.jagt.orchestrator.port.StateEvents;
-import dev.jagt.orchestrator.protocol.RetryPolicy;
+import dev.jagt.orchestrator.port.terminal.ReadScope;
+import dev.jagt.orchestrator.protocol.read.RetryPolicy;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.time.Duration;

@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.util.List;
 import lombok.With;
 

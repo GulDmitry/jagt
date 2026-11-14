@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
 import lombok.With;
 

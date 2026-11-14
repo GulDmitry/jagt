@@ -4,7 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.job.WatchdogService;
 import dev.jagt.orchestrator.service.SessionLedger;
 import java.nio.file.Path;

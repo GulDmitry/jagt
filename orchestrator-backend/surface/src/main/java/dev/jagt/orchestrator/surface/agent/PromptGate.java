@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.flow.SessionPhase;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.flow.session.SessionPhase;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ColdPrompts;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;

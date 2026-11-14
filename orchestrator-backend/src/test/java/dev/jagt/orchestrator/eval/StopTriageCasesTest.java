@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.StopTriage;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.stop.StopTriage;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import org.junit.jupiter.api.Test;
 
 class StopTriageCasesTest {

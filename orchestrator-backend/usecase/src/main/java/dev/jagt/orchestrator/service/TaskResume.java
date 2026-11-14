@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.launch.TaskName;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;

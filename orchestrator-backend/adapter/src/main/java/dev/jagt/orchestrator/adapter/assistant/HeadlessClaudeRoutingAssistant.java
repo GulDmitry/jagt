@@ -2,15 +2,15 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.FAILURE_RULE;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoutingAssistant;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoutingAssistant;
 import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.protocol.RuleRead;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.RoutingAnswer;
-import dev.jagt.orchestrator.task.RoutingQuestion;
-import dev.jagt.orchestrator.task.RulePair;
-import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.launch.RoutingAnswer;
+import dev.jagt.orchestrator.task.launch.RoutingQuestion;
+import dev.jagt.orchestrator.task.launch.RulePair;
+import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

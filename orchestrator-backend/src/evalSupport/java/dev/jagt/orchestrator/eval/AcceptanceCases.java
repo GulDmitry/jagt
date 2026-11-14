@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.eval;
 
-import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Status;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

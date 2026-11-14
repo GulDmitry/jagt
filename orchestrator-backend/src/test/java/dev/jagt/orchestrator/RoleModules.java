@@ -12,8 +12,8 @@ final class RoleModules {
       Stream.of(
               "service.master.",
               "flow.Master",
-              "flow.Arbiter",
-              "task.Master",
+              "flow.role.",
+              "task.master.",
               "task.LegacyMaster",
               "job.Master",
               "command.Master",
@@ -27,7 +27,7 @@ final class RoleModules {
   static final Map<String, List<String>> CHECKERS =
       Map.of(
           "acceptance",
-          Stream.of("eval.Acceptance", "startup.Acceptance", "task.Acceptance")
+          Stream.of("eval.Acceptance", "startup.Acceptance", "task.acceptance.")
               .map(prefix -> ROOT + prefix)
               .toList());
 

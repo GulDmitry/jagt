@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.capability;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter.flows;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.RoleOptions.Flows;
-import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
 import dev.jagt.orchestrator.service.OneLine;
 import java.io.IOException;
 import java.nio.file.Files;

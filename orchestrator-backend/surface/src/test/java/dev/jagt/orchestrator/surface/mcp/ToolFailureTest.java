@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.stream.Stream;

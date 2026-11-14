@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.util.ArrayList;
 import java.util.List;

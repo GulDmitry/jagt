@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
-import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

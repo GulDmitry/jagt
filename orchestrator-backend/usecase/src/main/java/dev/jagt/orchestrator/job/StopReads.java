@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.service.RoundReading;
 import dev.jagt.orchestrator.service.RoundRecord;
 import dev.jagt.orchestrator.service.TaskStops;

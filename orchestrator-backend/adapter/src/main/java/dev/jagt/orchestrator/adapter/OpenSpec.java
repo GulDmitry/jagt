@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.port.Host;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.Specs;
+import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.Specs;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;

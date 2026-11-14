@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import dev.jagt.orchestrator.task.ProjectConfig.CodeHost;
+import dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost;
 import java.nio.file.Path;
 
 /**

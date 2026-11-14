@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.teams;
 
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelDriver;
-import dev.jagt.orchestrator.port.ChannelMessage;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelDriver;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

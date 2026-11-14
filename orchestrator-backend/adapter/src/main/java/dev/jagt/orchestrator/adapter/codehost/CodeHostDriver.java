@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.task.FailedJob;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.task.deploy.FailedJob;
 import java.util.List;
 
 /** One kind of code host, answering in jagt's own words: a host's wording stops here. */

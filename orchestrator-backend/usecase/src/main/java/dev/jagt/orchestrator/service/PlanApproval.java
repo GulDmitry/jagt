@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.MasterMove;
-import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.task.turn.Step;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;

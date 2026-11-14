@@ -6,7 +6,7 @@ import static org.awaitility.Awaitility.await;
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.task.GitRemote;
+import dev.jagt.orchestrator.task.repo.GitRemote;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

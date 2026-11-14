@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.nio.file.Path;
 import java.time.Duration;

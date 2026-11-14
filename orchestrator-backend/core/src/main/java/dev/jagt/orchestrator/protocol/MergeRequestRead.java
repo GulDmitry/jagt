@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.protocol;
 
 import static dev.jagt.orchestrator.protocol.Wire.blank;
 
-import dev.jagt.orchestrator.task.MergeRequestFacts;
+import dev.jagt.orchestrator.task.review.MergeRequestFacts;
 import java.util.ArrayList;
 import java.util.List;
 

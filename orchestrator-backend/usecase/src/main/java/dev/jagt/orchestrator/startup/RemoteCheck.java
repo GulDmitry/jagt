@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.startup;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

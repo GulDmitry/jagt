@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.stand;
 
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

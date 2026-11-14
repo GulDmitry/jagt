@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.CodeHostCommands;
+import dev.jagt.orchestrator.port.codehost.CodeHostCommands;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;

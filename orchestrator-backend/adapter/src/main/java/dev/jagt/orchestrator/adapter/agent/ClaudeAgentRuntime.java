@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.assistant.ClaudeToolScope;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.port.AgentWorktree;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.port.Sandbox;
-import dev.jagt.orchestrator.task.Ansi;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.Sandbox;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.task.text.Ansi;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

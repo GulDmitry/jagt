@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.flow.Point;
+import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.channel.Notification;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.StateService;
 import java.io.IOException;

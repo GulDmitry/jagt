@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.protocol.Reported;
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Map;
 import lombok.With;
 

@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.SessionWakes;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.time.Duration;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

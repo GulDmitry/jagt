@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.BranchStrategy;
-import dev.jagt.orchestrator.task.GitRemote;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.task.repo.GitRemote;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

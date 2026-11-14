@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.port.EnvironmentProbe;
+import dev.jagt.orchestrator.port.assistant.EnvironmentProbe;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

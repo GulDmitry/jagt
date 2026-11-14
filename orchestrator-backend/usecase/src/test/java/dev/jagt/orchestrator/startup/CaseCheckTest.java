@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

@@ -4,8 +4,8 @@ import static dev.jagt.orchestrator.adapter.flows.TestAcceptanceRoleSettingsBuil
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.service.RoleSettings;

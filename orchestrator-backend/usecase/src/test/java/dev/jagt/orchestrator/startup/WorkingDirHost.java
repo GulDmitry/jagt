@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
-import dev.jagt.orchestrator.port.Host;
+import dev.jagt.orchestrator.port.host.Host;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

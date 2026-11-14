@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.flow.view.TaskView;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;

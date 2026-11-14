@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.UsageLimits;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.CostPerAcceptedTask;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.CostPerAcceptedTask;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneOffset;

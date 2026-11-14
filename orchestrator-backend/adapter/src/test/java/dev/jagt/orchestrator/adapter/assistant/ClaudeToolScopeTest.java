@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

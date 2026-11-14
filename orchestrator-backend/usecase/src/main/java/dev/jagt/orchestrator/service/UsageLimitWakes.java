@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
-import dev.jagt.orchestrator.port.SubscriptionUsage;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;

@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.task.acceptance.RoleRecord;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;

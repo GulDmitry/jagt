@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.ConflictEnding;
+import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.ReviewReader;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.ToldOnce;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

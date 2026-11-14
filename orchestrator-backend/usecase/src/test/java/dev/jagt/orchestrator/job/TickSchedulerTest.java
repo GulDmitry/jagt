@@ -6,7 +6,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.port.ReadScope;
+import dev.jagt.orchestrator.port.terminal.ReadScope;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;

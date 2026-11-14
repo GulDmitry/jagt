@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.task.Artifact;
-import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;

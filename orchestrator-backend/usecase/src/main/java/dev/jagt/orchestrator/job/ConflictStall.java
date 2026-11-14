@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.DeployStep;
-import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.SessionLog;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.agent.SessionLog;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

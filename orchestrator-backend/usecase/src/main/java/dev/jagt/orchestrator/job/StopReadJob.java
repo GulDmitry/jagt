@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.StopKind;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Duration;

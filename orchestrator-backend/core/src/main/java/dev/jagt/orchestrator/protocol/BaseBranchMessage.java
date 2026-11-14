@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.protocol;
 import static dev.jagt.orchestrator.protocol.Wire.absent;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import dev.jagt.orchestrator.protocol.message.Message;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 

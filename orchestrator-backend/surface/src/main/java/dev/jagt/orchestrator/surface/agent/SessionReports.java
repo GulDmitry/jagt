@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.TaskFacts;
 import dev.jagt.orchestrator.task.TaskState;

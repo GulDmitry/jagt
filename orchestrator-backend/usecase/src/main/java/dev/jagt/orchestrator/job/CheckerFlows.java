@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.port.AcceptanceRunner;
-import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner;
+import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.task.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

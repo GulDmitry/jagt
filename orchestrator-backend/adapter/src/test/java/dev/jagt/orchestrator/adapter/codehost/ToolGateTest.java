@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.service.ToolGate;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

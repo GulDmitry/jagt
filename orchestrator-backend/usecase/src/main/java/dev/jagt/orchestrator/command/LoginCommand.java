@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OpenedWindows;
 import java.util.List;

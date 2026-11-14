@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;

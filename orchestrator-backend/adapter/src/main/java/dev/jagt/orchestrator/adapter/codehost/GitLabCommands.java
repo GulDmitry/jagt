@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import dev.jagt.orchestrator.port.CodeHostCommands;
+import dev.jagt.orchestrator.port.codehost.CodeHostCommands;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Component;

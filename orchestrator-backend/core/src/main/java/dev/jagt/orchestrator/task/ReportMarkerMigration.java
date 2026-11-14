@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;

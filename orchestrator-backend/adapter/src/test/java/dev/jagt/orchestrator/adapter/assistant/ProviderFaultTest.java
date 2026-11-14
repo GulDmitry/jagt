@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import org.junit.jupiter.api.Test;
 
 class ProviderFaultTest {

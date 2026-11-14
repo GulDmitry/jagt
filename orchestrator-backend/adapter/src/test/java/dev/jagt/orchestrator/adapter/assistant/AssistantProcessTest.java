@@ -11,8 +11,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.AssistantUnavailable;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.assistant.AssistantUnavailable;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ReachLedger;
 import java.nio.file.Path;
 import java.time.Clock;

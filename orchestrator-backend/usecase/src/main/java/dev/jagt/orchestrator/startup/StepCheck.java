@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.port.StartupCheck;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;

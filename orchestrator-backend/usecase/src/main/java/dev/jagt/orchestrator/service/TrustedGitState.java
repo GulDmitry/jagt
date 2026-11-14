@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.GitTrust;
-import dev.jagt.orchestrator.task.Guard;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

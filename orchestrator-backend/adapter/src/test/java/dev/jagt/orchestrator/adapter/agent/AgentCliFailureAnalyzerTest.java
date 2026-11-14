@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;

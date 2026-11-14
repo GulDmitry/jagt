@@ -8,12 +8,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.protocol.RetryPolicy;
-import dev.jagt.orchestrator.task.MergeRequestFacts;
-import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.protocol.read.RetryPolicy;
+import dev.jagt.orchestrator.task.review.MergeRequestFacts;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;

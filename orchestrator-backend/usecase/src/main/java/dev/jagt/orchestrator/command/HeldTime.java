@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.Owner;
-import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;

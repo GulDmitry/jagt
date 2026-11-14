@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
-import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;

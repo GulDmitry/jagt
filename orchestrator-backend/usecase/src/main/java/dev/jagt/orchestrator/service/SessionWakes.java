@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Wake;
+import dev.jagt.orchestrator.task.session.Wake;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

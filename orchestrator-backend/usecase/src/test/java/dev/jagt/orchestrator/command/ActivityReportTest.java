@@ -6,11 +6,11 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

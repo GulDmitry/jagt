@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.List;
 import java.util.Map;
 import lombok.With;

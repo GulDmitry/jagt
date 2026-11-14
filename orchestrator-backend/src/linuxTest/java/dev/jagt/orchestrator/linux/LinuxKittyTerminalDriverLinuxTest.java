@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;

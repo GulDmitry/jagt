@@ -1,9 +1,15 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.AutoReviewWatch;
-import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.view.Attention;
+import dev.jagt.orchestrator.flow.view.Owner;
+import dev.jagt.orchestrator.flow.view.Phase;
+import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.task.review.AutoReviewWatch;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 

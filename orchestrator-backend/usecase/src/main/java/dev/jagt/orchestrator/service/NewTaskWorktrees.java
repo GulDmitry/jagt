@@ -1,17 +1,17 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.task.BranchStrategy;
-import dev.jagt.orchestrator.task.GitTrust;
-import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.Remote;
-import dev.jagt.orchestrator.task.TaskName;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.launch.NewTask;
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.Remote;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;

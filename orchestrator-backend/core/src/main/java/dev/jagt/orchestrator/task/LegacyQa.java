@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.task;
 
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.acceptance.RoleRecord;
+import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.HashMap;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;

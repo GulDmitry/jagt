@@ -33,18 +33,18 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use |
-| `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/Notification` + `port/ChannelDriver` |
+| `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/channel/Notification` + `port/channel/ChannelDriver` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
 | check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) |
-| `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
+| `startup/` | why the assembly must not start | built — `port/host/StartupCheck`, `StartupValidation` and every check |
 | `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion`, the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` |
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
 surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it. The board renders
-`flow/TaskView`; a report is text from the `GlobalCommand` that owns it.
+`flow/view/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
 ## The rings
 
@@ -76,7 +76,7 @@ answer. Every type in `flow/`, one question each:
 
 | type | answers |
 |------|---------|
-| `flow/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
+| `flow/capability/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
 | `Outcome` | OK, NOTHING, RELAYED, CONFLICT, PARTIAL, GONE + the sentence, the stamp, the cause |
 | `TaskChart` | the regions and their edges: `edge(chart, DEPLOYED, "deploy read red", move, DEPLOY_CONFLICT)` — one per status move |
 | `ConflictEnding` | which reads end a deploy conflict, by its cause, and under which stops; `job/DeployConflictJob` walks it |
@@ -86,15 +86,15 @@ answer. Every type in `flow/`, one question each:
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
 | `TaskAction` | a verb, named once for every surface |
-| `Capabilities` | every `flow/TaskCapability` there is, one per action — the `capability/` kind's registry |
+| `Capabilities` | every `flow/capability/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |
 | `Pipeline` | what the host last said about the checks, as a verdict rather than as its own wording |
-| `task/AgentReport` | what the task's last report means — a question, a permission, no changes, or plain; never parsed from its line |
+| `task/turn/AgentReport` | what the task's last report means — a question, a permission, no changes, or plain; never parsed from its line |
 | `RoundState` | what the last round left behind: that report, plus whether drafted replies are waiting |
 | `DashboardLine` | the one contextual line under a card, empty whenever status and next move already answer |
 | `Refusal` | a refusal a caller must act on rather than only show |
 | `Turns` | who holds a task's turn, from its status, its report and the Master's profile |
-| `task/Turn` | that turn on the task: holder, the step that opened it, its digest, since when, each step's last mark |
+| `task/turn/Turn` | that turn on the task: holder, the step that opened it, its digest, since when, each step's last mark |
 | `Move` | what can be done to this task, whose turn it is, how loudly it asks |
 | `Owner` | whose turn |
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
@@ -114,7 +114,7 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
   [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
   [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
-  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/ToldOnce`, written by the
+  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the
   reducer alone ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other
   marks are bookkeeping, written by `withMark` from anywhere.
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
@@ -123,7 +123,7 @@ answer. Every type in `flow/`, one question each:
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
   PARTIAL alone refuses: stamped first, thrown second, so half a change on a shared branch is recorded.
-- **An interceptor** (`flow/CapabilityInterceptor`) wraps a verb and may refuse, stopping the work *and* the transition.
+- **An interceptor** (`flow/capability/CapabilityInterceptor`) wraps a verb and may refuse, stopping the work *and* the transition.
 - **`Facts.projected`** assumes no live agent and costs nothing; the gate runs the real probe — so a stuck SHIPPING card
   offers SHIP and the gate can still refuse it.
 
@@ -158,8 +158,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 |------|----------------|
 | `TaskStore` | `service/StateService` |
 | `AgentPresence` | `service/AgentSessions` |
-| `flow/TaskCapability` | one per verb under `capability/` |
-| `flow/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/trust/GitStateGuard`; an install may add its own step |
+| `flow/capability/TaskCapability` | one per verb under `capability/` |
+| `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/trust/GitStateGuard`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,OpenCode,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
@@ -199,16 +199,16 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 | you want to | do this |
 |-------------|---------|
-| add a per-task verb | a constant in `flow/TaskAction`, a class in `capability/`, **and** its offer in `flow/TaskOffers` with the edge in `flow/TaskChart` leading each outcome |
+| add a per-task verb | a constant in `flow/capability/TaskAction`, a class in `capability/`, **and** its offer in `flow/TaskOffers` with the edge in `flow/TaskChart` leading each outcome |
 | add a report | one `GlobalCommand` in `command/` with `report()` true — the board picks it up |
 | add a launch shortcut | a `GlobalCommand` whose `part()` names the board form it opens |
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()` |
-| run something before/after a verb | a `flow/CapabilityInterceptor` for that action — never a new status |
+| run something before/after a verb | a `flow/capability/CapabilityInterceptor` for that action — never a new status |
 | add unattended work | one `Job`; `Jobs` schedules it and the `jobs` report lists it |
 | notify somewhere else | one `ChannelDriver` in `adapter/` and a channel of its `kind` in `jagt.yml`; no caller changes |
 | support another host, tracker, agent or OS | one adapter behind its port, plus the `@ConditionalOnProperty` value |
 
-- A new verb reaches the board because the board is generated from `flow/TaskAction`: it renders `Move.actions()` (the
+- A new verb reaches the board because the board is generated from `flow/capability/TaskAction`: it renders `Move.actions()` (the
   legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
 - **The surface holds no list** — the usual way to break that is building a button in `static/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
@@ -262,7 +262,7 @@ The coding agent is an adapter; the inner rings know one port — launch a sessi
 file it reads its instructions from.
 
 - **No shared instruction file is named after one vendor.** The system-knowledge file is `AGENTS.md`
-  (`port/AgentRuntime.SYSTEM_KNOWLEDGE_FILE`), in a provisioned worktree and in this root, where `CLAUDE.md` links to it
+  (`port/agent/AgentRuntime.SYSTEM_KNOWLEDGE_FILE`), in a provisioned worktree and in this root, where `CLAUDE.md` links to it
   — never two copies.
 - **How an agent reaches the MCP server is the adapter's business** — direct HTTP with a working-directory header, or a
   stdio bridge for a CLI that can only spawn a server.
@@ -280,7 +280,7 @@ file it reads its instructions from.
 ## Assembly validation
 
 At startup, **one report of everything wrong**, never first-failure, because a half-valid assembly boots and then does
-nothing: `port/StartupCheck` implementations are collected by `startup/StartupValidation`, which throws
+nothing: `port/host/StartupCheck` implementations are collected by `startup/StartupValidation`, which throws
 `Misconfigured` once with every problem. Some live in `startup/`, the rest at the edge, which can name the
 key that fixes it. The composition half, and what of it exists:
 

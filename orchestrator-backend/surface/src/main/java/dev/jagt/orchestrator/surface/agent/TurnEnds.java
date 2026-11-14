@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
 import dev.jagt.orchestrator.service.TurnTree;
-import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.session.Session;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;

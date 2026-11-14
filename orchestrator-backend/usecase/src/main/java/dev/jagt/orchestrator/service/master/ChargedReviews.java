@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.SessionReach;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

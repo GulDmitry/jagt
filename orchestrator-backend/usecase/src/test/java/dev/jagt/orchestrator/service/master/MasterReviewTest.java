@@ -6,16 +6,16 @@ import static org.mockito.Mockito.mock;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.flow.role.MasterPhase;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -343,7 +343,7 @@ class MasterReviewTest {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
-            .report(dev.jagt.orchestrator.task.AgentReport.NO_CHANGES)
+            .report(dev.jagt.orchestrator.task.turn.AgentReport.NO_CHANGES)
             .build();
     state.putTask("a1", task);
     reviews.write("a1", task, MasterReview.Review.of(task, "abc123", "in1", List.of()), "");

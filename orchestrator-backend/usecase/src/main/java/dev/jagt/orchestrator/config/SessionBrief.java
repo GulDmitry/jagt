@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.config;
 
-import dev.jagt.orchestrator.port.Problem;
-import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

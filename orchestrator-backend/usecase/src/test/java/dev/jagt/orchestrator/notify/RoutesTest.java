@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.notify.Routes.Routed;
-import dev.jagt.orchestrator.port.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;

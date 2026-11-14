@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.flow.Point;
-import dev.jagt.orchestrator.flow.StopHold;
+import dev.jagt.orchestrator.flow.role.Point;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.notify.PointCatalogue.Standing;
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.NotificationSink;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
+import dev.jagt.orchestrator.port.channel.Notification;
+import dev.jagt.orchestrator.port.channel.NotificationSink;
 import dev.jagt.orchestrator.service.InstalledRoles;
 import dev.jagt.orchestrator.service.PhaseProfiles;
 import dev.jagt.orchestrator.service.StateService;

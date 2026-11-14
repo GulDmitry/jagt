@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.port.ChannelAddress;
-import dev.jagt.orchestrator.port.ChannelDriver;
-import dev.jagt.orchestrator.port.ChannelMessage;
-import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelDriver;
+import dev.jagt.orchestrator.port.channel.ChannelMessage;
+import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.BoardUrl;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;

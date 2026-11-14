@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.Remote;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.Remote;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import dev.jagt.orchestrator.protocol.Message;
+import dev.jagt.orchestrator.protocol.message.Message;
 import org.jspecify.annotations.Nullable;
 
 /** What a tool does once its arguments have been read as a message and judged. */

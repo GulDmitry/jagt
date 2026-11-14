@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
-import dev.jagt.orchestrator.flow.Point;
+import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.channel.Notification;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.UserNotice;
+import dev.jagt.orchestrator.protocol.message.UserNotice;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.OwnStatusReports;
 import dev.jagt.orchestrator.surface.mcp.Audience;

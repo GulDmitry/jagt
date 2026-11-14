@@ -8,13 +8,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.Page;
-import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.PlanBaseline;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

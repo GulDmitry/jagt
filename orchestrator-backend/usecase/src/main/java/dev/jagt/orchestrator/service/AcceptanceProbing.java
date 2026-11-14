@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;

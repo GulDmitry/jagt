@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.MasterPhase;
-import dev.jagt.orchestrator.flow.RoundState;
-import dev.jagt.orchestrator.port.RequestlessShip;
-import dev.jagt.orchestrator.port.ScenarioReach;
-import dev.jagt.orchestrator.port.ShellEscapeReach;
+import dev.jagt.orchestrator.flow.capability.Facts;
+import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.flow.role.MasterPhase;
+import dev.jagt.orchestrator.flow.view.RoundState;
+import dev.jagt.orchestrator.port.codehost.RequestlessShip;
+import dev.jagt.orchestrator.port.reach.ScenarioReach;
+import dev.jagt.orchestrator.port.reach.ShellEscapeReach;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

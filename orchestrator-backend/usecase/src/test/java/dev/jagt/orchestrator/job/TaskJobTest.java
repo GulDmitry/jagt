@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.flow.StopKind;
-import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.testing.FakeTaskJob;
 import java.util.LinkedHashMap;
 import java.util.Map;

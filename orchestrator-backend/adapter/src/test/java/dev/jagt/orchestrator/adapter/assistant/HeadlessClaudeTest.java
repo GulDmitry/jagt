@@ -12,16 +12,16 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
 import dev.jagt.orchestrator.protocol.ProjectRead;
-import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.protocol.TicketRead;
-import dev.jagt.orchestrator.protocol.TicketSearch;
+import dev.jagt.orchestrator.protocol.read.ReviewRead;
+import dev.jagt.orchestrator.protocol.read.TicketSearch;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.usage.AssistantCallKind;
+import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.Optional;
@@ -136,7 +136,7 @@ class HeadlessClaudeTest {
     org.assertj.core.api.Assertions.assertThatThrownBy(() ->
             claude.read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ))
-        .isInstanceOf(dev.jagt.orchestrator.port.AssistantUnavailable.class);
+        .isInstanceOf(dev.jagt.orchestrator.port.assistant.AssistantUnavailable.class);
   }
 
   @Test

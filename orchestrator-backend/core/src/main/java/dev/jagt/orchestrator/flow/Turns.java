@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn.Holder;
+import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Turn.Holder;
 import java.util.Map;
 import java.util.Optional;
 

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.task.AcceptanceEnding;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

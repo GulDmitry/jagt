@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.task.launch.TaskName;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

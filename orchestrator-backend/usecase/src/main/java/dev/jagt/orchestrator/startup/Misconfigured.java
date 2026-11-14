@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
-import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.host.Problem;
 import java.util.List;
 
 /**

@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Reach;
-import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.protocol.Reported;
-import dev.jagt.orchestrator.task.ForeignLinks;
-import dev.jagt.orchestrator.task.GitRemote;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.repo.ForeignLinks;
+import dev.jagt.orchestrator.task.repo.GitRemote;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 

@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.replay.RecordedVerdicts;
 import dev.jagt.orchestrator.adapter.replay.Recording;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.RoundReviewer.Round;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Round;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

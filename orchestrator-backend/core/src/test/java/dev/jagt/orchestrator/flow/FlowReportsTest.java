@@ -8,12 +8,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.Conflict;
-import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.Guard;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
