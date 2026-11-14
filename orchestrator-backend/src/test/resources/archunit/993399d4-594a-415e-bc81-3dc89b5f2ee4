@@ -1,13 +1,5 @@
 dev.jagt.orchestrator.adapter.codehost.ToolGateTest
-dev.jagt.orchestrator.flow.InterceptedCapabilityTest
-dev.jagt.orchestrator.job.AcceptanceRoundFlowTest
 dev.jagt.orchestrator.job.SessionBriefContractTest
-dev.jagt.orchestrator.port.ValuesTest
-dev.jagt.orchestrator.protocol.ReadAnswerTest
-dev.jagt.orchestrator.protocol.ToolMessageTest
 dev.jagt.orchestrator.service.GitCaseFactsTest
-dev.jagt.orchestrator.service.HostMergedRequestTest
 dev.jagt.orchestrator.surface.board.BoardAssetsTest
 dev.jagt.orchestrator.surface.mcp.tools.McpToolScopeTest
-dev.jagt.orchestrator.task.ModesTest
-dev.jagt.orchestrator.task.RoutingTest

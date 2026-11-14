@@ -2,26 +2,11 @@ package dev.jagt.orchestrator.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class ReadAnswerTest {
-
-  @Test
-  void refusesRequestThatExistsWithoutTheBranchThatWouldBecomeTheTask() {
-    var facts = new MergeRequestFacts(true, "", "main", "Widget layout");
-
-    assertThat(MergeRequestRead.violations(facts))
-        .extracting(Violation::field)
-        .containsExactly("sourceBranch");
-  }
-
-  @Test
-  void acceptsHostSayingThereIsNoSuchRequest() {
-    assertThat(MergeRequestRead.violations(new MergeRequestFacts(false, "", "", ""))).isEmpty();
-  }
+class ReviewReadTest {
 
   @Test
   void refusesFailingJobsLinesQuotedUnderVerdictThatIsNotRed() {

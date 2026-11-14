@@ -33,4 +33,35 @@ class AnswerTest {
 
     assertThat(shaped.reach()).contains(lost);
   }
+
+  @Test
+  void reportsFailedReadWithItsSentenceAndWhatItCost() {
+    TokenUsage spent = TokenUsage.ofCall(10, 0, 5, 0.01);
+
+    Answer<String> answer = Answer.failed(spent, "timed out");
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.usage()).isEqualTo(spent);
+    assertThat(answer.failure()).isEqualTo("timed out");
+  }
+
+  @Test
+  void costsNothingForReadThatNeverHappened() {
+    Answer<String> answer = Answer.unavailable();
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.usage()).isEqualTo(TokenUsage.NONE);
+    assertThat(answer.failure()).isEmpty();
+  }
+
+  @Test
+  void shapesTheFactsWhileCarryingTheCostAndTheFailureThrough() {
+    TokenUsage spent = TokenUsage.ofCall(10, 0, 5, 0.01);
+
+    Answer<Integer> shaped = new Answer<>(Optional.of("abc"), spent, "note").map(String::length);
+
+    assertThat(shaped.facts()).contains(3);
+    assertThat(shaped.usage()).isEqualTo(spent);
+    assertThat(shaped.failure()).isEqualTo("note");
+  }
 }

@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
-class InterceptedCapabilityTest {
+class FlowEngineInterceptorTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 

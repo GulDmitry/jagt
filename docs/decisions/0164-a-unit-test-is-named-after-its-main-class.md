@@ -22,6 +22,8 @@ Accepted 2026-11-14.
 
 - An exemption list: a list grows; a kind does not.
 - Fixing every breach before the rule: the rule would wait on 34 renames and merges.
+- Renaming the five left in the store: `ToolGateTest`, `SessionBriefContractTest` and `GitCaseFactsTest` pin several
+  classes across packages; `BoardAssetsTest` and `McpToolScopeTest` are rule tests with no main class of their name.
 
 ## Reopen when
 
