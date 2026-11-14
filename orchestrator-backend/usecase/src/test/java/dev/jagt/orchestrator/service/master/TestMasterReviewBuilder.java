@@ -13,6 +13,10 @@ public record TestMasterReviewBuilder(
     return new TestMasterReviewBuilder(1_000, "abc123", "PLAIN", "in1");
   }
 
+  public static TestMasterReviewBuilder bareMasterReview() {
+    return new TestMasterReviewBuilder(1_000, "", "", "");
+  }
+
   public MasterReview.Review build() {
     return new MasterReview.Review(
         round,

@@ -24,10 +24,7 @@ class DuplicationTest {
           "service/AgentSessionsTest.java",
           "job/AutoReviewSchedulerTest.java",
           "job/DeployCheckJobTest.java",
-          "job/MasterAnswerJobTest.java",
-          "job/VerifyJobTest.java",
-          "job/WatchdogServiceTest.java",
-          "job/YourMoveJobTest.java")
+          "job/WatchdogServiceTest.java")
           .map(name -> Path.of("usecase/src/test/java/dev/jagt/orchestrator", name))
           .toList();
 

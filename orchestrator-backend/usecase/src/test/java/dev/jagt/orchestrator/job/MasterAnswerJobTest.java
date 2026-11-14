@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestMasterAnswerJobBuilder.masterAnswerJob;
+import static dev.jagt.orchestrator.job.TestMasterAnswerTaskBuilder.askingTask;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -12,14 +15,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskMovedOn;
@@ -34,159 +34,79 @@ import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class MasterAnswerJobTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
   private final MasterPanel panel = mock(MasterPanel.class);
   private final MasterVerdicts verdicts = mock(MasterVerdicts.class);
 
+  @TempDir Path root;
+
+  private StateService state;
+  private MasterAnswerJob job;
+
+  @BeforeEach
+  void masterActingOverAnEmptyState() {
+    state = stateService().withRoot(root).build();
+    when(config.load()).thenReturn(masterAnswerJob().config());
+    job = masterAnswerJob().build(state, config, panel, verdicts);
+  }
+
   @Test
-  void answersSessionThatStoppedToAskWhereTheMasterStandsInForTheHuman(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
+  void answersSessionThatStoppedToAskWhereTheMasterStandsInForTheHuman() {
+    TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(verdicts)
         .answered("ABC-1", asking, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
   }
 
   @Test
-  void marksNothingUnansweredOnTaskWhoseTurnMovedOnWhileTheMasterRead(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+  void marksNothingUnansweredOnTaskWhoseTurnMovedOnWhileTheMasterRead() {
+    state.putTask("ABC-1", askingTask().build());
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
     when(verdicts.answered(anyString(), any(), anyString(), any()))
         .thenThrow(new TaskMovedOn("ABC-1"));
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered()).isEmpty();
   }
 
   @Test
-  void leavesQuestionForPermissionToTheHumanWhereTheMasterActs(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void leavesQuestionForPermissionToTheHumanWhereTheMasterActs() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .message("edits in the deploy worktree denied")
-            .report(AgentReport.PERMISSION)
+        askingTask()
+            .withStatus(TaskStatus.DEPLOY_CONFLICT)
+            .withMessage("edits in the deploy worktree denied")
+            .withReport(AgentReport.PERMISSION)
             .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
   }
 
   @Test
-  void leavesQuestionWithNoTextToTheHumanRatherThanRetryingIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void leavesQuestionWithNoTextToTheHumanRatherThanRetryingIt() {
     state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-            .report(AgentReport.QUESTION)
-            .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        "ABC-1", askingTask().withStatus(TaskStatus.REVIEW_PENDING).withMessage(null).build());
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     TaskState left = state.task("ABC-1").orElseThrow();
     assertThat(left.masterOrNone().unanswered()).isEqualTo(left.askedDigest());
@@ -194,86 +114,34 @@ class MasterAnswerJobTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"ship", "plan"})
-  void leavesQuestionOnPlanToThePlanReviewWhateverTheMasterKeeps(String kept, @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void leavesQuestionOnPlanToThePlanReviewWhateverTheMasterKeeps(String kept) {
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .message("plan revised, approve?")
-            .report(AgentReport.QUESTION)
+        askingTask()
+            .withStatus(TaskStatus.PLAN_PENDING)
+            .withMessage("plan revised, approve?")
             .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of(kept), null)));
+    when(config.load()).thenReturn(masterAnswerJob().withMine(List.of(kept)).config());
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
   }
 
   @Test
-  void leavesTheQuestionToTheHumanWhoKeptAnswering(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
+  void leavesTheQuestionToTheHumanWhoKeptAnswering() {
+    TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("answer"), null)));
+    when(config.load()).thenReturn(masterAnswerJob().withMine(List.of("answer")).config());
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
   }
 
   @ParameterizedTest
   @EnumSource(TaskStop.Trigger.class)
-  void leavesTheQuestionOfTaskJagtStoppedToTheHuman(TaskStop.Trigger trigger, @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void leavesTheQuestionOfTaskJagtStoppedToTheHuman(TaskStop.Trigger trigger) {
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -281,90 +149,41 @@ class MasterAnswerJobTest {
             .report(AgentReport.QUESTION)
             .stop(new TaskStop(trigger, 1L, "the evidence"))
             .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
   }
 
   @Test
-  void changesTheApproachOnceThreeAnswersChangedNothingInTheTree(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void changesTheApproachOnceThreeAnswersChangedNothingInTheTree() {
     TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-            .message("override the gate?")
-            .report(AgentReport.QUESTION)
+        askingTask()
+            .withStatus(TaskStatus.REVIEW_PENDING)
+            .withMessage("override the gate?")
             .build();
     state.putTask("ABC-1", asking);
-    ConfigService.ConfigFile.MasterConfig master =
-        new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
     when(verdicts.answersOverThisTree(asking)).thenReturn(3);
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
-    verify(panel).answer("ABC-1", asking, "override the gate?", master, true);
+    verify(panel)
+        .answer("ABC-1", asking, "override the gate?", masterAnswerJob().config().master(), true);
   }
 
   @Test
-  void stopsRunawayLoopAtTheNinthAnswerOverAnUnchangedTree(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void stopsRunawayLoopAtTheNinthAnswerOverAnUnchangedTree() {
     TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-            .message("override the gate?")
-            .report(AgentReport.QUESTION)
+        askingTask()
+            .withStatus(TaskStatus.REVIEW_PENDING)
+            .withMessage("override the gate?")
             .build();
     state.putTask("ABC-1", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(verdicts.answersOverThisTree(asking)).thenReturn(9);
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
@@ -372,68 +191,21 @@ class MasterAnswerJobTest {
   }
 
   @Test
-  void answersNothingForSessionThatIsWorkingAndAsksNothing(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void answersNothingForSessionThatIsWorkingAndAsksNothing() {
     state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).message("working").build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        "ABC-1", askingTask().withMessage("working").withReport(AgentReport.PLAIN).build());
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
   }
 
   @Test
-  void asksThePanelOnceAboutQuestionItsAnswerCouldNotBeActedOn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
+  void asksThePanelOnceAboutQuestionItsAnswerCouldNotBeActedOn() {
+    TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
-    MasterAnswerJob job =
-        new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
     job.run();
     job.run();
 
@@ -441,37 +213,12 @@ class MasterAnswerJobTest {
   }
 
   @Test
-  void namesWhyTheMastersAnswerWasUnusable(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+  void namesWhyTheMastersAnswerWasUnusable() {
+    state.putTask("ABC-1", askingTask().build());
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the worktree could not be listed"));
     try (FakeLogCapture log = new FakeLogCapture(MasterAnswerJob.class)) {
-      new MasterAnswerJob(
-              state,
-              config,
-              panel,
-              verdicts,
-              new TaskTurns(
-                  state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-          .run();
+      job.run();
 
       ILoggingEvent unusable =
           assertThat(log.events())
@@ -488,38 +235,12 @@ class MasterAnswerJobTest {
   }
 
   @Test
-  void asksThePanelOnceAboutQuestionWhoseAnswerTheSessionRefused(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
+  void asksThePanelOnceAboutQuestionWhoseAnswerTheSessionRefused() {
+    TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Decision("keep v2", ""));
     when(verdicts.answered(anyString(), any(), anyString(), any())).thenReturn(false);
-    MasterAnswerJob job =
-        new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
     job.run();
     job.run();
 
@@ -527,36 +248,12 @@ class MasterAnswerJobTest {
   }
 
   @Test
-  void answersNoRepositoryRequestInProseWhereTheMasterHoldsTheRight(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void answersNoRepositoryRequestInProseWhereTheMasterHoldsTheRight() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("needs the registry")
-            .report(AgentReport.QUESTION)
-            .repoRequest("registry")
-            .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        askingTask().withMessage("needs the registry").withRepoRequest("registry").build());
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
@@ -564,161 +261,61 @@ class MasterAnswerJobTest {
   }
 
   @Test
-  void leavesRepositoryRequestToTheHumanWhoKeptTheRight(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void leavesRepositoryRequestToTheHumanWhoKeptTheRight() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("needs the registry")
-            .report(AgentReport.QUESTION)
-            .repoRequest("registry")
-            .build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("repo"), null)));
+        askingTask().withMessage("needs the registry").withRepoRequest("registry").build());
+    when(config.load()).thenReturn(masterAnswerJob().withMine(List.of("repo")).config());
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
   }
 
-  @Test
-  void answersQuestionWhereTheMasterLeftAnEarlierStepToTheHuman(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
-    state.putTask("ABC-1", asking.withMaster(Master.defaults().withLeft("deploy src/Login.java")));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
+  @Nested
+  class WhereThePanelFindsNothingToDecide {
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
+    @BeforeEach
+    void panelUndecided() {
+      when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
+          .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
+    }
 
-    verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    @Test
+    void answersQuestionWhereTheMasterLeftAnEarlierStepToTheHuman() {
+      TaskState asking = askingTask().build();
+      state.putTask(
+          "ABC-1", asking.withMaster(Master.defaults().withLeft("deploy src/Login.java")));
+
+      job.run();
+
+      verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersQuestionOnTaskWhoseDeployItPressedAndWasRefused() {
+      TaskState asking =
+          askingTask().withStatus(TaskStatus.APPROVED).withLastActiveTimestamp(7).build();
+      state.putTask("ABC-1", asking.withMaster(Master.defaults().withPressedDeploy("7")));
+
+      job.run();
+
+      verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersQuestionThatCameAfterItSealedItsReadOfTheRound() {
+      TaskState asking = askingTask().withStatus(TaskStatus.REVIEW_PENDING).build();
+      state.putTask("ABC-1", asking.withMaster(Master.defaults().withSeal("fingerprint", 0)));
+
+      job.run();
+
+      verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    }
   }
 
   @Test
-  void answersQuestionOnTaskWhoseDeployItPressedAndWasRefused(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .lastActiveTimestamp(7)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
-    state.putTask("ABC-1", asking.withMaster(Master.defaults().withPressedDeploy("7")));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
-
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
-
-    verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
-  }
-
-  @Test
-  void answersQuestionThatCameAfterItSealedItsReadOfTheRound(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState asking =
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-            .message("keep v2?")
-            .report(AgentReport.QUESTION)
-            .build();
-    state.putTask("ABC-1", asking.withMaster(Master.defaults().withSeal("fingerprint", 0)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
-
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
-
-    verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
-  }
-
-  @Test
-  void answersTheSameQuestionAgainWhereTheSessionWorkedSinceTheMasterLeftItUnanswered(
-      @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void answersTheSameQuestionAgainWhereTheSessionWorkedSinceTheMasterLeftItUnanswered() {
     final FlowReports reports =
         new FlowReports(
             state,
@@ -726,21 +323,8 @@ class MasterAnswerJobTest {
             new Checkers(new TaskChart(Composition.builtIn())),
             new FlowRules(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
-    MasterAnswerJob job =
-        new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.QUESTION, "keep v2?");
     job.run();
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN, "worked on it");
