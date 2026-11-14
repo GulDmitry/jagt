@@ -150,7 +150,7 @@ go through a press's batch and switch. A sighting is logged once per change, nev
 - **THEN** one line holds `shown:required` and its status, or `shown:jobs-failed` and null; further renders add none
 
 ### Requirement: A lost reach of a code host is the board's head
-Where jagt cannot reach a code host it reads, the header SHALL show ONE mark naming driver and host. Its hover gives
+Where jagt cannot reach a code host or an MCP server, the header SHALL show ONE mark naming driver and host. Its hover gives
 the fix command and the time left to the next probe, if scheduled. It replaces the per-card `DEPLOY_UNREAD` stop on that
 cause and wears the broken colour. `login` SHALL open the driver's login as a window's process, never by keystroke,
 and that window is on the Session tab. A login jagt opens SHALL open no browser: the board shows the login's one-time
@@ -172,6 +172,10 @@ tab, and `say` answers it.
 #### Scenario: A login without a device flow
 - **WHEN** a code host's CLI offers no device flow
 - **THEN** its own login prompt shows on the Session tab, and `say` answers it
+#### Scenario: The assistant's MCP server needs a login
+- **WHEN** a failed read finds an MCP server down
+- **THEN** the header's mark opens `claude` as the login window on the Session tab, and `say` types `/mcp` into it
+- **AND** while the mark stands jagt asks the CLI again each minute, and the read finding every server connected clears it
 
 ### Requirement: Every window jagt opens is on the Session tab
 A window jagt opens SHALL show on the Session tab and take `say`, whether a task's session or not: a login and the

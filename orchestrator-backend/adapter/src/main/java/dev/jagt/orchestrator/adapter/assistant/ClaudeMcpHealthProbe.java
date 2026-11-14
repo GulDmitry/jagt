@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.Reach;
+import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.OneLine;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -43,9 +45,13 @@ class ClaudeMcpHealthProbe implements McpHealth {
   /** The CLI's word for a server that is up. */
   private static final String CONNECTED = "Connected";
 
+  static final String DRIVER = "claude-mcp";
+  static final String HOST = "mcp";
+
   private final ProcessRunner processRunner;
   private final ClaudeProperties claude;
   private final AssistantProperties assistant;
+  private final Reach reach;
 
   private Optional<List<Server>> last = Optional.empty();
   private long lastAt;
@@ -83,7 +89,28 @@ class ClaudeMcpHealthProbe implements McpHealth {
           .log();
       return Optional.empty();
     }
-    return listed().map(ClaudeMcpHealthProbe::broken);
+    Optional<List<String>> broken = listed().map(ClaudeMcpHealthProbe::broken);
+    broken.ifPresent(this::reported);
+    return broken;
+  }
+
+  @Override
+  public synchronized Optional<List<String>> brokenServersNow() {
+    lastAt = 0;
+    return brokenServers();
+  }
+
+  private void reported(List<String> broken) {
+    if (broken.isEmpty()) {
+      reach.reached(DRIVER, HOST);
+      return;
+    }
+    reach.lost(
+        new ReachLost(
+            DRIVER,
+            HOST,
+            List.of(claude.command()),
+            "MCP server down: " + String.join(", ", broken)));
   }
 
   /**

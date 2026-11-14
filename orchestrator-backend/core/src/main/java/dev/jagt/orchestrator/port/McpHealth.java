@@ -12,6 +12,9 @@ public interface McpHealth {
    */
   Optional<List<String>> brokenServers();
 
+  /** As {@link #brokenServers()}, asking the CLI again however recently it was asked. */
+  Optional<List<String>> brokenServersNow();
+
   /** Every server the CLI lists, by name; empty {@code Optional} = could not be established. */
   Optional<List<String>> servers();
 }
