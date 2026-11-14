@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class RoleStartupTest {
+class RoleCheckStartupTest {
 
   @Test
   void roleYmlWithStateWithoutAnExitIsRefusedAndJagtStarts(@TempDir Path root) throws Exception {

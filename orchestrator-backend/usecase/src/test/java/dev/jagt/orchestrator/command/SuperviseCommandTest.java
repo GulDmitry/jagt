@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class SupervisorCommandsTest {
+class SuperviseCommandTest {
 
   private final Supervisor supervisor = mock(Supervisor.class);
   private final Host host = mock(Host.class);

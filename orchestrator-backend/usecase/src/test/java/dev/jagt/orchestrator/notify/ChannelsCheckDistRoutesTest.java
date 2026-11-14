@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.StandardEnvironment;
 
-class DistRoutesTest {
+class ChannelsCheckDistRoutesTest {
 
   @Test
   void shippedExampleRoutesTodaysBannersAndPassesTheStartCheck() {
