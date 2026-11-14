@@ -67,11 +67,11 @@ class LsofWorktreeProcessesTest {
               new Processes.Result(
                   0,
                   """
-                  p100
+                  p2147483646
                   cclaude
                   fcwd
                   n/nonexistent/wt
-                  p200
+                  p2147483647
                   cnode
                   fcwd
                   n/nonexistent/wt/app\

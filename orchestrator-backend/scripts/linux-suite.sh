@@ -42,7 +42,8 @@ for project in "$BACKEND_DIR"/build.gradle "$BACKEND_DIR"/*/build.gradle; do
 done
 
 echo "==> running: ${TASKS[*]}"
-docker run --rm \
+# --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
+docker run --rm --init \
     -v "$REPO_ROOT:/jagt" \
     "${STATE_MOUNTS[@]}" \
     -v "$CACHE_VOLUME:/gradle-home" \

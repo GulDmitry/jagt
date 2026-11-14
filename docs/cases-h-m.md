@@ -87,6 +87,8 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L23 | a test's provider is named by a bare `@MethodSource` (JUnit's own default `""`, the test method's name) → `NoHelperMethodTest` reads it as that provider, never as a helper method | seen 2026-11-14: two providers in `ConfigCheckTest` had to name themselves explicitly to pass the rule | `NoHelperMethodTest` over `ConfigCheckTest` |
 | L24 | the linux suite runs in its container on the host's checkout → Gradle's project state stays in container-only volumes, so the next host run reads no `/jagt` path | seen 2026-11-14: a host `:test` failed in `spotlessJava` on targets under `/jagt/orchestrator-backend` | none: `scripts/linux-suite.sh test`, then a host `:test` without `--rerun-tasks` |
 | L25 | a suite on a display reads an image → the container holds every library the JDK's X toolkit links against | seen 2026-11-14: `BoardAssetsTest` red in `scripts/linux-suite.sh test` on `UnsatisfiedLinkError`, `libXtst.so.6` missing | `BoardAssetsTest` in the container |
+| L26 | a test feeds a parser made-up pids and the code under test kills what it parsed → the pids are ones no OS hands out, so no live process is signalled | seen 2026-11-14: `scripts/linux-suite.sh test` lost its Gradle daemon, pid 100 or 200 under root in the container | `LsofWorktreeProcessesTest` |
+| L27 | the linux suite's container kills a timed-out command → an init reaps its orphan, so the child reads as gone, not as a live zombie | seen 2026-11-14: `ProcessRunnerTest` red in `scripts/linux-suite.sh`, PID 1 a shell that never reaps | `ProcessRunnerTest` |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
