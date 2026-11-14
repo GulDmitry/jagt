@@ -93,7 +93,7 @@ class BoardAssetsTest {
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
               .filter(path -> !path.endsWith("mermaid.min.js"))
-              .mapToLong(BoardAssetsTest::size)
+              .mapToLong(path -> path.toFile().length())
               .sum();
     }
 
@@ -113,7 +113,8 @@ class BoardAssetsTest {
 
     assertThat(sources)
         .isNotEmpty()
-        .noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());
+        .allSatisfy(
+            source -> assertThat(source).content().doesNotContainPattern(LOADED_FROM_OUTSIDE));
   }
 
   @Test
@@ -130,25 +131,12 @@ class BoardAssetsTest {
 
     assertThat(scripts)
         .isNotEmpty()
-        .noneMatch(script -> read(script).contains("toLocale"))
-        .noneMatch(script ->
-            read(script).contains("Intl.DateTimeFormat")
-                && !read(script).contains("timeZone: 'UTC'"));
-  }
-
-  private static long size(Path path) {
-    try {
-      return Files.size(path);
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private static String read(Path path) {
-    try {
-      return Files.readString(path);
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
+        .allSatisfy(script -> assertThat(script).content().doesNotContain("toLocale"))
+        .allSatisfy(script ->
+            assertThat(script)
+                .content()
+                .satisfiesAnyOf(
+                    text -> assertThat(text).doesNotContain("Intl.DateTimeFormat"),
+                    text -> assertThat(text).contains("timeZone: 'UTC'")));
   }
 }

@@ -8,14 +8,19 @@ import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class LibNotifyNotifierLinuxTest {
 
-  @Test
-  void deliversTheNotificationToTheSessionBusWithJagtAsTheApplication() throws Exception {
-    Path capture = Files.createTempFile("jagt-bus", ".txt");
-    Process monitor =
+  private Path capture;
+  private Process monitor;
+
+  @BeforeEach
+  void watchTheSessionBus() throws Exception {
+    capture = Files.createTempFile("jagt-bus", ".txt");
+    monitor =
         new ProcessBuilder(
                 "dbus-monitor",
                 "--session",
@@ -23,54 +28,48 @@ class LibNotifyNotifierLinuxTest {
             .redirectOutput(capture.toFile())
             .redirectErrorStream(true)
             .start();
-    try {
-      awaitCapture(capture, "NameAcquired");
-      new LibNotifyNotifier(new ProcessRunner(), "notify-send")
-          .notify("jagt · ABC-1", "your move: read the diff", null);
-
-      assertThat(awaitCapture(capture, "org.freedesktop.Notifications"))
-          .as("the Notify call as the desktop received it")
-          .contains("member=Notify")
-          .contains("\"jagt\"")
-          .contains("\"jagt · ABC-1\"")
-          .contains("\"your move: read the diff\"")
-          .contains("urgency");
-    } finally {
-      monitor.destroy();
-      Files.deleteIfExists(capture);
-    }
-  }
-
-  @Test
-  void sendsTitleThatLooksLikeAnOptionInsteadOfSwallowingIt() throws Exception {
-    Path capture = Files.createTempFile("jagt-bus", ".txt");
-    Process monitor =
-        new ProcessBuilder(
-                "dbus-monitor",
-                "--session",
-                "interface=org.freedesktop.Notifications,member=Notify")
-            .redirectOutput(capture.toFile())
-            .redirectErrorStream(true)
-            .start();
-    try {
-      awaitCapture(capture, "NameAcquired");
-      new LibNotifyNotifier(new ProcessRunner(), "notify-send")
-          .notify("--urgency=critical looking title", "body", null);
-
-      assertThat(awaitCapture(capture, "looking title"))
-          .contains("\"--urgency=critical looking title\"");
-    } finally {
-      monitor.destroy();
-      Files.deleteIfExists(capture);
-    }
-  }
-
-  private static String awaitCapture(Path capture, String expected) {
-    return await()
+    await()
         .atMost(Duration.ofSeconds(10))
         .pollInterval(Duration.ofMillis(250))
-        .until(
-            () -> Files.exists(capture) ? Files.readString(capture) : "",
-            seen -> seen.contains(expected));
+        .until(() -> Files.readString(capture), seen -> seen.contains("NameAcquired"));
+  }
+
+  @AfterEach
+  void stopWatching() throws Exception {
+    monitor.destroy();
+    Files.deleteIfExists(capture);
+  }
+
+  @Test
+  void deliversTheNotificationToTheSessionBusWithJagtAsTheApplication() {
+    new LibNotifyNotifier(new ProcessRunner(), "notify-send")
+        .notify("jagt · ABC-1", "your move: read the diff", null);
+
+    assertThat(
+            await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(250))
+                .until(
+                    () -> Files.readString(capture),
+                    seen -> seen.contains("org.freedesktop.Notifications")))
+        .as("the Notify call as the desktop received it")
+        .contains("member=Notify")
+        .contains("\"jagt\"")
+        .contains("\"jagt · ABC-1\"")
+        .contains("\"your move: read the diff\"")
+        .contains("urgency");
+  }
+
+  @Test
+  void sendsTitleThatLooksLikeAnOptionInsteadOfSwallowingIt() {
+    new LibNotifyNotifier(new ProcessRunner(), "notify-send")
+        .notify("--urgency=critical looking title", "body", null);
+
+    assertThat(
+            await()
+                .atMost(Duration.ofSeconds(10))
+                .pollInterval(Duration.ofMillis(250))
+                .until(() -> Files.readString(capture), seen -> seen.contains("looking title")))
+        .contains("\"--urgency=critical looking title\"");
   }
 }

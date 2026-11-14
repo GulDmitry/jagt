@@ -6,50 +6,46 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class HttpEnvironmentProbeTest {
 
   private final HttpEnvironmentProbe probe = new HttpEnvironmentProbe();
+  private final int[] status = {200};
+  private HttpServer server;
 
-  private static HttpServer answering(int status) throws IOException {
-    HttpServer server =
-        HttpServer.create(
-            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
+  @BeforeEach
+  void listen() throws IOException {
+    server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
     server.createContext(
         "/",
         exchange -> {
-          exchange.sendResponseHeaders(status, -1);
+          exchange.sendResponseHeaders(status[0], -1);
           exchange.close();
         });
     server.start();
-    return server;
+  }
+
+  @AfterEach
+  void stop() {
+    server.stop(0);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"401,true", "503,false", "500,false"})
+  void answersOnlyWhereTheEnvironmentRespondsBelowServerFault(int respondedWith, boolean answered) {
+    status[0] = respondedWith;
+
+    assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/"))
+        .isEqualTo(answered);
   }
 
   @Test
-  void answersWhereTheEnvironmentRespondsWithPageThatNeedsLogin() throws IOException {
-    HttpServer server = answering(401);
-    try {
-      assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/")).isTrue();
-    } finally {
-      server.stop(0);
-    }
-  }
-
-  @Test
-  void doesNotAnswerWhereTheEnvironmentRespondsWithServerFault() throws IOException {
-    HttpServer server = answering(503);
-    try {
-      assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/"))
-          .isFalse();
-    } finally {
-      server.stop(0);
-    }
-  }
-
-  @Test
-  void doesNotAnswerWhereNothingListens() throws IOException {
-    HttpServer server = answering(200);
+  void doesNotAnswerWhereNothingListens() {
     int port = server.getAddress().getPort();
     server.stop(0);
 
@@ -57,28 +53,12 @@ class HttpEnvironmentProbeTest {
   }
 
   @Test
-  void doesNotAnswerWhereTheEnvironmentRespondsWithTheFirstServerFaultStatus() throws IOException {
-    HttpServer server = answering(500);
-    try {
-      assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/"))
-          .isFalse();
-    } finally {
-      server.stop(0);
-    }
-  }
+  void doesNotAnswerAndKeepsItsInterruptWhereTheProbingThreadWasInterrupted() {
+    Thread.currentThread().interrupt();
 
-  @Test
-  void doesNotAnswerAndKeepsItsInterruptWhereTheProbingThreadWasInterrupted() throws IOException {
-    HttpServer server = answering(200);
-    try {
-      Thread.currentThread().interrupt();
+    boolean answered = probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/");
 
-      boolean answered = probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/");
-
-      assertThat(answered).isFalse();
-      assertThat(Thread.interrupted()).isTrue();
-    } finally {
-      server.stop(0);
-    }
+    assertThat(answered).isFalse();
+    assertThat(Thread.interrupted()).isTrue();
   }
 }

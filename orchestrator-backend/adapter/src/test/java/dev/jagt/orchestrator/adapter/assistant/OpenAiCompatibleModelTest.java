@@ -14,38 +14,62 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class OpenAiCompatibleModelTest {
 
   private static final String SCHEMA = "{\"type\":\"object\",\"required\":[\"command\"]}";
   private final UsageTracker usageTracker = mock(UsageTracker.class);
-  private @Nullable HttpServer server;
+  private final AtomicReference<String> sent = new AtomicReference<>();
+  private int status = 200;
+  private String reply = "{}";
+  private Duration delay = Duration.ZERO;
+  private HttpServer server;
+  private OpenAiCompatibleModel model;
+
+  @BeforeEach
+  void listen() throws IOException {
+    server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+    server.createContext(
+        "/v1/chat/completions",
+        exchange -> {
+          sent.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+          try {
+            Thread.sleep(delay.toMillis());
+            byte[] bytes = reply.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(status, bytes.length);
+            exchange.getResponseBody().write(bytes);
+          } catch (InterruptedException | IOException ignored) {
+            Thread.currentThread().interrupt();
+          } finally {
+            exchange.close();
+          }
+        });
+    server.start();
+    model =
+        new OpenAiCompatibleModel(
+            LocalModelProperties.off()
+                .withEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
+                .withModel("qwen")
+                .withTimeout(Duration.ofSeconds(5)),
+            usageTracker);
+  }
 
   @AfterEach
   void stop() {
-    if (server != null) {
-      server.stop(0);
-    }
+    server.stop(0);
   }
 
   @Test
   void answersWithTheObjectTheServerReturnsAndBooksItsTokens() throws IOException {
-    AtomicReference<String> sent = new AtomicReference<>();
-    start(
-        200,
+    reply =
         "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"}}],"
-            + "\"usage\":{\"prompt_tokens\":120,\"completion_tokens\":9}}",
-        Duration.ZERO,
-        sent);
+            + "\"usage\":{\"prompt_tokens\":120,\"completion_tokens\":9}}";
 
-    var answer =
-        model(Duration.ofSeconds(5))
-            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+    var answer = model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts().orElseThrow().path("command").asString("")).isEqualTo("ship");
     verify(usageTracker).record(AssistantCallKind.COMMAND_MAP, TokenUsage.ofCall(120, 0, 9, 0));
@@ -53,11 +77,9 @@ class OpenAiCompatibleModelTest {
 
   @Test
   void sendsTheSchemaAsTheResponseFormatAndTheConfiguredModel() throws IOException {
-    AtomicReference<String> sent = new AtomicReference<>();
-    start(200, "{\"choices\":[{\"message\":{\"content\":\"{}\"}}]}", Duration.ZERO, sent);
+    reply = "{\"choices\":[{\"message\":{\"content\":\"{}\"}}]}";
 
-    model(Duration.ofSeconds(5))
-        .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+    model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(sent.get())
         .contains("\"model\":\"qwen\"")
@@ -68,11 +90,10 @@ class OpenAiCompatibleModelTest {
 
   @Test
   void failsWithoutAnswerWhereTheServerAnswersAnError() throws IOException {
-    start(500, "boom", Duration.ZERO, new AtomicReference<>());
+    status = 500;
+    reply = "boom";
 
-    var answer =
-        model(Duration.ofSeconds(5))
-            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+    var answer = model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure()).isEqualTo("http 500");
@@ -80,15 +101,9 @@ class OpenAiCompatibleModelTest {
 
   @Test
   void failsWithoutAnswerWhereTheContentIsNotAnObject() throws IOException {
-    start(
-        200,
-        "{\"choices\":[{\"message\":{\"content\":\"[1]\"}}]}",
-        Duration.ZERO,
-        new AtomicReference<>());
+    reply = "{\"choices\":[{\"message\":{\"content\":\"[1]\"}}]}";
 
-    var answer =
-        model(Duration.ofSeconds(5))
-            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+    var answer = model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure()).isEqualTo("content is not an object");
@@ -96,11 +111,16 @@ class OpenAiCompatibleModelTest {
 
   @Test
   void failsWithinTheTimeoutWhereTheServerOutlastsIt() throws IOException {
-    start(200, "{}", Duration.ofSeconds(4), new AtomicReference<>());
+    delay = Duration.ofSeconds(4);
     long begun = System.nanoTime();
 
     var answer =
-        model(Duration.ofSeconds(1))
+        new OpenAiCompatibleModel(
+                LocalModelProperties.off()
+                    .withEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
+                    .withModel("qwen")
+                    .withTimeout(Duration.ofSeconds(1)),
+                usageTracker)
             .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();
@@ -109,53 +129,11 @@ class OpenAiCompatibleModelTest {
 
   @Test
   void failsWithoutAnswerWhereNothingListens() throws IOException {
-    start(200, "{}", Duration.ZERO, new AtomicReference<>());
-    int port = Objects.requireNonNull(server).getAddress().getPort();
     server.stop(0);
-    server = null;
-    OpenAiCompatibleModel dead =
-        new OpenAiCompatibleModel(
-            LocalModelProperties.off()
-                .withEndpoint("http://127.0.0.1:" + port + "/v1")
-                .withModel("qwen"),
-            usageTracker);
 
-    var answer = dead.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+    var answer = model.ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.usage()).isEqualTo(TokenUsage.NONE);
-  }
-
-  private OpenAiCompatibleModel model(Duration timeout) {
-    return new OpenAiCompatibleModel(
-        LocalModelProperties.off()
-            .withEndpoint(
-                "http://127.0.0.1:" + Objects.requireNonNull(server).getAddress().getPort() + "/v1")
-            .withModel("qwen")
-            .withTimeout(timeout),
-        usageTracker);
-  }
-
-  private void start(int status, String body, Duration delay, AtomicReference<String> sent)
-      throws IOException {
-    server =
-        HttpServer.create(
-            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
-    server.createContext(
-        "/v1/chat/completions",
-        exchange -> {
-          sent.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-          try {
-            Thread.sleep(delay.toMillis());
-            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(status, bytes.length);
-            exchange.getResponseBody().write(bytes);
-          } catch (InterruptedException | IOException ignored) {
-            Thread.currentThread().interrupt();
-          } finally {
-            exchange.close();
-          }
-        });
-    server.start();
   }
 }

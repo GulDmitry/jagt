@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -45,27 +46,25 @@ class FileTrackerAssistantTest {
   private final ConfigService configService = mock(ConfigService.class);
   private final FileTrackerAssistant assistant = new FileTrackerAssistant(elsewhere, configService);
 
-  private Path configured(String content) throws IOException {
-    Path file = dir.resolve("work.md");
-    Files.writeString(file, content);
+  private Path file;
+
+  @BeforeEach
+  void holdTheList() throws IOException {
+    file = dir.resolve("work.md");
+    Files.writeString(file, LIST);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults().withTracker(TrackerConfig.defaults().withFile(file.toString())));
-    return file;
   }
 
   @Test
   void listsEveryKeyInFileOrder() throws IOException {
-    configured(LIST);
-
     assertThat(assistant.findCandidates("").facts())
         .contains(List.of("ABC-42", "ABC-7", "XYZ-9", "ABC-8"));
   }
 
   @Test
   void readsAnUncheckedItemAsOpenWithFileLink() throws IOException {
-    Path file = configured(LIST);
-
     TicketFacts facts = assistant.readTicket("ABC-42").facts().orElseThrow();
 
     assertThat(facts.key()).isEqualTo("ABC-42");
@@ -77,45 +76,34 @@ class FileTrackerAssistantTest {
 
   @Test
   void readsCheckedItemAsDone() throws IOException {
-    configured(LIST);
-
     assertThat(assistant.readTicket("ABC-7").facts().orElseThrow().trackerStatus())
         .isEqualTo("done");
   }
 
   @Test
   void costsNothingToRead() throws IOException {
-    configured(LIST);
-
     assertThat(assistant.readTicket("ABC-42").usage()).isEqualTo(TokenUsage.NONE);
   }
 
   @Test
   void readsTheTitleAndBodyVerbatimUpToTheNextItem() throws IOException {
-    configured(LIST);
-
     assertThat(assistant.readTicketText("ABC-42").facts())
         .contains("A title\n  first body line\n\n  second body line");
   }
 
   @Test
   void endsBodyAtHeading() throws IOException {
-    configured(LIST);
-
     assertThat(assistant.readTicketText("XYZ-9").facts()).contains("Last");
   }
 
   @Test
   void doesNotTakeLineWithoutKeyForAnItem() throws IOException {
-    configured(LIST);
-
     assertThat(assistant.findCandidates("").facts().orElseThrow())
         .doesNotContain("a line without a key");
   }
 
   @Test
   void asksTheDelegateAboutKeyTheFileDoesNotHold() throws IOException {
-    configured(LIST);
     Answer<TicketFacts> other = Answer.unavailable();
     when(elsewhere.readTicket("QQQ-1", List.of())).thenReturn(other);
 
@@ -133,7 +121,6 @@ class FileTrackerAssistantTest {
 
   @Test
   void asksTheDelegateForTheTextOfKeyTheFileDoesNotHold() throws IOException {
-    configured(LIST);
     when(elsewhere.readTicketText("QQQ-1"))
         .thenReturn(new Answer<>(Optional.of("elsewhere"), TokenUsage.NONE));
 
@@ -157,7 +144,7 @@ class FileTrackerAssistantTest {
 
   @Test
   void answersAnEmptyListWhenTheFileHoldsNoItem() throws IOException {
-    configured("# Nothing here\n");
+    Files.writeString(file, "# Nothing here\n");
 
     assertThat(assistant.findCandidates("").facts()).contains(List.of());
   }
