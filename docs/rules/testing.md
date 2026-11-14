@@ -21,6 +21,7 @@ the human's. Shared test code (AGENTS.md "Tests"): `TextBudgetTest.mainSources` 
 ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)) is a record with `@With`,
 `<thing>()` setting fixed valid defaults and `build()` calling production's constructor or builder; it holds no branch, loop,
 mock, assertion, clock or random value; one of outside state (a git repo) may write.
+A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example to copy.
 
 ### Every test pins a business case
 
