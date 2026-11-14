@@ -158,7 +158,8 @@ class VerifyJobTest {
   void storesNoMoreOfFailedRunsOutputThanTheStopCanShowPlusOneCharToFlagTheCut() {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     when(verification.key(any())).thenReturn(Optional.of("tree-1"));
-    when(verification.failure(any())).thenReturn(Optional.of("x".repeat(10_000)));
+    when(verification.failure(any()))
+        .thenReturn(Optional.of("a".repeat(4_001) + "b".repeat(5_999)));
     when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class)))
         .thenReturn(true);
 
@@ -166,7 +167,7 @@ class VerifyJobTest {
 
     String stored =
         state.task("ABC-1").orElseThrow().toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
-    assertThat(stored).hasSize(4_001);
+    assertThat(stored).isEqualTo("a".repeat(4_001));
   }
 
   @Test

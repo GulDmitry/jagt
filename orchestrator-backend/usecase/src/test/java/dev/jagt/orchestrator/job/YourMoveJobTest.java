@@ -135,6 +135,7 @@ class YourMoveJobTest {
     job.run();
 
     verify(notifications, times(1)).send(any());
+    verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())));
   }
 
   @Test

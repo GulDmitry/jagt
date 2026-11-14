@@ -209,7 +209,7 @@ class MasterAnswerJobTest {
     job.run();
     job.run();
 
-    verify(panel, times(1)).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    verify(panel, times(1)).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
   }
 
   @Test
@@ -244,7 +244,7 @@ class MasterAnswerJobTest {
     job.run();
     job.run();
 
-    verify(panel, times(1)).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    verify(panel, times(1)).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
   }
 
   @Test
@@ -289,7 +289,7 @@ class MasterAnswerJobTest {
 
       job.run();
 
-      verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+      verify(panel).answer(eq("ABC-1"), any(), eq(asking.message()), any(), anyBoolean());
     }
 
     @Test
@@ -300,7 +300,7 @@ class MasterAnswerJobTest {
 
       job.run();
 
-      verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+      verify(panel).answer(eq("ABC-1"), any(), eq(asking.message()), any(), anyBoolean());
     }
 
     @Test
@@ -310,7 +310,7 @@ class MasterAnswerJobTest {
 
       job.run();
 
-      verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+      verify(panel).answer(eq("ABC-1"), any(), eq(asking.message()), any(), anyBoolean());
     }
   }
 

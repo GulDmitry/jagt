@@ -105,6 +105,9 @@ class ConflictStallTest {
     stall.watch("ABC-42", conflict);
     stall.watch("ABC-42", changed);
     stall.watch("ABC-42", changed);
+
+    assertThat(state.task("ABC-42").orElseThrow().currentConflict())
+        .hasValueSatisfying(watch -> assertThat(watch.stalled()).isFalse());
   }
 
   @Test
@@ -120,6 +123,9 @@ class ConflictStallTest {
     restarted.watch("ABC-42", conflict);
 
     assertThat(handed).isTrue();
+    assertThat(state.task("ABC-42").orElseThrow().currentConflict().orElseThrow().told())
+        .extracting(Conflict.Told::at)
+        .isEqualTo(1_201_000L);
   }
 
   @Test
