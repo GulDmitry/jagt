@@ -37,7 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class AcceptanceCheckJobTest {
+class CheckerCheckJobTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 

@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
-class AcceptanceReadsTest {
+class CheckerReadsTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 

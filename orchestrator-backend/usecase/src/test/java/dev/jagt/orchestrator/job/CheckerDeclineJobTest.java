@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
-class AcceptanceDeclineJobTest {
+class CheckerDeclineJobTest {
 
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));

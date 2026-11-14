@@ -6,10 +6,6 @@ dev.jagt.orchestrator.flow.HandedOverTest
 dev.jagt.orchestrator.flow.InterceptedCapabilityTest
 dev.jagt.orchestrator.flow.ShippedCheckersTest
 dev.jagt.orchestrator.flow.StoppedDeployCardTest
-dev.jagt.orchestrator.job.AcceptanceCheckJobTest
-dev.jagt.orchestrator.job.AcceptanceDeclineFlowTest
-dev.jagt.orchestrator.job.AcceptanceDeclineJobTest
-dev.jagt.orchestrator.job.AcceptanceReadsTest
 dev.jagt.orchestrator.job.AcceptanceRoundFlowTest
 dev.jagt.orchestrator.job.SessionBriefContractTest
 dev.jagt.orchestrator.notify.DistRoutesTest
