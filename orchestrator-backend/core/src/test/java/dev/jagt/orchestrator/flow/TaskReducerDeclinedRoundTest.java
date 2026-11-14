@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class DeclinedRoundTest {
+class TaskReducerDeclinedRoundTest {
 
   private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 

@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class StoppedDeployCardTest {
+class TaskViewStoppedDeployCardTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 

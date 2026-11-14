@@ -1,10 +1,5 @@
 dev.jagt.orchestrator.adapter.codehost.ToolGateTest
-dev.jagt.orchestrator.config.CheckerSchemaTest
-dev.jagt.orchestrator.flow.DeclinedRoundTest
-dev.jagt.orchestrator.flow.HandedOverTest
 dev.jagt.orchestrator.flow.InterceptedCapabilityTest
-dev.jagt.orchestrator.flow.ShippedCheckersTest
-dev.jagt.orchestrator.flow.StoppedDeployCardTest
 dev.jagt.orchestrator.job.AcceptanceRoundFlowTest
 dev.jagt.orchestrator.job.SessionBriefContractTest
 dev.jagt.orchestrator.port.ValuesTest

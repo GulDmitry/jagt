@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class CheckerSchemaTest {
+class RoleDefinitionsCheckerSchemaTest {
 
   @Test
   void theAcceptanceSchemaFromItsDefinitionIsTheOneAcceptanceAnsweredBefore() {
