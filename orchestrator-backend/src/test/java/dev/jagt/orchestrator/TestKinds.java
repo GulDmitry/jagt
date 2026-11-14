@@ -84,7 +84,7 @@ final class TestKinds {
   private static Stream<String> sourcesNamedBy(JavaMethod test) {
     return test.tryGetAnnotationOfType(METHOD_SOURCE)
         .map(source -> (String[]) source.get("value").orElse(new String[0]))
-        .map(names -> names.length == 0 ? Stream.of(test.getName()) : Arrays.stream(names))
+        .map(names -> Arrays.stream(names).map(name -> name.isEmpty() ? test.getName() : name))
         .map(stream -> stream.map(name -> name.substring(name.indexOf('#') + 1)))
         .orElseGet(Stream::empty);
   }
