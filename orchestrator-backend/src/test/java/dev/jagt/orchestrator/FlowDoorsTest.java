@@ -4,6 +4,8 @@ import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 
@@ -245,6 +247,18 @@ class FlowDoorsTest {
         .callMethodWhere(target(name("withReportedAt")))
         .orShould()
         .callMethodWhere(target(name("withStampedAsk")))
+        .check(MainClasses.CODE);
+  }
+
+  @Test
+  void noTaskJobWatchNamesThePause() {
+    noClasses()
+        .that()
+        .implement(TaskJob.class)
+        .should()
+        .accessField(StopKind.class, "PAUSE")
+        .orShould()
+        .callMethod(StopKind.class, "values")
         .check(MainClasses.CODE);
   }
 

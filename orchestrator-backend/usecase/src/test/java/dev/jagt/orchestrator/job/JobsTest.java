@@ -3,11 +3,8 @@ package dev.jagt.orchestrator.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -15,40 +12,29 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.SimpleTriggerContext;
-import org.springframework.util.ClassUtils;
 
 class JobsTest {
 
@@ -386,86 +372,20 @@ class JobsTest {
     verify(job, times(1)).run();
   }
 
-  @ParameterizedTest
-  @MethodSource("taskJobs")
-  void neverHandsTaskJobTaskInStatusItsWatchLeavesOut(Class<? extends TaskJob> type) {
-    TaskJob taskJob = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
-    Map<String, TaskState> tasks = new LinkedHashMap<>();
-    for (TaskStatus status : TaskStatus.values()) {
-      tasks.put("ABC-" + tasks.size(), TaskState.builder("proj", "/wt", status).build());
-    }
-
-    List<TaskState> reached = reachedBy(taskJob, tasks);
-
-    assertThat(reached).allMatch(task -> taskJob.watch().statuses().contains(task.status()));
-  }
-
-  @ParameterizedTest
-  @MethodSource("taskJobsByStop")
-  void handsStoppedTaskOnlyToTaskJobWhoseWatchNamesItsStopKind(
-      Class<? extends TaskJob> type, TaskStop.Trigger stopTrigger) {
-    TaskJob taskJob = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+  @Test
+  void handsTaskJobTheTasksTheStateHoldsInsteadOfRunningItBare() {
+    TaskJob taskJob = mock(TaskJob.class);
+    when(taskJob.id()).thenReturn("task-job");
     Map<String, TaskState> tasks =
-        Map.of(
-            "ABC-42",
-            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .stop(new TaskStop(stopTrigger, 1, "evidence"))
-                .build());
-
-    List<TaskState> reached = reachedBy(taskJob, tasks);
-
-    assertThat(reached)
-        .allMatch(task -> taskJob.watch().stops().contains(StopKind.of(task.stop())));
-  }
-
-  @ParameterizedTest
-  @MethodSource("taskJobs")
-  void neverAdmitsPausedTaskToTaskJob(Class<? extends TaskJob> type) {
-    TaskJob taskJob = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
-    TaskState paused =
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it"))
-            .build();
-
-    assertThat(taskJob.watch().admits(paused)).isFalse();
-  }
-
-  private static List<TaskState> reachedBy(TaskJob job, Map<String, TaskState> tasks) {
-    doReturn("job").when(job).id();
-    doNothing().when(job).run(any(String.class), any(TaskState.class));
-    StateService state = mock(StateService.class);
+        Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(state.tasks()).thenReturn(tasks);
-    TaskScheduler scheduler = mock(TaskScheduler.class);
-    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), state);
-    jobs.start();
+    Jobs withTaskJob = new Jobs(List.of(taskJob), scheduler, Clock.systemUTC(), state);
+    withTaskJob.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
+
     work.getValue().run();
-    ArgumentCaptor<TaskState> reached = ArgumentCaptor.captor();
-    verify(job, atLeast(0)).run(any(String.class), reached.capture());
-    return reached.getAllValues();
-  }
 
-  static Stream<Class<?>> taskJobs() {
-    ClassPathScanningCandidateComponentProvider scan =
-        new ClassPathScanningCandidateComponentProvider(false);
-    scan.addIncludeFilter(new AssignableTypeFilter(TaskJob.class));
-    return scan.findCandidateComponents("dev.jagt.orchestrator.job").stream()
-        .map(
-            found ->
-                ClassUtils.resolveClassName(
-                    Objects.requireNonNull(found.getBeanClassName()), null));
-  }
-
-  static Stream<Arguments> taskJobsByStop() {
-    return taskJobs()
-        .flatMap(
-            type ->
-                Stream.of(
-                        TaskStop.Trigger.CHECKS,
-                        TaskStop.Trigger.UNDELIVERED,
-                        TaskStop.Trigger.WAIT,
-                        TaskStop.Trigger.PACE)
-                    .map(trigger -> Arguments.of(type, trigger)));
+    verify(taskJob).runOn(tasks);
+    verify(taskJob, never()).run();
   }
 }
