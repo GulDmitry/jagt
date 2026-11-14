@@ -196,7 +196,7 @@ final class TestKinds {
         boolean named =
             SourceRoots.ALL.stream()
                 .filter(JavaClass::isTopLevelClass)
-                .filter(type -> location(type).contains(CLASSES + "main/"))
+                .filter(type -> !location(type).contains(CLASSES + "test/"))
                 .filter(type -> type.getPackageName().equals(test.getPackageName()))
                 .anyMatch(type -> tested.startsWith(type.getSimpleName()));
         if (!named) {

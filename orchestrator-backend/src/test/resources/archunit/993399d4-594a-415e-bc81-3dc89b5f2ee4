@@ -31,4 +31,3 @@ dev.jagt.orchestrator.task.ModesTest
 dev.jagt.orchestrator.task.PipelineUrlTest
 dev.jagt.orchestrator.task.RoutingTest
 dev.jagt.orchestrator.task.StateFileCompatibilityTest
-dev.jagt.orchestrator.testing.FakeLogCaptureTest
