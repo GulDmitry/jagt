@@ -222,6 +222,7 @@ main#board:empty { padding: 0; }
 @media (max-width: 599px) {
   .menu { position: static; }
   #reports { left: 8px; right: 8px; width: auto; }
+  .tabs { overflow-x: auto; scrollbar-width: none; }
   .tabs button { padding: 6px 5px; white-space: nowrap; }
   .field-row .field { flex: 1 1 100%; }
 }
