@@ -177,4 +177,32 @@ final class TestKinds {
       }
     };
   }
+
+  static DescribedPredicate<JavaClass> moduleUnitTests() {
+    return DescribedPredicate.describe(
+        "unit tests of a module",
+        type ->
+            type.isTopLevelClass()
+                && type.getSimpleName().endsWith("Test")
+                && location(type).contains(CLASSES + "test/")
+                && !location(type).contains(ROOT_TEST_SET));
+  }
+
+  static ArchCondition<JavaClass> beNamedAfterMainClassOfItsPackage() {
+    return new ArchCondition<>("be named after a main class of its package") {
+      @Override
+      public void check(JavaClass test, ConditionEvents events) {
+        String tested = test.getSimpleName().replaceFirst("Test$", "");
+        boolean named =
+            SourceRoots.ALL.stream()
+                .filter(JavaClass::isTopLevelClass)
+                .filter(type -> location(type).contains(CLASSES + "main/"))
+                .filter(type -> type.getPackageName().equals(test.getPackageName()))
+                .anyMatch(type -> tested.startsWith(type.getSimpleName()));
+        if (!named) {
+          events.add(SimpleConditionEvent.violated(test, test.getName()));
+        }
+      }
+    };
+  }
 }
