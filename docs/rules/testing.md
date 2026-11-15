@@ -2,27 +2,25 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate (AGENTS.md "Tests"). Other
-suites live in `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux, `boardTest` Chromium, `linuxDriverTest` Linux binaries + a display
-(`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens. **Every `test` ends in `pitestDiff`**: mutants on the `main` lines
-changed against `HEAD`, each survivor judged before the commit
+`./gradlew test` is the hermetic gate (AGENTS.md "Tests"). Other suites live in `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux,
+`boardTest` Chromium, `linuxDriverTest` Linux binaries + a display (`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens.
+**Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD`, each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
+**A filtered run names its project**: `:test --tests '<Name>'` for the root's rule tests, `:<module>:test --tests '<Name>'` for a module's;
+a bare `test --tests` fails in every project the filter matches nothing in.
 
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
 A fixed bug's `docs/cases.md` row and `Defect-family:` trailer make defects countable per family.
-**A new test's run is predicted first**, outcome and message; a surprise is a
-stop to understand, never a blind retry. **Every new install requirement goes in `docs/installation.md`**.
-**Leave no trace** (AGENTS.md "Tests"): a suite
-uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes
-the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches
-the human's. Shared test code (AGENTS.md "Tests"): `TextBudgetTest.mainSources` is a scanner, `ScriptedProcesses` a fake. A test builder
-([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)) is a record with `@With`,
-`<thing>()` setting fixed valid defaults and `build()` calling production's constructor or builder; it holds no branch, loop,
-mock, assertion, clock or random value; one of outside state (a git repo) may write.
-A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example to copy.
-A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
+**A new test's run is predicted first**, outcome and message; a surprise is a stop to understand, never a blind retry.
+**Every new install requirement goes in `docs/installation.md`**. **Leave no trace** (AGENTS.md "Tests"): a suite uses a throwaway tmux session plus
+`ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the
+task), so no test reaches the human's. Shared test code (AGENTS.md "Tests"): `TextBudgetTest.mainSources` is a scanner, `ScriptedProcesses` a fake.
+A test builder ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)) is a record with `@With`, `<thing>()` setting fixed valid
+defaults and `build()` calling production's constructor or builder; it holds no branch, loop, mock, assertion, clock or random value; one of outside
+state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example
+to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
 
 ### Every test pins a business case
 
@@ -84,7 +82,7 @@ A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0
 - `roleEval -Prole=triage` hands the stop reader a stop of known who, lift and family (`roles/triage/eval/*.yml`), one JVM. Bar (estimate): a lift
   advised safe where unsafe 0, who right on >= 80% of answered runs; the family is recorded, not asserted.
 - Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.
-- `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
+  `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
 - `standTest`: real sessions on invariants (`-Pmodelfree`: no tokens); `StandSlots` caps runs at 6; kicks jobs per second; `build/stand/failed`.
 - A live stand run records its model moves (`recording.jsonl`); `ReplayStandTest` replays one, no model, a turn it never answered a divergence.
 
