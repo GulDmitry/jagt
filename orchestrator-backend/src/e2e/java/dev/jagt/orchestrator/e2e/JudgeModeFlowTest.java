@@ -146,6 +146,19 @@ class JudgeModeFlowTest {
     }
 
     @Test
+    void sweepAnswersNotReadableWhenTheHostHasNotYetAnsweredTheRequest() throws Exception {
+      flow.judges(judgement().build());
+      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+      flow.awaitReview();
+      flow.act("ship");
+      flow.pushesTheRound();
+      flow.agentReports(
+          "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
+
+      assertThat(flow.act("sweep")).contains("read failed", flow.request());
+    }
+
+    @Test
     void shipsAndDeploysOnlyWhenTheHumanPresses() throws Exception {
       flow.judges(judgement().build());
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");

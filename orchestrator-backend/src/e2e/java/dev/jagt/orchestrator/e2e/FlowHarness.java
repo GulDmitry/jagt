@@ -105,10 +105,14 @@ final class FlowHarness {
     awaitTask(reached -> reached.status() == TaskStatus.IN_PROGRESS);
   }
 
-  void pushesTheRoundAndReportsItsRequest() throws Exception {
+  void pushesTheRound() throws Exception {
     E2eWorkspace.git(worktree(), "add", "widget.txt");
     E2eWorkspace.git(worktree(), "commit", "-m", task + " fix the widget");
     E2eWorkspace.git(worktree(), "push", "-u", "origin", task);
+  }
+
+  void pushesTheRoundAndReportsItsRequest() throws Exception {
+    pushesTheRound();
     when(context.getBean(Assistants.class).codeHost().readReview(request()))
         .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
     agentReports(
