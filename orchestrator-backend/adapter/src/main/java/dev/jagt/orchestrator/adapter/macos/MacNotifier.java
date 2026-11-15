@@ -25,6 +25,10 @@ import org.springframework.stereotype.Component;
     name = "platform",
     havingValue = "macos",
     matchIfMissing = true)
+@ConditionalOnProperty(
+    name = "orchestrator.notifier",
+    havingValue = "desktop",
+    matchIfMissing = true)
 @Slf4j
 public class MacNotifier implements UserNotifier {
 

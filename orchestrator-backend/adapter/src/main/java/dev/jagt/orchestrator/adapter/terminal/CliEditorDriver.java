@@ -12,9 +12,11 @@ import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "orchestrator.editor", havingValue = "cli", matchIfMissing = true)
 @RequiredArgsConstructor
 public class CliEditorDriver implements EditorDriver, StartupCheck {
 

@@ -21,7 +21,8 @@ class TaskViewerTest {
   @CsvSource({
     "WINDOW, and raised the agents window",
     "UNREACHABLE_TAB, a tab this terminal cannot select",
-    "NOT_RUNNING, no agents viewer is open"
+    "NOT_RUNNING, no agents viewer is open",
+    "NO_TERMINAL, set `terminal` in jagt.yml"
   })
   void saysWhatTheTerminalCouldActuallyDoAboutTheViewer(
       TerminalDriver.Revealed revealed, String expected) {

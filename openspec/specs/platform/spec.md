@@ -10,14 +10,14 @@ What jagt asks of the machine it runs on, each only when `jagt.yml` asks for it,
 With `keepAwake: true`, the `keepawake` job SHALL hold `port/host/KeepAwake` while the Master is in `act`, auto-review
 is enabled or `tracker.mode` takes work. Each minute it SHALL check, releasing the hold otherwise. On macOS it is `caffeinate -i -w
 <jagt's pid>`, on Linux `systemd-inhibit --what=idle:sleep` around `tail --pid=<jagt's pid>`, each ending with jagt.
-Unset, no job is declared and nothing is spawned.
+Unset or `none`, no driver and no job is declared and nothing is spawned.
 
 #### Scenario: Unattended work on
 - **WHEN** `keepAwake: true` and `roles.master.mode: act`
 - **THEN** the machine does not idle-sleep until the mode changes or jagt stops
 
 #### Scenario: Not asked
-- **WHEN** `keepAwake` is unset
+- **WHEN** `keepAwake` is unset or `none`
 - **THEN** nothing is spawned, whatever runs unattended
 
 ### Requirement: jagt shows every time in UTC and every text in English
@@ -34,9 +34,10 @@ the machine's or the browser's locale or zone.
 - **THEN** every case change and every date it renders is the English one
 
 ### Requirement: The viewer driver is chosen by orchestrator.terminal
-`orchestrator.terminal` SHALL select the `TerminalDriver`: `kitty` (default) or `ghostty`. `GhosttyTerminalDriver` SHALL
+`orchestrator.terminal` SHALL select the `TerminalDriver`: `kitty` (default), `ghostty` or `none`. `GhosttyTerminalDriver` SHALL
 drive Ghostty through its AppleScript dictionary, so it is macOS only; on another OS startup is refused naming the key.
 It opens each viewer as a tab attached to tmux in the window whose tab carries the viewer title, else in a new window.
+`none` opens no viewer and needs no terminal binary.
 
 #### Scenario: ghostty opens a tab in the window carrying the title
 - **WHEN** `orchestrator.terminal` is `ghostty` and a viewer opens
@@ -50,8 +51,13 @@ It opens each viewer as a tab attached to tmux in the window whose tab carries t
 - **WHEN** no Ghostty window holds a tab with the viewer title
 - **THEN** the reveal answers `NOT_RUNNING` and Ghostty is not launched
 
+#### Scenario: focus with no terminal
+- **WHEN** `orchestrator.terminal` is `none` and the human presses focus
+- **THEN** the board answers with a sentence naming `terminal` as the key that enables it
+
 ### Requirement: The editor is a launcher
 jagt SHALL open a worktree and a diff only through `editorCommand` and the optional `editorDiffCommand`, naming no editor.
+`orchestrator.editor` SHALL be `cli` (default) or `none`; `none` opens nothing.
 IDE service folders present in the base repository SHALL be copied into a fresh worktree. A file the worktree already holds SHALL stay as it is.
 
 #### Scenario: IDE service folders, or no diff command
@@ -61,6 +67,10 @@ IDE service folders present in the base repository SHALL be copied into a fresh 
 - **THEN** nothing is copied
 - **WHEN** `editorDiffCommand` is unset and the human presses diff
 - **THEN** it is refused, naming the key and an example; jagt still starts
+
+#### Scenario: open with no editor
+- **WHEN** `orchestrator.editor` is `none` and the human presses open or diff
+- **THEN** it is refused with a sentence naming `editor` as the key that enables it; jagt still starts
 
 ### Requirement: jagt stops a worktree's container stacks
 Removing a worktree SHALL first take down every Compose project whose compose file lies under it
@@ -79,3 +89,15 @@ A missing or failing Docker SHALL log at most a WARN and never stop the removal.
 #### Scenario: Docker is not installed
 - **WHEN** the worktree is removed on a machine without Docker
 - **THEN** the worktree is removed and nothing is logged above WARN
+
+### Requirement: The notifier is chosen by orchestrator.notifier
+`orchestrator.notifier` SHALL select the `UserNotifier`: `desktop` (default, the platform's own notifier) or `none`.
+`none` shows no banner and logs each skipped one; startup SHALL say once, naming `notifier`, that banners are off.
+
+#### Scenario: banners with no notifier
+- **WHEN** `orchestrator.notifier` is `none`
+- **THEN** startup notes that no banner is shown and names `notifier` as the key enabling them, and no notifier binary is needed
+
+#### Scenario: A machine with no display
+- **WHEN** `terminal`, `notifier`, `keepAwake` and `editor` are `none` on a machine with no kitty and no display
+- **THEN** jagt starts and the board answers

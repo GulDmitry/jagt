@@ -46,6 +46,8 @@ public class TaskViewer {
           " — the agents viewer is a tab this terminal cannot select; click it yourself";
       case NOT_RUNNING ->
           " — no agents viewer is open; the session is there, nothing is showing it";
+      case NO_TERMINAL ->
+          " — no terminal is chosen: set `terminal` in jagt.yml to raise the agents window";
     };
   }
 }

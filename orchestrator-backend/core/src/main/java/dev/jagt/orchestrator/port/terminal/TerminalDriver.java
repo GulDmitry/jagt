@@ -27,7 +27,9 @@ public interface TerminalDriver {
     /** The viewer is a TAB behind another one, and this terminal has no API to select a tab. */
     UNREACHABLE_TAB,
     /** No viewer is open at all. */
-    NOT_RUNNING
+    NOT_RUNNING,
+    /** No terminal is chosen, so there is nothing to raise. */
+    NO_TERMINAL
   }
 
   /**

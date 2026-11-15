@@ -19,6 +19,10 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "linux")
+@ConditionalOnProperty(
+    name = "orchestrator.notifier",
+    havingValue = "desktop",
+    matchIfMissing = true)
 @Slf4j
 public class LibNotifyNotifier implements UserNotifier, StartupCheck {
 

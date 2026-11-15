@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "linux")
+@ConditionalOnProperty(name = "orchestrator.keep-awake", havingValue = "true")
 public class SystemdInhibit implements KeepAwake {
 
   private final HeldCommand inhibitor;

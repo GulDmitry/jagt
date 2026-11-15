@@ -7,12 +7,14 @@
 Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-capable CLI) behind a
 **strategy interface**: an implementation plus a config value, never `if claude` or `if macos`.
 
-- Selected by config: `UserNotifier` by `orchestrator.platform` (the machine's OS unless overridden). `TerminalDriver` by
-  `orchestrator.terminal` (kitty default, ghostty on macOS only). `EditorDriver` by `orchestrator.editor-command`.
+- Selected by config: `UserNotifier` by `orchestrator.notifier` (desktop default, its OS from `orchestrator.platform`, the
+  machine's unless overridden). `TerminalDriver` by `orchestrator.terminal` (kitty default, ghostty on macOS only).
+  `EditorDriver` by `orchestrator.editor` (cli default, run by `editor-command`). `KeepAwake` by `orchestrator.keep-awake`.
   `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).
   `CodeHost` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.
 - **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
-  a notifier reaching nothing logs and returns.
+  a notifier reaching nothing logs and returns. **`none` is the one allowed absence**: terminal, notifier, keepAwake and
+  editor each take it, chosen and never guessed; what needs it answers with a sentence naming the key that enables it.
 - **Third-party seams** (AGENTS.md, [0130](../decisions/0130-every-third-party-is-a-configured-seam.md)):
   one driver per vendor, never guessed from a file either.
 - **A read may run on OpenCode** (`opencode.reads`): the `Chosen…Reader`s pick per role, `HeadlessOpenCode` skips the cloud's breaker.

@@ -185,10 +185,10 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `ToolGateEnvelope` | `adapter/agent/hook/ClaudeToolGateEnvelope` |
 | `WorktreeProcesses` | `adapter/worktree/LsofWorktreeProcesses` |
 | `WorktreeContainers` | `adapter/worktree/{DockerComposeContainers,NoWorktreeContainers}` — by `orchestrator.containers` |
-| `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
-| `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit` |
-| `TerminalDriver` | `adapter/terminal/AbstractKittyTerminalDriver` (+ one per platform) |
-| `EditorDriver` | `adapter/terminal/CliEditorDriver` |
+| `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier`, `adapter/channel/NoNotifier` |
+| `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit`; none: no bean |
+| `TerminalDriver` | `adapter/terminal/AbstractKittyTerminalDriver` (+ one per platform), `NoTerminalDriver` |
+| `EditorDriver` | `adapter/terminal/{CliEditorDriver,NoEditorDriver}` |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
 | `AgentWorktree`, `Notification`, `Answer`, `Sandbox` | nothing: value **records** the ports pass |
 

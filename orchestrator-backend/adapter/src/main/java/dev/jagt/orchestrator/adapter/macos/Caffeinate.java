@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
     name = "platform",
     havingValue = "macos",
     matchIfMissing = true)
+@ConditionalOnProperty(name = "orchestrator.keep-awake", havingValue = "true")
 public class Caffeinate implements KeepAwake {
 
   private final HeldCommand assertion;
