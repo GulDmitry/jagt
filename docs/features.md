@@ -30,7 +30,7 @@
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
-  [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-is-the-boards-head)
+  [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-shows-in-the-boards-head)
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
 - **Local or a login** — Loopback, or `auth: password`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
 
@@ -54,7 +54,7 @@
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-a-git-case-the-session-can-work-has-a-verb)
-  [spec](../openspec/specs/revert/spec.md#requirement-revert-refuses-rather-than-guess)
+  [spec](../openspec/specs/revert/spec.md#requirement-revert-takes-out-the-last-deploy-or-refuses)
 - **Ship** — Ship has the session commit, push and open or update its review request against the base it reported; with no code host, push alone.
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
 - **A repository kept on this machine** — `remote: none` cuts worktrees from the local base, pushes nothing and deploys into the local branch.

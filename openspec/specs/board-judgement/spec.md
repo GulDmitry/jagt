@@ -1,7 +1,7 @@
 # board-judgement Specification
 
 ## Purpose
-TBD - created by archiving change jagt-45-judge-on-board. Update Purpose after archive.
+What the board shows of a judged task's evidence, adopted trust, its log tail and orphaned worktrees.
 
 ## Requirements
 
@@ -53,11 +53,10 @@ message, fields), a line past `LogTail.MAX_LINE` characters cut and flagged. It 
 - **WHEN** the log file does not exist or is empty
 - **THEN** the report says where the log would be and that it holds nothing yet
 
-### Requirement: Orphaned worktrees are listed, each with its own delete verb
+### Requirement: Orphaned worktrees are listed with their delete verb
 `worktrees` SHALL be a report listing each directory the orphan scan finds. Each shows its project, its copied secret
 files and the typed verb that deletes it. `delete-worktree <name>` SHALL delete the one listed directory called `<name>`
-with all it holds, and refuse any name the scan does not list. A directory git still lists as a worktree is removed
-with `git worktree remove --force` in its repository; any other is deleted as a directory. No verb deletes more than
+with all it holds, and refuse any name the scan does not list. No verb deletes more than
 one, and none prunes. The Master holds the verb as a human does. The orphan ping points to `worktrees`.
 
 #### Scenario: Listing
@@ -68,10 +67,6 @@ one, and none prunes. The Master holds the verb as a human does. The orphan ping
 - **WHEN** you type `delete-worktree ABC-40-demo`
 - **THEN** that directory is gone and no other
 
-#### Scenario: A registered orphan
-- **WHEN** `ABC-40-demo` is still in its repository's worktree list and you type `delete-worktree ABC-40-demo`
-- **THEN** git removes that one worktree and its registration, and no other worktree is touched
-
 #### Scenario: The Master deletes one
 - **WHEN** the Master in `act` runs `delete-worktree ABC-40-demo` for a listed orphan
 - **THEN** it is deleted as for a human
@@ -79,3 +74,11 @@ one, and none prunes. The Master holds the verb as a human does. The orphan ping
 #### Scenario: A name that is no orphan
 - **WHEN** you type `delete-worktree` with the name of a task's live worktree or of any other directory
 - **THEN** it is refused, saying `worktrees` lists them, and nothing is deleted
+
+### Requirement: A registered orphan is removed through git
+A directory git still lists as a worktree SHALL be removed with `git worktree remove --force` in its repository;
+any other is deleted as a directory.
+
+#### Scenario: A registered orphan
+- **WHEN** `ABC-40-demo` is still in its repository's worktree list and you type `delete-worktree ABC-40-demo`
+- **THEN** git removes that one worktree and its registration, and no other worktree is touched

@@ -104,60 +104,6 @@ hover. Each row's Run now sends `run <job>`.
 - **WHEN** the human presses Run now on jarwatch
 - **THEN** it runs within a second, and the toast says so
 
-### Requirement: The open task has five tabs
-The open task SHALL have the tabs Overview, Drafted review, Artifacts, Diff and Session, in that order. Overview shows its status history,
-newest first. Session shows its session's screen read without colour codes and the Keys row. Drafted review shows its drafted review replies, or that
-none are drafted. Artifacts lists the documents of the task (`Artifact`) present in its worktree now, in the order `Artifact` declares
-them, the one picked rendered. Diff shows the task's change (`board-diff`). One message line SHALL be docked at the bottom of the pane
-under every tab, the only control that tells the task's session something; Enter sends the line to that task's session alone and
-clears it, and `Run` sits beside `Send` where the session's CLI has a shell escape. While the session works and the Session tab is not
-open, its last non-blank screen line shows above the message line. With no window holding the session the line is disabled and says why.
-
-#### Scenario: Reading the session
-- **WHEN** the human opens the Session tab
-- **THEN** the session's screen as it reads now stands there, with the one message line under it and no second form
-- **WHEN** a window holds the session and its screen is blank
-- **THEN** the tab shows it blank; it says no window holds the session only when none does
-
-#### Scenario: The message line under any tab
-- **WHEN** the human types a line under Overview, Artifacts or Diff and presses Enter
-- **THEN** it reaches that task's session and the line clears
-- **WHEN** the session works and another tab than Session is open
-- **THEN** its last non-blank screen line shows above the message line
-- **WHEN** no window holds the session
-- **THEN** the message line is disabled and says why
-
-#### Scenario: Reading the replies
-- **WHEN** the human opens the Drafted review tab
-- **THEN** it shows the drafted review replies, read from the command whose `part` is `round`, or that none are drafted
-- **WHEN** `review_replies.md` is written after the human last opened the Drafted review tab of that task
-- **THEN** the tab wears the your-move mark
-- **AND** an offer whose `part` names a tab, replies today, is not drawn on the card
-- **AND** opening the tab clears the mark, and a later write brings it back; the last opening is kept in this browser only
-
-#### Scenario: Reading the documents of a task
-- **WHEN** the human opens the Artifacts tab of a task whose worktree holds `plan.md` and `task_visual.md`
-- **THEN** both names are listed, the first is shown rendered, and picking the other shows it rendered
-- **WHEN** the worktree holds `master-review.md`, `master-decisions.md`, `task_request.md`, `task_visual.md` and `plan.md`
-- **THEN** they are listed `plan.md`, `task_visual.md`, `task_request.md`, `master-decisions.md`, `master-review.md`
-
-#### Scenario: A Files tab replaces the worktree
-- **WHEN** the human opens the Artifacts tab
-- **THEN** it reads the disk on request and stores nothing
-- **AND** `plan.md` or `task_notes.md` is read without opening the worktree in an editor or terminal
-
-#### Scenario: A document that is not there
-- **WHEN** the worktree holds no `task_visual.md`
-- **THEN** the Artifacts tab does not list it
-- **WHEN** a document holds a raw `<script>` element
-- **THEN** it is shown as text and nothing runs
-- **WHEN** a document holds a mermaid fence
-- **THEN** the Artifacts tab draws it as a diagram, loading the diagram library only then
-
-#### Scenario: A name that is no document of a task
-- **WHEN** a read names a file that is not in `Artifact`
-- **THEN** it is refused as an unknown document, apart from an unknown task, an absent file and an unreadable one
-
 ### Requirement: A verb carries its key
 A verb SHALL carry the letter that runs it on the open task, drawn on its button, from the server; a verb that asks before it runs asks on
 its key too, and `Done` carries none and stands apart at the end of its row.
@@ -197,3 +143,34 @@ router is asked only where no label matched and several projects are configured;
 #### Scenario: No label matches
 - **WHEN** no label matches and several projects are configured
 - **THEN** the router reads the item and places it in one project, or in none
+
+### Requirement: The open task has its five tabs
+The open task SHALL have the tabs Overview, Drafted review, Artifacts, Diff and Session, in that order. Overview shows its status history,
+newest first. Session shows its session's screen read without colour codes and the Keys row. Drafted review shows its drafted review replies, or that
+none are drafted. Artifacts lists the documents of the task (`Artifact`) present in its worktree now, in the order `Artifact` declares
+them, the one picked rendered. Diff shows the task's change (`board-diff`).
+#### Scenario: Reading the session
+- **WHEN** the human opens the Session tab
+- **THEN** the session's screen as it reads now stands there, with the one message line under it and no second form
+- **WHEN** a window holds the session and its screen is blank
+- **THEN** the tab shows it blank; it says no window holds the session only when none does
+#### Scenario: Reading the replies
+- **WHEN** the human opens the Drafted review tab
+- **THEN** it shows the drafted review replies, read from the command whose `part` is `round`, or that none are drafted
+- **WHEN** `review_replies.md` is written after the human last opened the Drafted review tab of that task
+- **THEN** the tab wears the your-move mark
+- **AND** an offer whose `part` names a tab, replies today, is not drawn on the card
+- **AND** opening the tab clears the mark, and a later write brings it back; the last opening is kept in this browser only
+
+### Requirement: One message line is docked under every tab
+One message line SHALL be docked at the bottom of the pane
+under every tab, the only control that tells the task's session something; Enter sends the line to that task's session alone and
+clears it, and `Run` sits beside `Send` where the session's CLI has a shell escape. While the session works and the Session tab is not
+open, its last non-blank screen line shows above the message line. With no window holding the session the line is disabled and says why.
+#### Scenario: The message line under any tab
+- **WHEN** the human types a line under Overview, Artifacts or Diff and presses Enter
+- **THEN** it reaches that task's session and the line clears
+- **WHEN** the session works and another tab than Session is open
+- **THEN** its last non-blank screen line shows above the message line
+- **WHEN** no window holds the session
+- **THEN** the message line is disabled and says why

@@ -1,7 +1,7 @@
 # supervisor Specification
 
 ## Purpose
-TBD - created by archiving change jagt-48-supervisor. Update Purpose after archive.
+The driver that keeps the staged jar running, restarts it, and hands its port to a hand-started jagt.
 
 ## Requirements
 
