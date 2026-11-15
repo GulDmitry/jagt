@@ -32,8 +32,8 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
   string: `working` kept "esc to interrupt" after Claude 2.1.308 dropped it (`docs/cases.md` I2).
-- Why: an edited test is the cheapest wrong fix, and a bug comes back through it
-  ([Approved Scenarios](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
+- **A test reaches an assertion** (`EveryTestAssertsTest`): `assert*`, `verify*`, `await*`, `check*`, `andExpect*`, here or in a sibling it calls.
+- Why: an edited test is the cheapest wrong fix ([pattern](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
 
 ### One constructor, the one production calls
 

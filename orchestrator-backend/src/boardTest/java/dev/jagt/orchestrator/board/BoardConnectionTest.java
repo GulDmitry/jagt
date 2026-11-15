@@ -52,7 +52,9 @@ class BoardConnectionTest extends BoardPageContext {
         new Page.RouteOptions().setTimes(1));
     page.navigate("http://localhost:" + port + "/");
 
-    page.waitForRequest("http://localhost:" + port + "/", () -> {});
+    var reload = page.waitForRequest("http://localhost:" + port + "/", () -> {});
+
+    org.assertj.core.api.Assertions.assertThat(reload.isNavigationRequest()).isTrue();
   }
 
   @Test

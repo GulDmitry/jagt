@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.capability.repo;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -134,7 +135,7 @@ class RepoAttachmentTest {
                 .withProjects(
                     Map.of("registry", new ProjectConfig("/reg", "origin/main", null, List.of()))));
 
-    attachment.vet("registry");
+    assertThatNoException().isThrownBy(() -> attachment.vet("registry"));
   }
 
   @Test
