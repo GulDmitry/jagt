@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.config.source;
 
 import java.io.IOException;
 import java.nio.file.Files;

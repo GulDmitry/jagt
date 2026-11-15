@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
+import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -15,6 +16,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -51,7 +53,11 @@ class RoleCheckStartupTest {
 
     assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("acceptance");
     RoleCheck check =
-        new RoleCheck(roles, new ConfigService(paths, agents, actStops, checkers), paths);
+        new RoleCheck(
+            roles,
+            new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+            paths);
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
         .singleElement()
@@ -135,7 +141,11 @@ class RoleCheckStartupTest {
     InstalledRoles roles = new InstalledRoles(paths);
 
     RoleCheck check =
-        new RoleCheck(roles, new ConfigService(paths, agents, actStops, checkers), paths);
+        new RoleCheck(
+            roles,
+            new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+            paths);
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -160,7 +170,14 @@ class RoleCheckStartupTest {
     InstalledRoles roles = new InstalledRoles(paths);
 
     assertThat(
-            new RoleCheck(roles, new ConfigService(paths, agents, actStops, checkers), paths)
+            new RoleCheck(
+                    roles,
+                    new ConfigService(
+                        new ConfigSource(paths, new FakeConfigInputs()),
+                        agents,
+                        actStops,
+                        checkers),
+                    paths)
                 .problems())
         .singleElement()
         .satisfies(problem -> {
@@ -188,29 +205,34 @@ class RoleCheckStartupTest {
 
     RoleCheck check =
         new RoleCheck(
-            new InstalledRoles(paths), new ConfigService(paths, agents, actStops, checkers), paths);
+            new InstalledRoles(paths),
+            new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+            paths);
 
     assertThat(check.notes()).isEmpty();
   }
 
   @Test
   void rolesKeyNamingNoInstalledRoleIsNoteNamingTheKey(@TempDir Path root) throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    ACCEPTANCE:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
         root.resolve("roles/acceptance/role.yml.dist"));
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  roles:\n    ACCEPTANCE:\n      enabled: true\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
 
-    RoleCheck check =
-        new RoleCheck(
-            new InstalledRoles(paths), new ConfigService(paths, agents, actStops, checkers), paths);
+    ConfigService config =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers);
+
+    RoleCheck check = new RoleCheck(new InstalledRoles(paths), config, paths);
 
     assertThat(check.notes())
         .singleElement()

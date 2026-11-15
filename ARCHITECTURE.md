@@ -252,6 +252,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `command/stats` | usecase | stats and finished reports with their renderers |
 | `command/workspace` | usecase | projects and worktrees as commands |
 | `config` | usecase | the properties jagt reads from `jagt.yml` |
+| `config/source` | usecase | `jagt.yml` read and resolved: `${VAR}`, `${file:}`, `JAGT__` overrides, the environment and files it reads |
 | `config/role` | usecase | a role's definition, files, options, cases and session brief |
 | `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, usage and worktree sweeps |
 | `job/checker` | usecase | the checker role's jobs: check, decline, wait, records and prompts |
@@ -305,6 +306,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
 | `adapter/replay` | adapter | a stand recording played back: runtime, sessions, moves, reads |
 | `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
+| `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
 | `adapter/tmux` | adapter | the tmux session host and its reads |
 | `adapter/tracker` | adapter | tracker drivers: file and Jira workflows |
 | `adapter/worktree` | adapter | worktree-facing drivers: line diff, containers, processes, build tools, OpenSpec |

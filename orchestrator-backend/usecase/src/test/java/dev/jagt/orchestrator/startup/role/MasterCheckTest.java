@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
+import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -17,6 +18,7 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
+import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -62,7 +64,7 @@ class MasterCheckTest {
                 .withConfigFile(root.resolve("jagt.yml").toString()));
     ConfigService real =
         new ConfigService(
-            paths,
+            new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
             mock(dev.jagt.orchestrator.service.stop.ActStops.class),
             new Checkers(new TaskChart(Composition.builtIn())));

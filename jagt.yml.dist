@@ -3,6 +3,9 @@
 # `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `tracker`,
 # `loopBreaker`, `conflictStallMinutes`, `notifications`, `archive` and `roles` are re-read on every access;
 # every other key is read once, at startup.
+# A string takes `${VAR}`, `${VAR:default}` and `${file:/path}` (a mounted secret; one trailing newline is cut); a variable
+# `JAGT__a__b=value` then sets the key `a.b`, `JAGT__orchestrator__projects__x__path` for one under `orchestrator`. An unset
+# variable with no default refuses the start.
 
 orchestrator:
 

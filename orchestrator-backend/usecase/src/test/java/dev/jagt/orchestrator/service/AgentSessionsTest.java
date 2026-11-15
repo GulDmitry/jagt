@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -36,6 +37,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.usage.ModelTier;
+import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +87,7 @@ class AgentSessionsTest {
     state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     config =
         new ConfigService(
-            paths,
+            new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
             new ActStops(new MasterBrake(paths)),
             new Checkers(new TaskChart(Composition.builtIn())));

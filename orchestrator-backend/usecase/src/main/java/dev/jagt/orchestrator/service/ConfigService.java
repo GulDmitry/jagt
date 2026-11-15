@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
@@ -19,8 +19,6 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.review.LoopBreaker;
 import dev.jagt.orchestrator.task.review.RoundTrail;
 import dev.jagt.orchestrator.task.turn.Turn;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -32,23 +30,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.convert.DurationStyle;
 import org.springframework.stereotype.Service;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
-import org.yaml.snakeyaml.nodes.NodeId;
-import org.yaml.snakeyaml.nodes.Tag;
-import org.yaml.snakeyaml.representer.Representer;
-import org.yaml.snakeyaml.resolver.Resolver;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -58,7 +46,6 @@ import tools.jackson.databind.json.JsonMapper;
  * its all-default instance.
  */
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class ConfigService implements LoopBreaker.Current, SessionReach {
 
@@ -826,21 +813,15 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     }
   }
 
-  /** The one root everything a human writes lives under, Spring's keys and jagt's own alike. */
-  private static final String ROOT = "orchestrator";
-
   private static final String MASTER = Arbiter.ID;
 
   private static final List<String> LEGACY_ROLE_KEYS = List.of(MASTER);
 
   private final JsonMapper mapper = new JsonMapper();
-  private final OrchestratorPaths paths;
+  private final ConfigSource source;
   private final AgentRuntime agentRuntime;
   private final ActStops actStops;
   private final Checkers checkers;
-  private volatile @Nullable Parsed parsed;
-
-  private record Parsed(FileVersion version, @Nullable Object section) {}
 
   public boolean anyCheckerEnabled() {
     return load().anyCheckerEnabled(checkers.withJobs());
@@ -946,41 +927,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   }
 
   private @Nullable Object section() {
-    Path file = paths.configFile();
-    if (!Files.exists(file)) {
-      throw new IllegalStateException(
-          "Missing " + file + " — copy jagt.yml.dist to jagt.yml and fill in your projects.");
-    }
-    FileVersion version = FileVersion.of(file);
-    Parsed last = parsed;
-    if (last != null && last.version().equals(version)) {
-      return last.section();
-    }
-    try {
-      // SafeConstructor: the file is hand-edited, and a YAML tag naming a class is not a setting.
-      Object tree =
-          new Yaml(
-                  new SafeConstructor(new LoaderOptions()),
-                  new Representer(new DumperOptions()),
-                  new DumperOptions(),
-                  new WordsStayWords())
-              .load(Files.readString(file));
-      Object section = tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
-      parsed = version == null ? null : new Parsed(version, section);
-      if (section instanceof Map<?, ?> keys && keys.containsKey(MASTER)) {
-        log.atInfo()
-            .setMessage("config key deprecated")
-            .addKeyValue("key", "orchestrator.master")
-            .addKeyValue("use", "orchestrator.roles.master")
-            .log();
-      }
-      return section;
-    } catch (IOException e) {
-      throw new UncheckedIOException("Cannot read " + file, e);
-    } catch (RuntimeException malformed) {
-      throw new IllegalStateException(
-          "Cannot read " + file + ": " + malformed.getMessage(), malformed);
-    }
+    return source.section();
   }
 
   public ProjectConfig project(String projectKey) {
@@ -991,21 +938,5 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           "Unknown project '" + projectKey + "'. Known projects: " + projects.keySet());
     }
     return project;
-  }
-
-  /**
-   * YAML 1.1 reads `off`, `on`, `yes` and `no` as booleans, and `mode: off` would arrive as
-   * "false".
-   */
-  private static final class WordsStayWords extends Resolver {
-
-    private static final Pattern WORD = Pattern.compile("(?i)on|off|yes|no|y|n");
-
-    @Override
-    public Tag resolve(NodeId kind, String value, boolean implicit) {
-      return kind == NodeId.scalar && implicit && WORD.matcher(value).matches()
-          ? Tag.STR
-          : super.resolve(kind, value, implicit);
-    }
   }
 }

@@ -13,6 +13,10 @@ One root, `orchestrator:`, holds all of it.
 - An omitted key falls back to the defaults built into `orchestrator-backend/src/main/resources/application.yml`.
 - A flag or environment variable (`--server.port=8390`, `LOG_FILE=…`) outranks both files, for one run, but only
   for the keys read once at startup; the re-read sections `jagt.yml.dist`'s header names are file-only.
+- A string takes `${VAR}`, `${VAR:default}` and `${file:/path}` (a mounted secret, one trailing newline cut); then every
+  `JAGT__a__b=value` variable sets the key `a.b` (a double underscore per level, camelCase kept, from the document's root:
+  `JAGT__orchestrator__conflictStallMinutes`, `JAGT__server__port`). Both hold in the re-read sections and in the keys Spring binds.
+  A variable unset with no default refuses the start, naming the key and the variable; a resolved value is never logged.
 - `config.json` is no longer read. If one is still lying around, jagt refuses to start and prints the
   `jagt.yml` to write in its place.
 

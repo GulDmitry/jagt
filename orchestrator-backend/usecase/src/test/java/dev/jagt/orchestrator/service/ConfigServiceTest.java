@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -20,6 +21,7 @@ import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -55,7 +57,12 @@ class ConfigServiceTest {
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString()));
     stops = new ActStops(new MasterBrake(paths));
-    service = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), checkers);
+    service =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            checkers);
   }
 
   @Test
@@ -237,7 +244,14 @@ class ConfigServiceTest {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
 
     String mode =
-        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers).load().master().mode();
+        new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()),
+                mock(AgentRuntime.class),
+                stops,
+                checkers)
+            .load()
+            .master()
+            .mode();
 
     assertThat(mode).isEqualTo("judge");
   }
@@ -265,7 +279,14 @@ class ConfigServiceTest {
     when(runtime.readsWhatTheHumanTyped()).thenReturn(reads);
 
     String mode =
-        new ConfigService(paths, runtime, mock(ActStops.class), checkers).load().master().mode();
+        new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()),
+                runtime,
+                mock(ActStops.class),
+                checkers)
+            .load()
+            .master()
+            .mode();
 
     assertThat(mode).isEqualTo(expected);
   }
@@ -328,7 +349,12 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
 
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
+    ConfigService config =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers);
 
     assertThat(config.actStop()).isEmpty();
   }
@@ -340,7 +366,9 @@ class ConfigServiceTest {
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
 
-    ConfigFile config = new ConfigService(paths, runtime, stops, checkers).load();
+    ConfigFile config =
+        new ConfigService(new ConfigSource(paths, new FakeConfigInputs()), runtime, stops, checkers)
+            .load();
 
     assertThat(config.projects()).isEmpty();
     assertThat(config.master().mode()).isEqualTo("judge");
@@ -352,7 +380,12 @@ class ConfigServiceTest {
     Files.writeString(
         configFile,
         "orchestrator:\n  projects:\n    api: {path: /srv/api, baseBranch: origin/main}\n");
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
+    ConfigService config =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers);
 
     assertThat(config.project("api").path()).isEqualTo("/srv/api");
     assertThatThrownBy(() -> config.project("web"))
@@ -651,7 +684,12 @@ class ConfigServiceTest {
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
 
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
+    ConfigService config =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers);
 
     assertThat(config.actStop()).isPresent();
   }
