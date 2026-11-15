@@ -16,11 +16,25 @@ const readline = require('node:readline');
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://127.0.0.1:8290/mcp';
 const CWD = process.cwd();
 
+// Beside state.json, wherever `stateFile` in jagt.yml (or ORCHESTRATOR_STATEFILE) puts it; else the root.
+function tokenFile() {
+  let stateFile = process.env.ORCHESTRATOR_STATEFILE;
+  if (!stateFile) {
+    try {
+      const yml = fs.readFileSync(path.join(__dirname, 'jagt.yml'), 'utf8');
+      stateFile = (/^\s*stateFile:\s*(\S+)/m.exec(yml) || [])[1];
+    } catch {
+      stateFile = undefined;
+    }
+  }
+  return path.join(path.dirname(path.resolve(__dirname, stateFile || 'state.json')), 'master-token');
+}
+
 // Read per call: jagt draws a new token at each start. `__dirname` is the root, the symlink resolved.
 function masterHeaders() {
   if (fs.realpathSync(CWD) !== __dirname) return {};
   try {
-    return { 'X-Jagt-Master': fs.readFileSync(path.join(__dirname, '.jagt', 'master-token'), 'utf8').trim() };
+    return { 'X-Jagt-Master': fs.readFileSync(tokenFile(), 'utf8').trim() };
   } catch {
     return {};
   }

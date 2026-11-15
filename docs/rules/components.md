@@ -58,7 +58,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/refusal/CallerScope` enforces X-Working-Directory; the
-  Master presents `surface/mcp/MasterToken`; anyone else is refused.
+  Master presents `surface/mcp/MasterToken`, written to `master-token` beside `state.json` so a read-only root still
+  starts; anyone else is refused.
   A tool taking a taskId gets a `McpToolScopeTest` row. A sub-agent is listed and answered `update_agent_status`,
   `notify_user` and `open_in_ide` alone, the rest being `Audience.MASTER`; its every call bumps `lastActiveTimestamp`.
 - **A task id is any name git accepts as a branch** (`core/task/launch/TaskName`): a task IS its branch, and every

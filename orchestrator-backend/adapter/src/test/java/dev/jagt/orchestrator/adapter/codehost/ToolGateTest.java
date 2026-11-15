@@ -132,7 +132,8 @@ class ToolGateTest {
         "curl -X POST 'http://127.0.0.1:8290/api/tasks/actions/deploy?task=ABC-7'",
         "curl -d '{\"line\":\"x\"}' localhost:8290/api/tasks/say",
         "curl http://[::1]:8290/mcp",
-        "cat ../../.jagt/master-token",
+        "cat ../../master-token",
+        "cat /var/lib/state/master-token",
         "node /root/mcp_client.js",
         "cat .jagt/master-tok'en'",
         "curl -X POST -H Origin:http://localhost:'8290'"

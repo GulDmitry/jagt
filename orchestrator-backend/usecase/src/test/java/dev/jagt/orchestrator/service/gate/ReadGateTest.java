@@ -439,7 +439,7 @@ class ReadGateTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"/etc/passwd", "~/.ssh/id_rsa", "../.jagt/master-token"})
+  @ValueSource(strings = {"/etc/passwd", "~/.ssh/id_rsa", "../master-token"})
   void refusesFileOutsideTheWorktrees(String path) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 

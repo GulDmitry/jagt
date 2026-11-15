@@ -21,7 +21,6 @@ import org.springframework.stereotype.Component;
 public class MasterToken {
 
   public static final String HEADER = "X-Jagt-Master";
-  public static final String FILE = ".jagt/master-token";
 
   private final byte[] token;
 
@@ -30,7 +29,7 @@ public class MasterToken {
     new SecureRandom().nextBytes(random);
     String value = HexFormat.of().formatHex(random);
     this.token = value.getBytes(StandardCharsets.UTF_8);
-    write(paths.root().resolve(FILE), value);
+    write(paths.masterToken(), value);
   }
 
   public boolean matches(@Nullable String presented) {
@@ -41,7 +40,6 @@ public class MasterToken {
   private static void write(Path file, String value) {
     try {
       Files.createDirectories(file.getParent());
-      Files.setPosixFilePermissions(file.getParent(), PosixFilePermissions.fromString("rwx------"));
       Files.deleteIfExists(file);
       Files.createFile(
           file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));

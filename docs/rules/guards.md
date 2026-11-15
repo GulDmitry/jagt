@@ -45,7 +45,7 @@ The CLI's `onFailure: "block"` (2.1.309) would close it, and stays off for that 
 | A binary other than git, `gh`, `glab` speaking a host's API: `curl`, a runtime | a shared ref moves without `git push` |
 | A session editing its own `.jagt/hooks` | a hook differs from what jagt wrote |
 | A same-user process rewriting `state.json` together with the verdict file | sessions run as another user |
-| A same-user process forging Origin, reading `.jagt/master-token`, naming another worktree's directory | sessions run as another user |
+| A same-user process forging Origin, reading `master-token`, naming another worktree's directory | sessions run as another user |
 | The board reached with no port spelled: port 80, `nc 127.0.0.1 8290`, `/dev/tcp/…`, still forging Host and Origin | a write lands that way |
 | `HEAD` moved on an earlier call, then pushed | the `pre-push` hook is bypassed too |
 | A non-loopback `server.address`: any host there acts as the human | the board leaves loopback by default |

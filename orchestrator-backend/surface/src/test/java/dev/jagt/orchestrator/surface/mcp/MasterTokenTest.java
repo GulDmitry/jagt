@@ -13,33 +13,36 @@ import org.junit.jupiter.api.io.TempDir;
 class MasterTokenTest {
 
   @Test
-  void admitsWhatItLeftForTheRootsOwnConfigOnly(@TempDir Path root) throws Exception {
+  void admitsWhatItLeftBesideTheStateForTheRootsOwnConfigOnly(@TempDir Path root) throws Exception {
     MasterToken token =
         new MasterToken(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-    String written = Files.readString(root.resolve(".jagt/master-token"));
+    String written = Files.readString(root.resolve("master-token"));
 
     assertThat(token.matches(written)).isTrue();
     assertThat(token.matches(written + "0")).isFalse();
     assertThat(token.matches("")).isFalse();
     assertThat(
             PosixFilePermissions.toString(
-                Files.getPosixFilePermissions(root.resolve(".jagt/master-token"))))
+                Files.getPosixFilePermissions(root.resolve("master-token"))))
         .isEqualTo("rw-------");
   }
 
   @Test
-  void closesTheDirectoryHoldingItToEveryoneButItsOwner(@TempDir Path root) throws Exception {
-    Files.createDirectory(
-        root.resolve(".jagt"),
-        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x")));
+  void startsWhenTheRootIsReadOnlyAndTheStateFolderWritable(@TempDir Path root, @TempDir Path state)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(state.resolve("state.json").toString()));
+    Files.setPosixFilePermissions(root, PosixFilePermissions.fromString("r-xr-xr-x"));
 
-    new MasterToken(
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+    MasterToken token = new MasterToken(paths);
 
-    assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(root.resolve(".jagt"))))
-        .isEqualTo("rwx------");
+    assertThat(token.matches(Files.readString(state.resolve("master-token")))).isTrue();
+    Files.setPosixFilePermissions(root, PosixFilePermissions.fromString("rwxr-xr-x"));
   }
 
   @Test
@@ -47,7 +50,7 @@ class MasterTokenTest {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     new MasterToken(paths);
-    String first = Files.readString(root.resolve(".jagt/master-token"));
+    String first = Files.readString(root.resolve("master-token"));
 
     MasterToken restarted = new MasterToken(paths);
 

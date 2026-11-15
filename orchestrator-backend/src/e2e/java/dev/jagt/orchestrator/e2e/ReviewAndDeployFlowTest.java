@@ -331,10 +331,7 @@ class ReviewAndDeployFlowTest {
             .formatted(TASK);
 
     flow.post(
-        "/mcp",
-        call,
-        Map.of(
-            MasterToken.HEADER, Files.readString(paths.root().resolve(MasterToken.FILE)).strip()));
+        "/mcp", call, Map.of(MasterToken.HEADER, Files.readString(paths.masterToken()).strip()));
 
     assertThat(flow.task().history())
         .extracting(StatusChange::status, StatusChange::origin)

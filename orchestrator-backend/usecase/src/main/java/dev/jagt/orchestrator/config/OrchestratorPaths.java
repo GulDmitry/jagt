@@ -52,6 +52,13 @@ public class OrchestratorPaths {
     return stateFile.resolveSibling("act-strikes");
   }
 
+  /**
+   * The Master's token, drawn at each start: beside the state, so a read-only root still starts.
+   */
+  public Path masterToken() {
+    return stateFile.resolveSibling("master-token");
+  }
+
   /** The last moment this process was seen alive, rewritten every minute. */
   public Path alive() {
     return stateFile.resolveSibling("alive");

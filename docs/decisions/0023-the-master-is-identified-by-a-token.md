@@ -15,8 +15,8 @@ Accepted 2026-10-08.
 
 ## Decision
 
-- jagt draws a random token at each start into `.jagt/master-token` at the root, mode 0600, compared in constant
-  time (`surface/mcp/MasterToken`).
+- jagt draws a random token at each start into `master-token` beside `state.json`, mode 0600, compared in
+  constant time (`surface/mcp/MasterToken`); a read-only root still starts.
 - The root's own MCP config presents it as `X-Jagt-Master`: Claude through `headersHelper`, Codex through
   `mcp_client.js`, each reading the file only when run from the root.
 - A registered worktree is a task; else the token is the Master; else 401, which makes Claude mint its header again
@@ -30,5 +30,5 @@ Accepted 2026-10-08.
 
 ## Reopen when
 
-- A sub-agent reads `.jagt/master-token` to act as the Master: then the root needs an OS boundary, not a file.
+- A sub-agent reads `master-token` to act as the Master: then the root needs an OS boundary, not a file.
 - A CLI the root must serve can neither run a header helper nor spawn the bridge.

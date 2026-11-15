@@ -19,7 +19,7 @@ That admission superseded by [0026](0026-the-guards-gaps-after-round-three.md).
 
 - A write under `/api`, the hooks' `/api/agent/` aside, carries an Origin or the Master's token
   (`BoardWriteFilter`). A browser sends Origin on every POST, and `LoopbackFilter` has already judged it.
-- `ToolGate` refuses a session's shell line naming the board's port on a loopback name, `.jagt/master-token` or
+- `ToolGate` refuses a session's shell line naming the board's port on a loopback name, `master-token` or
   `mcp_client.js`.
 - Both are guardrails. Known to pass: a same-user process forging Origin; a URL or path assembled at runtime; the
   Read tool on the token file; another worktree's path in `X-Working-Directory`.

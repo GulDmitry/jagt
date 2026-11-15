@@ -58,7 +58,9 @@ intake-turned-away
 plan-baselines/
 # Where a task with no repository plans, written beside state.json
 scratch/
-# The Master's MCP token, drawn by jagt at each start
+# The Master's MCP token, drawn at each start, written beside state.json
+master-token
+# jagt's own files at the root
 /.jagt/
 
 # Open work, kept on this machine
