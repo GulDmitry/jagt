@@ -21,7 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class BoardAssetsTest {
 
-  private static final Path STATIC = Path.of("src/main/resources/static");
+  private static final Path STATIC = Path.of("../../board");
   private static final Pattern LOADED_FROM_OUTSIDE =
       Pattern.compile(
           "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:"

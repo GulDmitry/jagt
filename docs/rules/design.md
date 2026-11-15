@@ -2,7 +2,7 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-**The storybook is the board's own `Help` report** (AGENTS.md "Interfaces": one legend row per mark): `static/ui/legend.js`.
+**The storybook is the board's own `Help` report** (AGENTS.md "Interfaces": one legend row per mark): `board/ui/legend.js`.
 Every legend row is a mark, bar a **transient** one inside an open control
 (`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`board`](../../openspec/specs/board/spec.md).
 

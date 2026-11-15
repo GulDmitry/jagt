@@ -1,7 +1,7 @@
 ---
 paths:
   - "**/dev/jagt/orchestrator/surface/**"
-  - "**/src/main/resources/static/**"
+  - "board/**"
   - "**/dev/jagt/orchestrator/command/**"
 ---
 

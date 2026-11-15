@@ -32,6 +32,8 @@
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-shows-in-the-boards-head)
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
+- **Board as its own app** — `board/` is served by the jar's copy or `orchestrator.board.dir`; `contracts/` is the one coupling.
+  [spec](../openspec/specs/board-app/spec.md)
 - **Local or a login** — Loopback, or `auth: password`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)

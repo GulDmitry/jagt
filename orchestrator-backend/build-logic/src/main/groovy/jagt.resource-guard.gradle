@@ -1,4 +1,4 @@
-// A local tool's state left under static/ would otherwise be served from the jar.
+// A local tool's state left under a served folder would otherwise be served from the jar.
 processResources {
     exclude '**/.omc/**' // a local tool's state, never served
 }

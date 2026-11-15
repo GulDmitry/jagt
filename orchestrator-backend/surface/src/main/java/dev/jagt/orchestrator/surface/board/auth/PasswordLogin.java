@@ -21,28 +21,28 @@ import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 @ConditionalOnProperty(prefix = "orchestrator.auth", name = "mode", havingValue = "password")
 class PasswordLogin {
 
-  private static final String PAGE = "/login.html";
-
   @Bean
   SecurityFilterChain passwordChain(HttpSecurity http) throws Exception {
+    PublicPaths contract = PublicPaths.fromContract();
+    String page = contract.loginPage();
     http.csrf(AbstractHttpConfigurer::disable)
         .headers(headers -> headers.cacheControl(cache -> cache.disable()))
         .authorizeHttpRequests(requests ->
             requests
                 .requestMatchers("/mcp", "/api/agent/**")
                 .permitAll()
-                .requestMatchers(PAGE, "/app.css", "/core/i18n.js", "/api/languages/**")
+                .requestMatchers(contract.patterns().toArray(String[]::new))
                 .permitAll()
                 .anyRequest()
                 .authenticated())
-        .formLogin(form -> form.loginPage(PAGE).loginProcessingUrl("/login").permitAll())
+        .formLogin(form -> form.loginPage(page).loginProcessingUrl("/login").permitAll())
         .exceptionHandling(handling ->
             handling
                 .defaultAuthenticationEntryPointFor(
                     new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                     PathPatternRequestMatcher.withDefaults().matcher("/api/**"))
                 .defaultAuthenticationEntryPointFor(
-                    new LoginUrlAuthenticationEntryPoint(PAGE), AnyRequestMatcher.INSTANCE));
+                    new LoginUrlAuthenticationEntryPoint(page), AnyRequestMatcher.INSTANCE));
     return http.build();
   }
 

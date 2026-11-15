@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.board;
+package dev.jagt.orchestrator.surface.board.files;
 
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;

@@ -10,11 +10,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -60,6 +62,28 @@ class BoardLoginOnTomcatTest {
     assertThat(page.statusCode()).isEqualTo(302);
     assertThat(page.headers().firstValue("Location").orElse("")).endsWith("/login.html");
     assertThat(refused.statusCode()).isEqualTo(401);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "/login.html",
+        "/app.css",
+        "/core/i18n.js",
+        "/i18n/index.json",
+        "/i18n/en.json",
+        "/user/i18n/index.json"
+      })
+  void servesTheLoginPageAndEveryAssetItFetchesWhenNobodyIsLoggedIn(String path) throws Exception {
+    Files.createDirectories(root.resolve("i18n"));
+    Files.writeString(root.resolve("i18n/index.json"), "[]");
+    HttpRequest request =
+        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).build();
+
+    HttpResponse<String> response =
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(200);
   }
 
   @Test

@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-16.
+Accepted 2026-10-16; its serving from the jar's `static/` superseded by [0170](0170-the-board-is-its-own-app-behind-one-contract.md).
 
 ## Context
 
@@ -16,7 +16,7 @@ Accepted 2026-10-16.
 
 ## Decision
 
-- Components are Preact, written with `htm` tagged templates; the three files sit in `static/vendor/` byte for byte
+- Components are Preact, written with `htm` tagged templates; the three files sit in `board/vendor/` byte for byte
   as the npm registry served them, resolved by an import map. `BoardAssetsTest` pins their SHA-256.
 - A component takes everything it shows as props, and reads no module state.
 - `styleguide.html` renders every component in every state from `styleguide/` fixtures; `boardTest` loads it.

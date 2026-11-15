@@ -1,11 +1,9 @@
-
-import english from '../api/languages/en' with {type: 'json'};
-
-const get = (code) => fetch(`api/languages/${code}`).then((response) => (response.ok ? response.json() : {}), () => ({}));
+const read = (f, or = {}) => Promise.all(['i18n', 'user/i18n'].map((d) => fetch(`${d}/${f}.json`).then((r) => r.ok ? r.json() : or, () => or)));
+const get = (code) => read(code).then(([a, b]) => ({...a, ...b}));
 
 let code = 'en';
 try { code = localStorage.lang || code; } catch (blocked) { /* English */ }
-const chosen = code === 'en' ? english : await get(code);
+const [english, chosen] = await Promise.all([get('en'), get(code)]);
 
 const platform = {mod: /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl+'};
 
@@ -18,8 +16,8 @@ export const choose = (next) => {
   try { localStorage.lang = next; } catch (blocked) { /* until reload */ }
 };
 
-export const languages = () => fetch('api/languages').then((response) => response.json())
-  .then((codes) => Promise.all(codes.map((one) => get(one).then((words) => ({code: one, name: words['language.name'] || one})))));
+export const languages = () => read('index', [])
+  .then((l) => Promise.all([...new Set(l.flat())].sort().map((one) => get(one).then((w) => ({code: one, name: w['language.name'] || one})))));
 
 // `data-t` is an element's text, `data-t-X` its attribute X (`tip` is data-tip).
 document.documentElement.lang = code;

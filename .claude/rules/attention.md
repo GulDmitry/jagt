@@ -5,8 +5,8 @@ paths:
   - "**/flow/view/Attention.java"
   - "**/flow/view/TaskView.java"
   - "**/service/task/TaskViews.java"
-  - "**/static/ui/card.js"
-  - "**/static/ui/header.js"
+  - "board/ui/card.js"
+  - "board/ui/header.js"
 ---
 
 Whose move it is: read **[`openspec/specs/attention/spec.md`](../../openspec/specs/attention/spec.md)** before changing behaviour here.

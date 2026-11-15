@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Board server-sent events",
+  "description": "Each SSE frame has an event name and a string data line.",
+  "oneOf": [
+    {
+      "title": "open",
+      "description": "First frame of a connection; data names this backend run, so a page older than it can tell.",
+      "type": "object",
+      "required": ["event", "data"],
+      "properties": {
+        "event": {"const": "open"},
+        "data": {"type": "string", "pattern": "^[0-9a-z]+$"}
+      }
+    },
+    {
+      "title": "beat",
+      "description": "Heartbeat; data is the interval in milliseconds the page may stay silent for.",
+      "type": "object",
+      "required": ["event", "data"],
+      "properties": {
+        "event": {"const": "beat"},
+        "data": {"type": "string", "pattern": "^[0-9]+$"}
+      }
+    },
+    {
+      "title": "changed",
+      "description": "State was written; no payload, the page re-reads GET /api/tasks.",
+      "type": "object",
+      "required": ["event", "data"],
+      "properties": {
+        "event": {"const": "changed"},
+        "data": {"const": "changed"}
+      }
+    }
+  ]
+}

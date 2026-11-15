@@ -16,9 +16,9 @@ Accepted 2026-11-06 by the owner's order: the board speaks any language by addin
 
 - One flat JSON per language, `{"key": "text"}`, placeholders `{name}`, named by its BCP 47 code: `en.json`, `pl.json`, `pt-BR.json`.
 - `en.json` holds every key and is the fallback: a key another catalog lacks reads English.
-- The languages offered are the files present, in the jar under `static/i18n/` and in `<root>/i18n/`.
+- The languages offered are the files present, in the board's `board/i18n/` and in `<root>/i18n/`.
 - A file in the root overrides or adds; no list, registration or code names a language.
-- `BoardLanguages` serves the codes and each merged catalog; a language's own name is its `language.name` key.
+- The board merges the codes and each catalog, the root one served as files; a language's own name is its `language.name` key.
 - Only the board's own UI text is translated; logs, specs, code, backend reports, verb words and times stay English and UTC.
 - The choice is kept per browser in `localStorage`, beside the theme, on the gear; the page loads its catalog before it renders.
 - The flat shape is what i18next reads, so a library can replace `core/i18n.js` without touching a catalog.

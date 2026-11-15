@@ -8,9 +8,20 @@ dependencies {
     api project(':usecase')
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.yaml:snakeyaml'
     implementation 'org.commonmark:commonmark:0.31.0'
     implementation 'org.commonmark:commonmark-ext-gfm-tables:0.31.0'
     testImplementation testFixtures(project(':usecase'))
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+processResources {
+    from('../../board') {
+        into 'static'
+    }
+    from('../../contracts') {
+        include 'openapi.yaml'
+        into 'contracts'
+    }
 }

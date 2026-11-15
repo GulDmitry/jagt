@@ -316,6 +316,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `surface/agent` | surface | what a session calls into: hooks, prompts, gates, reports |
 | `surface/board` | surface | the board's HTTP: API, projects, interactions, event stream |
 | `surface/board/auth` | surface | the board's login: the `auth` seam's properties, start check and two security chains |
+| `surface/board/files` | surface | what the board is served from: the jar's copy or `board.dir`, the user's i18n overlay, the manifest MIME |
 | `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
 | `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
 | `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, token, handlers |
@@ -358,7 +359,7 @@ None today; a package of one class folds into its parent.
 
 - A new verb reaches the board because the board is generated from `flow/capability/TaskAction`: it renders `Move.actions()` (the
   legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
-- **The surface holds no list** — the usual way to break that is building a button in `static/components/Card.js`.
+- **The surface holds no list** — the usual way to break that is building a button in `board/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - **The tree shows layers, then features, then kinds**: a new kind of thing is named in [the package map](#the-package-map)
   before its first class; three classes of one kind or feature get their own sub-package (`capability/ship/`); nothing is
@@ -369,11 +370,12 @@ None today; a package of one class folds into its parent.
 
 ## The board is two rings too
 
-`surface/src/main/resources/static` is HTML/CSS/JS served from the jar, no build step and no external asset
+`board/` is HTML/CSS/JS, an app of its own that the jar carries a copy of, no build step and no external asset
 ([`docs/rules/design.md`](docs/rules/design.md)). Native ES modules in three layers: `core/` holds the page's data and
 calls without a node, `components/` draws from props alone, `ui/` owns the events, the dialogs and the one render;
-`app.js` only wires them. A component is Preact written with `htm`, both in `vendor/` behind the import map
-([0046](docs/decisions/0046-the-board-renders-preact-components-with-no-build.md)).
+`app.js` only wires them. The backend and the board meet only in `contracts/`
+([0170](docs/decisions/0170-the-board-is-its-own-app-behind-one-contract.md)). A component is Preact written with `htm`,
+both in `vendor/` behind the import map ([0046](docs/decisions/0046-the-board-renders-preact-components-with-no-build.md)).
 
 | file | the question it answers |
 |------|------------------------|

@@ -17,8 +17,7 @@ class SiteTest {
   private static final Path SITE = Path.of("../site");
   private static final String REPOSITORY = "https://github.com/GulDmitry/jagt";
   private static final String BLOB = REPOSITORY + "/blob/main/";
-  private static final Path FAVICON =
-      Path.of("../orchestrator-backend/surface/src/main/resources/static/favicon.svg");
+  private static final Path FAVICON = Path.of("../board/favicon.svg");
   private static final Pattern NOT_SOURCED_BY_KIND =
       Pattern.compile(
           "(?s)<head>.*?</head>|<nav>.*?</nav>|<h[12][^>]*>.*?</h[12]>"

@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: jagt board contract
+  version: 1.0.0
+x-login-page: /login.html
+x-public-paths:
+  - /login.html
+  - /app.css
+  - /core/i18n.js
+  - /i18n/**
+  - /user/i18n/**
+paths:
+  /login:
+    post:
+      summary: Form login; 302 on success
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Login'}
+      responses:
+        '302': {description: Redirect to the board}
+  /api/tasks:
+    get:
+      summary: The board's whole projection
+      responses:
+        '200': {$ref: '#/components/responses/Board'}
+    post:
+      summary: Open a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LaunchRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/tasks/files:
+    get:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      responses:
+        '200':
+          description: Artifact names present
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}
+  /api/tasks/file:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/task'}
+        - {name: name, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: One artifact rendered
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Rendered'}
+  /api/tasks/diff:
+    get:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      responses:
+        '200':
+          description: One diff per repository
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/RepoDiff'}}
+  /api/tasks/screen:
+    get:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      responses:
+        '200': {$ref: '#/components/responses/Screen'}
+  /api/tasks/say:
+    post:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      requestBody: {$ref: '#/components/requestBodies/Line'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/tasks/run:
+    post:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      requestBody: {$ref: '#/components/requestBodies/Line'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/tasks/key:
+    post:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key]
+              properties:
+                key: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/tasks/actions/{actionId}:
+    post:
+      parameters:
+        - {name: actionId, in: path, required: true, schema: {type: string}}
+        - {$ref: '#/components/parameters/task'}
+        - {name: project, in: query, schema: {type: string}}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/jobs:
+    get:
+      responses:
+        '200':
+          description: Every job with its last run
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/JobStatus'}}
+  /api/commands:
+    get:
+      responses:
+        '200':
+          description: Every verb
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Verb'}}
+  /api/commands/{id}:
+    get:
+      summary: A report verb; reads only
+      parameters:
+        - {$ref: '#/components/parameters/verb'}
+        - {$ref: '#/components/parameters/about'}
+      responses:
+        '200':
+          description: The report
+          content:
+            text/plain:
+              schema: {type: string}
+    post:
+      summary: Run a global verb
+      parameters:
+        - {$ref: '#/components/parameters/verb'}
+        - {$ref: '#/components/parameters/about'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/events:
+    get:
+      summary: Server-sent events; frames in board-events.schema.json
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /api/interpret:
+    post:
+      summary: A typed sentence, proposed as a verb and run through its gate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/interactions:
+    post:
+      summary: A batch of button presses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                presses: {type: array, items: {type: object}}
+      responses:
+        '204': {description: Recorded}
+  /api/projects:
+    post:
+      requestBody: {$ref: '#/components/requestBodies/ProjectEntry'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/projects/check:
+    get:
+      parameters:
+        - {name: path, in: query, required: true, schema: {type: string}}
+        - {name: own, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: What the path is, writes nothing
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProjectReading'}
+  /api/projects/dirs:
+    get:
+      parameters:
+        - {name: under, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Folders under a path
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [name, repository]
+                  properties:
+                    name: {type: string}
+                    repository: {type: boolean}
+  /api/projects/{key}:
+    parameters: [{$ref: '#/components/parameters/key'}]
+    get:
+      responses:
+        '200':
+          description: The entry the edit form starts from
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProjectEntry'}
+    put:
+      requestBody: {$ref: '#/components/requestBodies/ProjectEntry'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+    delete:
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /api/projects/{key}/card:
+    get:
+      parameters: [{$ref: '#/components/parameters/key'}]
+      responses:
+        '200':
+          description: The project's whole jagt.yml entry
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [key, remoteUrl]
+                properties:
+                  key: {type: string}
+                  remoteUrl: {type: string}
+  /api/windows:
+    get:
+      responses:
+        '200':
+          description: Open window names
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}
+  /api/windows/screen:
+    get:
+      parameters: [{$ref: '#/components/parameters/name'}]
+      responses:
+        '200': {$ref: '#/components/responses/Screen'}
+  /api/windows/say:
+    post:
+      parameters: [{$ref: '#/components/parameters/name'}]
+      requestBody: {$ref: '#/components/requestBodies/Line'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+  /user/i18n/{file}:
+    get:
+      parameters:
+        - {name: file, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: A catalog file of the user's i18n folder, or its index.json listing codes
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {type: object, additionalProperties: {type: string}}
+                  - {type: array, items: {type: string}}
+        '404': {description: No such file}
+  /api/debug/records/{record}:
+    get:
+      parameters:
+        - {name: record, in: path, required: true, schema: {type: string}}
+        - {name: lines, in: query, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Text'}
+  /api/debug/transcript:
+    get:
+      parameters:
+        - {name: taskId, in: query, required: true, schema: {type: string}}
+        - {name: maxChars, in: query, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Text'}
+components:
+  parameters:
+    task: {name: task, in: query, required: true, schema: {type: string}}
+    name: {name: name, in: query, required: true, schema: {type: string}}
+    about: {name: about, in: query, schema: {type: string}}
+    verb: {name: id, in: path, required: true, schema: {type: string}}
+    key: {name: key, in: path, required: true, schema: {type: string}}
+  requestBodies:
+    Line:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [line]
+            properties:
+              line: {type: string}
+    ProjectEntry:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ProjectEntry'}
+  responses:
+    Result:
+      description: What was done, in words
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message: {type: string}
+    Screen:
+      description: A session as it reads now; held is false when no window holds it
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [held, shown]
+            properties:
+              held: {type: boolean}
+              shown: {type: string}
+    Text:
+      description: Plain text
+      content:
+        text/plain:
+          schema: {type: string}
+    Board:
+      description: Tasks, projects, offers and the header's state
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Board'}
+  schemas:
+    Login:
+      type: object
+      required: [username, password]
+      properties:
+        username: {type: string}
+        password: {type: string}
+    LaunchRequest:
+      type: object
+      properties:
+        ref: {type: [string, 'null']}
+        project: {type: [string, 'null']}
+        mode: {type: [string, 'null']}
+        strategy: {type: [string, 'null']}
+        baseBranch: {type: [string, 'null']}
+        notes: {type: [string, 'null']}
+    Rendered:
+      type: object
+      required: [name, html]
+      properties:
+        name: {type: string}
+        html: {type: string}
+    RepoDiff:
+      type: object
+      required: [project, base, diff, cut]
+      properties:
+        project: {type: string}
+        base: {type: string}
+        diff: {type: string}
+        cut: {type: boolean}
+    JobStatus:
+      type: object
+      required: [id, describe, running, serves]
+      properties:
+        id: {type: string}
+        describe: {type: string}
+        every: {}
+        lastStartedAt: {type: [integer, 'null']}
+        lastError: {type: [string, 'null']}
+        nextRunAt: {type: [integer, 'null']}
+        running: {type: boolean}
+        serves: {type: string}
+    Verb:
+      type: object
+      required: [id, hint, takesTask, report, aboutOneTask]
+      properties:
+        id: {type: string}
+        hint: {type: string}
+        takesTask: {type: boolean}
+        aliases: {type: array, items: {type: string}}
+        takesProject: {type: boolean}
+        report: {type: boolean}
+        aboutOneTask: {type: boolean}
+        part: {type: [string, 'null']}
+        confirmation: {type: [string, 'null']}
+    ProjectEntry:
+      type: object
+      required: [key, path, baseBranch]
+      properties:
+        key: {type: string}
+        path: {type: string}
+        baseBranch: {type: string}
+        deployBranch: {type: [string, 'null']}
+        verifyCommand: {type: [array, 'null'], items: {type: string}}
+        about: {type: [string, 'null']}
+        labels: {type: [array, 'null'], items: {type: string}}
+        humanPaths: {type: [array, 'null'], items: {type: string}}
+    ProjectReading:
+      type: object
+      required: [lines, key, baseBranch, deployBranch, deployBranches, verifyCommand]
+      properties:
+        lines:
+          type: array
+          items:
+            type: object
+            required: [ok, text]
+            properties:
+              ok: {type: boolean}
+              text: {type: string}
+        key: {type: string}
+        baseBranch: {type: string}
+        deployBranch: {type: string}
+        deployBranches: {type: array, items: {type: string}}
+        verifyCommand: {type: array, items: {type: string}}
+    Board:
+      type: object
+      required: [tasks, projects, offers, masterMode, autoReview, autoReviewEnabled, jobs, reach, branchStrategies, phases]
+      properties:
+        tasks: {type: array, items: {$ref: '#/components/schemas/Task'}}
+        projects: {type: array, items: {type: string}}
+        offers:
+          type: object
+          additionalProperties: {type: array, items: {type: string}}
+        masterMode: {type: string}
+        autoReview: {type: string}
+        autoReviewEnabled: {type: boolean}
+        jobs:
+          type: object
+          required: [count, failing]
+          properties:
+            count: {type: integer}
+            nextRunAt: {type: [integer, 'null']}
+            failing: {type: integer}
+        actStop:
+          type: [object, 'null']
+          properties:
+            cause: {enum: [STRIKES, BOARD]}
+            at: {type: [integer, 'null']}
+        reach:
+          type: array
+          items:
+            type: object
+            required: [driver, host, fix, said, retryAt]
+            properties:
+              driver: {type: string}
+              host: {type: string}
+              fix: {type: array, items: {type: string}}
+              said: {type: string}
+              retryAt: {type: integer}
+        branchStrategies: {type: array, items: {$ref: '#/components/schemas/Choice'}}
+        phases: {type: array, items: {$ref: '#/components/schemas/Choice'}}
+    Choice:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        hint: {type: string}
+        label: {type: string}
+    Task:
+      type: object
+      required: [id, status, statusLabel, statusSince, history, actions, confirmations, repos, deployed]
+      properties:
+        id: {type: string}
+        alias: {type: [string, 'null']}
+        project: {type: [string, 'null']}
+        title: {type: [string, 'null']}
+        ticketUrl: {type: [string, 'null']}
+        tier: {type: [string, 'null']}
+        status: {type: string}
+        statusLabel: {type: string}
+        phase: {type: string}
+        owner: {type: string}
+        attention: {type: string}
+        statusSince: {type: integer}
+        history: {type: array, items: {type: object}}
+        stop: {type: [object, 'null']}
+        ask: {type: [string, 'null']}
+        hint: {type: string}
+        actions: {type: array, items: {type: object}}
+        confirmations:
+          type: object
+          additionalProperties: {type: string}
+        detail: {type: string}
+        detailKind: {type: string}
+        waiting: {type: [string, 'null']}
+        reviewRequestUrl: {type: [string, 'null']}
+        requestOpenedAt: {type: integer}
+        approved: {type: [boolean, 'null']}
+        pipeline: {type: object}
+        pipelineSaid: {type: [string, 'null']}
+        pipelineUnread: {type: boolean}
+        repliesWrittenAt: {type: integer}
+        autoReview: {type: object}
+        switches:
+          type: object
+          additionalProperties: {type: string}
+        repos: {type: array, items: {type: object}}
+        deployed: {type: boolean}

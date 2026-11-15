@@ -7,15 +7,15 @@ What a card shows and the surface it is drawn on; the verbs are [`board-verbs`](
 ## Requirements
 
 ### Requirement: One surface, one projection
-The board, served by the jar, SHALL be the one front-end. Its projection is `flow/Move` + `flow/view/TaskView`, built by `service/task/TaskViews`,
-rendered by `/api/tasks`; gate and button read one `FlowRules.allows`; `TaskViews.snapshot()` reads the configuration once a render.
-A second surface MUST add no second answer to a board question. Stopping the backend is no verb.
+The board, an app of its own in `board/`, SHALL be the one front-end. Its projection is `flow/Move` + `flow/view/TaskView`, built by
+`service/task/TaskViews`, rendered by `/api/tasks`; gate and button read one `FlowRules.allows`; `TaskViews.snapshot()` reads the
+configuration once a render. A second surface MUST add no second answer to a board question. Stopping the backend is no verb.
 #### Scenario: Ship
 - **WHEN** `ship` runs
 - **THEN** it asks its button's `FlowRules`
 
 ### Requirement: A mark says what it replaces
-The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours are
+The colour legend SHALL be a section of the `help` report (`board/ui/legend.js`), never a control beside it; colours are
 [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: New task form's branch-strategy picker and MCP schema both read
 `task/repo/BranchStrategy`. A verb with all its inputs gets no form. The project key shows only where projects are several, in the install or task.
 #### Scenario: A mark is unclear
@@ -100,13 +100,13 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 - **AND** while no job's last run failed, no jobs chip shows
 
 ### Requirement: Components ship as the files that run
-The board SHALL render Preact components written with `htm`, served from `static/vendor/` byte for byte as the npm registry published them. The page's
+The board SHALL render Preact components written with `htm`, served from `board/vendor/` byte for byte as the npm registry published them. The page's
 import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 160 KB
 (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
 - **WHEN** `vendor/preact.mjs` differs from the published 11.0.1 by one byte
 - **THEN** `BoardAssetsTest` fails naming the file
-- **WHEN** a page under `static/` loads a script or a stylesheet from `https://`
+- **WHEN** a page under `board/` loads a script or a stylesheet from `https://`
 - **THEN** `BoardAssetsTest` fails
 - **WHEN** a human installs the board from Chrome or Safari
 - **THEN** it opens in its own window at `/`, and `GET /manifest.webmanifest` answers `application/manifest+json`

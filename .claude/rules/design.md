@@ -1,6 +1,6 @@
 ---
 paths:
-  - "**/src/main/resources/static/**"
+  - "board/**"
 ---
 
 The palette, the mark vocabulary and the metrics: read **[`docs/rules/design.md`](../../docs/rules/design.md)** before

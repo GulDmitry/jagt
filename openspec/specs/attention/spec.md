@@ -127,7 +127,7 @@ request until it lands.
 
 ### Requirement: The board orders its tasks
 `TaskViews` SHALL put the tasks waiting on the human first, then the rest in project order, each group in registration order. A phase is a count
-above the grid, zeros included. One order control, `static/ui/order.js`, MUST offer registration or alias; all else narrows: a filter over alias, id
+above the grid, zeros included. One order control, `board/ui/order.js`, MUST offer registration or alias; all else narrows: a filter over alias, id
 and title, typed in the filter box alone. An alias is the lowest free number, so alias order puts a new task where a retired one sat.
 #### Scenario: A status changes
 - **WHEN** a task's tier changes to waiting on the human

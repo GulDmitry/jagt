@@ -85,6 +85,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Files.writeString(
         root.resolve("i18n/xx.json"),
         "{\"language.name\": \"Testish\", \"reports.toggle\": \"Reports-xx\"}");
+    Files.writeString(root.resolve("i18n/index.json"), "[\"xx\"]");
     Page page = openBoard();
 
     page.click("#gear");
@@ -92,6 +93,19 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     assertThat(page.locator("#reports-toggle")).hasText("Reports-xx");
     assertThat(page.locator("#new-task span")).hasText("New task");
+  }
+
+  @Test
+  void catalogInTheRootOverridesShippedKeyAndKeepsTheRest() throws IOException {
+    Files.createDirectories(root.resolve("i18n"));
+    Files.writeString(root.resolve("i18n/pl.json"), "{\"reports.toggle\": \"Zestawienia\"}");
+    Page page = openBoard();
+
+    page.click("#gear");
+    page.click("#gear-menu button[data-lang=pl]");
+
+    assertThat(page.locator("#reports-toggle")).hasText("Zestawienia");
+    assertThat(page.locator("#new-task span")).hasText("Nowe zadanie");
   }
 
   @Test
