@@ -93,13 +93,17 @@ class RetiredWorktreesTest {
 
   @Test
   void removesTheDeployWorktreeAnAbandonedConflictLeftBehind() {
+    when(paths.deployWorktree("demo", "ABC-1"))
+        .thenReturn(Path.of("/data/worktrees/demo/ABC-1-deploy"));
     new RetiredWorktrees(git, sessions, paths)
         .remove(
             "ABC-1",
             List.of(TaskRepo.of("demo", "/wt")),
             Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())));
 
-    verify(git).removeDeployWorktreeIfPresent(Path.of("/repo"), "ABC-1");
+    verify(git)
+        .removeDeployWorktreeIfPresent(
+            Path.of("/repo"), Path.of("/data/worktrees/demo/ABC-1-deploy"), "ABC-1");
   }
 
   @Test

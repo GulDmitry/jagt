@@ -59,7 +59,7 @@ public class DeployService {
               "deploy "
                   + taskId
                   + " waits on the session's fix in "
-                  + GitDeploy.deployWorktreePath(target.path(), taskId)
+                  + gitDeploy.deployWorktreePath(target.path(), taskId)
                   + ": it is not staged in full yet."
                   + " Stage it, then deploy again.");
         });
@@ -80,7 +80,7 @@ public class DeployService {
                   + " waits on a conflict in "
                   + target.project()
                   + " but its deploy worktree "
-                  + GitDeploy.deployWorktreePath(target.path(), taskId)
+                  + gitDeploy.deployWorktreePath(target.path(), taskId)
                   + " is gone. `revert "
                   + taskId
                   + "` clears it.");

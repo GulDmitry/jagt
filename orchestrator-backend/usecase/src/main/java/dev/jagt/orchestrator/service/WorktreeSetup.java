@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
-import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
@@ -74,7 +73,8 @@ public class WorktreeSetup {
             repos,
             Path.of(System.getProperty("user.home")),
             Path.of(System.getProperty("java.io.tmpdir"))));
-    GitDeploy.deployWorktreePaths(repos, request.taskId())
+    paths
+        .deployWorktrees(repos, request.taskId())
         .forEach(deployWorktree -> agentRuntime.admit(worktreePath, deployWorktree));
     WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, WorktreeFiles.PROJECT_FILES);
     WorktreeFiles.copyLocalFiles(

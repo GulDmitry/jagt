@@ -1,13 +1,46 @@
 package dev.jagt.orchestrator.config;
 
+import static dev.jagt.orchestrator.service.TestNewRepoBuilder.api;
+import static dev.jagt.orchestrator.service.TestNewRepoBuilder.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class OrchestratorPathsTest {
+
+  @Test
+  void cutsTheDeployAndRevertWorktreesOfTaskUnderTheDataFolderPerProject(@TempDir Path data) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
+
+    assertThat(paths.deployWorktree("web", "ABC-1"))
+        .isEqualTo(data.resolve("worktrees/web/ABC-1-deploy"));
+    assertThat(paths.revertWorktree("web", "ABC-1"))
+        .isEqualTo(data.resolve("worktrees/web/ABC-1-revert"));
+  }
+
+  @Test
+  void listsTheDeployWorktreeOnlyOfRepositoriesThatHaveDeployBranch(@TempDir Path data) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
+
+    assertThat(
+            paths.deployWorktrees(
+                List.of(
+                    api(data).build(),
+                    web(data).withDeployBranch("").build(),
+                    web(data).withProject("web2").build()),
+                "ABC-1"))
+        .containsExactly(
+            data.resolve("worktrees/api/ABC-1-deploy"),
+            data.resolve("worktrees/web2/ABC-1-deploy"));
+  }
 
   @Test
   void takesTheFileNamedOnTheCommandLineOverTheOneItWouldHaveGoneLookingFor(@TempDir Path root) {

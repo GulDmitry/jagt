@@ -57,8 +57,8 @@ class IdeProject {
         .map(target -> {
           Path worktree =
               reverting
-                  ? GitDeploy.revertWorktreePath(target.path(), taskId)
-                  : GitDeploy.deployWorktreePath(target.path(), taskId);
+                  ? gitDeploy.revertWorktreePath(target.path(), taskId)
+                  : gitDeploy.deployWorktreePath(target.path(), taskId);
           editorDriver.open(worktree);
           return "Opened the "
               + (reverting ? "revert" : "deploy")

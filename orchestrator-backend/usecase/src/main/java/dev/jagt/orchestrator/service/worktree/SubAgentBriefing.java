@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service.worktree;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.plan.Artifact;
@@ -24,6 +24,7 @@ public class SubAgentBriefing {
 
   private final SessionBrief brief;
   private final TicketScenarios scenarios;
+  private final OrchestratorPaths orchestratorPaths;
 
   public String of(
       NewTask request,
@@ -42,7 +43,7 @@ public class SubAgentBriefing {
             repo.baseBranch(),
             repo.remoteUrl(),
             repo.worktreePath(),
-            alsoYours(repo, repos) + deployWorktrees(taskId, repos))
+            alsoYours(repo, repos) + deployConflictLine(taskId, repos))
         + brief
             .section(Step.CONTEXT)
             .filter(context -> !context.isBlank())
@@ -243,9 +244,9 @@ public class SubAgentBriefing {
         .collect(Collectors.joining(", "));
   }
 
-  private static String deployWorktrees(String taskId, List<NewRepo> repos) {
+  private String deployConflictLine(String taskId, List<NewRepo> repos) {
     String paths =
-        GitDeploy.deployWorktreePaths(repos, taskId).stream()
+        orchestratorPaths.deployWorktrees(repos, taskId).stream()
             .map(Path::toString)
             .collect(Collectors.joining(", "));
     return paths.isBlank()

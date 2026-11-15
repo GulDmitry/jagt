@@ -53,19 +53,6 @@ public final class ProjectProblems {
     if (!Files.exists(path.resolve(".git"))) {
       return List.of(new Problem(key, where + ".path " + path + " is not a git repository."));
     }
-    Path worktreeParent = path.toAbsolutePath().normalize().getParent();
-    if (worktreeParent != null && !Files.isWritable(worktreeParent)) {
-      return List.of(
-          new Problem(
-              key,
-              where
-                  + ".path "
-                  + path
-                  + ": jagt cuts every worktree next to the"
-                  + " repository and cannot write in "
-                  + worktreeParent
-                  + "."));
-    }
     return List.of();
   }
 

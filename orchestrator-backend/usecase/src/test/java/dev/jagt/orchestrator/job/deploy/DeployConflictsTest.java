@@ -70,6 +70,8 @@ class DeployConflictsTest {
                         "web",
                         new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+    when(git.deployWorktreePath(Path.of("/src/web"), "ABC-1"))
+        .thenReturn(Path.of("/data/worktrees/web/ABC-1-deploy"));
     when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
     when(git.deployProgress(Path.of("/src/web"), "ABC-1"))
         .thenReturn(new Conflict.Progress(0, 2, "d"));
@@ -79,7 +81,7 @@ class DeployConflictsTest {
     assertThat(conflicts)
         .contains(
             new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-1-deploy"),
+                Path.of("/data/worktrees/web/ABC-1-deploy"),
                 true,
                 new Conflict.Progress(0, 2, "d"),
                 null,
@@ -158,6 +160,8 @@ class DeployConflictsTest {
                     null))
             .build());
     when(git.hasRevertWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+    when(git.revertWorktreePath(Path.of("/src/web"), "ABC-1"))
+        .thenReturn(Path.of("/data/worktrees/web/ABC-1-revert"));
     when(git.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     when(git.revertProgress(Path.of("/src/web"), "ABC-1"))
         .thenReturn(new Conflict.Progress(0, 1, "r"));
@@ -167,7 +171,7 @@ class DeployConflictsTest {
     assertThat(conflicts)
         .contains(
             new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-1-revert"),
+                Path.of("/data/worktrees/web/ABC-1-revert"),
                 true,
                 new Conflict.Progress(0, 1, "r"),
                 null,

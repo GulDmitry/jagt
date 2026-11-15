@@ -114,7 +114,7 @@ class WorktreeSetupTest {
   void letsTheSessionReachTheDeployWorktreeItsConflictsWouldWaitIn() throws Exception {
     setup.fill(NewTask.builder("ABC-1", "repo").build(), deployRepo, List.of(deployRepo));
 
-    verify(runtime).admit(worktree, root.resolve("ABC-1-deploy"));
+    verify(runtime).admit(worktree, root.resolve("worktrees/repo/ABC-1-deploy"));
   }
 
   @Test

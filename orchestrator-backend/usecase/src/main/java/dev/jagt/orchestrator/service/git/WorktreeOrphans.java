@@ -207,8 +207,8 @@ public class WorktreeOrphans {
   }
 
   /**
-   * Directory names a live task owns: EVERY repository's worktree, plus the deploy worktree a
-   * conflict may have left.
+   * Directory names a live task owns: EVERY repository's worktree, plus the deploy and revert
+   * worktrees a conflict may have left.
    */
   private Set<String> ownedDirectoryNames() {
     Set<String> owned = new java.util.HashSet<>();
@@ -216,6 +216,7 @@ public class WorktreeOrphans {
         .tasks()
         .forEach((taskId, task) -> {
           owned.add(TaskName.slug(taskId) + "-deploy");
+          owned.add(TaskName.slug(taskId) + "-revert");
           task.repos().stream()
               .map(TaskRepo::worktreePath)
               .filter(path -> path != null && !path.isBlank())

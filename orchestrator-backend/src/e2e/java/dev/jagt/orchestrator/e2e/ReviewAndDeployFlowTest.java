@@ -19,7 +19,6 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
-import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.surface.mcp.MasterToken;
@@ -202,7 +201,7 @@ class ReviewAndDeployFlowTest {
       assertThat(E2eWorkspace.git(flow.webOrigin(), "log", "-1", "--format=%s", "dev"))
           .doesNotContain("Merge branch '" + TASK + "' into dev");
 
-      Path resolveIn = GitDeploy.deployWorktreePath(flow.webRepo(), TASK);
+      Path resolveIn = flow.webWorktree().resolveSibling(TASK + "-deploy");
       Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
       E2eWorkspace.git(resolveIn, "add", "widget.txt");
 

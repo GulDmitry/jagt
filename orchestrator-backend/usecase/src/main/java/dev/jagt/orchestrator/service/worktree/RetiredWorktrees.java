@@ -55,7 +55,8 @@ public class RetiredWorktrees {
       Path projectPath = Path.of(project.path());
       gitWorktrees.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
       // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
-      gitWorktrees.removeDeployWorktreeIfPresent(projectPath, taskId);
+      gitWorktrees.removeDeployWorktreeIfPresent(
+          projectPath, paths.deployWorktree(repo.project(), taskId), taskId);
       // A diff opened from the board cuts throwaway checkouts in the temp directory; nothing else
       // ends them.
       gitWorktrees.removeDiffWorktrees(projectPath, taskId, Objects.requireNonNull(repo.project()));

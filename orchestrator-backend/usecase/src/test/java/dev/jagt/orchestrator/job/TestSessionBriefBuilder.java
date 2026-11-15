@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
@@ -20,8 +21,8 @@ public record TestSessionBriefBuilder(Path root, String task, String project) {
   }
 
   public String build(TicketScenarios scenarios, NewRepo primary, List<NewRepo> repos) {
-    return new SubAgentBriefing(
-            new SessionBrief(orchestratorPaths().withRoot(root).build()), scenarios)
+    OrchestratorPaths paths = orchestratorPaths().withRoot(root).build();
+    return new SubAgentBriefing(new SessionBrief(paths), scenarios, paths)
         .of(
             NewTask.builder(task, project).build(),
             primary,

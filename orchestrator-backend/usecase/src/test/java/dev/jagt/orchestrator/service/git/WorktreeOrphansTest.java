@@ -29,6 +29,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 class WorktreeOrphansTest {
@@ -142,6 +144,29 @@ class WorktreeOrphansTest {
         "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
 
     assertThat(orphans.scan()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"ABC-44-deploy", "ABC-44-revert"})
+  void leavesTheDeployAndRevertWorktreeUnderTheDataFolderOfLiveTaskAlone(String name)
+      throws IOException {
+    Path live = Files.createDirectories(root.resolve("worktrees/demo/ABC-44"));
+    Files.createDirectories(root.resolve("worktrees/demo").resolve(name));
+    state.putTask(
+        "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+
+    assertThat(orphans.scan()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"ABC-45-deploy", "ABC-45-revert"})
+  void listsTheDeployAndRevertWorktreeUnderTheDataFolderOfTaskThatIsGone(String name)
+      throws IOException {
+    Path left = Files.createDirectories(root.resolve("worktrees/demo").resolve(name));
+
+    assertThat(orphans.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.path()).isEqualTo(left));
   }
 
   @Test

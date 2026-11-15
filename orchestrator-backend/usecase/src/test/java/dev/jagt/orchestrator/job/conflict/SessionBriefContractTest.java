@@ -96,7 +96,7 @@ class SessionBriefContractTest {
         .hand(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
-                Path.of("/repo/ABC-42-deploy"),
+                root.resolve("worktrees/web/ABC-42-deploy"),
                 false,
                 new Conflict.Progress(7, 0, "d"),
                 null,
@@ -106,12 +106,15 @@ class SessionBriefContractTest {
     ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
     verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());
     assertThat(relayed.getValue())
-        .contains("/repo/ABC-42-deploy", "`git merge`")
+        .contains(root.resolve("worktrees/web/ABC-42-deploy").toString(), "`git merge`")
         .doesNotContain("rebase", "cherry-pick", "--force", "--amend", "reset --hard");
     assertThat(brief.lines())
         .anySatisfy(line ->
             assertThat(line)
-                .contains("/repo/ABC-42-deploy", "yours", "is not a `git merge` of yours"));
+                .contains(
+                    root.resolve("worktrees/web/ABC-42-deploy").toString(),
+                    "yours",
+                    "is not a `git merge` of yours"));
   }
 
   @Test

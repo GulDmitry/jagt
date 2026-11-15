@@ -2,8 +2,6 @@ package dev.jagt.orchestrator.service.git;
 
 import dev.jagt.orchestrator.service.worktree.WorktreeNoise;
 import dev.jagt.orchestrator.task.deploy.Conflict;
-import dev.jagt.orchestrator.task.launch.TaskName;
-import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,7 +13,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -28,6 +25,7 @@ import org.springframework.stereotype.Service;
 public class GitDeploy {
 
   private final GitCommands git;
+  private final DeployWorktreePaths worktrees;
 
   /**
    * Merges the task branch into the deploy branch and pushes, in a worktree cut from {@code
@@ -773,26 +771,11 @@ public class GitDeploy {
     return "jagt-deploy-" + sourceBranch;
   }
 
-  /** Every deploy worktree a task of these repositories can stand in, each once. */
-  public static List<Path> deployWorktreePaths(List<NewRepo> repos, String sourceBranch) {
-    return repos.stream()
-        .filter(
-            repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
-        .map(repo -> deployWorktreePath(repo.projectPath(), sourceBranch))
-        .distinct()
-        .toList();
+  public Path deployWorktreePath(Path projectPath, String sourceBranch) {
+    return worktrees.deploy(projectPath, sourceBranch);
   }
 
-  public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
-    return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
-        .resolve(TaskName.slug(sourceBranch) + "-deploy");
-  }
-
-  /**
-   * Whether a deploy worktree for this task is waiting in THIS repository. The path is derived from
-   * the repository's PARENT, so siblings derive the SAME one and finishing another's merge here
-   * would push to the wrong remote.
-   */
+  /** Whether a deploy worktree for this task is waiting in THIS repository. */
   public boolean hasDeployWorktree(Path projectPath, String sourceBranch) {
     return git.worktreeOwner(deployWorktreePath(projectPath, sourceBranch))
         .filter(owner -> GitCommands.sameDirectory(owner, projectPath))
@@ -826,13 +809,12 @@ public class GitDeploy {
    * Where a revert is staged — separate from the deploy worktree, which may be sitting in a
    * conflict.
    */
-  public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
-    return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
-        .resolve(TaskName.slug(sourceBranch) + "-revert");
+  public Path revertWorktreePath(Path projectPath, String sourceBranch) {
+    return worktrees.revert(projectPath, sourceBranch);
   }
 
   /**
-   * The deploy worktree path this repository derives is occupied by a checkout it did not cut, so
+   * The deploy worktree path of this repository is occupied by a checkout it did not cut, so
    * nothing was attempted. Typed so a caller landing SEVERAL repositories can come back to this one
    * once the path is free.
    */

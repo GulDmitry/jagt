@@ -60,11 +60,15 @@ class IdeProjectTest {
                             new ProjectConfig(web.toString(), "origin/main", "dev", List.of()))));
     when(deploys.hasDeployWorktree(api, "ABC-1")).thenReturn(false);
     when(deploys.hasDeployWorktree(web, "ABC-1")).thenReturn(true);
+    when(deploys.deployWorktreePath(api, "ABC-1"))
+        .thenReturn(Path.of("/data/worktrees/api/ABC-1-deploy"));
+    when(deploys.deployWorktreePath(web, "ABC-1"))
+        .thenReturn(Path.of("/data/worktrees/web/ABC-1-deploy"));
 
     new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
-    verify(editor).open(GitDeploy.deployWorktreePath(web, "ABC-1"));
-    verify(editor, never()).open(GitDeploy.deployWorktreePath(api, "ABC-1"));
+    verify(editor).open(Path.of("/data/worktrees/web/ABC-1-deploy"));
+    verify(editor, never()).open(Path.of("/data/worktrees/api/ABC-1-deploy"));
   }
 
   @Test
@@ -156,10 +160,12 @@ class IdeProjectTest {
                         "proj",
                         new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
     when(deploys.hasRevertWorktree(repo, "ABC-1")).thenReturn(true);
+    when(deploys.revertWorktreePath(repo, "ABC-1"))
+        .thenReturn(Path.of("/data/worktrees/proj/ABC-1-revert"));
 
     String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
-    verify(editor).open(GitDeploy.revertWorktreePath(repo, "ABC-1"));
+    verify(editor).open(Path.of("/data/worktrees/proj/ABC-1-revert"));
     assertThat(out).contains("revert worktree", "`revert ABC-1` again");
   }
 }

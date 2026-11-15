@@ -227,10 +227,12 @@ class DeployServiceTest {
               .withDeployment(projectMergedAndConflictedBy(Deployment.Cause.RED_PIPELINE).build())
               .build());
       when(git.deployResolved(Path.of("/repo"), "ABC-1", "dev")).thenReturn(false);
+      when(git.deployWorktreePath(Path.of("/repo"), "ABC-1"))
+          .thenReturn(Path.of("/data/worktrees/proj/ABC-1-deploy"));
 
       assertThatThrownBy(() -> deploys.deploy("a1"))
           .isInstanceOf(Refusal.class)
-          .hasMessageContaining("waits on the session's fix in /ABC-1-deploy");
+          .hasMessageContaining("waits on the session's fix in /data/worktrees/proj/ABC-1-deploy");
 
       assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
       assertThat(state.task("ABC-1").orElseThrow().message())
@@ -453,9 +455,12 @@ class DeployServiceTest {
           reducer.deployStepped(
               pushed, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 3L));
 
+      when(git.deployWorktreePath(Path.of("/repo/web"), "ABC-1"))
+          .thenReturn(Path.of("/data/worktrees/web/ABC-1-deploy"));
+
       assertThatThrownBy(() -> deploys.deploy("a1"))
           .isInstanceOf(Refusal.class)
-          .hasMessageContaining("/repo/ABC-1-deploy");
+          .hasMessageContaining("/data/worktrees/web/ABC-1-deploy");
 
       verify(git, never()).mergeIntoAndPush(any(), anyString(), anyString());
     }

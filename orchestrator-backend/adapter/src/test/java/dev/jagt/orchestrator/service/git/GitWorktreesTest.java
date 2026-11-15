@@ -720,7 +720,7 @@ class GitWorktreesTest {
   @Test
   void removesTheDeployWorktreeAndItsBranchWhenOneIsWaiting() throws Exception {
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
-    Path deploy = GitDeploy.deployWorktreePath(repo, "ABC-1");
+    Path deploy = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.git(
         runner,
         repo,
@@ -732,9 +732,9 @@ class GitWorktreesTest {
         deploy.toString(),
         "origin/main");
 
-    git.removeDeployWorktreeIfPresent(repo, "ABC-1");
+    git.removeDeployWorktreeIfPresent(repo, deploy, "ABC-1");
 
-    assertThat(GitDeploy.deployWorktreePath(repo, "ABC-1")).doesNotExist();
+    assertThat(deploy).doesNotExist();
     assertThat(git.branchExists(repo, GitDeploy.deployBranch("ABC-1"))).isFalse();
   }
 

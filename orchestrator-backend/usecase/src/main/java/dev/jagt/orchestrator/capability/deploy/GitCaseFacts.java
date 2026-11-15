@@ -73,7 +73,7 @@ public class GitCaseFacts {
           worktreeCase(
               project,
               "revert",
-              GitDeploy.revertWorktreePath(projectPath, taskId),
+              gitDeploy.revertWorktreePath(projectPath, taskId),
               remote.track(deployBranch),
               "revert " + taskId));
     }
@@ -82,7 +82,7 @@ public class GitCaseFacts {
           worktreeCase(
               project,
               "deploy",
-              GitDeploy.deployWorktreePath(projectPath, taskId),
+              gitDeploy.deployWorktreePath(projectPath, taskId),
               remote.track(deployBranch),
               "deploy " + taskId));
     }

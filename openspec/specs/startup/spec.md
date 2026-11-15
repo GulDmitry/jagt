@@ -149,8 +149,9 @@ A change in a variable or file a read used SHALL be picked up by the next one. A
 - **THEN** it loads as before
 
 ### Requirement: One data folder holds everything jagt writes
-jagt SHALL write `state.json` and its siblings, `worktrees/<project>/<task>`, `repos/<name>` and `logs/` under one data
-folder, `orchestrator.data`, default `~/.jagt`, overridden by `JAGT__orchestrator__data` or `ORCHESTRATOR_DATA`.
+jagt SHALL write `state.json` and its siblings, `worktrees/<project>/<task>` (deploy and revert worktrees included),
+`repos/<name>` and `logs/` under one data folder.
+The folder is `orchestrator.data`, default `~/.jagt`, overridden by `JAGT__orchestrator__data` or `ORCHESTRATOR_DATA`.
 `jagt.yml` stays outside it. A project's `path` is used in place; a task in `state.json` keeps its recorded worktree.
 #### Scenario: No data key
 - **WHEN** jagt starts on a desktop with no `orchestrator.data`
@@ -161,6 +162,9 @@ folder, `orchestrator.data`, default `~/.jagt`, overridden by `JAGT__orchestrato
 #### Scenario: A repository elsewhere
 - **WHEN** a project's path lies outside the data folder
 - **THEN** it is used in place and a new task's worktree is cut under `worktrees/<project>/`
+#### Scenario: A repository in a read-only folder
+- **WHEN** a project's path lies in a folder jagt cannot write in
+- **THEN** jagt starts, and a deploy or revert cuts its worktree under `worktrees/<project>/`
 #### Scenario: A state from an older version
 - **WHEN** a `state.json` sits in the root and the data folder holds none
 - **THEN** it is moved into the data folder once, and its tasks resume with their recorded worktrees

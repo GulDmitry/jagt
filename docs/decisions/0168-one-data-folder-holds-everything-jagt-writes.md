@@ -22,7 +22,7 @@ Accepted 2026-11-15.
 - A task in `state.json` keeps its recorded worktree path; existing worktrees are not moved.
 - `DataFolderStart` creates the folder and, once, moves a `state.json` (and its `.bak`) from the root into it.
 - `orchestrator.state-file` still wins for the state and its siblings.
-- Deploy and revert worktrees stay beside the repository, so its parent must still be writable.
+- Deploy and revert worktrees are cut at `worktrees/<project>/<task>-deploy` and `-revert`; a repository's parent need not be writable.
 
 ## Rejected
 
@@ -32,5 +32,4 @@ Accepted 2026-11-15.
 
 ## Reopen when
 
-- A deploy or revert worktree moves under `worktrees/`: the parent-writable check leaves `ProjectProblems`.
 - A clone is cut under `repos/`: its path joins `OrchestratorPaths`.

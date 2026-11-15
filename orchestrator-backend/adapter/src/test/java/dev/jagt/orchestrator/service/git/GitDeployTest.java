@@ -2,15 +2,23 @@ package dev.jagt.orchestrator.service.git;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,7 +28,35 @@ class GitDeployTest {
 
   @TempDir Path dir;
   private final Processes runner = new ProcessRunner();
-  private final GitDeploy git = new GitDeploy(GitRepos.commands(runner));
+  private DeployWorktreePaths worktreePaths;
+  private GitDeploy git;
+
+  @BeforeEach
+  void setUp() {
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "repo",
+                        new ProjectConfig(
+                            dir.resolve("repo").toString(), "origin/main", "dev", List.of()),
+                        "api",
+                        new ProjectConfig(
+                            dir.resolve("api").toString(), "origin/main", "dev", List.of()),
+                        "web",
+                        new ProjectConfig(
+                            dir.resolve("web").toString(), "origin/main", "dev", List.of()))));
+    worktreePaths =
+        new DeployWorktreePaths(
+            config,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.resolve("data").toString())));
+    git = new GitDeploy(GitRepos.commands(runner), worktreePaths);
+  }
 
   @Test
   void deployMergesTheTaskBranchIntoDevAndLeavesTheTaskBranchByteIdentical() throws Exception {
@@ -34,7 +70,7 @@ class GitDeployTest {
     assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
     assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:g.txt").stdout())
         .contains("task");
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
   }
 
   @Test
@@ -58,9 +94,10 @@ class GitDeployTest {
   @Test
   void deploysThroughDeployPathAnEditorRecreatedAfterTheWorktreeWasRemoved() throws Exception {
     Path repo = GitRepos.cloneWithTask(runner, dir);
-    Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
+    Files.createDirectories(dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve(".idea"));
     Files.writeString(
-        dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
+        dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve(".idea").resolve("misc.xml"),
+        "<project/>");
 
     GitRepos.git(runner, repo, "push", "-q", "origin", "ABC-1");
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -68,7 +105,7 @@ class GitDeployTest {
     GitRepos.git(runner, repo, "fetch", "-q");
     assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "origin/dev:g.txt").stdout())
         .contains("task");
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
   }
 
   @Test
@@ -77,9 +114,10 @@ class GitDeployTest {
     GitRepos.git(runner, dir, "init", "-q", dir.toString());
     Path repo = GitRepos.cloneWithTask(runner, dir);
     GitRepos.git(runner, repo, "push", "-q", "origin", "ABC-1");
-    Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
+    Files.createDirectories(dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve(".idea"));
     Files.writeString(
-        dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
+        dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve(".idea").resolve("misc.xml"),
+        "<project/>");
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -91,14 +129,15 @@ class GitDeployTest {
   @Test
   void refusesToDeployThroughDeployPathHoldingSomethingJagtDidNotPutThere() throws Exception {
     Path repo = GitRepos.cloneWithTask(runner, dir);
-    Files.createDirectories(dir.resolve("ABC-1-deploy"));
-    Files.writeString(dir.resolve("ABC-1-deploy").resolve("notes.txt"), "mine");
+    Files.createDirectories(dir.resolve("data/worktrees/repo/ABC-1-deploy"));
+    Files.writeString(dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve("notes.txt"), "mine");
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.StaleDeployPathException.class)
         .hasMessageContaining("ABC-1-deploy")
         .hasMessageContaining("notes.txt");
-    assertThat(dir.resolve("ABC-1-deploy").resolve("notes.txt")).hasContent("mine");
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve("notes.txt"))
+        .hasContent("mine");
   }
 
   @Test
@@ -119,7 +158,8 @@ class GitDeployTest {
         .isInstanceOf(GitDeploy.MergeConflictException.class);
 
     assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
-    assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).isDirectory();
+    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
   }
 
   @Test
@@ -135,8 +175,7 @@ class GitDeployTest {
     GitRepos.git(runner, api, "push", "-q", "origin", "main:dev");
     GitRepos.git(runner, api, "branch", "ABC-1");
     GitRepos.emptyRepo(runner, dir, "web");
-    GitRepos.addWorktree(
-        runner, web, GitDeploy.deployWorktreePath(web, "ABC-1"), "jagt-deploy-ABC-1");
+    GitRepos.addWorktree(runner, web, git.deployWorktreePath(api, "ABC-1"), "jagt-deploy-ABC-1");
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(api, "ABC-1", "dev"))
         .isInstanceOf(IllegalStateException.class)
@@ -144,14 +183,12 @@ class GitDeployTest {
   }
 
   @Test
-  void onlyTheRepositoryThatCutTheDeployWorktreeClaimsItWhenSiblingDerivesTheSamePath()
-      throws Exception {
+  void onlyTheRepositoryThatCutTheDeployWorktreeClaimsIt() throws Exception {
     Path api = dir.resolve("api");
     Path web = dir.resolve("web");
     GitRepos.git(runner, dir, "init", "-q", "-b", "main", api.toString());
     GitRepos.emptyRepo(runner, dir, "web");
-    GitRepos.addWorktree(
-        runner, web, GitDeploy.deployWorktreePath(web, "ABC-1"), "jagt-deploy-ABC-1");
+    GitRepos.addWorktree(runner, web, git.deployWorktreePath(web, "ABC-1"), "jagt-deploy-ABC-1");
 
     assertThat(git.hasDeployWorktree(web, "ABC-1")).isTrue();
     assertThat(git.hasDeployWorktree(api, "ABC-1")).isFalse();
@@ -165,7 +202,7 @@ class GitDeployTest {
 
     git.discardDeploy(repo, "ABC-1");
 
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
     assertThat(GitRepos.git(runner, repo, "branch", "--list", "jagt-deploy-ABC-1").stdout())
         .isBlank();
   }
@@ -176,7 +213,7 @@ class GitDeployTest {
     final String taskTip = GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim();
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "f.txt", "resolved");
 
     String merged = git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -195,7 +232,7 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithConflictingTask(runner, dir);
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "f.txt", "resolved");
 
     boolean resolved = git.deployResolved(repo, "ABC-1", "dev");
@@ -209,7 +246,8 @@ class GitDeployTest {
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
     Conflict.Progress conflicted = git.deployProgress(repo, "ABC-1");
-    Files.writeString(dir.resolve("ABC-1-deploy").resolve("f.txt"), "resolving");
+    Files.writeString(
+        dir.resolve("data/worktrees/repo/ABC-1-deploy").resolve("f.txt"), "resolving");
 
     Conflict.Progress edited = git.deployProgress(repo, "ABC-1");
 
@@ -224,7 +262,7 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithConflictingTask(runner, dir);
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "f.txt", "resolved");
     Files.writeString(deployWorktree.resolve("f.txt"), "resolved, then reworked");
 
@@ -238,7 +276,7 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithConflictingTask(runner, dir);
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    final Path deployWorktree = dir.resolve("ABC-1-deploy");
+    final Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.git(runner, repo, "checkout", "-q", "_dev");
     Files.writeString(repo.resolve("f.txt"), "task change");
     GitRepos.git(runner, repo, "commit", "-qam", "release");
@@ -273,7 +311,7 @@ class GitDeployTest {
     GitRepos.git(runner, repo, "push", "-q", "origin", "ABC-1");
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "f.txt", "resolved by hand");
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -293,7 +331,7 @@ class GitDeployTest {
     GitRepos.git(runner, repo, "push", "-q", "origin", "main:staging");
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "f.txt", "task change");
     GitRepos.git(runner, deployWorktree, "commit", "-q", "--no-edit");
 
@@ -310,7 +348,7 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithConflictingTask(runner, dir);
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "f.txt", "resolved");
     GitRepos.git(runner, deployWorktree, "commit", "-q", "--no-edit");
     GitRepos.git(runner, deployWorktree, "push", "-q", "origin", "HEAD:dev");
@@ -335,7 +373,7 @@ class GitDeployTest {
     GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-1");
     Files.writeString(repo.resolve("g.txt"), "task");
     GitRepos.commit(runner, repo, "task");
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.git(
         runner,
         repo,
@@ -409,7 +447,7 @@ class GitDeployTest {
         .isEqualTo(devWithOnlyDevCommit)
         .isNotEqualTo(devBefore);
     assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
-    assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).isDirectory();
   }
 
   @Test
@@ -475,7 +513,7 @@ class GitDeployTest {
     assertThat(GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim())
         .isEqualTo(revert);
     assertThat(GitRepos.git(runner, repo, "rev-parse", "ABC-1").stdout().trim()).isEqualTo(taskTip);
-    assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-revert")).doesNotExist();
   }
 
   @Test
@@ -487,7 +525,7 @@ class GitDeployTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("is not on dev");
 
-    assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-revert")).doesNotExist();
   }
 
   @Test
@@ -527,7 +565,7 @@ class GitDeployTest {
     final String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     GitRepos.pushDevChange(runner, repo, "feature.txt", "someone edited the deployed feature");
     String devTip = GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim();
-    final Path revertWorktree = dir.resolve("ABC-1-revert");
+    final Path revertWorktree = dir.resolve("data/worktrees/repo/ABC-1-revert");
 
     assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
         .isInstanceOf(GitDeploy.RevertConflictException.class);
@@ -549,7 +587,7 @@ class GitDeployTest {
     final String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     GitRepos.pushDevChange(runner, repo, "feature.txt", "someone edited the deployed feature");
 
-    Path revertWorktree = dir.resolve("ABC-1-revert");
+    Path revertWorktree = dir.resolve("data/worktrees/repo/ABC-1-revert");
     assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
         .isInstanceOf(GitDeploy.RevertConflictException.class);
     GitRepos.stage(runner, revertWorktree, "feature.txt", "resolved by the session");
@@ -573,7 +611,7 @@ class GitDeployTest {
     final String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     GitRepos.pushDevChange(runner, repo, "feature.txt", "someone edited the deployed feature");
     final String devTip = GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim();
-    final Path revertWorktree = dir.resolve("ABC-1-revert");
+    final Path revertWorktree = dir.resolve("data/worktrees/repo/ABC-1-revert");
     assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
         .isInstanceOf(GitDeploy.RevertConflictException.class);
 
@@ -593,11 +631,11 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithFeatureBranch(runner, dir);
     final String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     git.openFixWorktree(repo, "ABC-1", "dev");
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "feature.txt", "the feature, fixed");
     final String fix = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     GitRepos.pushDevChange(runner, repo, "feature.txt", "someone edited the fixed feature");
-    Path revertWorktree = dir.resolve("ABC-1-revert");
+    Path revertWorktree = dir.resolve("data/worktrees/repo/ABC-1-revert");
     assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of(fix)))
         .isInstanceOf(GitDeploy.RevertConflictException.class);
     GitRepos.stage(runner, revertWorktree, "feature.txt", "the feature");
@@ -620,7 +658,7 @@ class GitDeployTest {
         ScriptedProcesses.answering(
             List.of("git", "merge"), new Processes.Result(128, "", "Author identity unknown"));
     Path repo = GitRepos.cloneWithTask(runner, dir);
-    GitDeploy git = new GitDeploy(GitRepos.commands(runner));
+    GitDeploy git = new GitDeploy(GitRepos.commands(runner), worktreePaths);
 
     GitRepos.git(runner, repo, "push", "-q", "origin", "ABC-1");
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -629,7 +667,7 @@ class GitDeployTest {
         .hasMessageContaining("no conflict is waiting for you")
         .hasMessageContaining("Author identity unknown");
 
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
   }
 
   @Test
@@ -647,7 +685,7 @@ class GitDeployTest {
         .isInstanceOf(GitDeploy.NothingToDeployException.class)
         .hasMessageContaining("Nothing left to push");
 
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
     assertThat(
             GitRepos.git(runner, repo, "rev-parse", "--verify", "--quiet", "jagt-deploy-ABC-1")
                 .exitCode())
@@ -671,22 +709,24 @@ class GitDeployTest {
         .hasMessageContaining("Deploy push to dev was rejected")
         .satisfies(refused -> assertThat(refused.getMessage()).doesNotEndWith("Details: "));
 
-    assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).isDirectory();
   }
 
   @Test
   void revertsThroughRevertPathStaleRunLeftBehind() throws Exception {
     Path repo = GitRepos.cloneWithDeployedFeatureBranch(runner, dir);
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
-    Files.createDirectories(dir.resolve("ABC-1-revert"));
-    Files.writeString(dir.resolve("ABC-1-revert").resolve("stale.txt"), "left by a run that died");
+    Files.createDirectories(dir.resolve("data/worktrees/repo/ABC-1-revert"));
+    Files.writeString(
+        dir.resolve("data/worktrees/repo/ABC-1-revert").resolve("stale.txt"),
+        "left by a run that died");
 
     String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
 
     GitRepos.git(runner, repo, "fetch", "-q");
     assertThat(GitRepos.git(runner, repo, "rev-parse", "origin/dev").stdout().trim())
         .isEqualTo(revert);
-    assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-revert")).doesNotExist();
   }
 
   @Test
@@ -717,7 +757,7 @@ class GitDeployTest {
     GitRepos.git(runner, repo, "checkout", "-q", "main");
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "feature.txt", "resolved");
     GitRepos.git(runner, deployWorktree, "commit", "-qm", "resolved");
 
@@ -734,7 +774,7 @@ class GitDeployTest {
 
     git.openFixWorktree(repo, "ABC-1", "dev");
 
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     assertThat(deployWorktree.resolve("feature.txt")).hasContent("the feature");
     assertThat(git.hasDeployWorktree(repo, "ABC-1")).isTrue();
     assertThat(git.deployResolved(repo, "ABC-1", "dev")).isFalse();
@@ -748,7 +788,7 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithFeatureBranch(runner, dir);
     final String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     git.openFixWorktree(repo, "ABC-1", "dev");
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "feature.txt", "the feature, fixed");
 
     String fix = git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -769,7 +809,7 @@ class GitDeployTest {
     Path repo = GitRepos.cloneWithFeatureBranch(runner, dir);
     final String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     git.openFixWorktree(repo, "ABC-1", "dev");
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.stage(runner, deployWorktree, "feature.txt", "the feature, fixed");
     String fix = git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -789,8 +829,7 @@ class GitDeployTest {
     Path web = dir.resolve("web");
     GitRepos.git(runner, dir, "init", "-q", "-b", "main", api.toString());
     GitRepos.emptyRepo(runner, dir, "web");
-    GitRepos.addWorktree(
-        runner, web, GitDeploy.revertWorktreePath(web, "ABC-1"), "jagt-revert-ABC-1");
+    GitRepos.addWorktree(runner, web, git.revertWorktreePath(web, "ABC-1"), "jagt-revert-ABC-1");
 
     assertThat(git.hasRevertWorktree(web, "ABC-1")).isTrue();
     assertThat(git.hasRevertWorktree(api, "ABC-1")).isFalse();
@@ -803,7 +842,7 @@ class GitDeployTest {
     GitRepos.commit(runner, repo, "base");
     GitRepos.git(runner, repo, "push", "-q", "origin", "main");
     GitRepos.git(runner, repo, "push", "-q", "origin", "main:dev");
-    Path deployWorktree = dir.resolve("ABC-1-deploy");
+    Path deployWorktree = dir.resolve("data/worktrees/repo/ABC-1-deploy");
     GitRepos.git(runner, repo, "fetch", "-q");
     GitRepos.git(
         runner,
@@ -862,12 +901,13 @@ class GitDeployTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                stopped -> {}));
+                stopped -> {}),
+            worktreePaths);
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
     assertThat(GitRepos.git(runner, repo, "cat-file", "-p", "dev:g.txt").stdout()).contains("task");
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
   }
 
   @Test
@@ -880,11 +920,12 @@ class GitDeployTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                stopped -> {}));
+                stopped -> {}),
+            worktreePaths);
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
     assertThat(repo.resolve("g.txt")).hasContent("task");
-    assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    assertThat(dir.resolve("data/worktrees/repo/ABC-1-deploy")).doesNotExist();
   }
 }

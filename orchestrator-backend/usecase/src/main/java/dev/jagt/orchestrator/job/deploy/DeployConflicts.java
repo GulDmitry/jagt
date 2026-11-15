@@ -37,14 +37,14 @@ public class DeployConflicts {
   private WaitingConflict conflict(String taskId, TaskState task, DeployTargets.Target target) {
     if (Facts.revertConflicted(task)) {
       return new WaitingConflict(
-          GitDeploy.revertWorktreePath(target.path(), taskId),
+          gitDeploy.revertWorktreePath(target.path(), taskId),
           gitDeploy.revertResolved(target.path(), taskId),
           gitDeploy.revertProgress(target.path(), taskId),
           null,
           true,
           Standing.of(task));
     }
-    Path worktree = GitDeploy.deployWorktreePath(target.path(), taskId);
+    Path worktree = gitDeploy.deployWorktreePath(target.path(), taskId);
     return new WaitingConflict(
         worktree,
         gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),

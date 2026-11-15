@@ -60,7 +60,8 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
             new SessionBrief(
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            scenarios);
+            scenarios,
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
   }
 
   @Test
@@ -117,12 +118,18 @@ class SubAgentBriefingTest {
     Files.createDirectories(absent.resolve("roles/session"));
     Files.writeString(absent.resolve("roles/session/brief.md"), "## other\nText.\n");
 
+    OrchestratorPaths sharedPaths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(root.resolve("data").toString()));
     String withBlank =
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults().withRoot(blank.toString()))),
-                scenarios)
+                scenarios,
+                sharedPaths)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -135,7 +142,8 @@ class SubAgentBriefingTest {
                 new SessionBrief(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults().withRoot(absent.toString()))),
-                scenarios)
+                scenarios,
+                sharedPaths)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -168,7 +176,9 @@ class SubAgentBriefingTest {
 
     assertThat(briefing)
         .contains(
-            "- Also yours while jagt hands you a deploy conflict there: /repo/ABC-42-deploy.");
+            "- Also yours while jagt hands you a deploy conflict there: "
+                + root.resolve("worktrees/web/ABC-42-deploy")
+                + ".");
   }
 
   @Test
@@ -445,7 +455,8 @@ class SubAgentBriefingTest {
                 new SessionBrief(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults().withRoot(root.toString()))),
-                scenarios)
+                scenarios,
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
             .ofScratch(
                 NewTask.unplacedBuilder("ABC-42").mode("plan").build(),
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),
@@ -477,7 +488,8 @@ class SubAgentBriefingTest {
                 new SessionBrief(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults().withRoot(root.toString()))),
-                found)
+                found,
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -499,7 +511,8 @@ class SubAgentBriefingTest {
                 new SessionBrief(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults().withRoot(root.toString()))),
-                found)
+                found,
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
             .ofScratch(
                 NewTask.builder("ABC-42", "web").build(),
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),

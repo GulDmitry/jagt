@@ -64,7 +64,7 @@ public class RevertService {
           "revert "
               + taskId
               + " waits on the conflict in "
-              + GitDeploy.revertWorktreePath(at.path(), taskId)
+              + gitDeploy.revertWorktreePath(at.path(), taskId)
               + ": still unmerged: "
               + unmerged.replace('\n', ' ')
               + ". Resolve and `git add` them, then revert again.");

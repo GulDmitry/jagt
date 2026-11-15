@@ -593,8 +593,8 @@ public class GitWorktrees {
   }
 
   /** Best-effort: nothing is thrown when the removal fails. */
-  public void removeDeployWorktreeIfPresent(Path projectPath, String sourceBranch) {
-    Path deployWorktree = GitDeploy.deployWorktreePath(projectPath, sourceBranch);
+  public void removeDeployWorktreeIfPresent(
+      Path projectPath, Path deployWorktree, String sourceBranch) {
     if (!Files.isDirectory(deployWorktree)) {
       return;
     }

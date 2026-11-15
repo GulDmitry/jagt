@@ -17,7 +17,6 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
-import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
@@ -238,7 +237,7 @@ class MasterModeFlowTest {
         @Test
         void handsDeployConflictToTheSessionAndFinishesTheDeployOnceItIsResolved()
             throws Exception {
-          Path resolveIn = GitDeploy.deployWorktreePath(flow.repo(), TASK);
+          Path resolveIn = flow.worktree().resolveSibling(TASK + "-deploy");
           assertThat(
                   Files.readString(flow.worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE))
                       .lines())

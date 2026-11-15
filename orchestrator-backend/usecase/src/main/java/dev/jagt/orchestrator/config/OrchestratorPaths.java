@@ -1,7 +1,10 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.task.launch.TaskName;
+import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -43,6 +46,26 @@ public class OrchestratorPaths {
 
   public Path worktrees() {
     return data.resolve("worktrees");
+  }
+
+  /** Where a task's deploy worktree stands in one project. */
+  public Path deployWorktree(String projectKey, String taskId) {
+    return worktrees().resolve(projectKey).resolve(TaskName.slug(taskId) + "-deploy");
+  }
+
+  /** Every deploy worktree a task of these repositories can stand in, each once. */
+  public List<Path> deployWorktrees(List<NewRepo> repos, String taskId) {
+    return repos.stream()
+        .filter(
+            repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
+        .map(repo -> deployWorktree(repo.project(), taskId))
+        .distinct()
+        .toList();
+  }
+
+  /** Separate from the deploy worktree, which may be sitting in a conflict. */
+  public Path revertWorktree(String projectKey, String taskId) {
+    return worktrees().resolve(projectKey).resolve(TaskName.slug(taskId) + "-revert");
   }
 
   /** Where older versions kept the state, before the data folder. */
