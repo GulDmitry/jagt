@@ -20,7 +20,7 @@ class DesktopNotifierTest {
   void clicksThroughToTheTasksCard() {
     UserNotifier os = mock(UserNotifier.class);
 
-    new DesktopNotifier(os, new BoardUrl("8290"))
+    new DesktopNotifier(os, new BoardUrl("8290", ""))
         .deliver(
             DESKTOP,
             new ChannelMessage(
@@ -37,7 +37,7 @@ class DesktopNotifierTest {
   void linksNothingWhenTheMessageIsAboutNoTask() {
     UserNotifier os = mock(UserNotifier.class);
 
-    new DesktopNotifier(os, new BoardUrl("8290"))
+    new DesktopNotifier(os, new BoardUrl("8290", ""))
         .deliver(
             DESKTOP,
             new ChannelMessage(
@@ -48,7 +48,7 @@ class DesktopNotifierTest {
 
   @Test
   void isTheDriverOfKindDesktop() {
-    assertThat(new DesktopNotifier(mock(UserNotifier.class), new BoardUrl("8290")).kind())
+    assertThat(new DesktopNotifier(mock(UserNotifier.class), new BoardUrl("8290", "")).kind())
         .isEqualTo("desktop");
   }
 }

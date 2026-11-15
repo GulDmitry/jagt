@@ -10,8 +10,10 @@ public class BoardUrl {
 
   private final String root;
 
-  public BoardUrl(@Value("${server.port:8290}") String port) {
-    this.root = "http://localhost:" + port.trim();
+  public BoardUrl(
+      @Value("${server.port:8290}") String port, @Value("${server.publicUrl:}") String publicUrl) {
+    String given = publicUrl.trim();
+    this.root = given.isEmpty() ? "http://localhost:" + port.trim() : given.replaceAll("/+$", "");
   }
 
   public String root() {

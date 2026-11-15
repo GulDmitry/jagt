@@ -81,7 +81,7 @@ class MessagesTest {
             .withAlias("p3");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), next)
+        new Messages(new BoardUrl("8290", ""), next)
             .of(new Routed(DESKTOP, "", placeholder), sent, Optional.of(task));
 
     assertThat(message.text()).isEqualTo(expected);
@@ -92,7 +92,7 @@ class MessagesTest {
     Notification install = Notification.install("install", "restart needed", "jar rebuilt");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(
                 new Routed(DESKTOP, "jagt · {alias} · {task} · {title}", "{body}"),
                 install,
@@ -107,7 +107,7 @@ class MessagesTest {
         Notification.watchdog("stopped", "ABC-42", "agent stopped", "silent").withAlias("p3");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(
                 new Routed(DESKTOP, "jagt · {alias} · {task} · {title}", "{body}"),
                 stopped,
@@ -126,7 +126,7 @@ class MessagesTest {
     Notification sent = Notification.fromAgent("deployed", "ABC-42", "deployed", "");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(new Routed(DESKTOP, "", "{pipeline}"), sent, Optional.of(task));
 
     assertThat(message.text()).isEqualTo("https://host/pipelines/9");
@@ -141,7 +141,7 @@ class MessagesTest {
     Notification sent = Notification.watchdog("acceptance-passed", "ABC-42", "t", "b");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(new Routed(DESKTOP, "", "[{role}]"), sent, Optional.of(task));
 
     assertThat(message.text()).isEqualTo("[]");
@@ -156,7 +156,7 @@ class MessagesTest {
     Notification sent = Notification.watchdog("stopped", "ABC-42", "t", "b");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(new Routed(DESKTOP, "", "[{said}][{origin}][{stop}]"), sent, Optional.of(task));
 
     assertThat(message.text()).isEqualTo("[][][]");
@@ -167,7 +167,7 @@ class MessagesTest {
     Notification install = Notification.install("install", "restart needed", "jar rebuilt");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(new Routed(DESKTOP, "", "{nope} {body}"), install, Optional.empty());
 
     assertThat(message.text()).isEqualTo("{nope} jar rebuilt");
@@ -178,7 +178,7 @@ class MessagesTest {
     Notification install = Notification.install("install", " ", "jar rebuilt");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(new Routed(DESKTOP, "jagt · {title}", ""), install, Optional.empty());
 
     assertThat(message.title()).isEqualTo("jagt · install");
@@ -190,7 +190,7 @@ class MessagesTest {
         Notification.watchdog("stopped", "ABC-42", "agent stopped", "silent").withAlias("p3");
 
     ChannelMessage message =
-        new Messages(new BoardUrl("8290"), mock(NextMove.class))
+        new Messages(new BoardUrl("8290", ""), mock(NextMove.class))
             .of(new Routed(DESKTOP, "t", "x"), stopped, Optional.empty());
 
     assertThat(message).isEqualTo(new ChannelMessage("stopped", "ABC-42", "p3", "t", "x"));

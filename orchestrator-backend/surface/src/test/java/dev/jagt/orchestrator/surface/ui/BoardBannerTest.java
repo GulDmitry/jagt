@@ -15,7 +15,7 @@ class BoardBannerTest {
   void tellsTheHumanWhereTheBoardListens() {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    new BoardBanner(new BoardUrl("8290"), new PrintStream(out, true, StandardCharsets.UTF_8))
+    new BoardBanner(new BoardUrl("8290", ""), new PrintStream(out, true, StandardCharsets.UTF_8))
         .run(new DefaultApplicationArguments());
 
     assertThat(out.toString(StandardCharsets.UTF_8))

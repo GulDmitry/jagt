@@ -66,6 +66,10 @@ only the launcher is resolved, and the arguments stay yours.
 password and a wider address refuses the start ([remote access](remote-access.md)). Clients default to
 `127.0.0.1` rather than `localhost`, which resolves `::1` first and would cost a refused connection per call.
 
+**`server.publicUrl`** is the address a human opens the board at (a pod's ingress, a mesh name); every link in a banner or
+channel message starts with it, and with it blank they name `http://localhost:<port>`. The sessions' own URLs
+(mcp, hook, gate) stay on loopback.
+
 **`assistant.mcpConfig` buys determinism, not money** — the figures are in [seams](rules/seams.md). Server
 names lose their plugin scope here (`mcp__gitlab__…`, not `mcp__plugin_<x>_gitlab__…`), so an `allowedTools`
 list written for the inherited names stops matching. Declare instead of inherit when the servers that can

@@ -322,3 +322,5 @@ orchestrator:
 server:
   address: 127.0.0.1
   port: 8290
+  # publicUrl: https://jagt.example.org   # the board's address as a human reaches it; every link jagt sends (banner, channels) starts with it;
+  #                                        # blank = http://localhost:<port>. The mcp, hook and gate URLs stay loopback.
