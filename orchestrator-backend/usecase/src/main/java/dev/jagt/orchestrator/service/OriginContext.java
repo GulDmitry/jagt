@@ -13,6 +13,7 @@ public final class OriginContext {
 
   private static final ThreadLocal<ActionOrigin> CURRENT = new ThreadLocal<>();
   private static final ThreadLocal<String> WHY = new ThreadLocal<>();
+  private static final ThreadLocal<String> CHECKER = new ThreadLocal<>();
 
   private OriginContext() {}
 
@@ -45,6 +46,26 @@ public final class OriginContext {
           work.run();
           return null;
         });
+  }
+
+  /** The checker role {@code roleId} sending its round back: origin acceptance, named by its id. */
+  public static <T> T asChecker(String roleId, Supplier<T> work) {
+    String previous = CHECKER.get();
+    CHECKER.set(roleId);
+    try {
+      return as(ActionOrigin.ACCEPTANCE, work);
+    } finally {
+      if (previous == null) {
+        CHECKER.remove();
+      } else {
+        CHECKER.set(previous);
+      }
+    }
+  }
+
+  /** The checker role the acceptance origin stands for, null where none said. */
+  public static @Nullable String checker() {
+    return CHECKER.get();
   }
 
   /**

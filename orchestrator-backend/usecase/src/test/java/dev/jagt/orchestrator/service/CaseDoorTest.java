@@ -8,12 +8,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.CaseDoor.Admission;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -201,5 +203,23 @@ class CaseDoorTest {
         .isInstanceOfSatisfying(
             Refusal.class,
             refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+  }
+
+  @ParameterizedTest
+  @CsvSource({"audit, audit, true", "acceptance, audit, false", "acceptance, acceptance, true"})
+  void sendsCheckerRoundOnlyWhereCaseNamesThatChecker(
+      String caseBy, String checker, boolean admitted) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/cases.md"),
+        "## round\n\nstep: acceptance-round\nat: DEPLOYED\nby: "
+            + caseBy
+            + "\nreplies: IN_PROGRESS; plain\nThe checker sends its rows back.\n");
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+
+    Admission result =
+        OriginContext.asChecker(checker, () -> door.opens("ABC-42", Step.ACCEPTANCE_ROUND));
+
+    assertThat(result.admitted()).isEqualTo(admitted);
   }
 }

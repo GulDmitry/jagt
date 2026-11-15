@@ -75,15 +75,18 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
           .or(() -> id.isEmpty() ? Optional.empty() : Optional.of(new Role(id)));
     }
 
-    /** A call over MCP is a session's own, so what it sets off is jagt's answer to it. */
-    static By of(@Nullable ActionOrigin origin) {
+    /**
+     * A call over MCP is a session's own, so what it sets off is jagt's answer to it; the
+     * acceptance origin is the checker {@code checker} names, acceptance where none does.
+     */
+    static By of(@Nullable ActionOrigin origin, @Nullable String checker) {
       if (origin == null) {
         return JAGT;
       }
       return switch (origin) {
         case BOARD, PALETTE -> HUMAN;
         case MASTER -> MASTER;
-        case ACCEPTANCE -> new Role(Checkers.ACCEPTANCE);
+        case ACCEPTANCE -> new Role(checker == null ? Checkers.ACCEPTANCE : checker);
         case MCP, ROOT, AUTO_REVIEW, TRACKER, JAGT -> JAGT;
       };
     }

@@ -73,21 +73,22 @@ one is named, else its own. A GET answered by anything but a server fault passes
 - **THEN** the check does not run again, however long it waits, and nobody is asked
 
 #### Scenario: The environment answers
-- **WHEN** every environment answers its probe
-- **THEN** the same check runs again
+- **WHEN** every environment answers its probe **THEN** the same check runs again
 
 ### Requirement: What a check found goes where it is owed
-A row not met SHALL go to the session as an `acceptance-round` (`Step.ACCEPTANCE_ROUND`, origin `acceptance`), the task `IN_PROGRESS`, counted as an
-unattended move toward `loopBreaker`. A row unprovable, or a verdict with no row, is a question to you. A failed run stops the task for you
-(`ACCEPTANCE_FAILED`) and its lift runs the check once more. A verdict on a sha that is no longer the deploy's tip is dropped.
+A row not met SHALL go to the session as an `acceptance-round` (`Step.ACCEPTANCE_ROUND`), the task `IN_PROGRESS`.
+Its origin is `acceptance` named by the checker's role id, an unattended move toward `loopBreaker`.
+A row unprovable, or a verdict with no row, is a question to you. A failed run stops the task for you (`ACCEPTANCE_FAILED`)
+and its lift runs the check once more. A verdict on a sha that is no longer the deploy's tip is dropped.
 
 #### Scenario: A row not met
-- **WHEN** acceptance finds a row not met
-- **THEN** the session receives the rows as an `acceptance-round`
+- **WHEN** acceptance finds a row not met **THEN** the session receives the rows as an `acceptance-round`
+
+#### Scenario: A second checker's row not met
+- **WHEN** audit, a second checker, finds a row not met **THEN** the round is `by: audit`; a case `by: acceptance` does not send it
 
 #### Scenario: A verdict on a sha off the deploy branch
-- **WHEN** the checked sha is no longer the tip when the verdict arrives
-- **THEN** it is dropped and changes nothing on the card
+- **WHEN** the checked sha is no longer the tip when the verdict arrives **THEN** it is dropped and changes nothing on the card
 
 ### Requirement: A declined round holds DEPLOYED
 A session answering an `acceptance-round` with `no_changes` SHALL leave the task DEPLOYED, since nothing on the deploy changed.
@@ -132,8 +133,7 @@ A turn left open and unanswered by a restart SHALL run the same check again on t
 A task closed by you or by `ticket-close` SHALL end its check: a verdict arriving afterwards is refused and changes nothing.
 
 #### Scenario: Closed while acceptance reads
-- **WHEN** ABC-42 is closed while acceptance reads it and the verdict arrives
-- **THEN** the verdict is refused and no round or question is raised
+- **WHEN** ABC-42 is closed while acceptance reads it and the verdict arrives **THEN** the verdict is refused and no round or question is raised
 
 ### Requirement: A checker declares its jobs and its read steps
 A checker's `role.yml` SHALL declare `jobs:` and `readSteps:` (the brief steps whose turn opens its read); `jobs: true` SHALL name one.

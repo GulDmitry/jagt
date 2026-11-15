@@ -6,9 +6,14 @@ import static dev.jagt.orchestrator.job.TestFlowReportsBuilder.flowReports;
 import static dev.jagt.orchestrator.job.checker.TestCheckerOutcomesBuilder.checkerOutcomes;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -17,8 +22,11 @@ import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.acceptance.RoleRecord;
 import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.turn.Step;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,5 +129,41 @@ class CheckerOutcomesTest {
         Arguments.of(List.of(unprovable), "which user?", ":\nwhich user?"),
         Arguments.of(List.of(met, unprovable), "", ":\n- login works — unprovable: no login"),
         Arguments.of(List.of(), "", ":\nthe check named no criterion"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({"audit", "acceptance"})
+  void sendsTheNotMetRoundUnderTheCheckerThatFoundIt(String id) throws Exception {
+    Path roleFile = root.resolve("role.yml");
+    Files.writeString(
+        roleFile,
+        Files.readString(Path.of("../../roles/acceptance/role.yml.dist"))
+            .replace("id: acceptance", "id: " + id));
+    StepRelay relay = mock(StepRelay.class);
+    List<String> sentUnder = new ArrayList<>();
+    when(relay.relayRound(
+            eq("ABC-42"), eq(Step.ACCEPTANCE_ROUND), anyString(), any(StepRelay.Claim.class)))
+        .thenAnswer(call -> {
+          sentUnder.add(OriginContext.current() + "/" + OriginContext.checker());
+          return false;
+        });
+    CheckerOutcomes checker =
+        checkerOutcomes()
+            .withRoleFile(roleFile)
+            .build(
+                relay, flowReports().build(state, Clock.systemUTC()), mock(TaskStops.class), state);
+    TaskState task = askedDeploy().build();
+    state.putTask("ABC-42", task);
+    AcceptanceVerdict verdict =
+        acceptanceVerdict()
+            .withRows(
+                List.of(
+                    new AcceptanceVerdict.Row(
+                        "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me 500")))
+            .build();
+
+    checker.apply("ABC-42", task, verdict);
+
+    assertThat(sentUnder).containsExactly("ACCEPTANCE/" + id);
   }
 }

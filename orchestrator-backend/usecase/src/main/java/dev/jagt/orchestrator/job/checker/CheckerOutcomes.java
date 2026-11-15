@@ -14,7 +14,6 @@ import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceQuestion;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.stop.TaskStop;
-import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.util.Objects;
@@ -125,9 +124,8 @@ public class CheckerOutcomes {
                     opensTheTurn),
             opened -> reports.undoClaim(taskId, task, opened));
     boolean sent =
-        OriginContext.as(
-            ActionOrigin.ACCEPTANCE,
-            () -> relay.relayRound(taskId, Step.ACCEPTANCE_ROUND, facts, claim));
+        OriginContext.asChecker(
+            role.id(), () -> relay.relayRound(taskId, Step.ACCEPTANCE_ROUND, facts, claim));
     if (sent) {
       String digest =
           Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());

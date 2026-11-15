@@ -49,8 +49,7 @@ public class CaseDoor {
       return new Admission(true, null);
     }
     boolean admitted =
-        cases.book().sends(step.id(), status.get(), CaseBook.By.of(OriginContext.current()))
-            || refused(id, step, status.get());
+        cases.book().sends(step.id(), status.get(), by()) || refused(id, step, status.get());
     return new Admission(admitted, status.get());
   }
 
@@ -89,11 +88,15 @@ public class CaseDoor {
 
   /** Whether what runs now runs as the Master: the one answer to who that is. */
   public static boolean byTheMaster() {
-    return CaseBook.By.MASTER.equals(CaseBook.By.of(OriginContext.current()));
+    return CaseBook.By.MASTER.equals(by());
+  }
+
+  private static CaseBook.By by() {
+    return CaseBook.By.of(OriginContext.current(), OriginContext.checker());
   }
 
   private boolean refused(String id, Step step, TaskStatus status) {
-    CaseBook.By by = CaseBook.By.of(OriginContext.current());
+    CaseBook.By by = by();
     misses.record(id, step.id(), status, by);
     log.atWarn()
         .setMessage("step refused")
