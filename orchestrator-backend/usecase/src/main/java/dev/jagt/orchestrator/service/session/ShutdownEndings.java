@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ShutdownEndings implements SmartLifecycle {
 
-  /** Stops after the web server's graceful-shutdown phase (default phase minus 1024). */
-  static final int PHASE = DEFAULT_PHASE - 2048;
+  /** Stops after the web server's stop phase (default phase minus 2048). */
+  static final int PHASE = DEFAULT_PHASE - 3072;
 
   private static final String REASON = "jagt stopped";
 

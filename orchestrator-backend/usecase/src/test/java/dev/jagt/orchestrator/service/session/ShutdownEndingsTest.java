@@ -131,14 +131,14 @@ class ShutdownEndingsTest {
 
           @Override
           public int getPhase() {
-            return SmartLifecycle.DEFAULT_PHASE - 1024;
+            return SmartLifecycle.DEFAULT_PHASE - 2048;
           }
         };
     ApplicationContextRunner runner =
         new ApplicationContextRunner()
             .withPropertyValues("orchestrator.on-stop=end")
-            .withBean(SmartLifecycle.class, () -> webServer)
-            .withBean(ShutdownEndings.class, () -> new ShutdownEndings(state, ledger, sessions));
+            .withBean(ShutdownEndings.class, () -> new ShutdownEndings(state, ledger, sessions))
+            .withBean(SmartLifecycle.class, () -> webServer);
 
     runner.run(context -> {});
 
