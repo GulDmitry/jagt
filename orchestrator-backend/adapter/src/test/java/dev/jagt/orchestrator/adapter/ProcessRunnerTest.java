@@ -62,7 +62,7 @@ class ProcessRunnerTest {
   void feedsTheGivenInputToTheCommandAndClosesIt() {
     String echoed =
         new ProcessRunner()
-            .run(null, Duration.ofSeconds(5), java.util.Map.of(), "{\"a\":1}", List.of("cat"))
+            .run(null, Duration.ofSeconds(3), java.util.Map.of(), "{\"a\":1}", List.of("cat"))
             .stdout();
 
     assertThat(echoed).isEqualTo("{\"a\":1}");
@@ -150,7 +150,7 @@ class ProcessRunnerTest {
     long child = Long.parseLong(Files.readString(childPid).strip());
     try {
       await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(3))
           .until(() -> ProcessHandle.of(child).filter(ProcessHandle::isAlive).isEmpty());
     } finally {
       ProcessHandle.of(child).ifPresent(ProcessHandle::destroyForcibly);
@@ -180,7 +180,7 @@ class ProcessRunnerTest {
 
     try {
       await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(3))
           .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
     } finally {
       ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
@@ -208,7 +208,7 @@ class ProcessRunnerTest {
 
     try {
       await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(3))
           .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
     } finally {
       ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
@@ -235,7 +235,7 @@ class ProcessRunnerTest {
         .until(() -> Files.readString(pid).endsWith("\n"));
 
     runner.destroyRunning();
-    caller.join(5_000);
+    caller.join(3_000);
 
     assertThat(answered.get()).isInstanceOf(Processes.Stopped.class);
   }
@@ -282,7 +282,7 @@ class ProcessRunnerTest {
 
       assertThat(kill.waitFor(5, TimeUnit.SECONDS)).isTrue();
       assertThat(kill.exitValue()).isZero();
-      assertThat(launched.waitFor(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(launched.waitFor(3, TimeUnit.SECONDS)).isTrue();
     } finally {
       launched.destroyForcibly();
     }
@@ -405,7 +405,7 @@ class ProcessRunnerTest {
     long command = Long.parseLong(Files.readString(pid).strip());
 
     caller.interrupt();
-    caller.join(5_000);
+    caller.join(3_000);
     ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
 
     assertThat(stillInterrupted).isTrue();
