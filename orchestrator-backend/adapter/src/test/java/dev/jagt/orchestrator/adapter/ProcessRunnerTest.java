@@ -42,6 +42,23 @@ class ProcessRunnerTest {
   }
 
   @Test
+  void readsNothingFromTheConsoleWhenTheCommandWasGivenNoInput() {
+    String stdinIsNull =
+        new ProcessRunner()
+            .run(
+                null,
+                Duration.ofSeconds(5),
+                List.of(
+                    "perl",
+                    "-e",
+                    "my @in = stat(STDIN); my @null = stat('/dev/null');"
+                        + " print $in[1] == $null[1] && $in[6] == $null[6] ? 'null' : 'other';"))
+            .stdout();
+
+    assertThat(stdinIsNull).isEqualTo("null");
+  }
+
+  @Test
   void feedsTheGivenInputToTheCommandAndClosesIt() {
     String echoed =
         new ProcessRunner()
@@ -131,9 +148,13 @@ class ProcessRunnerTest {
         .hasMessageContaining("timed out");
 
     long child = Long.parseLong(Files.readString(childPid).strip());
-    await()
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> ProcessHandle.of(child).filter(ProcessHandle::isAlive).isEmpty());
+    try {
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> ProcessHandle.of(child).filter(ProcessHandle::isAlive).isEmpty());
+    } finally {
+      ProcessHandle.of(child).ifPresent(ProcessHandle::destroyForcibly);
+    }
   }
 
   @Test
@@ -157,9 +178,13 @@ class ProcessRunnerTest {
 
     caller.interrupt();
 
-    await()
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+    try {
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+    } finally {
+      ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
+    }
   }
 
   @Test
@@ -181,9 +206,13 @@ class ProcessRunnerTest {
 
     runner.destroyRunning();
 
-    await()
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+    try {
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+    } finally {
+      ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
+    }
   }
 
   @Test
@@ -226,10 +255,15 @@ class ProcessRunnerTest {
   void leavesTheAppInterruptibleByItsOwnTooling() throws Exception {
     Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "5"));
 
-    Process kill = new ProcessBuilder("kill", "-INT", String.valueOf(launched.pid())).start();
+    try {
+      Process kill = new ProcessBuilder("kill", "-INT", String.valueOf(launched.pid())).start();
 
-    assertThat(kill.waitFor()).isZero();
-    assertThat(launched.waitFor(2, TimeUnit.SECONDS)).isTrue();
+      assertThat(kill.waitFor(5, TimeUnit.SECONDS)).isTrue();
+      assertThat(kill.exitValue()).isZero();
+      assertThat(launched.waitFor(2, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      launched.destroyForcibly();
+    }
   }
 
   @Test
@@ -246,7 +280,8 @@ class ProcessRunnerTest {
           .until(() -> launched.info().command().filter(c -> c.endsWith("/sleep")).isPresent());
       Process kill = new ProcessBuilder("kill", "-INT", String.valueOf(launched.pid())).start();
 
-      assertThat(kill.waitFor()).isZero();
+      assertThat(kill.waitFor(5, TimeUnit.SECONDS)).isTrue();
+      assertThat(kill.exitValue()).isZero();
       assertThat(launched.waitFor(10, TimeUnit.SECONDS)).isTrue();
     } finally {
       launched.destroyForcibly();
@@ -367,8 +402,11 @@ class ProcessRunnerTest {
         .atMost(Duration.ofSeconds(5))
         .until(() -> Files.readString(pid).endsWith("\n"));
 
+    long command = Long.parseLong(Files.readString(pid).strip());
+
     caller.interrupt();
     caller.join(5_000);
+    ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
 
     assertThat(stillInterrupted).isTrue();
   }
@@ -384,7 +422,8 @@ class ProcessRunnerTest {
   void handsBackLauncherThatHandedOffToRunningInstanceAndExitedZero() throws Exception {
     Process launched = new ProcessRunner().runDetached(null, List.of("/bin/sh", "-c", "exit 0"));
 
-    assertThat(launched.waitFor()).isZero();
+    assertThat(launched.waitFor(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(launched.exitValue()).isZero();
   }
 
   @Test
