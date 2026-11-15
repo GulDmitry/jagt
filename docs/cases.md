@@ -138,6 +138,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | E40 | a red-pipeline deploy conflict is held by a repository the task no longer holds → the conflict read ends it instead of waiting on a pipeline nothing reads | seen 2026-11-05: a repository left a multi-repo task before 0.19.1 and its red pipeline held the task in DEPLOY_CONFLICT for two days | `DeployPipelinesTest` |
 | E41 | a deploy commit is red on its own pipeline while a later one on the deploy branch containing it is green → the deploy stands on that green and the red pipeline is not re-run | found 2026-11-07: the red's failed jobs were re-run before the later green was read, a needless code-host write and an older build over the newer green where a failed job deploys | `DeployPipelinesRetryTest` |
 | E42 | a start request arrives while jagt with `onStop: end` stops → the endings run after the web server stopped taking requests, so no session is left running | seen 2026-11-15 | `ShutdownEndingsTest` |
+| E43 | a checker names two read steps → its decline job still runs, so a not-met round leaves ROUND_OPEN; `jobs: true` naming none is refused at startup naming the role, not a `NoSuchElementException` every tick | seen 2026-11-15: review of the checker jobs | `CheckerJobsTest`, `RoleDefinitionsTest` |
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

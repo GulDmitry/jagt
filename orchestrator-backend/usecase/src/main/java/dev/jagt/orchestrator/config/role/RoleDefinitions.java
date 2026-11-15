@@ -79,6 +79,12 @@ public final class RoleDefinitions {
       throw new RoleInvalid(
           id + ": its trigger names deployed, or a check would open before the change is live");
     }
+    List<String> readSteps = strings(document, "readSteps");
+    boolean jobs = Boolean.TRUE.equals(document.get("jobs"));
+    if (jobs && readSteps.isEmpty()) {
+      throw new RoleInvalid(
+          id + ": jobs: true names no readSteps, so its jobs have no step to read");
+    }
     return new RoleDefinition(
         id,
         text(document, "name"),
@@ -87,8 +93,7 @@ public final class RoleDefinitions {
         new RoleDefinition.Replies(
             outcomes, schema(document, "answer"), schema(document, "decline")),
         tools(map(document, "tools")),
-        new RoleDefinition.Checking(
-            Boolean.TRUE.equals(document.get("jobs")), strings(document, "readSteps")),
+        new RoleDefinition.Checking(jobs, readSteps),
         words(document, "points", POINT_KINDS));
   }
 

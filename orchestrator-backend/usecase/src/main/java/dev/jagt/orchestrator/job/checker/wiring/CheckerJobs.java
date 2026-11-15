@@ -22,8 +22,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CheckerJobs implements JobSource {
 
-  private static final int WITH_DECLINE = 3;
-
   private final RoleKits kits;
   private final CheckerReaders readers;
   private final CheckerActs acts;
@@ -49,9 +47,7 @@ public class CheckerJobs implements JobSource {
     List<TaskJob> jobs = new ArrayList<>();
     jobs.add(new CheckerCheckJob(kit.settings(), prompts, reads, records, outcomes));
     jobs.add(new CheckerWaitJob(kit.settings(), records, probe));
-    if (kit.definition().checking().readSteps().size() >= WITH_DECLINE) {
-      jobs.add(new CheckerDeclineJob(kit.settings(), prompts, reads, records, outcomes));
-    }
+    jobs.add(new CheckerDeclineJob(kit.settings(), prompts, reads, records, outcomes));
     return jobs;
   }
 }

@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CheckerJobsTest {
 
@@ -42,16 +44,20 @@ class CheckerJobsTest {
   private final CheckerReads reads = mock(CheckerReads.class);
   private final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
 
-  @Test
-  void everyInstalledCheckerRunsItsOwnJobsBesideAcceptance(@TempDir Path root) throws IOException {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {"[audit, audit-again, audit-decline]", "[audit, audit-decline]", "[audit]"})
+  void everyInstalledCheckerRunsItsOwnJobsBesideAcceptance(String readSteps, @TempDir Path root)
+      throws IOException {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
         root.resolve("roles/acceptance/role.yml.dist"));
     Files.createDirectories(root.resolve("roles/audit"));
-    Files.copy(
-        Path.of("src/test/resources/checker-fixture/roles/audit/role.yml"),
-        root.resolve("roles/audit/role.yml"));
+    Files.writeString(
+        root.resolve("roles/audit/role.yml"),
+        Files.readString(Path.of("src/test/resources/checker-fixture/roles/audit/role.yml"))
+            .replace("[audit, audit-again, audit-decline]", readSteps));
     OrchestratorPaths paths = orchestratorPaths().withRoot(root).build();
     List<RoleKit> kits =
         new InstalledRoles(paths)

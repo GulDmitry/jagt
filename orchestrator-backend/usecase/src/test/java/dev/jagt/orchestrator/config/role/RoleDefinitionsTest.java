@@ -201,4 +201,21 @@ class RoleDefinitionsTest {
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("no exit");
   }
+
+  @Test
+  void refusesJobsWithoutReadSteps() {
+    assertThatThrownBy(() ->
+            RoleDefinitions.compile(
+                """
+                id: x
+                name: X
+                model: m
+                trigger: [deployed]
+                oncePer: deploy
+                outcomes: [round]
+                jobs: true
+                """))
+        .isInstanceOf(RoleInvalid.class)
+        .hasMessageContaining("x: jobs: true names no readSteps");
+  }
 }
