@@ -21,7 +21,7 @@ public record TestProjectConfigBuilder(
 
   public ProjectConfig build() {
     return new ProjectConfig(
-        new ProjectConfig.Repository(path, List.of(), null, List.of()),
+        new ProjectConfig.Repository(path, List.of(), null, List.of(), null, null),
         new ProjectConfig.Branches(baseBranch, deployBranch, remote),
         new ProjectConfig.CodeHost(
             codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),

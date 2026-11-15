@@ -41,6 +41,10 @@ public class ConfigSource {
     this.resolver = new ConfigResolver(inputs);
   }
 
+  public Path clone(String projectKey) {
+    return paths.clone(projectKey);
+  }
+
   private record Parsed(FileVersion version, Resolution resolution, @Nullable Object section) {}
 
   public @Nullable Object section() {

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.usage;
 
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Paid;

@@ -17,11 +17,18 @@ public record ProjectConfig(
 
   /**
    * {@code about}: one line saying what this repository IS, for placing an item no label places;
-   * blank = its path.
+   * blank = its path. {@code url}: cloned into the data folder where {@code path} is blank or
+   * missing. {@code localFiles}: the folder {@code worktree.copyGlobs} copies from; blank = its
+   * path.
    */
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record Repository(
-      String path, List<String> labels, @Nullable String about, List<String> humanPaths) {
+      String path,
+      List<String> labels,
+      @Nullable String about,
+      List<String> humanPaths,
+      @Nullable String url,
+      @Nullable String localFiles) {
 
     public Repository {
       labels = labels == null ? List.of() : labels;
@@ -80,7 +87,7 @@ public record ProjectConfig(
   public ProjectConfig(
       String path, String baseBranch, @Nullable String deployBranch, List<String> labels) {
     this(
-        new Repository(path, labels, null, List.of()),
+        new Repository(path, labels, null, List.of(), null, null),
         new Branches(baseBranch, deployBranch, null),
         new CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
         new Verify(List.of(), null));
@@ -88,6 +95,29 @@ public record ProjectConfig(
 
   public String path() {
     return repository.path();
+  }
+
+  public @Nullable String url() {
+    return repository.url();
+  }
+
+  public boolean hasUrl() {
+    return url() != null && !url().isBlank();
+  }
+
+  public String localFilesOrPath() {
+    String folder = repository.localFiles();
+    return folder == null || folder.isBlank() ? path() : folder;
+  }
+
+  public ProjectConfig withPath(String path) {
+    Repository held = repository;
+    return new ProjectConfig(
+        new Repository(
+            path, held.labels(), held.about(), held.humanPaths(), held.url(), held.localFiles()),
+        branches,
+        host,
+        verify);
   }
 
   public List<String> labels() {

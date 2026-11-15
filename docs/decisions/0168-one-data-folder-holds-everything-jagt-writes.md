@@ -16,7 +16,7 @@ Accepted 2026-11-15.
 
 - One key, `orchestrator.data`, default `~/.jagt` from `user.home` in `application.yml`; `ORCHESTRATOR_DATA` and
   `JAGT__orchestrator__data` override it.
-- It holds `state.json` and its siblings, `worktrees/<project>/<task>`, `repos/<name>` and `logs/`; nothing writes `repos/` yet.
+- It holds `state.json` and its siblings, `worktrees/<project>/<task>`, `repos/<name>` and `logs/`; `ProjectClonesJob` writes `repos/<name>`.
 - `jagt.yml` stays outside it: it is the owner's file, read before any data exists.
 - A project's `path` is used in place; only a new task's worktree moves under `worktrees/`.
 - A task in `state.json` keeps its recorded worktree path; existing worktrees are not moved.
@@ -32,4 +32,4 @@ Accepted 2026-11-15.
 
 ## Reopen when
 
-- A clone is cut under `repos/`: its path joins `OrchestratorPaths`.
+- A clone is cut anywhere but `OrchestratorPaths.clone`.

@@ -27,7 +27,7 @@ kept or refreshed. `usageLimits.enabled: false` reads, tells and shows nothing.
 - **THEN** no call is sent until its `Retry-After`, else 5 minutes, has passed
 
 ### Requirement: A limit is told once per period, never gated
-The job SHALL send a `USAGE` banner (`job/UsageAlerts`) once per window period and SHALL never refuse or slow a task.
+The job SHALL send a `USAGE` banner (`job/usage/UsageAlerts`) once per window period and SHALL never refuse or slow a task.
 
 #### Scenario: A window fills
 - **WHEN** the weekly window reaches 96% with thresholds 80 and 95

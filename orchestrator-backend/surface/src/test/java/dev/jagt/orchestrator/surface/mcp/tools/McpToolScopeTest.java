@@ -227,7 +227,7 @@ class McpToolScopeTest {
                         "api",
                         new ProjectConfig(
                             new ProjectConfig.Repository(
-                                "/api", List.of("backend"), "the order API", List.of()),
+                                "/api", List.of("backend"), "the order API", List.of(), null, null),
                             new ProjectConfig.Branches("origin/main", "dev", null),
                             new ProjectConfig.CodeHost(
                                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),

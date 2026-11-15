@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.usage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;

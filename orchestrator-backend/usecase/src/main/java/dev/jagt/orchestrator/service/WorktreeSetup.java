@@ -78,7 +78,9 @@ public class WorktreeSetup {
         .forEach(deployWorktree -> agentRuntime.admit(worktreePath, deployWorktree));
     WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, WorktreeFiles.PROJECT_FILES);
     WorktreeFiles.copyLocalFiles(
-        repo.projectPath(), worktreePath, configService.load().worktree().copyGlobsOrDefault());
+        Path.of(repo.config().localFilesOrPath()),
+        worktreePath,
+        configService.load().worktree().copyGlobsOrDefault());
     WorktreeFiles.write(
         systemKnowledge,
         briefing.of(

@@ -14,7 +14,11 @@ orchestrator:
   # `baseBranch`, or jagt refuses to start.
   projects:
     my-project:
-      path: /absolute/path/to/base/repository
+      path: /absolute/path/to/base/repository   # used as is when it exists; nothing is cloned there
+      # url: https://example.com/team/repo.git   # cloned into <data>/repos/<project> where `path` is blank or missing;
+      #                             # fetched before each task starts; the clone CLI's own credentials; a failure marks the board's head
+      # localFiles: /path/to/local-files   # the folder `worktree.copyGlobs` copies from into every new worktree (an .env a clone lacks);
+      #                             # blank = the project's path
       baseBranch: origin/main       # tasks are cut from here; jagt never pushes to it
       deployBranch: dev             # omit to disable deploy for this project
       # labels: [proj, my-project]  # ticket labels suggesting this project where `do` names none

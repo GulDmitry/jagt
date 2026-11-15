@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.usage;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;

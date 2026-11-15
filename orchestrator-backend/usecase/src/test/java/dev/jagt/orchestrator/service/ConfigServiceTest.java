@@ -393,6 +393,43 @@ class ConfigServiceTest {
         .hasMessage("Unknown project 'web'. Known projects: [api]");
   }
 
+  @Test
+  void placesProjectNamedByUrlWithNoPathInItsFolderUnderTheDataFolder() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  projects:\n    api: {url: 'https://example.invalid/api.git', baseBranch: origin/main}\n");
+
+    String path = service.project("api").path();
+
+    assertThat(path).isEqualTo(root.resolve("repos/api").toString());
+  }
+
+  @Test
+  void keepsTheWrittenPathOfProjectNamedByUrlWhereThatFolderExists() throws Exception {
+    Path existing = Files.createDirectories(root.resolve("mine"));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  projects:\n    api: {url: 'https://example.invalid/api.git', path: '"
+            + existing
+            + "', baseBranch: origin/main}\n");
+
+    String path = service.project("api").path();
+
+    assertThat(path).isEqualTo(existing.toString());
+  }
+
+  @Test
+  void placesProjectNamedByUrlWhoseWrittenPathIsMissingInItsFolderUnderTheDataFolder()
+      throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  projects:\n    api: {url: 'https://example.invalid/api.git', path: /gone/api, baseBranch: origin/main}\n");
+
+    String path = service.project("api").path();
+
+    assertThat(path).isEqualTo(root.resolve("repos/api").toString());
+  }
+
   @ParameterizedTest
   @CsvSource(
       value = {"null,24", "0,24", "1,1", "48,48"},
@@ -757,7 +794,7 @@ class ConfigServiceTest {
                     "demo",
                     new dev.jagt.orchestrator.task.repo.ProjectConfig(
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Repository(
-                            "/repo", List.of(), null, List.of()),
+                            "/repo", List.of(), null, List.of(), null, null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Branches(
                             "origin/main", "dev", null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(

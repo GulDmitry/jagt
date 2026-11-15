@@ -41,6 +41,9 @@
 - **The open task's tabs** — Session, Artifacts and Diff, and the shell line the Session tab runs: [their own page](features/board.md).
 - **Add a project, run a job now** — Add, change or drop a project, labels and human paths too, from the board or `project`; any job runs now.
   [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+- **A project named by url** — A `url` with no existing `path` is cloned under the data folder; a failed clone marks the head.
+  `localFiles` feeds `copyGlobs`.
+  [spec](../openspec/specs/project-setup/spec.md#requirement-a-project-named-by-url-is-cloned)
 - **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
   [spec](../openspec/specs/board/spec.md#requirement-a-mark-says-what-it-replaces)
 - **Keys for verbs, who asked** — Every verb shows its key, even one that asks first; each history step names who asked.

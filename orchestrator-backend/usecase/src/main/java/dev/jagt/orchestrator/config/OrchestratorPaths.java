@@ -48,6 +48,11 @@ public class OrchestratorPaths {
     return data.resolve("worktrees");
   }
 
+  /** Where a project named by url is cloned. */
+  public Path clone(String projectKey) {
+    return data.resolve("repos").resolve(projectKey);
+  }
+
   /** Where a task's deploy worktree stands in one project. */
   public Path deployWorktree(String projectKey, String taskId) {
     return worktrees().resolve(projectKey).resolve(TaskName.slug(taskId) + "-deploy");

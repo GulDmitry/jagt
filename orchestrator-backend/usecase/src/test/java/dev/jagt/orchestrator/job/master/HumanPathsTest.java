@@ -31,7 +31,8 @@ class HumanPathsTest {
       when(configService.project("demo"))
           .thenReturn(
               new ProjectConfig(
-                  new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
+                  new ProjectConfig.Repository(
+                      "/repo", List.of(), null, List.of("**/auth/**"), null, null),
                   new ProjectConfig.Branches("origin/main", "dev", null),
                   new ProjectConfig.CodeHost(
                       null, null, List.of(), List.of(), List.of(), List.of(), List.of()),

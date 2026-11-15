@@ -121,7 +121,8 @@ class ChosenCodeHostTest {
                     Map.of(
                         "shop",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
+                            new ProjectConfig.Repository(
+                                "/repo/shop", List.of(), null, List.of(), null, null),
                             new ProjectConfig.Branches("main", "dev", "none"),
                             new ProjectConfig.CodeHost(
                                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),

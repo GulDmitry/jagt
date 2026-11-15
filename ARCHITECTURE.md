@@ -254,7 +254,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `config` | usecase | the properties jagt reads from `jagt.yml` |
 | `config/source` | usecase | `jagt.yml` read and resolved: `${VAR}`, `${file:}`, `JAGT__` overrides, the environment and files it reads |
 | `config/role` | usecase | a role's definition, files, options, cases and session brief |
-| `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, usage and worktree sweeps |
+| `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, the worktree sweep |
 | `job/checker` | usecase | the checker role's jobs: check, decline, wait, records and prompts |
 | `job/conflict` | usecase | deploy-conflict jobs and the reads that end them |
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
@@ -262,6 +262,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
 | `job/stop` | usecase | stop reads and the stop triage |
+| `job/usage` | usecase | usage-limit alerts and the job reading them |
 | `job/tracker` | usecase | tracker intake and ticket close jobs |
 | `job/verdict` | usecase | the Master's verdict and answer jobs |
 | `notify` | usecase | points routed to channels: routes, messages, posts, watch |

@@ -72,6 +72,19 @@ class ConfigCheckTest {
   }
 
   @Test
+  void acceptsProjectNamedByUrlWhoseCloneIsNotCutYet() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        """
+        orchestrator:
+          viewer: { tmuxSession: jagt, viewMode: tab-per-task }
+          projects:
+            demo: { url: "https://example.invalid/demo.git", baseBranch: origin/main }
+        """);
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
   void saysWhereTheConfigFileShouldBeWhenThereIsNone() {
     assertThat(check.problems())
         .extracting(Problem::key)

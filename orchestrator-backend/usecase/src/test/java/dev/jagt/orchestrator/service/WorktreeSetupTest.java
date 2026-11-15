@@ -154,6 +154,33 @@ class WorktreeSetupTest {
   }
 
   @Test
+  void copiesGitignoredFilesFromTheProjectsLocalFilesFolderIntoTheWorktreeOfCloneFolder()
+      throws Exception {
+    Path localFiles = Files.createDirectories(root.resolve("secrets"));
+    Files.writeString(localFiles.resolve(".env"), "KEY=2");
+    NewRepo clone =
+        new NewRepo(
+            "repo",
+            new ProjectConfig(
+                new ProjectConfig.Repository(
+                    project.toString(), List.of(), null, List.of(), null, localFiles.toString()),
+                new ProjectConfig.Branches("origin/main", null, null),
+                new ProjectConfig.CodeHost(
+                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                new ProjectConfig.Verify(List.of(), null)),
+            project,
+            worktree,
+            repo.gitCommonDir(),
+            "origin/main",
+            "u",
+            true);
+
+    setup.fill(NewTask.builder("ABC-1", "repo").build(), clone, List.of(clone));
+
+    assertThat(worktree.resolve(".env")).hasContent("KEY=2");
+  }
+
+  @Test
   void letsTheSessionEditTheWorktreeOfRepositoryAddedToItsTask() throws Exception {
     when(runtime.briefedFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
 

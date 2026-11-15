@@ -17,8 +17,13 @@ class ProjectConfigTest {
     var project =
         new ProjectConfig(
             new ProjectConfig.Repository(
-                "/repos/parser", List.of(), "the PDF parser behind the intake form", List.of()),
-            new ProjectConfig.Branches("origin/main", "dev", null),
+                "/repos/parser",
+                List.of(),
+                "the PDF parser behind the intake form",
+                List.of(),
+                null,
+                null),
+            new ProjectConfig.Branches("origin/main", "release", null),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
             new ProjectConfig.Verify(List.of(), null));
@@ -72,7 +77,7 @@ class ProjectConfigTest {
     var declared =
         new ProjectConfig(
             new ProjectConfig.Repository(
-                "/repos/parser", List.of(), null, List.of("db/migration/**")),
+                "/repos/parser", List.of(), null, List.of("db/migration/**"), null, null),
             new ProjectConfig.Branches("main", "dev", null),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
@@ -87,7 +92,7 @@ class ProjectConfigTest {
   void readsTheBaseBranchWithoutTheProjectsOwnRemotePrefix() {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of()),
+            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
@@ -100,7 +105,7 @@ class ProjectConfigTest {
   void refusesToDeployIntoTheBaseBranchWhereTheRepositoryHasNoRemote() {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of()),
+            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
             new ProjectConfig.Branches("main", "main", "none"),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
@@ -114,7 +119,7 @@ class ProjectConfigTest {
   void limitsVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of()),
+            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
             new ProjectConfig.Branches("main", "dev", null),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),

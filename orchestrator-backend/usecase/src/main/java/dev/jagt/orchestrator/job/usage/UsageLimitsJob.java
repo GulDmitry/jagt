@@ -1,7 +1,8 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.usage;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
+import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import dev.jagt.orchestrator.service.usage.UsageLimits;

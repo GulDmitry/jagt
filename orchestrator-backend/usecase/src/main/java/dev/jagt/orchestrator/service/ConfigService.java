@@ -833,7 +833,25 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       return masterByDefault(ConfigFile.defaults());
     }
     ConfigFile config = mapper.convertValue(layered(section), ConfigFile.class);
-    return masterByDefault(config.projects() == null ? config.withProjects(Map.of()) : config);
+    return masterByDefault(
+        config.projects() == null ? config.withProjects(Map.of()) : withClonePaths(config));
+  }
+
+  private ConfigFile withClonePaths(ConfigFile config) {
+    Map<String, ProjectConfig> placed = new java.util.LinkedHashMap<>();
+    config
+        .projects()
+        .forEach((key, project) ->
+            placed.put(
+                key,
+                project.hasUrl() && !isDirectory(project.path())
+                    ? project.withPath(source.clone(key).toString())
+                    : project));
+    return config.withProjects(placed);
+  }
+
+  private static boolean isDirectory(@Nullable String path) {
+    return path != null && !path.isBlank() && Files.isDirectory(Path.of(path));
   }
 
   /**

@@ -14,7 +14,7 @@ public record TestShopProjectBuilder(@Nullable String kind, List<String> pipelin
 
   public ProjectConfig build() {
     return new ProjectConfig(
-        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
+        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of(), null, null),
         new ProjectConfig.Branches("origin/main", "dev", null),
         new ProjectConfig.CodeHost(
             kind, null, pipelineCommand, List.of(), List.of(), List.of(), List.of()),

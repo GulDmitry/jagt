@@ -15,12 +15,12 @@ public final class ProjectProblems {
   public static List<Problem> of(String key, ProjectConfig project) {
     List<Problem> problems = new ArrayList<>();
     String where = "projects." + key;
-    if (isBlank(project.path())) {
+    if (isBlank(project.path()) && !project.hasUrl()) {
       problems.add(
           new Problem(
               "orchestrator." + where + ".path",
               where + ".path is empty — set it to the base repository."));
-    } else {
+    } else if (!isBlank(project.path()) && !awaitsClone(project)) {
       problems.addAll(repositoryProblems(where, Path.of(project.path())));
     }
     if (isBlank(project.baseBranch())) {
@@ -43,6 +43,10 @@ public final class ProjectProblems {
                   + " Point it elsewhere or remove it."));
     }
     return problems;
+  }
+
+  private static boolean awaitsClone(ProjectConfig project) {
+    return project.hasUrl() && !Files.exists(Path.of(project.path()));
   }
 
   private static List<Problem> repositoryProblems(String where, Path path) {
