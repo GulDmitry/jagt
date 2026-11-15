@@ -11,6 +11,7 @@ Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-
   machine's unless overridden). `TerminalDriver` by `orchestrator.terminal` (kitty default, ghostty on macOS only).
   `EditorDriver` by `orchestrator.editor` (cli default, run by `editor-command`). `KeepAwake` by `orchestrator.keep-awake`.
   `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).
+  `auth` by `orchestrator.auth.mode` (none default, password; [0167](../decisions/0167-the-board-is-guarded-by-an-auth-seam-on-spring-security.md)).
   `CodeHost` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.
 - **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
   a notifier reaching nothing logs and returns. **`none` is the one allowed absence**: terminal, notifier, keepAwake and

@@ -2,16 +2,34 @@
 
 [← README](../README.md)
 
-The board listens on `127.0.0.1:8290` only (`server.address` in `application.yml` and `jagt.yml.dist`).
-A phone or a second machine reaches it through your own private network; the network is the guard.
+The board listens on `127.0.0.1:8290` (`server.address` in `application.yml` and `jagt.yml.dist`) and, with
+`auth.mode: none`, asks for no login: the network is the guard.
 
 | rule | why |
 |------|-----|
-| keep `server.address: 127.0.0.1` | jagt adds no token; anything that can connect is let in |
-| never bind `0.0.0.0` | it opens the board to every network the Mac is on |
+| keep `server.address: 127.0.0.1` under `auth.mode: none` | anything that can connect is let in; a wider address refuses the start |
 | forward to the loopback port | the private network carries the connection, jagt sees a local one |
 
 The two ways below are examples; any tool that forwards to `127.0.0.1:8290` does the same job.
+
+## Behind an ingress: a login
+
+Checked 2026-11-15 against the code only; no ingress was run.
+
+```yaml
+orchestrator:
+  auth:
+    mode: password
+    passwordHash: "$2y$10$…"        # htpasswd -nBC 10 "" | cut -d: -f2
+    allowedHosts: [jagt.example.com]
+server:
+  forward-headers-strategy: native  # a TLS ingress sends X-Forwarded-Proto; redirects keep https
+```
+
+- The login guards the board, `/api` and `/api/events`; a browser is sent to `/login.html`, `/api` answers 401.
+- The ingress must forward only the board's paths: `/mcp` and `/api/agent/` need no login and are the sessions' own, reached by
+  a worktree header, so an ingress that exposes them lets the outside name a worktree. Block both there.
+- One password, no throttle and no logout: front the ingress with its own rate limit.
 
 ## Example: a mesh VPN (Tailscale)
 

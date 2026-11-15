@@ -53,9 +53,9 @@ single-module repo's own `.env`.
 no Homebrew on PATH), then inside application bundles. Give an absolute path to pin one; for `editorCommand`
 only the launcher is resolved, and the arguments stay yours.
 
-**`server.address`** stays on loopback until you decide otherwise: the board asks for no password and can
-deploy. Clients default to `127.0.0.1` rather than `localhost`, which resolves `::1` first and would cost a
-refused connection per call.
+**`server.address`** stays on loopback unless `auth.mode` is `password`: with `none` the board asks for no
+password and a wider address refuses the start ([remote access](remote-access.md)). Clients default to
+`127.0.0.1` rather than `localhost`, which resolves `::1` first and would cost a refused connection per call.
 
 **`assistant.mcpConfig` buys determinism, not money** — the figures are in [seams](rules/seams.md). Server
 names lose their plugin scope here (`mcp__gitlab__…`, not `mcp__plugin_<x>_gitlab__…`), so an `allowedTools`

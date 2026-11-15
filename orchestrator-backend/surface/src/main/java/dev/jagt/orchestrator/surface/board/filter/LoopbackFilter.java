@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board.filter;
 
+import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -20,10 +22,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class LoopbackFilter extends OncePerRequestFilter {
 
   private static final Set<String> LOOPBACK = Set.of("127.0.0.1", "localhost", "[::1]", "::1");
+
+  private final AuthProperties auth;
 
   @Override
   protected void doFilterInternal(
@@ -42,9 +47,10 @@ public class LoopbackFilter extends OncePerRequestFilter {
     chain.doFilter(request, response);
   }
 
-  private static Optional<String> foreign(HttpServletRequest request) {
-    if (!own(request.getServerName(), request)
-        || request.getServerPort() != request.getLocalPort()) {
+  private Optional<String> foreign(HttpServletRequest request) {
+    if (!listed(request.getServerName())
+        && (!own(request.getServerName(), request)
+            || request.getServerPort() != request.getLocalPort())) {
       return Optional.of("foreign host " + request.getServerName() + ":" + request.getServerPort());
     }
     String origin = request.getHeader("Origin");
@@ -61,13 +67,22 @@ public class LoopbackFilter extends OncePerRequestFilter {
     return LOOPBACK.contains(host) || host.equals(request.getLocalAddr());
   }
 
-  private static boolean ownOrigin(String origin, HttpServletRequest request) {
+  /** A name an ingress forwards under: the owner listed it, so its port is the ingress's. */
+  private boolean listed(String host) {
+    return auth.allowedHosts().stream().anyMatch(host::equalsIgnoreCase);
+  }
+
+  private boolean ownOrigin(String origin, HttpServletRequest request) {
     try {
       URI uri = URI.create(origin);
-      return "http".equals(uri.getScheme())
-          && uri.getHost() != null
-          && own(uri.getHost(), request)
-          && uri.getPort() == request.getLocalPort();
+      if (uri.getHost() == null) {
+        return false;
+      }
+      boolean web = "http".equals(uri.getScheme()) || "https".equals(uri.getScheme());
+      return (web && listed(uri.getHost()))
+          || ("http".equals(uri.getScheme())
+              && own(uri.getHost(), request)
+              && uri.getPort() == request.getLocalPort());
     } catch (IllegalArgumentException unparsable) {
       return false;
     }

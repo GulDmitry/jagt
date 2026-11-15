@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.surface.board.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,7 +24,8 @@ class LoopbackFilterTest {
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter().doFilter(request, response, chain);
+    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+        .doFilter(request, response, chain);
 
     assertThat(response.getStatus()).isEqualTo(403);
     assertThat(chain.getRequest()).isNull();
@@ -39,7 +42,8 @@ class LoopbackFilterTest {
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter().doFilter(request, response, chain);
+    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+        .doFilter(request, response, chain);
 
     assertThat(response.getStatus()).isEqualTo(403);
     assertThat(chain.getRequest()).isNull();
@@ -54,7 +58,8 @@ class LoopbackFilterTest {
     request.addHeader("Origin", "http://localhost:8290");
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter().doFilter(request, new MockHttpServletResponse(), chain);
+    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+        .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
   }
@@ -68,8 +73,41 @@ class LoopbackFilterTest {
     request.setLocalAddr("192.168.1.20");
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter().doFilter(request, new MockHttpServletResponse(), chain);
+    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+        .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
+  }
+
+  @Test
+  void admitsHostAndOriginOnTheAllowList() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/commands/do");
+    request.setServerName("jagt.example.test");
+    request.setServerPort(80);
+    request.setLocalPort(8290);
+    request.addHeader("Origin", "https://jagt.example.test");
+    MockFilterChain chain = new MockFilterChain();
+    AuthProperties auth =
+        new AuthProperties(AuthProperties.Mode.NONE, null, List.of("jagt.example.test"));
+
+    new LoopbackFilter(auth).doFilter(request, new MockHttpServletResponse(), chain);
+
+    assertThat(chain.getRequest()).isSameAs(request);
+  }
+
+  @Test
+  void refusesAllowListedNameSentFromAnotherScheme() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/commands/do");
+    request.setServerName("jagt.example.test");
+    request.setServerPort(80);
+    request.setLocalPort(8290);
+    request.addHeader("Origin", "ftp://jagt.example.test");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    AuthProperties auth =
+        new AuthProperties(AuthProperties.Mode.NONE, null, List.of("jagt.example.test"));
+
+    new LoopbackFilter(auth).doFilter(request, response, new MockFilterChain());
+
+    assertThat(response.getStatus()).isEqualTo(403);
   }
 }

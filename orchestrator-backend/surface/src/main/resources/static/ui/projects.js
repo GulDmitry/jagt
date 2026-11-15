@@ -31,7 +31,7 @@ export function render() {
   const configured = store.projects();
   const signature = configured.join('\n');
   if (rendered === signature) {
-    return;                       // a rebuild under a human ticking boxes would drop the ticks
+    return; // a rebuild under a human ticking boxes would drop the ticks
   }
   rendered = signature;
   const ticked = new Set(chosen().split(',').filter(Boolean));

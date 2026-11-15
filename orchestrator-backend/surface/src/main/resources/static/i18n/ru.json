@@ -189,5 +189,9 @@
   "legend.row.23": "в шапке: шестерёнка открывает настройки · тема (авто следует за системой) и язык, запоминаются только в этом браузере",
   "sample.refused": "отклонено",
   "sample.done": "готово",
-  "auto-review-off": "auto-review выключен"
+  "auto-review-off": "auto-review выключен",
+  "login.title": "Вход",
+  "login.password": "Пароль",
+  "login.submit": "Войти",
+  "login.failed": "Неверный пароль"
 }

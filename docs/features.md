@@ -32,7 +32,7 @@
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-is-the-boards-head)
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
-- **Local, installable** — Answers locally only, refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
+- **Local or a login** — Loopback, or `auth: password`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.

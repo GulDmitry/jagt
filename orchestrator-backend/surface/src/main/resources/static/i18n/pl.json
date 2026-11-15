@@ -189,5 +189,9 @@
   "legend.row.23": "w nagłówku: koło zębate otwiera ustawienia · motyw (auto podąża za systemem) i język, zapamiętane tylko w tej przeglądarce",
   "sample.refused": "odrzucono",
   "sample.done": "gotowe",
-  "auto-review-off": "auto-review wyłączone"
+  "auto-review-off": "auto-review wyłączone",
+  "login.title": "Logowanie",
+  "login.password": "Hasło",
+  "login.submit": "Zaloguj",
+  "login.failed": "Błędne hasło"
 }

@@ -113,7 +113,7 @@ form.onsubmit = async (event) => {
         return;
       }
     } catch (e) {
-      toast(refusal(e), true);      // a line that reached the backend and was refused is not tier 2's to retry
+      toast(refusal(e), true); // a line that reached the backend and was refused is not tier 2's to retry
       return;
     } finally {
       button.disabled = false;
@@ -122,7 +122,7 @@ form.onsubmit = async (event) => {
     }
   }
   await sending(form, {
-    waiting: t('palette.interpreting'),                    // a model call: seconds
+    waiting: t('palette.interpreting'), // a model call: seconds
     send: () => api('/api/interpret', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

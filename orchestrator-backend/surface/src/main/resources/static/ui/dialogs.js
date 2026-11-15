@@ -77,7 +77,7 @@ export async function repaintReport() {
   try {
     said = await text(read);
   } catch (e) {
-    return;                       // a read that failed is not an empty report: leave what is on screen
+    return; // a read that failed is not an empty report: leave what is on screen
   }
   // The answer to a report nobody is reading any more belongs to no dialog on screen.
   if (mine !== reread || !report.open || showing.path !== read || said === showing.body) {

@@ -7,6 +7,10 @@ server:
   # Loopback: the board needs no password to deploy, close a task or start an agent. Set 0.0.0.0 only if you
   # accept that everyone who can reach the port can do all of it.
   address: 127.0.0.1
+  servlet:
+    session:
+      cookie:
+        same-site: strict
 
 spring:
   application:

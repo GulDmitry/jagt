@@ -310,6 +310,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/worktree` | adapter | worktree-facing drivers: line diff, containers, processes, build tools, OpenSpec |
 | `surface/agent` | surface | what a session calls into: hooks, prompts, gates, reports |
 | `surface/board` | surface | the board's HTTP: API, projects, interactions, event stream |
+| `surface/board/auth` | surface | the board's login: the `auth` seam's properties, start check and two security chains |
 | `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
 | `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
 | `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, token, handlers |

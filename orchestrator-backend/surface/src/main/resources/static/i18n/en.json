@@ -189,5 +189,9 @@
   "legend.row.23": "in the header: the gear opens the settings · the theme, auto following the system, and the language, kept in this browser alone",
   "sample.refused": "refused",
   "sample.done": "done",
-  "auto-review-off": "auto-review off"
+  "auto-review-off": "auto-review off",
+  "login.title": "Sign in",
+  "login.password": "Password",
+  "login.submit": "Sign in",
+  "login.failed": "Wrong password"
 }

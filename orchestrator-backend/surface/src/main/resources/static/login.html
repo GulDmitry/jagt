@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="login.title">jagt</title>
+<link rel="stylesheet" href="app.css">
+<form method="post" action="login" style="max-width:300px;margin:18vh auto;display:grid;gap:12px">
+<input type="hidden" name="username" value="owner">
+<input type="password" name="password" required autocomplete="current-password" data-t-placeholder="login.password">
+<span id="failed" class="chip bad" data-t="login.failed" hidden></span>
+<button class="primary" data-t="login.submit"></button>
+</form>
+<script type="module">
+import './core/i18n.js';
+failed.hidden = !location.search.includes('error');
+</script>
