@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
+import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import java.time.Duration;
 import java.util.List;
@@ -19,7 +20,7 @@ public class RoleFolderReach implements Job {
 
   private static final String MCP = "mcp__";
 
-  private final RoleSettings settings;
+  private final RoleKits kits;
   private final Reach reach;
 
   @Override
@@ -39,17 +40,22 @@ public class RoleFolderReach implements Job {
 
   @Override
   public void run() {
+    kits.all().forEach(kit -> run(kit.settings()));
+  }
+
+  private void run(RoleSettings settings) {
     String driver = settings.role().id();
     String file = settings.file();
-    missing()
+    missing(settings)
         .ifPresentOrElse(
             said ->
                 reach.lost(
-                    new ReachLost(driver, file, List.of(), said), () -> missing().isPresent()),
+                    new ReachLost(driver, file, List.of(), said),
+                    () -> missing(settings).isPresent()),
             () -> reach.reached(driver, file));
   }
 
-  private Optional<String> missing() {
+  private Optional<String> missing(RoleSettings settings) {
     RoleOptions options = settings.load();
     if (!options.enabled()) {
       return Optional.empty();

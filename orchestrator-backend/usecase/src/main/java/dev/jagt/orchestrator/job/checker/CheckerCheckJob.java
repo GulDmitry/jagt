@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.checker;
 
+import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -16,14 +17,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 /**
  * The after-deploy check where the role is enabled: one acceptance run per deploy, opened once the
  * deploy's pipelines are green. {@link DeployCheckJob} asks the session nothing then, so a deploy
  * is never checked twice.
  */
-@Service
 @RequiredArgsConstructor
 public class CheckerCheckJob implements TaskJob {
 
@@ -72,10 +71,11 @@ public class CheckerCheckJob implements TaskJob {
       return;
     }
     String sha = open.get().tips();
+    RoleDefinition.Checking steps = settings.role().checking();
     String step =
         CheckerPhase.of(task, settings.role().id()) == CheckerPhase.READING
-            ? AcceptanceVerdict.AGAIN
-            : AcceptanceVerdict.ACCEPT;
+            ? steps.againStep()
+            : steps.checkStep();
     Answer<AcceptanceVerdict> answer =
         reads.check(taskId, step, digest, prompts.accept(taskId, worktree, sha, acceptance, step));
     AcceptanceVerdict verdict =

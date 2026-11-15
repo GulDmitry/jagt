@@ -11,11 +11,9 @@ import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /** Runs the scripted flows an acceptance read asked for and folds each result into its verdict. */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class CheckerFlows {
 
@@ -30,7 +28,7 @@ public class CheckerFlows {
     }
     List<FlowResult> results =
         settings.load().allows(ask.environment())
-            ? runner.run(worktree, ask.ids(), ask.environment())
+            ? runner.run(role.id(), worktree, ask.ids(), ask.environment())
             : ask.ids().stream()
                 .map(flow ->
                     FlowResult.defaults()

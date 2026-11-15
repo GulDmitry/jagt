@@ -24,6 +24,8 @@ public record TestAcceptanceRoleBuilder(String trigger) {
           trigger: [%s]
           oncePer: deploy
           outcomes: [round]
+          jobs: true
+          readSteps: [accept, again, decline]
           tools:
             shell: ["git log*"]
           answer:

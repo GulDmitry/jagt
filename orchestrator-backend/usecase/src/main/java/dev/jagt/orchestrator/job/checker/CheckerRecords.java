@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.checker;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,14 +13,12 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
- * What each task's last acceptance check ended in, kept beside {@code state.json}: one check per
- * deploy, across a restart.
+ * What each task's last check by one checker ended in, kept beside {@code state.json}: one check
+ * per deploy, across a restart.
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class CheckerRecords {
 
@@ -30,6 +29,7 @@ public class CheckerRecords {
 
   private final OrchestratorPaths paths;
   private final Clock clock;
+  private final String role;
 
   public synchronized Optional<Entry> latest(String taskId) {
     return Optional.ofNullable(all().get(taskId));
@@ -64,7 +64,7 @@ public class CheckerRecords {
   private void write(Map<String, Entry> kept) {
     try {
       Files.write(
-          paths.acceptanceVerdicts(),
+          file(),
           kept.entrySet().stream()
               .map(entry ->
                   entry.getKey()
@@ -80,7 +80,7 @@ public class CheckerRecords {
     } catch (IOException unwritten) {
       log.atWarn()
           .setMessage("acceptance verdicts not kept")
-          .addKeyValue("file", paths.acceptanceVerdicts())
+          .addKeyValue("file", file())
           .addKeyValue("cause", unwritten.toString())
           .log();
     }
@@ -100,17 +100,22 @@ public class CheckerRecords {
     return read;
   }
 
+  private Path file() {
+    return paths.checkerVerdicts(role);
+  }
+
+  private Path legacy() {
+    return Checkers.ACCEPTANCE.equals(role) ? paths.legacyQaVerdicts() : file();
+  }
+
   private List<String> lines() {
     try {
-      Path kept =
-          Files.isRegularFile(paths.acceptanceVerdicts())
-              ? paths.acceptanceVerdicts()
-              : paths.legacyQaVerdicts();
+      Path kept = Files.isRegularFile(file()) ? file() : legacy();
       return Files.isRegularFile(kept) ? Files.readAllLines(kept) : List.of();
     } catch (IOException unread) {
       log.atWarn()
           .setMessage("acceptance verdicts unread")
-          .addKeyValue("file", paths.acceptanceVerdicts())
+          .addKeyValue("file", file())
           .addKeyValue("cause", unread.toString())
           .log();
       return List.of();

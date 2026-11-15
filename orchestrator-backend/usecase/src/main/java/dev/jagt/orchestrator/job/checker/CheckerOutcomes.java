@@ -21,14 +21,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * What a finished check does to the task: rows not met go back as a round, unprovable ones to the
  * human.
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class CheckerOutcomes {
 

@@ -32,11 +32,29 @@ class FlowsRunnerTest {
                     .withRoot(root)
                     .build(mock(AgentRuntime.class), mock(ActStops.class)),
                 new PlaywrightRunner(processes))
-            .run(root, List.of("AC-1", "AC-2"), "https://alpha.test");
+            .run("acceptance", root, List.of("AC-1", "AC-2"), "https://alpha.test");
 
     assertThat(results)
         .extracting(FlowResult::verdict)
         .containsExactly(Verdict.UNPROVABLE, Verdict.UNPROVABLE);
     verify(processes, never()).run(any(), any(), anyMap(), anyList());
+  }
+
+  @Test
+  void everyFlowIsUnprovableForRoleThatIsNotInstalled(@TempDir Path root) throws Exception {
+    List<FlowResult> results =
+        new FlowsRunner(
+                acceptanceRoleSettings()
+                    .withRoot(root)
+                    .build(mock(AgentRuntime.class), mock(ActStops.class)),
+                new PlaywrightRunner(mock(Processes.class)))
+            .run("audit", root, List.of("AC-1"), "https://alpha.test");
+
+    assertThat(results)
+        .singleElement()
+        .satisfies(result -> {
+          assertThat(result.verdict()).isEqualTo(Verdict.UNPROVABLE);
+          assertThat(result.reason()).contains("no role audit is installed");
+        });
   }
 }

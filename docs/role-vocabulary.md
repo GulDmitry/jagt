@@ -19,6 +19,11 @@ A `role.yml` is compiled by `config/role/RoleDefinitions` from a closed vocabula
 |-----------|---------|
 | `deploy` | one read per deploy; fixed, declared for the lint only |
 
+## Read steps
+
+`readSteps:` lists the brief steps whose turn opens the role's read: in order the check, its run again after a restart,
+and its decline. A role naming fewer repeats its last; one naming three or more runs a decline job.
+
 ## Outcomes
 
 `outcomes:` lists what the role may answer; at least one is required. Declared for the lint only.

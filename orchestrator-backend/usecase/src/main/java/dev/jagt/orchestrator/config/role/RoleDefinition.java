@@ -49,8 +49,24 @@ public record RoleDefinition(
    */
   public record Replies(List<String> outcomes, Schema answer, Schema decline) {}
 
-  /** Whether the role runs jobs, and the brief steps whose turn opens its read. */
-  public record Checking(boolean jobs, List<String> readSteps) {}
+  /**
+   * Whether the role runs jobs, and the brief steps whose turn opens its read: in order the check,
+   * its run again after a restart, and its decline; a role naming fewer repeats its last.
+   */
+  public record Checking(boolean jobs, List<String> readSteps) {
+
+    public String checkStep() {
+      return readSteps.getFirst();
+    }
+
+    public String againStep() {
+      return readSteps.get(Math.min(1, readSteps.size() - 1));
+    }
+
+    public String declineStep() {
+      return readSteps.getLast();
+    }
+  }
 
   /**
    * Command globs a read may run and may not, path globs it may not open, and the MCP servers or

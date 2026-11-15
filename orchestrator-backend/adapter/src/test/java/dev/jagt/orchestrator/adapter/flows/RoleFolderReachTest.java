@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
-import dev.jagt.orchestrator.service.role.RoleSettings;
+import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.stop.ActStops;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +36,7 @@ class RoleFolderReachTest {
       })
   void anEnabledRoleWhoseFolderCannotRunCheckIsOneMarkOnTheBoardsHead(
       String written, String said, @TempDir Path root) throws Exception {
-    RoleSettings settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
+    RoleKits settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
     Files.writeString(root.resolve("roles/acceptance/role.yml"), written + "\n");
 
     ReachLedger reach = new ReachLedger();
@@ -53,7 +53,7 @@ class RoleFolderReachTest {
   @Test
   void theMarkEndsOnTheFirstReadAfterTheFolderNamesAnEnvironment(@TempDir Path root)
       throws Exception {
-    RoleSettings settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
+    RoleKits settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
     ReachLedger reach = new ReachLedger();
     new RoleFolderReach(settings, reach).run();
     Files.writeString(
@@ -66,7 +66,7 @@ class RoleFolderReachTest {
 
   @Test
   void folderNamingAnEnvironmentAndAnMcpServerRaisesNoMark(@TempDir Path root) throws Exception {
-    RoleSettings settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
+    RoleKits settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "{environments: [{url: a}], tools: {mcp: [mcp__logs]}}\n");
@@ -79,7 +79,7 @@ class RoleFolderReachTest {
 
   @Test
   void roleTurnedOffRaisesNoMarkWhateverItsFolderLacks(@TempDir Path root) throws Exception {
-    RoleSettings settings =
+    RoleKits settings =
         acceptanceRoleSettings()
             .withRoot(root)
             .withJagtYml("orchestrator:\n  projects: {}\n")

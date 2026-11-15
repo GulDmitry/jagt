@@ -12,13 +12,11 @@ import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 /**
  * A check that found its environment down holds with nobody until every environment answers its
  * probe: its `landed` address where one is named, else its own. Then the same check runs again.
  */
-@Service
 @RequiredArgsConstructor
 public class CheckerWaitJob implements TaskJob {
 

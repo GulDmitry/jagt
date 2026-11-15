@@ -16,10 +16,14 @@ import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
 import dev.jagt.orchestrator.eval.ShippedRoot;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.job.checker.CheckerFlows;
 import dev.jagt.orchestrator.job.checker.CheckerPrompts;
+import dev.jagt.orchestrator.job.checker.wiring.CheckerReaders;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
+import dev.jagt.orchestrator.service.role.RoleKit;
+import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
@@ -106,15 +110,12 @@ abstract class AcceptanceVerdictEvalTest {
 
   @Autowired
   AcceptanceVerdictEvalTest(
-      CheckerReader reader,
-      CheckerPrompts prompts,
-      CheckerFlows checkerFlows,
-      RoleDefinition acceptanceDefinition,
-      UsageTracker usage) {
+      CheckerReader reader, RoleKits kits, CheckerReaders readers, UsageTracker usage) {
     this.reader = reader;
-    this.prompts = prompts;
-    this.checkerFlows = checkerFlows;
-    this.acceptanceDefinition = acceptanceDefinition;
+    RoleKit acceptance = kits.find(Checkers.ACCEPTANCE).orElseThrow();
+    this.prompts = new CheckerPrompts(acceptance.definition(), acceptance.files());
+    this.checkerFlows = readers.flows(acceptance);
+    this.acceptanceDefinition = acceptance.definition();
     this.usage = usage;
   }
 

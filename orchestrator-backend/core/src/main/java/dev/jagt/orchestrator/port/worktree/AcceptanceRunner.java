@@ -31,6 +31,8 @@ public interface AcceptanceRunner {
     }
   }
 
-  /** One result per flow, in the order given. */
-  List<FlowResult> run(Path worktree, List<String> flows, String environment);
+  /**
+   * One result per flow, in the order given, run as the folder of the checker {@code role} says.
+   */
+  List<FlowResult> run(String role, Path worktree, List<String> flows, String environment);
 }

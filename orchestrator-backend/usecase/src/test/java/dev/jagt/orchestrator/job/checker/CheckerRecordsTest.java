@@ -25,7 +25,8 @@ class CheckerRecordsTest {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     CheckerRecords records =
-        new CheckerRecords(paths, Clock.fixed(Instant.ofEpochMilli(9), ZoneOffset.UTC));
+        new CheckerRecords(
+            paths, Clock.fixed(Instant.ofEpochMilli(9), ZoneOffset.UTC), "acceptance");
 
     AcceptanceEnding ending = records.latest("ABC-42").orElseThrow().ending();
     records.put("ABC-43", "d2", "def456", AcceptanceEnding.PASSED);

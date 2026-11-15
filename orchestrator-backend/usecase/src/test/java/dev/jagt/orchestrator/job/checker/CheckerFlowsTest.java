@@ -81,13 +81,13 @@ class CheckerFlowsTest {
     AcceptanceVerdict result = flows.run(read, worktree, AcceptanceVerdict.Flows.none());
 
     assertThat(result).isSameAs(read);
-    verify(runner, never()).run(any(), any(), any());
+    verify(runner, never()).run(any(), any(), any(), any());
     assertThat(worktree.resolve("acceptance-report.md")).doesNotExist();
   }
 
   @Test
   void failedFlowIsNotMetRowInTheVerdictAndTheReport(@TempDir Path worktree) throws IOException {
-    when(runner.run(worktree, List.of("AC-1"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("AC-1"), STAGE))
         .thenReturn(
             List.of(
                 FlowResult.defaults()
@@ -125,7 +125,7 @@ class CheckerFlowsTest {
 
   @Test
   void passedFlowIsMetRow(@TempDir Path worktree) throws IOException {
-    when(runner.run(worktree, List.of("AC-1"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("AC-1"), STAGE))
         .thenReturn(List.of(FlowResult.defaults().withFlow("AC-1").withVerdict(Verdict.PASSED)));
 
     AcceptanceVerdict result =
@@ -142,7 +142,7 @@ class CheckerFlowsTest {
   @Test
   void passedFlowMakesItsCriterionsUnprovableRowMetAndDropsTheQuestion(@TempDir Path worktree)
       throws IOException {
-    when(runner.run(worktree, List.of("open-page"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(FlowResult.defaults().withFlow("open-page").withVerdict(Verdict.PASSED)));
     AcceptanceVerdict result = flows.run(behindLogin, worktree, openPageNamingC1);
@@ -156,7 +156,7 @@ class CheckerFlowsTest {
 
   @Test
   void failedFlowMakesItsCriterionsRowNotMet(@TempDir Path worktree) throws IOException {
-    when(runner.run(worktree, List.of("open-page"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(
                 FlowResult.defaults()
@@ -184,7 +184,7 @@ class CheckerFlowsTest {
   @Test
   void anUnprovableFlowLeavesTheReadsRowAndAddsItsReason(@TempDir Path worktree)
       throws IOException {
-    when(runner.run(worktree, List.of("open-page"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(
                 FlowResult.defaults()
@@ -205,7 +205,7 @@ class CheckerFlowsTest {
   @Test
   void eachOfTwoFlowsDecidesOnlyTheRowOfTheCriterionItNames(@TempDir Path worktree)
       throws IOException {
-    when(runner.run(worktree, List.of("page-a", "page-b"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("page-a", "page-b"), STAGE))
         .thenReturn(
             List.of(
                 FlowResult.defaults().withFlow("page-a").withVerdict(Verdict.PASSED),
@@ -236,7 +236,7 @@ class CheckerFlowsTest {
 
   @Test
   void flowNamingCriterionNoRowHasKeepsItsOwnRow(@TempDir Path worktree) throws IOException {
-    when(runner.run(worktree, List.of("open-page"), STAGE))
+    when(runner.run("acceptance", worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(FlowResult.defaults().withFlow("open-page").withVerdict(Verdict.PASSED)));
 
@@ -272,6 +272,6 @@ class CheckerFlowsTest {
     assertThat(result.rows())
         .extracting(AcceptanceVerdict.Row::status)
         .containsExactly(AcceptanceVerdict.Status.UNPROVABLE);
-    verify(runner, never()).run(any(), any(), any());
+    verify(runner, never()).run(any(), any(), any(), any());
   }
 }

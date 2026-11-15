@@ -119,9 +119,9 @@ public class OrchestratorPaths {
     return stateFile.resolveSibling("intake-turned-away");
   }
 
-  /** What each deploy's acceptance check ended in, one line per task. */
-  public Path acceptanceVerdicts() {
-    return stateFile.resolveSibling("acceptance-verdicts");
+  /** What each deploy's check by the checker {@code role} ended in, one line per task. */
+  public Path checkerVerdicts(String role) {
+    return stateFile.resolveSibling(role + "-verdicts");
   }
 
   /**

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.checker;
 
+import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -11,20 +12,17 @@ import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
-import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Duration;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 /**
  * Reads the session's no-change reply to an acceptance round back to acceptance: it accepts, or
  * disputes. Once a round and a first dispute are behind, a reply is read once more; a second
  * dispute goes to the human, and nothing is read after it.
  */
-@Service
 @RequiredArgsConstructor
 public class CheckerDeclineJob implements TaskJob {
 
@@ -78,8 +76,8 @@ public class CheckerDeclineJob implements TaskJob {
     }
     String sha = asked.get().sha();
     String rows = task.roleOrNone(role).roundRows();
-    String step =
-        reading == CheckerPhase.READING ? AcceptanceVerdict.AGAIN : AcceptanceVerdict.DECLINE;
+    RoleDefinition.Checking steps = settings.role().checking();
+    String step = reading == CheckerPhase.READING ? steps.againStep() : steps.declineStep();
     Answer<AcceptanceDecline> answer =
         reads.decline(
             taskId,

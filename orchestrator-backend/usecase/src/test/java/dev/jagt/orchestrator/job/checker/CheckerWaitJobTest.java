@@ -44,7 +44,7 @@ class CheckerWaitJobTest {
         root.resolve("roles/acceptance/role.yml"),
         "environments: [{url: \"https://stage.example.com\","
             + " landed: \"https://stage.example.com/health\"}]\n");
-    records = new CheckerRecords(paths, Clock.systemUTC());
+    records = new CheckerRecords(paths, Clock.systemUTC(), "acceptance");
     job =
         new CheckerWaitJob(
             new RoleSettings(

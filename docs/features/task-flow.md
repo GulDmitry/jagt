@@ -11,6 +11,8 @@
   [spec](../../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed)
   · [role](../../openspec/specs/acceptance/spec.md)
   · [host](../../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
+- **More checkers** — A folder `roles/<id>/role.yml` declaring `jobs: true` runs its own check at deploy beside acceptance.
+  [spec](../../openspec/specs/acceptance/spec.md#requirement-a-checker-declares-its-jobs-and-its-read-steps)
 - **Acceptance workspace** — Acceptance keeps scenarios in its own folder, writes only there, and asks one question per ticket gap in a session.
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-keeps-its-checks-in-its-workspace)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-analyses-a-ticket-before-its-plan)

@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.job.JobSource;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
@@ -52,7 +53,8 @@ class BoardApiControllerTest {
                   new Declared("stats", "what the calls cost", true, 100),
                   new Declared("do", "start a task", false, 40))),
           new HeaderState(
-              new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+              new Jobs(
+                  List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
               new ReachLedger(),
               Clock.systemUTC()));
 
@@ -162,7 +164,8 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class),
             new GlobalCommands(List.of()),
             new HeaderState(
-                new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new Jobs(
+                    List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
                 reach,
                 Clock.systemUTC()));
 
@@ -179,7 +182,12 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class),
             new GlobalCommands(List.of()),
             new HeaderState(
-                new Jobs(List.of(poll), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new Jobs(
+                    List.of(poll),
+                    List.of(),
+                    scheduler,
+                    Clock.systemUTC(),
+                    mock(StateService.class)),
                 new ReachLedger(),
                 Clock.systemUTC()));
 
@@ -197,7 +205,12 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class),
             new GlobalCommands(List.of()),
             new HeaderState(
-                new Jobs(List.of(poll), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new Jobs(
+                    List.of(poll),
+                    List.<JobSource>of(),
+                    scheduler,
+                    Clock.systemUTC(),
+                    mock(StateService.class)),
                 new ReachLedger(),
                 Clock.systemUTC()));
 
@@ -215,7 +228,8 @@ class BoardApiControllerTest {
             stream,
             new GlobalCommands(List.of()),
             new HeaderState(
-                new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new Jobs(
+                    List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
                 new ReachLedger(),
                 Clock.systemUTC()));
 
@@ -272,7 +286,8 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class),
             new GlobalCommands(List.of(drafts)),
             new HeaderState(
-                new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new Jobs(
+                    List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
                 new ReachLedger(),
                 Clock.systemUTC()));
     TaskView drafted =

@@ -255,7 +255,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `config/source` | usecase | `jagt.yml` read and resolved: `${VAR}`, `${file:}`, `JAGT__` overrides, the environment and files it reads |
 | `config/role` | usecase | a role's definition, files, options, cases and session brief |
 | `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, the worktree sweep |
-| `job/checker` | usecase | the checker role's jobs: check, decline, wait, records and prompts |
+| `job/checker` | usecase | one checker role's jobs: check, decline, wait, records and prompts |
+| `job/checker/wiring` | usecase | the set of those jobs per installed checker, and what they share |
 | `job/conflict` | usecase | deploy-conflict jobs and the reads that end them |
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |

@@ -35,7 +35,7 @@ public record TestCheckerCheckJobBuilder(Path roleFile) {
         new RoleSettings(role, config, paths),
         new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
         reader,
-        new CheckerRecords(paths, clock),
+        new CheckerRecords(paths, clock, "acceptance"),
         outcomes);
   }
 }

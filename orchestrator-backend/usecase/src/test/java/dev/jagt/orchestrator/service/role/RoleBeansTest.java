@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
@@ -38,10 +37,37 @@ class RoleBeansTest {
             mock(AgentRuntime.class),
             mock(ActStops.class),
             new Checkers(new TaskChart(Composition.builtIn())));
-    RoleBeans beans = new RoleBeans();
 
-    RoleDefinition acceptance = beans.acceptanceDefinition(new InstalledRoles(paths));
+    RoleKits kits = new RoleBeans().roleKits(new InstalledRoles(paths), config, paths);
 
-    assertThat(beans.acceptanceSettings(acceptance, config, paths).load().enabled()).isFalse();
+    assertThat(kits.find(Checkers.ACCEPTANCE).orElseThrow().settings().load().enabled()).isFalse();
+  }
+
+  @Test
+  void everyInstalledCheckerHasItsKitLookedUpByItsId(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/audit"));
+    Files.copy(
+        Path.of("src/test/resources/checker-fixture/roles/audit/role.yml"),
+        root.resolve("roles/audit/role.yml"));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    RoleKits kits =
+        new RoleBeans().roleKits(new InstalledRoles(paths), mock(ConfigService.class), paths);
+
+    assertThat(kits.find("audit").orElseThrow().definition().checking().readSteps())
+        .containsExactly("audit", "audit-again", "audit-decline");
+  }
+
+  @Test
+  void acceptanceFilesAndSettingsAreThoseOfTheAcceptanceKit(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    RoleKits kits =
+        new RoleBeans().roleKits(new InstalledRoles(paths), mock(ConfigService.class), paths);
+
+    assertThat(new RoleBeans().acceptanceFiles(kits))
+        .isSameAs(kits.find(Checkers.ACCEPTANCE).orElseThrow().files());
+    assertThat(new RoleBeans().acceptanceSettings(kits))
+        .isSameAs(kits.find(Checkers.ACCEPTANCE).orElseThrow().settings());
   }
 }

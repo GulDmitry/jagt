@@ -247,6 +247,7 @@ class TaskEventStreamTest {
                     new HeaderState(
                         new Jobs(
                             List.of(),
+                            List.of(),
                             mock(TaskScheduler.class),
                             Clock.systemUTC(),
                             mock(StateService.class)),

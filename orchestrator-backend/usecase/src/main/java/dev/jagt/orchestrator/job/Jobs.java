@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.StateService;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,11 +60,18 @@ public class Jobs {
   private final StateService stateService;
   private volatile boolean ready;
 
-  public Jobs(List<Job> declared, TaskScheduler scheduler, Clock clock, StateService stateService) {
+  public Jobs(
+      List<Job> declared,
+      List<JobSource> sources,
+      TaskScheduler scheduler,
+      Clock clock,
+      StateService stateService) {
     this.scheduler = scheduler;
     this.clock = clock;
     this.stateService = stateService;
-    for (Job job : declared) {
+    List<Job> all = new ArrayList<>(declared);
+    sources.forEach(source -> all.addAll(source.jobs()));
+    for (Job job : all) {
       if (job.id() == null || job.id().isBlank()) {
         throw new IllegalStateException(job.getClass().getSimpleName() + " declares no id");
       }

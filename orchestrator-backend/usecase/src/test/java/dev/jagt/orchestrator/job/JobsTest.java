@@ -52,7 +52,7 @@ class JobsTest {
   @BeforeEach
   void oneJobDeclared() {
     when(job.id()).thenReturn("poll-reviews");
-    jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), state);
+    jobs = new Jobs(List.of(job), List.of(), scheduler, Clock.systemUTC(), state);
   }
 
   @Test
@@ -75,6 +75,7 @@ class JobsTest {
     Jobs fixed =
         new Jobs(
             List.of(job),
+            List.of(),
             scheduler,
             Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
             state);
@@ -138,7 +139,7 @@ class JobsTest {
     Job failing = mock(Job.class);
     when(failing.id()).thenReturn("archive-logs");
     doThrow(new IllegalStateException("disk full")).when(failing).run();
-    Jobs both = new Jobs(List.of(failing, job), scheduler, Clock.systemUTC(), state);
+    Jobs both = new Jobs(List.of(failing, job), List.of(), scheduler, Clock.systemUTC(), state);
     both.start();
     verify(scheduler, times(2)).schedule(work.capture(), any(Trigger.class));
 
@@ -214,7 +215,8 @@ class JobsTest {
     Job second = mock(Job.class);
     when(second.id()).thenReturn("poll-reviews");
 
-    assertThatThrownBy(() -> new Jobs(List.of(job, second), scheduler, Clock.systemUTC(), state))
+    assertThatThrownBy(
+            () -> new Jobs(List.of(job, second), List.of(), scheduler, Clock.systemUTC(), state))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
   }
@@ -224,7 +226,8 @@ class JobsTest {
     Job nameless = mock(Job.class);
     when(nameless.id()).thenReturn(" ");
 
-    assertThatThrownBy(() -> new Jobs(List.of(nameless), scheduler, Clock.systemUTC(), state))
+    assertThatThrownBy(
+            () -> new Jobs(List.of(nameless), List.of(), scheduler, Clock.systemUTC(), state))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("declares no id");
   }
@@ -258,7 +261,7 @@ class JobsTest {
     Job later = mock(Job.class);
     when(later.id()).thenReturn("clean-recents");
     when(later.every()).thenReturn(Duration.ofHours(1));
-    Jobs both = new Jobs(List.of(job, later), scheduler, Clock.systemUTC(), state);
+    Jobs both = new Jobs(List.of(job, later), List.of(), scheduler, Clock.systemUTC(), state);
     both.start();
     verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
 
@@ -299,7 +302,7 @@ class JobsTest {
     Job healthy = mock(Job.class);
     when(healthy.id()).thenReturn("clean-recents");
     when(healthy.every()).thenReturn(Duration.ofHours(1));
-    Jobs both = new Jobs(List.of(job, healthy), scheduler, Clock.systemUTC(), state);
+    Jobs both = new Jobs(List.of(job, healthy), List.of(), scheduler, Clock.systemUTC(), state);
 
     assertThat(both.statuses(1_000))
         .extracting(Jobs.Status::id, Jobs.Status::every)
@@ -314,6 +317,7 @@ class JobsTest {
     Jobs fixed =
         new Jobs(
             List.of(job),
+            List.of(),
             scheduler,
             Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
             state);
@@ -379,7 +383,7 @@ class JobsTest {
     Map<String, TaskState> tasks =
         Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(state.tasks()).thenReturn(tasks);
-    Jobs withTaskJob = new Jobs(List.of(taskJob), scheduler, Clock.systemUTC(), state);
+    Jobs withTaskJob = new Jobs(List.of(taskJob), List.of(), scheduler, Clock.systemUTC(), state);
     withTaskJob.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
 
@@ -387,5 +391,19 @@ class JobsTest {
 
     verify(taskJob).runOn(tasks);
     verify(taskJob, never()).run();
+  }
+
+  @Test
+  void schedulesTheJobsSourceHoldsBesideTheDeclaredOnes() {
+    Job sourced = mock(Job.class);
+    when(sourced.id()).thenReturn("audit-check");
+
+    Jobs both =
+        new Jobs(
+            List.of(job), List.of(() -> List.of(sourced)), scheduler, Clock.systemUTC(), state);
+
+    assertThat(both.statuses(1_000))
+        .extracting(Jobs.Status::id)
+        .containsExactly("poll-reviews", "audit-check");
   }
 }

@@ -1,0 +1,26 @@
+id: audit
+name: audit
+model: sonnet
+trigger: [deployed, pipelines-green, environment-named]
+oncePer: deploy
+outcomes: [round, question, stop]
+jobs: true
+readSteps: [audit, audit-again, audit-decline]
+points: [passed]
+tools:
+  shell: ["curl -sS*"]
+  refuseShell: ["git push*"]
+  refuseRead: []
+  git: true
+  fetch: environments
+  mcp: []
+environments:
+  - url: https://audit.example.com
+answer:
+  - required: failure
+  - records: rows
+    fields: [criterion, status, evidence]
+    choices: {status: [met, "not met", unprovable]}
+decline:
+  - required: failure
+  - text: dispute

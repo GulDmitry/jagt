@@ -78,7 +78,7 @@ class CheckerDeclineJobTest {
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "environments: [{url: \"https://stage.example.com\"}]\n");
-    records = new CheckerRecords(paths, Clock.systemUTC());
+    records = new CheckerRecords(paths, Clock.systemUTC(), "acceptance");
     job =
         new CheckerDeclineJob(
             new RoleSettings(

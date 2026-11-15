@@ -5,14 +5,11 @@ import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.reach.CheckerReach;
-import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /** What an acceptance run is told: the brief, then the facts of the deploy it checks. */
-@Component
 @RequiredArgsConstructor
 public class CheckerPrompts {
 
@@ -67,7 +64,7 @@ public class CheckerPrompts {
             + environments;
     return new CheckerReader.Run(
         brief.text(),
-        brief.section(AcceptanceVerdict.DECLINE) + "\n\n" + facts,
+        brief.section(role.checking().declineStep()) + "\n\n" + facts,
         Path.of(worktree),
         sha,
         acceptance.model(),

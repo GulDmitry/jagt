@@ -8,13 +8,11 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * An acceptance read held as a turn: open while the run reads, closed before what it found is acted
  * on.
  */
-@Component
 @RequiredArgsConstructor
 public class CheckerReads {
 
