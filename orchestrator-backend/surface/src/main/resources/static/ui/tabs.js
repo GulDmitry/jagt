@@ -19,7 +19,7 @@ const artifacts = async (task) => {
 
 let windowName = null;
 
-// The task's own session, or one of the windows jagt opened that is no task's.
+// The task's session, or a window jagt opened that is no task's.
 async function sessionOf(task) {
   const names = await api('/api/windows').catch(() => []);
   const name = names.includes(windowName) ? windowName : null;
@@ -28,6 +28,19 @@ async function sessionOf(task) {
   const screen = await api(path).catch((e) => ({held: true, shown: t('tabs.unread', {cause: e.message})}));
   return {...screen, names, name};
 }
+
+let peeked = {};
+
+// The Session tab reads the whole screen itself.
+function glance(task, repaint) {
+  if (tab === 'session') return;
+  api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`).then(({held, shown: screen}) => {
+    peeked = {id: task.id, held, line: screen.trimEnd().split('\n').pop().trim()};
+    repaint();
+  }, () => {});
+}
+
+export const peek = (task) => (peeked.id === task.id ? peeked : {});
 
 export const pickWindow = (name) => {
   windowName = name;
@@ -53,30 +66,27 @@ export const forget = () => {
   read = {...read, stale: true};
 };
 
-// A session's screen changes with no event to say so, so its tab reads it again while it stays open.
+// A screen changes with no event, so it is read again while open.
 const EVERY = 5000;
-let ticking = 0;
-let repaintOnTick = () => {};
+let again = () => {};
+
+setInterval(() => again(), EVERY);
 
 export const choose = (id) => {
   tab = id;
   if (id === 'diff') forget();
-  clearInterval(ticking);
-  ticking = id === 'session' ? setInterval(() => {
-    forget();
-    repaintOnTick();
-  }, EVERY) : 0;
 };
 
 export function shown(task, repaint) {
-  repaintOnTick = repaint;
+  again = () => (tab === 'session' ? (forget(), repaint()) : glance(task, repaint));
+  if (peeked.id !== task.id) glance(task, repaint);
   const source = sources[tab];
   if (!source || !task) return null;
   const offer = store.offerFor(task, tab);
   if (tab === 'round' && !offer) return null;
   const key = `${tab}:${task.id}:${task.statusSince}`;
   if (read.key === key && !read.stale) return read.shown;
-  // A re-read keeps the last screen up rather than flashing back to "reading…", but never another task's or tab's.
+  // A re-read keeps the last screen up, never another task's or tab's.
   const kept = read.key === key ? read.shown : null;
   const mine = ++asked;
   read = {key, shown: kept, stale: false};

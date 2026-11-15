@@ -95,6 +95,7 @@
   "windows.task": "this task's session",
   "say.send": "Send",
   "say.run": "Run",
+  "say.none": "no window holds this session, so there is nobody to tell",
   "said.label": "the session is working",
   "said.tip": "the session is working; this repaints when it answers",
   "report.silent": "nothing said back yet — this repaints when it is",

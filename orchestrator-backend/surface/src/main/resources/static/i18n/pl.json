@@ -95,6 +95,7 @@
   "windows.task": "sesja tego zadania",
   "say.send": "Wyślij",
   "say.run": "Uruchom",
+  "say.none": "żadne okno nie trzyma tej sesji, nie ma komu napisać",
   "said.label": "sesja pracuje",
   "said.tip": "sesja pracuje; widok odświeży się, gdy odpowie",
   "report.silent": "jeszcze brak odpowiedzi — widok odświeży się, gdy się pojawi",

@@ -58,8 +58,7 @@ document.getElementById('report-body').addEventListener('click', (event) => {
 });
 showLog(() => showReport(t('log.title'), sessionLog()));
 
-// A linked task lands in the FILTER rather than a selection of its own: the control that did it is visible, and
-// clearing it is a button already on the page.
+// A linked task lands in the FILTER, not a selection: that control is visible and clearing it is on the page.
 const deepLink = new URLSearchParams(window.location.search).get('task');
 if (deepLink) {
   filters.box.value = deepLink;
@@ -97,8 +96,8 @@ function listen() {
   let silence = 0;
   // Every connect reads the board, the first one included: whatever changed while disconnected sent no event.
   events.addEventListener('open', (event) => {
-    // The server's first message is also named `open`, and one connect is one read. It names the run: a page
-    // that outlived a restart is still the old board's code, so it loads the new one.
+    // The server's first message is also named `open`; one connect is one read. It names the run: a page that
+    // outlived a restart loads the new board.
     if (event instanceof MessageEvent) {
       if (servedBy && servedBy !== event.data) reloadOnceNoDialogIsOpen();
       servedBy = event.data;

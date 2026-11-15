@@ -2,7 +2,7 @@
 import {refusal} from '../core/api.js';
 import {toast} from './toast.js';
 
-// The board is read again after every form, whatever it answered.
+// The board is read again after every form.
 let afterwards = async () => {};
 
 export const onSent = (read) => { afterwards = read; };
@@ -10,7 +10,7 @@ export const onSent = (read) => { afterwards = read; };
 export async function sending(form, {waiting, send, done, problem}) {
   const state = form.querySelector('.state');
   const button = form.querySelector('button[type=submit]');
-  // requestSubmit() fires a submit even when the button is disabled.
+  // requestSubmit() submits past a disabled button.
   if (button.disabled) return;
   const refused = problem?.();
   state?.classList.toggle('bad', !!refused);

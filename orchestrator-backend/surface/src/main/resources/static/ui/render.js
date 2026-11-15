@@ -1,4 +1,4 @@
-// One repaint of everything: a row that changes in place keeps the position a human has learnt.
+// One repaint of everything: a row changing in place keeps its position.
 
 import {render as paint} from 'preact';
 import * as store from '../core/store.js';
@@ -27,7 +27,7 @@ import {hideStaleTip} from './tips.js';
 const board = document.getElementById('board');
 let walked = [];
 
-// An offer whose verb has not arrived says nothing yet: its part, and so where it lives, is the verb's.
+// An offer whose verb has not arrived says nothing: its part is the verb's.
 const offersOn = (task) => store.offersOn(task).flatMap((id) => {
   const verb = store.verbs().find((each) => each.id === id);
   return verb ? [{id, hint: verb.hint, part: verb.part}] : [];
@@ -43,13 +43,13 @@ export function render() {
   projects.render();
   launch.render();
   header.render(tasks, shown.length);
-  // Read off the cards themselves: the configured list can be longer than the board, and shorter than the truth.
+  // Read off the cards: the configured list can differ from the truth.
   const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
   const groups = grouped(shown, manyProjects, (task) => flags.holds(task.id));
   walked = groups.flatMap((group) => group.tasks);
   const open = selection.current(walked);
   const now = Date.now();
-  // Wide, the open task stands on screen whether picked or not, so it is seen; narrow, only once opened.
+  // Wide, the open task is on screen unpicked, so seen; narrow, only once opened.
   seen.note(tasks, selection.paneShown() ? open : null);
   if (open && selection.paneShown() && tabs.current() === 'round') repliesOpened.note(open);
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
@@ -61,7 +61,7 @@ export function render() {
   paint(open ? html`
     <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${said(rowVerb)}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
-      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}
+      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)} peek=${tabs.peek(open)}
       fresh=${repliesOpened.fresh(open)}/>` : null, board);
   hideStaleTip(null);
 }
@@ -69,13 +69,12 @@ export function render() {
 const buttonOf = ({task, action}) => board.querySelector(
   `#pane button[data-task="${CSS.escape(task)}"][data-action="${CSS.escape(action)}"]`);
 
-// A press disables its own button while it runs, which drops the focus to the page; nobody else has taken it.
+// A press disables its button, dropping focus to the page; nobody else took it.
 export function refocus(pressed) {
   if (document.activeElement === document.body) buttonOf(pressed)?.focus();
 }
 
-// A click carries NAMES, never a captured task, so a row rebuilt under the pointer cannot act for the task it
-// used to describe.
+// A click carries NAMES, never a captured task: a rebuilt row cannot act for the old one.
 export const onClick = ({action}) => {
   board.onclick = (event) => {
     if (event.target.closest('button[data-back]')) {

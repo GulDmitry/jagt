@@ -23,6 +23,8 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -205,6 +207,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void theSessionTabRunsTheLineThroughTheRunVerbInsteadOfSayingIt() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
     when(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la"))
         .thenReturn("Run in the agent's window.");
     Page page = openBoard();
@@ -216,6 +219,56 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     assertThat(page.locator("#toasts .toast")).hasText("Run in the agent's window.");
     verify(commands).executeLine("ABC-1", TaskAction.RUN, "ls -la");
     verify(sessions, org.mockito.Mockito.never()).say("ABC-1", "ls -la");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"overview", "artifacts", "diff"})
+  void theMessageLineUnderAnyTabTellsThatTasksSessionAndClears(String tab) {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
+    when(sessions.say("ABC-1", "use the fake clock")).thenReturn("Said to the agent.");
+    Page page = openBoard();
+
+    page.locator("#pane .tabs button[data-tab=" + tab + "]").click();
+    page.locator("#pane .dock .say input").fill("use the fake clock");
+    page.locator("#pane .dock .say input").press("Enter");
+
+    assertThat(page.locator("#toasts .toast")).hasText("Said to the agent.");
+    assertThat(page.locator("#pane .dock .say input")).hasValue("");
+    verify(sessions).say("ABC-1", "use the fake clock");
+  }
+
+  @Test
+  void theWorkingSessionsLastNonBlankLinePeeksAboveTheMessageLine() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling\n> running tests\n\n  \n"));
+    Page page = openBoard();
+
+    assertThat(page.locator("#pane .dock .peek")).hasText("> running tests");
+  }
+
+  @Test
+  void theMessageLineIsDisabledAndSaysWhyWhenNoWindowHoldsTheSession() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.empty());
+    Page page = openBoard();
+
+    assertThat(page.locator("#pane .dock .say input")).isDisabled();
+    assertThat(page.locator("#pane .dock .say input"))
+        .hasAttribute("placeholder", "no window holds this session, so there is nobody to tell");
+    assertThat(page.locator("#pane .dock .say button").first()).isDisabled();
+  }
+
+  @Test
+  void theSessionTabHasOneMessageLineOnly() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
+    Page page = openBoard();
+
+    page.locator("#pane .tabs button[data-tab=session]").click();
+
+    assertThat(page.locator("#pane .say")).hasCount(1);
+    assertThat(page.locator("#pane .session .say")).hasCount(0);
   }
 
   @Test
@@ -433,7 +486,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void theSessionTabReadsTheScreenAgainWhileItStaysOpen() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"), Optional.of("tests pass"));
+    when(sessions.screen("ABC-1"))
+        .thenReturn(Optional.of("compiling"), Optional.of("compiling"), Optional.of("tests pass"));
     Page page = session.newPage();
     page.clock().install();
     page.navigate("http://localhost:" + port + "/");
@@ -522,7 +576,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     CountDownLatch release = new CountDownLatch(1);
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1"))
-        .thenReturn(Optional.of("compiling"))
+        .thenReturn(Optional.of("compiling"), Optional.of("compiling"))
         .thenAnswer(call -> {
           release.await();
           return Optional.of("tests pass");
@@ -532,7 +586,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     assertThat(page.locator("#pane .session .screen")).hasText("compiling");
 
     state.putTask("ABC-1", state.task("ABC-1").orElseThrow().touched(System.currentTimeMillis()));
-    verify(sessions, timeout(5000).times(2)).screen("ABC-1");
+    verify(sessions, timeout(5000).times(3)).screen("ABC-1");
 
     assertThat(page.locator("#pane .session .screen")).hasText("compiling");
     release.countDown();

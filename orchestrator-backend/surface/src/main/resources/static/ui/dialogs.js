@@ -90,8 +90,7 @@ export async function repaintReport() {
   stopWaiting();
 }
 
-// A worktree file fires no event, and the agent's own report only comes at the END of a round, so a line just
-// said is followed until the answer lands.
+// A worktree file fires no event and the agent's report comes at a round's END: a line just said is followed.
 const EVERY = 3000;
 const GIVE_UP = 300000;
 

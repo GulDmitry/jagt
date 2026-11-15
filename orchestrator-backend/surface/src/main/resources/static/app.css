@@ -81,9 +81,11 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .doc .mermaid { margin: 8px 0; white-space: pre; font-family: var(--mono); }
 .keys { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
 .keys button { min-width: 32px; padding: 2px 6px; font-family: var(--mono); font-size: 12px; }
-.say { display: flex; gap: 8px; margin-top: 8px; }
+.say { display: flex; gap: 8px; }
+.dock { position: sticky; bottom: 0; margin-top: auto; background: var(--bg); }
+.peek { font: 12px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .say input { flex: 1; }
-.session p, .round p { margin: 0 0 6px; font-size: 12px; }
+.round p { margin: 0 0 6px; font-size: 12px; }
 table.jobs { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; table-layout: fixed; }
 table.jobs td:nth-child(1) { width: 20px; }
 table.jobs td:nth-child(2) { width: 140px; }
