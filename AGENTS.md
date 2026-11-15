@@ -85,8 +85,9 @@ or local setup; such names live only in git-ignored files. **A check holds for a
 - **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
 - **No static state, no lifecycle hook that does work**: a static field is final and immutable.
   A holder's inputs are its arguments; a collaborator arrives through the constructor.
-  Start work is an `@EventListener` or a `Job`, never `@PostConstruct`
-  (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)).
+  Start work is an `@EventListener` or a `Job`, never `@PostConstruct`; stop work is a `SmartLifecycle` after the web server
+  (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
+  [0169](docs/decisions/0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).
 - **No duplicated block of 75 tokens or more** (`DuplicationTest`): one holder in main, a builder or parameterized case
   in tests. Never raise the number.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target

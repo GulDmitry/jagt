@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.SmartLifecycle;
 
 class ShutdownEndingsTest {
 
@@ -44,7 +45,7 @@ class ShutdownEndingsTest {
     ledger.sign("ABC-1", new SessionSign.WorkStarted());
     ledger.sign("ABC-2", new SessionSign.WorkStarted());
 
-    new ShutdownEndings(state, ledger, sessions).end();
+    new ShutdownEndings(state, ledger, sessions).stop();
 
     StateService restarted = stateService().withRoot(root).build();
     assertThat(SessionPhase.of(restarted.task("ABC-1").orElseThrow().session()))
@@ -59,7 +60,7 @@ class ShutdownEndingsTest {
   void leavesTaskThatNeverHadSessionAlone() {
     ledger.sign("ABC-1", new SessionSign.WorkStarted());
 
-    new ShutdownEndings(state, ledger, sessions).end();
+    new ShutdownEndings(state, ledger, sessions).stop();
 
     assertThat(SessionPhase.of(state.task("ABC-3").orElseThrow().session()))
         .isEqualTo(SessionPhase.NONE);
@@ -72,7 +73,7 @@ class ShutdownEndingsTest {
     ledger.sign("ABC-2", new SessionSign.WorkStarted());
     doThrow(new IllegalStateException("tmux unreadable")).when(sessions).killWindows("ABC-1");
 
-    new ShutdownEndings(state, ledger, sessions).end();
+    new ShutdownEndings(state, ledger, sessions).stop();
 
     assertThat(SessionPhase.of(state.task("ABC-2").orElseThrow().session()))
         .isEqualTo(SessionPhase.GONE);
@@ -104,5 +105,45 @@ class ShutdownEndingsTest {
     verify(sessions, never()).killWindows("ABC-1");
     assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
         .isEqualTo(SessionPhase.WORKING);
+  }
+
+  @Test
+  void endsOneSessionStartedWhileTheWebServerDrains() {
+    SmartLifecycle webServer =
+        new SmartLifecycle() {
+          private boolean running;
+
+          @Override
+          public void start() {
+            running = true;
+          }
+
+          @Override
+          public void stop() {
+            running = false;
+            ledger.sign("ABC-1", new SessionSign.WorkStarted());
+          }
+
+          @Override
+          public boolean isRunning() {
+            return running;
+          }
+
+          @Override
+          public int getPhase() {
+            return SmartLifecycle.DEFAULT_PHASE - 1024;
+          }
+        };
+    ApplicationContextRunner runner =
+        new ApplicationContextRunner()
+            .withPropertyValues("orchestrator.on-stop=end")
+            .withBean(SmartLifecycle.class, () -> webServer)
+            .withBean(ShutdownEndings.class, () -> new ShutdownEndings(state, ledger, sessions));
+
+    runner.run(context -> {});
+
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+        .isEqualTo(SessionPhase.GONE);
+    verify(sessions).killWindows("ABC-1");
   }
 }
