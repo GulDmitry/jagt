@@ -232,6 +232,27 @@ class ProcessRunnerTest {
     assertThat(launched.waitFor(2, TimeUnit.SECONDS)).isTrue();
   }
 
+  @Test
+  void leavesTheAppInterruptibleWhenJagtItselfWasStartedIgnoringInterrupt() throws Exception {
+    List<String> ignoringParent =
+        List.of("perl", "-e", "$SIG{INT} = 'IGNORE'; exec @ARGV or exit 127;", "--");
+    List<String> command = new java.util.ArrayList<>(ignoringParent);
+    command.addAll(ProcessRunner.detachedFrom(List.of("sleep", "30")));
+    Process launched = new ProcessBuilder(command).start();
+
+    try {
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> launched.info().command().filter(c -> c.endsWith("/sleep")).isPresent());
+      Process kill = new ProcessBuilder("kill", "-INT", String.valueOf(launched.pid())).start();
+
+      assertThat(kill.waitFor()).isZero();
+      assertThat(launched.waitFor(10, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      launched.destroyForcibly();
+    }
+  }
+
   @ParameterizedTest
   @CsvSource({
     "143, on SIGTERM (143)",
@@ -360,10 +381,10 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void handsBackLauncherThatHandedOffToRunningInstanceAndExitedZero() {
+  void handsBackLauncherThatHandedOffToRunningInstanceAndExitedZero() throws Exception {
     Process launched = new ProcessRunner().runDetached(null, List.of("/bin/sh", "-c", "exit 0"));
 
-    assertThat(launched.exitValue()).isZero();
+    assertThat(launched.waitFor()).isZero();
   }
 
   @Test

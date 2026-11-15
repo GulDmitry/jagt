@@ -93,6 +93,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L27 | the linux suite's container kills a timed-out command → an init reaps its orphan, so the child reads as gone, not as a live zombie | seen 2026-11-14: `ProcessRunnerTest` red in `scripts/linux-suite.sh`, PID 1 a shell that never reaps | `ProcessRunnerTest` |
 | L28 | the linux suite's container runs a test refusing an unreadable or unwritable path → the suites run as the image's non-root user, so file modes refuse as on a host | seen 2026-11-14: nine permission tests red in `scripts/linux-suite.sh test`, root ignoring file modes | `WorkspaceCheckTest`, `LogTailTest` |
 | L29 | the linux suite runs from a linked worktree → its main checkout's git dir is mounted at its own path, so the build reads git | seen 2026-11-14: `jagt.pitest` failed on git exit 128, the suite ran only from a clone | `scripts/linux-suite.sh` from a linked worktree |
+| L30 | the suite runs beside another full run, or from a daemon born in a background shell → a detached launch resets SIGINT itself, and a diff checkout's temp name carries the test's own project, so neither a parent's ignored disposition nor a parallel run's checkout decides the result | seen 2026-11-15: `ProcessRunnerTest` and `DiffCheckoutsTest` red under four parallel gates, green alone with `--no-daemon` | `ProcessRunnerTest`, `DiffCheckoutsTest` |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

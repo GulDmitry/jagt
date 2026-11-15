@@ -103,27 +103,33 @@ public class ProcessRunner implements Processes {
   }
 
   /**
-   * A session of its OWN, because the terminal delivers Ctrl-C to jagt's whole process group.
-   * Signal DISPOSITIONS stay default: ignoring SIGINT would be inherited by everything spawned
-   * later, and an IDE's Stop button IS a SIGINT. Both wrappers {@code exec}, so the returned
-   * process is the app itself and still killable by pid. With neither tool present the command is
-   * returned unchanged — no session, but a launch.
+   * A session of its OWN, because the terminal delivers Ctrl-C to jagt's whole process group, and
+   * SIGINT back at its default: a parent started with it ignored (a daemon born in a background
+   * shell) hands the ignore to every child, and an IDE's Stop button IS a SIGINT. Only perl can
+   * reset it before the {@code exec}, so {@code setsid} alone is the fallback. Both wrappers {@code
+   * exec}, so the returned process is the app itself and still killable by pid. With neither tool
+   * present the command is returned unchanged — no session, but a launch.
    */
   static List<String> detachedFrom(List<String> command) {
     if (command.isEmpty()) {
       throw new IllegalArgumentException("Nothing to launch: the command is empty");
     }
     List<String> wrapped = new java.util.ArrayList<>();
-    String setsid = firstExecutable(SETSID);
-    if (setsid != null) {
-      wrapped.add(setsid);
+    String perl = firstExecutable(PERL);
+    if (perl != null) {
+      wrapped.addAll(
+          List.of(
+              perl,
+              "-MPOSIX",
+              "-e",
+              "POSIX::setsid(); $SIG{INT} = 'DEFAULT'; exec @ARGV or exit 127;",
+              "--"));
     } else {
-      String perl = firstExecutable(PERL);
-      if (perl == null) {
+      String setsid = firstExecutable(SETSID);
+      if (setsid == null) {
         return command;
       }
-      wrapped.addAll(
-          List.of(perl, "-MPOSIX", "-e", "POSIX::setsid(); exec @ARGV or exit 127;", "--"));
+      wrapped.add(setsid);
     }
     wrapped.addAll(command);
     return List.copyOf(wrapped);
