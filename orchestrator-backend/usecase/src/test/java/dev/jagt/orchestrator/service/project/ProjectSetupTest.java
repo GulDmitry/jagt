@@ -778,9 +778,24 @@ class ProjectSetupTest {
     Files.writeString(configFile, before);
     confFolder.toFile().setWritable(false);
 
-    assertThatThrownBy(() -> setup.add(billingEntry))
-        .isInstanceOf(java.io.UncheckedIOException.class)
-        .hasMessageStartingWith("Cannot change ");
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
+    assertThat(Files.readString(configFile)).isEqualTo(before);
+  }
+
+  @Test
+  void addRefusesAsAnArgumentAndLeavesTheFileUnchangedWhereJagtYmlIsReadOnly() throws Exception {
+    String before =
+        """
+        orchestrator:
+          projects:
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+        """;
+    Files.writeString(configFile, before);
+    configFile.toFile().setWritable(false);
+
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
     assertThat(Files.readString(configFile)).isEqualTo(before);
   }
 

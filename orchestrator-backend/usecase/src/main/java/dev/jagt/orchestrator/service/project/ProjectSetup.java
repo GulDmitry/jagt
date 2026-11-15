@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.task.repo.GitRemote;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -300,6 +299,9 @@ public class ProjectSetup {
   /** {@code readBack} is the project the result must still hold, or null to read the file whole. */
   private String rewrite(@Nullable String readBack, UnaryOperator<String> change, String done) {
     Path file = real(paths.configFile());
+    if (!Files.isWritable(file)) {
+      throw editByHand(file, "it is not writable here", null);
+    }
     try {
       String before = Files.readString(file, StandardCharsets.UTF_8);
       AtomicFiles.write(file, change.apply(before).getBytes(StandardCharsets.UTF_8));
@@ -314,8 +316,14 @@ public class ProjectSetup {
       }
       return done;
     } catch (IOException e) {
-      throw new UncheckedIOException("Cannot change " + file + ": " + e.getMessage(), e);
+      throw editByHand(file, String.valueOf(e.getMessage()), e);
     }
+  }
+
+  private static IllegalArgumentException editByHand(
+      Path file, String reason, @Nullable IOException cause) {
+    return new IllegalArgumentException(
+        "Cannot change " + file + ": " + reason + ", edit that file by hand", cause);
   }
 
   private static void putBack(Path file, String before, RuntimeException unreadable) {

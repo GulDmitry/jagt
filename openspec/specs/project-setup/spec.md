@@ -49,7 +49,8 @@ The verb `project` SHALL reach it from `help` and the palette: typed alone it op
 A project's block in `jagt.yml` SHALL be rewritten or deleted as lines (`path`, `baseBranch`, `deployBranch`,
 `verifyCommand`, `about`, `labels`, `humanPaths` are rewritten; its other keys, its comments and every other line
 stay). The file is read back and put back when it no longer reads. A project an open task works in, and the only
-project, are not removed. A file that cannot be written is refused naming it, and stays as it was.
+project, are not removed. A file that cannot be written is refused with a sentence naming the file to edit by hand, and stays as it was.
+The refusal is a request the human answers, never a server fault; no write is tried on a read-only file.
 
 #### Scenario: Editing one project
 - **WHEN** the human changes the deploy branch of `billing`, whose block also holds `codeHost` and a comment
@@ -65,7 +66,11 @@ project, are not removed. A file that cannot be written is refused naming it, an
 
 #### Scenario: A file that cannot be written
 - **WHEN** the folder holding `jagt.yml` is read-only and the human adds a project
-- **THEN** the add is refused with `Cannot change <file>` and its cause, and the file's bytes are as they were
+- **THEN** the add is refused as an invalid request naming `<file>`, and the file's bytes are as they were
+
+#### Scenario: A read-only jagt.yml
+- **WHEN** `jagt.yml` is read-only, as on a single-file mount, and the human adds, edits or removes a project
+- **THEN** the board shows a sentence naming the file to edit, nothing is thrown, and no temp file is written
 
 ### Requirement: Labels and human paths are typed in the form
 The form SHALL carry `labels` and `humanPaths`, each typed as a comma-separated list, blanks dropped; an empty field
