@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -19,6 +21,7 @@ import dev.jagt.orchestrator.job.JobSource;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -44,6 +47,13 @@ class BoardApiControllerTest {
 
   private final TaskViews taskViews = mock(TaskViews.class);
   private final TaskScheduler scheduler = mock(TaskScheduler.class);
+  private final BoardStop idleStop =
+      new BoardStop(
+          new OrchestratorPaths(
+              OrchestratorProperties.defaults()
+                  .withRoot("/state")
+                  .withStateFile("/state/state.json")),
+          Clock.systemUTC());
   private final BoardApiController api =
       new BoardApiController(
           taskViews,
@@ -54,7 +64,11 @@ class BoardApiControllerTest {
                   new Declared("do", "start a task", false, 40))),
           new HeaderState(
               new Jobs(
-                  List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                  new Jobs.Catalog(List.of(), List.of()),
+                  scheduler,
+                  Clock.systemUTC(),
+                  mock(StateService.class),
+                  idleStop),
               new ReachLedger(),
               Clock.systemUTC()));
 
@@ -165,7 +179,11 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                    new Jobs.Catalog(List.of(), List.of()),
+                    scheduler,
+                    Clock.systemUTC(),
+                    mock(StateService.class),
+                    idleStop),
                 reach,
                 Clock.systemUTC()));
 
@@ -183,11 +201,11 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    List.of(poll),
-                    List.of(),
+                    new Jobs.Catalog(List.of(poll), List.of()),
                     scheduler,
                     Clock.systemUTC(),
-                    mock(StateService.class)),
+                    mock(StateService.class),
+                    idleStop),
                 new ReachLedger(),
                 Clock.systemUTC()));
 
@@ -206,11 +224,11 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    List.of(poll),
-                    List.<JobSource>of(),
+                    new Jobs.Catalog(List.of(poll), List.<JobSource>of()),
                     scheduler,
                     Clock.systemUTC(),
-                    mock(StateService.class)),
+                    mock(StateService.class),
+                    idleStop),
                 new ReachLedger(),
                 Clock.systemUTC()));
 
@@ -229,7 +247,11 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                    new Jobs.Catalog(List.of(), List.of()),
+                    scheduler,
+                    Clock.systemUTC(),
+                    mock(StateService.class),
+                    idleStop),
                 new ReachLedger(),
                 Clock.systemUTC()));
 
@@ -287,7 +309,11 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of(drafts)),
             new HeaderState(
                 new Jobs(
-                    List.of(), List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                    new Jobs.Catalog(List.of(), List.of()),
+                    scheduler,
+                    Clock.systemUTC(),
+                    mock(StateService.class),
+                    idleStop),
                 new ReachLedger(),
                 Clock.systemUTC()));
     TaskView drafted =

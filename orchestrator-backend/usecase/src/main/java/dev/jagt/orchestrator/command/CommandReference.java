@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,15 +13,18 @@ import org.jspecify.annotations.Nullable;
  */
 public final class CommandReference {
 
+  /** What only a verb a task owns declares. */
+  public record TaskOnly(List<String> aliases, boolean takesProject) {}
+
   public record Verb(
       String id,
       String hint,
       boolean takesTask,
-      List<String> aliases,
+      @JsonUnwrapped TaskOnly taskOnly,
       boolean report,
       boolean aboutOneTask,
       @Nullable String part,
-      boolean takesProject) {
+      @Nullable String confirmation) {
 
     /** Built from the declaration rather than by a caller: adjacent flags transpose in silence. */
     static Verb of(TaskAction action) {
@@ -28,11 +32,11 @@ public final class CommandReference {
           action.id(),
           action.hint(),
           true,
-          action.retiredVerbs(),
+          new TaskOnly(action.retiredVerbs(), action.takesProject()),
           false,
           false,
           null,
-          action.takesProject());
+          null);
     }
 
     static Verb of(GlobalCommand command) {
@@ -40,11 +44,11 @@ public final class CommandReference {
           command.id(),
           command.hint(),
           false,
-          List.of(),
+          new TaskOnly(List.of(), false),
           command.report(),
           command.aboutOneTask(),
           command.part(),
-          false);
+          command.confirmation().orElse(null));
     }
   }
 

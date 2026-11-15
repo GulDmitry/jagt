@@ -54,11 +54,11 @@ export function judge() {
   verdict.textContent = text;
 }
 
-// A line the backend answered without creating anything is the line that would repeat the attempt.
+// A line answered without creating anything would only repeat the attempt.
 const HANDLED = {clear: true};
 const KEPT = {clear: false};
 
-// A line that parses is EXECUTED, not interpreted: only real free text is worth a model call.
+// A line that parses is executed; only free text is worth a model call.
 async function runParsed(parsed) {
   const {verb, argument, task, project} = parsed;
   if (verb.takesTask) {
@@ -81,6 +81,7 @@ async function runParsed(parsed) {
     return HANDLED;
   }
   if (argument && await part.argued?.(argument)) return HANDLED;
+  if (verb.confirmation && !confirm(verb.confirmation)) return KEPT;
   const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
   const result = await api(`/api/commands/${encodeURIComponent(verb.id)}${narrowed}`, {method: 'POST'});
   toast(result.message);

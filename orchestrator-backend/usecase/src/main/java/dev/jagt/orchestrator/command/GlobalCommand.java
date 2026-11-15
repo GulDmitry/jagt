@@ -57,6 +57,11 @@ public interface GlobalCommand {
     return Optional.empty();
   }
 
+  /** The one question a surface asks before running the verb; empty where it runs unasked. */
+  default Optional<String> confirmation() {
+    return Optional.empty();
+  }
+
   /** {@code tail} is what was typed after the verb, blank when nothing was. */
   String run(String tail);
 }

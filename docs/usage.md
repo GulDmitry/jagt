@@ -74,6 +74,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `acceptance [project]` | an interactive acceptance session in its workspace, one per project: write scenarios, answer its questions |
 | `supervise` | with `supervisor: launchd`, have the machine keep the staged jar running; the jagt you started ends itself and launchd takes over |
 | `restart` | restart jagt from the staged jar, after a rebuild or a fixed `jagt.yml` |
+| `stop` / `unstop` | interrupt every working session and pause jobs and intake until you lift it; the mark in the header lifts too, a restart keeps it |
 | `login` | log in where jagt lost its reach, in a window of its own |
 | `activity [created\|shipped\|deployed\|stopped\|done] [<project>]` | every status change of every task, live or finished, newest first |
 | `jobs` | every scheduled job, its cadence, last and next run |

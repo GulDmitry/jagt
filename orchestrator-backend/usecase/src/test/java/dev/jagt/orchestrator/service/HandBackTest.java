@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -25,6 +26,7 @@ import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -63,7 +65,7 @@ class HandBackTest {
           new ConfigService(
               new ConfigSource(paths, new FakeConfigInputs()),
               mock(AgentRuntime.class),
-              new ActStops(new MasterBrake(paths)),
+              new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC())),
               new Checkers(new TaskChart(Composition.builtIn())));
       handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
     }

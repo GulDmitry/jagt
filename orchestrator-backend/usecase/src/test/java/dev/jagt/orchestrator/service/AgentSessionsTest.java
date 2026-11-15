@@ -31,6 +31,7 @@ import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -42,6 +43,7 @@ import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -89,7 +91,7 @@ class AgentSessionsTest {
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
-            new ActStops(new MasterBrake(paths)),
+            new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC())),
             new Checkers(new TaskChart(Composition.builtIn())));
     sessions =
         new AgentSessions(
@@ -714,6 +716,28 @@ class AgentSessionsTest {
     assertThatThrownBy(() -> sessions.press("ABC-1", SessionHost.Key.TAB))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("No Claude session is running");
+    verify(tmux, never()).pressTaskWindow(anyString(), anyString(), any());
+  }
+
+  @ParameterizedTest
+  @CsvSource({"true,true", "false,false"})
+  void countsTheInterruptOnlyWhereTheKeyLandsOnWorkingTurn(boolean landed, boolean counted) {
+    state.putTask("ABC-1", inProgress);
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("esc to interrupt"));
+    when(agentRuntime.working("esc to interrupt")).thenReturn(true);
+    when(tmux.pressTaskWindow("jagt", "ABC-1", SessionHost.Key.ESCAPE)).thenReturn(landed);
+
+    assertThat(sessions.interrupt("ABC-1")).isEqualTo(counted);
+  }
+
+  @Test
+  void interruptsNothingWhereTheSessionWaitsAtItsPrompt() {
+    state.putTask("ABC-1", inProgress);
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("❯ "));
+
+    assertThat(sessions.interrupt("ABC-1")).isFalse();
     verify(tmux, never()).pressTaskWindow(anyString(), anyString(), any());
   }
 

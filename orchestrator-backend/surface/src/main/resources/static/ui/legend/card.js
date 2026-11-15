@@ -41,6 +41,6 @@ export const cardRows = () => [
   [draftedTab()],
   [blockHead(), span('quote', '> the row count is wrong')],
   [requestChip('mr-age stalled', `${t('request')} 9d`), aged('status stalled', 'out for review', '9d'),
-    span('chip stalled', t('act-stopped'))],
+    span('chip stalled', t('act-stopped')), span('chip stalled', t('board-stopped'))],
   [detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
 ];

@@ -185,6 +185,8 @@
   [spec](../openspec/specs/task-stops/spec.md#requirement-in-act-the-master-decides-a-stop-for-a-suspected-loop)
 - **Stop triage** — A stop's hover says who looped. [spec](../openspec/specs/task-stops/spec.md#requirement-triage-reads-a-stop-onto-its-hover)
 - **Pause** — Nothing of jagt runs on a paused task until you lift. [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
+- **Board stop** — `stop` interrupts every working session and pauses jobs and intake until your `unstop`; a restart keeps it.
+  [spec](../openspec/specs/board-verbs/spec.md#requirement-a-board-wide-stop-halts-all-work-until-your-lift)
 - **Next tier** — A failure stop lifts on a stronger model. [spec](../openspec/specs/task-stops/spec.md#requirement-a-stop-lifts-on-the-next-tier)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)

@@ -43,7 +43,7 @@ illegible. A hex outside `:root` is a bug, but the translucent blacks (four shad
 - in a round's replies — `.block` head, its `.verdict` green fixed / `--you` a question / grey pushed back;
   the `.quote` it answers muted.
 - `--you` ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link, and on every row): the poll stopped,
-  nothing will look again, `jagt stopped` among them; `.chip.stalled`: `act` stopped, pressed to restore.
+  nothing will look again, `jagt stopped` among them; `.chip.stalled`: `act` or the whole board stopped, pressed to restore.
 - `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
 - `--you` tab `.tabs button.you` — the Drafted review tab: replies written since you last opened it, this browser only.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.

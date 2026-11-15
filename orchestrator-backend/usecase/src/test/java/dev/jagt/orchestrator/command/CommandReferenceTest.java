@@ -45,7 +45,7 @@ class CommandReferenceTest {
     assertThat(CommandReference.verbs(List.of()))
         .filteredOn(verb -> verb.id().equals("sweep"))
         .singleElement()
-        .extracting(CommandReference.Verb::aliases)
+        .extracting(verb -> verb.taskOnly().aliases())
         .isEqualTo(List.of("review"));
   }
 

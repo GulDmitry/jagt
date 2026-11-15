@@ -17,6 +17,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
@@ -52,7 +53,13 @@ class JobsTest {
   @BeforeEach
   void oneJobDeclared() {
     when(job.id()).thenReturn("poll-reviews");
-    jobs = new Jobs(List.of(job), List.of(), scheduler, Clock.systemUTC(), state);
+    jobs =
+        new Jobs(
+            new Jobs.Catalog(List.of(job), List.of()),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            mock(BoardStop.class));
   }
 
   @Test
@@ -70,15 +77,37 @@ class JobsTest {
   }
 
   @Test
+  void runsNoJobWhileTheBoardIsStopped() {
+    BoardStop stopped = mock(BoardStop.class);
+    when(stopped.stopped()).thenReturn(true);
+    Job sourced = mock(Job.class);
+    when(sourced.id()).thenReturn("audit-check");
+    Jobs halted =
+        new Jobs(
+            new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced))),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            stopped);
+    halted.start();
+    verify(scheduler, times(2)).schedule(work.capture(), any(Trigger.class));
+
+    work.getAllValues().forEach(Runnable::run);
+
+    verify(job, never()).run();
+    verify(sourced, never()).run();
+  }
+
+  @Test
   void dueAtOnceTheFirstTimeItIsAsked() {
     when(job.every()).thenReturn(Duration.ofMinutes(1));
     Jobs fixed =
         new Jobs(
-            List.of(job),
-            List.of(),
+            new Jobs.Catalog(List.of(job), List.of()),
             scheduler,
             Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            state);
+            state,
+            mock(BoardStop.class));
     fixed.start();
     verify(scheduler).schedule(any(Runnable.class), trigger.capture());
 
@@ -139,7 +168,13 @@ class JobsTest {
     Job failing = mock(Job.class);
     when(failing.id()).thenReturn("archive-logs");
     doThrow(new IllegalStateException("disk full")).when(failing).run();
-    Jobs both = new Jobs(List.of(failing, job), List.of(), scheduler, Clock.systemUTC(), state);
+    Jobs both =
+        new Jobs(
+            new Jobs.Catalog(List.of(failing, job), List.of()),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            mock(BoardStop.class));
     both.start();
     verify(scheduler, times(2)).schedule(work.capture(), any(Trigger.class));
 
@@ -215,8 +250,13 @@ class JobsTest {
     Job second = mock(Job.class);
     when(second.id()).thenReturn("poll-reviews");
 
-    assertThatThrownBy(
-            () -> new Jobs(List.of(job, second), List.of(), scheduler, Clock.systemUTC(), state))
+    assertThatThrownBy(() ->
+            new Jobs(
+                new Jobs.Catalog(List.of(job, second), List.of()),
+                scheduler,
+                Clock.systemUTC(),
+                state,
+                mock(BoardStop.class)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
   }
@@ -226,8 +266,13 @@ class JobsTest {
     Job nameless = mock(Job.class);
     when(nameless.id()).thenReturn(" ");
 
-    assertThatThrownBy(
-            () -> new Jobs(List.of(nameless), List.of(), scheduler, Clock.systemUTC(), state))
+    assertThatThrownBy(() ->
+            new Jobs(
+                new Jobs.Catalog(List.of(nameless), List.of()),
+                scheduler,
+                Clock.systemUTC(),
+                state,
+                mock(BoardStop.class)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("declares no id");
   }
@@ -261,7 +306,13 @@ class JobsTest {
     Job later = mock(Job.class);
     when(later.id()).thenReturn("clean-recents");
     when(later.every()).thenReturn(Duration.ofHours(1));
-    Jobs both = new Jobs(List.of(job, later), List.of(), scheduler, Clock.systemUTC(), state);
+    Jobs both =
+        new Jobs(
+            new Jobs.Catalog(List.of(job, later), List.of()),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            mock(BoardStop.class));
     both.start();
     verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
 
@@ -302,7 +353,13 @@ class JobsTest {
     Job healthy = mock(Job.class);
     when(healthy.id()).thenReturn("clean-recents");
     when(healthy.every()).thenReturn(Duration.ofHours(1));
-    Jobs both = new Jobs(List.of(job, healthy), List.of(), scheduler, Clock.systemUTC(), state);
+    Jobs both =
+        new Jobs(
+            new Jobs.Catalog(List.of(job, healthy), List.of()),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            mock(BoardStop.class));
 
     assertThat(both.statuses(1_000))
         .extracting(Jobs.Status::id, Jobs.Status::every)
@@ -316,11 +373,11 @@ class JobsTest {
     doReturn(waiting).when(scheduler).schedule(any(Runnable.class), any(Trigger.class));
     Jobs fixed =
         new Jobs(
-            List.of(job),
-            List.of(),
+            new Jobs.Catalog(List.of(job), List.of()),
             scheduler,
             Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
-            state);
+            state,
+            mock(BoardStop.class));
     fixed.start();
 
     fixed.runNow("poll-reviews");
@@ -383,7 +440,13 @@ class JobsTest {
     Map<String, TaskState> tasks =
         Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(state.tasks()).thenReturn(tasks);
-    Jobs withTaskJob = new Jobs(List.of(taskJob), List.of(), scheduler, Clock.systemUTC(), state);
+    Jobs withTaskJob =
+        new Jobs(
+            new Jobs.Catalog(List.of(taskJob), List.of()),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            mock(BoardStop.class));
     withTaskJob.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
 
@@ -400,7 +463,11 @@ class JobsTest {
 
     Jobs both =
         new Jobs(
-            List.of(job), List.of(() -> List.of(sourced)), scheduler, Clock.systemUTC(), state);
+            new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced))),
+            scheduler,
+            Clock.systemUTC(),
+            state,
+            mock(BoardStop.class));
 
     assertThat(both.statuses(1_000))
         .extracting(Jobs.Status::id)

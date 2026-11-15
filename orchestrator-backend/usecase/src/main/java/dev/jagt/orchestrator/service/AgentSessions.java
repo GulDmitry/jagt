@@ -295,6 +295,17 @@ public class AgentSessions implements SessionLines {
     return "Pressed " + key + ".";
   }
 
+  /** Presses the runtime's interrupt where its turn is running; false where nothing ran. */
+  public boolean interrupt(String taskId) {
+    String id = stateService.canonicalTaskId(taskId);
+    String session = agentSession(configService.load(), id);
+    if (!running(session, id)
+        || !shown(session, id).filter(hosting.runtime()::working).isPresent()) {
+      return false;
+    }
+    return hosting.host().pressTaskWindow(session, id, SessionHost.Key.ESCAPE);
+  }
+
   /**
    * Work on a round already handed back needs the notes and the brief, not the conversation that
    * wrote them.

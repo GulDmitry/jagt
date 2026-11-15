@@ -19,11 +19,13 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -56,7 +58,7 @@ class ConfigServiceTest {
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    stops = new ActStops(new MasterBrake(paths));
+    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC()));
     service =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
@@ -254,6 +256,24 @@ class ConfigServiceTest {
             .mode();
 
     assertThat(mode).isEqualTo("judge");
+  }
+
+  @Test
+  void readsActAsJudgeWhileTheBoardIsStoppedAndKeepsTheConfiguredModeInTheFile() throws Exception {
+    Path configFile = root.resolve("jagt.yml");
+    Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
+    Files.writeString(root.resolve("board-stopped"), "1000");
+    ConfigService stoppedBoard =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers);
+
+    String mode = stoppedBoard.load().master().mode();
+
+    assertThat(mode).isEqualTo("judge");
+    assertThat(Files.readString(configFile)).contains("mode: act");
   }
 
   @Test

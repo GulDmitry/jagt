@@ -95,6 +95,11 @@ public class OrchestratorPaths {
     return stateFile.resolveSibling("act-stopped");
   }
 
+  /** Present while the whole board is stopped; holds the epoch millis of the stop. */
+  public Path boardStopped() {
+    return stateFile.resolveSibling("board-stopped");
+  }
+
   /**
    * The tasks counted toward stopping `act`, one per line, present while the count is above zero.
    */

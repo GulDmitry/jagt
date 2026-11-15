@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -42,6 +43,22 @@ public class Jobs {
   /** {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled. */
   public record Summary(int count, @Nullable Long nextRunAt, int failing) {}
 
+  /** The declared jobs and those each {@link JobSource} holds. */
+  @Component
+  public static class Catalog {
+
+    private final List<Job> all;
+
+    public Catalog(List<Job> declared, List<JobSource> sources) {
+      all = new ArrayList<>(declared);
+      sources.forEach(source -> all.addAll(source.jobs()));
+    }
+
+    List<Job> all() {
+      return List.copyOf(all);
+    }
+  }
+
   private static final class Run {
     private final AtomicBoolean running = new AtomicBoolean();
     private volatile long nextAt;
@@ -58,20 +75,20 @@ public class Jobs {
   private final TaskScheduler scheduler;
   private final Clock clock;
   private final StateService stateService;
+  private final BoardStop boardStop;
   private volatile boolean ready;
 
   public Jobs(
-      List<Job> declared,
-      List<JobSource> sources,
+      Catalog catalog,
       TaskScheduler scheduler,
       Clock clock,
-      StateService stateService) {
+      StateService stateService,
+      BoardStop boardStop) {
     this.scheduler = scheduler;
     this.clock = clock;
     this.stateService = stateService;
-    List<Job> all = new ArrayList<>(declared);
-    sources.forEach(source -> all.addAll(source.jobs()));
-    for (Job job : all) {
+    this.boardStop = boardStop;
+    for (Job job : catalog.all()) {
       if (job.id() == null || job.id().isBlank()) {
         throw new IllegalStateException(job.getClass().getSimpleName() + " declares no id");
       }
@@ -187,6 +204,9 @@ public class Jobs {
   }
 
   private void execute(Job job, Run run) {
+    if (boardStop.stopped()) {
+      return;
+    }
     if (!run.running.compareAndSet(false, true)) {
       return;
     }

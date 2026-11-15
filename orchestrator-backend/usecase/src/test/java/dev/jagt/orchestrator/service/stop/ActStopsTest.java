@@ -8,33 +8,62 @@ import dev.jagt.orchestrator.service.stop.ActStop.Cause;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class ActStopsTest {
 
-  @Test
-  void namesThreeBadEndingsWhereActStoppedFileStands(@TempDir Path root) throws IOException {
-    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+  @TempDir Path root;
 
-    assertThat(new ActStops(new MasterBrake(orchestratorPaths().withRoot(root).build())).standing())
-        .contains(new ActStop(Cause.STRIKES));
+  private ActStops stops;
+
+  @BeforeEach
+  void stopsOverTheTempRoot() {
+    var paths = orchestratorPaths().withRoot(root).build();
+    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC()));
   }
 
   @Test
-  void liftsNothingWhereNoStopStands(@TempDir Path root) {
-    assertThat(new ActStops(new MasterBrake(orchestratorPaths().withRoot(root).build())).lift())
-        .isFalse();
+  void namesThreeBadEndingsWhereActStoppedFileStands() throws IOException {
+    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+
+    assertThat(stops.standing()).contains(new ActStop(Cause.STRIKES, null));
   }
 
   @Test
-  void liftsTheStop(@TempDir Path root) throws IOException {
+  void liftsNothingWhereNoStopStands() {
+    assertThat(stops.lift()).isFalse();
+  }
+
+  @Test
+  void liftsTheStop() throws IOException {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    ActStops stops = new ActStops(new MasterBrake(orchestratorPaths().withRoot(root).build()));
 
     boolean lifted = stops.lift();
 
     assertThat(lifted).isTrue();
     assertThat(stops.standing()).isEmpty();
+  }
+
+  @Test
+  void namesTheBoardStopAndItsMomentWhereOnlyTheBoardIsStopped() throws IOException {
+    Files.writeString(root.resolve("board-stopped"), "1000");
+
+    assertThat(stops.standing()).contains(new ActStop(Cause.BOARD, 1000L));
+  }
+
+  @Test
+  void namesNoStopWhereNothingIsStopped() {
+    assertThat(stops.standing()).isEmpty();
+  }
+
+  @Test
+  void namesTheBoardStopFirstWhereActIsStoppedToo() throws IOException {
+    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+    Files.writeString(root.resolve("board-stopped"), "1000");
+
+    assertThat(stops.standing()).contains(new ActStop(Cause.BOARD, 1000L));
   }
 }

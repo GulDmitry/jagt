@@ -2,6 +2,7 @@
 
 import {make, span} from '../core/dom.js';
 import {countdown} from '../core/format.js';
+import {full} from '../core/time.js';
 import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import * as filters from './filters.js';
@@ -24,7 +25,7 @@ function renderJobs() {
   if (jobsChip.hidden) {
     return;
   }
-  // A run writes no state, so this stamp is the last change's and goes into the past: past means DUE.
+  // The stamp is the last change's, so it goes into the past: past means DUE.
   const due = jobs.nextRunAt ? jobs.nextRunAt - Date.now() : null;
   jobsChip.textContent = t('jobs-failed', {failing: jobs.failing, count: jobs.count});
   jobsChip.dataset.tip = t('header.jobs.tip', {next: due === null ? '-' : left(due)});
@@ -40,8 +41,7 @@ function renderReach() {
     + `\n${t('header.reach.clears')}`;
 }
 
-// An empty board has two causes a human cannot act on the wrong one of: nothing exists yet, or controls hide
-// everything. Two elements, so neither can be left showing the other's text.
+// An empty board is nothing created yet or everything filtered out: two elements, so neither shows the other's text.
 function renderEmpty(held, showing) {
   document.getElementById('empty').hidden = held > 0;
   const filtered = document.getElementById('filtered');
@@ -58,22 +58,22 @@ export function render(tasks, showing) {
   // Polling as it should is not news; only the poll being off is said.
   autoReviewChip.hidden = store.autoReview().enabled;
   autoReviewChip.textContent = store.autoReview().summary || '';
-  // The Master pressing buttons for the human is said while it does; judging alone changes nothing on screen.
+  // The Master pressing buttons for the human is said while it does; judging alone shows nothing.
   masterChip.hidden = store.masterMode() !== 'act';
   masterChip.textContent = t('header.master');
   masterChip.dataset.tip = t('header.master.tip');
   renderJobs();
   renderReach();
   const stop = store.actStop();
+  const board = stop?.cause === 'BOARD';
   actChip.hidden = !stop;
-  actChip.dataset.tip = {
-    STRIKES: t('header.act-stop'),
-  }[stop?.cause] || '';
+  actChip.dataset.verb = board ? 'unstop' : 'act';
+  actChip.textContent = t(board ? 'board-stopped' : 'act-stopped');
+  actChip.dataset.tip = !stop ? '' : board ? t('header.board-stop', {since: full(stop.at)}) : t('header.act-stop');
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;
   const perPhase = filters.narrowed(tasks);
-  // The separator is CONTENT, not a gap: a line whose words only come apart when a stylesheet loads is one
-  // stylesheet away from reading `build 0review 1`.
+  // The separator is content, not a gap: the words stay apart without the stylesheet.
   phaseBar.replaceChildren(...store.phases().flatMap(({id: phase, label}, index) => {
     const held = perPhase.filter((task) => task.phase === phase).length;
     const segment = make('button', held ? 'phase' : 'phase empty', `${label} `, span('count', held));
@@ -83,8 +83,7 @@ export function render(tasks, showing) {
     segment.dataset.tip = filters.holds(phase) ? t('header.phase.off', {label}) : t('header.phase.on', {label});
     return index === 0 ? [segment] : [span('sep', ' · '), segment];
   }));
-  // Another segment of the same line, separator and all: it states the order the board is IN, and the hover the
-  // one a press would take it to.
+  // Names the order the board is in; the hover, the one a press takes it to.
   const sort = make('button', 'order', t(order.holds() ? 'header.order.alias' : 'header.order.added'));
   sort.dataset.order = '';
   sort.dataset.tip = order.holds() ? t('header.order.added.tip') : t('header.order.alias.tip');

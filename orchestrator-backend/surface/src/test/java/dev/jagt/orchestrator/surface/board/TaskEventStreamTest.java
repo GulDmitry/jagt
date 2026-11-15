@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import jakarta.servlet.AsyncEvent;
 import java.io.IOException;
@@ -246,11 +247,11 @@ class TaskEventStreamTest {
                     new GlobalCommands(List.of()),
                     new HeaderState(
                         new Jobs(
-                            List.of(),
-                            List.of(),
+                            new Jobs.Catalog(List.of(), List.of()),
                             mock(TaskScheduler.class),
                             Clock.systemUTC(),
-                            mock(StateService.class)),
+                            mock(StateService.class),
+                            mock(BoardStop.class)),
                         new ReachLedger(),
                         Clock.systemUTC())))
             .build()
