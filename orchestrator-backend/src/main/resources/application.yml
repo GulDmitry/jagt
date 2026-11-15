@@ -7,12 +7,16 @@ server:
   # Loopback: the board needs no password to deploy, close a task or start an agent. Set 0.0.0.0 only if you
   # accept that everyone who can reach the port can do all of it.
   address: 127.0.0.1
+  # Stops accepting requests and lets the running ones finish before the context closes.
+  shutdown: graceful
   servlet:
     session:
       cookie:
         same-site: strict
 
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   application:
     name: jagt-orchestrator
   main:

@@ -56,6 +56,8 @@ orchestrator:
     perHour: 20            # unattended moves (Master, auto-review, tracker) of one task in an hour; the next one stops it (at most 49)
   conflictStallMinutes: 20 # in act, a deploy conflict its session was handed whose worktree has not changed this long:
                            # you get one banner, and the card says how many paths are unmerged, where, since when
+  onStop: keep            # keep | end. `end` (a server): stopping jagt ends every live session as gone, windows closed;
+                          # `keep`: sessions outlive a restart
   keepAwake: none         # none | true. `true`: the machine stays awake while the Master acts, auto-review polls or `take` runs; `none` holds nothing
   logging: file            # file | console. `console`: every line, the Master's included, is one ECS JSON object on stdout and no log file is written (a container); `file`: the files under logs/
   interactionLog: true    # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`

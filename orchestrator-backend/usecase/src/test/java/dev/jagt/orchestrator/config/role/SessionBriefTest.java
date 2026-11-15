@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class SessionBriefTest {
 
@@ -108,8 +110,15 @@ class SessionBriefTest {
     assertThat(brief.line(Step.START)).isEqualTo("Read the notes, then work.");
   }
 
-  @Test
-  void carriedTaskKeepsItsBoardStatusUntilChangeBegins(@TempDir Path root) throws Exception {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "Read task_notes.md (if present) and task_context.md",
+        "One carried from a previous session keeps the status the board shows",
+        "answer a question and end your turn without a report",
+        "report IN_PROGRESS when a change begins"
+      })
+  void startStepTellsSessionTo(String instruction, @TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -117,9 +126,6 @@ class SessionBriefTest {
         new SessionBrief(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-    assertThat(brief.line(Step.START))
-        .contains("One carried from a previous session keeps the status the board shows")
-        .contains("answer a question and end your turn without a report")
-        .contains("report IN_PROGRESS when a change begins");
+    assertThat(brief.line(Step.START)).contains(instruction);
   }
 }

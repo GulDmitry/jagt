@@ -121,6 +121,8 @@
 - **Revive after a restart** — Sessions return where they were; one that wrote while jagt was down is asked once to repeat its report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
   [spec](../openspec/specs/session-brief/spec.md#requirement-a-restart-asks-for-the-report-it-may-have-lost)
+- **Stop ends sessions as gone** — with `onStop: end`, SIGTERM ends every live session as gone, windows closed; the next start goes on from the notes.
+  [spec](../openspec/specs/shutdown/spec.md)
 - **Cold prompts** — Past the cache lifetime, a typed prompt starts fresh. [spec](../openspec/specs/cold-prompts/spec.md)
 - **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/platform/spec.md#requirement-the-editor-is-a-launcher)
 - **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
