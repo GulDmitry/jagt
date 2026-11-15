@@ -1,0 +1,13 @@
+services:
+  jagt:
+    build: .
+    ports:
+      - "${JAGT_PORT:-8290}:8290"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - jagt-data:/data
+
+volumes:
+  jagt-data:

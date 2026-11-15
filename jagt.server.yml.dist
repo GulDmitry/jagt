@@ -5,7 +5,8 @@ orchestrator:
     my-project:
       url: https://example.com/team/repo.git   # projects: cloned into the data folder
       baseBranch: origin/main                  # projects
-  terminal: none                               # terminal
+  platform: linux                              # platform
+  codeHost: none                               # codeHost: github or gitlab need `gh` or `glab` in your image
   notifier: none                               # notifier
   keepAwake: none                              # keepAwake
   editor: none                                 # editor

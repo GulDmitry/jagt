@@ -1,0 +1,12 @@
+.git
+.claude
+.codex
+.idea
+.gradle
+build
+node_modules
+backlog
+site
+jagt.yml
+CLAUDE.local.md
+*.log*

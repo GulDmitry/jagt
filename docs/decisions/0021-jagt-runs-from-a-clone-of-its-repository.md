@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-07.
+Accepted 2026-10-07; superseded by [0171](0171-the-image-is-a-base-without-agent-clis.md) for the image.
 
 ## Context
 

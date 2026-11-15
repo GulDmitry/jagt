@@ -37,7 +37,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0018 Master judges by default](0018-the-master-judges-by-default.md)
 - [0019 Large work cut by spec](0019-large-work-is-cut-by-its-spec-not-split-into-requests.md)
 - [0020 jagt holds no token](0020-jagt-holds-no-token-of-its-own.md) (amended by 0033)
-- [0021 jagt runs from its clone](0021-jagt-runs-from-a-clone-of-its-repository.md)
+- [0021 jagt runs from its clone](0021-jagt-runs-from-a-clone-of-its-repository.md) (superseded by 0171 for the image)
 - [0022 The one rewrite](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md) (amended by 0099)
 - [0023 The Master holds a token](0023-the-master-is-identified-by-a-token.md)
 - [0024 Calls metered where run](0024-every-headless-call-is-metered-where-it-runs.md)
@@ -184,3 +184,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0168 One data folder holds everything jagt writes](0168-one-data-folder-holds-everything-jagt-writes.md) (builds on 0021)
 - [0169 Stop work is a SmartLifecycle after the web server](0169-stop-work-is-a-smartlifecycle-after-the-web-server.md) (beside 0160)
 - [0170 The board is its own app](0170-the-board-is-its-own-app-behind-one-contract.md) (supersedes 0046 in part, 0141 in part)
+- [0171 jagt's image is a base without agent CLIs](0171-the-image-is-a-base-without-agent-clis.md) (supersedes 0021 for the image)
