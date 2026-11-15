@@ -44,6 +44,8 @@ logging:
       \ %clr(:){faint} %m %kvp%n%wEx"
 
 orchestrator:
+  # file | console: where every log line goes; jagt.yml.dist describes it.
+  logging: file
   # Blank = auto-detected by walking up from the launch directory.
   root: ${ORCHESTRATOR_ROOT:}
   config-file: ${ORCHESTRATOR_CONFIG_FILE:}

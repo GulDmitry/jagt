@@ -7,6 +7,8 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,7 +29,14 @@ class LogFileAppenderTest {
     JoranConfigurator configurator = new JoranConfigurator();
     configurator.setContext(context);
 
-    configurator.doConfigure(getClass().getResource("/logback-spring.xml"));
+    String withoutProfiles =
+        new String(
+                getClass().getResourceAsStream("/logback-spring.xml").readAllBytes(),
+                StandardCharsets.UTF_8)
+            .replaceAll("</?springProfile[^>]*>", "");
+
+    configurator.doConfigure(
+        new ByteArrayInputStream(withoutProfiles.getBytes(StandardCharsets.UTF_8)));
 
     RollingFileAppender<?> file =
         (RollingFileAppender<?>) context.getLogger(logger).getAppender(appender);

@@ -12,6 +12,7 @@ import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEven
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Profiles;
 
 /**
  * This run's log, the previous run's in {@code .1}, the runs before it dated beside it: runs in the
@@ -37,6 +38,9 @@ public class LogFileRoll
 
   /** Whether this run rolled the log; false means it deliberately left the file alone. */
   boolean apply(ConfigurableEnvironment environment) {
+    if (environment.acceptsProfiles(Profiles.of(LogTarget.CONSOLE_PROFILE))) {
+      return false;
+    }
     List<String> configured =
         Stream.of("logging.file.name", "logging.master.name")
             .map(key -> environment.getProperty(key, ""))

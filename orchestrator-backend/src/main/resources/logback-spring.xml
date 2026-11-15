@@ -7,6 +7,7 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
+    <springProfile name="!jagt-console-logging">
     <!-- Boot's console appender, declared here to carry the alias filter every appender needs. -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
@@ -76,4 +77,22 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>
+    </springProfile>
+
+    <springProfile name="jagt-console-logging">
+        <!-- Boot's structured console format, ECS, one JSON object per line on stdout; the Master's lines join it. -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>${CONSOLE_LOG_THRESHOLD}</level>
+            </filter>
+            <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>ecs</format>
+                <charset>${CONSOLE_LOG_CHARSET}</charset>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
 </configuration>
