@@ -7,7 +7,7 @@
 Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-capable CLI) behind a
 **strategy interface**: an implementation plus a config value, never `if claude` or `if macos`.
 
-- Selected by config: `UserNotifier` by `orchestrator.platform` (macos default, linux). `TerminalDriver` by
+- Selected by config: `UserNotifier` by `orchestrator.platform` (the machine's OS unless overridden). `TerminalDriver` by
   `orchestrator.terminal` (kitty default, ghostty on macOS only). `EditorDriver` by `orchestrator.editor-command`.
   `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).
   `CodeHost` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.

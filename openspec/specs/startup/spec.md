@@ -34,7 +34,11 @@ the network; `--orchestrator.startup-checks=false` skips the checks about the ma
 
 #### Scenario: Linux with the platform unset
 - **WHEN** you start jagt on Linux with the platform left unset
-- **THEN** it is refused: unset means macOS
+- **THEN** it starts with the Linux drivers
+
+#### Scenario: A platform other than the machine's
+- **WHEN** `platform` names an OS other than the one the machine reports, and you start jagt
+- **THEN** it is refused, naming both
 
 ### Requirement: Configuration lives in jagt.yml
 Every setting SHALL live in `jagt.yml` at the repository root, copied from `jagt.yml.dist`, where every key is

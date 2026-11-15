@@ -8,8 +8,8 @@
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
-**A filtered run names its project**: `:test --tests '<Name>'` for the root's rule tests, `:<module>:test --tests '<Name>'` for a module's;
-a bare `test --tests` fails in every project the filter matches nothing in.
+**The root's `:test` is the rule tests, run whole** (`:test --rerun`, about a minute), never a hand-picked list. **A filtered run
+names its project** (`:<module>:test --tests '<Name>'`): a bare `test --tests` fails where the filter matches nothing.
 
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
 A fixed bug's `docs/cases.md` row and `Defect-family:` trailer make defects countable per family.
@@ -35,7 +35,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### One constructor, the one production calls
 
-- **`ProductionConstructorTest`** exempts a record's canonical constructor, a bean's or failure analyzer's only one, a private one.
+- **`ProductionConstructorTest`** exempts a record's canonical constructor, a bean's or a `spring.factories` type's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
   `RuntimeWiring`, `OrchestratorPaths` or `port/host/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
 - Why: a second constructor builds in tests a class production never builds, and it sidesteps `MockCeilingTest`.

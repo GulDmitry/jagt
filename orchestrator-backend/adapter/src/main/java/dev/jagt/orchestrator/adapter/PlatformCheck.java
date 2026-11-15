@@ -11,9 +11,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * Every OS-specific piece is picked from the configured platform, so a wrong value starts perfectly
- * and fails where nobody is looking. The machine is the only thing that can contradict it, so it is
- * asked here.
+ * Every OS-specific piece is picked from the platform, the machine's unless overridden; an override
+ * naming another OS starts perfectly and fails where nobody is looking.
  */
 @Component
 public class PlatformCheck implements StartupCheck {
@@ -57,17 +56,12 @@ public class PlatformCheck implements StartupCheck {
     return problems;
   }
 
-  /** Unset reads as macOS, the same default the beans this key selects carry. */
-  private String configured() {
+  private @Nullable String configured() {
     String platform = properties.platform();
-    return platform == null || platform.isBlank() ? "macos" : platform.toLowerCase(Locale.ROOT);
+    return platform == null || platform.isBlank() ? running() : platform.toLowerCase(Locale.ROOT);
   }
 
   private @Nullable String running() {
-    String name = osName.toLowerCase(Locale.ROOT);
-    if (name.contains("linux")) {
-      return "linux";
-    }
-    return name.contains("mac") ? "macos" : null;
+    return DetectedPlatform.of(osName).orElse(null);
   }
 }

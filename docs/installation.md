@@ -76,12 +76,12 @@ on: 24 h of polling one request costs $3–$7.
 
 ```yaml
 orchestrator:
-  platform: linux         # selects the notifier
+  platform: linux         # optional override of the detected platform
   editorCommand: [idea]   # or [code]; editorDiffCommand is optional
 ```
 
-`platform` is not detected: it defaults to `macos`, and jagt refuses to start when it is not what the machine
-reports. Everything else is shared — kitty speaks the same remote-control protocol on both — bar one
+`platform` is detected from the machine; set it only to override, and jagt refuses to start when it is not
+what the machine reports. Everything else is shared — kitty speaks the same remote-control protocol on both — bar one
 difference: **a Linux notification does not open the board.** `notify-send` carries a click only by staying
 alive waiting for the daemon, which a fire-and-forget notification cannot; the task is named in the title
 instead.

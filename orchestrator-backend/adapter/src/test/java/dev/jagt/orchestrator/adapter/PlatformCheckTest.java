@@ -26,15 +26,17 @@ class PlatformCheckTest {
     List<Problem> problems = new PlatformCheck(properties, host).problems();
 
     assertThat(problems).extracting(Problem::key).containsExactly("orchestrator.platform");
-    assertThat(problems.getFirst().text()).contains("Set it to '" + expected + "'");
+    assertThat(problems.getFirst().text())
+        .contains("'" + configured + "'", "'" + osName + "'", "Set it to '" + expected + "'");
   }
 
-  @Test
-  void takesAnUnsetPlatformForMacosBecauseThatIsWhatEveryUnsetOneSelects() {
+  @ParameterizedTest
+  @CsvSource({"Linux", "Mac OS X"})
+  void startsWhenThePlatformIsUnsetBecauseTheMachineIsAskedInsteadOfAssumingMacos(String osName) {
     OrchestratorProperties properties = OrchestratorProperties.defaults();
 
     Host host = mock(Host.class);
-    when(host.osName()).thenReturn("Mac OS X");
+    when(host.osName()).thenReturn(osName);
 
     assertThat(new PlatformCheck(properties, host).problems()).isEmpty();
   }

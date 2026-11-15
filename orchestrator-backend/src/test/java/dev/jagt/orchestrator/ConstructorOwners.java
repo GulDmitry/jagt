@@ -5,6 +5,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaModifier;
+import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.diagnostics.FailureAnalyzer;
 import org.springframework.context.annotation.Configuration;
@@ -26,8 +27,8 @@ final class ConstructorOwners {
 
   static DescribedPredicate<JavaConstructor> springOrRecordOwns() {
     return DescribedPredicate.describe(
-        "be a Spring bean's, Logback component's or Boot failure analyzer's only"
-            + " constructor or a record's canonical one",
+        "be a Spring bean's, Logback component's or spring.factories type's only constructor"
+            + " or a record's canonical one",
         ConstructorOwners::owns);
   }
 
@@ -45,7 +46,8 @@ final class ConstructorOwners {
                 || owner.isAnnotatedWith(ConfigurationProperties.class)
                 || owner.isAnnotatedWith(Configuration.class)
                 || owner.isAssignableTo(LifeCycle.class)
-                || owner.isAssignableTo(FailureAnalyzer.class));
+                || owner.isAssignableTo(FailureAnalyzer.class)
+                || owner.isAssignableTo(EnvironmentPostProcessor.class));
     return canonical || theBeansOnly;
   }
 }
