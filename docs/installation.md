@@ -31,6 +31,12 @@ The rest are optional, and what selects each is in `jagt.yml.dist`:
 | [lsof](https://github.com/lsof-org/lsof), `pkill` | reaping a worktree's leftover processes on `done`; said once at start and skipped when absent |
 | [OpenSpec](https://github.com/Fission-AI/OpenSpec) | a repository holding `openspec/`: its hand-back is gated and `ship` folds the change; `npm i -g @fission-ai/openspec` |
 
+## Where jagt writes
+
+Everything jagt writes lives in one data folder, `~/.jagt` by default: `state.json` and its siblings, `worktrees/<project>/<task>`,
+`repos/<name>` and `logs/`. Name another with `orchestrator.data` in `jagt.yml`, `ORCHESTRATOR_DATA` or `JAGT__orchestrator__data`.
+A repository stays where it is. A `state.json` an older version left in the repository root is moved into the folder at the first start.
+
 ## MCP access comes first
 
 jagt talks to no external service: it reads a ticket, and a review round, by spawning a **headless** one-shot of

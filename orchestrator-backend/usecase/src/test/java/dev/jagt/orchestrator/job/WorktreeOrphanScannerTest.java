@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import static dev.jagt.orchestrator.job.TestWorktreeOrphanScannerBuilder.worktreeOrphanScanner;
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -41,7 +42,14 @@ class WorktreeOrphanScannerTest {
     repo = Files.createDirectories(root.resolve("demo-repo"));
     StateService state = stateService().withRoot(root).build();
     when(config.load()).thenReturn(worktreeOrphanScanner().withRepo(repo).config());
-    scanner = worktreeOrphanScanner().build(config, state, mock(GitCommands.class), notifications);
+    scanner =
+        worktreeOrphanScanner()
+            .build(
+                config,
+                state,
+                mock(GitCommands.class),
+                orchestratorPaths().withRoot(root).build(),
+                notifications);
   }
 
   static Stream<Arguments> orphansLeftOnDisk() {

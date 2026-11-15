@@ -17,6 +17,7 @@ public class OrchestratorPaths {
 
   private final Path root;
   private final Path configFile;
+  private final Path data;
   private final Path stateFile;
 
   public OrchestratorPaths(OrchestratorProperties properties) {
@@ -25,7 +26,28 @@ public class OrchestratorPaths {
             ? Path.of(properties.root()).toAbsolutePath().normalize()
             : findRoot();
     this.configFile = resolve(properties.configFile(), "jagt.yml");
-    this.stateFile = resolve(properties.stateFile(), "state.json");
+    this.data =
+        properties.data() != null && !properties.data().isBlank()
+            ? Path.of(properties.data()).toAbsolutePath().normalize()
+            : root;
+    this.stateFile =
+        properties.stateFile() != null && !properties.stateFile().isBlank()
+            ? Path.of(properties.stateFile()).toAbsolutePath().normalize()
+            : data.resolve("state.json");
+  }
+
+  /** Everything jagt writes; the root where none is configured. */
+  public Path data() {
+    return data;
+  }
+
+  public Path worktrees() {
+    return data.resolve("worktrees");
+  }
+
+  /** Where older versions kept the state, before the data folder. */
+  public Path legacyStateFile() {
+    return root.resolve("state.json");
   }
 
   public Path root() {

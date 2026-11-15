@@ -16,6 +16,7 @@ public record OrchestratorProperties(
     @Nullable String root,
     @Nullable String configFile,
     @Nullable String stateFile,
+    @Nullable String data,
     @Nullable String platform,
     boolean openTerminalWindow,
     Watchdog watchdog) {
@@ -28,6 +29,6 @@ public record OrchestratorProperties(
    */
   public static OrchestratorProperties defaults() {
     return new OrchestratorProperties(
-        null, null, null, null, false, new Watchdog(Duration.ofMinutes(5)));
+        null, null, null, null, null, false, new Watchdog(Duration.ofMinutes(5)));
   }
 }

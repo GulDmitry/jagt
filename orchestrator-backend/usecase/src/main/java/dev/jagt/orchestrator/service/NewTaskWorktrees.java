@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.git.GitWorktrees;
@@ -51,6 +52,7 @@ public class NewTaskWorktrees {
   private final StateService stateService;
   private final GitWorktrees gitWorktrees;
   private final WorktreeSetup worktreeSetup;
+  private final OrchestratorPaths paths;
 
   /**
    * An empty {@code projectKeys} asks every configured project — what a task with no project named
@@ -268,8 +270,7 @@ public class NewTaskWorktrees {
               projectKey,
               project,
               projectPath,
-              Objects.requireNonNull(projectPath.getParent())
-                  .resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
+              paths.worktrees().resolve(projectKey).resolve(TaskName.slug(request.taskId())),
               gitWorktrees.gitCommonDir(projectPath),
               override != null ? override : project.baseBranch(),
               gitWorktrees.remoteUrl(projectPath),

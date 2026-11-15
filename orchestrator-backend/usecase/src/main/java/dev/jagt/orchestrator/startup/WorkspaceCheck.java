@@ -11,13 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * The two places jagt itself owns. A state file it cannot write is found on the first task, not
- * here.
+ * The places jagt itself owns. A state file it cannot write is found on the first task, not here.
  */
 @Component
 @RequiredArgsConstructor
 public class WorkspaceCheck implements StartupCheck {
 
+  private static final String DATA = "orchestrator.data";
   private static final String STATE_FILE = "orchestrator.state-file";
 
   private final OrchestratorPaths paths;
@@ -30,6 +30,19 @@ public class WorkspaceCheck implements StartupCheck {
           new Problem(
               "orchestrator.root",
               "orchestrator.root " + paths.root() + " is not a directory (ORCHESTRATOR_ROOT)."));
+    }
+    if (!Files.isDirectory(paths.data())) {
+      problems.add(
+          new Problem(
+              DATA,
+              DATA
+                  + " "
+                  + paths.data()
+                  + " is not a directory and could not be created (ORCHESTRATOR_DATA)."));
+    } else if (!Files.isWritable(paths.data())) {
+      problems.add(
+          new Problem(
+              DATA, DATA + " " + paths.data() + " is not writable, so jagt could write nothing."));
     }
     Path stateDir = paths.stateFile().getParent();
     if (stateDir != null && !Files.isDirectory(stateDir)) {

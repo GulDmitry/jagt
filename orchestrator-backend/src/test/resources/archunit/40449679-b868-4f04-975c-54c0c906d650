@@ -24,6 +24,7 @@ Method <dev.jagt.orchestrator.config.LocalModelProperties.withModel(java.lang.St
 Method <dev.jagt.orchestrator.config.LocalModelProperties.withTimeout(java.time.Duration)> does not satisfy be called from main in (LocalModelProperties.java:12)
 Method <dev.jagt.orchestrator.config.OrchestratorProperties.defaults()> does not satisfy be called from main in (OrchestratorProperties.java:30)
 Method <dev.jagt.orchestrator.config.OrchestratorProperties.withConfigFile(java.lang.String)> does not satisfy be called from main in (OrchestratorProperties.java:17)
+Method <dev.jagt.orchestrator.config.OrchestratorProperties.withData(java.lang.String)> does not satisfy be called from main in (OrchestratorProperties.java:19)
 Method <dev.jagt.orchestrator.config.OrchestratorProperties.withOpenTerminalWindow(boolean)> does not satisfy be called from main in (OrchestratorProperties.java:20)
 Method <dev.jagt.orchestrator.config.OrchestratorProperties.withPlatform(java.lang.String)> does not satisfy be called from main in (OrchestratorProperties.java:19)
 Method <dev.jagt.orchestrator.config.OrchestratorProperties.withRoot(java.lang.String)> does not satisfy be called from main in (OrchestratorProperties.java:16)

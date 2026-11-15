@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.git;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -41,6 +42,7 @@ public class WorktreeOrphans {
   private final ConfigService configService;
   private final StateService stateService;
   private final GitCommands git;
+  private final OrchestratorPaths paths;
 
   /** Deletes the one orphan directory called {@code name}; any other path is refused. */
   public String delete(String name) {
@@ -109,24 +111,51 @@ public class WorktreeOrphans {
         .projects()
         .forEach((projectKey, project) -> {
           Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-          Path parent = projectPath.getParent();
-          if (parent == null || !Files.isDirectory(parent)) {
-            return;
-          }
-          for (String name :
-              orphanNames(
-                  directoryNames(parent),
-                  projectKey,
-                  owned,
-                  name -> holdsCheckout(parent.resolve(name)))) {
-            Path path = parent.resolve(name);
-            if (!path.equals(projectPath) && !somebodyElses(name, path)) {
-              found.putIfAbsent(
-                  path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers)));
-            }
-          }
+          besideRepository(projectKey, projectPath, owned, secretMatchers, found);
+          underData(projectKey, owned, secretMatchers, found);
         });
     return List.copyOf(found.values());
+  }
+
+  private void besideRepository(
+      String projectKey,
+      Path projectPath,
+      Set<String> owned,
+      List<PathMatcher> secretMatchers,
+      Map<Path, Orphan> found) {
+    Path parent = projectPath.getParent();
+    if (parent == null || !Files.isDirectory(parent)) {
+      return;
+    }
+    for (String name :
+        orphanNames(
+            directoryNames(parent),
+            projectKey,
+            owned,
+            name -> holdsCheckout(parent.resolve(name)))) {
+      Path path = parent.resolve(name);
+      if (!path.equals(projectPath) && !somebodyElses(name, path)) {
+        found.putIfAbsent(
+            path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers)));
+      }
+    }
+  }
+
+  private void underData(
+      String projectKey,
+      Set<String> owned,
+      List<PathMatcher> secretMatchers,
+      Map<Path, Orphan> found) {
+    Path own = paths.worktrees().resolve(projectKey);
+    if (!Files.isDirectory(own)) {
+      return;
+    }
+    directoryNames(own).stream()
+        .filter(name -> !owned.contains(name))
+        .map(own::resolve)
+        .forEach(path ->
+            found.putIfAbsent(
+                path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers))));
   }
 
   /**

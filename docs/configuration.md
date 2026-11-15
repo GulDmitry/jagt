@@ -48,6 +48,10 @@ orchestrator:
 
 ## What a key does not say for itself
 
+**`data`** is the one folder jagt writes in (`~/.jagt`); `jagt.yml` stays outside it.
+A task's worktree is `data/worktrees/<project>/<task>`.
+A project's own `path` is used in place, and the folder holding it must stay writable for `deploy`.
+
 **`worktree.copyGlobs`** is one top-level list for every project, and what makes a fresh worktree buildable.
 Widen it to whatever your tests and run configs read, knowing each copy is another copy of a credential in a
 sibling directory. `**/` also matches at the repository root, so `**/.env` covers both `app/.env` and a

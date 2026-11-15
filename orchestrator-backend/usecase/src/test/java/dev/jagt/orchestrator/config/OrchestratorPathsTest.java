@@ -54,4 +54,28 @@ class OrchestratorPathsTest {
 
     assertThat(paths.scratch()).isEqualTo(root.resolve("work/scratch"));
   }
+
+  @Test
+  void keepsStateAndWorktreesUnderTheDataFolderItWasGiven(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(root.resolve("vault").toString()));
+
+    assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/state.json"));
+    assertThat(paths.masterToken()).isEqualTo(root.resolve("vault/master-token"));
+    assertThat(paths.worktrees()).isEqualTo(root.resolve("vault/worktrees"));
+  }
+
+  @Test
+  void keepsTheOldStatePlaceInTheRoot(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(root.resolve("vault").toString()));
+
+    assertThat(paths.legacyStateFile()).isEqualTo(root.resolve("state.json"));
+  }
 }

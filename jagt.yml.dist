@@ -254,8 +254,9 @@ orchestrator:
   startupChecks: true     # refuse to start when part of the installation is missing
 
   # ── Almost nobody sets these ───────────────────────────────────────────────────────────────────────────────
-  # root: /path/to/jagt          # where worktrees are cut; default the jagt checkout
-  # stateFile: /path/to/state.json   # where the tasks are kept; default `root`/state.json
+  # data: /data                  # everything jagt writes: state, worktrees/<project>/<task>, repos, logs; default ~/.jagt
+  # root: /path/to/jagt          # where jagt finds `jagt.yml.dist` and the roles; default the jagt checkout
+  # stateFile: /path/to/state.json   # where the tasks are kept; default `data`/state.json
   # mcpUrl: http://127.0.0.1:8290/mcp                   # these three follow `server.port`
   # hookUrl: http://127.0.0.1:8290/api/agent/session
   # gateUrl: http://127.0.0.1:8290/api/agent

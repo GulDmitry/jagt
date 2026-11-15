@@ -46,16 +46,13 @@ class WorktreeOrphansTest {
   @BeforeEach
   void setUp() throws IOException {
     repo = Files.createDirectories(root.resolve("demo-repo"));
-    state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
-    orphans = new WorktreeOrphans(config, state, git);
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+    orphans = new WorktreeOrphans(config, state, git, paths);
     registered = root.resolve("ABC-48-demo");
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(
@@ -124,6 +121,27 @@ class WorktreeOrphansTest {
     assertThat(orphans.scan())
         .singleElement()
         .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
+  }
+
+  @Test
+  void listsFolderUnderTheDataFolderNoTaskOwns() throws IOException {
+    Path left = Files.createDirectories(root.resolve("worktrees/demo/ABC-43"));
+
+    assertThat(orphans.scan())
+        .singleElement()
+        .satisfies(found -> {
+          assertThat(found.path()).isEqualTo(left);
+          assertThat(found.projectKey()).isEqualTo("demo");
+        });
+  }
+
+  @Test
+  void leavesFolderUnderTheDataFolderOfLiveTaskAlone() throws IOException {
+    Path live = Files.createDirectories(root.resolve("worktrees/demo/ABC-44"));
+    state.putTask(
+        "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+
+    assertThat(orphans.scan()).isEmpty();
   }
 
   @Test

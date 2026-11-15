@@ -149,6 +149,8 @@
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
 - **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.
   [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
+- **One data folder** — State, worktrees, clones and logs live under `~/.jagt`, or the folder `orchestrator.data` names.
+  [spec](../openspec/specs/startup/spec.md#requirement-one-data-folder-holds-everything-jagt-writes)
 - **Values from the environment** — `${VAR}`, `${VAR:default}` and `${file:/path}` fill a value; `JAGT__a__b=value` sets the key `a.b`.
   [spec](../openspec/specs/startup/spec.md#requirement-a-value-may-come-from-the-environment-or-a-file)
 - **Local reads** — A local model may map commands, else the cloud; a down one is a lost reach. Key: `orchestrator.assistant.local.endpoint`, off.

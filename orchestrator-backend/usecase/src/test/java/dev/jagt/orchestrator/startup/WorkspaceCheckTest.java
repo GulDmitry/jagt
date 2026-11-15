@@ -40,6 +40,7 @@ class WorkspaceCheckTest {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.resolve("gone").toString())
+            .withData(root.toString())
             .withStateFile(root.resolve("state.json").toString());
 
     assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
@@ -82,5 +83,19 @@ class WorkspaceCheckTest {
             tuple(
                 "orchestrator.state-file",
                 "orchestrator.state-file " + state + " is not writable."));
+  }
+
+  @Test
+  void refusesDataFolderThatIsNoDirectory(@TempDir Path root) throws Exception {
+    Path data = Files.createFile(root.resolve("data"));
+    OrchestratorProperties properties =
+        OrchestratorProperties.defaults()
+            .withRoot(root.toString())
+            .withData(data.toString())
+            .withStateFile(root.resolve("state.json").toString());
+
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.data");
   }
 }

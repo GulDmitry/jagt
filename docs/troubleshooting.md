@@ -57,9 +57,9 @@ A `NoClassDefFoundError` during a startup failure or on exit is the same cause, 
 
 | symptom | fix |
 |---------|-----|
-| Focus raises no window | `grep kitty jagt-backend.log` — install kitty, or set `orchestrator.kittyCommand` |
-| You cannot find the log | `tail -f jagt-backend.log`, next to where you started the jar |
-| A session went missing and you want to know when | `grep -E 'session window changed|session gone|task window' jagt-backend.log`: one line per change |
+| Focus raises no window | `grep kitty ~/.jagt/logs/jagt-backend.log` — install kitty, or set `orchestrator.kittyCommand` |
+| You cannot find the log | `tail -f ~/.jagt/logs/jagt-backend.log`, in `logs/` of the data folder |
+| A session went missing and you want to know when | `grep -E 'session window changed|session gone|task window' ~/.jagt/logs/jagt-backend.log`: one line per change |
 
 The log rolls at 10 MB into one `.1`. A start keeps the previous run as `jagt-backend.log.<UTC date-time>`
 for 14 days, 200 MB at most; a read of an earlier run goes there.
@@ -68,6 +68,7 @@ for 14 days, 200 MB at most; a read of an earlier run goes there.
 
 | symptom | what jagt does |
 |---------|----------------|
+| `state.json` of an older version sits in the repository root | moves it into the data folder once, naming it in the log |
 | `state.json` is corrupted | recovers from `state.json.bak`, moves the bad file to `state.json.corrupt` |
 | Both the file and its backup are unusable | **refuses to start** rather than begin with an empty task list |
 | A worktree nobody owns still holds files | pings you once at startup and WARNs; it never deletes it |

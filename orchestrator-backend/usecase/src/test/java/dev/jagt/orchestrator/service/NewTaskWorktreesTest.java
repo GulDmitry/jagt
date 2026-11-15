@@ -79,10 +79,11 @@ class NewTaskWorktreesTest {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
+            .withData(root.resolve("data").toString())
             .withStateFile(root.resolve("state.json").toString());
-    state =
-        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
-    worktrees = new NewTaskWorktrees(config, state, git, setup);
+    OrchestratorPaths paths = new OrchestratorPaths(properties);
+    state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+    worktrees = new NewTaskWorktrees(config, state, git, setup, paths);
     oneProject =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -140,7 +141,8 @@ class NewTaskWorktreesTest {
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                         "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
     attaching =
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
+        TaskState.builder(
+                "api", root.resolve("data/worktrees/api/ABC-7").toString(), TaskStatus.IN_PROGRESS)
             .alias("a1")
             .repoRequest("registry")
             .build();
@@ -223,7 +225,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void cutsOneFlatWorktreeForSlashedBranchTakenOverFromSomeoneElse() {
+  void cutsOneFlatWorktreeUnderTheDataFolderWhileTheRepositoryStaysWhereItIs() {
 
     worktrees.cut(
         NewTask.builder("feature/ABC-42", "proj").build(), oneProject, BranchStrategy.FRESH);
@@ -231,7 +233,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("feature-ABC-42-proj"),
+            root.resolve("data/worktrees/proj/feature-ABC-42"),
             "feature/ABC-42",
             "origin/main",
             BranchStrategy.FRESH);
@@ -287,7 +289,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("ABC-99-proj"),
+            root.resolve("data/worktrees/proj/ABC-99"),
             "ABC-99",
             "origin/main",
             BranchStrategy.FRESH);
@@ -302,7 +304,8 @@ class NewTaskWorktreesTest {
                 NewTask.builder("ABC-9", "proj").build(), oneProject, BranchStrategy.FRESH))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(root.resolve("repo"), root.resolve("ABC-9-proj"), "ABC-9");
+    verify(git)
+        .removeWorktree(root.resolve("repo"), root.resolve("data/worktrees/proj/ABC-9"), "ABC-9");
   }
 
   @Test
@@ -314,7 +317,8 @@ class NewTaskWorktreesTest {
                 NewTask.builder("ABC-4", "proj").build(), oneProject, BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(root.resolve("repo"), root.resolve("ABC-4-proj"), null);
+    verify(git)
+        .removeWorktree(root.resolve("repo"), root.resolve("data/worktrees/proj/ABC-4"), null);
   }
 
   @Test
@@ -330,14 +334,14 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("api-repo"),
-            root.resolve("ABC-7-api"),
+            root.resolve("data/worktrees/api/ABC-7"),
             "ABC-7",
             "origin/main",
             BranchStrategy.FRESH);
     verify(git)
         .createWorktree(
             root.resolve("web-repo"),
-            root.resolve("ABC-7-web"),
+            root.resolve("data/worktrees/web/ABC-7"),
             "ABC-7",
             "origin/release",
             BranchStrategy.FRESH);
@@ -357,8 +361,12 @@ class NewTaskWorktreesTest {
                 BranchStrategy.FRESH))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(root.resolve("api-repo"), root.resolve("ABC-8-api"), "ABC-8");
-    verify(git).removeWorktree(root.resolve("web-repo"), root.resolve("ABC-8-web"), "ABC-8");
+    verify(git)
+        .removeWorktree(
+            root.resolve("api-repo"), root.resolve("data/worktrees/api/ABC-8"), "ABC-8");
+    verify(git)
+        .removeWorktree(
+            root.resolve("web-repo"), root.resolve("data/worktrees/web/ABC-8"), "ABC-8");
   }
 
   @Test
@@ -394,7 +402,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("ABC-3-proj"),
+            root.resolve("data/worktrees/proj/ABC-3"),
             "ABC-3",
             "feature/parent",
             BranchStrategy.FRESH);
@@ -423,7 +431,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("ABC-3-proj"),
+            root.resolve("data/worktrees/proj/ABC-3"),
             "ABC-3",
             "feature/parent",
             BranchStrategy.FRESH);
@@ -575,7 +583,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("registry-repo"),
-            root.resolve("ABC-7-registry"),
+            root.resolve("data/worktrees/registry/ABC-7"),
             "ABC-7",
             "origin/release",
             BranchStrategy.FRESH);
@@ -620,7 +628,8 @@ class NewTaskWorktreesTest {
         .isInstanceOf(IllegalStateException.class);
 
     verify(git)
-        .removeWorktree(root.resolve("registry-repo"), root.resolve("ABC-7-registry"), "ABC-7");
+        .removeWorktree(
+            root.resolve("registry-repo"), root.resolve("data/worktrees/registry/ABC-7"), "ABC-7");
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api");
     assertThat(task.repoRequest()).isEqualTo("registry");
@@ -639,7 +648,8 @@ class NewTaskWorktreesTest {
     assertThat(state.task("ABC-7").orElseThrow().repos())
         .extracting(TaskRepo::worktreePath)
         .containsExactly(
-            root.resolve("ABC-7-api").toString(), root.resolve("cut-by-hand").toString());
+            root.resolve("data/worktrees/api/ABC-7").toString(),
+            root.resolve("cut-by-hand").toString());
   }
 
   @Test
@@ -661,11 +671,12 @@ class NewTaskWorktreesTest {
   @Test
   void trustsTheAddedRepositorysGitStateAsItStandsAndKeepsTheRecordOfTheOthers() {
     when(config.load()).thenReturn(registryMain);
-    when(git.gitState(List.of(root.resolve("ABC-7-registry"))))
+    when(git.gitState(List.of(root.resolve("data/worktrees/registry/ABC-7"))))
         .thenReturn(Map.of("core.bare in registry", "d2"));
     state.putTask(
         "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
+        TaskState.builder(
+                "api", root.resolve("data/worktrees/api/ABC-7").toString(), TaskStatus.IN_PROGRESS)
             .alias("a1")
             .repoRequest("registry")
             .gitTrust(GitTrust.of(Map.of("core.bare in api", "d1")))
@@ -689,7 +700,8 @@ class NewTaskWorktreesTest {
     when(config.load()).thenReturn(configured);
     state.putTask(
         "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
+        TaskState.builder(
+                "api", root.resolve("data/worktrees/api/ABC-7").toString(), TaskStatus.IN_PROGRESS)
             .alias("a1")
             .repoRequest("api")
             .build());
@@ -735,10 +747,18 @@ class NewTaskWorktreesTest {
         .containsExactly(tuple("api", true), tuple("web", false));
     verify(git)
         .createWorktree(
-            Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9", "origin/main", BranchStrategy.FRESH);
+            Path.of("/api"),
+            root.resolve("data/worktrees/api/ABC-9"),
+            "ABC-9",
+            "origin/main",
+            BranchStrategy.FRESH);
     verify(git)
         .createWorktree(
-            Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9", "origin/main", BranchStrategy.FRESH);
+            Path.of("/web"),
+            root.resolve("data/worktrees/web/ABC-9"),
+            "ABC-9",
+            "origin/main",
+            BranchStrategy.FRESH);
     verify(setup, times(2)).fill(any(), any(), any());
   }
 
@@ -754,11 +774,15 @@ class NewTaskWorktreesTest {
 
     verify(git)
         .createWorktree(
-            Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9", "origin/main", BranchStrategy.RESUME);
+            Path.of("/api"),
+            root.resolve("data/worktrees/api/ABC-9"),
+            "ABC-9",
+            "origin/main",
+            BranchStrategy.RESUME);
     verify(git)
         .createWorktree(
             Path.of("/web"),
-            Path.of("/ABC-9-web"),
+            root.resolve("data/worktrees/web/ABC-9"),
             "ABC-9",
             "origin/main",
             BranchStrategy.RECREATE);
@@ -810,7 +834,11 @@ class NewTaskWorktreesTest {
     doThrow(new IllegalStateException("git failed"))
         .when(git)
         .createWorktree(
-            Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9", "origin/main", BranchStrategy.FRESH);
+            Path.of("/web"),
+            root.resolve("data/worktrees/web/ABC-9"),
+            "ABC-9",
+            "origin/main",
+            BranchStrategy.FRESH);
 
     assertThatThrownBy(() ->
             worktrees.place(
@@ -819,7 +847,7 @@ class NewTaskWorktreesTest {
                 repos -> {}))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9");
+    verify(git).removeWorktree(Path.of("/api"), root.resolve("data/worktrees/api/ABC-9"), "ABC-9");
     verify(git, never()).removeWorktree(eq(Path.of("/web")), any(), any());
   }
 
@@ -836,7 +864,7 @@ class NewTaskWorktreesTest {
                 }))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9");
-    verify(git).removeWorktree(Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9");
+    verify(git).removeWorktree(Path.of("/api"), root.resolve("data/worktrees/api/ABC-9"), "ABC-9");
+    verify(git).removeWorktree(Path.of("/web"), root.resolve("data/worktrees/web/ABC-9"), "ABC-9");
   }
 }

@@ -115,6 +115,7 @@ abstract class BoardPageContext {
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
     registry.add("orchestrator.root", () -> root.toString());
+    registry.add("orchestrator.data", () -> root.toString());
     registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
     registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
     registry.add("logging.file.name", () -> root.resolve("jagt.log").toString());

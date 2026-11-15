@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -26,7 +27,11 @@ public record TestWorktreeOrphanScannerBuilder(Path repo, List<String> copyGlobs
   }
 
   public WorktreeOrphanScanner build(
-      ConfigService config, StateService state, GitCommands git, Notifications notifications) {
-    return new WorktreeOrphanScanner(new WorktreeOrphans(config, state, git), notifications);
+      ConfigService config,
+      StateService state,
+      GitCommands git,
+      OrchestratorPaths paths,
+      Notifications notifications) {
+    return new WorktreeOrphanScanner(new WorktreeOrphans(config, state, git, paths), notifications);
   }
 }

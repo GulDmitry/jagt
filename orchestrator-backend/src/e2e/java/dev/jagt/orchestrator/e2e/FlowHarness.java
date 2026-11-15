@@ -52,6 +52,7 @@ final class FlowHarness {
 
   static void livesIn(DynamicPropertyRegistry registry, Path workspace) {
     registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
+    registry.add("orchestrator.data", () -> workspace.resolve("root").toString());
     registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
     registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
   }
@@ -129,7 +130,7 @@ final class FlowHarness {
   }
 
   Path webWorktree() {
-    return workspace.resolve(task + "-web");
+    return workspace.resolve("root/worktrees/web").resolve(task);
   }
 
   String webRequest() {
@@ -229,6 +230,6 @@ final class FlowHarness {
   }
 
   Path worktree() {
-    return workspace.resolve(task + "-proj");
+    return workspace.resolve("root/worktrees/proj").resolve(task);
   }
 }

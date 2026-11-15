@@ -28,6 +28,7 @@ class StartupRefusalTest {
                     "--server.port=0",
                     "--orchestrator.open-terminal-window=false",
                     "--orchestrator.root=" + root,
+                    "--orchestrator.data=" + root,
                     "--spring.config.import=",
                     "--orchestrator.config-file=" + root.resolve("jagt.yml"),
                     "--orchestrator.state-file=" + root.resolve("state.json"),

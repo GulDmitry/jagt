@@ -81,6 +81,7 @@ allprojects {
         // Walking up from the working directory would reach the human's own stores.
         def testRoot = task.project.layout.buildDirectory.dir("test-root/${task.name}").get().asFile
         task.environment 'ORCHESTRATOR_ROOT', testRoot.absolutePath
+        task.environment 'ORCHESTRATOR_DATA', testRoot.absolutePath
         // A booted app reads its briefs and cases from the root, so the root holds the shipped ones.
         def shipped = task.project.rootProject.file('..')
         task.doFirst {

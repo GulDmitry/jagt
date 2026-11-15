@@ -181,3 +181,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0165 Error Prone keeps the Java the build targets](0165-error-prone-keeps-the-java-the-build-targets.md)
 - [0166 Packages are architecture](0166-packages-are-architecture.md) (builds on 0162)
 - [0167 The board is guarded by an auth seam on Spring Security](0167-the-board-is-guarded-by-an-auth-seam-on-spring-security.md) (stands under 0130)
+- [0168 One data folder holds everything jagt writes](0168-one-data-folder-holds-everything-jagt-writes.md) (builds on 0021)

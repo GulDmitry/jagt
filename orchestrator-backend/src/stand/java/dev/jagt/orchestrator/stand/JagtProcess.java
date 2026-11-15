@@ -53,6 +53,8 @@ public final class JagtProcess implements AutoCloseable {
         .forEach(env::remove);
     env.keySet().removeIf(name -> name.startsWith("CLAUDE"));
     env.put("ORCHESTRATOR_ROOT", root.toString());
+    env.put("ORCHESTRATOR_DATA", root.toString());
+    env.put("LOG_FILE", root.resolve("jagt-backend.log").toString());
     env.put("TMUX_TMPDIR", root.resolve("tmux").toString());
     try {
       return new JagtProcess(builder.start(), port).awaitReady(root);
