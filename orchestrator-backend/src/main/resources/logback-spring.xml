@@ -91,8 +91,20 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
                 <charset>${CONSOLE_LOG_CHARSET}</charset>
             </encoder>
         </appender>
+        <!-- What the read-only log read returns: the lines CONSOLE writes, kept in memory. -->
+        <appender name="RECENT" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>${CONSOLE_LOG_THRESHOLD}</level>
+            </filter>
+            <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>ecs</format>
+                <charset>${CONSOLE_LOG_CHARSET}</charset>
+            </encoder>
+        </appender>
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="RECENT"/>
         </root>
     </springProfile>
 </configuration>

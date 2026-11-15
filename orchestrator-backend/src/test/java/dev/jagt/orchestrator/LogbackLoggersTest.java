@@ -71,6 +71,7 @@ class LogbackLoggersTest {
             .map(match -> match.group(1))
             .toList();
 
-    assertThat(appenders).containsExactlyInAnyOrder("CONSOLE", "CONSOLE", "FILE", "MASTER");
+    assertThat(appenders)
+        .containsExactlyInAnyOrder("CONSOLE", "CONSOLE", "FILE", "MASTER", "RECENT");
   }
 }

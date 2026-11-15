@@ -221,6 +221,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/terminal` | core | terminal, editor and session-host ports |
 | `port/worktree` | core | worktree-facing ports: acceptance runner, build tools, line diff, specs, containers, processes |
 | `protocol` | core | what crosses into jagt: tool messages, reads, hooks, schema |
+| `protocol/debug` | core | the read-only debug reads' messages |
 | `protocol/message` | core | the tool messages a session sends and their arguments |
 | `protocol/plan` | core | the plan's parts: criteria, probes, repositories, judgements |
 | `protocol/read` | core | the reads jagt asks a model for: round, review, ticket, retry policy |

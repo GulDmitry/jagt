@@ -63,6 +63,36 @@ class BoardLoginOnTomcatTest {
   }
 
   @Test
+  void refusesTheDebugApiReadWhenNobodyIsLoggedIn() throws Exception {
+    HttpRequest read =
+        HttpRequest.newBuilder(
+                URI.create("http://127.0.0.1:" + port + "/api/debug/records/backend-log"))
+            .build();
+
+    HttpResponse<String> refused =
+        HttpClient.newHttpClient().send(read, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(refused.statusCode()).isEqualTo(401);
+  }
+
+  @Test
+  void refusesTheDebugMcpReadWithNoTokenAndNoWorktree() throws Exception {
+    HttpRequest read =
+        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/mcp"))
+            .header("Content-Type", "application/json")
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":"
+                        + "{\"name\":\"read_record\",\"arguments\":{\"record\":\"stops\"}}}"))
+            .build();
+
+    HttpResponse<String> refused =
+        HttpClient.newHttpClient().send(read, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(refused.statusCode()).isEqualTo(401);
+  }
+
+  @Test
   void servesSessionOnMcpByItsWorktreeHeaderWithNoLogin() throws Exception {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/mcp"))

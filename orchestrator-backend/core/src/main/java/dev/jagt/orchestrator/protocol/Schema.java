@@ -45,6 +45,11 @@ public final class Schema {
     return this;
   }
 
+  public Schema optional(String name, String type, @Nullable String describes) {
+    field(name, type, describes);
+    return this;
+  }
+
   public Schema required(String name, String type, @Nullable String describes) {
     field(name, type, describes);
     required.add(name);

@@ -54,6 +54,10 @@
 - **Your own cases** — A case sends a step and opens a turn, or lets the Master move.
   [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
 
+## Debug reads · [spec](../openspec/specs/debug-reads/spec.md)
+- **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
+  [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
+
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-a-git-case-the-session-can-work-has-a-verb)

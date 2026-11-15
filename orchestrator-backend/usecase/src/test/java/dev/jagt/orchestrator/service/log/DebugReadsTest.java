@@ -1,0 +1,92 @@
+package dev.jagt.orchestrator.service.log;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.StateService;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class DebugReadsTest {
+
+  @Test
+  void returnsTheLastLinesOfTheStopRecord(@TempDir Path root) throws IOException {
+    Files.writeString(root.resolve("stops.jsonl"), "one\ntwo\nthree\n");
+
+    assertThat(
+            new DebugReads(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults()
+                            .withRoot(root.toString())
+                            .withStateFile(root.resolve("state.json").toString())),
+                    mock(StateService.class),
+                    mock(AgentRuntime.class))
+                .stops(2))
+        .isEqualTo("two\nthree");
+  }
+
+  @Test
+  void returnsTheReviewedStopsBesideTheStateFile(@TempDir Path root) throws IOException {
+    Files.writeString(root.resolve("stops-reviewed.jsonl"), "verdict\n");
+
+    assertThat(
+            new DebugReads(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults()
+                            .withRoot(root.toString())
+                            .withStateFile(root.resolve("state.json").toString())),
+                    mock(StateService.class),
+                    mock(AgentRuntime.class))
+                .stopsReviewed(5))
+        .isEqualTo("verdict");
+  }
+
+  @Test
+  void answersEmptyAndCreatesNothingWhereTheRecordDoesNotExistYet(@TempDir Path root)
+      throws IOException {
+    String read =
+        new DebugReads(
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())),
+                mock(StateService.class),
+                mock(AgentRuntime.class))
+            .stops(5);
+
+    try (Stream<Path> left = Files.list(root)) {
+      assertThat(read).isEmpty();
+      assertThat(left.toList()).isEqualTo(List.of());
+    }
+  }
+
+  @Test
+  void leavesTheRecordAndTheSessionUntouchedByAnyRead(@TempDir Path root) throws IOException {
+    Files.writeString(root.resolve("stops.jsonl"), "one\ntwo\n");
+    StateService state = mock(StateService.class);
+    AgentRuntime runtime = mock(AgentRuntime.class);
+    DebugReads reads =
+        new DebugReads(
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            state,
+            runtime);
+
+    reads.stops(1);
+    reads.stopsReviewed(1);
+
+    assertThat(Files.readString(root.resolve("stops.jsonl"))).isEqualTo("one\ntwo\n");
+    verifyNoInteractions(state, runtime);
+  }
+}
