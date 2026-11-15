@@ -82,7 +82,7 @@ tasks.register('roleEval', Test) {
         }
     }
     // Gated on CAPABILITY, and it names what is missing rather than failing every case on it.
-    onlyIf { task ->
+    onlyIf { task -> // skip, naming what is missing, rather than fail every case
         List<String> missing = []
         (evalIsArbiter ? ['claude', 'tmux', 'git'] : [evalCli, 'git']).each { binary ->
             if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
@@ -132,7 +132,7 @@ tasks.register('promptEval', Test) {
         }
     }
     // Gated on what answers, and it names what is missing rather than failing every row on it.
-    onlyIf { task ->
+    onlyIf { task -> // skip, naming what is missing, rather than fail every row
         List<String> missing = []
         if (onLocal) {
             if (localEndpoint.isEmpty() || localModel.isEmpty()) {

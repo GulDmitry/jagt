@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +50,9 @@ class StandShellTest {
               "sh",
               "-c",
               "trap '' HUP; while :; do : > " + root + "/w/f$RANDOM; done"));
-      Thread.sleep(500);
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> root.resolve("w").toFile().list().length > 0);
 
       StandShell.killTmux(root);
       StandShell.deleteRoot(root);

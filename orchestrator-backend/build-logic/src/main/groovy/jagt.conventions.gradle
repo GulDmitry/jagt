@@ -19,7 +19,7 @@ allprojects {
     // and therefore invisible in a diff — and everything there is packaged into the jar and served on
     // loopback. Every ring is guarded, not just the one that serves the board.
     tasks.named('processResources') {
-        exclude '**/.*', '**/.*/**'
+        exclude '**/.*', '**/.*/**' // dot-directories hold local tool state, never shipped
     }
 
     java {

@@ -8,7 +8,7 @@ tasks.register('standTest', Test) {
     classpath = sourceSets.stand.runtimeClasspath
     useJUnitPlatform {
         if (project.hasProperty('modelfree')) {
-            excludeTags 'model'
+            excludeTags 'model' // -Pmodelfree skips the runs that spend model tokens
         }
     }
     // Each run owns its root, port and tmux server, so runs go side by side: StandSlots caps the live runs at

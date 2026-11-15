@@ -363,7 +363,7 @@ class ProcessRunnerTest {
   void handsBackLauncherThatHandedOffToRunningInstanceAndExitedZero() {
     Process launched = new ProcessRunner().runDetached(null, List.of("/bin/sh", "-c", "exit 0"));
 
-    assertThat(launched).isNotNull();
+    assertThat(launched.exitValue()).isZero();
   }
 
   @Test

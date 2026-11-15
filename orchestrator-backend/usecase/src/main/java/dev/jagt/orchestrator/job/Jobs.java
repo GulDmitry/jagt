@@ -194,7 +194,7 @@ public class Jobs {
           .addKeyValue("job", job.id())
           .addKeyValue("effect", "nothing written, the next start asks again")
           .log();
-    } catch (Throwable t) {
+    } catch (Throwable t) { // any failure is logged, never allowed to end the schedule
       fail(job.id(), run, t);
     } finally {
       run.running.set(false);

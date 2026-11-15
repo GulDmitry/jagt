@@ -36,7 +36,7 @@ public record EvalQuorum(int runs, int passes, @Nullable Path stats) {
       made++;
       try {
         run.execute();
-      } catch (Throwable failure) {
+      } catch (Throwable failure) { // every failure of a run counts as one miss toward the quorum
         failures.add("run " + made + ": " + failure.getMessage());
         if (failure instanceof EvalStalled) {
           stalled++;

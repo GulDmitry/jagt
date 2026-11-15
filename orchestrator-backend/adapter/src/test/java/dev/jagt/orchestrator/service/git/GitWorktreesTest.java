@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service.git;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
@@ -23,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -93,10 +91,6 @@ class GitWorktreesTest {
 
   @Test
   void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava() throws Exception {
-    assumeTrue(
-        Arrays.stream(System.getenv("PATH").split(":"))
-            .anyMatch(bin -> Files.isExecutable(Path.of(bin, "lsof"))),
-        "lsof is not installed — the reap cannot see cwds without it");
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);

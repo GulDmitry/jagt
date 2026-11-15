@@ -28,7 +28,7 @@ The only section with no default, and the only one you must write:
 orchestrator:
   projects:
     widgets:
-      path: /Users/you/work/widget-service
+      path: /work/widget-service
       baseBranch: origin/main
       deployBranch: dev
       labels: [widget, backend]

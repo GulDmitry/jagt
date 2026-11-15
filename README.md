@@ -94,7 +94,7 @@ Edit the `my-project` entry the copy already holds; the repository needs a fetch
 orchestrator:
   projects:
     widgets:
-      path: /Users/you/work/widget-service   # absolute path to the repository
+      path: /work/widget-service        # absolute path to the repository
       baseBranch: origin/main                # tasks are cut from here, and it is never pushed to
       deployBranch: dev                      # omit to disable `deploy` for this project
   worktree:

@@ -119,7 +119,7 @@ tasks.register('linuxDriverTest', Test) {
     classpath = sourceSets.linuxTest.runtimeClasspath
     useJUnitPlatform()
     // Gated on CAPABILITY, never on which harness is running it, and it names what is missing.
-    onlyIf { task ->
+    onlyIf { task -> // skip, naming what is missing, off a non-Linux host
         List<String> missing = []
         if (!System.getProperty('os.name').toLowerCase().contains('linux')) {
             missing << 'Linux'

@@ -6,10 +6,10 @@ public final class Console {
   private Console() {}
 
   public static void say(String line) {
-    System.out.println(line);
+    System.out.println(line); // the log is a file, so stdout is the only human-visible channel
   }
 
   public static void problem(String line) {
-    System.err.println(line);
+    System.err.println(line); // problems go to stderr so they survive a redirected stdout
   }
 }

@@ -107,7 +107,7 @@ public final class JagtProcess implements AutoCloseable {
 
   static void pause(Duration duration) {
     try {
-      Thread.sleep(duration);
+      Thread.sleep(duration); // the interval between two polls of a condition no event announces
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new StandFailure("interrupted", e);

@@ -16,7 +16,7 @@ allprojects {
         excludedMethods = ['toString', 'hashCode']
         failWhenNoMutations = false
         if (project.path == ':usecase') {
-            excludedClasses = usecaseGitClasses.collectMany { [it, it + '$*'] }
+            excludedClasses = usecaseGitClasses.collectMany { [it, it + '$*'] } // these classes are mutated from :adapter, where their tests live
             // Most of `:core` is exercised only through `:usecase`, so its mutants are judged against both modules' tests.
             additionalMutableCodePaths = project(':core').sourceSets.main.output.classesDirs.files
         }

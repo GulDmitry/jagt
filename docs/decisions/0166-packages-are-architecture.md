@@ -10,7 +10,7 @@ Accepted 2026-11-14.
 
 - Owner 2026-11-11: `flow/`, `service/`, `job/` and `adapter/` held 60 to 140 classes flat; the tree did not show
   layers, features or what each adapter adapts.
-- JAGT-56 moved every module into sub-packages by feature and kind; six packages still hold more than ten classes
+- The move put every module into sub-packages by feature and kind; six packages still hold more than ten classes
   because package-private partners cannot move without being widened.
 - Without a check the next feature refills a flat package, and a package that is not on the map is an unnamed kind.
 

@@ -14,6 +14,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,7 @@ class OpenAiCompatibleModelTest {
   private final AtomicReference<String> sent = new AtomicReference<>();
   private int status = 200;
   private String reply = "{}";
-  private Duration delay = Duration.ZERO;
+  private volatile CountDownLatch gate = new CountDownLatch(0);
   private HttpServer server;
   private OpenAiCompatibleModel model;
 
@@ -38,7 +39,7 @@ class OpenAiCompatibleModelTest {
         exchange -> {
           sent.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
           try {
-            Thread.sleep(delay.toMillis());
+            gate.await();
             byte[] bytes = reply.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, bytes.length);
             exchange.getResponseBody().write(bytes);
@@ -60,6 +61,7 @@ class OpenAiCompatibleModelTest {
 
   @AfterEach
   void stop() {
+    gate.countDown();
     server.stop(0);
   }
 
@@ -111,7 +113,7 @@ class OpenAiCompatibleModelTest {
 
   @Test
   void failsWithinTheTimeoutWhereTheServerOutlastsIt() throws IOException {
-    delay = Duration.ofSeconds(4);
+    gate = new CountDownLatch(1);
     long begun = System.nanoTime();
 
     var answer =
