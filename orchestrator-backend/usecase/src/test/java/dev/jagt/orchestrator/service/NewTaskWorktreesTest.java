@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -38,6 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -818,6 +822,33 @@ class NewTaskWorktreesTest {
         NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), apiWebDev, repos -> {});
 
     verify(setup, times(2)).setUp(any(), any());
+  }
+
+  @Test
+  void cutsAnotherTaskWhilePlacedTasksSetupStillRuns() throws Exception {
+    when(config.load()).thenReturn(apiWeb);
+    CountDownLatch settingUp = new CountDownLatch(1);
+    CountDownLatch otherCut = new CountDownLatch(1);
+    AtomicBoolean otherCutDuringSetup = new AtomicBoolean();
+    doAnswer(
+            call -> {
+              settingUp.countDown();
+              otherCutDuringSetup.set(otherCut.await(2, TimeUnit.SECONDS));
+              return null;
+            })
+        .when(setup)
+        .setUp(argThat(task -> task.taskId().equals("ABC-9")), any());
+    final Thread placing =
+        Thread.ofVirtual()
+            .start(() ->
+                worktrees.place(NewTask.builder("ABC-9", "api").build(), apiWeb, repos -> {}));
+    settingUp.await(5, TimeUnit.SECONDS);
+
+    worktrees.cut(NewTask.builder("ABC-8", "api").build(), apiWeb, BranchStrategy.FRESH);
+    otherCut.countDown();
+    placing.join();
+
+    assertThat(otherCutDuringSetup).isTrue();
   }
 
   @Test
