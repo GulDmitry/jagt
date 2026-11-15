@@ -653,6 +653,28 @@ class NewTaskWorktreesTest {
   }
 
   @Test
+  void runsNoSetupInWorktreeStandingOnTheTaskBranchThatJagtDidNotCut() {
+    when(config.load()).thenReturn(registryRelease);
+    when(git.worktreeOf(root.resolve("registry-repo"), "ABC-7"))
+        .thenReturn(Optional.of(root.resolve("cut-by-hand")));
+    state.putTask("ABC-7", attaching);
+
+    worktrees.attach("ABC-7", "registry", registryRelease);
+
+    verify(setup, never()).setUp(any(), any());
+  }
+
+  @Test
+  void runsTheSetupInTheWorktreeItCutForTheAddedRepository() {
+    when(config.load()).thenReturn(registryMain);
+    state.putTask("ABC-7", attaching);
+
+    NewRepo added = worktrees.attach("ABC-7", "registry", registryMain);
+
+    verify(setup).setUp(any(), eq(added));
+  }
+
+  @Test
   void leavesAnAdoptedWorktreeAndItsWorkInPlaceWhenWritingItFails() {
     when(config.load()).thenReturn(registryRelease);
     when(git.worktreeOf(root.resolve("registry-repo"), "ABC-7"))
@@ -786,6 +808,29 @@ class NewTaskWorktreesTest {
             "ABC-9",
             "origin/main",
             BranchStrategy.RECREATE);
+  }
+
+  @Test
+  void runsTheSetupOfEveryWorktreeItCutsWhenPlacing() {
+    when(config.load()).thenReturn(apiWebDev);
+
+    worktrees.place(
+        NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), apiWebDev, repos -> {});
+
+    verify(setup, times(2)).setUp(any(), any());
+  }
+
+  @Test
+  void runsTheSetupOfEveryWorktreeCutBeforeTheTaskStarts() {
+    List<NewRepo> cut =
+        worktrees.cut(
+            NewTask.builder("ABC-8", "api").alsoIn(List.of("web")).build(),
+            apiWeb,
+            BranchStrategy.FRESH);
+
+    worktrees.setUp(NewTask.builder("ABC-8", "api").alsoIn(List.of("web")).build(), cut);
+
+    verify(setup, times(2)).setUp(any(), any());
   }
 
   @Test

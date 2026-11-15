@@ -99,6 +99,15 @@ class FreshWorktreeTest {
   }
 
   @Test
+  void failsAsRefusalTheBoardAnswersWhereSetupExitsNonZero() {
+    when(processes.run(any(), any(), any(List.class)))
+        .thenReturn(new Processes.Result(3, "", "cannot link node_modules"));
+
+    assertThatThrownBy(() -> fresh.setUp(request, seeded))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
   void failsNamingProjectWhereSetupPassesItsLimit() {
     when(processes.run(any(), any(), any(List.class)))
         .thenThrow(new IllegalStateException("Command timed out after PT20M: seed"));

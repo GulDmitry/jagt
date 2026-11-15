@@ -69,6 +69,13 @@ public class TaskProvisioning {
         throw e;
       }
     }
+    try {
+      worktrees.setUp(request, repos);
+    } catch (RuntimeException e) {
+      stateService.removeTask(taskId);
+      worktrees.uncut(request, repos, strategy);
+      throw e;
+    }
     NewRepo session = repos.get(0);
     return started(
         taskId,

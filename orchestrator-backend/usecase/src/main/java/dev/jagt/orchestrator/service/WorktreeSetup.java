@@ -49,7 +49,11 @@ public class WorktreeSetup {
                 ? agentRuntime.systemKnowledgeFile(repo.worktreePath())
                 : agentRuntime.briefedFile(repo.worktreePath())));
     agentRuntime.admit(repos.get(0).worktreePath(), added.worktreePath());
-    fresh.setUp(request, added);
+  }
+
+  /** The project's own setup in a worktree jagt cut; it runs on its own, never inside a lock. */
+  public void setUp(NewTask request, NewRepo repo) {
+    fresh.setUp(request, repo);
   }
 
   /**
@@ -60,7 +64,6 @@ public class WorktreeSetup {
     // Asked while the worktree holds nothing but the checkout: jagt's own links look the same
     // afterwards.
     fill(request, repo, repos, agentRuntime.systemKnowledgeFile(repo.worktreePath()));
-    fresh.setUp(request, repo);
   }
 
   private void fill(NewTask request, NewRepo repo, List<NewRepo> repos, Path systemKnowledge) {

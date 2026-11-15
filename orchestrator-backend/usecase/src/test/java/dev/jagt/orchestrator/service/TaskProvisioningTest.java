@@ -225,6 +225,49 @@ class TaskProvisioningTest {
   }
 
   @Test
+  void startsAnotherTaskWhileOneProjectsSetupStillRuns() throws Exception {
+    CountDownLatch settingUp = new CountDownLatch(1);
+    CountDownLatch secondRegistered = new CountDownLatch(1);
+    AtomicBoolean secondStartedDuringSetup = new AtomicBoolean();
+    doAnswer(
+            call -> {
+              settingUp.countDown();
+              secondStartedDuringSetup.set(secondRegistered.await(2, TimeUnit.SECONDS));
+              return null;
+            })
+        .when(worktrees)
+        .setUp(argThat(task -> task.taskId().equals("ABC-1")), any());
+    doAnswer(
+            call -> {
+              secondRegistered.countDown();
+              return List.of(TestNewRepoBuilder.proj().withWorktree(Path.of("/two")).build());
+            })
+        .when(worktrees)
+        .cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
+    Thread first =
+        Thread.ofVirtual()
+            .start(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build()));
+    settingUp.await();
+
+    provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
+    first.join();
+
+    assertThat(secondStartedDuringSetup).isTrue();
+  }
+
+  @Test
+  void unregistersAndRemovesTheWorktreesWhenTheProjectsSetupFails() {
+    NewTask request = NewTask.builder("ABC-5", "proj").build();
+    doThrow(new SetupFailed("[proj] setupCommand exited 2")).when(worktrees).setUp(any(), any());
+
+    assertThatThrownBy(() -> provisioning.initializeTask(request)).isInstanceOf(SetupFailed.class);
+
+    assertThat(state.task("ABC-5")).isEmpty();
+    verify(worktrees)
+        .uncut(request, List.of(TestNewRepoBuilder.proj().build()), BranchStrategy.FRESH);
+  }
+
+  @Test
   void refusesToBuildTaskWithNoProjectForItsSession() {
     assertThatThrownBy(() -> NewTask.builder("ABC-1", " ").alsoIn(List.of("web")).build())
         .isInstanceOf(IllegalArgumentException.class)

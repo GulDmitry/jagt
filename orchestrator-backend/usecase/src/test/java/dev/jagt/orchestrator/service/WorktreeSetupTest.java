@@ -184,7 +184,7 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void runsTheProjectsSetupCommandInTheWorktreeOnceItHoldsItsFilesAndBriefing() throws Exception {
+  void runsTheProjectsSetupCommandInTheWorktree() throws Exception {
     NewRepo seeded =
         new NewRepo(
             "repo",
@@ -200,10 +200,9 @@ class WorktreeSetupTest {
             true);
     when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
 
-    setup.fill(NewTask.builder("ABC-1", "repo").build(), seeded, List.of(seeded));
+    setup.setUp(NewTask.builder("ABC-1", "repo").build(), seeded);
 
     verify(processes).run(eq(worktree), any(), eq(List.of("seed", worktree.toString())));
-    assertThat(knowledge).hasContent("the briefing");
   }
 
   @Test
@@ -213,28 +212,6 @@ class WorktreeSetupTest {
     setup.attach(NewTask.builder("ABC-1", "registry").build(), registry, List.of(api, registry));
 
     verify(runtime).admit(apiWorktree, registryWorktree);
-  }
-
-  @Test
-  void runsTheSetupCommandOfTheAddedRepositoryAloneWhenItJoinsTheTask() throws Exception {
-    NewRepo seeded =
-        new NewRepo(
-            "registry",
-            TestProjectConfigBuilder.projectConfig()
-                .withSetup(new ProjectConfig.Setup(List.of("seed"), null))
-                .build(),
-            registry.projectPath(),
-            registryWorktree,
-            registry.gitCommonDir(),
-            "origin/main",
-            "u",
-            false);
-    when(runtime.briefedFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
-    when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
-
-    setup.attach(NewTask.builder("ABC-1", "registry").build(), seeded, List.of(api, seeded));
-
-    verify(processes).run(eq(registryWorktree), any(), eq(List.of("seed")));
   }
 
   @Test

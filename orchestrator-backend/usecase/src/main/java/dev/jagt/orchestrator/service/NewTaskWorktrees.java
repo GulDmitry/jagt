@@ -167,6 +167,7 @@ public class NewTaskWorktrees {
             Objects.requireNonNull(strategies.get(repo.project())));
         cut.add(repo);
         worktreeSetup.fill(request, repo, repos);
+        worktreeSetup.setUp(request, repo);
       }
       registration.accept(repos);
     } catch (RuntimeException e) {
@@ -320,6 +321,9 @@ public class NewTaskWorktrees {
     }
     try {
       worktreeSetup.attach(request, added, Stream.concat(held.stream(), Stream.of(added)).toList());
+      if (standing.isEmpty()) {
+        worktreeSetup.setUp(request, added);
+      }
       GitTrust addedTrust = trust(List.of(added));
       stateService.reduce(
           taskId,
@@ -382,6 +386,11 @@ public class NewTaskWorktrees {
       unwind(request, cut, repos, strategy);
       throw e;
     }
+  }
+
+  /** The project's setup in every worktree {@link #cut} made. */
+  public void setUp(NewTask request, List<NewRepo> repos) {
+    repos.forEach(repo -> worktreeSetup.setUp(request, repo));
   }
 
   /** Every worktree {@link #cut} made goes again, for a task whose registration failed after it. */
