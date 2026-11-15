@@ -20,7 +20,7 @@ absolute path in `jagt.yml` to pin one.
 | [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `ide` checkpoint | `idea` or `code` on PATH, or installed as an application |
 
 jagt refuses to start when one of those is missing — bar Claude Code, whose absence shows at the first read.
-The rest are optional, and what selects each is in `jagt.yml.dist`:
+The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
 
 | technology | needed for |
 |---|---|

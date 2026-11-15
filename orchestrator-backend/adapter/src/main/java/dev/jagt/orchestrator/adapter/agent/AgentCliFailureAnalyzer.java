@@ -31,8 +31,8 @@ class AgentCliFailureAnalyzer extends AbstractFailureAnalyzer<NoSuchBeanDefiniti
             + " is '"
             + environment.getProperty(KEY, "")
             + "', which no agent CLI jagt ships answers to.",
-        "Set agent.cli in jagt.yml to an agent CLI jagt ships, or remove it; jagt.yml.dist lists"
-            + " them.",
+        "Set agent.cli in jagt.yml to an agent CLI jagt ships, or remove it;"
+            + " jagt.desktop.yml.dist lists them.",
         cause);
   }
 }

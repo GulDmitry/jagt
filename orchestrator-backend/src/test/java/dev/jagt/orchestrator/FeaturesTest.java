@@ -33,7 +33,7 @@ class FeaturesTest {
 
   @Test
   void everyKeyNamedAsOptInIsDescribedInJagtYmlDist() {
-    String dist = DocFiles.read(Path.of("../jagt.yml.dist"));
+    String dist = DocFiles.read(Path.of("../jagt.desktop.yml.dist"));
     List<String> keys =
         Pattern.compile("Key: `([^`]+)`")
             .matcher(FEATURES.stream().map(DocFiles::read).collect(Collectors.joining("\n")))

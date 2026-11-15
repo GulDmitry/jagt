@@ -10,7 +10,7 @@ Superseded by [0126](0126-a-role-is-a-folder.md): roles first, the location map 
 
 ## Context
 
-- Today every setting sits in jagt's own checkout: `jagt.yml` over `jagt.yml.dist`, a brief's copy over its `.dist`
+- Today every setting sits in jagt's own checkout: `jagt.yml` over `jagt.desktop.yml.dist`, a brief's copy over its `.dist`
   (`HumanCopy`), `state.json` beside them. An installed app has no writable checkout.
 - The owner wants a desktop app to keep settings, overrides, stats and artifacts outside the project, and today's
   layout to keep working unchanged.

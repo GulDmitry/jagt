@@ -69,7 +69,7 @@ public class ConfigCheck implements StartupCheck {
               "orchestrator.projects",
               paths.configFile()
                   + " defines no projects. Add one"
-                  + " under `orchestrator.projects` (see jagt.yml.dist)."));
+                  + " under `orchestrator.projects` (see jagt.desktop.yml.dist)."));
       return problems;
     }
     projects.forEach((key, project) -> problems.addAll(ProjectProblems.of(key, project)));
@@ -91,7 +91,7 @@ public class ConfigCheck implements StartupCheck {
             retired
                 + " is no longer read — everything lives in "
                 + paths.configFile()
-                + " now, under one `orchestrator` root. Copy jagt.yml.dist next to it"
+                + " now, under one `orchestrator` root. Copy jagt.desktop.yml.dist next to it"
                 + " and move your projects across:\n"
                 + "    orchestrator:\n"
                 + "      projects:\n"

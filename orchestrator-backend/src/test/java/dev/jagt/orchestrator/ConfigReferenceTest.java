@@ -25,7 +25,7 @@ class ConfigReferenceTest {
 
   @Test
   void jagtYmlDistDescribesEveryKeyTheBackendReads() {
-    String dist = SourceRoots.read(Path.of("../jagt.yml.dist"));
+    String dist = SourceRoots.read(Path.of("../jagt.desktop.yml.dist"));
     Pattern named = Pattern.compile("[\"{]orchestrator\\.([a-z][a-z-]*)");
     Stream<String> bound =
         Stream.of(

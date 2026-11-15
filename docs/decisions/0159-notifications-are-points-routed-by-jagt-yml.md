@@ -18,7 +18,7 @@ Accepted 2026-11-11 by the owner.
 
 - **A point is a fact that stands**, declared once in `flow/role/Point` (an id and what makes it stand);
   a role adds `<role>-<kind>` for the kinds its `role.yml` `points` lists.
-- **`jagt.yml` holds every channel, route and text**; code holds no default, `jagt.yml.dist` writes today's banners out.
+- **`jagt.yml` holds every channel, route and text**; code holds no default, `jagt.desktop.yml.dist` writes today's banners out.
 - **Channel kinds** are `desktop`, `teams` and `command`; the command stays a script given the point as JSON on stdin.
 - **`PointWatch` observes the persisted task** (`StateWritten`), not the call: any writer reaches the same facts.
 - **Told once per (task, point, key)** in `ToldOnce.points`, written by `TaskReducer.told`; a restart tells silently.

@@ -22,9 +22,9 @@ The root is provisioned for both CLIs as a worktree is: **a rule only one vendor
 sessions break**. Claude reads its `CLAUDE.md` symlink (AGENTS.md) and declares the server, minting the
 Master's token, in `.mcp.json`; Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** project.
 
-- `jagt.yml` is user config, gitignored, copied from `jagt.yml.dist`: one `orchestrator` root, re-read per access,
+- `jagt.yml` is user config, gitignored, copied from `jagt.desktop.yml.dist`: one `orchestrator` root, re-read per access,
   Spring binding it once for `orchestrator.*`. Sections are omissible value records (`ConfigService.ConfigFile.*Config`).
-- Root detection: the nearest parent holding `jagt.yml.dist` **or** `mcp_client.js` (`OrchestratorPaths`);
+- Root detection: the nearest parent holding `jagt.desktop.yml.dist` **or** `mcp_client.js` (`OrchestratorPaths`);
   `ORCHESTRATOR_ROOT` overrides.
 - `initialize_task` copies gitignored IDE and local files best-effort
   (`WorktreeFiles.copyProjectFiles(…, PROJECT_FILES)`, `copyLocalFiles`); the per-project

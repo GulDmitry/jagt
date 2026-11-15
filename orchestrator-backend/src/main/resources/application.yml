@@ -1,5 +1,5 @@
 # DEFAULTS ONLY — built into the jar, committed, and not the file you edit. Yours is `jagt.yml` at the
-# repository root: copy `jagt.yml.dist`, which carries every key below with what it means, and write only what
+# repository root: copy `jagt.desktop.yml.dist`, which carries every key below with what it means, and write only what
 # you change. It overrides this file key by key and survives every build.
 server:
   # Every worktree jagt provisions follows this port; a config you wrote yourself needs MCP_SERVER_URL to match.
@@ -48,7 +48,7 @@ logging:
       \ %clr(:){faint} %m %kvp%n%wEx"
 
 orchestrator:
-  # file | console: where every log line goes; jagt.yml.dist describes it.
+  # file | console: where every log line goes; jagt.desktop.yml.dist describes it.
   logging: file
   # Blank = auto-detected by walking up from the launch directory.
   root: ${ORCHESTRATOR_ROOT:}
@@ -91,7 +91,7 @@ orchestrator:
     # declared file's ${ENV} placeholders and the model resolve as usual; only the server list is pinned.
     # Measured cold: it costs MORE than inheriting, which rides the prompt cache the human's own sessions keep warm.
     # mcp-config: /path/to/mcp-servers.json
-  # claude.outputStyle and claude.disabledPlugins are read from jagt.yml on every access; jagt.yml.dist describes them.
+  # claude.outputStyle and claude.disabledPlugins are read from jagt.yml on every access; jagt.desktop.yml.dist describes them.
   # A bare name is resolved on PATH and then in the known install dirs; an absolute path is not portable.
   tmux-command: tmux
   # Empty: tmux's default server. A name: every tmux call carries -L <name>.

@@ -51,7 +51,9 @@ public class ConfigSource {
     Path file = paths.configFile();
     if (!Files.exists(file)) {
       throw new IllegalStateException(
-          "Missing " + file + " — copy jagt.yml.dist to jagt.yml and fill in your projects.");
+          "Missing "
+              + file
+              + " — copy jagt.desktop.yml.dist to jagt.yml and fill in your projects.");
     }
     FileVersion version = FileVersion.of(file);
     Parsed last = parsed;

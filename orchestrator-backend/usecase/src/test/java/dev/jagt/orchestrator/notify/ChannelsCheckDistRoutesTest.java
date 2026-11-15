@@ -27,7 +27,7 @@ class ChannelsCheckDistRoutesTest {
 
   @Test
   void shippedExampleRoutesTodaysBannersAndPassesTheStartCheck() {
-    Path dist = Path.of("../../jagt.yml.dist").toAbsolutePath().normalize();
+    Path dist = Path.of("../../jagt.desktop.yml.dist").toAbsolutePath().normalize();
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withConfigFile(dist.toString()));
     ConfigService config =
@@ -59,7 +59,7 @@ class ChannelsCheckDistRoutesTest {
 
   @Test
   void shippedExampleShowsCommentedTeamsChannel() throws Exception {
-    Path dist = Path.of("../../jagt.yml.dist").toAbsolutePath().normalize();
+    Path dist = Path.of("../../jagt.desktop.yml.dist").toAbsolutePath().normalize();
 
     assertThat(Files.readAllLines(dist))
         .anyMatch(line -> line.matches("\\s*# chat: \\{ kind: teams, webhookEnv: \\w+ \\}.*"));

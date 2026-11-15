@@ -2,7 +2,7 @@
 
 [← README](../README.md)
 
-The board listens on `127.0.0.1:8290` (`server.address` in `application.yml` and `jagt.yml.dist`) and, with
+The board listens on `127.0.0.1:8290` (`server.address` in `application.yml` and `jagt.desktop.yml.dist`) and, with
 `auth.mode: none`, asks for no login: the network is the guard.
 
 | rule | why |

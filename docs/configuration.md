@@ -2,17 +2,17 @@
 
 [← README](../README.md)
 
-Everything is in **one file**: `jagt.yml` at the repository root — `cp jagt.yml.dist jagt.yml`. **Every key is
-described in `jagt.yml.dist`, and nowhere else**: it carries each one with its shipped value and what that
+Everything is in **one file**: `jagt.yml` at the repository root — `cp jagt.desktop.yml.dist jagt.yml`. **Every key is
+described in `jagt.desktop.yml.dist`, and nowhere else**: it carries each one with its shipped value and what that
 value means, so the file you edit is the reference. Your copy is gitignored, so comment it freely.
 
 One root, `orchestrator:`, holds all of it.
 
-- The sections `jagt.yml.dist`'s header names are re-read on **every access**, so adding a repository or
+- The sections `jagt.desktop.yml.dist`'s header names are re-read on **every access**, so adding a repository or
   changing `roles.master.mode` needs no restart. Everything else Spring binds **once at startup**.
 - An omitted key falls back to the defaults built into `orchestrator-backend/src/main/resources/application.yml`.
 - A flag or environment variable (`--server.port=8390`, `LOG_FILE=…`) outranks both files, for one run, but only
-  for the keys read once at startup; the re-read sections `jagt.yml.dist`'s header names are file-only.
+  for the keys read once at startup; the re-read sections `jagt.desktop.yml.dist`'s header names are file-only.
 - A string takes `${VAR}`, `${VAR:default}` and `${file:/path}` (a mounted secret, one trailing newline cut); then every
   `JAGT__a__b=value` variable sets the key `a.b` (a double underscore per level, camelCase kept, from the document's root:
   `JAGT__orchestrator__conflictStallMinutes`, `JAGT__server__port`). Both hold in the re-read sections and in the keys Spring binds.

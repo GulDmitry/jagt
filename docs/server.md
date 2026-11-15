@@ -17,3 +17,14 @@ curl -s -H "X-Jagt-Master: $(cat <token file>)" -H 'Content-Type: application/js
 - `<token file>` is `master-token` beside `state.json`; point a CLI's MCP config at `http://localhost:8290/mcp` with that header.
 - Under `auth.mode: password`, `/api/debug/…` needs the login session; `/mcp` needs the token.
 - Records: `backend-log`, `master-log`, `stops`, `stops-reviewed`; under `orchestrator.logging: console` the two logs are what stdout carried.
+
+## Start from the server configuration
+
+```sh
+cp jagt.server.yml.dist jagt.yml          # terminal, notifier, editor and keep-awake none; logs to the console; password login
+export JAGT_PASSWORD_HASH='<bcrypt hash>' JAGT_PUBLIC_URL=https://jagt.example.org
+```
+
+- Each key of `jagt.server.yml.dist` is described in `jagt.desktop.yml.dist` under the same name, and nowhere else.
+- One file per environment: keep `jagt.stage.yml` and `jagt.prod.yml` and set `ORCHESTRATOR_CONFIG_FILE=/etc/jagt/jagt.prod.yml`;
+  jagt reads that file alone, no profile or overlay involved. Start each from `jagt.server.yml.dist`.

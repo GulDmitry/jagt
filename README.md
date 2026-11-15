@@ -83,7 +83,7 @@ No tracker: skip this step. `tracker.workflow: none` is the default, and a task 
 
 ```sh
 git clone https://github.com/GulDmitry/jagt.git && cd jagt
-cp jagt.yml.dist jagt.yml
+cp jagt.desktop.yml.dist jagt.yml
 ```
 
 `projects` is the only section with no default — without one jagt refuses to start.
@@ -103,7 +103,8 @@ orchestrator:
 
 **`copyGlobs` makes a worktree usable**: a clean checkout lacks whatever your build reads but git does not
 track. Widen it until your tests pass inside one; each pattern carries matching files from the base repository into every fresh worktree.
-Every other key has a default, described in `jagt.yml.dist`.
+Every other key has a default, described in `jagt.desktop.yml.dist`.
+On a server, copy `jagt.server.yml.dist` instead ([docs/server.md](docs/server.md)).
 
 **+ add a project** inside New task, or the `project` verb, writes the entry too, no restart.
 

@@ -43,9 +43,9 @@ Against the bar, today's way is not better, only the one that works, for a devel
 | # | step | what stops them | where |
 |---|---|---|---|
 | 1 | `java -jar jagt-<v>.jar` | no JVM: the OS says so; jagt needs Java 25 | `jagt.conventions.gradle`, `installation.md` |
-| 2 | the jar starts | "Cannot locate orchestrator root: none of [jagt.yml.dist, mcp_client.js] found … Set ORCHESTRATOR_ROOT" | `OrchestratorPaths.findRoot` |
-| 3 | they clone instead (README step 2) | `git clone`, `cp jagt.yml.dist jagt.yml`; "Missing jagt.yml — copy jagt.yml.dist" otherwise | `ConfigService.section` |
-| 4 | they edit `jagt.yml` | `projects` has no default: "defines no projects"; a path, `baseBranch`, a fetched remote or `remote: none` + `codeHost: none` | `ConfigCheck`, `RemoteCheck`, `jagt.yml.dist` |
+| 2 | the jar starts | "Cannot locate orchestrator root: none of [jagt.desktop.yml.dist, mcp_client.js] found … Set ORCHESTRATOR_ROOT" | `OrchestratorPaths.findRoot` |
+| 3 | they clone instead (README step 2) | `git clone`, `cp jagt.desktop.yml.dist jagt.yml`; "Missing jagt.yml — copy jagt.desktop.yml.dist" otherwise | `ConfigService.section` |
+| 4 | they edit `jagt.yml` | `projects` has no default: "defines no projects"; a path, `baseBranch`, a fetched remote or `remote: none` + `codeHost: none` | `ConfigCheck`, `RemoteCheck`, `jagt.desktop.yml.dist` |
 | 5 | on Linux | `platform` defaults to `macos` and is refused: "jagt drives macOS and Linux, and this machine …" | `PlatformCheck` |
 | 6 | start again | git, tmux, pgrep each refused by name; the list is printed whole | `ToolchainCheck` |
 | 7 | `agent.cli: codex` or `opencode` | node and `mcp_client.js`, or the `opencode` command, refused | `CodexAgentRuntime`, `OpenCodeCheck` |
@@ -53,7 +53,7 @@ Against the bar, today's way is not better, only the one that works, for a devel
 | 9 | port 8290 held | "port 8290 is in use, most likely another jagt" | `StartupFailure` |
 | 10 | the board opens, New task | Claude Code missing or its headless call has no MCP: the first read fails, not the start | `AgentCliFailureAnalyzer`, README step 1 |
 | 11 | `focus` | no kitty: "Focus raises no window"; on macOS a non-UTF-8 locale drops input | `troubleshooting.md`, `installation.md` |
-| 12 | `ide` | `editorCommand` defaults to `idea`; absent, the launch fails when pressed | `jagt.yml.dist` |
+| 12 | `ide` | `editorCommand` defaults to `idea`; absent, the launch fails when pressed | `jagt.desktop.yml.dist` |
 | 13 | the first session builds | `copyGlobs` too narrow: the worktree lacks the untracked files the build reads | README step 2 |
 
 Tasks 1–2 (§8) answer 1–8 and 10–13: 1 — a bundled runtime or the install line for Java; 2–3 — classpath resources, `root` a per-user
@@ -162,7 +162,7 @@ its own release feed and updates itself; a GUI app ships an installer per OS and
 ## 8. Recommendation and tasks — the first run, then the installer with its updater, then Windows by measurement, the image last (costs est)
 | # | task | replaces | done when | cost |
 |---|---|---|---|---|
-| 1 | **Self-contained jar**: `jagt.yml.dist`, `mcp_client.js`, `roles/*.dist` on the classpath; `root` = `--root`, `ORCHESTRATOR_ROOT`, else a per-user data dir; reopens 0021 | the clone, 0021 | `java -jar jagt.jar --root=$(mktemp -d)` answers `/state` 200 and shows the setup page; `./gradlew test e2eTest` exit 0 | 3–5 days |
+| 1 | **Self-contained jar**: `jagt.desktop.yml.dist`, `mcp_client.js`, `roles/*.dist` on the classpath; `root` = `--root`, `ORCHESTRATOR_ROOT`, else a per-user data dir; reopens 0021 | the clone, 0021 | `java -jar jagt.jar --root=$(mktemp -d)` answers `/state` 200 and shows the setup page; `./gradlew test e2eTest` exit 0 | 3–5 days |
 | 2 | **First-run page** on the board: platform read from the machine, every tool probed with its install line per OS, the first project via the `project` verb, the MCP check, `copyGlobs` hint; startup refuses only port and root; step 0: the PWA install prompt measured on 127.0.0.1 and localhost through CDP `Page.getInstallabilityErrors`, the result written into 0117 | README steps 2–4, the refusal list, 0117's open line | `boardTest` scenario: empty root → a task created on a stub project, exit 0 | 3–4 days |
 | 3 | **Native installer + `jagt` command + self-update**: `install.sh`, `install.ps1` and a manifest (jar, Temurin build, sha256 per asset) attached to the release; per-user `versions/<v>/`, `runtime/`, a launcher on PATH that restarts on a named exit; hourly check of `releases/latest`, download beside, verify, dry-run checks, switch, exit; `install.ps1` installs into WSL2 until task 5's host | `git pull` + build, the manual jar, the tap | stand run on a fake feed v0 → v1: the tmux session and a task's state intact, board reconnected; `install.sh` on a clean Linux runner and `install.ps1` on a Windows runner reach `/state` 200; `e2eTest` exit 0 | 4–5 days |
 | 4 | **State fixture per release**: the `state.json` of each released minor under test resources, read without loss; the release step adds it | nothing: closes §6.5's gap | `StateCompatibilityTest` exit 0 | 1 day |

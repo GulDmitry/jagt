@@ -58,7 +58,7 @@ public class TrackerCheck implements StartupCheck {
               "orchestrator.tracker.workflow: '"
                   + tracker.workflow()
                   + "' is not a workflow jagt carries, so nothing reads your tracker — see"
-                  + " jagt.yml.dist for the ones it does"));
+                  + " jagt.desktop.yml.dist for the ones it does"));
     }
     return List.copyOf(problems);
   }

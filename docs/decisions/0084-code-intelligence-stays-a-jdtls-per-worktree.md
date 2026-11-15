@@ -42,6 +42,6 @@ Any holds, checked at each refresh:
 - It runs with no editor installed.
 
 Then: (1) one port, "a code-intelligence service a session is given", only `adapter/` names IntelliJ, jdtls or Serena,
-per-language pick in `jagt.yml` + `jagt.yml.dist`; (2) order shared service, else per-worktree jdtls, else grep, a session
+per-language pick in `jagt.yml` + `jagt.desktop.yml.dist`; (2) order shared service, else per-worktree jdtls, else grep, a session
 never fails to start for a missing tool; (3) measure first, same tasks with and without, from `usage-by-day.jsonl`;
 (4) new record, `runtime` spec delta, retire `~/.claude/lsp/jdtls-launch` if replaced.

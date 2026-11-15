@@ -1,0 +1,24 @@
+# jagt on a server: `cp jagt.server.yml.dist jagt.yml`, name your projects, set the two env vars.
+# Each key is described in jagt.desktop.yml.dist under the same name, and nowhere else.
+orchestrator:
+  projects:
+    my-project:
+      url: https://example.com/team/repo.git   # projects: cloned into the data folder
+      baseBranch: origin/main                  # projects
+  terminal: none                               # terminal
+  notifier: none                               # notifier
+  keepAwake: none                              # keepAwake
+  editor: none                                 # editor
+  onStop: end                                  # onStop
+  logging: console                             # logging
+  agent:
+    sandbox:
+      enabled: false                           # agent.sandbox
+  usageLimits:
+    enabled: false                             # usageLimits
+  auth:
+    mode: password                             # auth
+    passwordHash: ${JAGT_PASSWORD_HASH}        # auth: a bcrypt hash, from the env var
+server:
+  address: 0.0.0.0                             # server
+  publicUrl: ${JAGT_PUBLIC_URL}                # server.publicUrl

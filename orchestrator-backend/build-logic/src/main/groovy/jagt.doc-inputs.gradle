@@ -11,7 +11,7 @@ tasks.named('test') {
         include '.claude/rules/*.md'
         include 'orchestrator-backend/*/src/*/java/**/*.java'
         include 'orchestrator-backend/src/*/java/**/*.java'
-        include 'jagt.yml.dist'
+        include 'jagt.desktop.yml.dist'
         include 'roles/**/*.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
     // CiWorkflowTest reads the workflow, TestTmuxCleanupTest the script.

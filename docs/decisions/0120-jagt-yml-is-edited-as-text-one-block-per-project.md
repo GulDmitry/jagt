@@ -30,4 +30,4 @@ Accepted 2026-10-31. Records the writer built 2026-10-16, extended by edit and r
 
 ## Reopen when
 
-- A file the text writer cannot place appears twice, or a library proves byte-stable on `jagt.yml.dist` plus a commented copy.
+- A file the text writer cannot place appears twice, or a library proves byte-stable on `jagt.desktop.yml.dist` plus a commented copy.

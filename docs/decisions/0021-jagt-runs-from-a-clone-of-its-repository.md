@@ -8,7 +8,7 @@ Accepted 2026-10-07.
 
 ## Context
 
-- `OrchestratorPaths.findRoot` walks up for `jagt.yml.dist` or `mcp_client.js`, and `AbstractAgentRuntime`
+- `OrchestratorPaths.findRoot` walks up for `jagt.desktop.yml.dist` or `mcp_client.js`, and `AbstractAgentRuntime`
   links the bridge from disk, so the jar starts only inside a clone.
 - Making it run alone needs both as classpath resources and a decision on what `root` means once nothing
   marks it, since worktrees are cut beside it.

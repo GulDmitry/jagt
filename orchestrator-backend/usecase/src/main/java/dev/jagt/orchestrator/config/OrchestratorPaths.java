@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class OrchestratorPaths {
 
   private static final java.util.List<String> ROOT_MARKERS =
-      java.util.List.of("jagt.yml.dist", "mcp_client.js");
+      java.util.List.of("jagt.desktop.yml.dist", "mcp_client.js");
 
   private final Path root;
   private final Path configFile;
