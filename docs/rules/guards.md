@@ -16,6 +16,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 | `ReadGate` | each call of a headless read and the Master's reviewer | allow-list, fails closed | nothing: it is the boundary |
 | `BoardWriteFilter` | every board write but `/mcp` and `/api/agent/` | allow-list | the Master's token, same-user trust |
 | `auth: password` (Spring Security) | the board, `/api` and its streams, from anyone off loopback | login; `/mcp`, `/api/agent/` and the login page's files exempt | `LoopbackFilter` first, one bcrypt hash |
+| `AgentDoorFilter` | `/mcp` and `/api/agent/` under `auth: password`, from a peer off loopback or forwarded | allow-list: the Master token | `LoopbackFilter` first; loopback peers pass as ever |
 | `ToolGate` | a session's shell line or a plan's command probe, `git worktree add` included | block-list over one line, fails open | the worktree's `pre-push` |
 | `PlanFirst` | a session's file write while its plan waits | allow-list: `plan.md`, `task_visual.md`, `task_notes.md` | the human, who reads the diff |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
@@ -49,7 +50,6 @@ The CLI's `onFailure: "block"` (2.1.309) would close it, and stays off for that 
 | A same-user process forging Origin, reading `master-token`, naming another worktree's directory | sessions run as another user |
 | The board reached with no port spelled: port 80, `nc 127.0.0.1 8290`, `/dev/tcp/…`, still forging Host and Origin | a write lands that way |
 | `HEAD` moved on an earlier call, then pushed | the `pre-push` hook is bypassed too |
-| A non-loopback `server.address` under `auth: password`: `/mcp` and `/api/agent/` need no login, a worktree header names the caller | an ingress exposes them, or the board leaves loopback by default |
 | A board behind an ingress: one bcrypt password, no throttle | a second login mode or a brute-force report |
 | Config `GitStateGuard` reads no further: global, system, an `include.path` file, `branch.*` tracking | a guarded git runs a program set there |
 | A hook the merged branch carries under a relative `core.hooksPath` | a deploy runs a hook the record did not hold |

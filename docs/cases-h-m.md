@@ -21,6 +21,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | H18 | the Master in act presses a verb a human may (`trust`, `lift`, `escalate`, `pause`, `done`, `remove-repo`) → the door admits it where a Master case allows it; only a verb `roles.master.mine` names is refused | seen 2026-11-08: a table of human-only verbs refused the Master what AGENTS.md gives it | `CaseDoorTest`, `MasterVerbsTest`, `MasterCheckTest` |
 | H19 | jagt's own nudge sits unsent in the input of a session that idled past `cacheLifetime` → no Enter is pressed into it; a fresh session starts and reads `task_context.md` | seen 2026-11-08: 10 nudges reached sessions idle 1 h or more, each a full cache rewrite | `AgentSessionsTest` |
 | H20 | a project is named for `run`, or a line for any other verb → refused; the line has its own argument and `project` means a project | seen 2026-11-11: `run`'s line rode `press_task`'s `project` and passed the project guard | `FlowEngineTest`, `TaskPressMessagesTest` |
+| H21 | under `auth: password` a peer off loopback calls `/mcp` or `/api/agent/` naming a task by its worktree header alone → refused 401, served only with the Master token; a peer on loopback is served as ever | seen 2026-11-15: finding in the login review | `AgentDoorFilterTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
