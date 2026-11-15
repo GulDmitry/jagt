@@ -35,6 +35,26 @@ class DebugReadsTest {
   }
 
   @Test
+  void returnsTheLinesOfRecordHoldingMalformedByte(@TempDir Path root) throws IOException {
+    Files.write(
+        root.resolve("stops.jsonl"),
+        new byte[] {
+          'o', 'n', 'e', '\n', 't', 'w', (byte) 0xC3, '\n', 't', 'h', 'r', 'e', 'e', '\n'
+        });
+
+    assertThat(
+            new DebugReads(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults()
+                            .withRoot(root.toString())
+                            .withStateFile(root.resolve("state.json").toString())),
+                    mock(StateService.class),
+                    mock(AgentRuntime.class))
+                .stops(3))
+        .isEqualTo("one\ntw�\nthree");
+  }
+
+  @Test
   void returnsTheReviewedStopsBesideTheStateFile(@TempDir Path root) throws IOException {
     Files.writeString(root.resolve("stops-reviewed.jsonl"), "verdict\n");
 

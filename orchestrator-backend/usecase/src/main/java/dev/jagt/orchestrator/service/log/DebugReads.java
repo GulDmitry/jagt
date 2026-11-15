@@ -9,9 +9,9 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.springframework.stereotype.Service;
 
 /** Reads of jagt's own records and a session's words; nothing here writes. */
@@ -36,9 +36,9 @@ public class DebugReads {
     if (!Files.isRegularFile(file)) {
       return "";
     }
-    try {
-      List<String> all = Files.readAllLines(file, StandardCharsets.UTF_8);
-      return String.join("\n", all.subList(Math.max(0, all.size() - lines), all.size()));
+    try (ReversedLinesFileReader reader =
+        ReversedLinesFileReader.builder().setPath(file).setCharset(StandardCharsets.UTF_8).get()) {
+      return String.join("\n", reader.readLines(lines).reversed());
     } catch (IOException e) {
       throw new UncheckedIOException("cannot read " + file.getFileName(), e);
     }
