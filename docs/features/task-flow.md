@@ -19,6 +19,9 @@
   [spec](../../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
   [spec](../../openspec/specs/task-start/spec.md#requirement-starting-a-task)
+- **Setup in a new worktree** — A project's `setupCommand` runs once in every new worktree before its session starts.
+  A failure or `setupMinutes` ends the start, naming the project and the output's tail.
+  [spec](../../openspec/specs/task-start/spec.md#requirement-a-projects-setup-command-runs-in-every-new-worktree)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../../openspec/specs/task-start/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
 - **Plan before a project** — `plan first`, no project ticked: plans in a scratch folder; approval cuts each `[changed]` project's worktree.

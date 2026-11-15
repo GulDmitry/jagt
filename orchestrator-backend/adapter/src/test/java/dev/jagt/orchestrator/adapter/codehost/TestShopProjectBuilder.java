@@ -18,6 +18,7 @@ public record TestShopProjectBuilder(@Nullable String kind, List<String> pipelin
         new ProjectConfig.Branches("origin/main", "dev", null),
         new ProjectConfig.CodeHost(
             kind, null, pipelineCommand, List.of(), List.of(), List.of(), List.of()),
-        new ProjectConfig.Verify(List.of(), null));
+        new ProjectConfig.Verify(List.of(), null),
+        new ProjectConfig.Setup(List.of(), null));
   }
 }

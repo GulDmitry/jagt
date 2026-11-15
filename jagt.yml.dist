@@ -27,6 +27,10 @@ orchestrator:
       # verifyCommand: ["./gradlew", "test"]   # jagt runs it in the worktree before a hand-back reaches you;
                                                # a failing run goes back to the agent, never to your IDE
       # verifyMinutes: 20   # minutes the verify command may run before jagt stops it; 20 where you write none
+      # setupCommand: ["sh", "-c", "cp -al ../node_modules ."]   # run once in every new worktree of this project, after
+                                               # `worktree.copyGlobs` and before the session starts; {branch} and {worktree} are filled;
+                                               # a non-zero exit or the limit fails the start, no session opens
+      # setupMinutes: 20    # minutes the setup command may run before jagt stops it; 20 where you write none
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
       #                             # name is shipped and deployed by you alone; the master window names the path
 

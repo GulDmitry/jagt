@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
@@ -27,6 +28,7 @@ class WorktreeSetupTest {
   private final AgentRuntime runtime = mock(AgentRuntime.class);
   private final ConfigService config = mock(ConfigService.class);
   private final SubAgentBriefing briefing = mock(SubAgentBriefing.class);
+  private final Processes processes = mock(Processes.class);
   private WorktreeSetup setup;
   private Path project;
   private Path worktree;
@@ -42,7 +44,7 @@ class WorktreeSetupTest {
   void setUp() throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    setup = new WorktreeSetup(runtime, paths, config, briefing);
+    setup = new WorktreeSetup(runtime, paths, config, new FreshWorktree(briefing, processes));
     project = Files.createDirectories(root.resolve("repo"));
     worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     knowledge = worktree.resolve("AGENTS.md");
@@ -167,7 +169,8 @@ class WorktreeSetupTest {
                 new ProjectConfig.Branches("origin/main", null, null),
                 new ProjectConfig.CodeHost(
                     null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)),
+                new ProjectConfig.Verify(List.of(), null),
+                ProjectConfig.Setup.NONE),
             project,
             worktree,
             repo.gitCommonDir(),
@@ -181,12 +184,57 @@ class WorktreeSetupTest {
   }
 
   @Test
+  void runsTheProjectsSetupCommandInTheWorktreeOnceItHoldsItsFilesAndBriefing() throws Exception {
+    NewRepo seeded =
+        new NewRepo(
+            "repo",
+            TestProjectConfigBuilder.projectConfig()
+                .withPath(project.toString())
+                .withSetup(new ProjectConfig.Setup(List.of("seed", "{worktree}"), null))
+                .build(),
+            project,
+            worktree,
+            repo.gitCommonDir(),
+            "origin/main",
+            "u",
+            true);
+    when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
+
+    setup.fill(NewTask.builder("ABC-1", "repo").build(), seeded, List.of(seeded));
+
+    verify(processes).run(eq(worktree), any(), eq(List.of("seed", worktree.toString())));
+    assertThat(knowledge).hasContent("the briefing");
+  }
+
+  @Test
   void letsTheSessionEditTheWorktreeOfRepositoryAddedToItsTask() throws Exception {
     when(runtime.briefedFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
 
     setup.attach(NewTask.builder("ABC-1", "registry").build(), registry, List.of(api, registry));
 
     verify(runtime).admit(apiWorktree, registryWorktree);
+  }
+
+  @Test
+  void runsTheSetupCommandOfTheAddedRepositoryAloneWhenItJoinsTheTask() throws Exception {
+    NewRepo seeded =
+        new NewRepo(
+            "registry",
+            TestProjectConfigBuilder.projectConfig()
+                .withSetup(new ProjectConfig.Setup(List.of("seed"), null))
+                .build(),
+            registry.projectPath(),
+            registryWorktree,
+            registry.gitCommonDir(),
+            "origin/main",
+            "u",
+            false);
+    when(runtime.briefedFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
+    when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
+
+    setup.attach(NewTask.builder("ABC-1", "registry").build(), seeded, List.of(api, seeded));
+
+    verify(processes).run(eq(registryWorktree), any(), eq(List.of("seed")));
   }
 
   @Test

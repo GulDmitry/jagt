@@ -13,7 +13,8 @@ public record ProjectConfig(
     @JsonUnwrapped Repository repository,
     @JsonUnwrapped Branches branches,
     @JsonUnwrapped CodeHost host,
-    @JsonUnwrapped Verify verify) {
+    @JsonUnwrapped Verify verify,
+    @JsonUnwrapped Setup setup) {
 
   /**
    * {@code about}: one line saying what this repository IS, for placing an item no label places;
@@ -78,6 +79,22 @@ public record ProjectConfig(
   }
 
   /**
+   * {@code command}: run once in every new worktree of the project before its session starts, empty
+   * = nothing; {@code minutes}: null, zero or negative = 20.
+   */
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  public record Setup(
+      @JsonProperty("setupCommand") List<String> command,
+      @JsonProperty("setupMinutes") @Nullable Integer minutes) {
+
+    public static final Setup NONE = new Setup(List.of(), null);
+
+    public Setup {
+      command = command == null ? List.of() : command;
+    }
+  }
+
+  /**
    * The {@code codeHost} value of a repository with no host to open a request on or read a pipeline
    * from.
    */
@@ -90,7 +107,8 @@ public record ProjectConfig(
         new Repository(path, labels, null, List.of(), null, null),
         new Branches(baseBranch, deployBranch, null),
         new CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-        new Verify(List.of(), null));
+        new Verify(List.of(), null),
+        Setup.NONE);
   }
 
   public String path() {
@@ -117,7 +135,8 @@ public record ProjectConfig(
             path, held.labels(), held.about(), held.humanPaths(), held.url(), held.localFiles()),
         branches,
         host,
-        verify);
+        verify,
+        setup);
   }
 
   public List<String> labels() {
@@ -166,7 +185,18 @@ public record ProjectConfig(
   }
 
   public Duration verifyTimeoutOrDefault() {
-    Integer minutes = verifyMinutes();
+    return minutesOrDefault(verifyMinutes());
+  }
+
+  public List<String> setupCommand() {
+    return setup.command();
+  }
+
+  public Duration setupTimeoutOrDefault() {
+    return minutesOrDefault(setup.minutes());
+  }
+
+  private static Duration minutesOrDefault(@Nullable Integer minutes) {
     return Duration.ofMinutes(minutes == null || minutes <= 0 ? 20 : minutes);
   }
 

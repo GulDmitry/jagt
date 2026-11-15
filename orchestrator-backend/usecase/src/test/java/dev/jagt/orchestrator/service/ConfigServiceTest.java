@@ -799,8 +799,8 @@ class ConfigServiceTest {
                             "origin/main", "dev", null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
                             own, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Verify(
-                            List.of(), null))));
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Verify(List.of(), null),
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Setup(List.of(), null))));
 
     assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
   }

@@ -114,7 +114,7 @@ public class Verification {
     return project == null || project.verifyCommand() == null ? List.of() : project.verifyCommand();
   }
 
-  private static String tail(String output) {
+  static String tail(String output) {
     String[] lines = output.strip().split("\n");
     return lines.length <= LINES
         ? output.strip()

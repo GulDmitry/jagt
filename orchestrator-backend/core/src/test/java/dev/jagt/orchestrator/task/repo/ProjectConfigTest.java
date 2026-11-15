@@ -26,7 +26,8 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("origin/main", "release", null),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-            new ProjectConfig.Verify(List.of(), null));
+            new ProjectConfig.Verify(List.of(), null),
+            new ProjectConfig.Setup(List.of(), null));
 
     assertThat(project.aboutOrPath()).isEqualTo("the PDF parser behind the intake form");
   }
@@ -81,7 +82,8 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("main", "dev", null),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-            new ProjectConfig.Verify(List.of(), null));
+            new ProjectConfig.Verify(List.of(), null),
+            new ProjectConfig.Setup(List.of(), null));
     var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
 
     assertThat(declared.humanPathsOrNone()).containsExactly("db/migration/**");
@@ -96,7 +98,8 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-            new ProjectConfig.Verify(List.of(), null));
+            new ProjectConfig.Verify(List.of(), null),
+            new ProjectConfig.Setup(List.of(), null));
 
     assertThat(project.baseBranchName()).isEqualTo("main");
   }
@@ -109,7 +112,8 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("main", "main", "none"),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-            new ProjectConfig.Verify(List.of(), null));
+            new ProjectConfig.Verify(List.of(), null),
+            new ProjectConfig.Setup(List.of(), null));
 
     assertThat(project.deploysIntoTheBaseBranch()).isTrue();
   }
@@ -123,7 +127,8 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("main", "dev", null),
             new ProjectConfig.CodeHost(
                 null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-            new ProjectConfig.Verify(List.of(), written));
+            new ProjectConfig.Verify(List.of(), written),
+            new ProjectConfig.Setup(List.of(), null));
 
     assertThat(project.verifyTimeoutOrDefault()).isEqualTo(Duration.ofMinutes(20));
   }

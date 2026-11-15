@@ -18,6 +18,7 @@ public record TestRemoteProjectBuilder(@Nullable String codeHost, @Nullable Stri
         new ProjectConfig.Branches("main", "dev", remote),
         new ProjectConfig.CodeHost(
             codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-        new ProjectConfig.Verify(List.of(), null));
+        new ProjectConfig.Verify(List.of(), null),
+        new ProjectConfig.Setup(List.of(), null));
   }
 }

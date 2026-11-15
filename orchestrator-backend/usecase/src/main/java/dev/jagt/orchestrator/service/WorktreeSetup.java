@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
-import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.launch.TaskName;
@@ -27,7 +26,7 @@ public class WorktreeSetup {
   private final AgentRuntime agentRuntime;
   private final OrchestratorPaths paths;
   private final ConfigService configService;
-  private final SubAgentBriefing briefing;
+  private final FreshWorktree fresh;
 
   /**
    * A step a ship instruction asks for, such as opening the request, is not left to a classifier's
@@ -50,6 +49,7 @@ public class WorktreeSetup {
                 ? agentRuntime.systemKnowledgeFile(repo.worktreePath())
                 : agentRuntime.briefedFile(repo.worktreePath())));
     agentRuntime.admit(repos.get(0).worktreePath(), added.worktreePath());
+    fresh.setUp(request, added);
   }
 
   /**
@@ -60,6 +60,7 @@ public class WorktreeSetup {
     // Asked while the worktree holds nothing but the checkout: jagt's own links look the same
     // afterwards.
     fill(request, repo, repos, agentRuntime.systemKnowledgeFile(repo.worktreePath()));
+    fresh.setUp(request, repo);
   }
 
   private void fill(NewTask request, NewRepo repo, List<NewRepo> repos, Path systemKnowledge) {
@@ -83,13 +84,15 @@ public class WorktreeSetup {
         configService.load().worktree().copyGlobsOrDefault());
     WorktreeFiles.write(
         systemKnowledge,
-        briefing.of(
-            request,
-            repo,
-            repos,
-            configService.load().agent().autoplanOrDefault(),
-            configService.load().agent().visualizeOrDefault(),
-            configService.load().agent().diagnoseOrDefault()));
+        fresh
+            .briefing()
+            .of(
+                request,
+                repo,
+                repos,
+                configService.load().agent().autoplanOrDefault(),
+                configService.load().agent().visualizeOrDefault(),
+                configService.load().agent().diagnoseOrDefault()));
     if (repo.primary()) {
       writeInstructions(worktreePath, request);
     }
@@ -116,11 +119,13 @@ public class WorktreeSetup {
             Path.of(System.getProperty("java.io.tmpdir"))));
     WorktreeFiles.write(
         systemKnowledge,
-        briefing.ofScratch(
-            request,
-            configService.load().agent().autoplanOrDefault(),
-            configService.load().agent().visualizeOrDefault(),
-            configService.load().agent().diagnoseOrDefault()));
+        fresh
+            .briefing()
+            .ofScratch(
+                request,
+                configService.load().agent().autoplanOrDefault(),
+                configService.load().agent().visualizeOrDefault(),
+                configService.load().agent().diagnoseOrDefault()));
     writeInstructions(folder, request);
     return folder;
   }

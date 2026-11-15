@@ -13,10 +13,12 @@ public record TestProjectConfigBuilder(
     @Nullable String remote,
     @Nullable String codeHost,
     List<String> verifyCommand,
-    @Nullable Integer verifyMinutes) {
+    @Nullable Integer verifyMinutes,
+    ProjectConfig.Setup setup) {
 
   public static TestProjectConfigBuilder projectConfig() {
-    return new TestProjectConfigBuilder("/repo", "origin/main", "dev", null, null, List.of(), null);
+    return new TestProjectConfigBuilder(
+        "/repo", "origin/main", "dev", null, null, List.of(), null, ProjectConfig.Setup.NONE);
   }
 
   public ProjectConfig build() {
@@ -25,6 +27,7 @@ public record TestProjectConfigBuilder(
         new ProjectConfig.Branches(baseBranch, deployBranch, remote),
         new ProjectConfig.CodeHost(
             codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-        new ProjectConfig.Verify(verifyCommand, verifyMinutes));
+        new ProjectConfig.Verify(verifyCommand, verifyMinutes),
+        setup);
   }
 }
