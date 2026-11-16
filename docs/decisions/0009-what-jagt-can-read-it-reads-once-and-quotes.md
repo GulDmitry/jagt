@@ -13,7 +13,7 @@ output carried one fact, "178 passed", and rules that each closed a real error t
 Three of its five questions hit jagt:
 
 - `list_tasks` returned `state.json` pretty-printed: 7.7 KB for one task, 56% `history` and 27% `agentSpend`.
-  At the 24-task cap one call is ~185 KB, ~50k tokens, to answer "what is open".
+  At the 50-task default cap one call is ~385 KB, ~100k tokens (scaled from 7.7 KB a task, an estimate), to answer "what is open".
 - Each role of the Master panel read the round's diff itself: five roles, five `git diff` explorations of
   the same worktree.
 - Every sub-agent's brief carried every configured project and a snapshot of every task, stale on arrival and

@@ -42,12 +42,6 @@ public class NewTaskWorktrees {
   /** Past this many tasks opening on the same words, the words are the problem. */
   private static final int MAX_SAME_NAME = 20;
 
-  /**
-   * A ceiling rather than a queue: a board nobody can read is the failure this refuses, not a busy
-   * machine.
-   */
-  static final int MAX_TASKS = 24;
-
   private final ConfigService configService;
   private final StateService stateService;
   private final GitWorktrees gitWorktrees;
@@ -222,9 +216,10 @@ public class NewTaskWorktrees {
     String taskId = request.taskId();
     TaskName.require(taskId, "taskId");
     requireOwnBranch(taskId, request.baseBranch(), config);
-    if (stateService.tasks().size() >= MAX_TASKS) {
+    int maxTasks = config.maxTasksOrDefault();
+    if (stateService.tasks().size() >= maxTasks) {
       throw Refusal.byState(
-          MAX_TASKS
+          maxTasks
               + " tasks are already open, which is the limit —"
               + " finish one with `done` before starting another.");
     }

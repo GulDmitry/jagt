@@ -8,7 +8,7 @@ How a task starts: its branch and worktree, the plan gate, and what a start neve
 ## Requirements
 
 ### Requirement: Starting a task
-`do` SHALL cut a branch from the project's base into its own worktree, an agent in it; at most 24 open (`NewTaskWorktrees.MAX_TASKS`).
+`do` SHALL cut a branch from the project's base into its own worktree, an agent in it; at most `maxTasks` open, 50 unless `jagt.yml` sets it.
 
 #### Scenario: A task starts
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
@@ -22,9 +22,9 @@ How a task starts: its branch and worktree, the plan gate, and what a start neve
 - **WHEN** you pick `plan first`
 - **THEN** the card reads `plan waiting`; `approve-plan` starts the session on it
 
-#### Scenario: A twenty-fifth task
-- **WHEN** 24 tasks are open and you start another
-- **THEN** it is refused before anything is cut
+#### Scenario: A task past the cap
+- **WHEN** `maxTasks` tasks are open (50, or 10 where `jagt.yml` says 10) and you start another
+- **THEN** it is refused before anything is cut, naming the cap
 
 ### Requirement: Plan first is a gate jagt holds
 A task opened or reopened in `plan` mode, or with `agent.autoplan.enabled` on, SHALL hold its plan gate closed (`TaskState.planGate`): a session's

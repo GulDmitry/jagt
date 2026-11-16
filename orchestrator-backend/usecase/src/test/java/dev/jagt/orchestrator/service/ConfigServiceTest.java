@@ -670,6 +670,18 @@ class ConfigServiceTest {
         .isEqualTo(java.time.Duration.ofMinutes(expectedMinutes));
   }
 
+  @ParameterizedTest
+  @CsvSource(
+      value = {"null,50", "0,50", "1,1", "10,10"},
+      nullValues = "null")
+  void resolvesHowManyTasksMayBeOpen(Integer configured, int expected) {
+    assertThat(
+            ConfigFile.defaults()
+                .withSessions(new ConfigFile.Sessions(null, null, null, null, null, configured))
+                .maxTasksOrDefault())
+        .isEqualTo(expected);
+  }
+
   @Test
   void keepsTheDiagnoseSectionTheHumanWroteAndDefaultsOneTheyDidNot() {
     assertThat(AgentConfig.defaults().diagnoseOrDefault().enabledOrDefault()).isFalse();

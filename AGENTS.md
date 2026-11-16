@@ -180,7 +180,7 @@ or local setup; such names live only in git-ignored files. **A check holds for a
   never decided quietly and named in the closing report.
 - **What is still open is a list, not a paragraph**: one `OPEN QUESTIONS:` line ending the terminal output
   names what the agent settled unasked. If the answer would have changed the code, it asks instead.
-- **Tasks are capped at 24, and no bulk branch cleanup** — never a queue, a slots indicator or a `prune` verb.
+- **Tasks are capped at `maxTasks`, 50 by default, and no bulk branch cleanup** — never a queue, a slots indicator or a `prune` verb.
 
 ## Build & run
 

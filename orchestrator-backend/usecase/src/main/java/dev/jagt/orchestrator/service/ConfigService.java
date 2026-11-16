@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
@@ -67,7 +68,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         @Nullable WorktreeConfig worktree,
         @Nullable Map<String, RoleConfig> roles,
         @Nullable LoopBreakerConfig loopBreaker,
-        @Nullable Integer conflictStallMinutes) {}
+        @Nullable Integer conflictStallMinutes,
+        @With(AccessLevel.NONE) @Nullable Integer maxTasks) {}
 
     @With
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -688,7 +690,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           Map.of(),
           null,
           null,
-          new Sessions(null, null, null, null, null),
+          new Sessions(null, null, null, null, null, null),
           new Reviewing(null, null, null),
           new Outside(null, null, null));
     }
@@ -746,6 +748,15 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     public Duration conflictStallOrDefault() {
       Integer minutes = sessions.conflictStallMinutes();
       return Duration.ofMinutes(minutes == null || minutes <= 0 ? 20 : minutes);
+    }
+
+    /**
+     * A ceiling rather than a queue: a board nobody can read is the failure this refuses, not a
+     * busy machine.
+     */
+    public int maxTasksOrDefault() {
+      Integer max = sessions.maxTasks();
+      return max == null || max <= 0 ? 50 : max;
     }
 
     /** The ship ceiling counts over the auto-review window. */

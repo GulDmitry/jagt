@@ -17,7 +17,7 @@ Axelix's JVM checks, measured on `jagt-run.jar`, Temurin 25.0.4, an idle board, 
 | `-XX:AOTCache` (trained to refresh) | 0.71 s | 423 MB, a 65 MB file per build |
 | both | 0.81 s | 435 MB |
 
-jagt starts once and runs for days; its heap holds at most 24 tasks.
+jagt starts once and runs for days; its heap holds at most 50 tasks by default (`maxTasks`; the heap at 50 is an estimate, not measured).
 
 ## Decision
 
