@@ -17,7 +17,6 @@ Accepted 2026-11-16, owner's choice.
 - JaCoCo, applied to every project in `jagt.conventions.gradle`; JaCoCo's defaults otherwise.
 - `jacocoTestCoverageVerification` (LINE, COVEREDRATIO, 0.80 per module) finalizes `test`; a miss fails naming the module and its ratio.
 - A `--tests` run skips the verification: part of a suite proves nothing about a ratio.
-- The root's floor is 0.60, its measured ratio: the launch loop in `OrchestratorApplication` has no test yet. Raise it to 0.80 with that test.
 
 ## Rejected
 
@@ -26,4 +25,4 @@ Accepted 2026-11-16, owner's choice.
 
 ## Reopens when
 
-- The root reaches 0.80: its floor goes.
+- A module cannot reach 0.80 without a test that only a production seam would allow: its exclusion is named here with its reason.

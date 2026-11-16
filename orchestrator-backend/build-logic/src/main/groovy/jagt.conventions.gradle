@@ -62,7 +62,6 @@ allprojects {
     tasks.named('test') { dependsOn tasks.withType(Checkstyle) }
 
     // 0181: line coverage of each module's own main code, measured by its own tests, gates `test`.
-    // The root's floor is its measured ratio until its launch loop has a test: the owner asked 0.80.
     apply plugin: 'jacoco'
     jacoco { toolVersion = '0.8.14' }
     tasks.named('jacocoTestReport') { reports { xml.required = true } }
@@ -76,7 +75,7 @@ allprojects {
                 limit {
                     counter = 'LINE'
                     value = 'COVEREDRATIO'
-                    minimum = project == rootProject ? 0.60 : 0.80
+                    minimum = 0.80
                 }
             }
         }
