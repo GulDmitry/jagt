@@ -67,6 +67,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B36 | concurrent tests of one class write and read one role file under a shared temp dir → each test owns its dir, so a read never meets a half-written file and an environment listed stays listed | seen 2026-11-10: acceptance flows read UNPROVABLE, the environment not listed | `CheckerFlowsTest` |
 | B37 | a test asserting on a log line runs beside a test logging through the same logger → its captured list is never written while it reads it: every such test holds the global lock | seen 2026-11-12: `ConcurrentModificationException` reading the appender's list | `LogCaptureTest`, `ChargedReviewsTest`, `MasterPanelTest`, `ScenarioWindowsTest` |
 | B38 | two scans of one task run from write snapshots taken before either recorded the point → the point is told once: told-ness is read from the stored task inside the write, never from the snapshot | seen 2026-11-13: a stalled conflict's banner sent twice in one millisecond in `e2eTest` | `PointWatchTest` |
+| B39 | a container's entrypoint runs under `sh` and a `JAGT__a__my-project__url` variable names a hyphen → the variable reaches the JVM, so a project's url set from the environment is the one cloned | seen 2026-11-16: dash dropped the variable, the stub project was never cloned, 6 of 12 `containerTest` cases red | `ServerContainerTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

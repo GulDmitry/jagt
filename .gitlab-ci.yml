@@ -2,8 +2,8 @@
 # business being an exception. Both files call the SAME scripts (scripts/linux-test-deps.sh,
 # scripts/with-linux-desktop.sh), so a step can only exist in one of them by mistake.
 #
-# No Docker-in-Docker and no privileged runner: the jobs run IN a Java image and apt-install what they need,
-# which is also what the container harness does for macOS developers.
+# The jobs run IN a Java image and apt-install what they need, which is also what the container harness does for
+# macOS developers. Only `image` needs a Docker daemon: a docker:dind service, so that one job wants a privileged runner.
 stages:
   - test
 
@@ -76,3 +76,22 @@ jar:
     expire_in: 30 days
     paths:
       - orchestrator-backend/build/libs/jagt-*.jar
+
+# jagt's own image through compose, one board scenario and containerTest against it (GitHub alone publishes it).
+image:
+  stage: test
+  services:
+    - docker:29-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - sh scripts/linux-test-deps.sh
+    - apt-get install -y --no-install-recommends docker.io docker-compose-v2 curl
+    - scripts/container-suite.sh
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - orchestrator-backend/build/reports/tests/boardTest
+      - orchestrator-backend/build/reports/tests/containerTest

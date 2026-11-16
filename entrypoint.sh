@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 child=
 stop() {
   kill -TERM "$child" 2>/dev/null

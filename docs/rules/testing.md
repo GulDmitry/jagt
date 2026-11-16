@@ -48,8 +48,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   script dirs, then **inside application bundles**. An absolute default fails every task on Linux; `editor-command` defaults to bare `idea`.
 - **Do not weaken the resolver**: an IDE needs the bundle step (`/Applications/<App>.app/Contents/MacOS/<name>`).
   The agent CLI is **not** resolved: it runs under the human's PATH in its tmux window.
-- `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, the arguments stay the
-  human's; a launcher found nowhere fails naming the config **key**.
+- `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, arguments stay the human's; a missing one names the **key**.
 - JUnit parallel, methods **and** classes, every test isolated by construction: no `@BeforeAll`, no mutable statics,
   every file under a `@TempDir`, a port bound to 0, a log read only through its own test's capture.
 - **No `@ResourceLock`, `@Isolated` or `@Execution(SAME_THREAD)`**: what tests share is faked or stubbed, and a test that
@@ -96,5 +95,6 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   uncovered**, never faked; raising and closing the viewer stay `@Disabled` (`LinuxKittyTerminalDriverLinuxTest`).
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,
   `scripts/with-linux-desktop.sh` Xvfb + session bus + notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.**
-  `linuxDriverTest` is gated on **capability**, never on the harness.
+  `linuxDriverTest` is gated on **capability**, never on the harness. The `image` job (`scripts/container-suite.sh`): the `Dockerfile` by compose,
+  a stub project, a password login, `BoardContainerTest` (skipped unless `JAGT_BOARD_URL` is set), `containerTest`; release publishes it.
 - **Only the hermetic suite is cached**: four others prove the **machine**, three a model (`cacheIf` / `upToDateWhen` false).

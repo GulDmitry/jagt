@@ -69,7 +69,7 @@ jobs:
   pages:
     name: pages
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [unit, jar, linux, board]
+    needs: [unit, jar, linux, board, image]
     runs-on: ubuntu-24.04
     permissions:
       pages: write
@@ -90,10 +90,11 @@ jobs:
   release:
     name: release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [unit, jar, linux, board]
+    needs: [unit, jar, linux, board, image]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v7
@@ -111,6 +112,12 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "$asset" --generate-notes --verify-tag
           fi
+      # The base image for both architectures, under the release version, once every suite incl. the image's is green.
+      - name: publish the image
+        working-directory: orchestrator-backend
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: scripts/publish-image.sh "$GITHUB_REF_NAME"
       # Tags stay, so a pruned version can still be checked out and rebuilt.
       - name: keep every patch of the last two minors
         env:
@@ -180,3 +187,31 @@ jobs:
         with:
           name: board-test-report
           path: orchestrator-backend/build/reports/tests/boardTest
+
+  # jagt's own image: built, started by compose with a stub project, logged in by password, one board scenario and
+  # containerTest against it. Docker is on the runner; Chromium's libraries come from the shared list.
+  image:
+    name: container image (compose + board)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      - name: install what the suites shell out to
+        run: sudo scripts/linux-test-deps.sh
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('orchestrator-backend/build-logic/src/main/groovy/jagt.suites.gradle') }}
+          restore-keys: playwright-
+      - run: scripts/container-suite.sh
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: image-test-report
+          path: |
+            orchestrator-backend/build/reports/tests/boardTest
+            orchestrator-backend/build/reports/tests/containerTest
