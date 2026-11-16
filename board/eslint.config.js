@@ -16,6 +16,8 @@ export default [
     },
     plugins: { "import-x": importX },
     rules: {
+      complexity: ["error", 12],
+      "max-params": ["error", 7],
       "import-x/no-cycle": "error",
       "import-x/max-dependencies": ["error", { max: 5 }],
       "no-restricted-syntax": [

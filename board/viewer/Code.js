@@ -23,6 +23,79 @@ const firstOf = (trees) => {
 
 const SAID = { BINARY: "code.binary", TOO_LARGE: "code.large" };
 
+const Hits = ({ found, picked, project, pick }) =>
+  found.hits.length
+    ? found.hits.map(
+        (hit) =>
+          html`<button
+            onClick=${() => pick({ project, path: hit.path, line: hit.line })}
+            aria-pressed=${String(picked?.path === hit.path && picked?.line === hit.line)}
+          >
+            ${hit.path}:${hit.line}
+            <span class="muted">${hit.text.trim()}</span>
+          </button>`,
+      )
+    : html`<p class="muted">${t("code.no-hits")}</p>`;
+
+const Changes = ({ changes, picked, pick }) => {
+  if (changes === null) return html`<p class="muted">${t("reading")}</p>`;
+  if (!changes.some((repo) => repo.files.length))
+    return html`<p class="muted">${t("pane.no-diff")}</p>`;
+  return changes.flatMap((repo) => [
+    ...repo.files.map(
+      (one) =>
+        html`<button
+          class="code-change"
+          onClick=${() => pick({ project: repo.project, path: one.path, line: 0, change: one })}
+          aria-pressed=${String(picked?.project === repo.project && picked?.path === one.path && !!picked.change)}
+        >
+          ${one.path}
+          <span class="muted">${` +${one.added} \u2212${one.removed}`}</span>
+        </button>`,
+    ),
+    repo.cut ? html`<p class="muted">${t("pane.diff-cut")}</p>` : "",
+  ]);
+};
+
+const Files = ({ trees, picked, failure, pick }) => {
+  if (trees === null)
+    return failure ? "" : html`<p class="muted">${t("reading")}</p>`;
+  if (!picked) return html`<p class="muted">${t("code.none")}</p>`;
+  return trees.flatMap((tree) =>
+    tree.files.map(
+      (name) =>
+        html`<button
+          onClick=${() => pick({ project: tree.project, path: name, line: 0 })}
+          aria-pressed=${String(picked.project === tree.project && picked.path === name)}
+        >
+          ${name}
+        </button>`,
+    ),
+  );
+};
+
+const Names = ({ found, changed, changes, trees, picked, failure, pick }) => {
+  if (found)
+    return html`<${Hits}
+      found=${found}
+      picked=${picked}
+      project=${picked?.project || ""}
+      pick=${pick}
+    />`;
+  if (changed)
+    return html`<${Changes}
+      changes=${changes}
+      picked=${picked}
+      pick=${pick}
+    />`;
+  return html`<${Files}
+    trees=${trees}
+    picked=${picked}
+    failure=${failure}
+    pick=${pick}
+  />`;
+};
+
 export const Code = ({ task }) => {
   const [trees, setTrees] = useState(null);
   const [picked, setPicked] = useState(null);
@@ -89,9 +162,7 @@ export const Code = ({ task }) => {
     return read.search(id, picked?.project || "", q).then(setFound, said);
   };
 
-  const project = picked?.project || "";
   const changed = mode === "changes";
-  const listed = changed ? changes || [] : [];
   return html`<section
     class="code"
     role="tabpanel"
@@ -124,61 +195,15 @@ export const Code = ({ task }) => {
     ${failure ? html`<p class="detail problem">${failure}</p>` : ""}
     <div class="code-body">
       <div class="code-names">
-        ${
-          found
-            ? found.hits.length
-              ? found.hits.map(
-                  (hit) =>
-                    html`<button
-                      onClick=${() => setPicked({ project, path: hit.path, line: hit.line })}
-                      aria-pressed=${String(picked?.path === hit.path && picked?.line === hit.line)}
-                    >
-                      ${hit.path}:${hit.line}
-                      <span class="muted">${hit.text.trim()}</span>
-                    </button>`,
-                )
-              : html`<p class="muted">${t("code.no-hits")}</p>`
-            : changed
-              ? changes === null
-                ? html`<p class="muted">${t("reading")}</p>`
-                : !listed.some((repo) => repo.files.length)
-                  ? html`<p class="muted">${t("pane.no-diff")}</p>`
-                  : listed.flatMap((repo) => [
-                      ...repo.files.map(
-                        (one) =>
-                          html`<button
-                            class="code-change"
-                            onClick=${() => setPicked({ project: repo.project, path: one.path, line: 0, change: one })}
-                            aria-pressed=${String(picked?.project === repo.project && picked?.path === one.path && !!picked.change)}
-                          >
-                            ${one.path}
-                            <span class="muted"
-                              >${` +${one.added} \u2212${one.removed}`}</span
-                            >
-                          </button>`,
-                      ),
-                      repo.cut
-                        ? html`<p class="muted">${t("pane.diff-cut")}</p>`
-                        : "",
-                    ])
-              : trees === null
-                ? failure
-                  ? ""
-                  : html`<p class="muted">${t("reading")}</p>`
-                : !picked
-                  ? html`<p class="muted">${t("code.none")}</p>`
-                  : trees.flatMap((tree) =>
-                      tree.files.map(
-                        (name) =>
-                          html`<button
-                            onClick=${() => setPicked({ project: tree.project, path: name, line: 0 })}
-                            aria-pressed=${String(picked.project === tree.project && picked.path === name)}
-                          >
-                            ${name}
-                          </button>`,
-                      ),
-                    )
-        }
+        <${Names}
+          found=${found}
+          changed=${changed}
+          changes=${changes}
+          trees=${trees}
+          picked=${picked}
+          failure=${failure}
+          pick=${setPicked}
+        />
         ${found?.cut ? html`<p class="muted">${t("code.cut")}</p>` : ""}
       </div>
       <div class="code-file">

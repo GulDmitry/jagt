@@ -1,6 +1,34 @@
 const HUNK = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/;
 const HEADER = /^diff --\w+ /;
 
+const fileOf = (line) => ({
+  path: line.slice(line.lastIndexOf(" b/") + 3),
+  added: 0,
+  removed: 0,
+  hunks: [],
+  gone: false,
+});
+
+const hunkOf = (line) => {
+  const [, start, count] = HUNK.exec(line);
+  return {
+    start: Number(start),
+    count: count === undefined ? 1 : Number(count),
+    lines: [],
+  };
+};
+
+const target = (one, line) => {
+  one.gone = line === "+++ /dev/null";
+  if (!one.gone) one.path = line.slice(6);
+};
+
+const counted = (one, hunk, line) => {
+  hunk.lines.push(line);
+  if (line[0] === "+") one.added++;
+  if (line[0] === "-") one.removed++;
+};
+
 // One unified diff as its files: path, the lines each side counts, and the hunks that rebuild the old text.
 export function files(diff) {
   const out = [];
@@ -8,32 +36,18 @@ export function files(diff) {
   let hunk = null;
   for (const line of diff.split("\n")) {
     if (HEADER.test(line)) {
-      one = {
-        path: line.slice(line.lastIndexOf(" b/") + 3),
-        added: 0,
-        removed: 0,
-        hunks: [],
-        gone: false,
-      };
+      one = fileOf(line);
       hunk = null;
       out.push(one);
     } else if (!one) {
       continue;
     } else if (!hunk && line.startsWith("+++ ")) {
-      one.gone = line === "+++ /dev/null";
-      if (!one.gone) one.path = line.slice(6);
+      target(one, line);
     } else if (HUNK.test(line)) {
-      const [, start, count] = HUNK.exec(line);
-      hunk = {
-        start: Number(start),
-        count: count === undefined ? 1 : Number(count),
-        lines: [],
-      };
+      hunk = hunkOf(line);
       one.hunks.push(hunk);
     } else if (hunk && /^[ +-]/.test(line)) {
-      hunk.lines.push(line);
-      if (line[0] === "+") one.added++;
-      if (line[0] === "-") one.removed++;
+      counted(one, hunk, line);
     }
   }
   return out;

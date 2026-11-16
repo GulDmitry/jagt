@@ -96,6 +96,42 @@ const Dock = ({ task, held, named, line }) => {
   </div>`;
 };
 
+const CodePane = ({ task, shown }) =>
+  shown?.Code
+    ? html`<${shown.Code} key=${task.id} task=${task} />`
+    : html`<p class=${shown ? "detail problem" : "muted"}>
+        ${shown ? shown.failure : t("reading")}
+      </p>`;
+
+const Panel = ({ card, tab, shown }) =>
+  tab === "session"
+    ? html`<${Session} task=${card.task} shown=${shown} />`
+    : tab === "artifacts"
+      ? html`<${Artifacts} task=${card.task} shown=${shown} />`
+      : tab === "code"
+        ? html`<${CodePane} task=${card.task} shown=${shown} />`
+        : tab === "diff"
+          ? html`<${Diff} shown=${shown} />`
+          : tab === "round"
+            ? html`<${Round}
+                shown=${shown}
+                offered=${card.offers.some((offer) => offer.part === "round")}
+              />`
+            : html`<${History} task=${card.task} now=${card.now} />`;
+
+const dockOf = (tab, card, shown, peek) => {
+  const session = tab === "session";
+  return {
+    named: session && shown ? shown.name : null,
+    held: session
+      ? shown
+        ? Boolean(shown.name) || shown.held
+        : null
+      : peek.held,
+    line: !session && card.task.owner === "AGENT" && peek.held ? peek.line : "",
+  };
+};
+
 export const Pane = ({ card, tab, shown, peek = {}, fresh = false }) =>
   html`<section id="pane" aria-label=${t("pane.label")}>
     <button class="back" data-back="">${t("pane.back")}</button>
@@ -115,31 +151,10 @@ export const Pane = ({ card, tab, shown, peek = {}, fresh = false }) =>
           </button>`,
       )}
     </div>
-    ${
-      tab === "session"
-        ? html`<${Session} task=${card.task} shown=${shown} />`
-        : tab === "artifacts"
-          ? html`<${Artifacts} task=${card.task} shown=${shown} />`
-          : tab === "code"
-            ? shown?.Code
-              ? html`<${shown.Code} key=${card.task.id} task=${card.task} />`
-              : html`<p class=${shown ? "detail problem" : "muted"}>
-                  ${shown ? shown.failure : t("reading")}
-                </p>`
-            : tab === "diff"
-              ? html`<${Diff} shown=${shown} />`
-              : tab === "round"
-                ? html`<${Round}
-                    shown=${shown}
-                    offered=${card.offers.some((offer) => offer.part === "round")}
-                  />`
-                : html`<${History} task=${card.task} now=${card.now} />`
-    }
+    <${Panel} card=${card} tab=${tab} shown=${shown} />
     <${Dock}
       key=${card.task.id}
       task=${card.task}
-      named=${tab === "session" && shown ? shown.name : null}
-      held=${tab === "session" ? (shown ? Boolean(shown.name) || shown.held : null) : peek.held}
-      line=${tab !== "session" && card.task.owner === "AGENT" && peek.held ? peek.line : ""}
+      ...${dockOf(tab, card, shown, peek)}
     />
   </section>`;

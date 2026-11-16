@@ -9,85 +9,112 @@ import { marked, watchLine } from "./Meta.js";
 const quickClass = (action) =>
   action.primary ? "row-verb primary" : "row-verb";
 
-const Row = ({ task, selected, changed, project, now }) => {
-  const owner = task.owner.toLowerCase();
-  const stopped = watchLine(task.autoReview, now)?.stalled
-    ? watchLine(task.autoReview, now).line
-    : null;
-  const quick = (task.actions || []).find((action) => action.onRow);
-  return html`<div
-    class=${[
-      "row",
-      owner,
-      task.attention === "OPTIONAL" && "optional",
-      selected && "selected",
-    ]
-      .filter(Boolean)
-      .join(" ")}
-    data-row=${task.id}
-  >
-    <button
-      class="pick"
-      data-select=${task.id}
-      aria-current=${selected ? "true" : undefined}
-      tabindex=${selected ? 0 : -1}
-      aria-label=${[
-        `${task.alias || task.id} ${task.title || ""}`,
-        task.statusLabel,
-        marked(task) &&
-          `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`,
-        stopped,
-        changed && t("list.changed"),
-      ]
-        .filter(Boolean)
-        .join(", ")}
+const stoppedLine = (task, now) => {
+  const watch = watchLine(task.autoReview, now);
+  return watch?.stalled ? watch.line : null;
+};
+
+const rowClass = (task, selected) =>
+  [
+    "row",
+    task.owner.toLowerCase(),
+    task.attention === "OPTIONAL" && "optional",
+    selected && "selected",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+const pickLabel = (task, changed, stopped) =>
+  [
+    `${task.alias || task.id} ${task.title || ""}`,
+    task.statusLabel,
+    marked(task) &&
+      `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`,
+    stopped,
+    changed && t("list.changed"),
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+const Badge = ({ task }) =>
+  html`<span
+    class=${`badge ${task.attention.toLowerCase()}${task.detailKind === "PROBLEM" ? " problem" : ""}`}
+    >${task.ask}</span
+  >`;
+
+const RowFacts = ({ task, stopped, project, now }) =>
+  html`<span class="row-line row-facts">
+    <span
+      class=${stopped ? "status stalled" : "status"}
+      data-tip=${stopped || undefined}
+      >${task.statusLabel}${" "}
+      <span class="age">${duration(now - task.statusSince)}</span></span
     >
-      <span class="row-line">
-        <span class="alias">${task.alias || "-"}</span>
-        <span class=${changed ? "row-title changed" : "row-title"}
-          >${task.title || task.id}</span
-        >
-        ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}${task.detailKind === "PROBLEM" ? " problem" : ""}`}>${task.ask}</span>` : ""}
-      </span>
-      <span class="row-line row-facts">
-        <span
-          class=${stopped ? "status stalled" : "status"}
-          data-tip=${stopped || undefined}
-          >${task.statusLabel}${" "}
-          <span class="age">${duration(now - task.statusSince)}</span></span
-        >
-        ${project ? html`<span>${task.project}</span>` : ""}
-        ${marked(task) ? html`<span class=${`checks ${task.pipeline.toLowerCase()}`} aria-hidden="true"></span>` : ""}
-      </span>
-    </button>
-    ${
-      quick
-        ? html`<button
-            class=${quickClass(quick)}
-            data-task=${task.id}
-            data-action=${quick.id}
-            data-place="row"
-            tabindex=${selected ? 0 : -1}
-            aria-label=${`${quick.label} ${task.alias || task.id}`}
-            data-tip=${quick.hint}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-              <path d="M7 9l3 3-3 3M13 15h4"></path>
-            </svg>
-          </button>`
-        : ""
-    }
+    ${project ? html`<span>${task.project}</span>` : ""}
+    ${marked(task) ? html`<span class=${`checks ${task.pipeline.toLowerCase()}`} aria-hidden="true"></span>` : ""}
+  </span>`;
+
+const Pick = ({ task, selected, changed, stopped, project, now }) =>
+  html`<button
+    class="pick"
+    data-select=${task.id}
+    aria-current=${selected ? "true" : undefined}
+    tabindex=${selected ? 0 : -1}
+    aria-label=${pickLabel(task, changed, stopped)}
+  >
+    <span class="row-line">
+      <span class="alias">${task.alias || "-"}</span>
+      <span class=${changed ? "row-title changed" : "row-title"}
+        >${task.title || task.id}</span
+      >
+      ${task.ask ? html`<${Badge} task=${task} />` : ""}
+    </span>
+    <${RowFacts}
+      task=${task}
+      stopped=${stopped}
+      project=${project}
+      now=${now}
+    />
+  </button>`;
+
+const QuickVerb = ({ task, quick, selected }) =>
+  html`<button
+    class=${quickClass(quick)}
+    data-task=${task.id}
+    data-action=${quick.id}
+    data-place="row"
+    tabindex=${selected ? 0 : -1}
+    aria-label=${`${quick.label} ${task.alias || task.id}`}
+    data-tip=${quick.hint}
+  >
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+      <path d="M7 9l3 3-3 3M13 15h4"></path>
+    </svg>
+  </button>`;
+
+const Row = ({ task, selected, changed, project, now }) => {
+  const quick = (task.actions || []).find((action) => action.onRow);
+  return html`<div class=${rowClass(task, selected)} data-row=${task.id}>
+    <${Pick}
+      task=${task}
+      selected=${selected}
+      changed=${changed}
+      stopped=${stoppedLine(task, now)}
+      project=${project}
+      now=${now}
+    />
+    ${quick ? html`<${QuickVerb} task=${task} quick=${quick} selected=${selected} />` : ""}
   </div>`;
 };
 

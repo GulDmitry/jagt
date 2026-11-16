@@ -26,13 +26,12 @@ export const marked = (task) =>
 const classes = (...names) => names.filter(Boolean).join(" ");
 
 // `sole` is false for one link among several: the approval is every repository's, not one link's.
-const RequestChip = ({ url, label, openedAt, task, sole, now }) => {
+const requestLines = (task, openedAt, watch) => {
   const lines = [
     openedAt > 0
       ? t("meta.request.opened", { at: full(openedAt) })
       : t("meta.request.undated"),
   ];
-  const approved = sole && task.approved;
   if (task.approved != null)
     lines.push(t(task.approved ? "meta.approved" : "meta.not-approved"));
   const ships = (task.history || []).filter(
@@ -44,8 +43,14 @@ const RequestChip = ({ url, label, openedAt, task, sole, now }) => {
     lines.push(
       t("meta.checks", { said: task.pipelineSaid || t("meta.checks.unread") }),
     );
-  const watch = watchLine(task.autoReview, now);
   if (watch) lines.push(watch.line);
+  return lines;
+};
+
+const RequestChip = ({ url, label, openedAt, task, sole, now }) => {
+  const watch = watchLine(task.autoReview, now);
+  const lines = requestLines(task, openedAt, watch);
+  const approved = sole && task.approved;
   const text = openedAt > 0 ? `${label} ${duration(now - openedAt)}` : label;
   return html`<a
     href=${httpOnly(url)}
@@ -82,13 +87,20 @@ const ChecksDot = ({ task }) => {
 };
 
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
-const StatusChip = ({ task, stalled, now }) => {
+const joined = (tip, next) => (tip ? `${tip}\n\n${next}` : next);
+
+const statusTip = (task, stalled) => {
   let tip = stalled ? stalled.line : "";
-  if (task.waiting) tip = tip ? `${tip}\n\n${task.waiting}` : task.waiting;
+  if (task.waiting) tip = joined(tip, task.waiting);
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   const live =
     task.deployed && !(task.actions || []).some((action) => action.again);
-  if (live) tip = tip ? `${tip}\n\n${t("meta.live")}` : t("meta.live");
+  if (live) tip = joined(tip, t("meta.live"));
+  return { tip, live };
+};
+
+const StatusChip = ({ task, stalled, now }) => {
+  const { tip, live } = statusTip(task, stalled);
   return html`<span
     class=${classes("status", stalled && "stalled", live && "live")}
     data-tip=${tip || undefined}
