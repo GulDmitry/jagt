@@ -71,7 +71,7 @@ nothing), `AbortedConnectionFilter` (drops an aborted peer's socket error), `Ref
 | a peer claims to be the owner | BCrypt hash named by env, no default; OIDC subject or email allow-listed | `AuthCheckTest`, `OidcLoginOnTomcatTest` | V6.2, V9, V10 |
 | a peer claims to be the Master | constant-time token compare, 256 random bits, new at each start | `MasterToken`, `MasterTokenTest` | V6, V11 |
 | a peer names a worktree to act as a session | the doors need the token from a peer off loopback or forwarded | `AgentDoorFilterTest` | V8 |
-| password guessing | per-peer backoff, 429 with `Retry-After` | `LoginBackoffFilterTest`, `PasswordLoginRefusalOnTomcatTest` | V6.3 |
+| password guessing | per-peer backoff keyed on the client Tomcat's `RemoteIpValve` resolves from a trusted proxy, 429 with `Retry-After` | `LoginBackoffFilterTest`, `PasswordLoginRefusalOnTomcatTest` | V6.3 |
 
 ### Tampering
 
@@ -127,7 +127,6 @@ nothing), `AbortedConnectionFilter` (drops an aborted peer's socket error), `Ref
 | a same-user process forges Origin and reads `master-token` | a known pass in [guards](rules/guards.md) | sessions as another user |
 | `auth: none` trusts the network | `server.address` stays loopback, a wider one refuses the start | none |
 | one owner, one password, no MFA | OIDC delegates MFA | a second login mode |
-| the backoff key behind an ingress is unknown: the proxy's address or the forwarded one | none verified | open question |
 | no DAST, no JS lint of the board | JAGT-96 | JAGT-96 |
 | no HSTS from jagt | TLS ends at the ingress | none |
 | ASVS IDs are chapters, not individual requirements | practices names the same grain | a requirement-level audit |

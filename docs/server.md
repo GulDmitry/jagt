@@ -29,6 +29,8 @@ cp jagt.server.yml.dist jagt.yml          # the image ships it as /app/jagt.yml;
 - The host of `JAGT_PUBLIC_URL` is the one the ingress must forward; any other `Host` or `Origin` is refused with 403.
 - The ingress ends TLS (the manifest's `tls` Secret); the starter reads `X-Forwarded-*`, sets the cookie Secure
   and ends an idle login after 30 minutes.
+- `X-Forwarded-For` counts only from a private-range proxy; an ingress on a public address is named in
+  `server.tomcat.remoteip.internal-proxies`, else the login backoff keys on the ingress, not the client.
 
 ## Single sign-on
 

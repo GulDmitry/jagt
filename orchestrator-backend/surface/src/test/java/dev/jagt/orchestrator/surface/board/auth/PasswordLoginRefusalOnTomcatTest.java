@@ -184,6 +184,36 @@ class PasswordLoginRefusalOnTomcatTest {
   }
 
   @Test
+  void backsOffOnlyTheForwardedClientBehindOneIngress() throws Exception {
+    String base = "http://localhost:" + port;
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest.Builder attacker =
+        HttpRequest.newBuilder(URI.create(base + "/login"))
+            .header("Origin", base)
+            .header("X-Forwarded-For", "10.9.9.5")
+            .header("Content-Type", "application/x-www-form-urlencoded");
+    for (int i = 0; i < 2; i++) {
+      client.send(
+          attacker
+              .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=nope"))
+              .build(),
+          HttpResponse.BodyHandlers.discarding());
+    }
+
+    HttpResponse<Void> other =
+        client.send(
+            HttpRequest.newBuilder(URI.create(base + "/login"))
+                .header("Origin", base)
+                .header("X-Forwarded-For", "10.9.9.6")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+                .build(),
+            HttpResponse.BodyHandlers.discarding());
+
+    assertThat(other.statusCode()).isEqualTo(302);
+  }
+
+  @Test
   void sendsWrongPasswordBackToTheLoginPageWithTheError() throws Exception {
     String base = "http://localhost:" + port;
 
