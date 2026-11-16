@@ -71,6 +71,21 @@ Each is set by your image's environment or a mounted file, never a value in `jag
 - The mounted MCP file carries the tracker's own `${VAR}` secrets; a `gh` or `glab` login under HOME is only their fallback.
 - Pass the variables at run time (`docker run -e`, a compose `.env`, a Kubernetes `Secret`); see `Dockerfile.dist`.
 
+## The agent's settings, plugins and MCP servers
+
+In a pod nobody signs in through a browser, so the organisation's image supplies what a session loads.
+
+| what | where | how |
+|------|-------|-----|
+| settings, plugins, skills | baked into the image as a seed folder (`JAGT_AGENT_SEED`) from your plugin marketplace repository | the `Dockerfile.dist` stage clones it with a build secret and records the commit it built from |
+| MCP config holding a token | mounted from a `Secret`, its path in `JAGT_MCP_CONFIG` | never in the image |
+
+- HOME lives on the volume, which hides whatever the image bakes under it; so on every start `entrypoint.sh` copies the seed over
+  the agent's folder (`JAGT_AGENT_HOME`): settings, MCP config and plugins are replaced, conversations and logins kept.
+- With either variable unset, or no seed folder, nothing is copied.
+- `claude.mcpConfig` or `assistant.mcpConfig` naming a file the container lacks is one mark on the board's head; it ends
+  once the file is there. A value holding the JSON itself is not a file and is not checked.
+
 ## Git reaches the code host
 
 - **SSH**: mount the bot's private key (mode 0600) and a `known_hosts` into `/home/jagt/.ssh`; the image has `openssh-client`.

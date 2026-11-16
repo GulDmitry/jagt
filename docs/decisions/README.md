@@ -191,3 +191,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0175 An organisation builds its toolchains onto jagt's image](0175-an-organisation-builds-its-toolchains-onto-jagts-image.md) (on 0171)
 - [0176 Every kind has a ceiling](0176-every-kind-has-a-ceiling.md) (on 0162)
 - [0177 A missing project program is read by its own job](0177-a-missing-project-program-is-read-by-its-own-job.md) (on 0176)
+- [0178 An MCP file is read by its own job, the agent's folder seeded](0178-an-mcp-file-is-read-by-its-own-job.md) (on 0177)

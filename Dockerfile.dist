@@ -31,6 +31,19 @@ USER root
 # ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 # RUN npm install -g playwright@1.49.1 && playwright install --with-deps chromium && chmod -R a+rX /opt/playwright && rm -rf /var/lib/apt/lists/*
 
+# Your organisation's agent settings, plugins and skills, from its plugin marketplace repository (docs/server.md).
+# The seed folder is baked here; entrypoint.sh lays it over JAGT_AGENT_HOME on every start. Names are examples.
+# The token is a build secret (docker build --secret id=marketplace_token,env=MARKETPLACE_TOKEN), never an ARG or ENV.
+# ENV JAGT_AGENT_SEED=/opt/agent-seed JAGT_AGENT_HOME=/data/home/.agent
+# RUN --mount=type=secret,id=marketplace_token \
+#     git clone "https://x-access-token:$(cat /run/secrets/marketplace_token)@git.example.com/ABC/plugin-marketplace.git" /tmp/marketplace \
+#  && git -C /tmp/marketplace rev-parse HEAD > /tmp/marketplace.commit \
+#  && git -C /tmp/marketplace remote remove origin \
+#  && mkdir -p "$JAGT_AGENT_SEED" \
+#  && <your agent CLI> plugin install --config-dir "$JAGT_AGENT_SEED" /tmp/marketplace \
+#  && cp /tmp/marketplace.commit "$JAGT_AGENT_SEED/marketplace.commit" \
+#  && rm -rf /tmp/marketplace /tmp/marketplace.commit
+
 # Identities (docs/server.md): never an ENV value here; pass them when the container runs.
 #   docker run -e GH_TOKEN -e JAGT_NOTIFY_WEBHOOK -e JAGT_TRACKER_USER -e JAGT_MCP_CONFIG=/run/secrets/jagt-mcp.json \
 #     --mount type=bind,src=./mcp.json,dst=/run/secrets/jagt-mcp.json,readonly my-jagt
