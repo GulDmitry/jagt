@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 
 class BoardPopupsAndTabsTest extends BoardPageContext {
 
@@ -150,7 +149,6 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void failedJobOpensFromTheHeaderAsTableWhoseRowRunsItNow() {
     breakable.breakIt();
     Page page = openLiveBoard();
@@ -726,7 +724,6 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void theJobsTableTurnsFailedJobRedWithoutReopeningTheReport() {
     breakable.breakIt();
     Page page = openLiveBoard();

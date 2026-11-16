@@ -32,33 +32,22 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @E2eFlow(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class MasterModeFlowTest {
+class MasterModeFlowTest extends FlowHarness.World {
 
   private static final String TASK = "ABC-7";
-
-  @TempDir static Path workspace;
-
-  @DynamicPropertySource
-  static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-    FlowHarness.livesIn(registry, workspace);
-  }
 
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
@@ -78,11 +67,6 @@ class MasterModeFlowTest {
     this.userNotifier = userNotifier;
     this.provisioning = provisioning;
     this.flow = new FlowHarness(context, workspace, TASK, port);
-  }
-
-  @BeforeAll
-  static void createTheThrowawayOutsideWorld() throws Exception {
-    FlowHarness.createThrowawayWorld(workspace, true);
   }
 
   @AfterEach

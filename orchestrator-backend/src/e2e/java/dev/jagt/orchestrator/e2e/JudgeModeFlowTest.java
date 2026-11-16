@@ -16,33 +16,24 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @E2eFlow(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class JudgeModeFlowTest {
+@MockitoSpyBean(types = Clock.class)
+class JudgeModeFlowTest extends FlowHarness.World {
 
   private static final String TASK = "ABC-7";
-
-  @TempDir static Path workspace;
-
-  @DynamicPropertySource
-  static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-    FlowHarness.livesIn(registry, workspace);
-  }
 
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
@@ -56,11 +47,6 @@ class JudgeModeFlowTest {
       TaskProvisioning provisioning, ApplicationContext context, @LocalServerPort int port) {
     this.provisioning = provisioning;
     this.flow = new FlowHarness(context, workspace, TASK, port);
-  }
-
-  @BeforeAll
-  static void createTheThrowawayOutsideWorld() throws Exception {
-    FlowHarness.createThrowawayWorld(workspace, true);
   }
 
   @BeforeEach

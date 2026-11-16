@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 
 class BoardHeaderAndFiltersTest extends BoardPageContext {
 
@@ -381,7 +380,6 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void anOpenTipOnTheJobsChipFollowsItsCountdownThroughRepaint() {
     breakable.breakIt();
     long now = System.currentTimeMillis();

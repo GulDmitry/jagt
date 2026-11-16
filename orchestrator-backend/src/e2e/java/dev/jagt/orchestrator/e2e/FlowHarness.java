@@ -33,10 +33,36 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.util.FileSystemUtils;
 
 final class FlowHarness {
 
   private static final Duration A_FEW_TICKS_AND_A_DEPLOY_TICK = Duration.ofSeconds(55);
+
+  abstract static class World {
+
+    static final Path workspace = createWorld();
+
+    private static Path createWorld() {
+      try {
+        Path created = Files.createTempDirectory("flow-world");
+        Runtime.getRuntime()
+            .addShutdownHook(new Thread(() -> FileSystemUtils.deleteRecursively(created.toFile())));
+        createThrowawayWorld(created, true);
+        E2eWorkspace.createRepositoryWithOrigin(
+            created.resolve("web-origin.git"), created.resolve("web"));
+        return created;
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      }
+    }
+
+    @DynamicPropertySource
+    static void orchestratorLivesInTheSharedWorld(DynamicPropertyRegistry registry) {
+      livesIn(registry, workspace);
+    }
+  }
 
   private final HttpClient client = HttpClient.newHttpClient();
   private final ApplicationContext context;

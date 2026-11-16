@@ -11,7 +11,6 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 
 class BoardInteractionLogTest extends BoardPageContext {
 
@@ -88,7 +87,6 @@ class BoardInteractionLogTest extends BoardPageContext {
   }
 
   @Test
-  @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void theFailedJobsChipAppearingIsLoggedWithoutStatus() throws Exception {
     breakable.breakIt();
     Page page = openLiveBoard();

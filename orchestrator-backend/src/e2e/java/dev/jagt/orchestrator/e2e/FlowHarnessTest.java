@@ -22,9 +22,7 @@ class FlowHarnessTest {
   }
 
   @Test
-  void flowContextEndsWithItsClassBeforeItsTempRootIsGone() {
-    DirtiesContext dirties = E2eFlow.class.getAnnotation(DirtiesContext.class);
-
-    assertThat(dirties.classMode()).isEqualTo(DirtiesContext.ClassMode.AFTER_CLASS);
+  void flowContextIsCachedForTheClassesSharingOneWorld() {
+    assertThat(E2eFlow.class.getAnnotation(DirtiesContext.class)).isNull();
   }
 }

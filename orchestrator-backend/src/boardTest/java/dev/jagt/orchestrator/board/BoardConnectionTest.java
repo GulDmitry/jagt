@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
 import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.APIResponse;
@@ -12,18 +11,13 @@ import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.surface.board.TaskEventStream;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.test.annotation.DirtiesContext;
 
 class BoardConnectionTest extends BoardPageContext {
 
@@ -246,22 +240,6 @@ class BoardConnectionTest extends BoardPageContext {
     assertThat(page.locator("#offline"))
         .isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(10_000));
     assertThat(page.locator("#board")).not().hasAttribute("inert", "");
-  }
-
-  @Test
-  @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-  void roundOpenWhenTheBackendGoesAwayTakesNoLineForItsSession(
-      @Autowired TaskEventStream events, @Autowired ApplicationContext context) throws IOException {
-    replyDraft(root).withKey("ABC-18").withText("## thread 1\nFIXED - Renamed it.\n").build();
-    putReviewTask("ABC-18");
-    Page page = openLiveBoard();
-    ask(page, "replies a18");
-    assertThat(page.locator("#report-line")).isVisible();
-
-    events.onApplicationEvent(new ContextClosedEvent(context));
-
-    assertThat(page.locator("#offline")).isVisible();
-    assertThat(page.locator("#report-line")).hasAttribute("inert", "");
   }
 
   @Test

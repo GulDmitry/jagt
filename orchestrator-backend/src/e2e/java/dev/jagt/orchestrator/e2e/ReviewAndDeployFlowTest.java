@@ -32,13 +32,13 @@ import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,22 +49,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @E2eFlow(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ReviewAndDeployFlowTest {
+@MockitoSpyBean(types = Clock.class)
+class ReviewAndDeployFlowTest extends FlowHarness.World {
 
   private static final String TASK = "ABC-1";
   private static final String TITLE = "Widget layout is off";
-
-  @TempDir static Path workspace;
-
-  @DynamicPropertySource
-  static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-    FlowHarness.livesIn(registry, workspace);
-  }
 
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
@@ -93,13 +86,6 @@ class ReviewAndDeployFlowTest {
     this.paths = context.getBean(OrchestratorPaths.class);
     this.properties = context.getBean(ToolchainProperties.class);
     this.flow = new FlowHarness(context, workspace, TASK, port);
-  }
-
-  @BeforeAll
-  static void createTheThrowawayOutsideWorld() throws Exception {
-    FlowHarness.createThrowawayWorld(workspace, false);
-    E2eWorkspace.createRepositoryWithOrigin(
-        workspace.resolve("web-origin.git"), workspace.resolve("web"));
   }
 
   @BeforeEach

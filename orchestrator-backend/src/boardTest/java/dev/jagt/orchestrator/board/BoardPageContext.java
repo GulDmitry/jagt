@@ -9,6 +9,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
@@ -22,25 +23,25 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskState.TaskStateBuilder;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.util.FileSystemUtils;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -50,7 +51,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
     })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Import(BoardPageContext.BreakableJob.class)
 @ExtendWith(BoardBrowser.class)
 abstract class BoardPageContext {
@@ -59,9 +59,27 @@ abstract class BoardPageContext {
 
   static class BreakableJob implements Job {
     private volatile boolean broken;
+    private final ObjectProvider<Jobs> jobs;
+
+    BreakableJob(ObjectProvider<Jobs> jobs) {
+      this.jobs = jobs;
+    }
 
     void breakIt() {
       broken = true;
+    }
+
+    boolean repair() {
+      boolean was = broken;
+      broken = false;
+      if (was) {
+        jobs.getObject().runNow(id());
+      }
+      return was;
+    }
+
+    boolean failing() {
+      return jobs.getObject().summary(System.currentTimeMillis()).failing() > 0;
     }
 
     @Override
@@ -89,7 +107,7 @@ abstract class BoardPageContext {
 
   final BreakableJob breakable;
 
-  @TempDir static Path root;
+  static final Path root = createRoot();
 
   @LocalServerPort int port;
 
@@ -121,25 +139,36 @@ abstract class BoardPageContext {
     registry.add("logging.file.name", () -> root.resolve("jagt.log").toString());
   }
 
-  @BeforeAll
-  static void nameTheProjectsTheBoardOffers() throws IOException {
+  private static Path createRoot() {
+    try {
+      Path created = Files.createTempDirectory("board-root");
+      nameTheProjectsTheBoardOffers(created);
+      Runtime.getRuntime()
+          .addShutdownHook(new Thread(() -> FileSystemUtils.deleteRecursively(created.toFile())));
+      return created;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static void nameTheProjectsTheBoardOffers(Path folder) throws IOException {
     try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
       for (Path file : shipped) {
         Files.copy(
             file,
-            root.resolve(file.getFileName()),
+            folder.resolve(file.getFileName()),
             java.nio.file.StandardCopyOption.REPLACE_EXISTING);
       }
     }
     try (var shipped = Files.walk(Path.of("..", "roles"))) {
       for (Path file : shipped.filter(path -> path.toString().endsWith(".dist")).toList()) {
-        Path target = root.resolve(Path.of("..").relativize(file));
+        Path target = folder.resolve(Path.of("..").relativize(file));
         Files.createDirectories(target.getParent());
         Files.copy(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
       }
     }
     Files.writeString(
-        root.resolve("jagt.yml"),
+        folder.resolve("jagt.yml"),
         """
         orchestrator:
           projects:
@@ -147,7 +176,7 @@ abstract class BoardPageContext {
             alpha: {path: "%s", baseBranch: origin/main, deployBranch: dev}
           autoReview: {enabled: true}
         """
-            .formatted(root.resolve("beta"), root.resolve("alpha")));
+            .formatted(folder.resolve("beta"), folder.resolve("alpha")));
   }
 
   TaskStateBuilder alphaTask(String key, TaskStatus status) {
@@ -195,13 +224,22 @@ abstract class BoardPageContext {
 
   @BeforeEach
   void emptyTheBoard(Browser browser) throws IOException {
-    Files.deleteIfExists(root.resolve("state.json"));
-    Files.deleteIfExists(root.resolve("state.json.bak"));
+    try (var entries = Files.newDirectoryStream(root)) {
+      for (Path entry : entries) {
+        if (!entry.getFileName().toString().equals("jagt.log")) {
+          FileSystemUtils.deleteRecursively(entry);
+        }
+      }
+    }
+    nameTheProjectsTheBoardOffers(root);
     session = browser.newContext();
   }
 
   @AfterEach
   void closeTheTab() {
+    if (breakable.repair()) {
+      session.newPage().waitForCondition(() -> !breakable.failing());
+    }
     session.close();
   }
 }
