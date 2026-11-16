@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.board.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
@@ -19,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = PasswordLoginRefusalTest.Board.class,
@@ -27,6 +29,7 @@ import org.springframework.context.annotation.Import;
       "orchestrator.auth.mode=password",
       "orchestrator.auth.passwordHash=$2y$04$cpM1ODse0DnRCsm1Zpa9quQKnFm0ZxoiaduZfAt4nnLFQp0rBW332"
     })
+@MockitoBean(types = {UserNotifier.class})
 class PasswordLoginRefusalTest {
 
   @SpringBootConfiguration
@@ -45,39 +48,34 @@ class PasswordLoginRefusalTest {
   @ParameterizedTest
   @CsvSource(
       delimiter = '|',
-      nullValues = "none",
       value = {
-        "GET|/state|rebound.example.test|none",
-        "POST|/api/tasks/say|localhost|http://evil.example.test",
-        "POST|/api/tasks/say|localhost|none"
+        "GET|/state|rebound.example.test|Accept: */*",
+        "POST|/api/tasks/say|localhost|Origin: http://evil.example.test",
+        "POST|/api/tasks/say|localhost|Accept: */*"
       })
-  void answersItsRefusalNotTheLoginRedirect(String method, String path, String host, String origin)
+  void answersItsRefusalNotTheLoginRedirect(String method, String path, String host, String header)
       throws Exception {
-    String originHeader = origin == null ? "" : "Origin: " + origin + "\r\n";
+    String request =
+        method
+            + " "
+            + path
+            + " HTTP/1.1\r\nHost: "
+            + host
+            + ":"
+            + port
+            + "\r\n"
+            + header
+            + "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
 
-    String status =
-        statusLine(
-            method
-                + " "
-                + path
-                + " HTTP/1.1\r\nHost: "
-                + host
-                + ":"
-                + port
-                + "\r\n"
-                + originHeader
-                + "Content-Length: 0\r\nConnection: close\r\n\r\n");
-
-    assertThat(status).contains(" 403");
-  }
-
-  private String statusLine(String request) throws Exception {
+    String status;
     try (Socket socket = new Socket(InetAddress.getLoopbackAddress(), port)) {
       socket.getOutputStream().write(request.getBytes(StandardCharsets.US_ASCII));
-      socket.getOutputStream().flush();
-      return new BufferedReader(
-              new InputStreamReader(socket.getInputStream(), StandardCharsets.US_ASCII))
-          .readLine();
+      status =
+          new BufferedReader(
+                  new InputStreamReader(socket.getInputStream(), StandardCharsets.US_ASCII))
+              .readLine();
     }
+
+    assertThat(status).contains(" 403");
   }
 }
