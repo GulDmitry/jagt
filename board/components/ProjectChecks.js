@@ -1,7 +1,15 @@
+import { t } from "../core/i18n.js";
+import { html } from "./html.js";
 
-import {t} from '../core/i18n.js';
-import {html} from './html.js';
-
-export const ProjectChecks = ({lines}) => html`${lines.map((line) => html`<li class=${line.ok ? 'ok' : 'bad'}>
-  <span class=${`checks ${line.ok ? 'green' : 'red'}`} role="img" aria-label=${t(line.ok ? 'checks.fine' : 'checks.not-fine')}></span>
-  ${line.text}</li>`)}`;
+export const ProjectChecks = ({ lines }) =>
+  html`${lines.map(
+    (line) =>
+      html`<li class=${line.ok ? "ok" : "bad"}>
+        <span
+          class=${`checks ${line.ok ? "green" : "red"}`}
+          role="img"
+          aria-label=${t(line.ok ? "checks.fine" : "checks.not-fine")}
+        ></span>
+        ${line.text}
+      </li>`,
+  )}`;

@@ -1,29 +1,30 @@
+import { api, refusal } from "../core/api.js";
+import { parse, verdictOf } from "../core/grammar.js";
+import { t } from "../core/i18n.js";
+import * as store from "../core/store.js";
+import { run } from "./act.js";
+import { openReport } from "./dialogs.js";
+import { boardArrived, refresh, verbsArrived } from "./refresh.js";
+import { sending } from "./submit.js";
+import { toast } from "./toast.js";
 
-import {api, refusal} from '../core/api.js';
-import {parse, verdictOf} from '../core/grammar.js';
-import {t} from '../core/i18n.js';
-import * as store from '../core/store.js';
-import {run} from './act.js';
-import {openReport} from './dialogs.js';
-import {boardArrived, refresh, verbsArrived} from './refresh.js';
-import {sending} from './submit.js';
-import {toast} from './toast.js';
-
-const form = document.getElementById('palette');
-const ask = document.getElementById('ask');
-const opener = document.getElementById('open-palette');
-const verdict = document.getElementById('palette-state');
+const form = document.getElementById("palette");
+const ask = document.getElementById("ask");
+const opener = document.getElementById("open-palette");
+const verdict = document.getElementById("palette-state");
 
 // Asked here, decided at wiring time, so this module knows no form and no verb by name.
-let forms = {partFor: () => ({})};
+let forms = { partFor: () => ({}) };
 
-export const wire = (wired) => { forms = wired; };
+export const wire = (wired) => {
+  forms = wired;
+};
 
 export const isOpen = () => !form.hidden;
 
 function show(open) {
   form.hidden = !open;
-  opener.setAttribute('aria-pressed', String(open));
+  opener.setAttribute("aria-pressed", String(open));
   if (open) {
     ask.focus();
     ask.select();
@@ -42,25 +43,30 @@ export function toggle() {
 }
 
 export function refreshSuggestions() {
-  document.getElementById('ask-options').replaceChildren(
-    ...store.verbs().map((verb) => Object.assign(document.createElement('option'),
-      {value: verb.id, label: verb.hint})));
+  document.getElementById("ask-options").replaceChildren(
+    ...store.verbs().map((verb) =>
+      Object.assign(document.createElement("option"), {
+        value: verb.id,
+        label: verb.hint,
+      }),
+    ),
+  );
 }
 
 export function judge() {
-  const {kind, text} = verdictOf(ask.value.trim());
-  verdict.classList.remove('ok', 'bad');
+  const { kind, text } = verdictOf(ask.value.trim());
+  verdict.classList.remove("ok", "bad");
   if (kind) verdict.classList.add(kind);
   verdict.textContent = text;
 }
 
 // A line answered without creating anything would only repeat the attempt.
-const HANDLED = {clear: true};
-const KEPT = {clear: false};
+const HANDLED = { clear: true };
+const KEPT = { clear: false };
 
 // A line that parses is executed; only free text is worth a model call.
 async function runParsed(parsed) {
-  const {verb, argument, task, project} = parsed;
+  const { verb, argument, task, project } = parsed;
   if (verb.takesTask) {
     await run(task.id, verb.id, project);
     return HANDLED;
@@ -68,10 +74,12 @@ async function runParsed(parsed) {
   const part = forms.partFor(verb.part);
   // What was typed after the verb goes with it: a report that narrows to one task must not answer for all.
   if (verb.report) {
-    const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
-    const opened = await openReport(`${verb.id} ${store.nameOf(argument)}`.trim(),
+    const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : "";
+    const opened = await openReport(
+      `${verb.id} ${store.nameOf(argument)}`.trim(),
       `/api/commands/${encodeURIComponent(verb.id)}${narrowed}`,
-      {about: verb.aboutOneTask ? argument : null, extra: part.section?.()});
+      { about: verb.aboutOneTask ? argument : null, extra: part.section?.() },
+    );
     // A report that could not be read leaves the typed line where it was, to try again.
     return opened ? HANDLED : KEPT;
   }
@@ -80,15 +88,18 @@ async function runParsed(parsed) {
     part.focus();
     return HANDLED;
   }
-  if (argument && await part.argued?.(argument)) return HANDLED;
+  if (argument && (await part.argued?.(argument))) return HANDLED;
   if (verb.confirmation && !confirm(verb.confirmation)) return KEPT;
-  const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
-  const result = await api(`/api/commands/${encodeURIComponent(verb.id)}${narrowed}`, {method: 'POST'});
+  const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : "";
+  const result = await api(
+    `/api/commands/${encodeURIComponent(verb.id)}${narrowed}`,
+    { method: "POST" },
+  );
   toast(result.message);
   return HANDLED;
 }
 
-ask.addEventListener('input', judge);
+ask.addEventListener("input", judge);
 opener.onclick = toggle;
 
 form.onsubmit = async (event) => {
@@ -102,13 +113,13 @@ form.onsubmit = async (event) => {
   }
   if (parsed && (!parsed.verb.takesTask || parsed.task)) {
     // Tier 1 answers for itself, so there is no one message to show and nothing to say while it happens.
-    const button = form.querySelector('button[type=submit]');
+    const button = form.querySelector("button[type=submit]");
     button.disabled = true;
     try {
       const answered = await runParsed(parsed);
       if (answered) {
         if (answered.clear) {
-          ask.value = '';
+          ask.value = "";
           close();
         }
         return;
@@ -123,14 +134,15 @@ form.onsubmit = async (event) => {
     }
   }
   await sending(form, {
-    waiting: t('palette.interpreting'), // a model call: seconds
-    send: () => api('/api/interpret', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({text: ask.value}),
-    }),
+    waiting: t("palette.interpreting"), // a model call: seconds
+    send: () =>
+      api("/api/interpret", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: ask.value }),
+      }),
     done: () => {
-      ask.value = '';
+      ask.value = "";
       close();
     },
   });

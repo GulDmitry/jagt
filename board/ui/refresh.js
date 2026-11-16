@@ -1,19 +1,20 @@
-
-import {api} from '../core/api.js';
-import {t} from '../core/i18n.js';
-import * as store from '../core/store.js';
-import {render} from './render.js';
-import {toast} from './toast.js';
+import { api } from "../core/api.js";
+import { t } from "../core/i18n.js";
+import * as store from "../core/store.js";
+import { render } from "./render.js";
+import { toast } from "./toast.js";
 
 let asked = 0;
 let painted = 0;
 let boardRead;
-export const boardArrived = new Promise((resolve) => { boardRead = resolve; });
+export const boardArrived = new Promise((resolve) => {
+  boardRead = resolve;
+});
 
 export async function refresh() {
   const mine = ++asked;
   try {
-    const data = await api('/api/tasks');
+    const data = await api("/api/tasks");
     // Reads overlap, and one answered late describes the board before a later one.
     if (mine < painted) return;
     painted = mine;
@@ -22,7 +23,7 @@ export async function refresh() {
       projects: data.projects || [],
       branchStrategies: data.branchStrategies || [],
       phases: data.phases || [],
-      autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
+      autoReview: { summary: data.autoReview, enabled: data.autoReviewEnabled },
       jobs: data.jobs,
       actStop: data.actStop,
       reach: data.reach || [],
@@ -31,7 +32,7 @@ export async function refresh() {
     });
     render();
   } catch (e) {
-    toast(t('refresh.backend', {cause: e.message}), true);
+    toast(t("refresh.backend", { cause: e.message }), true);
   } finally {
     boardRead();
   }
@@ -41,17 +42,19 @@ let verbsFailed = false;
 let verbsRead;
 
 // Settles once the first read of the verbs does, failed or not: a line parsed before it would go to the model.
-export const verbsArrived = new Promise((resolve) => { verbsRead = resolve; });
+export const verbsArrived = new Promise((resolve) => {
+  verbsRead = resolve;
+});
 
 // Fetched, not hardcoded: the palette completes and validates against the server's own verb list. Without it
 // the palette degrades rather than breaks, said once per failing streak rather than on every reconnect.
 export async function refreshVerbs() {
   try {
-    store.set({verbs: await api('/api/commands')});
+    store.set({ verbs: await api("/api/commands") });
     verbsFailed = false;
   } catch (e) {
-    store.set({verbs: []});
-    if (!verbsFailed) toast(t('refresh.commands', {cause: e.message}), true);
+    store.set({ verbs: [] });
+    if (!verbsFailed) toast(t("refresh.commands", { cause: e.message }), true);
     verbsFailed = true;
   } finally {
     verbsRead();

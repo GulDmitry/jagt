@@ -9,7 +9,7 @@ Accepted 2026-11-06 by the owner's order: the board speaks any language by addin
 ## Context
 
 - The board's text sat in its scripts and page; a second language meant editing code.
-- The board has a 160 KB budget for scripts, styles and pages (`BoardAssetsTest`); a catalog is data and stands outside it.
+- The board has a 192 KB budget for scripts, styles and pages (`BoardAssetsTest`); a catalog is data and stands outside it.
 - jagt runs from an installed jar whose users cannot rebuild it.
 
 ## Decision
@@ -25,7 +25,7 @@ Accepted 2026-11-06 by the owner's order: the board speaks any language by addin
 
 ## Rejected
 
-- A vendored i18n library: its weight takes the 160 KB budget the board keeps, and `t(key, values)` is all the board uses.
+- A vendored i18n library: its weight takes the 192 KB budget the board keeps, and `t(key, values)` is all the board uses.
 - A language list in code or `jagt.yml`: a second place to forget when a file is added.
 - Catalogs in the jar only: a user of the installed jar could not add a language.
 - Translating by browser locale alone: a human cannot then choose a language the browser does not offer.

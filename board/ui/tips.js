@@ -1,6 +1,9 @@
 // `title` shows only after a wait, and a push rebuilds the element it was waiting on — so a tip is delegated.
 
-const tip = Object.assign(document.createElement('div'), {id: 'tip', hidden: true});
+const tip = Object.assign(document.createElement("div"), {
+  id: "tip",
+  hidden: true,
+});
 document.body.append(tip);
 
 let shownFor = null;
@@ -8,12 +11,14 @@ let shownFor = null;
 // Text the stylesheet cuts with an ellipsis is its own tip, whole, wherever it is cut.
 const clipped = (node) => {
   for (let at = node; at instanceof Element; at = at.parentElement) {
-    if (getComputedStyle(at).textOverflow === 'ellipsis') return at.scrollWidth > at.clientWidth ? at : null;
+    if (getComputedStyle(at).textOverflow === "ellipsis")
+      return at.scrollWidth > at.clientWidth ? at : null;
   }
   return null;
 };
 
-const said = (node) => node.dataset.tip || (clipped(node) === node ? node.textContent : '');
+const said = (node) =>
+  node.dataset.tip || (clipped(node) === node ? node.textContent : "");
 
 export function hideTip() {
   tip.hidden = true;
@@ -28,14 +33,14 @@ export function hideStaleTip(rebuilt) {
 
 function showTip(target) {
   // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
-  (target.closest('dialog[open]') || document.body).append(tip);
+  (target.closest("dialog[open]") || document.body).append(tip);
   shownFor = target;
   tip.textContent = said(target);
   tip.hidden = false;
   tip.scrollTop = 0;
   // Past its cap a tip is READ, not glanced at: it takes the pointer to scroll, and leaves no gap to cross.
   const scrolls = tip.scrollHeight > tip.clientHeight;
-  tip.classList.toggle('scrolls', scrolls);
+  tip.classList.toggle("scrolls", scrolls);
   const gap = scrolls ? 0 : 8;
   const anchor = target.getBoundingClientRect();
   const own = tip.getBoundingClientRect();
@@ -45,15 +50,20 @@ function showTip(target) {
   tip.style.top = `${fits ? below : Math.max(8, anchor.top - own.height - gap)}px`;
 }
 
-for (const event of ['pointerover', 'focusin']) {
+for (const event of ["pointerover", "focusin"]) {
   document.addEventListener(event, (moved) => {
-    if (moved.target.closest?.('#tip')) return;
-    const target = moved.target.closest?.('[data-tip]') || clipped(moved.target);
+    if (moved.target.closest?.("#tip")) return;
+    const target =
+      moved.target.closest?.("[data-tip]") || clipped(moved.target);
     if (target && said(target)) showTip(target);
     else hideTip();
   });
 }
-document.addEventListener('pointerdown', hideTip);
-window.addEventListener('scroll', (scrolled) => {
-  if (scrolled.target !== tip) hideTip();
-}, true);
+document.addEventListener("pointerdown", hideTip);
+window.addEventListener(
+  "scroll",
+  (scrolled) => {
+    if (scrolled.target !== tip) hideTip();
+  },
+  true,
+);

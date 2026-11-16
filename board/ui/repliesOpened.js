@@ -1,13 +1,14 @@
-
-const KEY = 'jagt.repliesOpened';
+const KEY = "jagt.repliesOpened";
 
 let opened = {};
 try {
-  opened = JSON.parse(localStorage.getItem(KEY) || '{}');
+  opened = JSON.parse(localStorage.getItem(KEY) || "{}");
 } catch {
+  // storage blocked
 }
 
-export const fresh = (task) => (task.repliesWrittenAt || 0) > (opened[task.id] || 0);
+export const fresh = (task) =>
+  (task.repliesWrittenAt || 0) > (opened[task.id] || 0);
 
 export function note(task) {
   if (!fresh(task)) return;
@@ -15,5 +16,6 @@ export function note(task) {
   try {
     localStorage.setItem(KEY, JSON.stringify(opened));
   } catch {
+    // storage blocked
   }
 }

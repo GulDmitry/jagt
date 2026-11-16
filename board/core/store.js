@@ -1,10 +1,19 @@
+import { bothNames } from "./format.js";
 
-import {bothNames} from './format.js';
-
-let data = {tasks: [], projects: [], autoReview: {summary: '', enabled: false}, jobs: null, actStop: null, assistant: null, reach: [],
-  masterMode: 'off',
+let data = {
+  tasks: [],
+  projects: [],
+  autoReview: { summary: "", enabled: false },
+  jobs: null,
+  actStop: null,
+  assistant: null,
+  reach: [],
+  masterMode: "off",
   verbs: [],
-  branchStrategies: [], phases: [], offers: {}};
+  branchStrategies: [],
+  phases: [],
+  offers: {},
+};
 
 export const tasks = () => data.tasks;
 export const projects = () => data.projects;
@@ -19,9 +28,13 @@ export const verbs = () => data.verbs;
 export const offersOn = (task) => data.offers[task.id] || [];
 
 // The verb a task's card offers for a tab: the server's verb says which tab it feeds, by its part.
-export const offerFor = (task, part) => data.verbs.find((verb) => verb.part === part && offersOn(task).includes(verb.id));
+export const offerFor = (task, part) =>
+  data.verbs.find(
+    (verb) => verb.part === part && offersOn(task).includes(verb.id),
+  );
 
-export const taskFor = (name) => data.tasks.find((task) => task.id === name || (task.alias || '') === name);
+export const taskFor = (name) =>
+  data.tasks.find((task) => task.id === name || (task.alias || "") === name);
 
 // An empty reference names no task: the loose lookup above would hand it the first task without an alias.
 export const nameOf = (ref) => {
@@ -32,5 +45,5 @@ export const nameOf = (ref) => {
 export const taskById = (id) => data.tasks.find((task) => task.id === id);
 
 export function set(next) {
-  data = {...data, ...next};
+  data = { ...data, ...next };
 }

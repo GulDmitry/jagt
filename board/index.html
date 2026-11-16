@@ -1,148 +1,349 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>jagt</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
-  <script>try { document.documentElement.dataset.theme = localStorage.theme || ''; document.documentElement.lang = localStorage.lang || 'en'; } catch (blocked) {}</script>
-  <link rel="stylesheet" href="app.css">
-  <script type="importmap">{"imports": {"preact": "./vendor/preact.mjs", "preact/hooks": "./vendor/hooks.mjs", "htm": "./vendor/htm.mjs"}}</script>
-</head>
-<body class="stale">
-<header>
-  <h1>jagt</h1>
-  <span id="waiting" class="waiting" hidden></span>
-  <button id="jobs-pulse" class="chip bad" hidden></button>
-  <button id="reach-lost" class="chip bad" data-verb="login" hidden></button>
-  <span id="master-mode" class="chip" hidden></span>
-  <button id="act-stopped" class="chip stalled" data-verb="act" hidden data-tip=""></button>
-  <span id="auto-review" class="chip" tabindex="0" data-t-tip="header.review.tip" hidden></span>
-  <span class="grow"></span>
-  <label class="search">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-    <input id="filter" autocomplete="off"
-           data-t-aria-label="filter.label"
-           data-t-placeholder="filter.hint" data-t-tip="filter.tip">
-    <button id="open-palette" type="button"
-            data-t="palette.open.label" data-t-aria-label="palette.open.aria" data-t-tip="palette.open.tip">⌘K</button>
-  </label>
-  <div class="menu">
-    <button id="reports-toggle" type="button" aria-expanded="false" data-t="reports.toggle"></button>
-    <div id="reports" hidden></div>
-  </div>
-  <button id="new-task" type="button" class="primary"><span data-t="new-task"></span> <kbd>t</kbd></button>
-  <div class="menu">
-    <button id="gear" type="button" aria-expanded="false"
-            data-t-aria-label="gear.label" data-t-tip="gear.label">⚙</button>
-    <div id="gear-menu" hidden></div>
-  </div>
-  <span id="offline" class="chip bad" role="status" hidden
-        data-t="offline" data-t-tip="offline.tip"></span>
-</header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>jagt</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.theme || "";
+        document.documentElement.lang = localStorage.lang || "en";
+      } catch (blocked) {}
+    </script>
+    <link rel="stylesheet" href="app.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "preact": "./vendor/preact.mjs",
+          "preact/hooks": "./vendor/hooks.mjs",
+          "htm": "./vendor/htm.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body class="stale">
+    <header>
+      <h1>jagt</h1>
+      <span id="waiting" class="waiting" hidden></span>
+      <button id="jobs-pulse" class="chip bad" hidden></button>
+      <button
+        id="reach-lost"
+        class="chip bad"
+        data-verb="login"
+        hidden
+      ></button>
+      <span id="master-mode" class="chip" hidden></span>
+      <button
+        id="act-stopped"
+        class="chip stalled"
+        data-verb="act"
+        hidden
+        data-tip=""
+      ></button>
+      <span
+        id="auto-review"
+        class="chip"
+        tabindex="0"
+        data-t-tip="header.review.tip"
+        hidden
+      ></span>
+      <span class="grow"></span>
+      <label class="search">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input
+          id="filter"
+          autocomplete="off"
+          data-t-aria-label="filter.label"
+          data-t-placeholder="filter.hint"
+          data-t-tip="filter.tip"
+        />
+        <button
+          id="open-palette"
+          type="button"
+          data-t="palette.open.label"
+          data-t-aria-label="palette.open.aria"
+          data-t-tip="palette.open.tip"
+        >
+          ⌘K
+        </button>
+      </label>
+      <div class="menu">
+        <button
+          id="reports-toggle"
+          type="button"
+          aria-expanded="false"
+          data-t="reports.toggle"
+        ></button>
+        <div id="reports" hidden></div>
+      </div>
+      <button id="new-task" type="button" class="primary">
+        <span data-t="new-task"></span> <kbd>t</kbd>
+      </button>
+      <div class="menu">
+        <button
+          id="gear"
+          type="button"
+          aria-expanded="false"
+          data-t-aria-label="gear.label"
+          data-t-tip="gear.label"
+        >
+          ⚙
+        </button>
+        <div id="gear-menu" hidden></div>
+      </div>
+      <span
+        id="offline"
+        class="chip bad"
+        role="status"
+        hidden
+        data-t="offline"
+        data-t-tip="offline.tip"
+      ></span>
+    </header>
 
-<form id="palette" hidden>
-  <input id="ask" list="ask-options"
-         autocomplete="off" required data-t-aria-label="palette.ask.label" data-t-placeholder="palette.ask.hint">
-  <datalist id="ask-options"></datalist>
-  <button type="submit" class="primary" data-t="palette.run">Run</button>
-  <span id="palette-state" class="muted state"></span>
-</form>
+    <form id="palette" hidden>
+      <input
+        id="ask"
+        list="ask-options"
+        autocomplete="off"
+        required
+        data-t-aria-label="palette.ask.label"
+        data-t-placeholder="palette.ask.hint"
+      />
+      <datalist id="ask-options"></datalist>
+      <button type="submit" class="primary" data-t="palette.run">Run</button>
+      <span id="palette-state" class="muted state"></span>
+    </form>
 
-<dialog id="launch-dialog" aria-labelledby="launch-title">
-  <form id="launch">
-    <header class="report-head"><strong id="launch-title" data-t="new-task"></strong><span class="grow"></span>
-      <button type="button" id="close-launch" data-t="close"></button></header>
-    <label class="field"><span data-t="launch.ticket"></span>
-      <input id="ref" name="ref" autocomplete="off"
-             data-t-aria-label="launch.ticket.label" data-t-placeholder="launch.ticket.hint"></label>
-    <fieldset class="field" id="project-field"><legend><span data-t="launch.projects"></span> <span class="muted" data-t="launch.projects.hint"></span></legend>
-      <!-- Several picked = one task, one agent session, a worktree in each. -->
-      <div id="project" role="group" data-t-aria-label="launch.group"></div>
-      <button type="button" id="add-project" class="link" data-t="launch.add-project"></button>
-    </fieldset>
-    <label class="field"><span data-t="launch.notes"></span>
-      <input id="notes" name="notes" autocomplete="off"
-             data-t-aria-label="launch.notes.label" data-t-placeholder="launch.notes.hint"></label>
-    <div class="field-row">
-      <label class="field"><span data-t="launch.base"></span>
-        <input id="base-branch" name="baseBranch" autocomplete="off"
-               data-t-aria-label="launch.base.label" data-t-placeholder="launch.base.hint"></label>
-      <label class="field"><span data-t="launch.strategy"></span>
-        <select id="strategy" name="strategy" size="1"
-                data-t-aria-label="launch.strategy.aria"
-                data-t-tip="launch.strategy.tip"></select></label>
-      <label class="checkbox" data-t-tip="launch.plan.tip"><input type="checkbox" id="plan"> <span data-t="launch.plan"></span></label>
-    </div>
-    <footer class="dialog-foot"><span id="launch-state" class="muted state"></span><span class="grow"></span>
-      <button type="submit" class="primary"
-              data-t="launch.start" data-t-tip="launch.start.tip"></button></footer>
-  </form>
-</dialog>
+    <dialog id="launch-dialog" aria-labelledby="launch-title">
+      <form id="launch">
+        <header class="report-head">
+          <strong id="launch-title" data-t="new-task"></strong
+          ><span class="grow"></span>
+          <button type="button" id="close-launch" data-t="close"></button>
+        </header>
+        <label class="field"
+          ><span data-t="launch.ticket"></span>
+          <input
+            id="ref"
+            name="ref"
+            autocomplete="off"
+            data-t-aria-label="launch.ticket.label"
+            data-t-placeholder="launch.ticket.hint"
+        /></label>
+        <fieldset class="field" id="project-field">
+          <legend>
+            <span data-t="launch.projects"></span>
+            <span class="muted" data-t="launch.projects.hint"></span>
+          </legend>
+          <!-- Several picked = one task, one agent session, a worktree in each. -->
+          <div id="project" role="group" data-t-aria-label="launch.group"></div>
+          <button
+            type="button"
+            id="add-project"
+            class="link"
+            data-t="launch.add-project"
+          ></button>
+        </fieldset>
+        <label class="field"
+          ><span data-t="launch.notes"></span>
+          <input
+            id="notes"
+            name="notes"
+            autocomplete="off"
+            data-t-aria-label="launch.notes.label"
+            data-t-placeholder="launch.notes.hint"
+        /></label>
+        <div class="field-row">
+          <label class="field"
+            ><span data-t="launch.base"></span>
+            <input
+              id="base-branch"
+              name="baseBranch"
+              autocomplete="off"
+              data-t-aria-label="launch.base.label"
+              data-t-placeholder="launch.base.hint"
+          /></label>
+          <label class="field"
+            ><span data-t="launch.strategy"></span>
+            <select
+              id="strategy"
+              name="strategy"
+              size="1"
+              data-t-aria-label="launch.strategy.aria"
+              data-t-tip="launch.strategy.tip"
+            ></select
+          ></label>
+          <label class="checkbox" data-t-tip="launch.plan.tip"
+            ><input type="checkbox" id="plan" />
+            <span data-t="launch.plan"></span
+          ></label>
+        </div>
+        <footer class="dialog-foot">
+          <span id="launch-state" class="muted state"></span
+          ><span class="grow"></span>
+          <button
+            type="submit"
+            class="primary"
+            data-t="launch.start"
+            data-t-tip="launch.start.tip"
+          ></button>
+        </footer>
+      </form>
+    </dialog>
 
-<dialog id="project-dialog" aria-labelledby="project-title">
-  <form id="project-form">
-    <header class="report-head"><strong id="project-title" data-t="project.add"></strong><span class="grow"></span>
-      <button type="button" id="close-project" data-t="close"></button></header>
-    <label class="field"><span data-t="project.path"></span>
-      <input id="project-path" name="path" list="project-folders" placeholder="~/www/billing-api" autocomplete="off" required>
-      <datalist id="project-folders"></datalist></label>
-    <ul id="project-checks" class="checks-list" aria-live="polite"></ul>
-    <div class="field-row">
-      <label class="field"><span data-t="project.key">Key</span><input id="project-key" name="key" autocomplete="off" required></label>
-      <label class="field"><span data-t="project.base"></span><input id="project-base" name="baseBranch" autocomplete="off" required></label>
-    </div>
-    <div class="field-row">
-      <label class="field"><span><span data-t="project.deploy"></span> <span class="muted" data-t="project.deploy.hint"></span></span>
-        <input id="project-deploy" name="deployBranch" list="project-branches" autocomplete="off"
-               data-t-title="project.deploy.title">
-        <datalist id="project-branches"></datalist></label>
-      <label class="field"><span data-t="project.verify"></span><input id="project-verify" name="verify" autocomplete="off"></label>
-    </div>
-    <label class="field"><span data-t="project.about"></span>
-      <input id="project-about" name="about" autocomplete="off"></label>
-    <div class="field-row">
-      <label class="field"><span data-t="project.labels"></span><input id="project-labels" name="labels" autocomplete="off" placeholder="bill, pay"></label>
-      <label class="field"><span data-t="project.human"></span><input id="project-human" name="humanPaths" data-t-title="project.human.title" autocomplete="off" placeholder="**/auth/**"></label>
-    </div>
-    <footer class="dialog-foot"><span class="muted state" id="project-state"></span><span class="grow"></span>
-      <button type="submit" class="primary" data-t="project.add-submit"></button></footer>
-  </form>
-</dialog>
+    <dialog id="project-dialog" aria-labelledby="project-title">
+      <form id="project-form">
+        <header class="report-head">
+          <strong id="project-title" data-t="project.add"></strong
+          ><span class="grow"></span>
+          <button type="button" id="close-project" data-t="close"></button>
+        </header>
+        <label class="field"
+          ><span data-t="project.path"></span>
+          <input
+            id="project-path"
+            name="path"
+            list="project-folders"
+            placeholder="~/www/billing-api"
+            autocomplete="off"
+            required />
+          <datalist id="project-folders"></datalist
+        ></label>
+        <ul id="project-checks" class="checks-list" aria-live="polite"></ul>
+        <div class="field-row">
+          <label class="field"
+            ><span data-t="project.key">Key</span
+            ><input id="project-key" name="key" autocomplete="off" required
+          /></label>
+          <label class="field"
+            ><span data-t="project.base"></span
+            ><input
+              id="project-base"
+              name="baseBranch"
+              autocomplete="off"
+              required
+          /></label>
+        </div>
+        <div class="field-row">
+          <label class="field"
+            ><span
+              ><span data-t="project.deploy"></span>
+              <span class="muted" data-t="project.deploy.hint"></span
+            ></span>
+            <input
+              id="project-deploy"
+              name="deployBranch"
+              list="project-branches"
+              autocomplete="off"
+              data-t-title="project.deploy.title" />
+            <datalist id="project-branches"></datalist
+          ></label>
+          <label class="field"
+            ><span data-t="project.verify"></span
+            ><input id="project-verify" name="verify" autocomplete="off"
+          /></label>
+        </div>
+        <label class="field"
+          ><span data-t="project.about"></span>
+          <input id="project-about" name="about" autocomplete="off"
+        /></label>
+        <div class="field-row">
+          <label class="field"
+            ><span data-t="project.labels"></span
+            ><input
+              id="project-labels"
+              name="labels"
+              autocomplete="off"
+              placeholder="bill, pay"
+          /></label>
+          <label class="field"
+            ><span data-t="project.human"></span
+            ><input
+              id="project-human"
+              name="humanPaths"
+              data-t-title="project.human.title"
+              autocomplete="off"
+              placeholder="**/auth/**"
+          /></label>
+        </div>
+        <footer class="dialog-foot">
+          <span class="muted state" id="project-state"></span
+          ><span class="grow"></span>
+          <button
+            type="submit"
+            class="primary"
+            data-t="project.add-submit"
+          ></button>
+        </footer>
+      </form>
+    </dialog>
 
-<dialog id="report" aria-labelledby="report-title">
-  <header class="report-head">
-    <strong id="report-title"></strong>
-    <span class="grow"></span>
-    <button id="close-report" autofocus data-t="close"></button>
-  </header>
-  <div id="report-scroll">
-    <div id="report-section"></div>
-    <pre id="report-body"></pre>
-  </div>
-  <!-- Only for a report about ONE task: the session it is about is the one this line reaches. -->
-  <form id="report-line" hidden>
-    <input id="say" autocomplete="off" required
-           data-t-aria-label="say.label" data-t-placeholder="say.hint">
-    <button type="submit" hidden data-t="say.send">Send</button>
-    <span id="said" class="checks running" hidden role="img" tabindex="0"
-          data-t-aria-label="said.label" data-t-tip="said.tip"></span>
-  </form>
-</dialog>
+    <dialog id="report" aria-labelledby="report-title">
+      <header class="report-head">
+        <strong id="report-title"></strong>
+        <span class="grow"></span>
+        <button id="close-report" autofocus data-t="close"></button>
+      </header>
+      <div id="report-scroll">
+        <div id="report-section"></div>
+        <pre id="report-body"></pre>
+      </div>
+      <!-- Only for a report about ONE task: the session it is about is the one this line reaches. -->
+      <form id="report-line" hidden>
+        <input
+          id="say"
+          autocomplete="off"
+          required
+          data-t-aria-label="say.label"
+          data-t-placeholder="say.hint"
+        />
+        <button type="submit" hidden data-t="say.send">Send</button>
+        <span
+          id="said"
+          class="checks running"
+          hidden
+          role="img"
+          tabindex="0"
+          data-t-aria-label="said.label"
+          data-t-tip="said.tip"
+        ></span>
+      </form>
+    </dialog>
 
-<div id="phases"></div>
-<main id="board"></main>
-<section id="empty" class="empty" hidden>
-  <p data-t="empty.none"></p>
-  <p><button type="button" id="empty-new" class="primary"><span data-t="new-task"></span> <kbd>t</kbd></button>
-    <button type="button" id="empty-project" data-t="project.add-short"></button></p>
-</section>
-<p id="filtered" class="empty" hidden></p>
-<button id="show-log" class="log" hidden data-t="log.open">log</button>
-<div id="toasts" role="status"></div>
-<script type="module" src="app.js"></script>
-</body>
+    <div id="phases"></div>
+    <main id="board"></main>
+    <section id="empty" class="empty" hidden>
+      <p data-t="empty.none"></p>
+      <p>
+        <button type="button" id="empty-new" class="primary">
+          <span data-t="new-task"></span> <kbd>t</kbd>
+        </button>
+        <button
+          type="button"
+          id="empty-project"
+          data-t="project.add-short"
+        ></button>
+      </p>
+    </section>
+    <p id="filtered" class="empty" hidden></p>
+    <button id="show-log" class="log" hidden data-t="log.open">log</button>
+    <div id="toasts" role="status"></div>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>

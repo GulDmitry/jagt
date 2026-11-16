@@ -1,4 +1,3 @@
-
 let chosen = null;
 let linked = null;
 let opened = false;
@@ -20,15 +19,20 @@ export const back = () => {
 
 export const isOpen = () => opened;
 
-const narrow = window.matchMedia('(max-width: 1199px)');
+const narrow = window.matchMedia("(max-width: 1199px)");
 
 // Wide, the open task always stands beside the list; narrow, only once the human opened it.
 export const paneShown = () => !narrow.matches || opened;
 
 // A choice that left the view falls back to the first task waiting on the human, so the pane is never empty.
-export const current = (shown) => shown.find((task) => task.id === chosen)
-  || (chosen === null && linked !== null && shown.find((task) => task.alias === linked || task.id === linked))
-  || shown.find((task) => task.attention === 'REQUIRED') || shown[0] || null;
+export const current = (shown) =>
+  shown.find((task) => task.id === chosen) ||
+  (chosen === null &&
+    linked !== null &&
+    shown.find((task) => task.alias === linked || task.id === linked)) ||
+  shown.find((task) => task.attention === "REQUIRED") ||
+  shown[0] ||
+  null;
 
 // A walk moves the cursor through the list; on a narrow window Enter is what opens the task it rests on.
 export const step = (ordered, by) => {
@@ -38,10 +42,13 @@ export const step = (ordered, by) => {
 };
 
 // A row the keyboard moved the cursor to is also where the focus goes, so the next key starts from it.
-export const focusSelected = () => document.querySelector('#tasks .row.selected .pick')?.focus();
+export const focusSelected = () =>
+  document.querySelector("#tasks .row.selected .pick")?.focus();
 
 export const nextRequired = (ordered) => {
   const at = ordered.findIndex((task) => task.id === current(ordered)?.id);
-  const waiting = [...ordered.slice(at + 1), ...ordered.slice(0, at + 1)].find((task) => task.attention === 'REQUIRED');
+  const waiting = [...ordered.slice(at + 1), ...ordered.slice(0, at + 1)].find(
+    (task) => task.attention === "REQUIRED",
+  );
   if (waiting) chosen = waiting.id;
 };

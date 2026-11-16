@@ -1,16 +1,17 @@
-
-const KEY = 'jagt.seen';
+const KEY = "jagt.seen";
 
 let seen = {};
 try {
-  seen = JSON.parse(localStorage.getItem(KEY) || '{}');
+  seen = JSON.parse(localStorage.getItem(KEY) || "{}");
 } catch {
+  // storage blocked
 }
 
 const save = () => {
   try {
     localStorage.setItem(KEY, JSON.stringify(seen));
   } catch {
+    // storage blocked
   }
 };
 
@@ -18,11 +19,14 @@ const save = () => {
 // board forgets nothing, since the page paints one before the tasks arrive.
 export function note(tasks, open) {
   if (!tasks.length) return;
-  const next = Object.fromEntries(tasks.map((task) => [task.id, seen[task.id] ?? task.statusSince]));
+  const next = Object.fromEntries(
+    tasks.map((task) => [task.id, seen[task.id] ?? task.statusSince]),
+  );
   if (open) next[open.id] = open.statusSince;
   const changed = JSON.stringify(next) !== JSON.stringify(seen);
   seen = next;
   if (changed) save();
 }
 
-export const changed = (task) => seen[task.id] !== undefined && seen[task.id] !== task.statusSince;
+export const changed = (task) =>
+  seen[task.id] !== undefined && seen[task.id] !== task.statusSince;

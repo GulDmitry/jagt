@@ -1,19 +1,30 @@
+import { t } from "../core/i18n.js";
+import { run } from "./act.js";
+import * as filters from "./filters.js";
+import { note } from "./interactions.js";
+import * as launch from "./launch.js";
+import * as menu from "./menu.js";
+import * as palette from "./palette.js";
+import { ordered, render } from "./render.js";
+import * as selection from "./selection.js";
 
-import {t} from '../core/i18n.js';
-import {run} from './act.js';
-import * as filters from './filters.js';
-import {note} from './interactions.js';
-import * as launch from './launch.js';
-import * as menu from './menu.js';
-import * as palette from './palette.js';
-import {ordered, render} from './render.js';
-import * as selection from './selection.js';
+const typingInto = (target) =>
+  target instanceof HTMLInputElement ||
+  target instanceof HTMLTextAreaElement ||
+  target instanceof HTMLSelectElement;
 
-const typingInto = (target) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
-  || target instanceof HTMLSelectElement;
-
-export const said = (rowVerb) => [t('keys.walk'), t('keys.open'), t('keys.next'), rowVerb?.key && `${rowVerb.key} ${rowVerb.label.toLowerCase()}`,
-  t('keys.new'), t('keys.filter'), t('keys.command')].filter(Boolean).join(' · ');
+export const said = (rowVerb) =>
+  [
+    t("keys.walk"),
+    t("keys.open"),
+    t("keys.next"),
+    rowVerb?.key && `${rowVerb.key} ${rowVerb.label.toLowerCase()}`,
+    t("keys.new"),
+    t("keys.filter"),
+    t("keys.command"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
 // A letter moves the selection or opens a form; any other letter is the key of a verb the open task offers, and the
 // server still decides whether it may run.
@@ -24,16 +35,16 @@ const letters = {
   n: () => selection.nextRequired(ordered()),
 };
 
-document.addEventListener('keydown', (event) => {
+document.addEventListener("keydown", (event) => {
   // Behind a modal the board is inert: a shortcut would change it unseen.
-  if (document.querySelector('dialog[open]')) return;
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+  if (document.querySelector("dialog[open]")) return;
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
     palette.toggle();
     return;
   }
-  if (typingInto(event.target) && event.key !== 'Escape') return;
-  if (event.key === '/') {
+  if (typingInto(event.target) && event.key !== "Escape") return;
+  if (event.key === "/") {
     event.preventDefault();
     filters.box.focus();
     return;
@@ -41,8 +52,11 @@ document.addEventListener('keydown', (event) => {
   const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
   const open = selection.current(ordered());
   // A verb key acts only on a task whose verbs are on screen.
-  const verb = plain && !letters[event.key] && selection.paneShown()
-    && open?.actions?.find((action) => action.key && action.key === event.key);
+  const verb =
+    plain &&
+    !letters[event.key] &&
+    selection.paneShown() &&
+    open?.actions?.find((action) => action.key && action.key === event.key);
   if (verb) {
     event.preventDefault();
     note(`key:${event.key}`, open.id);
@@ -53,21 +67,24 @@ document.addEventListener('keydown', (event) => {
   if (letter) {
     event.preventDefault();
     note(`key:${event.key}`, selection.current(ordered())?.id);
-    const inList = Boolean(event.target.closest?.('#tasks'));
+    const inList = Boolean(event.target.closest?.("#tasks"));
     letter();
     render();
     if (inList) selection.focusSelected();
     return;
   }
-  if (event.key === 'Enter' && !event.target.closest?.('button, a')) {
+  if (event.key === "Enter" && !event.target.closest?.("button, a")) {
     const open = selection.current(ordered());
     if (open) selection.choose(open.id);
     render();
     return;
   }
   // A <dialog> closes on Escape by itself; the inline forms do not. One press closes the innermost thing open.
-  if (event.key !== 'Escape') return;
-  const closed = palette.close() || menu.close() || (event.target === filters.box && filters.clearText());
+  if (event.key !== "Escape") return;
+  const closed =
+    palette.close() ||
+    menu.close() ||
+    (event.target === filters.box && filters.clearText());
   if (!closed) selection.back();
   render();
 });

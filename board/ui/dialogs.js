@@ -1,31 +1,39 @@
+import { render } from "preact";
+import { html } from "../components/html.js";
+import { Report } from "../components/Report.js";
+import { refusal, sayTo, text } from "../core/api.js";
+import { reportParts } from "../core/format.js";
+import * as store from "../core/store.js";
+import { t } from "../core/i18n.js";
+import { sending } from "./submit.js";
+import { toast } from "./toast.js";
 
-import {render} from 'preact';
-import {html} from '../components/html.js';
-import {Report} from '../components/Report.js';
-import {refusal, sayTo, text} from '../core/api.js';
-import {reportParts} from '../core/format.js';
-import * as store from '../core/store.js';
-import {t} from '../core/i18n.js';
-import {sending} from './submit.js';
-import {toast} from './toast.js';
+const report = document.getElementById("report");
+const reportTitle = document.getElementById("report-title");
+const reportBody = document.getElementById("report-body");
+const reportScroll = document.getElementById("report-scroll");
+const reportSection = document.getElementById("report-section");
+const reportLine = document.getElementById("report-line");
+const sayInput = document.getElementById("say");
+const working = document.getElementById("said");
 
-const report = document.getElementById('report');
-const reportTitle = document.getElementById('report-title');
-const reportBody = document.getElementById('report-body');
-const reportScroll = document.getElementById('report-scroll');
-const reportSection = document.getElementById('report-section');
-const reportLine = document.getElementById('report-line');
-const sayInput = document.getElementById('say');
-const working = document.getElementById('said');
-
-let showing = {path: null, about: null, body: '', extra: null};
+let showing = { path: null, about: null, body: "", extra: null };
 let poll = 0;
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
 let asked = 0;
 // A poll and the board's own event overlap: the read sent last paints.
 let reread = 0;
 
-const drawn = (said) => render(html`<${Report} parts=${reportParts(said, store.tasks().map((task) => task.id))}/>`, reportBody);
+const drawn = (said) =>
+  render(
+    html`<${Report}
+      parts=${reportParts(
+        said,
+        store.tasks().map((task) => task.id),
+      )}
+    />`,
+    reportBody,
+  );
 
 function paint(title, said, extra) {
   reportTitle.textContent = title;
@@ -33,25 +41,29 @@ function paint(title, said, extra) {
   reportSection.replaceChildren(...(extra ? [extra] : []));
   // Only a report about ONE task has a session to talk to, and a line typed at one round is not the next one's.
   reportLine.hidden = !showing.about;
-  sayInput.value = '';
+  sayInput.value = "";
   if (!report.open) report.showModal();
   reportScroll.scrollTop = 0;
 }
 
 export function showReport(title, said, extra = null) {
   asked++;
-  showing = {path: null, about: null, body: said, extra};
+  showing = { path: null, about: null, body: said, extra };
   stopWaiting();
   paint(title, said, extra);
 }
 
 /** False when the report could not be read, the caller deciding what a failed read costs it. */
-export async function openReport(title, path, {extra = null, about = null} = {}) {
+export async function openReport(
+  title,
+  path,
+  { extra = null, about = null } = {},
+) {
   const mine = ++asked;
   try {
     const said = await text(path);
     if (mine !== asked) return true;
-    showing = {path, about, body: said, extra};
+    showing = { path, about, body: said, extra };
     stopWaiting();
     paint(title, said, extra);
     // Whatever changed WHILE this was being read reached no open dialog, so it is read once more now.
@@ -70,20 +82,25 @@ export async function repaintReport() {
     return;
   }
   // What an extra shows may change with no word of the report changing.
-  showing.extra?.dispatchEvent(new Event('reread'));
+  showing.extra?.dispatchEvent(new Event("reread"));
   const read = showing.path;
   const mine = ++reread;
   let said;
   try {
     said = await text(read);
-  } catch (e) {
+  } catch {
     return; // a read that failed is not an empty report: leave what is on screen
   }
   // The answer to a report nobody is reading any more belongs to no dialog on screen.
-  if (mine !== reread || !report.open || showing.path !== read || said === showing.body) {
+  if (
+    mine !== reread ||
+    !report.open ||
+    showing.path !== read ||
+    said === showing.body
+  ) {
     return;
   }
-  showing = {...showing, body: said};
+  showing = { ...showing, body: said };
   const where = reportScroll.scrollTop;
   drawn(said);
   reportScroll.scrollTop = where;
@@ -98,13 +115,16 @@ function waitForTheAnswer() {
   stopWaiting();
   working.hidden = false;
   const until = Date.now() + GIVE_UP;
-  poll = setInterval(() => (Date.now() > until ? giveUp() : repaintReport()), EVERY);
+  poll = setInterval(
+    () => (Date.now() > until ? giveUp() : repaintReport()),
+    EVERY,
+  );
 }
 
 // A ring that just disappears reads as an answer that landed. The board's own event still repaints this.
 function giveUp() {
   stopWaiting();
-  toast(t('report.silent'));
+  toast(t("report.silent"));
 }
 
 function stopWaiting() {
@@ -119,21 +139,27 @@ reportLine.onsubmit = (event) => {
   if (!line) {
     return;
   }
-  sending(reportLine, {waiting: '', send: () => sayTo(showing.about, line), done: () => {
-    sayInput.value = '';
-    waitForTheAnswer();
-  }});
+  sending(reportLine, {
+    waiting: "",
+    send: () => sayTo(showing.about, line),
+    done: () => {
+      sayInput.value = "";
+      waitForTheAnswer();
+    },
+  });
 };
 
 // Which element the press STARTED on decides: selecting text inside and releasing outside asks for nothing.
 function closeOnBackdrop(dialog) {
   let pressedBackdrop = false;
-  dialog.addEventListener('mousedown', (event) => { pressedBackdrop = event.target === dialog; });
-  dialog.addEventListener('click', (event) => {
+  dialog.addEventListener("mousedown", (event) => {
+    pressedBackdrop = event.target === dialog;
+  });
+  dialog.addEventListener("click", (event) => {
     if (pressedBackdrop && event.target === dialog) dialog.close();
   });
 }
 
-document.getElementById('close-report').onclick = () => report.close();
-report.addEventListener('close', stopWaiting);
+document.getElementById("close-report").onclick = () => report.close();
+report.addEventListener("close", stopWaiting);
 closeOnBackdrop(report);

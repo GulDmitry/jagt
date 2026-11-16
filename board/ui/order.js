@@ -11,7 +11,8 @@ export const toggle = () => {
 };
 
 // An alias-less task sorts after every aliased one, as `-` reads on the card. `numeric` is what puts p2 before p10.
-const compare = (a, b) => (a.alias ? 0 : 1) - (b.alias ? 0 : 1)
-  || (a.alias || '').localeCompare(b.alias || '', undefined, {numeric: true});
+const compare = (a, b) =>
+  (a.alias ? 0 : 1) - (b.alias ? 0 : 1) ||
+  (a.alias || "").localeCompare(b.alias || "", undefined, { numeric: true });
 
 export const sorted = (tasks) => (byAlias ? [...tasks].sort(compare) : tasks);

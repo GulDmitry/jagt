@@ -1,10 +1,10 @@
-
 const icon = document.querySelector('link[rel=icon][type="image/svg+xml"]');
-const source = icon?.getAttribute('href');
+const source = icon?.getAttribute("href");
 let drawn = null;
 let svg = null;
 
-const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const token = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 async function dot(colour) {
   if (!icon) return;
@@ -12,18 +12,22 @@ async function dot(colour) {
     icon.href = source;
     return;
   }
-  svg ??= await fetch(source).then((response) => response.text()).catch(() => null);
+  svg ??= await fetch(source)
+    .then((response) => response.text())
+    .catch(() => null);
   // A later paint may have changed the colour while the icon was being read.
   if (!svg || colour !== drawn) return;
-  const marked = svg.replace('</svg>',
-    `<circle cx="25" cy="7" r="6.5" fill="${colour}" stroke="${token('--panel')}" stroke-width="2"/></svg>`);
+  const marked = svg.replace(
+    "</svg>",
+    `<circle cx="25" cy="7" r="6.5" fill="${colour}" stroke="${token("--panel")}" stroke-width="2"/></svg>`,
+  );
   icon.href = `data:image/svg+xml,${encodeURIComponent(marked)}`;
 }
 
 // Broken outranks waiting: a red dot is what stopped, an amber one is what only waits on the human.
-export function render({waiting, broken}) {
-  document.title = waiting ? `(${waiting}) jagt` : 'jagt';
-  const colour = broken ? token('--danger') : waiting ? token('--you') : '';
+export function render({ waiting, broken }) {
+  document.title = waiting ? `(${waiting}) jagt` : "jagt";
+  const colour = broken ? token("--danger") : waiting ? token("--you") : "";
   if (colour === drawn) return;
   drawn = colour;
   dot(colour);
