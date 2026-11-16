@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -106,11 +105,7 @@ class AbstractKittyTerminalDriverTest {
     when(runner.run(isNull(), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "", ""));
     var driver =
-        new AbstractKittyTerminalDriver(
-            runner,
-            OrchestratorProperties.defaults().withOpenTerminalWindow(true),
-            new KittyOptions("kitty", ""),
-            Clock.systemUTC()) {
+        new AbstractKittyTerminalDriver(runner, new KittyOptions("kitty", ""), Clock.systemUTC()) {
           @Override
           protected List<String> platformOptions() {
             return List.of();
@@ -138,11 +133,7 @@ class AbstractKittyTerminalDriverTest {
     Clock clock = mock(Clock.class);
     when(clock.millis()).thenReturn(100_000L, 160_000L);
     var driver =
-        new AbstractKittyTerminalDriver(
-            runner,
-            OrchestratorProperties.defaults().withOpenTerminalWindow(true),
-            new KittyOptions("kitty", ""),
-            clock) {
+        new AbstractKittyTerminalDriver(runner, new KittyOptions("kitty", ""), clock) {
           @Override
           protected List<String> platformOptions() {
             return List.of();

@@ -23,7 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "spring.config.import=",
       "orchestrator.agent.cli=stub",
-      "orchestrator.open-terminal-window=false",
+      "orchestrator.terminal=none",
       "orchestrator.startup-checks=false"
     })
 @MockitoBean(types = {TerminalDriver.class, EditorDriver.class, UserNotifier.class})

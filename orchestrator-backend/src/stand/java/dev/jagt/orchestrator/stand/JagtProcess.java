@@ -42,7 +42,7 @@ public final class JagtProcess implements AutoCloseable {
                     "-jar",
                     JAR.toString(),
                     "--server.port=" + port,
-                    "--orchestrator.open-terminal-window=false",
+                    "--orchestrator.terminal=none",
                     "--logging.level.dev.jagt.orchestrator.surface.mcp.McpProtocolService=DEBUG",
                     "--logging.level.dev.jagt.orchestrator.adapter.assistant.HeadlessClaude=DEBUG"))
             .directory(root.toFile())

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.channel.NoNotifier;
+import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.NoEditorDriver;
 import dev.jagt.orchestrator.adapter.terminal.NoTerminalDriver;
 import dev.jagt.orchestrator.eval.ShippedRoot;
@@ -23,7 +24,6 @@ import org.springframework.test.context.DynamicPropertySource;
 @SpringBootTest(
     properties = {
       "spring.config.import=",
-      "orchestrator.open-terminal-window=false",
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false",
       "orchestrator.platform=linux",
@@ -65,5 +65,10 @@ class NoneProfileContextTest {
     assertThat(userNotifier).isInstanceOf(NoNotifier.class);
     assertThat(editorDriver).isInstanceOf(NoEditorDriver.class);
     assertThat(context.getBeansOfType(KeepAwake.class)).isEmpty();
+  }
+
+  @Test
+  void needsNoKittyWhereNoTerminalIsChosenOnLinux() {
+    assertThat(context.getBeansOfType(AbstractKittyTerminalDriver.class)).isEmpty();
   }
 }

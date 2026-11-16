@@ -6,7 +6,6 @@ import static org.awaitility.Awaitility.await;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -29,11 +28,7 @@ class LinuxKittyTerminalDriverLinuxTest {
 
   private final ProcessRunner runner = new ProcessRunner();
   private final LinuxKittyTerminalDriver driver =
-      new LinuxKittyTerminalDriver(
-          runner,
-          OrchestratorProperties.defaults().withOpenTerminalWindow(true),
-          new KittyOptions("kitty", ""),
-          Clock.systemUTC());
+      new LinuxKittyTerminalDriver(runner, new KittyOptions("kitty", ""), Clock.systemUTC());
 
   @AfterEach
   void leaveNoWindowsOrSessionsBehind() {

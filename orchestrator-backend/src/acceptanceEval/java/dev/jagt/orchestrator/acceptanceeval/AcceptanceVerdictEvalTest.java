@@ -62,7 +62,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "spring.config.import=",
       "orchestrator.startup-checks=false",
-      "orchestrator.open-terminal-window=false"
+      "orchestrator.terminal=none"
     })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class AcceptanceVerdictEvalTest {

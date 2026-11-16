@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter.terminal;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
@@ -29,18 +28,13 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
   protected final ProcessRunner processRunner;
   protected final String kittyCommand;
-  private final OrchestratorProperties properties;
   private final String kittyFontSize;
   private final Clock clock;
   private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
 
   protected AbstractKittyTerminalDriver(
-      ProcessRunner processRunner,
-      OrchestratorProperties properties,
-      KittyOptions options,
-      Clock clock) {
+      ProcessRunner processRunner, KittyOptions options, Clock clock) {
     this.processRunner = processRunner;
-    this.properties = properties;
     this.kittyCommand = Executables.resolve(options.command());
     this.kittyFontSize = options.fontSize();
     this.clock = clock;
@@ -48,7 +42,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
   @Override
   public List<Problem> problems() {
-    return properties.openTerminalWindow() && Executables.unresolved(kittyCommand)
+    return Executables.unresolved(kittyCommand)
         ? List.of(
             new Problem(
                 "orchestrator.kitty-command",
@@ -72,13 +66,6 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
   @Override
   public void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd) {
-    if (!properties.openTerminalWindow()) {
-      log.atInfo()
-          .setMessage("terminal auto-open disabled")
-          .addKeyValue("fix", String.join(" ", attachCommand))
-          .log();
-      return;
-    }
     long now = clock.millis();
     if (now - openedAt.getOrDefault(dedicatedTitle, 0L) < ATTACH_GRACE_MS) {
       return;

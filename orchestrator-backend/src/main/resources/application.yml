@@ -72,7 +72,7 @@ orchestrator:
   data: ${ORCHESTRATOR_DATA:${user.home}/.jagt}
   # macos | linux — selects the notifier.
   platform: macos
-  # kitty | ghostty — the viewer terminal; ghostty needs macOS and Ghostty 1.3 or newer.
+  # kitty | ghostty | none — the viewer terminal, none opens no window and needs no kitty; ghostty needs macOS and Ghostty 1.3 or newer.
   terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own
@@ -110,8 +110,6 @@ orchestrator:
   tmux-command: tmux
   # Empty: tmux's default server. A name: every tmux call carries -L <name>.
   tmux-socket:
-  # A suite passes false, so a run leaves no kitty window behind.
-  open-terminal-window: true
   # Refuse to start when a part of the installation is missing, instead of failing at the click that needs it.
   # A suite that boots the application passes false: what these check is the machine, and a runner is not one.
   startup-checks: true

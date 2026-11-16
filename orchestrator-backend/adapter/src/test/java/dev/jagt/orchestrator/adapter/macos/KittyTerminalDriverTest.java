@@ -9,11 +9,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;
@@ -32,10 +30,6 @@ class KittyTerminalDriverTest {
   private final ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
   private final Clock clock = Clock.systemUTC();
   private final KittyTerminalDriver driver = kittyDriver().build(runner, osaScript, clock);
-  private final KittyTerminalDriver viewer =
-      kittyDriver()
-          .withProperties(OrchestratorProperties.defaults().withOpenTerminalWindow(true))
-          .build(runner, osaScript, clock);
 
   @Test
   void notesNothingAboutClosedViewerWhereItsKillToolIsOnPath() {
@@ -66,23 +60,11 @@ class KittyTerminalDriverTest {
   }
 
   @Test
-  void opensNothingWhereTheHumanTurnedTheWindowOff() {
-    var driver =
-        kittyDriver()
-            .withProperties(OrchestratorProperties.defaults().withOpenTerminalWindow(false))
-            .build(runner, osaScript, clock);
-
-    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
-
-    verifyNoInteractions(runner);
-  }
-
-  @Test
   void startsTheViewerInstanceWhereNoneAnswers() {
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", ""));
 
-    viewer.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
     verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
     assertThat(commands.getAllValues().get(1))
@@ -95,7 +77,7 @@ class KittyTerminalDriverTest {
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", ""));
 
-    viewer.openViewer(
+    driver.openViewer(
         List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"),
         "agents",
         Path.of("/work/tree"));
@@ -110,7 +92,7 @@ class KittyTerminalDriverTest {
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
-    viewer.openViewer(
+    driver.openViewer(
         List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"),
         "agents tab",
         Path.of("/work/tree"));
@@ -125,7 +107,7 @@ class KittyTerminalDriverTest {
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
-    viewer.openViewer(
+    driver.openViewer(
         List.of("tmux", "attach", "-t", "agents"), "agents tab", Path.of("/work/tree"));
 
     verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
@@ -143,8 +125,8 @@ class KittyTerminalDriverTest {
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
-    viewer.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
-    viewer.openViewer(List.of("tmux", "attach", "-t", second), second, Path.of("/work/tree"));
+    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+    driver.openViewer(List.of("tmux", "attach", "-t", second), second, Path.of("/work/tree"));
 
     verify(runner, times(total)).run(isNull(), any(Duration.class), anyList());
   }

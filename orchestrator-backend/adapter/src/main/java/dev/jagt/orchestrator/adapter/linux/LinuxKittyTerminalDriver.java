@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.adapter.linux;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import java.time.Clock;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,12 +20,8 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "orchestrator.terminal", havingValue = "kitty", matchIfMissing = true)
 public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
-  public LinuxKittyTerminalDriver(
-      ProcessRunner processRunner,
-      OrchestratorProperties properties,
-      KittyOptions options,
-      Clock clock) {
-    super(processRunner, properties, options, clock);
+  public LinuxKittyTerminalDriver(ProcessRunner processRunner, KittyOptions options, Clock clock) {
+    super(processRunner, options, clock);
   }
 
   @Override

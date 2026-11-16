@@ -56,7 +56,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
     properties = {
       "spring.config.import=",
       "orchestrator.startup-checks=false",
-      "orchestrator.open-terminal-window=false"
+      "orchestrator.terminal=none"
     })
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 abstract class MasterVerdictEvalTest {

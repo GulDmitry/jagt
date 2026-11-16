@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter.macos;
 
 import static dev.jagt.orchestrator.adapter.macos.OsaScript.string;
 
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
@@ -34,7 +33,6 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
 
   private static final String KEY = "orchestrator.terminal";
 
-  private final OrchestratorProperties properties;
   private final OsaScript osaScript;
   private final Host host;
   private final Clock clock;
@@ -70,10 +68,6 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
         attachCommand.stream()
             .map(GhosttyTerminalDriver::shellWord)
             .collect(Collectors.joining(" "));
-    if (!properties.openTerminalWindow()) {
-      log.atInfo().setMessage("terminal auto-open disabled").addKeyValue("fix", attach).log();
-      return;
-    }
     long now = clock.millis();
     if (now - openedAt.getOrDefault(dedicatedTitle, 0L) < ATTACH_GRACE_MS) {
       return;

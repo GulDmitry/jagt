@@ -26,7 +26,7 @@ class StartupRefusalTest {
             new SpringApplicationBuilder(OrchestratorApplication.class)
                 .run(
                     "--server.port=0",
-                    "--orchestrator.open-terminal-window=false",
+                    "--orchestrator.terminal=none",
                     "--orchestrator.root=" + root,
                     "--orchestrator.data=" + root,
                     "--spring.config.import=",

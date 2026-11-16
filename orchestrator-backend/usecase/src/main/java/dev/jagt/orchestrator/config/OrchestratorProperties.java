@@ -18,17 +18,13 @@ public record OrchestratorProperties(
     @Nullable String stateFile,
     @Nullable String data,
     @Nullable String platform,
-    boolean openTerminalWindow,
     Watchdog watchdog) {
 
   public record Watchdog(Duration staleAfter) {}
 
-  /**
-   * Everything unset but the watchdog threshold, dereferenced on every scan, and {@code
-   * openTerminalWindow}.
-   */
+  /** Everything unset but the watchdog threshold, dereferenced on every scan. */
   public static OrchestratorProperties defaults() {
     return new OrchestratorProperties(
-        null, null, null, null, null, false, new Watchdog(Duration.ofMinutes(5)));
+        null, null, null, null, null, new Watchdog(Duration.ofMinutes(5)));
   }
 }

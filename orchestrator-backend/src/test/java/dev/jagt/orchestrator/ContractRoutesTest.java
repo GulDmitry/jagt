@@ -29,7 +29,7 @@ import org.yaml.snakeyaml.Yaml;
 @SpringBootTest(
     properties = {
       "spring.config.import=",
-      "orchestrator.open-terminal-window=false",
+      "orchestrator.terminal=none",
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
     })

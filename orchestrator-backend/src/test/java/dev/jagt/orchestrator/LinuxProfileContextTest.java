@@ -22,7 +22,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @SpringBootTest(
     properties = {
       "spring.config.import=",
-      "orchestrator.open-terminal-window=false",
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false",
       "orchestrator.platform=linux"

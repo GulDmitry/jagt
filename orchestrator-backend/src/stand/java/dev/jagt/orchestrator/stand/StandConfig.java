@@ -73,7 +73,7 @@ public final class StandConfig {
       projects:
         proj: { path: "%s", baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
       startupChecks: false
-      openTerminalWindow: false
+      terminal: none
       viewer: { tmuxSession: "%s", viewMode: shared, keepViewer: false }
       agent:
         cli: %s

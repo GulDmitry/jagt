@@ -32,7 +32,8 @@ public class ConfigCheck implements StartupCheck {
           "ui", "the board is the only surface",
           "webTerminal", "`focus` raises the terminal window",
           "dashboard", "nothing renders a console table",
-          "openWarpWindow", "renamed to `openTerminalWindow`; set it again",
+          "openWarpWindow", "write `terminal: none` for no terminal window",
+          "openTerminalWindow", "write `terminal: none` for no terminal window",
           "qa", "the role is called `acceptance`; write it under `roles.acceptance`");
   private static final String RETIRED_ROLE = "qa";
   private static final List<String> FOLDER_OPTIONS = List.of("environments", "flows", "model");

@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Problem;
 import java.time.Clock;
 import org.junit.jupiter.api.Test;
@@ -18,10 +17,7 @@ class LinuxKittyTerminalDriverTest {
   void refusesToStartWhenNothingWouldShowTheAgentsSessions() {
     var driver =
         new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class),
-            OrchestratorProperties.defaults().withOpenTerminalWindow(true),
-            new KittyOptions("no-such-kitty", ""),
-            Clock.systemUTC());
+            mock(ProcessRunner.class), new KittyOptions("no-such-kitty", ""), Clock.systemUTC());
 
     assertThat(driver.problems())
         .extracting(Problem::key)
@@ -29,25 +25,10 @@ class LinuxKittyTerminalDriverTest {
   }
 
   @Test
-  void needsNoKittyWhenNoTerminalWindowIsOpened() {
-    var driver =
-        new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class),
-            OrchestratorProperties.defaults().withOpenTerminalWindow(false),
-            new KittyOptions("no-such-kitty", ""),
-            Clock.systemUTC());
-
-    assertThat(driver.problems()).isEmpty();
-  }
-
-  @Test
   void addsNoneOfTheMacOnlyKeyboardWorkaroundToTheViewer() {
     var driver =
         new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class),
-            OrchestratorProperties.defaults(),
-            new KittyOptions("kitty", ""),
-            Clock.systemUTC());
+            mock(ProcessRunner.class), new KittyOptions("kitty", ""), Clock.systemUTC());
 
     assertThat(driver.platformOptions()).isEmpty();
   }
@@ -57,11 +38,7 @@ class LinuxKittyTerminalDriverTest {
     ProcessRunner runner = mock(ProcessRunner.class);
 
     assertThatCode(() ->
-            new LinuxKittyTerminalDriver(
-                    runner,
-                    OrchestratorProperties.defaults(),
-                    new KittyOptions("kitty", ""),
-                    Clock.systemUTC())
+            new LinuxKittyTerminalDriver(runner, new KittyOptions("kitty", ""), Clock.systemUTC())
                 .bringToFront())
         .doesNotThrowAnyException();
     verifyNoInteractions(runner);

@@ -26,7 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "spring.config.import=",
-      "orchestrator.open-terminal-window=false",
+      "orchestrator.terminal=none",
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false",
       "orchestrator.auth.mode=password",

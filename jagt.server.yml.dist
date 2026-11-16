@@ -9,7 +9,7 @@ orchestrator:
   codeHost: none                               # codeHost: github or gitlab need `gh` or `glab` in your image
   notifier: none                               # notifier
   keepAwake: none                              # keepAwake
-  openTerminalWindow: false                    # openTerminalWindow: no window, so no kitty is needed
+  terminal: none                               # terminal: no window, so no kitty is needed
   editor: none                                 # editor
   onStop: end                                  # onStop
   logging: console                             # logging
