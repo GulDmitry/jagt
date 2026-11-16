@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.role.CheckerRole;
 import dev.jagt.orchestrator.port.host.Problem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,6 +95,79 @@ class CaseCheckTest {
         .extracting(Problem::text)
         .anySatisfy(text ->
             assertThat(text).startsWith("roles/session/cases.md: case wake has at: 'WAITING'"));
+  }
+
+  @Nested
+  class WithAuditInstalled {
+
+    private CaseCheck withAudit;
+
+    @BeforeEach
+    void auditBesideAcceptance() {
+      withAudit =
+          new CaseCheck(
+              new SessionCases(paths),
+              new SessionBrief(paths),
+              new Checkers(
+                  new TaskChart(
+                      Composition.of(
+                          List.of(
+                              new CheckerRole("acceptance", false, List.of("accept"), List.of()),
+                              new CheckerRole(
+                                  "audit", false, List.of("audit-read"), List.of()))))));
+    }
+
+    @Test
+    void refusesInstalledCheckerWithNoCaseSendingItsRound() throws Exception {
+      Files.writeString(
+          root.resolve("roles/session/brief.md"), "## acceptance-round\n\nfix rows\n");
+      Files.writeString(
+          root.resolve("roles/session/cases.md"),
+          """
+          ## acceptance-round-by-acceptance
+
+          step: acceptance-round
+          at: DEPLOYED
+          by: acceptance
+          replies: IN_PROGRESS; plain
+          Acceptance sends its rows.
+          """);
+
+      assertThat(withAudit.problems())
+          .containsExactly(
+              new Problem(
+                  "roles/session/cases.md",
+                  "roles/session/cases.md: installed checker audit has no case sending the step"
+                      + " 'acceptance-round' by: audit — add acceptance-round-by-audit, or its rows"
+                      + " never reach a session"));
+    }
+
+    @Test
+    void startsWhereInstalledSecondCheckerHasItsRoundCase() throws Exception {
+      Files.writeString(
+          root.resolve("roles/session/brief.md"), "## acceptance-round\n\nfix rows\n");
+      Files.writeString(
+          root.resolve("roles/session/cases.md"),
+          """
+          ## acceptance-round-by-acceptance
+
+          step: acceptance-round
+          at: DEPLOYED
+          by: acceptance
+          replies: IN_PROGRESS; plain
+          Acceptance sends its rows.
+
+          ## acceptance-round-by-audit
+
+          step: acceptance-round
+          at: DEPLOYED
+          by: audit
+          replies: IN_PROGRESS; plain
+          Audit sends its rows.
+          """);
+
+      assertThat(withAudit.problems()).isEmpty();
+    }
   }
 
   @Nested

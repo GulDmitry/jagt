@@ -8,6 +8,7 @@ Each case: `step:` a brief step · `at:` the task's statuses, `any` or `any but 
 human, who sets it off · `replies:` what the session may report while the step's turn is open, its statuses then
 its kinds (plain, question, permission, no_changes, wait) · one line saying what the case is. A reply no case of the step
 takes is not applied: it is written to `misses.jsonl` too, and the task stops for you.
+A checker role you install needs its own `acceptance-round-by-<id>` case in your copy, or jagt does not start.
 
 ## start
 

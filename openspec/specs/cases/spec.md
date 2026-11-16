@@ -42,7 +42,8 @@ jagt SHALL refuse to start on a case naming no brief step, or a Master case nami
 It SHALL refuse a status, `by` or reply kind that is none, and a Master `by` not `master`.
 It SHALL refuse a case missing `replies:` or the line saying what it is, and an id written twice.
 A case whose `by` names a checker jagt ships but this setup has not installed SHALL NOT load, nor its step be required;
-a `by` naming no shipped checker SHALL be refused.
+a `by` naming neither a shipped nor an installed checker SHALL be refused.
+A session case's `by` MAY name any installed checker, which SHALL have an `acceptance-round` case `by: <id>`, or start is refused.
 #### Scenario: A case naming a missing step
 - **WHEN** a case says `step: woke` and the brief has no `## woke`
 - **THEN** jagt does not start and names `roles/session/cases.md` and that case
@@ -50,17 +51,18 @@ a `by` naming no shipped checker SHALL be refused.
 - **WHEN** the `wake` case has no `replies:` line, or one naming the kind `maybe`
 - **THEN** jagt does not start and names `roles/session/cases.md` and that case
 #### Scenario: A revert
-- **WHEN** a case names `move: revert`
-- **THEN** jagt does not start: the Master never reverts
+- **WHEN** a case names `move: revert` **THEN** jagt does not start: the Master never reverts
 #### Scenario: A relayed step in the Master's cases
 - **WHEN** a Master case names `move: answered`
 - **THEN** jagt does not start and names `roles/master/cases.md` and that case
 #### Scenario: A checker not installed
-- **WHEN** a context lacks `roles/acceptance` and `acceptance-round-by-acceptance` says `by: acceptance`
-- **THEN** jagt starts, that case is not loaded and the step `acceptance-round` is not required
+- **WHEN** no `roles/acceptance` is installed and a case says `by: acceptance` **THEN** it is not loaded, its step not required
 #### Scenario: A checker nobody ships
-- **WHEN** a case says `by: acceptnce`
-- **THEN** jagt does not start and names `roles/session/cases.md` and that case
+- **WHEN** a case says `by: acceptnce` **THEN** jagt does not start and names `roles/session/cases.md` and that case
+#### Scenario: An installed second checker's round is sent
+- **WHEN** audit is installed, a case `by: audit` sends the round and audit finds a row not met **THEN** it is sent, no miss
+#### Scenario: An installed checker with no case
+- **WHEN** audit is installed and no case sends `acceptance-round` by it **THEN** jagt does not start, naming `roles/session/cases.md`
 
 ### Requirement: Startup refuses a step no case names
 It SHALL refuse a brief step or Master verb no case names, and a relayed Master step no `by: master` case names.

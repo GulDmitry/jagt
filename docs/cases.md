@@ -25,6 +25,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | A16 | the read calls a criterion unprovable and the flow it named for it passes → the flow's answer names its criterion and decides that row, so no question reaches a human for a criterion a flow proved | seen 2026-11-09: a live read's unprovable row stayed beside a passed flow's own row | `CheckerFlowsTest`, `CheckerPromptsTest` |
 | A17 | a criterion nothing in the workspace covers is decided by one read → the brief still asks for its flow, so the next deploy reuses it | seen 2026-11-09: 0.22.0 gate red, 2 of 3 runs wrote no flow | `AcceptanceVerdictEvalTest` |
 | A18 | an eval fixture names the task its conflict belongs to → it names the eval's own task (`{task}`), so the Master is not shown another task's merge | seen 2026-11-11: gate red, case 21 0 of 2 | `MasterVerdictEvalTest` |
+| A19 | a second checker is installed and sends its not-met round → startup names the missing `acceptance-round` case `by:` that checker, so the round is never refused as a miss at run time | seen 2026-11-16: no case `by: audit` could exist, the round was a MISS | `CaseCheckTest`, `CaseDoorTest` |
 
 ## B — state overwritten / dedup key in the wrong place
 | id | the case, one line | defects | pinned by |
