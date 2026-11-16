@@ -2,8 +2,8 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate (AGENTS.md "Tests"). Other suites live in `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux,
-`boardTest` Chromium, `linuxDriverTest` Linux binaries + a display (`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens.
+`./gradlew test` is the hermetic gate (AGENTS.md). Other suites in `src/<name>/java`, none in `check`: `e2eTest` git + tmux, `containerTest` docker,
+`boardTest` Chromium, `linuxDriverTest` Linux + display (`JAGT_IN_CONTAINER`), `promptEval`, `roleEval -Prole=<id>` the CLI + tokens.
 **Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD`, each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
@@ -97,4 +97,4 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,
   `scripts/with-linux-desktop.sh` Xvfb + session bus + notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.**
   `linuxDriverTest` is gated on **capability**, never on the harness.
-- **Only the hermetic suite is cached**: three others prove the **machine**, three a model (`cacheIf` / `upToDateWhen` false).
+- **Only the hermetic suite is cached**: four others prove the **machine**, three a model (`cacheIf` / `upToDateWhen` false).

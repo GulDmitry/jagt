@@ -7,6 +7,15 @@ sourceSets {
     }
 }
 
+// Needs docker, so it is asked for by name and stays out of `check`.
+sourceSets {
+    containerTest {
+        java.srcDirs = ['src/containerTest/java']
+        compileClasspath += configurations.testCompileClasspath
+        runtimeClasspath += configurations.testRuntimeClasspath
+    }
+}
+
 // Spends model tokens on a local stand, so it is asked for by name. NOT in `check`.
 sourceSets {
     stand {
@@ -87,6 +96,8 @@ dependencies {
     boardTestImplementation 'com.microsoft.playwright:playwright:1.64.0'
     boardTestCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     boardTestAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    containerTestImplementation 'org.testcontainers:testcontainers'
+    containerTestImplementation 'org.springframework.security:spring-security-crypto'
     e2eCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     e2eAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
@@ -157,5 +168,16 @@ tasks.register('e2eTest', Test) {
         scratch.deleteDir()
         scratch.mkdirs()
     }
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.register('containerTest', Test) {
+    description = "Starts jagt's image with docker compose and drives it over HTTP (needs docker; leaves no container, volume, network or image)."
+    group = 'verification'
+    testClassesDirs = sourceSets.containerTest.output.classesDirs
+    classpath = sourceSets.containerTest.runtimeClasspath
+    useJUnitPlatform()
+    environment 'TESTCONTAINERS_RYUK_DISABLED', 'true'
+    testLogging.events 'skipped'
     shouldRunAfter tasks.named('test')
 }

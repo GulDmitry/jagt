@@ -29,7 +29,7 @@ class PasswordLogin {
         .headers(headers -> headers.cacheControl(cache -> cache.disable()))
         .authorizeHttpRequests(requests ->
             requests
-                .requestMatchers("/mcp", "/api/agent/**")
+                .requestMatchers("/mcp", "/api/agent/**", "/error")
                 .permitAll()
                 .requestMatchers(contract.patterns().toArray(String[]::new))
                 .permitAll()
