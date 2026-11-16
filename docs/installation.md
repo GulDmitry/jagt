@@ -2,6 +2,8 @@
 
 [← README](../README.md)
 
+On a server, see [docs/server.md](server.md).
+
 ## Technologies
 
 Every one is spawned by **bare name**, resolved on PATH and then in the usual install directories. Give an
