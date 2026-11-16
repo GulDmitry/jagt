@@ -73,7 +73,8 @@ docker build -f Dockerfile.dist --build-arg BASE=jagt-base -t my-jagt .
 ```
 
 **Compose** builds jagt's own image and mounts one volume, `jagt-data`, at `/data`: state, artifacts, repositories,
-worktrees and the CLI login. Without the volume a restart starts empty.
+worktrees and the CLI login. **`/data` must be persistent** — a compose volume, or a PersistentVolumeClaim under
+Kubernetes: without it a restart, a deleted pod or a new image loses every task, worktree and login. jagt does not check.
 
 ```sh
 docker compose up -d --build
