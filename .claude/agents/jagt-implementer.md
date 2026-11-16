@@ -15,6 +15,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
 5. The done command is the brief's; without one, the gate AGENTS.md "Tests" names. A change to a source set other than
    `test` also runs `checkstyle<Set>`: only `test` pulls every set's checkstyle in. A removed or renamed main
    symbol compiles every source set first. Run gates in the background into a log; read the exit and the tail.
+   One Gradle run per tree at a time: a second one rewrites the class dirs the first is reading.
    Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
 6. Judge every pitest survivor on your diff: kill it or say why.
 7. One commit for the whole brief, as AGENTS.md says in "Git and committing"; write it in the style of `git log --oneline -5`.
