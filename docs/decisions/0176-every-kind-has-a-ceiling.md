@@ -1,0 +1,35 @@
+# 0176 — Every kind has a ceiling
+
+[← decisions](README.md) · on [0162](0162-a-check-holds-for-all-code.md)
+Rule: [`ARCHITECTURE.md`](../../ARCHITECTURE.md#the-kinds)
+
+## Status
+
+Accepted 2026-11-16 by the owner's order.
+
+## Context
+
+- Each kind of thing (a CI job, a port, a role, a Gradle module, a dependency) grows by one at a time, each looking harmless.
+- A cap written as prose is never read at the moment of the addition; a count in a test is.
+- Cycle-freedom between packages is already a zero rule, `RingsTest`; a count is a different shape.
+
+## Decision
+
+- `ComplexityCeilingsTest` holds one ratchet per counted kind, all numbers in `complexity-ceilings.json`.
+- Each kind is a `CeilingKind` with a scanner listing its items by name, so a failure names the new item.
+- Above the stored number fails; below it fails too, asking to lower the number: the ratchet only tightens.
+- Raising a number needs a decision record in the same commit.
+- Counted: CI jobs and triggers, source sets, Gradle modules, build-logic files, declared dependency lines,
+  start triggers, task statuses, capabilities, ports, startup checks, roles, spec capabilities, rule docs, public surface.
+- The count ratchet is own code: no library counts CI jobs, triggers or kinds.
+- Zero rules stay where they are; a scanner finding a violation of one fixes it, never freezes it.
+- The refresh reviews each number against what the kind is for.
+
+## Rejected
+
+- One cap for the whole architecture: it names no kind, so no one knows what to remove.
+- A ceiling only above: a deleted item would leave headroom for a new one.
+
+## Reopen when
+
+- A kind's count moves every week for a reason no record names: the scanner measures the wrong thing.

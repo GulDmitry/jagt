@@ -1,0 +1,17 @@
+{
+  "ciJobs": 6,
+  "ciTriggers": 3,
+  "sourceSets": 23,
+  "startTriggers": 53,
+  "taskStatuses": 14,
+  "publicSurface": 80,
+  "gradleModules": 5,
+  "buildLogic": 14,
+  "dependencyLinesInBuildGradle": 54,
+  "capabilities": 19,
+  "ports": 50,
+  "startupChecks": 31,
+  "roles": 4,
+  "specCapabilities": 44,
+  "ruleDocs": 7
+}

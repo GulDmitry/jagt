@@ -45,7 +45,9 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
-surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it. The board renders
+surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it.
+`ComplexityCeilingsTest` ratchets each kind's count to `complexity-ceilings.json`
+([0176](docs/decisions/0176-every-kind-has-a-ceiling.md)). The board renders
 `flow/view/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
 ## The rings

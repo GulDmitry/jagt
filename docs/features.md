@@ -59,6 +59,11 @@
 - **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
+## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
+- **Architecture rule tests** — Kind, collaborator, complexity, duplication, mock and text ceilings, cycle-freedom and a count ratchet over
+  CI, source sets, triggers, statuses and the public surface fail the build, for every source set.
+  [kinds](../ARCHITECTURE.md#the-kinds)
+
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-a-git-case-the-session-can-work-has-a-verb)
@@ -192,9 +197,4 @@
 - **Next tier** — A failure stop lifts on a stronger model. [spec](../openspec/specs/task-stops/spec.md#requirement-a-stop-lifts-on-the-next-tier)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)
-- **Limits** — Warned once per period, never gating; a stopped session wakes once at reset. Key: `orchestrator.usageLimits.wakeOnReset`, off.
-  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-limit-is-told-once-per-period-never-gated)
-  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-stop-on-a-full-window-arms-one-wake)
-- **Spend** — A headless read stops at a spend ceiling or outage; `stats` ends with the median and the week's cost per accepted task, `≥` if unpriced.
-  [spec](../openspec/specs/usage-limits/spec.md) [spec](../openspec/specs/unpriced-cost/spec.md) [spec](../openspec/specs/cost-per-accepted/spec.md)
-  [spec](../openspec/specs/usage-limits/spec.md#requirement-headless-reads-stop-after-repeated-provider-failures)
+- **Limits and spend** — warned once per period, a spend ceiling, the week's cost per accepted task: [their own page](features/usage-limits.md).
