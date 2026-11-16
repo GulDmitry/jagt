@@ -43,8 +43,7 @@
 - **The open task's tabs** — Session, Artifacts and Diff, and the shell line the Session tab runs: [their own page](features/board.md).
 - **Add a project, run a job now** — Add, change or drop a project, labels and human paths too, from the board or `project`; any job runs now.
   [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
-- **A project named by url** — A `url` with no existing `path` is cloned under the data folder; a failed clone marks the head.
-  `localFiles` feeds `copyGlobs`.
+- **Project by url** — A `url` with no existing `path` is cloned under the data folder; a failed clone marks the head. `localFiles` feeds `copyGlobs`.
   [spec](../openspec/specs/project-setup/spec.md#requirement-a-project-named-by-url-is-cloned)
 - **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
   [spec](../openspec/specs/board/spec.md#requirement-a-mark-says-what-it-replaces)
@@ -160,6 +159,7 @@
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
 - **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.
   [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
+- **Probe** — `/actuator/health/readiness`, no login: ready if started, cloned. [spec](../openspec/specs/readiness/spec.md#requirement-pod-readiness)
 - **One data folder** — State, worktrees, clones and logs live under `~/.jagt`, or the folder `orchestrator.data` names.
   [spec](../openspec/specs/startup/spec.md#requirement-one-data-folder-holds-everything-jagt-writes)
 - **Console logging** — `logging: console` writes every log line as one ECS JSON object on stdout and no file; `file` is the default.

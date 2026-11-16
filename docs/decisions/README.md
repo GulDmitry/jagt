@@ -185,3 +185,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0169 Stop work is a SmartLifecycle after the web server](0169-stop-work-is-a-smartlifecycle-after-the-web-server.md) (beside 0160)
 - [0170 The board is its own app](0170-the-board-is-its-own-app-behind-one-contract.md) (supersedes 0046 in part, 0141 in part)
 - [0171 jagt's image is a base without agent CLIs](0171-the-image-is-a-base-without-agent-clis.md) (supersedes 0021 for the image)
+- [0172 Readiness is Spring Boot Actuator's probe](0172-readiness-is-spring-boot-actuators-probe.md) (beside 0171)

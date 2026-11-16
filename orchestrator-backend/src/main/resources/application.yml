@@ -28,6 +28,20 @@ spring:
           # Revalidate, not "never cache": unchanged assets still answer 304.
           no-cache: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only the readiness probe of a container platform; the board's own routes stay under /api.
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,clones
+
 logging:
   # No console threshold: nothing owns the terminal any more, so Boot's default is what a human wants —
   # a server saying nothing at all is indistinguishable from one that died.

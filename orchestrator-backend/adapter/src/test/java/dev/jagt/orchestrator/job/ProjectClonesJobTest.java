@@ -2,10 +2,14 @@ package dev.jagt.orchestrator.job;
 
 import static dev.jagt.orchestrator.job.TestClonedProjectBuilder.clonedProject;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -15,6 +19,7 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -117,5 +122,47 @@ class ProjectClonesJobTest {
 
     assertThat(reach.standing()).isEmpty();
     assertThat(folder.resolve("f.txt")).exists();
+  }
+
+  @Test
+  void reportsCloningWhileOneProjectIsClonedAndNotBeforeNorAfter() {
+    Processes processes = mock(Processes.class);
+    ProjectClonesJob watched = new ProjectClonesJob(config, processes, reach);
+    AtomicBoolean duringTheClone = new AtomicBoolean();
+    when(processes.run(any(), any(), anyMap(), anyList()))
+        .thenAnswer(call -> {
+          duringTheClone.set(watched.cloning());
+          return new Processes.Result(0, "", "");
+        });
+    ProjectConfig api =
+        clonedProject()
+            .withUrl(origin.toString())
+            .withPath(dir.resolve("repos/api").toString())
+            .build();
+    when(config.load())
+        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", api)));
+    boolean before = watched.cloning();
+
+    watched.run();
+
+    assertThat(before).isFalse();
+    assertThat(duringTheClone).isTrue();
+    assertThat(watched.cloning()).isFalse();
+  }
+
+  @Test
+  void reportsNotCloningWhereNoProjectIsMissing() throws Exception {
+    Processes processes = mock(Processes.class);
+    ProjectClonesJob watched = new ProjectClonesJob(config, processes, reach);
+    AtomicBoolean duringTheRun = new AtomicBoolean(true);
+    when(config.load())
+        .thenAnswer(call -> {
+          duringTheRun.set(watched.cloning());
+          return ConfigService.ConfigFile.defaults();
+        });
+
+    watched.run();
+
+    assertThat(duringTheRun).isFalse();
   }
 }

@@ -48,7 +48,7 @@ spec:
                 name: jagt
           readinessProbe:
             httpGet:
-              path: /login.html
+              path: /actuator/health/readiness
               port: 8290
             periodSeconds: 10
           volumeMounts:

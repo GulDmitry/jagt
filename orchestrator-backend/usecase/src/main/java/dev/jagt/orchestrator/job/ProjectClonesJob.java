@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,8 @@ public class ProjectClonesJob implements Job {
   private final Processes processes;
   private final Reach reach;
 
+  private volatile boolean cloning;
+
   @Override
   public String id() {
     return "project-clones";
@@ -60,20 +63,31 @@ public class ProjectClonesJob implements Job {
     run();
   }
 
+  public boolean cloning() {
+    return cloning;
+  }
+
   @Override
   public synchronized void run() {
-    Map<String, ProjectConfig> projects;
+    Map<String, ProjectConfig> missing;
     try {
-      projects = configService.load().projects();
+      missing = new LinkedHashMap<>(configService.load().projects());
     } catch (RuntimeException unreadable) {
       return;
     }
-    projects.forEach((key, project) -> {
-      Path folder = Path.of(project.path());
-      if (project.hasUrl() && !Files.exists(folder)) {
-        clone(key, String.valueOf(project.url()), folder);
-      }
-    });
+    missing
+        .values()
+        .removeIf(project -> !project.hasUrl() || Files.exists(Path.of(project.path())));
+    if (missing.isEmpty()) {
+      return;
+    }
+    cloning = true;
+    try {
+      missing.forEach(
+          (key, project) -> clone(key, String.valueOf(project.url()), Path.of(project.path())));
+    } finally {
+      cloning = false;
+    }
   }
 
   private void clone(String key, String url, Path folder) {
