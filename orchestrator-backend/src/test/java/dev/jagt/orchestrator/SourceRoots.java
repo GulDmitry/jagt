@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 
 final class SourceRoots {
 
+  static final String BASE_PACKAGE = "dev.jagt.orchestrator";
+  static final String BASE_PATH = BASE_PACKAGE.replace('.', '/');
+
   private static final Path BACKEND = Path.of(".");
   private static final int DEEPEST = 4;
 

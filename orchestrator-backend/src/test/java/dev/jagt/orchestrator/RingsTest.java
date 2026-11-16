@@ -36,7 +36,7 @@ class RingsTest {
         .resideInAPackage(RingFiles.packageOf(ring))
         .should()
         .onlyDependOnClassesThat(
-            resideOutsideOfPackage("dev.jagt.orchestrator..")
+            resideOutsideOfPackage(SourceRoots.BASE_PACKAGE + "..")
                 .or(
                     resideInAnyPackage(
                         Stream.of(maySee.split(" "))
@@ -70,7 +70,7 @@ class RingsTest {
   @Test
   void noTwoRingsDependOnEachOther() {
     slices()
-        .matching("dev.jagt.orchestrator.(*)..")
+        .matching(SourceRoots.BASE_PACKAGE + ".(*)..")
         .should()
         .beFreeOfCycles()
         .check(MainClasses.CODE);

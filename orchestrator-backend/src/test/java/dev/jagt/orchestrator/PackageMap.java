@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 final class PackageMap {
 
-  private static final String ROOT = "dev/jagt/orchestrator";
+  private static final String ROOT = SourceRoots.BASE_PATH;
   private static final Pattern ROW = Pattern.compile("(?m)^\\| `([^`]+)` \\|");
   private static final String OVER_TEN = "### Over ten classes";
   private static final String SINGLE = "### A single class";

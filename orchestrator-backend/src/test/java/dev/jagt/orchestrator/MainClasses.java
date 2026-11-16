@@ -9,7 +9,7 @@ final class MainClasses {
   static final JavaClasses CODE =
       new ClassFileImporter()
           .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-          .importPackages("dev.jagt.orchestrator");
+          .importPackages(SourceRoots.BASE_PACKAGE);
 
   private MainClasses() {}
 }

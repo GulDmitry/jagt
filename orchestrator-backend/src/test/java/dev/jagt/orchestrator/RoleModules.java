@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 
 final class RoleModules {
 
-  private static final String ROOT = "dev.jagt.orchestrator.";
+  private static final String ROOT = SourceRoots.BASE_PACKAGE + ".";
 
   static final List<String> ARBITER =
       Stream.of(

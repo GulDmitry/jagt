@@ -8,7 +8,9 @@ The gates are requirements in [`engineering`](../openspec/specs/engineering/spec
 
 ```text
 Read docs/practices.md of the jagt repository. For each sphere, adopt the rows that fit my stack: copy the unit named in "copy",
-adapt its base package, and keep its check beside it. Link jagt's rule home, never copy its text.
+adapt its base package in `SourceRoots.BASE_PACKAGE`, and keep its check beside it.
+Class-name literals in `FlowDoorsTest`, `TaskOpeningDoorsTest`, `RoleNamesTest`, `CeilingKind` and `CodeCeilings` are adapted by hand.
+Link jagt's rule home, never copy its text.
 A check that fails is fixed in the code, never by raising its number. A row saying "gap" is not adopted: list it and ask me.
 Report a table: practice | adopted | unit copied | gap. Run my test suite after every sphere.
 ```

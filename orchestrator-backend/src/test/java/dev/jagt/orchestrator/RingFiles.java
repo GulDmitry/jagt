@@ -9,14 +9,14 @@ final class RingFiles {
 
   static final List<Path> ROOTS =
       SourceRoots.ROOTS.stream()
-          .map(root -> root.resolve("dev/jagt/orchestrator"))
+          .map(root -> root.resolve(SourceRoots.BASE_PATH))
           .filter(Files::isDirectory)
           .toList();
 
   private RingFiles() {}
 
   static String packageOf(String ring) {
-    return "dev.jagt.orchestrator." + ring + "..";
+    return SourceRoots.BASE_PACKAGE + "." + ring + "..";
   }
 
   static Stream<Path> outsideTheEdge(boolean withTests) {
