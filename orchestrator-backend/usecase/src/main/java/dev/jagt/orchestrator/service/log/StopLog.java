@@ -20,7 +20,7 @@ public class StopLog {
 
   public StopLog(ObjectMapper mapper, OrchestratorPaths paths) {
     this.mapper = mapper;
-    this.file = new RollingFile(paths.stateFile().resolveSibling("stops.jsonl"));
+    this.file = new RollingFile(paths.stops());
   }
 
   public void record(Stop stop) {

@@ -58,7 +58,7 @@ public class FinishedArtifacts {
     this.clock = clock;
     this.config = config;
     this.mapper = mapper;
-    this.store = paths.stateFile().resolveSibling("archive");
+    this.store = paths.archive();
   }
 
   /** Called while the worktree still exists: after retirement there is nothing left to copy. */

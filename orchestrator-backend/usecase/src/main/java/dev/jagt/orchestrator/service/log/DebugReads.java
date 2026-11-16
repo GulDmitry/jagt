@@ -24,11 +24,11 @@ public class DebugReads {
   private final AgentRuntime runtime;
 
   public String stops(int lines) {
-    return tail(paths.stateFile().resolveSibling("stops.jsonl"), lines);
+    return tail(paths.stops(), lines);
   }
 
   public String stopsReviewed(int lines) {
-    return tail(paths.stateFile().resolveSibling("stops-reviewed.jsonl"), lines);
+    return tail(paths.stopsReviewed(), lines);
   }
 
   /** Empty where the file does not exist yet. */

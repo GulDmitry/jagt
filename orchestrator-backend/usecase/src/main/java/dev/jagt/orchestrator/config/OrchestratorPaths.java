@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.port.host.Layout;
 import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.nio.file.Files;
@@ -20,8 +21,7 @@ public class OrchestratorPaths {
 
   private final Path root;
   private final Path configFile;
-  private final Path data;
-  private final Path stateFile;
+  private final Layout layout;
 
   public OrchestratorPaths(OrchestratorProperties properties) {
     this.root =
@@ -29,28 +29,30 @@ public class OrchestratorPaths {
             ? Path.of(properties.root()).toAbsolutePath().normalize()
             : findRoot();
     this.configFile = resolve(properties.configFile(), "jagt.yml");
-    this.data =
+    Path data =
         properties.data() != null && !properties.data().isBlank()
             ? Path.of(properties.data()).toAbsolutePath().normalize()
             : root;
-    this.stateFile =
-        properties.stateFile() != null && !properties.stateFile().isBlank()
-            ? Path.of(properties.stateFile()).toAbsolutePath().normalize()
-            : data.resolve("state.json");
+    this.layout =
+        new Layout(
+            data,
+            properties.stateFile() != null && !properties.stateFile().isBlank()
+                ? Path.of(properties.stateFile()).toAbsolutePath().normalize()
+                : null);
   }
 
   /** Everything jagt writes; the root where none is configured. */
   public Path data() {
-    return data;
+    return layout.data();
   }
 
   public Path worktrees() {
-    return data.resolve("worktrees");
+    return layout.worktrees();
   }
 
   /** Where a project named by url is cloned. */
   public Path clone(String projectKey) {
-    return data.resolve("repos").resolve(projectKey);
+    return layout.clone(projectKey);
   }
 
   /** Where a task's deploy worktree stands in one project. */
@@ -87,73 +89,105 @@ public class OrchestratorPaths {
   }
 
   public Path stateFile() {
-    return stateFile;
+    return layout.stateFile();
   }
 
   /** Present while `act` is stopped, whatever the configured mode says. */
   public Path actStopped() {
-    return stateFile.resolveSibling("act-stopped");
+    return layout.actStopped();
   }
 
   /** Present while the whole board is stopped; holds the epoch millis of the stop. */
   public Path boardStopped() {
-    return stateFile.resolveSibling("board-stopped");
+    return layout.boardStopped();
   }
 
   /**
    * The tasks counted toward stopping `act`, one per line, present while the count is above zero.
    */
   public Path actStrikes() {
-    return stateFile.resolveSibling("act-strikes");
+    return layout.actStrikes();
   }
 
   /**
    * The Master's token, drawn at each start: beside the state, so a read-only root still starts.
    */
   public Path masterToken() {
-    return stateFile.resolveSibling("master-token");
+    return layout.masterToken();
   }
 
   /** The last moment this process was seen alive, rewritten every minute. */
   public Path alive() {
-    return stateFile.resolveSibling("alive");
+    return layout.alive();
   }
 
   /** The keys intake turned away, one per line. */
   public Path intakeTurnedAway() {
-    return stateFile.resolveSibling("intake-turned-away");
+    return layout.intakeTurnedAway();
   }
 
   /** What each deploy's check by the checker {@code role} ended in, one line per task. */
   public Path checkerVerdicts(String role) {
-    return stateFile.resolveSibling(role + "-verdicts");
+    return layout.checkerVerdicts(role);
   }
 
   /**
    * Where the verdicts were kept while the role was called qa; read while the new file is absent.
    */
   public Path legacyQaVerdicts() {
-    return stateFile.resolveSibling("qa-verdicts");
+    return layout.legacyQaVerdicts();
   }
 
   /** The usage levels already told, with the period each was told in. */
   public Path usageAlerts() {
-    return stateFile.resolveSibling("usage-alerts.properties");
+    return layout.usageAlerts();
   }
 
   /** One copy of the last approved plan per task, named by the task's slug. */
   public Path planBaselines() {
-    return stateFile.resolveSibling("plan-baselines");
+    return layout.planBaselines();
   }
 
   /** One copy of each task's ticket text as first read, named by the task's slug. */
   public Path ticketTexts() {
-    return stateFile.resolveSibling("ticket-texts");
+    return layout.ticketTexts();
   }
 
   /** One folder per task that plans before it has a repository, named by the task's slug. */
   public Path scratch() {
-    return stateFile.resolveSibling("scratch");
+    return layout.scratch();
+  }
+
+  public Path archive() {
+    return layout.archive();
+  }
+
+  public Path openCodeGate() {
+    return layout.openCodeGate();
+  }
+
+  public Path usageByDay() {
+    return layout.usageByDay();
+  }
+
+  public Path finished() {
+    return layout.finished();
+  }
+
+  public Path misses() {
+    return layout.misses();
+  }
+
+  public Path interactions() {
+    return layout.interactions();
+  }
+
+  public Path stops() {
+    return layout.stops();
+  }
+
+  public Path stopsReviewed() {
+    return layout.stopsReviewed();
   }
 
   private Path resolve(@Nullable String override, String defaultName) {

@@ -59,7 +59,7 @@ public class FinishedTasks {
     this.stateService = stateService;
     this.reviews = reviews;
     this.clock = clock;
-    this.file = paths.stateFile().resolveSibling("finished.jsonl");
+    this.file = paths.finished();
   }
 
   /**

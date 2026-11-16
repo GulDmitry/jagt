@@ -223,7 +223,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/assistant` | core | the headless assistants and readers, their answers |
 | `port/channel` | core | the channel driver port and what it carries |
 | `port/codehost` | core | the code host port and its commands |
-| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks |
+| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout |
 | `port/reach` | core | what jagt's reach loss is told in |
 | `port/terminal` | core | terminal, editor and session-host ports |
 | `port/worktree` | core | worktree-facing ports: acceptance runner, build tools, line diff, specs, containers, processes |

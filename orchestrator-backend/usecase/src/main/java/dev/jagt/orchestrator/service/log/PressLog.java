@@ -36,7 +36,7 @@ public class PressLog {
       OrchestratorPaths paths,
       @Value("${orchestrator.interaction-log:true}") boolean enabled) {
     this.mapper = mapper;
-    this.file = new RollingFile(paths.stateFile().resolveSibling("interactions.jsonl"));
+    this.file = new RollingFile(paths.interactions());
     this.enabled = enabled;
   }
 
