@@ -1,3 +1,8 @@
+/**
+ * @param {string} f
+ * @param {any} [or]
+ * @returns {Promise<any[]>}
+ */
 const read = (f, or = {}) =>
   Promise.all(
     ["i18n", "user/i18n"].map((d) =>
@@ -7,6 +12,7 @@ const read = (f, or = {}) =>
       ),
     ),
   );
+/** @param {string} code @returns {Promise<Record<string, string>>} */
 const get = (code) => read(code).then(([a, b]) => ({ ...a, ...b }));
 
 const chosenLanguage = { code: "en" };
@@ -20,10 +26,15 @@ const [english, chosen] = await Promise.all([
   get(chosenLanguage.code),
 ]);
 
+/** @type {Record<string, string>} */
 const platform = {
   mod: /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl+",
 };
 
+/**
+ * @param {string} key
+ * @param {Record<string, string | undefined>} [values]
+ */
 export const t = (key, values = {}) =>
   (chosen[key] ?? english[key] ?? key).replace(
     /\{(\w+)\}/g,
@@ -32,6 +43,7 @@ export const t = (key, values = {}) =>
 
 export const current = () => chosenLanguage.code;
 
+/** @param {string} next */
 export const choose = (next) => {
   try {
     localStorage.lang = next;

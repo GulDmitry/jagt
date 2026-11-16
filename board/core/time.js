@@ -1,3 +1,4 @@
+/** @param {Intl.DateTimeFormatOptions} options */
 const format = (options) =>
   new Intl.DateTimeFormat("en-GB", {
     timeZone: "UTC",
@@ -25,10 +26,20 @@ const FULL = format({
   minute: "2-digit",
 });
 
+/** @typedef {number | Date} Instant */
+
+/** @param {Instant} at */
 export const withSeconds = (at) => SECONDS.format(at);
+/** @param {Instant} at */
 export const minutes = (at) => MINUTES.format(at);
+/** @param {Instant} at */
 export const dayAndMinutes = (at) => DAY_AND_MINUTES.format(at);
+/** @param {Instant} at */
 export const full = (at) => `${FULL.format(at)} UTC`;
+/**
+ * @param {Instant} a
+ * @param {Instant} b
+ */
 export const sameDay = (a, b) =>
   new Date(a).toISOString().slice(0, 10) ===
   new Date(b).toISOString().slice(0, 10);

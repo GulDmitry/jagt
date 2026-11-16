@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "prettier --check . && eslint .",
+    "lint": "prettier --check . && eslint . && tsc -p jsconfig.json",
     "format": "prettier --write .",
     "test": "node -e \"process.exit(0)\""
   },

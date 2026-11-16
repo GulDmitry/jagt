@@ -1,5 +1,6 @@
 import { full } from "./time.js";
 
+/** @param {number} millis */
 export const duration = (millis) => {
   const minutes = Math.max(0, Math.floor(millis / 60000));
   if (minutes < 60) return `${minutes}m`;
@@ -8,6 +9,7 @@ export const duration = (millis) => {
 };
 
 // Seconds matter while the wait is under a minute: a countdown is watched ticking.
+/** @param {number} millis */
 export const countdown = (millis) => {
   const seconds = Math.max(0, Math.floor(millis / 1000));
   if (seconds < 60) return `${seconds}s`;
@@ -16,6 +18,7 @@ export const countdown = (millis) => {
   return minutes < 60 ? `${minutes}m` : `${Math.ceil(minutes / 60)}h`;
 };
 
+/** @param {{ id: string, alias?: string }} task */
 export const bothNames = (task) =>
   task.alias ? `${task.alias} \u00b7 ${task.id}` : task.id;
 
@@ -23,9 +26,19 @@ export const bothNames = (task) =>
 const WEB_LINK = /https?:\/\/[^\s<>"'`)\]]+/g;
 const HEAD = /^(\s*\d+ · )([^·]+)(· .*)$/;
 const QUOTE = /^\s*>/;
+/** @type {Record<string, string>} */
 const TONE = { FIXED: "ok", QUESTION: "you" };
 
+/**
+ * @typedef {{ kind: string, text?: string, href?: string, tone?: string, parts?: Part[] }} Part
+ */
+
+/**
+ * @param {string} line
+ * @returns {Part[]}
+ */
 function linked(line) {
+  /** @type {Part[]} */
   const parts = [];
   let at = 0;
   for (const found of line.matchAll(WEB_LINK)) {
@@ -40,6 +53,10 @@ function linked(line) {
   return parts;
 }
 
+/**
+ * @param {string} line
+ * @returns {Part[]}
+ */
 function marked(line) {
   const head = HEAD.exec(line);
   if (head) {
@@ -64,17 +81,28 @@ function marked(line) {
 }
 
 // A task still on the board opens from a line naming it.
+/** @param {string[]} ids */
 const named = (ids) =>
   new RegExp(
     `(?<![\\w-])(${ids.map((id) => id.replace(/\W/g, "\\$&")).join("|")})(?![\\w-])`,
   );
+/**
+ * @param {Part} part
+ * @param {string[]} ids
+ * @returns {Part[]}
+ */
 const tasked = (part, ids) =>
   part.kind !== "text" || !ids.length
     ? [part]
-    : part.text
+    : (part.text ?? "")
         .split(named(ids))
         .map((text, at) => ({ kind: at % 2 ? "task" : "text", text }));
 
+/**
+ * @param {string} said
+ * @param {string[]} [ids]
+ * @returns {Part[]}
+ */
 export const reportParts = (said, ids = []) =>
   said
     .trimEnd()
@@ -84,9 +112,14 @@ export const reportParts = (said, ids = []) =>
     )
     .flatMap((part) => tasked(part, ids));
 
+/** @param {{ switches?: Record<string, string> }} task */
 export const switchLines = (task) =>
   Object.entries(task.switches || {}).map(([name, said]) => `${name}: ${said}`);
 
+/**
+ * @param {{ stop?: { evidence?: string, next?: string, at: number, triage?: string } }} task
+ * @returns {string[]}
+ */
 export const stopLines = (task) =>
   task.stop
     ? [
@@ -94,5 +127,5 @@ export const stopLines = (task) =>
         task.stop.next,
         `stopped ${full(task.stop.at)}`,
         task.stop.triage,
-      ].filter(Boolean)
+      ].flatMap((line) => (line ? [line] : []))
     : [];
