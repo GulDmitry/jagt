@@ -168,6 +168,25 @@ class BoardAssetsTest {
   }
 
   @Test
+  void noBoardPageRunsAnInlineScriptButItsImportMap() throws IOException {
+    List<Path> pages;
+    try (Stream<Path> files = Files.walk(STATIC)) {
+      pages =
+          files
+              .filter(path -> path.toString().endsWith(".html"))
+              .filter(path -> !path.startsWith(STATIC.resolve("node_modules")))
+              .toList();
+    }
+
+    assertThat(pages)
+        .isNotEmpty()
+        .allSatisfy(page ->
+            assertThat(page)
+                .content()
+                .doesNotContainPattern("<script(?![^>]*(src=|type=\"importmap\"))[^>]*>"));
+  }
+
+  @Test
   void noBoardScriptFormatsTimeInTheBrowsersLocaleOrZone() throws IOException {
     List<Path> scripts;
     try (Stream<Path> files = Files.walk(STATIC)) {

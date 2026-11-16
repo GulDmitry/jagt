@@ -197,3 +197,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0181 Every module keeps 80% line coverage, gating `test`](0181-every-module-keeps-80-percent-line-coverage.md) (beside 0125)
 - [0182 A release lists what is inside it, as CycloneDX](0182-a-release-lists-what-is-inside-it-as-cyclonedx.md)
 - [0183 A release is signed by the platform that built it](0183-a-release-is-signed-by-the-platform-that-built-it.md) (on 0182)
+- [0184 The board answers with a Content-Security-Policy of its own origin](0184-the-board-answers-with-a-csp-of-its-own-origin.md) (on 0173)

@@ -1215,3 +1215,10 @@ table.jobs td.last.failed {
 .round .screen .quote {
   font-family: inherit;
 }
+
+form.login {
+  max-width: 300px;
+  margin: 18vh auto;
+  display: grid;
+  gap: 12px;
+}

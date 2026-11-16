@@ -10,7 +10,12 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.SpringBootConfiguration;
@@ -27,7 +32,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "orchestrator.auth.mode=password",
-      "orchestrator.auth.passwordHash=$2y$04$cpM1ODse0DnRCsm1Zpa9quQKnFm0ZxoiaduZfAt4nnLFQp0rBW332"
+      "orchestrator.auth.passwordHash=$2y$04$.W6F.lVT3xhLTvtg8hW1WuEf2QP.enJ4zNrFWqlXmuBhzZndQnIiu"
     })
 @MockitoBean(types = {UserNotifier.class})
 class PasswordLoginRefusalOnTomcatTest {
@@ -77,5 +82,21 @@ class PasswordLoginRefusalOnTomcatTest {
     }
 
     assertThat(status).contains(" 403");
+  }
+
+  @Test
+  void everyResponseCarriesContentSecurityPolicyOfItsOwnOriginOnly() throws Exception {
+    HttpResponse<String> response =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/login.html"))
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+    String policy = response.headers().firstValue("Content-Security-Policy").orElse("");
+    assertThat(policy)
+        .startsWith("default-src 'self'; script-src 'self' 'sha256-")
+        .contains("object-src 'none'", "frame-ancestors 'none'")
+        .doesNotContain("unsafe-eval", "http:", "https:", "*");
   }
 }

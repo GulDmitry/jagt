@@ -29,6 +29,31 @@ class BoardVendorLoadTest extends BoardPageContext {
   }
 
   @Test
+  void contentSecurityPolicyBlocksNothingOnFirstPaintOrWhenTheCodeEditorLoads() {
+    Page page = session.newPage();
+    List<String> blocked = new ArrayList<>();
+    page.onConsoleMessage(message -> {
+      if (message.text().contains("Content Security Policy")) {
+        blocked.add(message.text());
+      }
+    });
+    page.navigate("http://localhost:" + port + "/");
+    page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE);
+
+    page.evaluate(
+        "async () => {"
+            + " const map = document.createElement('script');"
+            + " map.type = 'importmap';"
+            + " map.textContent ="
+            + "   await (await fetch('./vendor/codemirror/importmap.json')).text();"
+            + " document.head.append(map);"
+            + " await import('@codemirror/view');"
+            + "}");
+
+    assertThat(blocked).isEmpty();
+  }
+
+  @Test
   void codeEditorAndGrammarLoadOnDemandWithoutMissingFile() {
     Page page = session.newPage();
     List<String> missing = new ArrayList<>();

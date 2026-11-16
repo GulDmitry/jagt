@@ -15,7 +15,7 @@ final class GuardedBoard {
   static HttpSecurity guard(HttpSecurity http, String loginUrl) throws Exception {
     PublicPaths contract = PublicPaths.fromContract();
     return http.csrf(AbstractHttpConfigurer::disable)
-        .headers(headers -> headers.cacheControl(cache -> cache.disable()))
+        .headers(BoardCsp::apply)
         .authorizeHttpRequests(requests ->
             requests
                 .requestMatchers("/mcp", "/api/agent/**", "/error")

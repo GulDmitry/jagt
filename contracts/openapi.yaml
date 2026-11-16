@@ -7,6 +7,7 @@ x-public-paths:
   - /login.html
   - /actuator/health/readiness
   - /actuator/health/liveness
+  - /login.js
   - /app.css
   - /core/i18n.js
   - /i18n/**

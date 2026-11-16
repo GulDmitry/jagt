@@ -35,6 +35,7 @@
 - **Board as its own app** — `board/` is served by the jar's copy or `orchestrator.board.dir`; `contracts/` is the one coupling.
   [spec](../openspec/specs/board-app/spec.md)
 - **Local or a login** — Loopback, or `auth: password` or `oidc`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
+- **Board security** — Every response carries a Content-Security-Policy of the board's origin only. [spec](../openspec/specs/board-security/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
@@ -154,7 +155,11 @@
   [spec](../openspec/specs/session-brief/spec.md#requirement-a-session-judges-each-switch-that-is-on)
 
 ## Spec changes · [spec](../openspec/specs/spec-changes/spec.md)
+<<<<<<< HEAD
 - **Spec change and fold** — A hand-back is refused until the task's spec change validates; a ship folds it into the specs in its commit.
+=======
+- **Spec change at hand-back and ship** — A hand-back is refused until the task's spec change validates; a ship folds it into the specs.
+>>>>>>> 9d0331485 (The board answers with a Content-Security-Policy of its own origin, its pages running no inline script but the import map)
   [hand-back](../openspec/specs/spec-changes/spec.md#requirement-a-hand-back-carries-a-valid-change) ·
   [ship](../openspec/specs/spec-changes/spec.md#requirement-a-ship-folds-the-change-into-the-specs)
 

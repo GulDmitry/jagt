@@ -20,7 +20,7 @@ class OpenBoard {
   @Bean
   SecurityFilterChain openChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
-        .headers(headers -> headers.cacheControl(cache -> cache.disable()))
+        .headers(BoardCsp::apply)
         .authorizeHttpRequests(requests -> requests.anyRequest().permitAll());
     return http.build();
   }
