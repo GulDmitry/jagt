@@ -14,6 +14,11 @@ public class NoEditorDriver implements EditorDriver {
           + " to open a worktree.";
 
   @Override
+  public boolean absent() {
+    return true;
+  }
+
+  @Override
   public void open(Path path) {
     throw new IllegalStateException(SENTENCE);
   }

@@ -8,6 +8,11 @@ import java.nio.file.Path;
  */
 public interface EditorDriver {
 
+  /** True when no editor is configured: {@link #open} and {@link #openDiff} then only throw. */
+  default boolean absent() {
+    return false;
+  }
+
   void open(Path path);
 
   /** Opens a diff/compare window between two paths, no project. */

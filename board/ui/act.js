@@ -5,6 +5,7 @@ import * as store from '../core/store.js';
 import {blocked, hold, release, waitingFor} from './inflight.js';
 import {refresh} from './refresh.js';
 import {refocus, render} from './render.js';
+import * as tabs from './tabs.js';
 import {toast} from './toast.js';
 
 // A verb the card does not offer is still SENT: this page may be describing a task that has moved on, and it
@@ -45,6 +46,7 @@ export async function run(taskId, actionId, project = '') {
     const named = project ? `&project=${encodeURIComponent(project)}` : '';
     const result = await api(`/api/tasks/actions/${action.id}?task=${encodeURIComponent(task.id)}${named}`,
       {method: 'POST'});
+    if (action.id === 'code') tabs.choose('code');
     toast(result.message);
   } catch (e) {
     toast(refusal(e), true);

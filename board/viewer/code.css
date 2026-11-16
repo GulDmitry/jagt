@@ -1,0 +1,12 @@
+.code-search input { width: 100%; box-sizing: border-box; }
+.code-body { display: flex; gap: 10px; margin-top: 8px; }
+.code-names { flex: 0 0 30%; max-height: 60vh; overflow: auto; display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 12px; }
+.code-names button { text-align: left; border: 0; background: none; overflow-wrap: anywhere; }
+.code-names button[aria-pressed="true"] { border-left: 3px solid var(--accent); }
+.code-file { flex: 1; min-width: 0; }
+.code-view { max-height: 60vh; overflow: auto; font-size: 12px; }
+section.code .code-view .cm-editor { background: var(--panel); color: var(--text); }
+section.code .code-view .cm-gutters { background: var(--chip-bg); color: var(--muted); border: 0; }
+section.code .code-view .tok-keyword { font-weight: 700; }
+section.code .code-view .tok-comment { color: var(--muted); font-style: italic; }
+@media (max-width: 700px) { .code-body { flex-direction: column; } .code-names { flex-basis: auto; max-height: 24vh; } }

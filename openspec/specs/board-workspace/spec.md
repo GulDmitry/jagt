@@ -144,11 +144,11 @@ router is asked only where no label matched and several projects are configured;
 - **WHEN** no label matches and several projects are configured
 - **THEN** the router reads the item and places it in one project, or in none
 
-### Requirement: The open task has its five tabs
-The open task SHALL have the tabs Overview, Drafted review, Artifacts, Diff and Session, in that order. Overview shows its status history,
-newest first. Session shows its session's screen read without colour codes and the Keys row. Drafted review shows its drafted review replies, or that
-none are drafted. Artifacts lists the documents of the task (`Artifact`) present in its worktree now, in the order `Artifact` declares
-them, the one picked rendered. Diff shows the task's change (`board-diff`).
+### Requirement: The open task has its six tabs
+The open task SHALL have the tabs Overview, Drafted review, Artifacts, Code, Diff and Session, in that order. Overview shows its status
+history, newest first. Session shows its session's screen without colour codes, and the Keys row. Drafted review shows its drafted replies, or
+that none are drafted. Artifacts lists the task's documents (`Artifact`) in its worktree now, in declared order, the one picked rendered. Code
+reads its worktree, Diff the task's change (`board-diff`).
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
 - **THEN** the session's screen as it reads now stands there, with the one message line under it and no second form
@@ -174,3 +174,20 @@ open, its last non-blank screen line shows above the message line. With no windo
 - **THEN** its last non-blank screen line shows above the message line
 - **WHEN** no window holds the session
 - **THEN** the message line is disabled and says why
+
+### Requirement: The Code tab reads the worktree
+The Code tab SHALL list the files of each repository of the open task's worktree, tracked or untracked and not ignored.
+It SHALL show one file highlighted by its grammar and search the worktree's lines for a text. It reads on request, changes nothing, and its library
+loads on first use, never with the page. A tree stops at 5000 files and a search at 200 lines, and the tab says so.
+#### Scenario: Opening a task's code
+- **WHEN** the human presses `code` on a task and no editor is configured
+- **THEN** the Code tab opens with the worktree's files and one file highlighted
+#### Scenario: A path leaves the worktree
+- **WHEN** a request names `../x`, an absolute path, `.git` or a symlink whose target is outside the worktree
+- **THEN** it is refused and nothing outside the worktree is read
+#### Scenario: A file that is not text
+- **WHEN** the human picks a binary file or one over 512 KB
+- **THEN** the server answers its kind with no text, and the tab says it is not shown
+#### Scenario: Searching
+- **WHEN** the human searches `needle`
+- **THEN** each line holding it, in any case, is listed with its file and number, and picking one opens the file there

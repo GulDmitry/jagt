@@ -26,6 +26,8 @@ Accepted 2026-11-16; reopens [0046](0046-the-board-renders-preact-components-wit
 - The map is no inline `<script>` in `index.html`: the 160 KB budget has no room for its 4 KB.
 - The files load on demand by `import()`: the first paint fetches none, as with mermaid.
 - `BoardAssetsTest` pins each file's SHA-256 and leaves the folder out of the 160 KB budget; the number stays.
+- The viewer's own code sits in `board/viewer/`, `import()`ed when the Code tab first opens.
+- `BoardAssetsTest` leaves `board/viewer/` and `vendor/hooks.mjs`, which only the viewer imports, out of the 160 KB: the eager part has no room.
 - `@codemirror/autocomplete` is vendored because `lang-javascript` and `lang-markdown` import it.
 - `commands` and `lint` are not vendored: no vendored file imports them.
 - Three LICENSE files, one per holder text: codemirror, lezer, lezer-json.

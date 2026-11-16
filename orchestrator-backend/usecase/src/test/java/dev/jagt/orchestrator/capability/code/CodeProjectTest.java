@@ -168,4 +168,15 @@ class CodeProjectTest {
     verify(editor).open(Path.of("/data/worktrees/proj/ABC-1-revert"));
     assertThat(out).contains("revert worktree", "`revert ABC-1` again");
   }
+
+  @Test
+  void opensNoEditorAndPointsAtTheViewerWhenNoEditorIsConfigured() {
+    when(editor.absent()).thenReturn(true);
+    TaskState task = TaskState.builder("proj", "/work/ABC-1-demo", TaskStatus.IN_PROGRESS).build();
+
+    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+
+    verify(editor, never()).open(Path.of("/work/ABC-1-demo"));
+    assertThat(out).contains("code viewer");
+  }
 }

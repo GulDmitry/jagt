@@ -8,7 +8,8 @@ import {draw} from '../ui/mermaid.js';
 import {dayAndMinutes, minutes, sameDay} from '../core/time.js';
 
 export const TABS = [{id: 'overview', label: t('tab.overview')}, {id: 'round', label: t('tab.round')},
-  {id: 'artifacts', label: t('tab.artifacts')}, {id: 'diff', label: t('tab.diff')}, {id: 'session', label: t('tab.session')}];
+  {id: 'artifacts', label: t('tab.artifacts')}, {id: 'code', label: t('tab.code')},
+  {id: 'diff', label: t('tab.diff')}, {id: 'session', label: t('tab.session')}];
 
 // Today's steps by the clock; older ones by day too.
 const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
@@ -82,6 +83,8 @@ export const Pane = ({card, tab, shown, peek = {}, fresh = false}) => html`<sect
     aria-selected=${String(one.id === tab)} aria-controls=${one.id === tab ? `panel-${one.id}` : undefined}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
     : tab === 'artifacts' ? html`<${Artifacts} task=${card.task} shown=${shown}/>`
+    : tab === 'code' ? shown?.Code ? html`<${shown.Code} key=${card.task.id} task=${card.task}/>`
+      : html`<p class=${shown ? "detail problem" : "muted"}>${shown ? shown.failure : t('reading')}</p>`
     : tab === 'diff' ? html`<${Diff} shown=${shown}/>`
     : tab === 'round' ? html`<${Round} shown=${shown}
       offered=${card.offers.some((offer) => offer.part === 'round')}/>`

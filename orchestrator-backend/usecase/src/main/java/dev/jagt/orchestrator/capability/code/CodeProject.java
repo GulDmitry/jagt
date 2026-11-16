@@ -24,6 +24,9 @@ class CodeProject {
   private final EditorDriver editorDriver;
 
   String open(String taskId, TaskState task) {
+    if (editorDriver.absent()) {
+      return "Opened " + taskId + " in the board's code viewer";
+    }
     // A DEPLOY_CONFLICT lives on the DEPLOY side; the task's own worktrees are clean.
     if (FlowRules.conflictedInTheDeployWorktree(task.status())) {
       Optional<String> conflict = openConflict(taskId, task);

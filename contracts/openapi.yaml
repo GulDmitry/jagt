@@ -70,6 +70,39 @@ paths:
           content:
             application/json:
               schema: {type: array, items: {$ref: '#/components/schemas/RepoDiff'}}
+  /api/tasks/code/tree:
+    get:
+      parameters: [{$ref: '#/components/parameters/task'}]
+      responses:
+        '200':
+          description: The tracked and untracked unignored files of each repository's worktree
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/CodeTree'}}
+  /api/tasks/code/file:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/task'}
+        - {name: project, in: query, schema: {type: string}}
+        - {name: path, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: One file of the worktree; a binary or over-size one carries no text
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CodeFile'}
+  /api/tasks/code/search:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/task'}
+        - {name: project, in: query, schema: {type: string}}
+        - {name: q, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Lines of the worktree holding the query, capped
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CodeFound'}
   /api/tasks/screen:
     get:
       parameters: [{$ref: '#/components/parameters/task'}]
@@ -371,6 +404,34 @@ components:
         project: {type: string}
         base: {type: string}
         diff: {type: string}
+        cut: {type: boolean}
+    CodeTree:
+      type: object
+      required: [project, files, cut]
+      properties:
+        project: {type: string}
+        files: {type: array, items: {type: string}}
+        cut: {type: boolean}
+    CodeFile:
+      type: object
+      required: [path, kind, text]
+      properties:
+        path: {type: string}
+        kind: {type: string, enum: [TEXT, BINARY, TOO_LARGE]}
+        text: {type: string}
+    CodeFound:
+      type: object
+      required: [hits, cut]
+      properties:
+        hits:
+          type: array
+          items:
+            type: object
+            required: [path, line, text]
+            properties:
+              path: {type: string}
+              line: {type: integer}
+              text: {type: string}
         cut: {type: boolean}
     JobStatus:
       type: object

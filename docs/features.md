@@ -40,7 +40,7 @@
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
   [row](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row) ·
   [open](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
-- **The open task's tabs** — Session, Artifacts and Diff, and the shell line the Session tab runs: [their own page](features/board.md).
+- **The open task's tabs** — Session, Artifacts, Code and Diff, and the shell line the Session tab runs: [their own page](features/board.md).
 - **Add a project, run a job now** — Add, change or drop a project, labels and human paths too, from the board or `project`; any job runs now.
   [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Project by url** — A `url` with no existing `path` is cloned under the data folder; a failed clone marks the head. `localFiles` feeds `copyGlobs`.

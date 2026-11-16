@@ -74,12 +74,19 @@ setInterval(() => again(), EVERY);
 
 export const choose = (id) => {
   tab = id;
+  if (id === 'code' && viewer?.failure) viewer = null;
   if (id === 'diff') forget();
 };
+
+let viewer = null;
 
 export function shown(task, repaint) {
   again = () => (tab === 'session' ? (forget(), repaint()) : glance(task, repaint));
   if (peeked.id !== task.id) glance(task, repaint);
+  if (tab === 'code') {
+    if (!viewer) import('../viewer/Code.js').then((loaded) => { viewer = loaded; repaint(); }, (e) => { viewer = {failure: t('tabs.unread', {cause: e.message})}; repaint(); });
+    return viewer;
+  }
   const source = sources[tab];
   if (!source || !task) return null;
   const offer = store.offerFor(task, tab);

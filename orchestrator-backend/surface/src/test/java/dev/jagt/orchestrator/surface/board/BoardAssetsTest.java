@@ -138,7 +138,9 @@ class BoardAssetsTest {
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
               .filter(path -> !path.endsWith("mermaid.min.js"))
+              .filter(path -> !path.endsWith("hooks.mjs"))
               .filter(path -> !path.startsWith(STATIC.resolve("vendor/codemirror")))
+              .filter(path -> !path.startsWith(STATIC.resolve("viewer")))
               .mapToLong(path -> path.toFile().length())
               .sum();
     }

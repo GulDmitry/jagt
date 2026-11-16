@@ -376,7 +376,58 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Page page = openBoard();
 
     assertThat(page.locator("#pane .tabs button"))
-        .hasText(new String[] {"Overview", "Drafted review", "Artifacts", "Diff", "Session"});
+        .hasText(
+            new String[] {"Overview", "Drafted review", "Artifacts", "Code", "Diff", "Session"});
+  }
+
+  @Test
+  void codeTabShowsOneFileOfTheWorktreeHighlighted() throws Exception {
+    Path worktree = Files.createDirectories(root.resolve("ABC-6-alpha"));
+    Files.writeString(worktree.resolve("A.java"), "public class A {}\n");
+    new ProcessBuilder("git", "init", "-q").directory(worktree.toFile()).start().waitFor();
+    state.putTask("ABC-6", alphaTask("ABC-6", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
+
+    page.locator("#pane .tabs button[data-tab=code]").click();
+
+    assertThat(page.locator("#pane .code-view .cm-content")).containsText("public class A");
+    assertThat(page.locator("#pane .code-view .tok-keyword").first()).isVisible();
+  }
+
+  @Test
+  void codeTabNamesTheCauseWhenTheViewerDoesNotLoad() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = session.newPage();
+    page.route("**/viewer/Code.js", route -> route.abort());
+    page.navigate("http://localhost:" + port + "/");
+
+    page.locator("#pane .tabs button[data-tab=code]").click();
+
+    assertThat(page.locator("#pane .detail.problem")).containsText("could not read it");
+    assertThat(page.locator("#pane .muted", new Page.LocatorOptions().setHasText("reading")))
+        .hasCount(0);
+  }
+
+  @Test
+  void codeTabNamesTheCauseWhenTheTreeCannotBeRead() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = session.newPage();
+    page.route(
+        "**/api/tasks/code/tree*",
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setStatus(400)
+                    .setContentType("application/json")
+                    .setBody("{\"error\":\"the worktree of alpha is not on disk\"}")));
+    page.navigate("http://localhost:" + port + "/");
+
+    page.locator("#pane .tabs button[data-tab=code]").click();
+
+    assertThat(page.locator("#pane .code .detail.problem"))
+        .hasText("the worktree of alpha is not on disk");
+    assertThat(page.locator("#pane .code .muted", new Page.LocatorOptions().setHasText("reading")))
+        .hasCount(0);
   }
 
   @Test
