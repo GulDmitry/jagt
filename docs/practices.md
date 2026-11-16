@@ -134,6 +134,6 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 |---|---|---|---|---|
 | A bill of materials ships with a release (SBOM) | [release-artifacts](../openspec/specs/release-artifacts/spec.md), 0182 | `CiWorkflowTest`, `jagt.sbom.gradle` | gap | `jagt.sbom.gradle` |
 | Signed provenance and checksums for the jar and the image (SLSA L2) | [release-artifacts](../openspec/specs/release-artifacts/spec.md), 0183 | `CiWorkflowTest` | n.a. | `ci.yml` release job |
-| Dependencies, actions, base images and the wrapper are pinned; an update bot (12F II, SLSA integrity, update automation) | none yet | gap: JAGT-124 | gap: JAGT-124 | gap: JAGT-124 |
+| Dependencies, actions, base images and the wrapper are pinned; an update bot (12F II, SLSA integrity, update automation) | [engineering](../openspec/specs/engineering/spec.md), 0189 | `PinningTest`, lockfiles | n.a. | `PinningTest` |
 | A dependency vulnerability stops the build (ASVS V13) | [engineering](../openspec/specs/engineering/spec.md), 0188 | osv-scanner on the release SBOM, `QualityGatesTest` | gap: JAGT-96 | `ci.yml` test job |
 | One codebase, the image built from it (12F I) | 0171 | `Dockerfile` | n.a. | `Dockerfile` |

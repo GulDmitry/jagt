@@ -24,19 +24,18 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           java-version: '25'
           distribution: temurin
           cache: gradle
       - run: ./gradlew --no-daemon test
       - run: ./gradlew --no-daemon cyclonedxBom
-      # google/osv-scanner-action v2.7.1
-      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932
+      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
         with:
           scan-args: -L orchestrator-backend/build/reports/sbom/jagt.cdx.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: unit-test-report
@@ -47,15 +46,14 @@ jobs:
     if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           java-version: '25'
           distribution: temurin
           cache: gradle
       - run: ./gradlew --no-daemon cyclonedxBom
-      # google/osv-scanner-action v2.7.1
-      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932
+      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
         with:
           scan-args: -L orchestrator-backend/build/reports/sbom/jagt.cdx.json
       - name: install what the suites shell out to
@@ -64,7 +62,7 @@ jobs:
         run: |
           git config --global user.email "ci@example.com"
           git config --global user.name "jagt ci"
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('orchestrator-backend/build-logic/src/main/groovy/jagt.suites.gradle') }}
@@ -74,7 +72,7 @@ jobs:
       - name: run the image under compose
         if: '!cancelled()'
         run: scripts/container-suite.sh
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: heavy-test-reports
@@ -101,8 +99,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           java-version: '25'
           distribution: temurin
@@ -115,8 +113,7 @@ jobs:
           cp build/libs/jagt.jar "build/release/jagt-$version.jar"
           cp build/reports/sbom/jagt.cdx.json "build/release/jagt-$version.cdx.json"
           (cd build/release && sha256sum "jagt-$version.jar" "jagt-$version.cdx.json" > "jagt-$version.sha256")
-      # actions/attest-build-provenance v4.2.2
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: orchestrator-backend/build/release/*.jar
       - name: attach them to the release
@@ -133,8 +130,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: scripts/publish-image.sh "$GITHUB_REF_NAME"
-      # actions/attest-build-provenance v4.2.2
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}
@@ -157,9 +153,9 @@ jobs:
                | sort_by(.at) | reverse | .[:2] | map(.minor)) as $kept
             | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName' |
             while read -r tag; do gh release delete "$tag" --yes; done
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: site
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

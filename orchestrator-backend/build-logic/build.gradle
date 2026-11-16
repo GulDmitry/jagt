@@ -1,5 +1,15 @@
+buildscript {
+    configurations.classpath {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+
 plugins {
     id 'groovy-gradle-plugin'
+}
+
+dependencyLocking {
+    lockAllConfigurations()
 }
 
 repositories {

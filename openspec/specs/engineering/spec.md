@@ -149,9 +149,11 @@ A row of a standard SHALL be listed as not applicable with its why, and a reject
 - **THEN** it is out: an application, TLS ends at the ingress, one owner account, no WebRTC, state on `/data` by design, scale out rejected by 0179
 
 ### Requirement: Every gate stays wired
-JaCoCo, PIT, Spotless, Checkstyle, Error Prone, the ArchUnit rule tests and the vulnerability scan SHALL stay wired into the commit suite or CI.
+JaCoCo, PIT, Spotless, Checkstyle, Error Prone, the ArchUnit rule tests, the vulnerability scan and the pins SHALL stay wired into the build or CI.
 #### Scenario: A gate is unwired
 - **WHEN** a build file or the workflow stops wiring one of them **THEN** `QualityGatesTest` fails naming it; the board's gates: JAGT-96 checks them
+#### Scenario: A pin is dropped
+- **WHEN** a lockfile, the wrapper checksum, an action sha, an image digest or the update bot goes **THEN** `PinningTest` fails naming it
 
 ### Requirement: A known vulnerability stops the build
 A dependency with a known vulnerability SHALL fail the `test` job of CI, found by osv-scanner on the SBOM of the release jar.
@@ -185,9 +187,6 @@ Every test run SHALL end in mutants on the diff, each survivor judged.
 
 ### Requirement: An open gap is listed with its task
 A gate no stack meets yet SHALL be listed here with its task, never silent, and its task SHALL end by writing the gate above.
-#### Scenario: Pinning
-- **WHEN** a dependency, an action, a base image or the wrapper changes
-- **THEN** the lockfile, the SHA pins, the digests and the update bot are gap, JAGT-124 (12F II, SLSA integrity, update automation)
 #### Scenario: Metrics and build info
 - **WHEN** the owner reads the running process **THEN** no metrics or build info endpoint answers: gap, JAGT-130
 #### Scenario: Time behaviour

@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25-jdk-noble AS build
+FROM eclipse-temurin:25-jdk-noble@sha256:80f67fb3d6f76e2d817d98a4cc2a9cf05f054d4e6adc5e2144bde671d722e63f AS build
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
@@ -7,7 +7,7 @@ RUN git init -q && git commit -q --allow-empty -m build
 WORKDIR /src/orchestrator-backend
 RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar -x test --no-daemon
 
-FROM eclipse-temurin:25-jre-noble
+FROM eclipse-temurin:25-jre-noble@sha256:e3b6f7887a50f20d8f07abf279d8a81a5953fb398a9555bd9edd56b9bd15968c
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git tmux tini procps lsof openssh-client \
  && rm -rf /var/lib/apt/lists/* \

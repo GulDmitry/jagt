@@ -32,6 +32,11 @@ allprojects {
         mavenCentral()
     }
 
+    // 0189: every resolvable configuration of every project is locked, so a dependency change is a lockfile diff.
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.addAll(['-parameters', '-Werror'])
         options.errorprone {
