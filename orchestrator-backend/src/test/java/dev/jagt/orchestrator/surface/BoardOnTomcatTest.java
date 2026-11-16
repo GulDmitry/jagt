@@ -160,8 +160,15 @@ class BoardOnTomcatTest {
     assertThat(response.headers().firstValue("Location").orElse("")).endsWith(landing);
   }
 
-  @Test
-  void keepsTheOwnersSessionOpenToTheApi() throws Exception {
+  @ParameterizedTest
+  @CsvSource({
+    "/api/tasks, ''",
+    "/actuator/metrics, jvm.memory.used",
+    "/actuator/metrics/http.server.requests, http.server.requests",
+    "/actuator/info, version"
+  })
+  void keepsTheOwnersSessionOpenToTheApiTheMetricsAndTheBuildVersion(String path, String expected)
+      throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest login =
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/login"))
@@ -175,14 +182,15 @@ class BoardOnTomcatTest {
             .headers()
             .firstValue("Set-Cookie")
             .orElse("");
-    HttpRequest api =
-        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/tasks"))
+    HttpRequest read =
+        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
             .header("Cookie", cookie.substring(0, cookie.indexOf(';')))
             .build();
 
-    HttpResponse<String> response = client.send(api, HttpResponse.BodyHandlers.ofString());
+    HttpResponse<String> response = client.send(read, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).contains(expected);
   }
 
   @ParameterizedTest
@@ -237,5 +245,19 @@ class BoardOnTomcatTest {
         HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
 
     assertThat(status).isEqualTo(200);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/actuator/metrics", "/actuator/info"})
+  void refusesMetricsAndInfoWhenNobodyIsLoggedIn(String path) throws Exception {
+    HttpRequest request =
+        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+            .header("Accept", "application/json")
+            .build();
+
+    int status =
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
+
+    assertThat(status).isIn(302, 401);
   }
 }

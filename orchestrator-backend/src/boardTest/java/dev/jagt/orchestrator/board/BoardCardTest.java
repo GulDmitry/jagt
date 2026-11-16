@@ -610,7 +610,7 @@ class BoardCardTest extends BoardPageContext {
 
     Page page = openLiveBoard();
     button(page, "Focus").hover();
-    page.locator("h1").hover();
+    page.locator("#phases").hover();
 
     assertThat(page.locator("#tip")).isHidden();
   }

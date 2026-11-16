@@ -34,7 +34,7 @@
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
 - **Board as its own app** — `board/` from the jar or `orchestrator.board.dir`; coupled by `contracts/`. [spec](../openspec/specs/board-app/spec.md)
 - **Local or a login** — Loopback, or `auth: password` or `oidc`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
-- **Board security** — An own-origin CSP, log out, login back-off and audit line. [spec](../openspec/specs/board-security/spec.md)
+- **Board security** — Own-origin CSP, log out, login back-off, audit line, owner-only metrics. [spec](../openspec/specs/board-security/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.

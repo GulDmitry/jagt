@@ -123,7 +123,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Every store, call, loop and task count is bounded (25010 resource use, capacity) | [components](rules/components.md), 0045, 0048, 0104, 0179 | `ImageJvmOptionsTest`, `StandSlotsTest`, `LoopBreakerTest` | n.a. | `ImageJvmOptionsTest` |
 | Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerContainerTest` | n.a. | `Dockerfile`, `kubernetes.yml.dist` |
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |
-| Metrics and build info answer to the owner (Boot metrics, info) | none yet | gap: JAGT-130 | gap: JAGT-130 | gap: JAGT-130 |
+| Metrics and build info answer to the owner (Boot metrics, info) | [board-security](../openspec/specs/board-security/spec.md#requirement-metrics-and-build-info-answer-the-owner) | `BoardOnTomcatTest` | `BoardHeaderAndFiltersTest` | `BoardOnTomcatTest` |
 | Start-to-ready and latency stay under a measured budget (25010 time behaviour) | none yet | gap: JAGT-131 | gap: JAGT-131 | gap: JAGT-131 |
 | Upgrade, backup and rollback of data are documented (25010 replaceability) | [server](server.md) | `StateServiceCompatibilityTest` | n.a. | `StateServiceCompatibilityTest` |
 | Scale out (12F VIII) and stateless processes (12F VI) | 0179 | rejected: one replica, state on `/data` | n.a. | none |

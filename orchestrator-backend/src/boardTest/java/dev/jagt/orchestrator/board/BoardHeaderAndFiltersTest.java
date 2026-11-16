@@ -421,4 +421,12 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     assertThat(page.locator("#waiting")).hasText("1 need your action");
   }
+
+  @Test
+  void theTitleHoverNamesTheRunningVersion() {
+    Page page = openBoard();
+
+    assertThat(page.locator("#title"))
+        .hasAttribute("data-tip", Pattern.compile("^jagt \\d+\\.\\d+\\.\\d+"));
+  }
 }

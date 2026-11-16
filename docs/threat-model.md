@@ -51,7 +51,8 @@
 | `/api/debug` (records, transcript; read only) | same | all | V4, V8, V14 |
 | `/state` | same | all | V8, V14 |
 | `/login.html` and its assets, `/login`, `/logout`, `/login/oauth2` | public, a write carries Origin | all | V6, V7, V10 |
-| `/actuator` (`health` alone, liveness and readiness) | public | `LoopbackFilter` | V13 |
+| `/actuator/health` (liveness and readiness) | public | `LoopbackFilter` | V13 |
+| `/actuator/metrics`, `/actuator/info` | login, else loopback: not in the contract's public paths | all | V4, V13 |
 | `/mcp` | Master token or `X-Working-Directory` of a worktree | `LoopbackFilter`, `AgentDoorFilter` | V8, V4 |
 | `/api/agent` (tool, read, session, prompt, turn-end, permission) | the same | the same | V8, V4 |
 | board assets and `user/` files | public static, no request-driven path | `LoopbackFilter` | V5, V3 |
@@ -129,5 +130,4 @@ nothing), `AbortedConnectionFilter` (drops an aborted peer's socket error), `Ref
 | the backoff key behind an ingress is unknown: the proxy's address or the forwarded one | none verified | open question |
 | no DAST, no JS lint of the board | JAGT-96 | JAGT-96 |
 | no HSTS from jagt | TLS ends at the ingress | none |
-| no metrics or build info endpoint | JAGT-130 | JAGT-130 |
 | ASVS IDs are chapters, not individual requirements | practices names the same grain | a requirement-level audit |

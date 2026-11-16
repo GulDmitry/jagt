@@ -48,6 +48,7 @@ onClick({ action: run });
 header.onBarClick(render);
 onSent(refresh);
 header.onVerbClick(runGlobal);
+header.showVersion();
 document.getElementById("new-task").onclick = launch.open;
 document.getElementById("empty-new").onclick = launch.open;
 document.getElementById("add-project").onclick = addProject.open;

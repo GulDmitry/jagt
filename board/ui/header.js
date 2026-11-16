@@ -1,5 +1,6 @@
 //
 
+import { api } from "../core/api.js";
 import { make, span } from "../core/dom.js";
 import { countdown } from "../core/format.js";
 import { full } from "../core/time.js";
@@ -154,3 +155,11 @@ export const onBarClick = (repaint) => {
     repaint();
   };
 };
+
+export async function showVersion() {
+  const info = await api("/actuator/info").catch(() => ({}));
+  const version = info.build?.version;
+  if (version) {
+    document.getElementById("title").dataset.tip = `jagt ${version}`;
+  }
+}

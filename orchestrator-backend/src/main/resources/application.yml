@@ -32,8 +32,8 @@ management:
   endpoints:
     web:
       exposure:
-        # Only the readiness probe of a container platform; the board's own routes stay under /api.
-        include: health
+        # Health is public by contract; metrics and info answer the owner only, as every path outside the contract does.
+        include: health,metrics,info
   endpoint:
     health:
       probes:
