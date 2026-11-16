@@ -169,6 +169,10 @@ public final class StandRun implements AutoCloseable {
     marker = marker.withJagt(jagt.pid(), jagt.port()).writeTo(root);
   }
 
+  String windows() {
+    return jagt.windows();
+  }
+
   public Path root() {
     return root;
   }

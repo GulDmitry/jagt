@@ -22,3 +22,21 @@ A clone that failed SHALL NOT hold it unready; the board's head shows it.
 #### Scenario: Started and cloned
 - **WHEN** the checks passed and no clone runs, and nobody is logged in
 - **THEN** the readiness path answers 200
+
+### Requirement: The image keeps its tmux across a jagt restart
+The shipped image SHALL run an init as PID 1 and jagt under a relaunch loop.
+When a signal kills jagt's process, the loop SHALL start it again and the container's tmux server SHALL keep running;
+any other exit SHALL end the container with jagt's exit code.
+A termination signal to the container SHALL stop jagt and the loop promptly.
+
+#### Scenario: The JVM dies
+- **WHEN** jagt's JVM inside the container is killed while a session's tmux window is open
+- **THEN** jagt starts again in the same container and the window is still listed
+
+#### Scenario: jagt exits on its own
+- **WHEN** jagt's JVM exits with a code of its own, a failed start included
+- **THEN** the container exits with that code and its restart policy decides what follows
+
+#### Scenario: The container is stopped
+- **WHEN** the container receives SIGTERM
+- **THEN** jagt stops and the container exits without the loop starting jagt again

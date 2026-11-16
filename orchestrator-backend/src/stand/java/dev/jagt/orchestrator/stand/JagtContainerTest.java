@@ -58,7 +58,7 @@ class JagtContainerTest {
   }
 
   @Test
-  void theJagtPidIsTheOneDockerInspectsForTheJagtService(@TempDir Path dir) {
+  void theJagtPidIsTheJvmsInsideTheContainer(@TempDir Path dir) {
     StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(0, "4242\n");
 
     long pid = new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of()).pid();

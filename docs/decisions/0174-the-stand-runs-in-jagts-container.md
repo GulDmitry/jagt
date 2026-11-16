@@ -23,6 +23,7 @@ Accepted 2026-11-16 by the owner's choice of the container as the default in 0.2
 - Logs, screens and the recording are copied out before `down -v --remove-orphans`; a failed run's evidence is on the host.
 - Without docker a run is skipped with one sentence; `standCleanup` removes the `jagt-stand*` image tags.
 - The shipped `Dockerfile` caches `/root/.gradle` in its build stage.
+- The image runs `tini` as PID 1 and jagt under the `entrypoint.sh` relaunch loop: a restart kills the JVM alone, tmux survives.
 
 ## Measured 2026-11-16
 
@@ -34,7 +35,6 @@ Accepted 2026-11-16 by the owner's choice of the container as the default in 0.2
 
 ## Known gaps
 
-- A container restart kills the container's tmux; the model-tagged restart-mid-turn scenarios stay `-Plocal` until a follow-up.
 - Native-Linux file ownership of what the container writes into the root is untested.
 - `standImage` rebuilds from layer cache per run (about 13 s), since `standCleanup` removes the tags.
 
@@ -46,4 +46,3 @@ Accepted 2026-11-16 by the owner's choice of the container as the default in 0.2
 ## Reopen when
 
 - A run in the container fails where the host passes, for a cause the container adds.
-- The container's tmux must survive a jagt restart.

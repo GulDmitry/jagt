@@ -19,6 +19,7 @@ public final class JagtContainer implements JagtEngine {
       "tmux list-windows -a -F '#{session_name}:#{window_index} #{window_name}'"
           + " | while read -r target name; do echo \"=== $target $name\";"
           + " tmux capture-pane -p -S -300 -t \"$target\"; done";
+  private static final String JAR = "jagt.jar";
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
   private final Path root;
@@ -49,9 +50,7 @@ public final class JagtContainer implements JagtEngine {
 
   @Override
   public long pid() {
-    String id = compose("ps", "-q", "jagt").output().strip();
-    return shell
-        .run(root, List.of("docker", "inspect", "-f", "{{.State.Pid}}", id), env)
+    return exec("pgrep", "-f", JAR)
         .output()
         .lines()
         .map(String::strip)
@@ -95,12 +94,12 @@ public final class JagtContainer implements JagtEngine {
   @Override
   public JagtEngine restart() {
     logs();
-    compose("stop");
     JagtProcess.keepOutput(root);
-    StandShell.Result start = compose("start");
-    if (start.exit() != 0) {
-      throw new StandFailure("jagt's container did not restart: " + start.output());
+    StandShell.Result killed = exec("pkill", "-f", JAR);
+    if (killed.exit() != 0) {
+      throw new StandFailure("jagt's JVM was not running in its container: " + killed.output());
     }
+    awaitDown();
     return awaitReady();
   }
 
@@ -108,6 +107,18 @@ public final class JagtContainer implements JagtEngine {
   public void close() {
     logs();
     compose("down", "-v", "--remove-orphans");
+  }
+
+  private void awaitDown() {
+    Instant deadline = Instant.now(Clock.systemUTC()).plus(STARTUP);
+    while (board.ready()) {
+      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+        close();
+        throw new StandFailure(
+            "jagt did not stop on port " + port + "; read " + root.resolve("jagt.out"));
+      }
+      JagtProcess.pause(Duration.ofMillis(200));
+    }
   }
 
   private JagtContainer awaitReady() {
