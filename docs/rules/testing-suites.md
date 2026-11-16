@@ -24,6 +24,18 @@ waits for it. Times are wall clock, dated in `measurements.md`.
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |
 
+## A change runs the heavy suites it reaches
+
+Before its commit, a change touching a path below runs that suite too; the session's commit gate reads this table and
+adds them itself. 9509dbb2f changed the server starter with `test` alone and broke every login under compose.
+
+| path (extended regex) | suite |
+|---|---|
+| `^(Dockerfile\|Dockerfile\.dist\|docker-compose\.yml\|entrypoint\.sh\|jagt\.server\.yml\.dist\|kubernetes\.yml\.dist)$` | `containerTest --rerun-tasks` |
+| `^orchestrator-backend/(docker\|src/containerTest)/` | `containerTest --rerun-tasks` |
+| `^(board\|orchestrator-backend/src/boardTest)/` | `boardTest --rerun-tasks` |
+| `^orchestrator-backend/src/stand/` | `standTest -Pmodelfree --rerun-tasks` |
+
 ## Context ceilings
 
 - `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contextsTest`,
