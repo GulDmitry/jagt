@@ -96,22 +96,21 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: gradle
-      - run: ./gradlew --no-daemon bootJar
-      - name: name the jar after the version it is
-        id: jar
+      - run: ./gradlew --no-daemon bootJar cyclonedxBom
+      - name: name the assets after the version they are
         run: |
           version=$(./gradlew --no-daemon -q printVersion)
-          cp build/libs/jagt.jar "build/libs/jagt-$version.jar"
-          echo "asset=$GITHUB_WORKSPACE/orchestrator-backend/build/libs/jagt-$version.jar" >> "$GITHUB_OUTPUT"
-      - name: attach it to the release
+          mkdir -p build/release
+          cp build/libs/jagt.jar "build/release/jagt-$version.jar"
+          cp build/reports/sbom/jagt.cdx.json "build/release/jagt-$version.cdx.json"
+      - name: attach them to the release
         env:
           GH_TOKEN: ${{ github.token }}
-          ASSET: ${{ steps.jar.outputs.asset }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+            gh release upload "$GITHUB_REF_NAME" build/release/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "$ASSET" --generate-notes --verify-tag
+            gh release create "$GITHUB_REF_NAME" build/release/* --generate-notes --verify-tag
           fi
       - name: publish the image
         env:

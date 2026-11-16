@@ -68,9 +68,10 @@ release:
     - if: $CI_COMMIT_TAG =~ /^v/
   needs: [test, heavy]
   script:
-    - ./gradlew --no-daemon bootJar
+    - ./gradlew --no-daemon bootJar cyclonedxBom
     - cp build/libs/jagt.jar "build/libs/jagt-$(./gradlew --no-daemon -q printVersion).jar"
   artifacts:
     expire_in: 30 days
     paths:
       - orchestrator-backend/build/libs/jagt-*.jar
+      - orchestrator-backend/build/reports/sbom/jagt.cdx.json

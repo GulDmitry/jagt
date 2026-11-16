@@ -6,13 +6,13 @@
   "taskStatuses": 14,
   "publicSurface": 80,
   "gradleModules": 5,
-  "buildLogic": 14,
-  "dependencyLinesInBuildGradle": 54,
+  "buildLogic": 15,
+  "dependencyLinesInBuildGradle": 55,
   "capabilities": 19,
   "ports": 50,
   "startupChecks": 31,
   "roles": 4,
-  "specCapabilities": 44,
+  "specCapabilities": 45,
   "ruleDocs": 7,
   "contextBootingTests": 17
 }

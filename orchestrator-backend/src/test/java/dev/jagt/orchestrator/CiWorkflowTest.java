@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -82,5 +83,28 @@ class CiWorkflowTest {
   void runsTheTestJobNeverOnSchedule() {
     assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("if"))
         .isEqualTo("github.event_name != 'schedule'");
+  }
+
+  @Test
+  void attachesTheCycloneDxSbomToTheReleaseBesideTheJar() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release)
+        .contains("cyclonedxBom")
+        .contains("build/reports/sbom/jagt.cdx.json")
+        .contains("jagt-$version.cdx.json")
+        .contains("gh release upload \"$GITHUB_REF_NAME\" build/release/*");
+  }
+
+  @Test
+  void publishesTheImageWithItsSbom() {
+    assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh"))).contains("--sbom=true");
+  }
+
+  @Test
+  void attachesTheSbomToTheGitlabReleaseToo() {
+    assertThat(CiWorkflow.gitlabText())
+        .contains("bootJar cyclonedxBom")
+        .contains("orchestrator-backend/build/reports/sbom/jagt.cdx.json");
   }
 }

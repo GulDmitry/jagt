@@ -1,0 +1,10 @@
+plugins {
+    id 'org.cyclonedx.bom'
+}
+
+tasks.named('cyclonedxBom') {
+    projectType = 'application'
+    schemaVersion = 'VERSION_16'
+    jsonOutput = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
+    includeBomSerialNumber = false
+}

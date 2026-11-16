@@ -13,6 +13,7 @@ plugins {
     id 'jagt.evals' apply false
     id 'jagt.uncached-suites' apply false
     id 'jagt.suite-stats' apply false
+    id 'jagt.sbom' apply false
 }
 
 group = 'dev.jagt'
@@ -41,6 +42,7 @@ apply plugin: 'jagt.stand'
 apply plugin: 'jagt.evals'
 apply plugin: 'jagt.uncached-suites'
 apply plugin: 'jagt.suite-stats'
+apply plugin: 'jagt.sbom'
 
 tasks.named('test') {
     systemProperty 'org.springframework.boot.logging.LoggingSystem', 'none'

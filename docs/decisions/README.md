@@ -195,3 +195,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0179 The Kubernetes pod is restricted, its JVM sized](0179-the-kubernetes-pod-is-restricted-and-its-jvm-sized.md) (on 0172)
 - [0180 Each sphere's industry standard is jagt's floor](0180-each-spheres-industry-standard-is-jagts-floor.md) (on 0162)
 - [0181 Every module keeps 80% line coverage, gating `test`](0181-every-module-keeps-80-percent-line-coverage.md) (beside 0125)
+- [0182 A release lists what is inside it, as CycloneDX](0182-a-release-lists-what-is-inside-it-as-cyclonedx.md)
