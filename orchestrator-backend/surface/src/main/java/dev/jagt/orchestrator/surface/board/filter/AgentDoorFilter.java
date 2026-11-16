@@ -30,7 +30,7 @@ public class AgentDoorFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String resolved = request.getServletPath() + Objects.toString(request.getPathInfo(), "");
-    return auth.mode() != AuthProperties.Mode.PASSWORD
+    return auth.mode() == AuthProperties.Mode.NONE
         || !(door(request.getRequestURI()) || door(resolved));
   }
 

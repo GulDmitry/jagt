@@ -13,7 +13,8 @@ public record AuthProperties(
 
   public enum Mode {
     NONE,
-    PASSWORD
+    PASSWORD,
+    OIDC
   }
 
   @Override

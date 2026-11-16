@@ -24,6 +24,26 @@ cp jagt.server.yml.dist jagt.yml          # the image ships it as /app/jagt.yml;
 - `usageLimits.enabled` stays `false` with an API key: the limits are read from an agent CLI's own login, which a key lacks.
 - The host of `JAGT_PUBLIC_URL` is the one the ingress must forward; any other `Host` or `Origin` is refused with 403.
 
+## Single sign-on
+
+`auth.mode: oidc` replaces the password with any OpenID Connect provider; one subject or email is let in, any other gets 403.
+
+```yaml
+orchestrator:
+  auth:
+    mode: oidc
+    oidc:
+      issuerUri: https://sso.example.com/realms/main
+      clientId: jagt
+      clientSecretEnv: JAGT_OIDC_SECRET   # the NAME of the variable holding the client secret
+      allowed: owner@example.com          # the id token's subject or email
+```
+
+- Register `<publicUrl>/login/oauth2/code/oidc` as the client's redirect URI; the client asks for `openid email`.
+- A missing key, or a `clientSecretEnv` naming an unset variable, refuses the start naming it.
+- The provider is discovered on the first login, so one that is down does not stop jagt starting.
+- `email` is read from the id token alone; a provider that leaves it out matches on the subject.
+
 ## Secrets
 
 `.env` for compose, a `Secret` for Kubernetes, the same keys (`.env.dist`), never in `jagt.yml` or an image:

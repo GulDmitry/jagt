@@ -24,7 +24,7 @@
 - **Teams channel** — A `teams` channel posts a point as an Adaptive Card to a Workflows webhook, its links as buttons.
   [spec](../openspec/specs/notification-routing/spec.md#requirement-a-teams-channel-posts-an-adaptive-card-to-a-workflows-webhook)
 
-## Board · [spec](../openspec/specs/board/spec.md)
+## Board · [spec](../openspec/specs/board/spec.md) · [oidc login](../openspec/specs/oidc-login/spec.md)
 - **One surface** — Cards, buttons and gates read the same rules. [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
 - **Judge on the board** — A failed check's output, what Trust adopts, `tail` and `worktrees`. [spec](../openspec/specs/board-judgement/spec.md)
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
@@ -34,7 +34,7 @@
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
 - **Board as its own app** — `board/` is served by the jar's copy or `orchestrator.board.dir`; `contracts/` is the one coupling.
   [spec](../openspec/specs/board-app/spec.md)
-- **Local or a login** — Loopback, or `auth: password`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
+- **Local or a login** — Loopback, or `auth: password` or `oidc`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.

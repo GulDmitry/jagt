@@ -147,7 +147,7 @@ acceptance scenarios session. The tab lists the open task's session first, then 
 - **THEN** the Session tab lists it, shows its screen as it reads now, and a line typed under it reaches that window
 
 ### Requirement: Loopback, or behind a password login
-`orchestrator.auth` SHALL be `none` (default: loopback, no login) or `password` (one bcrypt hash in `jagt.yml`, never logged).
+`orchestrator.auth` SHALL be `none` (default: loopback, no login), `password` (a bcrypt hash, never logged) or `oidc` (`oidc-login`).
 `none` with a `server.address` beyond loopback, `auth.allowedHosts` or a non-loopback `server.publicUrl` refuses the start naming `auth`.
 `password` guards the board, `/api` and `/api/events`: a browser is sent to `/login.html`, `/api` answers 401. `/mcp` and `/api/agent/` take no login;
 off loopback or forwarded, they answer 401 without the Master token.
