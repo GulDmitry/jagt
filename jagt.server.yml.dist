@@ -41,3 +41,6 @@ orchestrator:
 server:
   address: 0.0.0.0                             # server
   publicUrl: ${JAGT_PUBLIC_URL}                # server.publicUrl
+  forward-headers-strategy: native             # server: the ingress ends TLS and says so in X-Forwarded-*
+  servlet.session.cookie.secure: true          # server: the cookie travels over HTTPS only
+  servlet.session.timeout: 30m                 # server: idle time before a login ends

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
@@ -61,6 +62,25 @@ class KubernetesManifestsTest {
             .orElseThrow();
     String host = URI.create(publicUrl.replaceFirst(".*JAGT_PUBLIC_URL:", "").trim()).getHost();
     assertThat(manifests).contains("- host: " + host);
+  }
+
+  @Test
+  void theIngressEndsTransportSecurityForItsHostWithSecretOfItsOwn() {
+    List<Map<?, ?>> documents = new ArrayList<>();
+    new Yaml()
+        .loadAll(SourceRoots.read(MANIFESTS))
+        .forEach(document -> documents.add((Map<?, ?>) document));
+    Map<?, ?> ingress =
+        documents.stream()
+            .filter(document -> "Ingress".equals(document.get("kind")))
+            .findFirst()
+            .orElseThrow();
+
+    Map<?, ?> spec = (Map<?, ?>) Objects.requireNonNull(ingress.get("spec"));
+    Map<?, ?> tls = (Map<?, ?>) ((List<?>) Objects.requireNonNull(spec.get("tls"))).getFirst();
+    Map<?, ?> rule = (Map<?, ?>) ((List<?>) Objects.requireNonNull(spec.get("rules"))).getFirst();
+    assertThat(tls.get("hosts")).isEqualTo(List.of(rule.get("host")));
+    assertThat(tls.get("secretName")).isEqualTo("jagt-tls");
   }
 
   @Test

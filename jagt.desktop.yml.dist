@@ -334,5 +334,8 @@ orchestrator:
 server:
   address: 127.0.0.1
   port: 8290
+  # forward-headers-strategy: native         # behind a TLS ingress: read X-Forwarded-*, so redirects and the peer address are the client's
+  # servlet.session.cookie.secure: true       # behind TLS: the login cookie travels over HTTPS only
+  # servlet.session.timeout: 30m              # idle time before a login ends
   # publicUrl: https://jagt.example.org   # the board's address as a human reaches it; every link jagt sends (banner, channels) starts with it;
   #                                        # blank = http://localhost:<port>. The mcp, hook and gate URLs stay loopback.

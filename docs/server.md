@@ -27,6 +27,8 @@ cp jagt.server.yml.dist jagt.yml          # the image ships it as /app/jagt.yml;
 - Verify runs go one task at a time, since the verify job never overlaps itself: size the pod's limits for one
   `verifyCommand` beside the sessions.
 - The host of `JAGT_PUBLIC_URL` is the one the ingress must forward; any other `Host` or `Origin` is refused with 403.
+- The ingress ends TLS (the manifest's `tls` Secret); the starter reads `X-Forwarded-*`, sets the cookie Secure
+  and ends an idle login after 30 minutes.
 
 ## Single sign-on
 

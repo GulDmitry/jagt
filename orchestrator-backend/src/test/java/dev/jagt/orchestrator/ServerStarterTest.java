@@ -54,6 +54,15 @@ class ServerStarterTest {
   }
 
   @Test
+  void theServerStarterSitsBehindTransportSecurityIngressWithSecureCookieAndSessionTimeout() {
+    String server = SourceRoots.read(SERVER);
+
+    assertThat(server).containsPattern("(?m)^  forward-headers-strategy: native\\b");
+    assertThat(server).containsPattern("(?m)^  servlet\\.session\\.cookie\\.secure: true\\b");
+    assertThat(server).containsPattern("(?m)^  servlet\\.session\\.timeout: 30m\\b");
+  }
+
+  @Test
   void theServerStarterTurnsTheAcceptanceRoleOn() {
     String server = SourceRoots.read(SERVER);
 

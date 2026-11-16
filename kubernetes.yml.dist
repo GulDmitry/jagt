@@ -154,7 +154,7 @@ metadata:
   name: jagt
 spec:
   # ingressClassName: nginx
-  # tls: [{hosts: [jagt.example.com], secretName: jagt-tls}]
+  tls: [{hosts: [jagt.example.com], secretName: jagt-tls}]   # a kubernetes.io/tls Secret, by hand or cert-manager
   rules:
     - host: jagt.example.com
       http:
