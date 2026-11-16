@@ -6,7 +6,9 @@ const tip = Object.assign(document.createElement("div"), {
 });
 document.body.append(tip);
 
-let shownFor = null;
+const state = {
+  shownFor: null,
+};
 
 // Text the stylesheet cuts with an ellipsis is its own tip, whole, wherever it is cut.
 const clipped = (node) => {
@@ -26,15 +28,16 @@ export function hideTip() {
 
 // A repaint keeps an open tip, in its node's new words, on the node or on the one rebuilt in its place.
 export function hideStaleTip(rebuilt) {
-  if (!shownFor?.isConnected && rebuilt) shownFor = rebuilt;
-  if (!shownFor?.isConnected || !said(shownFor)) hideTip();
-  else if (!tip.hidden && said(shownFor) !== tip.textContent) showTip(shownFor);
+  if (!state.shownFor?.isConnected && rebuilt) state.shownFor = rebuilt;
+  if (!state.shownFor?.isConnected || !said(state.shownFor)) hideTip();
+  else if (!tip.hidden && said(state.shownFor) !== tip.textContent)
+    showTip(state.shownFor);
 }
 
 function showTip(target) {
   // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
   (target.closest("dialog[open]") || document.body).append(tip);
-  shownFor = target;
+  state.shownFor = target;
   tip.textContent = said(target);
   tip.hidden = false;
   tip.scrollTop = 0;

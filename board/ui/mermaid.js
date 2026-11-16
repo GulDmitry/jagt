@@ -1,10 +1,12 @@
 import { make } from "../core/dom.js";
 import { toast } from "./toast.js";
 
-let loading = null;
+const state = {
+  loading: null,
+};
 
 const load = () => {
-  loading ??= new Promise((resolve, reject) => {
+  state.loading ??= new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = "./vendor/mermaid.min.js";
     script.onload = () => {
@@ -15,12 +17,12 @@ const load = () => {
       resolve(globalThis.mermaid);
     };
     script.onerror = () => {
-      loading = null;
+      state.loading = null;
       reject(new Error("mermaid did not load"));
     };
     document.head.append(script);
   });
-  return loading;
+  return state.loading;
 };
 
 export function draw(root) {

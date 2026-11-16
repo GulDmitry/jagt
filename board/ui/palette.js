@@ -14,10 +14,12 @@ const opener = document.getElementById("open-palette");
 const verdict = document.getElementById("palette-state");
 
 // Asked here, decided at wiring time, so this module knows no form and no verb by name.
-let forms = { partFor: () => ({}) };
+const state = {
+  forms: { partFor: () => ({}) },
+};
 
 export const wire = (wired) => {
-  forms = wired;
+  state.forms = wired;
 };
 
 export const isOpen = () => !form.hidden;
@@ -71,7 +73,7 @@ async function runParsed(parsed) {
     await run(task.id, verb.id, project);
     return HANDLED;
   }
-  const part = forms.partFor(verb.part);
+  const part = state.forms.partFor(verb.part);
   // What was typed after the verb goes with it: a report that narrows to one task must not answer for all.
   if (verb.report) {
     const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : "";

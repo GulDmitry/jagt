@@ -2,9 +2,15 @@ import { text, api } from "../core/api.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 
-let tab = "overview";
-let read = { key: null, shown: null, stale: false };
-let asked = 0;
+const state = {
+  tab: "overview",
+  read: { key: null, shown: null, stale: false },
+  asked: 0,
+  windowName: null,
+  peeked: {},
+  again: () => {},
+  viewer: null,
+};
 
 const picked = new Map();
 
@@ -20,12 +26,10 @@ const artifacts = async (task) => {
   return { names, name, html: rendered ? rendered.html : "" };
 };
 
-let windowName = null;
-
 // The task's session, or a window jagt opened that is no task's.
 async function sessionOf(task) {
   const names = await api("/api/windows").catch(() => []);
-  const name = names.includes(windowName) ? windowName : null;
+  const name = names.includes(state.windowName) ? state.windowName : null;
   const path = name
     ? `/api/windows/screen?name=${encodeURIComponent(name)}`
     : `/api/tasks/screen?task=${encodeURIComponent(task.id)}`;
@@ -36,14 +40,12 @@ async function sessionOf(task) {
   return { ...screen, names, name };
 }
 
-let peeked = {};
-
 // The Session tab reads the whole screen itself.
 function glance(task, repaint) {
-  if (tab === "session") return;
+  if (state.tab === "session") return;
   api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`).then(
     ({ held, shown: screen }) => {
-      peeked = {
+      state.peeked = {
         id: task.id,
         held,
         line: screen.trimEnd().split("\n").pop().trim(),
@@ -54,10 +56,10 @@ function glance(task, repaint) {
   );
 }
 
-export const peek = (task) => (peeked.id === task.id ? peeked : {});
+export const peek = (task) => (state.peeked.id === task.id ? state.peeked : {});
 
 export const pickWindow = (name) => {
-  windowName = name;
+  state.windowName = name;
   forget();
 };
 
@@ -71,7 +73,7 @@ const sources = {
     ),
 };
 
-export const current = () => tab;
+export const current = () => state.tab;
 
 export const pick = (task, name) => {
   picked.set(task, name);
@@ -79,61 +81,58 @@ export const pick = (task, name) => {
 };
 
 export const forget = () => {
-  asked++;
-  read = { ...read, stale: true };
+  state.asked++;
+  state.read = { ...state.read, stale: true };
 };
 
 // A screen changes with no event, so it is read again while open.
 const EVERY = 5000;
-let again = () => {};
 
-setInterval(() => again(), EVERY);
+setInterval(() => state.again(), EVERY);
 
 export const choose = (id) => {
-  tab = id;
-  if (id === "code" && viewer?.failure) viewer = null;
+  state.tab = id;
+  if (id === "code" && state.viewer?.failure) state.viewer = null;
   if (id === "diff") forget();
 };
 
-let viewer = null;
-
 export function shown(task, repaint) {
-  again = () =>
-    tab === "session" ? (forget(), repaint()) : glance(task, repaint);
-  if (peeked.id !== task.id) glance(task, repaint);
-  if (tab === "code") {
-    if (!viewer)
+  state.again = () =>
+    state.tab === "session" ? (forget(), repaint()) : glance(task, repaint);
+  if (state.peeked.id !== task.id) glance(task, repaint);
+  if (state.tab === "code") {
+    if (!state.viewer)
       import("../viewer/Code.js").then(
         (loaded) => {
-          viewer = loaded;
+          state.viewer = loaded;
           repaint();
         },
         (e) => {
-          viewer = { failure: t("tabs.unread", { cause: e.message }) };
+          state.viewer = { failure: t("tabs.unread", { cause: e.message }) };
           repaint();
         },
       );
-    return viewer;
+    return state.viewer;
   }
-  const source = sources[tab];
+  const source = sources[state.tab];
   if (!source || !task) return null;
-  const offer = store.offerFor(task, tab);
-  if (tab === "round" && !offer) return null;
-  const key = `${tab}:${task.id}:${task.statusSince}`;
-  if (read.key === key && !read.stale) return read.shown;
+  const offer = store.offerFor(task, state.tab);
+  if (state.tab === "round" && !offer) return null;
+  const key = `${state.tab}:${task.id}:${task.statusSince}`;
+  if (state.read.key === key && !state.read.stale) return state.read.shown;
   // A re-read keeps the last screen up, never another task's or tab's.
-  const kept = read.key === key ? read.shown : null;
-  const mine = ++asked;
-  read = { key, shown: kept, stale: false };
+  const kept = state.read.key === key ? state.read.shown : null;
+  const mine = ++state.asked;
+  state.read = { key, shown: kept, stale: false };
   source(task, offer)
     .then((said) => {
-      if (mine !== asked) return;
-      read = { key, shown: said, stale: false };
+      if (mine !== state.asked) return;
+      state.read = { key, shown: said, stale: false };
       repaint();
     })
     .catch((e) => {
-      if (mine !== asked) return;
-      read = {
+      if (mine !== state.asked) return;
+      state.read = {
         key,
         shown: t("tabs.unread", { cause: e.message }),
         stale: false,

@@ -17,12 +17,14 @@ const reportLine = document.getElementById("report-line");
 const sayInput = document.getElementById("say");
 const working = document.getElementById("said");
 
-let showing = { path: null, about: null, body: "", extra: null };
-let poll = 0;
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
-let asked = 0;
 // A poll and the board's own event overlap: the read sent last paints.
-let reread = 0;
+const state = {
+  showing: { path: null, about: null, body: "", extra: null },
+  poll: 0,
+  asked: 0,
+  reread: 0,
+};
 
 const drawn = (said) =>
   render(
@@ -40,15 +42,15 @@ function paint(title, said, extra) {
   drawn(said);
   reportSection.replaceChildren(...(extra ? [extra] : []));
   // Only a report about ONE task has a session to talk to, and a line typed at one round is not the next one's.
-  reportLine.hidden = !showing.about;
+  reportLine.hidden = !state.showing.about;
   sayInput.value = "";
   if (!report.open) report.showModal();
   reportScroll.scrollTop = 0;
 }
 
 export function showReport(title, said, extra = null) {
-  asked++;
-  showing = { path: null, about: null, body: said, extra };
+  state.asked++;
+  state.showing = { path: null, about: null, body: said, extra };
   stopWaiting();
   paint(title, said, extra);
 }
@@ -59,18 +61,18 @@ export async function openReport(
   path,
   { extra = null, about = null } = {},
 ) {
-  const mine = ++asked;
+  const mine = ++state.asked;
   try {
     const said = await text(path);
-    if (mine !== asked) return true;
-    showing = { path, about, body: said, extra };
+    if (mine !== state.asked) return true;
+    state.showing = { path, about, body: said, extra };
     stopWaiting();
     paint(title, said, extra);
     // Whatever changed WHILE this was being read reached no open dialog, so it is read once more now.
     await repaintReport();
     return true;
   } catch (e) {
-    if (mine !== asked) return true;
+    if (mine !== state.asked) return true;
     toast(refusal(e), true);
     return false;
   }
@@ -78,13 +80,13 @@ export async function openReport(
 
 /** The board changed under an open report: read it again, and stop waiting once it says something new. */
 export async function repaintReport() {
-  if (!report.open || !showing.path) {
+  if (!report.open || !state.showing.path) {
     return;
   }
   // What an extra shows may change with no word of the report changing.
-  showing.extra?.dispatchEvent(new Event("reread"));
-  const read = showing.path;
-  const mine = ++reread;
+  state.showing.extra?.dispatchEvent(new Event("reread"));
+  const read = state.showing.path;
+  const mine = ++state.reread;
   let said;
   try {
     said = await text(read);
@@ -93,14 +95,14 @@ export async function repaintReport() {
   }
   // The answer to a report nobody is reading any more belongs to no dialog on screen.
   if (
-    mine !== reread ||
+    mine !== state.reread ||
     !report.open ||
-    showing.path !== read ||
-    said === showing.body
+    state.showing.path !== read ||
+    said === state.showing.body
   ) {
     return;
   }
-  showing = { ...showing, body: said };
+  state.showing = { ...state.showing, body: said };
   const where = reportScroll.scrollTop;
   drawn(said);
   reportScroll.scrollTop = where;
@@ -115,7 +117,7 @@ function waitForTheAnswer() {
   stopWaiting();
   working.hidden = false;
   const until = Date.now() + GIVE_UP;
-  poll = setInterval(
+  state.poll = setInterval(
     () => (Date.now() > until ? giveUp() : repaintReport()),
     EVERY,
   );
@@ -129,8 +131,8 @@ function giveUp() {
 
 function stopWaiting() {
   working.hidden = true;
-  if (poll) clearInterval(poll);
-  poll = 0;
+  if (state.poll) clearInterval(state.poll);
+  state.poll = 0;
 }
 
 reportLine.onsubmit = (event) => {
@@ -141,7 +143,7 @@ reportLine.onsubmit = (event) => {
   }
   sending(reportLine, {
     waiting: "",
-    send: () => sayTo(showing.about, line),
+    send: () => sayTo(state.showing.about, line),
     done: () => {
       sayInput.value = "";
       waitForTheAnswer();

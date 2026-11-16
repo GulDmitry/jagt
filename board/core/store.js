@@ -1,6 +1,6 @@
 import { bothNames } from "./format.js";
 
-let data = {
+const data = {
   tasks: [],
   projects: [],
   autoReview: { summary: "", enabled: false },
@@ -45,5 +45,5 @@ export const nameOf = (ref) => {
 export const taskById = (id) => data.tasks.find((task) => task.id === id);
 
 export function set(next) {
-  data = { ...data, ...next };
+  Object.assign(data, next);
 }

@@ -4,7 +4,9 @@ import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 
 const group = document.getElementById("project");
-let rendered = null;
+const state = {
+  rendered: null,
+};
 
 // The order they were ticked in is not kept, so the CONFIGURED order decides which repository the agent's
 // session runs in. None ticked sends nothing: naming a project skips the ticket read.
@@ -44,10 +46,10 @@ export const cards = () =>
 export function render() {
   const configured = store.projects();
   const signature = configured.join("\n");
-  if (rendered === signature) {
+  if (state.rendered === signature) {
     return; // a rebuild under a human ticking boxes would drop the ticks
   }
-  rendered = signature;
+  state.rendered = signature;
   const ticked = new Set(chosen().split(",").filter(Boolean));
   const byName = [...configured].sort((a, b) => a.localeCompare(b, "en"));
   group.replaceChildren(

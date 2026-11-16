@@ -1,15 +1,17 @@
 const KEY = "jagt.seen";
 
-let seen = {};
+const state = {
+  seen: {},
+};
 try {
-  seen = JSON.parse(localStorage.getItem(KEY) || "{}");
+  state.seen = JSON.parse(localStorage.getItem(KEY) || "{}");
 } catch {
   // storage blocked
 }
 
 const save = () => {
   try {
-    localStorage.setItem(KEY, JSON.stringify(seen));
+    localStorage.setItem(KEY, JSON.stringify(state.seen));
   } catch {
     // storage blocked
   }
@@ -20,13 +22,13 @@ const save = () => {
 export function note(tasks, open) {
   if (!tasks.length) return;
   const next = Object.fromEntries(
-    tasks.map((task) => [task.id, seen[task.id] ?? task.statusSince]),
+    tasks.map((task) => [task.id, state.seen[task.id] ?? task.statusSince]),
   );
   if (open) next[open.id] = open.statusSince;
-  const changed = JSON.stringify(next) !== JSON.stringify(seen);
-  seen = next;
+  const changed = JSON.stringify(next) !== JSON.stringify(state.seen);
+  state.seen = next;
   if (changed) save();
 }
 
 export const changed = (task) =>
-  seen[task.id] !== undefined && seen[task.id] !== task.statusSince;
+  state.seen[task.id] !== undefined && state.seen[task.id] !== task.statusSince;

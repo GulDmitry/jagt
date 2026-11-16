@@ -2,10 +2,12 @@ import { refusal } from "../core/api.js";
 import { toast } from "./toast.js";
 
 // The board is read again after every form.
-let afterwards = async () => {};
+const held = {
+  afterwards: async () => {},
+};
 
 export const onSent = (read) => {
-  afterwards = read;
+  held.afterwards = read;
 };
 
 export async function sending(form, { waiting, send, done, problem }) {
@@ -30,7 +32,7 @@ export async function sending(form, { waiting, send, done, problem }) {
   } finally {
     button.disabled = false;
     if (state) state.textContent = "";
-    await afterwards();
+    await held.afterwards();
   }
 }
 

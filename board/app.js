@@ -105,12 +105,14 @@ function reloadOnceNoDialogIsOpen() {
   else window.location.reload();
 }
 
-let retryIn = 1000;
-let servedBy = null;
+const state = {
+  retryIn: 1000,
+  servedBy: null,
+};
 
 function retry() {
-  setTimeout(listen, retryIn);
-  retryIn = Math.min(retryIn * 2, 30000);
+  setTimeout(listen, state.retryIn);
+  state.retryIn = Math.min(state.retryIn * 2, 30000);
 }
 
 function listen() {
@@ -121,11 +123,12 @@ function listen() {
     // The server's first message is also named `open`; one connect is one read. It names the run: a page that
     // outlived a restart loads the new board.
     if (event instanceof MessageEvent) {
-      if (servedBy && servedBy !== event.data) reloadOnceNoDialogIsOpen();
-      servedBy = event.data;
+      if (state.servedBy && state.servedBy !== event.data)
+        reloadOnceNoDialogIsOpen();
+      state.servedBy = event.data;
       return;
     }
-    retryIn = 1000;
+    state.retryIn = 1000;
     connected(true);
     loadVerbs();
     readBoard();

@@ -9,13 +9,16 @@ const read = (f, or = {}) =>
   );
 const get = (code) => read(code).then(([a, b]) => ({ ...a, ...b }));
 
-let code = "en";
+const chosenLanguage = { code: "en" };
 try {
-  code = localStorage.lang || code;
+  chosenLanguage.code = localStorage.lang || chosenLanguage.code;
 } catch {
   /* English */
 }
-const [english, chosen] = await Promise.all([get("en"), get(code)]);
+const [english, chosen] = await Promise.all([
+  get("en"),
+  get(chosenLanguage.code),
+]);
 
 const platform = {
   mod: /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl+",
@@ -27,7 +30,7 @@ export const t = (key, values = {}) =>
     (hole, name) => values[name] ?? platform[name] ?? hole,
   );
 
-export const current = () => code;
+export const current = () => chosenLanguage.code;
 
 export const choose = (next) => {
   try {
@@ -50,7 +53,7 @@ export const languages = () =>
   );
 
 // `data-t` is an element's text, `data-t-X` its attribute X (`tip` is data-tip).
-document.documentElement.lang = code;
+document.documentElement.lang = chosenLanguage.code;
 document.querySelectorAll("*").forEach((node) =>
   [...node.attributes].forEach(({ name, value }) => {
     if (name === "data-t") node.textContent = t(value);

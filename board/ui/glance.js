@@ -1,7 +1,9 @@
 const icon = document.querySelector('link[rel=icon][type="image/svg+xml"]');
 const source = icon?.getAttribute("href");
-let drawn = null;
-let svg = null;
+const state = {
+  drawn: null,
+  svg: null,
+};
 
 const token = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -12,12 +14,12 @@ async function dot(colour) {
     icon.href = source;
     return;
   }
-  svg ??= await fetch(source)
+  state.svg ??= await fetch(source)
     .then((response) => response.text())
     .catch(() => null);
   // A later paint may have changed the colour while the icon was being read.
-  if (!svg || colour !== drawn) return;
-  const marked = svg.replace(
+  if (!state.svg || colour !== state.drawn) return;
+  const marked = state.svg.replace(
     "</svg>",
     `<circle cx="25" cy="7" r="6.5" fill="${colour}" stroke="${token("--panel")}" stroke-width="2"/></svg>`,
   );
@@ -28,7 +30,7 @@ async function dot(colour) {
 export function render({ waiting, broken }) {
   document.title = waiting ? `(${waiting}) jagt` : "jagt";
   const colour = broken ? token("--danger") : waiting ? token("--you") : "";
-  if (colour === drawn) return;
-  drawn = colour;
+  if (colour === state.drawn) return;
+  state.drawn = colour;
   dot(colour);
 }

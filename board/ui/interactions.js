@@ -5,8 +5,13 @@ const BATCH = 50;
 const QUEUE = 200;
 const SETTLE = 2000;
 
-let queue = [];
-let due = 0;
+const state = {
+  queue: [],
+  due: 0,
+  required: null,
+  jobsFailed: false,
+  sighting: !navigator.locks,
+};
 
 const named = (node) => {
   const { action, verb, phase, place } = node.dataset;
@@ -33,48 +38,45 @@ const fitted = (name) =>
 export const note = (name, taskId) => {
   const control = name && fitted(name);
   if (!control) return;
-  queue.push({
+  state.queue.push({
     at: Date.now(),
     control,
     status: (taskId && store.taskById(taskId)?.status) || null,
   });
-  if (queue.length > QUEUE) queue = queue.slice(-QUEUE);
-  if (queue.length >= BATCH) flush();
-  else if (!due) due = setTimeout(flush, SETTLE);
+  if (state.queue.length > QUEUE) state.queue = state.queue.slice(-QUEUE);
+  if (state.queue.length >= BATCH) flush();
+  else if (!state.due) state.due = setTimeout(flush, SETTLE);
 };
 
-let required = null;
-let jobsFailed = false;
 // One board per browser logs sightings, the next open one taking over when it closes.
-let sighting = !navigator.locks;
 navigator.locks?.request(
   "jagt-sightings",
-  () => new Promise(() => (sighting = true)),
+  () => new Promise(() => (state.sighting = true)),
 );
 
 // A sighting is logged when it BEGINS: the first board seen only seeds, since when it turned required is unknown.
 export function watch(tasks, failing) {
-  if (failing && !jobsFailed) note("shown:jobs-failed");
-  jobsFailed = failing;
+  if (failing && !state.jobsFailed) note("shown:jobs-failed");
+  state.jobsFailed = failing;
   if (!tasks.length) return;
   const now = new Set(
     tasks
       .filter((task) => task.attention === "REQUIRED")
       .map((task) => task.id),
   );
-  if (required && sighting)
+  if (state.required && state.sighting)
     tasks
-      .filter((task) => now.has(task.id) && !required.has(task.id))
+      .filter((task) => now.has(task.id) && !state.required.has(task.id))
       .forEach((task) => note("shown:required", task.id));
-  required = now;
+  state.required = now;
 }
 
 function flush() {
-  clearTimeout(due);
-  due = 0;
-  if (!queue.length) return;
-  const presses = queue.splice(0, BATCH);
-  if (queue.length) due = setTimeout(flush, SETTLE);
+  clearTimeout(state.due);
+  state.due = 0;
+  if (!state.queue.length) return;
+  const presses = state.queue.splice(0, BATCH);
+  if (state.queue.length) state.due = setTimeout(flush, SETTLE);
   api("/api/interactions", {
     method: "POST",
     keepalive: true,

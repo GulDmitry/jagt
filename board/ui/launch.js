@@ -25,13 +25,15 @@ form.addEventListener("keydown", (event) => {
   }
 });
 
-let rendered = null;
+const state = {
+  rendered: null,
+};
 
 export function render() {
   const choices = store.branchStrategies();
   const signature = choices.map((choice) => choice.id).join("\n");
-  if (rendered === signature) return;
-  rendered = signature;
+  if (state.rendered === signature) return;
+  state.rendered = signature;
   const chosenBefore = strategy.value;
   strategy.replaceChildren(
     ...choices.map((choice) => new Option(choice.id, choice.id)),

@@ -17,10 +17,12 @@ const open = () => {
   list.querySelector("button")?.focus();
 };
 
-let picked = () => {};
+const state = {
+  picked: () => {},
+};
 
 export const onPick = (open) => {
-  picked = open;
+  state.picked = open;
 };
 
 // A report about ONE task gets no button: the card that has something to show is where it is pressed, and a menu
@@ -48,7 +50,7 @@ list.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
   close();
-  picked(button.dataset.verb);
+  state.picked(button.dataset.verb);
 });
 document.addEventListener("pointerdown", (event) => {
   if (!list.hidden && !event.target.closest(".menu")) close();

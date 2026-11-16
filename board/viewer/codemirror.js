@@ -1,4 +1,6 @@
-let loading = null;
+const held = {
+  loading: null,
+};
 
 const GRAMMARS = {
   java: ["@codemirror/lang-java", "java"],
@@ -23,7 +25,7 @@ const readOnly = ({ view, state, language, highlight, search }, grammar) => [
 ];
 
 const load = () => {
-  loading ??= (async () => {
+  held.loading ??= (async () => {
     const map = document.createElement("script");
     map.type = "importmap";
     map.textContent = await (
@@ -42,10 +44,10 @@ const load = () => {
     );
     return { view, state, language, highlight, search, merge };
   })().catch((e) => {
-    loading = null;
+    held.loading = null;
     throw e;
   });
-  return loading;
+  return held.loading;
 };
 
 const grammarOf = async (path) => {

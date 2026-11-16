@@ -19,12 +19,13 @@ const folders = $("project-folders");
 const branches = $("project-branches");
 const SETTLE = 400;
 const LISTING = 150;
-let due = 0,
-  listing = 0,
-  asked = 0,
-  listed = 0;
-
-let editing = null;
+const state = {
+  due: 0,
+  listing: 0,
+  asked: 0,
+  listed: 0,
+  editing: null,
+};
 
 const reset = (key = null) => {
   form.reset();
@@ -32,7 +33,7 @@ const reset = (key = null) => {
     .querySelectorAll("[data-typed]")
     .forEach((field) => delete field.dataset.typed);
   render(null, checks);
-  editing = key;
+  state.editing = key;
   $("project-title").textContent = key
     ? t("project.edit", { key })
     : t("project.add");
@@ -85,7 +86,7 @@ const option = (value, label) =>
 
 // Each folder under the last typed one completes the path.
 async function offerFolders() {
-  const mine = ++listed;
+  const mine = ++state.listed;
   const typed = path.value;
   const slash = typed.lastIndexOf("/");
   if (slash < 0) {
@@ -96,7 +97,7 @@ async function offerFolders() {
     const found = await api(
       `/api/projects/dirs?under=${encodeURIComponent(typed)}`,
     );
-    if (mine === listed) {
+    if (mine === state.listed) {
       folders.replaceChildren(
         ...found.map((each) =>
           option(
@@ -107,21 +108,21 @@ async function offerFolders() {
       );
     }
   } catch {
-    if (mine === listed) folders.replaceChildren();
+    if (mine === state.listed) folders.replaceChildren();
   }
 }
 
 async function read() {
-  const mine = ++asked;
+  const mine = ++state.asked;
   if (!path.value.trim()) {
     render(null, checks);
     return;
   }
   try {
     const reading = await api(
-      `/api/projects/check?path=${encodeURIComponent(path.value.trim())}${editing ? `&own=${encodeURIComponent(editing)}` : ""}`,
+      `/api/projects/check?path=${encodeURIComponent(path.value.trim())}${state.editing ? `&own=${encodeURIComponent(state.editing)}` : ""}`,
     );
-    if (mine !== asked) return;
+    if (mine !== state.asked) return;
     render(html`<${ProjectChecks} lines=${reading.lines} />`, checks);
     Object.entries(suggested).forEach(([key, id]) => fill(id, reading[key]));
     fill("project-verify", (reading.verifyCommand || []).join(" "));
@@ -129,7 +130,7 @@ async function read() {
       ...(reading.deployBranches || []).map((name) => option(name, "")),
     );
   } catch (e) {
-    if (mine === asked)
+    if (mine === state.asked)
       render(
         html`<${ProjectChecks} lines=${[{ ok: false, text: refusal(e) }]} />`,
         checks,
@@ -138,10 +139,10 @@ async function read() {
 }
 
 path.addEventListener("input", () => {
-  clearTimeout(listing);
-  listing = setTimeout(offerFolders, LISTING);
-  clearTimeout(due);
-  due = setTimeout(read, SETTLE);
+  clearTimeout(state.listing);
+  state.listing = setTimeout(offerFolders, LISTING);
+  clearTimeout(state.due);
+  state.due = setTimeout(read, SETTLE);
 });
 
 $("close-project").onclick = () => dialog.close();
@@ -159,14 +160,14 @@ const list = (name) => {
 form.onsubmit = (event) => {
   event.preventDefault();
   return sending(form, {
-    waiting: t(editing ? "project.saving" : "project.adding"),
+    waiting: t(state.editing ? "project.saving" : "project.adding"),
     send: () =>
       api(
-        editing
-          ? `/api/projects/${encodeURIComponent(editing)}`
+        state.editing
+          ? `/api/projects/${encodeURIComponent(state.editing)}`
           : "/api/projects",
         {
-          method: editing ? "PUT" : "POST",
+          method: state.editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             key: said("key"),

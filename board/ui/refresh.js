@@ -4,20 +4,24 @@ import * as store from "../core/store.js";
 import { render } from "./render.js";
 import { toast } from "./toast.js";
 
-let asked = 0;
-let painted = 0;
-let boardRead;
+const state = {
+  asked: 0,
+  painted: 0,
+  boardRead: undefined,
+  verbsFailed: false,
+  verbsRead: undefined,
+};
 export const boardArrived = new Promise((resolve) => {
-  boardRead = resolve;
+  state.boardRead = resolve;
 });
 
 export async function refresh() {
-  const mine = ++asked;
+  const mine = ++state.asked;
   try {
     const data = await api("/api/tasks");
     // Reads overlap, and one answered late describes the board before a later one.
-    if (mine < painted) return;
-    painted = mine;
+    if (mine < state.painted) return;
+    state.painted = mine;
     store.set({
       tasks: data.tasks,
       projects: data.projects || [],
@@ -34,16 +38,13 @@ export async function refresh() {
   } catch (e) {
     toast(t("refresh.backend", { cause: e.message }), true);
   } finally {
-    boardRead();
+    state.boardRead();
   }
 }
 
-let verbsFailed = false;
-let verbsRead;
-
 // Settles once the first read of the verbs does, failed or not: a line parsed before it would go to the model.
 export const verbsArrived = new Promise((resolve) => {
-  verbsRead = resolve;
+  state.verbsRead = resolve;
 });
 
 // Fetched, not hardcoded: the palette completes and validates against the server's own verb list. Without it
@@ -51,12 +52,13 @@ export const verbsArrived = new Promise((resolve) => {
 export async function refreshVerbs() {
   try {
     store.set({ verbs: await api("/api/commands") });
-    verbsFailed = false;
+    state.verbsFailed = false;
   } catch (e) {
     store.set({ verbs: [] });
-    if (!verbsFailed) toast(t("refresh.commands", { cause: e.message }), true);
-    verbsFailed = true;
+    if (!state.verbsFailed)
+      toast(t("refresh.commands", { cause: e.message }), true);
+    state.verbsFailed = true;
   } finally {
-    verbsRead();
+    state.verbsRead();
   }
 }

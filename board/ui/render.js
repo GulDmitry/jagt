@@ -25,7 +25,9 @@ import { said } from "./keys.js";
 import { hideStaleTip } from "./tips.js";
 
 const board = document.getElementById("board");
-let walked = [];
+const state = {
+  walked: [],
+};
 
 // An offer whose verb has not arrived says nothing: its part is the verb's.
 const offersOn = (task) =>
@@ -41,7 +43,7 @@ const blockedOn = (task) =>
       .map((action) => action.id),
   );
 
-export const ordered = () => walked;
+export const ordered = () => state.walked;
 
 export function render() {
   const tasks = store.tasks();
@@ -55,8 +57,8 @@ export function render() {
       tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project)),
     ).size > 1;
   const groups = grouped(shown, manyProjects, (task) => flags.holds(task.id));
-  walked = groups.flatMap((group) => group.tasks);
-  const open = selection.current(walked);
+  state.walked = groups.flatMap((group) => group.tasks);
+  const open = selection.current(state.walked);
   const now = Date.now();
   // Wide, the open task is on screen unpicked, so seen; narrow, only once opened.
   seen.note(tasks, selection.paneShown() ? open : null);
