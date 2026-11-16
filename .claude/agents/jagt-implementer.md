@@ -17,6 +17,8 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
 6. Judge every pitest survivor on your diff: kill it or say why.
 7. One commit for the whole brief, as AGENTS.md says in "Git and committing"; write it in the style of `git log --oneline -5`.
+   A new `docs/decisions/` number is the next free one on `main` after `git rebase main`, taken just before that commit:
+   parallel branches take numbers too.
 
 Report only: the sha, changed files one line each, each gate command and its exit, survivors and verdicts, and one
 `OPEN QUESTIONS:` line naming what you settled unasked.
