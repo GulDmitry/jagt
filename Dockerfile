@@ -11,7 +11,8 @@ FROM eclipse-temurin:25-jre-noble
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git tmux tini procps lsof openssh-client \
  && rm -rf /var/lib/apt/lists/* \
- && useradd --create-home --uid 10001 jagt \
+ && groupadd --gid 10001 jagt \
+ && useradd --create-home --uid 10001 --gid 10001 jagt \
  && mkdir -p /app /data \
  && chown jagt /data
 WORKDIR /app
@@ -21,6 +22,7 @@ COPY entrypoint.sh ./
 COPY roles roles
 COPY jagt.server.yml.dist jagt.yml
 ENV ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data
+ENV JAGT_JAVA_OPTIONS="-XX:MaxRAMPercentage=25 -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/dumps"
 USER jagt
 EXPOSE 8290
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]

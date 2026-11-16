@@ -225,4 +225,17 @@ class BoardOnTomcatTest {
 
     assertThat(status).isEqualTo(503);
   }
+
+  @Test
+  void isAliveWithoutLoginWhileNotReady() throws Exception {
+    AvailabilityChangeEvent.publish(context, ReadinessState.REFUSING_TRAFFIC);
+    HttpRequest request =
+        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/actuator/health/liveness"))
+            .build();
+
+    int status =
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
+
+    assertThat(status).isEqualTo(200);
+  }
 }

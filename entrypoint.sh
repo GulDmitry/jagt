@@ -11,8 +11,11 @@ if [ -n "$JAGT_AGENT_SEED" ] && [ -n "$JAGT_AGENT_HOME" ] && [ -d "$JAGT_AGENT_S
   mkdir -p "$JAGT_AGENT_HOME"
   cp -a "$JAGT_AGENT_SEED"/. "$JAGT_AGENT_HOME"/
 fi
+mkdir -p /data/dumps
 while true; do
-  java -jar /app/jagt.jar &
+  # Unquoted: the variable holds several options.
+  # shellcheck disable=SC2086
+  java $JAGT_JAVA_OPTIONS -jar /app/jagt.jar &
   child=$!
   wait "$child"
   code=$?

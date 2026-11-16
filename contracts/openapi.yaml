@@ -6,11 +6,18 @@ x-login-page: /login.html
 x-public-paths:
   - /login.html
   - /actuator/health/readiness
+  - /actuator/health/liveness
   - /app.css
   - /core/i18n.js
   - /i18n/**
   - /user/i18n/**
 paths:
+  /actuator/health/liveness:
+    get:
+      summary: Alive while the application's own state is correct; open without a login
+      responses:
+        '200': {description: Alive}
+        '503': {description: Broken}
   /actuator/health/readiness:
     get:
       summary: Ready once the start's checks passed and no project clone runs; open without a login

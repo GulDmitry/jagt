@@ -116,9 +116,21 @@ docker compose up -d --build
 curl -s localhost:8290/actuator/health/readiness     # 200 once startup checks are green and clones are done
 ```
 
-**Kubernetes**: `cp kubernetes.yml.dist kubernetes.yml`, set the image, host and Secret values, `kubectl apply -f kubernetes.yml`.
-One replica, `Recreate`, one optional PVC, Secret, Service, Ingress; the probe is `/actuator/health/readiness`.
+**Kubernetes**: `cp kubernetes.yml.dist kubernetes.yml`, set the image, host and Secret values, `kubectl apply -f kubernetes.yml`
+([0179](decisions/0179-the-kubernetes-pod-is-restricted-and-its-jvm-sized.md)).
+One replica, `Recreate`, restricted Pod Security Standard, a service account without a token, one optional PVC, Secrets
+(identities; the MCP file mounted at `JAGT_MCP_CONFIG`), Service, Ingress (host = `JAGT_PUBLIC_URL`), a `NetworkPolicy`.
+[`KubernetesManifestsTest`](../orchestrator-backend/src/test/java/dev/jagt/orchestrator/KubernetesManifestsTest.java) pins them.
 
+| knob | where | default |
+|------|-------|---------|
+| JVM options | `JAGT_JAVA_OPTIONS`, jagt's JVM alone | heap a quarter of the limit, serial GC, exit on out-of-memory, dump to `/data/dumps` |
+| memory, CPU | `resources` | 8Gi requested and limited (estimate), 2 CPUs requested, no CPU limit |
+| shutdown | `terminationGracePeriodSeconds` | 60: preStop 5 s, `spring.lifecycle.timeout-per-shutdown-phase` 20 s twice |
+| probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min, liveness 3 misses |
+| egress | `NetworkPolicy` | DNS, then HTTPS and SSH to public addresses; add acceptance environments |
+
+- Probes: liveness is the application's own state alone; readiness waits for the start and the clones (below).
 - The first clone runs inside startup, before readiness, so a pod is never ready ahead of it. A clone retried after a
   failure does not hold the pod: the board's head shows it.
 
