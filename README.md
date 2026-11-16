@@ -160,6 +160,7 @@ It does not run your CI or run on Windows.
 | [Development](docs/development.md) | test suites, CI, running the Linux suite from a Mac |
 | [Architecture](ARCHITECTURE.md) | the code map: what kinds of thing jagt has, and where a new one goes |
 | [C4](docs/c4.md) | the same, drawn: context, containers, rings, hooks, Master |
+| [Threat model](docs/threat-model.md) | the web surface: assets, actors, entry points, STRIDE, ASVS |
 
 ## License
 

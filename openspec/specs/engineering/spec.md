@@ -195,4 +195,4 @@ A gate no stack meets yet SHALL be listed here with its task, never silent, and 
 - **WHEN** a newer minor replaces an older one
 - **THEN** state holds one minor's fixture and no page says how to roll back: gap, JAGT-132 (25010 replaceability)
 #### Scenario: Threat model
-- **WHEN** the web surface changes **THEN** no document names its assets and actors: gap, JAGT-133 (ASVS V15)
+- **WHEN** the web surface changes **THEN** `docs/threat-model.md` names it (V15) and `ThreatModelTest` fails on an omitted filter or route

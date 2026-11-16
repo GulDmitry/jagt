@@ -109,7 +109,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Management exposes health only; the cookie is same-site strict (V13) | [server-environment](../openspec/specs/server-environment/spec.md), 0172 | `KubernetesManifestsTest` | n.a. | the manifest |
 | No secret or personal value in a log (V14); a token file is rw owner only (25010 confidentiality) | [style](rules/style.md) | `TaskAliasLogFilterTest`, `MasterTokenTest` | n.a. | `TaskAliasLogFilterTest` |
 | A file is served by a resource handler, never a request-driven path (V5; judged from the two handlers, a route reading a path reopens it) | [board-security](../openspec/specs/board-security/spec.md) | `BoardFolder`, `UserFiles` | n.a. | none |
-| A threat model names assets, actors and the rows above (V15) | none yet | guards have theirs; the web surface: gap: JAGT-133 | n.a. | gap: JAGT-133 |
+| A threat model names assets, actors and the rows above (V15) | [threat-model](threat-model.md) | `ThreatModelTest`; guards have theirs in [guards](rules/guards.md) | n.a. | `ThreatModelTest` |
 | HSTS (V3.4), MFA (V6.4), WebRTC (V17) | n.a. | TLS ends at the ingress; one owner, OIDC delegates MFA; unused | n.a. | none |
 
 ## Operations
