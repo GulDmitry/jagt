@@ -13,5 +13,6 @@
   "startupChecks": 31,
   "roles": 4,
   "specCapabilities": 44,
-  "ruleDocs": 7
+  "ruleDocs": 7,
+  "contextBootingTests": 23
 }

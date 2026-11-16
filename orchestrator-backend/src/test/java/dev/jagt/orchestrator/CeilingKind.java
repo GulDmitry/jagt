@@ -30,7 +30,8 @@ enum CeilingKind {
   STARTUP_CHECKS("startupChecks"),
   ROLES("roles"),
   SPEC_CAPABILITIES("specCapabilities"),
-  RULE_DOCS("ruleDocs");
+  RULE_DOCS("ruleDocs"),
+  CONTEXT_BOOTING_TESTS("contextBootingTests");
 
   private static final Path BACKEND = Path.of(".");
   private static final String JOB = "dev.jagt.orchestrator.job.Job";
@@ -65,6 +66,7 @@ enum CeilingKind {
       case ROLES -> BuildCeilings.roles();
       case SPEC_CAPABILITIES -> BuildCeilings.specCapabilities();
       case RULE_DOCS -> BuildCeilings.ruleDocs();
+      case CONTEXT_BOOTING_TESTS -> CodeCeilings.contextBootingTests();
     };
   }
 
