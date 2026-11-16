@@ -24,6 +24,12 @@ waits for it. Times are wall clock, dated in `measurements.md`.
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |
 
+## Context ceilings
+
+- `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contextsTest`,
+  `contextsBoardTest`, `contextsE2eTest` in `complexity-ceilings.json`): past the ceiling the build fails naming the suite and count.
+- Ceilings start at the measured count and only go down ([0186](../decisions/0187-a-suite-creates-no-more-spring-contexts-than-its-ceiling.md)).
+
 ## Planned
 
 - JAGT-102: kind as a second stand engine, `standTest -Pmodelfree -Pengine=kind`.

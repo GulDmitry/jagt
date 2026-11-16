@@ -14,5 +14,8 @@
   "roles": 4,
   "specCapabilities": 47,
   "ruleDocs": 7,
-  "contextBootingTests": 17
+  "contextBootingTests": 17,
+  "contextsTest": 5,
+  "contextsBoardTest": 2,
+  "contextsE2eTest": 4
 }

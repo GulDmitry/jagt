@@ -52,8 +52,8 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   every file under a `@TempDir`, a port bound to 0, a log read only through its own test's capture.
 - **No `@ResourceLock`, `@Isolated` or `@Execution(SAME_THREAD)`**: what tests share is faked or stubbed, and a test that
   cannot run in parallel is rewritten or deleted. An extraordinary reason, written at the site, is the only exception.
-- **A test boots no application**, a boot being the slowest test: a unit, then `ApplicationContextRunner`, then a slice; a `@SpringBootTest` only
-  when none can pin its case, the reason at its site, on the one configuration Spring caches. Parallel, logging `none`: a boot resets no capture.
+- **A test boots no application**, the slowest test: a unit, then `ApplicationContextRunner`, then a slice; a `@SpringBootTest` only
+  when none can pin its case, the reason at its site, on the one configuration Spring caches ([ceilings](testing-suites.md#context-ceilings)).
 - **A flaky test is a defect, fixed when first seen**: a red a rerun turns green is never waved through. Its cause is
   found before the next commit (a race gets a fix); never a longer wait, a retry or `@Disabled`.
 

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -23,10 +24,13 @@ class ComplexityCeilingsTest {
               new TypeReference<>() {});
 
   @Test
-  void storesOneCountForEveryKindAndNothingElse() {
+  void storesOneCountForEveryKindAndEverySuiteContextCeilingAndNothingElse() {
     assertThat(STORED.keySet())
         .containsExactlyInAnyOrderElementsOf(
-            Arrays.stream(CeilingKind.values()).map(CeilingKind::key).toList());
+            Stream.concat(
+                    Arrays.stream(CeilingKind.values()).map(CeilingKind::key),
+                    Stream.of("contextsTest", "contextsBoardTest", "contextsE2eTest"))
+                .toList());
   }
 
   @ParameterizedTest

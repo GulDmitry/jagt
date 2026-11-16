@@ -182,3 +182,34 @@ tasks.register('containerTest', Test) {
     testLogging.events 'skipped'
     shouldRunAfter tasks.named('test')
 }
+
+// A suite's context count is the sum, over its JVMs, of Spring's own cache miss count, logged at DEBUG into the
+// suite's test report; the ceiling is its entry in complexity-ceilings.json.
+['test': 'contextsTest', 'boardTest': 'contextsBoardTest', 'e2eTest': 'contextsE2eTest'].each { suite, key ->
+    def ceilings = layout.projectDirectory.file('src/test/resources/complexity-ceilings.json')
+    def reports = layout.buildDirectory.dir("test-results/${suite}")
+    def check = tasks.register("${suite}ContextCeiling") {
+        inputs.dir(reports).optional()
+        inputs.file(ceilings)
+        doLast {
+            def caches = [:]
+            reports.get().asFile.eachFileMatch(~/.*\.xml/) { xml ->
+                (xml.text =~ /DefaultContextCache@(\w+) .*?missCount = (\d+)/).each { all, cache, misses ->
+                    caches[cache] = Math.max(caches[cache] ?: 0, misses as int)
+                }
+            }
+            def created = caches.values().sum() ?: 0
+            def ceiling = new groovy.json.JsonSlurper().parse(ceilings.asFile)[key] as int
+            logger.lifecycle("${suite}: ${created} Spring contexts, ceiling ${ceiling}")
+            if (created > ceiling) {
+                throw new GradleException("${suite} created ${created} Spring contexts, ceiling ${ceiling} (${key} in complexity-ceilings.json)")
+            }
+        }
+    }
+    tasks.named(suite) {
+        finalizedBy check
+        if (suite != 'test') {
+            systemProperty 'logging.level.org.springframework.test.context.cache', 'DEBUG'
+        }
+    }
+}
