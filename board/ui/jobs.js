@@ -1,12 +1,13 @@
 import { render } from "preact";
 import { api, refusal } from "../core/api.js";
-import { make } from "../core/dom.js";
 import { html } from "../components/html.js";
 import { JobsTable } from "../components/JobsTable.js";
 import { toast } from "./toast.js";
 
 export function node() {
-  const holder = make("div", "jobs-table");
+  const holder = Object.assign(document.createElement("div"), {
+    className: "jobs-table",
+  });
   const paint = () =>
     api("/api/jobs")
       .then((jobs) =>

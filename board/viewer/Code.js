@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { api } from "../core/api.js";
 import { t } from "../core/i18n.js";
 import { html } from "../components/html.js";
-import { reveal, show, showChange } from "./codemirror.js";
-import { files, original } from "./patch.js";
+import { open as openEditor, reveal } from "./editor.js";
+import * as read from "./read.js";
 
 document.head.append(
   Object.assign(document.createElement("link"), {
@@ -33,26 +32,20 @@ export const Code = ({ task }) => {
   const [changes, setChanges] = useState(null);
   const [failure, setFailure] = useState("");
   const host = useRef(null);
-  const id = encodeURIComponent(task.id);
+  const id = task.id;
   const said = (e) => setFailure(e.message);
 
   useEffect(() => {
-    api(`/api/tasks/code/tree?task=${id}`).then((read) => {
-      setTrees(read);
-      setPicked(firstOf(read));
+    read.tree(id).then((found) => {
+      setTrees(found);
+      setPicked(firstOf(found));
     }, said);
   }, [task.id]);
 
   useEffect(() => {
     if (mode !== "changes") return;
-    api(`/api/tasks/diff?task=${id}`).then((read) => {
-      setChanges(
-        read.map((repo) => ({
-          project: repo.project,
-          cut: repo.cut,
-          files: files(repo.diff),
-        })),
-      );
+    read.changes(id).then((found) => {
+      setChanges(found);
       setFailure("");
     }, said);
   }, [mode, task.id]);
@@ -60,11 +53,9 @@ export const Code = ({ task }) => {
   useEffect(() => {
     if (!picked) return;
     setFile(null);
-    api(
-      `/api/tasks/code/file?task=${id}&project=${encodeURIComponent(picked.project)}&path=${encodeURIComponent(picked.path)}`,
-    ).then(
-      (read) => {
-        setFile(read);
+    read.file(id, picked).then(
+      (found) => {
+        setFile(found);
         setFailure("");
       },
       (e) =>
@@ -78,15 +69,7 @@ export const Code = ({ task }) => {
     if (file?.kind !== "TEXT") return undefined;
     let gone = false;
     let stop = null;
-    const open = picked.change
-      ? showChange(
-          host.current,
-          original(file.text, picked.change.hunks),
-          file.text,
-          file.path,
-        )
-      : show(host.current, file.text, file.path);
-    open.then((close) => {
+    openEditor(host.current, file, picked).then((close) => {
       if (gone) return close();
       stop = close;
       return picked.line && !picked.change
@@ -103,9 +86,7 @@ export const Code = ({ task }) => {
     event.preventDefault();
     const q = event.target.elements.q.value.trim();
     if (!q) return setFound(null);
-    return api(
-      `/api/tasks/code/search?task=${id}&project=${encodeURIComponent(picked?.project || "")}&q=${encodeURIComponent(q)}`,
-    ).then(setFound, said);
+    return read.search(id, picked?.project || "", q).then(setFound, said);
   };
 
   const project = picked?.project || "";

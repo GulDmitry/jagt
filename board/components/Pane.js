@@ -1,10 +1,8 @@
-import { Card } from "./Card.js";
-import { reportParts, switchLines } from "../core/format.js";
 import { t } from "../core/i18n.js";
+import { Card } from "./Card.js";
+import { History } from "./History.js";
 import { html } from "./html.js";
-import { Report } from "./Report.js";
-import { draw } from "../ui/mermaid.js";
-import { dayAndMinutes, minutes, sameDay } from "../core/time.js";
+import { Artifacts, Diff, Round } from "./Reading.js";
 
 export const TABS = [
   { id: "overview", label: t("tab.overview") },
@@ -14,37 +12,6 @@ export const TABS = [
   { id: "diff", label: t("tab.diff") },
   { id: "session", label: t("tab.session") },
 ];
-
-// Today's steps by the clock; older ones by day too.
-const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
-
-const History = ({ task, now }) =>
-  html`<section
-    class="history"
-    role="tabpanel"
-    id="panel-overview"
-    aria-labelledby="tab-overview"
-  >
-    <h2 class="group-head">${t("pane.history")}</h2>
-    <ol>
-      ${[...(task.history || [])].reverse().map(
-        (step) =>
-          html`<li
-            data-tip=${step.why || undefined}
-            tabindex=${step.why ? 0 : undefined}
-          >
-            <span class="age">${when(step.at, now)}</span>
-            ${step.label || step.status}${
-              step.origin
-                ? html` <span class="muted"
-                    >${step.origin.toLowerCase().replace("_", "-")}</span
-                  >`
-                : ""
-            }
-          </li>`,
-      )}
-    </ol>
-  </section>`;
 
 const KEYS = [
   ["ESCAPE", "Esc"],
@@ -128,88 +95,6 @@ const Dock = ({ task, held, named, line }) => {
     </form>
   </div>`;
 };
-
-const Round = ({ shown, offered }) =>
-  html`<section
-    class="round"
-    role="tabpanel"
-    id="panel-round"
-    aria-labelledby="tab-round"
-  >
-    ${
-      !offered
-        ? html`<p class="muted">${t("pane.nothing-drafted")}</p>`
-        : shown === null
-          ? html`<pre class="screen">${t("reading")}</pre>`
-          : html`<pre
-              class="screen"
-            ><${Report} parts=${reportParts(shown)}/></pre>`
-    }
-  </section>`;
-
-const Artifacts = ({ task, shown }) =>
-  html`<section
-    class="artifacts"
-    role="tabpanel"
-    id="panel-artifacts"
-    aria-labelledby="tab-artifacts"
-  >
-    ${switchLines(task).length ? html`<p class="muted switches">${switchLines(task).map((line, at) => html`${at ? html`<br />` : ""}${line}`)}</p>` : ""}
-    ${
-      shown === null
-        ? html`<p class="muted">${t("reading")}</p>`
-        : !shown.names.length
-          ? html`<p class="muted">${t("pane.no-doc")}</p>`
-          : html`<div class="doc-names">
-                ${shown.names.map(
-                  (name) =>
-                    html`<button
-                      data-file=${name}
-                      data-task=${task.id}
-                      aria-pressed=${String(name === shown.name)}
-                    >
-                      ${name}
-                    </button>`,
-                )}
-              </div>
-              <div
-                class="doc"
-                ref=${(root) => draw(root)}
-                dangerouslySetInnerHTML=${{ __html: shown.html }}
-              ></div>`
-    }
-  </section>`;
-
-const kind = (line) =>
-  /^(\+\+\+|---|diff|index|@@)/.test(line)
-    ? "muted"
-    : line[0] === "+"
-      ? "changed"
-      : line[0] === "-"
-        ? "removed"
-        : "";
-
-const Diff = ({ shown }) =>
-  html`<section
-    class="diff"
-    role="tabpanel"
-    id="panel-diff"
-    aria-labelledby="tab-diff"
-  >
-    ${
-      shown === null
-        ? html`<p class="muted">${t("reading")}</p>`
-        : typeof shown === "string" || !shown.length
-          ? html`<p class="muted">${shown || t("pane.no-diff")}</p>`
-          : shown.map(
-              (repo) =>
-                html`<h2 class="group-head">${repo.project} · ${repo.base}</h2>
-                  <pre class="screen">
-${repo.diff ? repo.diff.split("\n").map((line) => html`<span class=${kind(line)}>${line} </span>`) : t("pane.no-diff")}</pre>
-                  ${repo.cut ? html`<p class="muted">${t("pane.diff-cut")}</p>` : ""}`,
-            )
-    }
-  </section>`;
 
 export const Pane = ({ card, tab, shown, peek = {}, fresh = false }) =>
   html`<section id="pane" aria-label=${t("pane.label")}>

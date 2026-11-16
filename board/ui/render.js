@@ -1,109 +1,15 @@
 // One repaint of everything: a row changing in place keeps its position.
 
-import { render as paint } from "preact";
-import * as store from "../core/store.js";
-import * as filters from "./filters.js";
-import * as flags from "./flags.js";
-import * as glance from "./glance.js";
-import * as header from "./header.js";
-import { watch } from "./interactions.js";
-import { html } from "../components/html.js";
-import { blocked } from "./inflight.js";
-import * as launch from "./launch.js";
-import { grouped, TaskList } from "../components/TaskList.js";
-import * as order from "./order.js";
-import { Pane } from "../components/Pane.js";
-import * as projects from "./projects.js";
-import * as seen from "./seen.js";
-import * as repliesOpened from "./repliesOpened.js";
-import * as selection from "./selection.js";
-import * as tabs from "./tabs.js";
-import { pressKey, refusal, runTo, sayTo, sayToWindow } from "../core/api.js";
-import { toast } from "./toast.js";
-import { sending } from "./submit.js";
-import { said } from "./keys.js";
-import { hideStaleTip } from "./tips.js";
+import { body } from "./body.js";
+import { chrome } from "./chrome.js";
+import { view } from "./view.js";
 
 const board = document.getElementById("board");
-const state = {
-  walked: [],
-};
-
-// An offer whose verb has not arrived says nothing: its part is the verb's.
-const offersOn = (task) =>
-  store.offersOn(task).flatMap((id) => {
-    const verb = store.verbs().find((each) => each.id === id);
-    return verb ? [{ id, hint: verb.hint, part: verb.part }] : [];
-  });
-
-const blockedOn = (task) =>
-  new Set(
-    (task.actions || [])
-      .filter((action) => blocked(task, action))
-      .map((action) => action.id),
-  );
-
-export const ordered = () => state.walked;
 
 export function render() {
-  const tasks = store.tasks();
-  const shown = order.sorted(filters.shown(tasks));
-  projects.render();
-  launch.render();
-  header.render(tasks, shown.length);
-  // Read off the cards: the configured list can differ from the truth.
-  const manyProjects =
-    new Set(
-      tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project)),
-    ).size > 1;
-  const groups = grouped(shown, manyProjects, (task) => flags.holds(task.id));
-  state.walked = groups.flatMap((group) => group.tasks);
-  const open = selection.current(state.walked);
-  const now = Date.now();
-  // Wide, the open task is on screen unpicked, so seen; narrow, only once opened.
-  seen.note(tasks, selection.paneShown() ? open : null);
-  if (open && selection.paneShown() && tabs.current() === "round")
-    repliesOpened.note(open);
-  glance.render({
-    waiting: tasks.filter((task) => task.attention === "REQUIRED").length,
-    broken:
-      tasks.some((task) => task.detailKind === "PROBLEM") ||
-      Boolean(store.jobs()?.failing) ||
-      store.actStop()?.cause === "STRIKES" ||
-      store.reach().length > 0,
-  });
-  watch(tasks, Boolean(store.jobs()?.failing));
-  board.classList.toggle("open", selection.isOpen());
-  const rowVerb = shown
-    .flatMap((task) => task.actions || [])
-    .find((action) => action.onRow);
-  paint(
-    open
-      ? html` <${TaskList}
-            groups=${groups}
-            selected=${open.id}
-            changed=${seen.changed}
-            now=${now}
-            keys=${said(rowVerb)}
-          />
-          <${Pane}
-            card=${{
-              task: open,
-              manyProjects,
-              flagged: flags.holds(open.id),
-              blocked: blockedOn(open),
-              offers: offersOn(open),
-              now,
-            }}
-            tab=${tabs.current()}
-            shown=${tabs.shown(open, render)}
-            peek=${tabs.peek(open)}
-            fresh=${repliesOpened.fresh(open)}
-          />`
-      : null,
-    board,
-  );
-  hideStaleTip(null);
+  const now = view();
+  chrome(now);
+  body(now, render);
 }
 
 const buttonOf = ({ task, action }) =>
@@ -115,78 +21,3 @@ const buttonOf = ({ task, action }) =>
 export function refocus(pressed) {
   if (document.activeElement === document.body) buttonOf(pressed)?.focus();
 }
-
-// A click carries NAMES, never a captured task: a rebuilt row cannot act for the old one.
-export const onClick = ({ action }) => {
-  board.onclick = (event) => {
-    if (event.target.closest("button[data-back]")) {
-      selection.back();
-      render();
-      return;
-    }
-    const tab = event.target.closest("button[data-tab]");
-    if (tab) {
-      tabs.choose(tab.dataset.tab);
-      render();
-      return;
-    }
-    const named = event.target.closest("button[data-window]");
-    if (named) {
-      tabs.pickWindow(named.dataset.window || null);
-      render();
-      return;
-    }
-    const file = event.target.closest("button[data-file]");
-    if (file) {
-      tabs.pick(file.dataset.task, file.dataset.file);
-      render();
-      return;
-    }
-    const picked = event.target.closest("button[data-select]");
-    if (picked) {
-      selection.choose(picked.dataset.select);
-      render();
-      return;
-    }
-    const flagged = event.target.closest("button[data-flag]");
-    if (flagged) {
-      flags.toggle(flagged.dataset.flag);
-      render();
-      return;
-    }
-    const key = event.target.closest("button[data-press]");
-    if (key) {
-      pressKey(key.dataset.task, key.dataset.press)
-        .then(
-          () => tabs.forget(),
-          (e) => toast(refusal(e), true),
-        )
-        .then(render);
-      return;
-    }
-    const button = event.target.closest("button[data-action]");
-    if (button) action(button.dataset.task, button.dataset.action);
-  };
-};
-
-board.addEventListener("submit", (event) => {
-  const form = event.target.closest("form[data-say]");
-  if (!form) return;
-  event.preventDefault();
-  const line = form.elements.line.value.trim();
-  if (!line) return;
-  const send = form.dataset.window
-    ? (name, said) => sayToWindow(name, said)
-    : event.submitter?.hasAttribute("data-run")
-      ? runTo
-      : sayTo;
-  sending(form, {
-    waiting: "sending…",
-    send: () => send(form.dataset.window || form.dataset.say, line),
-    done: () => {
-      form.reset();
-      tabs.forget();
-      render();
-    },
-  });
-});

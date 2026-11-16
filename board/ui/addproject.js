@@ -1,29 +1,13 @@
-import { render } from "preact";
-import { api, refusal } from "../core/api.js";
+import { api } from "../core/api.js";
 import { t } from "../core/i18n.js";
-import { html } from "../components/html.js";
-import { ProjectChecks } from "../components/ProjectChecks.js";
-import { sending } from "./submit.js";
+import { clear, read, watchPath } from "./projectcheck.js";
+import { save } from "./projectsave.js";
 
 const $ = (id) => document.getElementById(id);
 const dialog = $("project-dialog");
 const form = $("project-form");
 const path = $("project-path");
-const checks = $("project-checks");
-const suggested = {
-  key: "project-key",
-  baseBranch: "project-base",
-  deployBranch: "project-deploy",
-};
-const folders = $("project-folders");
-const branches = $("project-branches");
-const SETTLE = 400;
-const LISTING = 150;
 const state = {
-  due: 0,
-  listing: 0,
-  asked: 0,
-  listed: 0,
   editing: null,
 };
 
@@ -32,7 +16,7 @@ const reset = (key = null) => {
   form
     .querySelectorAll("[data-typed]")
     .forEach((field) => delete field.dataset.typed);
-  render(null, checks);
+  clear();
   state.editing = key;
   $("project-title").textContent = key
     ? t("project.edit", { key })
@@ -76,111 +60,8 @@ form.addEventListener("input", (event) => {
   if (event.target !== path) event.target.dataset.typed = "true";
 });
 
-const fill = (id, value) => {
-  const field = $(id);
-  if (!field.dataset.typed) field.value = value || "";
-};
-
-const option = (value, label) =>
-  Object.assign(document.createElement("option"), { value, label });
-
-// Each folder under the last typed one completes the path.
-async function offerFolders() {
-  const mine = ++state.listed;
-  const typed = path.value;
-  const slash = typed.lastIndexOf("/");
-  if (slash < 0) {
-    folders.replaceChildren();
-    return;
-  }
-  try {
-    const found = await api(
-      `/api/projects/dirs?under=${encodeURIComponent(typed)}`,
-    );
-    if (mine === state.listed) {
-      folders.replaceChildren(
-        ...found.map((each) =>
-          option(
-            `${typed.slice(0, slash + 1)}${each.name}/`,
-            each.repository ? t("project.repository") : "",
-          ),
-        ),
-      );
-    }
-  } catch {
-    if (mine === state.listed) folders.replaceChildren();
-  }
-}
-
-async function read() {
-  const mine = ++state.asked;
-  if (!path.value.trim()) {
-    render(null, checks);
-    return;
-  }
-  try {
-    const reading = await api(
-      `/api/projects/check?path=${encodeURIComponent(path.value.trim())}${state.editing ? `&own=${encodeURIComponent(state.editing)}` : ""}`,
-    );
-    if (mine !== state.asked) return;
-    render(html`<${ProjectChecks} lines=${reading.lines} />`, checks);
-    Object.entries(suggested).forEach(([key, id]) => fill(id, reading[key]));
-    fill("project-verify", (reading.verifyCommand || []).join(" "));
-    branches.replaceChildren(
-      ...(reading.deployBranches || []).map((name) => option(name, "")),
-    );
-  } catch (e) {
-    if (mine === state.asked)
-      render(
-        html`<${ProjectChecks} lines=${[{ ok: false, text: refusal(e) }]} />`,
-        checks,
-      );
-  }
-}
-
-path.addEventListener("input", () => {
-  clearTimeout(state.listing);
-  state.listing = setTimeout(offerFolders, LISTING);
-  clearTimeout(state.due);
-  state.due = setTimeout(read, SETTLE);
-});
+watchPath(() => state.editing);
+save({ editing: () => state.editing, done: () => dialog.close() });
 
 $("close-project").onclick = () => dialog.close();
 dialog.addEventListener("close", () => reset());
-
-const said = (name) => form.elements[name].value.trim();
-const list = (name) => {
-  const each = said(name)
-    .split(",")
-    .map((one) => one.trim())
-    .filter(Boolean);
-  return each.length ? each : null;
-};
-
-form.onsubmit = (event) => {
-  event.preventDefault();
-  return sending(form, {
-    waiting: t(state.editing ? "project.saving" : "project.adding"),
-    send: () =>
-      api(
-        state.editing
-          ? `/api/projects/${encodeURIComponent(state.editing)}`
-          : "/api/projects",
-        {
-          method: state.editing ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key: said("key"),
-            path: said("path"),
-            baseBranch: said("baseBranch"),
-            deployBranch: said("deployBranch") || null,
-            verifyCommand: said("verify") ? said("verify").split(/\s+/) : null,
-            about: said("about") || null,
-            labels: list("labels"),
-            humanPaths: list("humanPaths"),
-          }),
-        },
-      ),
-    done: () => dialog.close(),
-  });
-};

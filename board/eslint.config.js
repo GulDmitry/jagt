@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
+import importX from "eslint-plugin-import-x";
 import globals from "globals";
 
 export default [
@@ -13,7 +14,10 @@ export default [
       sourceType: "module",
       globals: globals.browser,
     },
+    plugins: { "import-x": importX },
     rules: {
+      "import-x/no-cycle": "error",
+      "import-x/max-dependencies": ["error", { max: 5 }],
       "no-restricted-syntax": [
         "error",
         {

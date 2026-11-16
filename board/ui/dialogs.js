@@ -1,58 +1,21 @@
-import { render } from "preact";
-import { html } from "../components/html.js";
-import { Report } from "../components/Report.js";
-import { refusal, sayTo, text } from "../core/api.js";
-import { reportParts } from "../core/format.js";
-import * as store from "../core/store.js";
-import { t } from "../core/i18n.js";
-import { sending } from "./submit.js";
+import { refusal, text } from "../core/api.js";
+import { follow, stopWaiting } from "./followup.js";
+import * as dialog from "./reportdialog.js";
 import { toast } from "./toast.js";
-
-const report = document.getElementById("report");
-const reportTitle = document.getElementById("report-title");
-const reportBody = document.getElementById("report-body");
-const reportScroll = document.getElementById("report-scroll");
-const reportSection = document.getElementById("report-section");
-const reportLine = document.getElementById("report-line");
-const sayInput = document.getElementById("say");
-const working = document.getElementById("said");
 
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
 // A poll and the board's own event overlap: the read sent last paints.
 const state = {
   showing: { path: null, about: null, body: "", extra: null },
-  poll: 0,
   asked: 0,
   reread: 0,
 };
-
-const drawn = (said) =>
-  render(
-    html`<${Report}
-      parts=${reportParts(
-        said,
-        store.tasks().map((task) => task.id),
-      )}
-    />`,
-    reportBody,
-  );
-
-function paint(title, said, extra) {
-  reportTitle.textContent = title;
-  drawn(said);
-  reportSection.replaceChildren(...(extra ? [extra] : []));
-  // Only a report about ONE task has a session to talk to, and a line typed at one round is not the next one's.
-  reportLine.hidden = !state.showing.about;
-  sayInput.value = "";
-  if (!report.open) report.showModal();
-  reportScroll.scrollTop = 0;
-}
 
 export function showReport(title, said, extra = null) {
   state.asked++;
   state.showing = { path: null, about: null, body: said, extra };
   stopWaiting();
-  paint(title, said, extra);
+  dialog.paint(title, said, state.showing);
 }
 
 /** False when the report could not be read, the caller deciding what a failed read costs it. */
@@ -67,7 +30,7 @@ export async function openReport(
     if (mine !== state.asked) return true;
     state.showing = { path, about, body: said, extra };
     stopWaiting();
-    paint(title, said, extra);
+    dialog.paint(title, said, state.showing);
     // Whatever changed WHILE this was being read reached no open dialog, so it is read once more now.
     await repaintReport();
     return true;
@@ -80,7 +43,7 @@ export async function openReport(
 
 /** The board changed under an open report: read it again, and stop waiting once it says something new. */
 export async function repaintReport() {
-  if (!report.open || !state.showing.path) {
+  if (!dialog.isOpen() || !state.showing.path) {
     return;
   }
   // What an extra shows may change with no word of the report changing.
@@ -96,72 +59,16 @@ export async function repaintReport() {
   // The answer to a report nobody is reading any more belongs to no dialog on screen.
   if (
     mine !== state.reread ||
-    !report.open ||
+    !dialog.isOpen() ||
     state.showing.path !== read ||
     said === state.showing.body
   ) {
     return;
   }
   state.showing = { ...state.showing, body: said };
-  const where = reportScroll.scrollTop;
-  drawn(said);
-  reportScroll.scrollTop = where;
+  dialog.redraw(said);
   stopWaiting();
 }
 
-// A worktree file fires no event and the agent's report comes at a round's END: a line just said is followed.
-const EVERY = 3000;
-const GIVE_UP = 300000;
-
-function waitForTheAnswer() {
-  stopWaiting();
-  working.hidden = false;
-  const until = Date.now() + GIVE_UP;
-  state.poll = setInterval(
-    () => (Date.now() > until ? giveUp() : repaintReport()),
-    EVERY,
-  );
-}
-
-// A ring that just disappears reads as an answer that landed. The board's own event still repaints this.
-function giveUp() {
-  stopWaiting();
-  toast(t("report.silent"));
-}
-
-function stopWaiting() {
-  working.hidden = true;
-  if (state.poll) clearInterval(state.poll);
-  state.poll = 0;
-}
-
-reportLine.onsubmit = (event) => {
-  event.preventDefault();
-  const line = sayInput.value.trim();
-  if (!line) {
-    return;
-  }
-  sending(reportLine, {
-    waiting: "",
-    send: () => sayTo(state.showing.about, line),
-    done: () => {
-      sayInput.value = "";
-      waitForTheAnswer();
-    },
-  });
-};
-
-// Which element the press STARTED on decides: selecting text inside and releasing outside asks for nothing.
-function closeOnBackdrop(dialog) {
-  let pressedBackdrop = false;
-  dialog.addEventListener("mousedown", (event) => {
-    pressedBackdrop = event.target === dialog;
-  });
-  dialog.addEventListener("click", (event) => {
-    if (pressedBackdrop && event.target === dialog) dialog.close();
-  });
-}
-
-document.getElementById("close-report").onclick = () => report.close();
-report.addEventListener("close", stopWaiting);
-closeOnBackdrop(report);
+follow({ about: () => state.showing.about, repaint: repaintReport });
+dialog.onClose(stopWaiting);

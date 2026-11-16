@@ -1,17 +1,11 @@
-import { api, refusal } from "../core/api.js";
-import { parse, verdictOf } from "../core/grammar.js";
-import { t } from "../core/i18n.js";
-import * as store from "../core/store.js";
-import { run } from "./act.js";
-import { openReport } from "./dialogs.js";
-import { boardArrived, refresh, verbsArrived } from "./refresh.js";
-import { sending } from "./submit.js";
-import { toast } from "./toast.js";
+import { parse } from "../core/grammar.js";
+import { interpret } from "./interpret.js";
+import { boardArrived, verbsArrived } from "./refresh.js";
+import { tier1 } from "./tier1.js";
+import { ask, judge } from "./verdict.js";
 
 const form = document.getElementById("palette");
-const ask = document.getElementById("ask");
 const opener = document.getElementById("open-palette");
-const verdict = document.getElementById("palette-state");
 
 // Asked here, decided at wiring time, so this module knows no form and no verb by name.
 const state = {
@@ -44,62 +38,10 @@ export function toggle() {
   judge();
 }
 
-export function refreshSuggestions() {
-  document.getElementById("ask-options").replaceChildren(
-    ...store.verbs().map((verb) =>
-      Object.assign(document.createElement("option"), {
-        value: verb.id,
-        label: verb.hint,
-      }),
-    ),
-  );
-}
-
-export function judge() {
-  const { kind, text } = verdictOf(ask.value.trim());
-  verdict.classList.remove("ok", "bad");
-  if (kind) verdict.classList.add(kind);
-  verdict.textContent = text;
-}
-
-// A line answered without creating anything would only repeat the attempt.
-const HANDLED = { clear: true };
-const KEPT = { clear: false };
-
-// A line that parses is executed; only free text is worth a model call.
-async function runParsed(parsed) {
-  const { verb, argument, task, project } = parsed;
-  if (verb.takesTask) {
-    await run(task.id, verb.id, project);
-    return HANDLED;
-  }
-  const part = state.forms.partFor(verb.part);
-  // What was typed after the verb goes with it: a report that narrows to one task must not answer for all.
-  if (verb.report) {
-    const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : "";
-    const opened = await openReport(
-      `${verb.id} ${store.nameOf(argument)}`.trim(),
-      `/api/commands/${encodeURIComponent(verb.id)}${narrowed}`,
-      { about: verb.aboutOneTask ? argument : null, extra: part.section?.() },
-    );
-    // A report that could not be read leaves the typed line where it was, to try again.
-    return opened ? HANDLED : KEPT;
-  }
-  // Typed alone, a verb with a part of the board hands over to it, where the rest of its inputs are chosen.
-  if (!argument && part.focus) {
-    part.focus();
-    return HANDLED;
-  }
-  if (argument && (await part.argued?.(argument))) return HANDLED;
-  if (verb.confirmation && !confirm(verb.confirmation)) return KEPT;
-  const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : "";
-  const result = await api(
-    `/api/commands/${encodeURIComponent(verb.id)}${narrowed}`,
-    { method: "POST" },
-  );
-  toast(result.message);
-  return HANDLED;
-}
+const clear = () => {
+  ask.value = "";
+  close();
+};
 
 ask.addEventListener("input", judge);
 opener.onclick = toggle;
@@ -114,38 +56,8 @@ form.onsubmit = async (event) => {
     return;
   }
   if (parsed && (!parsed.verb.takesTask || parsed.task)) {
-    // Tier 1 answers for itself, so there is no one message to show and nothing to say while it happens.
-    const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
-    try {
-      const answered = await runParsed(parsed);
-      if (answered) {
-        if (answered.clear) {
-          ask.value = "";
-          close();
-        }
-        return;
-      }
-    } catch (e) {
-      toast(refusal(e), true); // a line that reached the backend and was refused is not tier 2's to retry
-      return;
-    } finally {
-      button.disabled = false;
-      judge();
-      await refresh();
-    }
+    await tier1(parsed, { form, partFor: state.forms.partFor, clear });
+    return;
   }
-  await sending(form, {
-    waiting: t("palette.interpreting"), // a model call: seconds
-    send: () =>
-      api("/api/interpret", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: ask.value }),
-      }),
-    done: () => {
-      ask.value = "";
-      close();
-    },
-  });
+  await interpret(form, ask.value, clear);
 };
