@@ -4,7 +4,9 @@
 
 ## Status
 
-Accepted 2026-10-16; its serving from the jar's `static/` superseded by [0170](0170-the-board-is-its-own-app-behind-one-contract.md).
+Accepted 2026-10-16; its serving from the jar's `static/` superseded by
+[0170](0170-the-board-is-its-own-app-behind-one-contract.md); its 50 KB vendor limit reopened by
+[0173](0173-a-code-editor-is-vendored-and-loaded-on-demand.md).
 
 ## Context
 

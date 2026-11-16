@@ -45,6 +45,51 @@ class BoardAssetsTest {
     assertThat(digest).isEqualTo(sha256);
   }
 
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = ' ',
+      textBlock =
+          """
+          codemirror-autocomplete.js 0bc143dbdc725b9cd2a550a552b4f3a8cfd057948b274eee9f0689b3eb9ad798
+          codemirror-lang-css.js 0a7e271ad65f99f43f34a7169acf67ec3ad016f4c7818904b3e34a5c89f40916
+          codemirror-lang-html.js 6f608aaeb92179d873e487060d006a5859fa382de6ceb827935bb9a1f724191f
+          codemirror-lang-java.js e0cb6e93fc1a41a016b7634bfcec9bd27d12eb8694f5c394e37dad50dbd68e4c
+          codemirror-lang-javascript.js 3f6f84c3139a3e2601e2c81c9b26f80e5bcc4ba2da4e493303c74d948a327400
+          codemirror-lang-json.js 5472a597498460db724d830a6852ed643eec267bfac3aab1498e8fd83cfd4e60
+          codemirror-lang-markdown.js 55d8cfa46628ca5cc907d1a991ed81c6872b392a17673c0b8cde396100b216b7
+          codemirror-lang-python.js c60274624c703cb07b471a2de503b319b222b87e140445c09ce57415130b5eca
+          codemirror-lang-yaml.js 6279053de28ed4b4335cc3067638d97807f5dfc8b0fb1cee8de62f7e8efec1d9
+          codemirror-language.js 3ee82597686d97904b1c0df409661c2e6386e206b9122ac309622e225a0075ff
+          codemirror-merge.js bd0c5387c8fbbf7689b520a44bf34e2a59eac3f3c96ffc5ad0586bea7228ce44
+          codemirror-search.js 1155a69fb8d6f56c1d644e3e93222348481d6b2df78d6bebcf3293fe209f3fd7
+          codemirror-state.js cf4ffe7d177bf2c7c5da66c49be0811cc79a29e12cb658238876bbdcef12939c
+          codemirror-streamparser.js 03b1109bc091c1f70e34abbd6161cd1675280a10ac5d26fffdede446076e4bb6
+          codemirror-view.js e1ee658a4f903317aa6a573b993b78c5552307cba4c4b838335e9ef079d82451
+          crelt.js 924800defa2bf95a0bfd16dde589ecebbcd9e36b03635274da84968c77a3721e
+          lezer-common.js 5afcf283f7ab19b5c1ffaf60efb4984d694c0b62077c8f8897545a98d01ef571
+          lezer-css.js 9c2426962e5f4553310e31bc02ff045625dd4dfcb5f9f0bd93c433817871b6f1
+          lezer-highlight.js 8984bb2887a6354d3e5ac79bdd7e522948f1cee1dda16aac77d9473f10696d7c
+          lezer-html.js fd4c7f475d40e7cb86346c7c18bbaf0902492a995b03cf372adb8b2a33cc8829
+          lezer-java.js d940a41bc64d2bca07734af0ae7b0b3374526d1607610194963acdd58fddbe8c
+          lezer-javascript.js 7ff6ade8c607be16afb95da5bebf531d14a03e7ba112fd84003bc6329d664b77
+          lezer-json.js 3310e7216620dc17c6bdfb1665f774e7b0b29918e761ccc74a7e2a83f039a735
+          lezer-lr.js 3c649203d840e7175277239ef43baa3c98aec6c183a770e7d3867006927a3238
+          lezer-markdown.js 38706e0e3a27bcc959f8c811aeb2e9d24289565494f35ca6c5742f0425b23733
+          lezer-python.js 47135244f8db0253e8cc7c01115f6cb86049a094936209091e6ca32c01258224
+          lezer-yaml.js 761bb6fa2f88915f916b33429b8d0f06639efe288b695c8abc6f32c0d116c9c5
+          marijn-find-cluster-break.js 4e9e441fac9db54e09e4e3b1cb0b0393da207ebe943f2ff9efc577821fc03751
+          style-mod.js 4bd6b34edda52f362553d33df7e3a10f31fbdc0c95125aabec89c4de6be80b0a
+          w3c-keyname.js b649dec4f01c7c5eb05be4641b5b698c6938231ee50b38e17a2f0f822ca3df2e
+          """)
+  void vendoredEditorFileIsTheExactFileTheRegistryServed(String file, String sha256)
+      throws IOException, NoSuchAlgorithmException {
+    byte[] bytes = Files.readAllBytes(STATIC.resolve("vendor/codemirror").resolve(file));
+
+    String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+
+    assertThat(digest).isEqualTo(sha256);
+  }
+
   @Test
   void theBoardInstallsAsStandaloneAppStartingAtItsOwnRoot() throws IOException {
     JsonNode manifest =
@@ -93,6 +138,7 @@ class BoardAssetsTest {
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
               .filter(path -> !path.endsWith("mermaid.min.js"))
+              .filter(path -> !path.startsWith(STATIC.resolve("vendor/codemirror")))
               .mapToLong(path -> path.toFile().length())
               .sum();
     }
