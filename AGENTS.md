@@ -13,6 +13,9 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 **jagt is agnostic to everything**: no tracked file names a user's employer, project, ticket, skill, machine
 or local setup; such names live only in git-ignored files. **A check holds for all code**: its kind is in
 [`ARCHITECTURE.md`](ARCHITECTURE.md#the-kinds) ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)).
+**Each sphere's industry standard is jagt's floor** — architecture, code quality, testing, QA, security, operations,
+supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#the-kinds),
+[0180](docs/decisions/0180-each-spheres-industry-standard-is-jagts-floor.md)).
 
 ## Where things are written down
 

@@ -9,7 +9,8 @@ You review the commit range you are given on jagt. You change nothing: no edit, 
 
 1. `git log` and `git diff` the range; read `AGENTS.md` and the rules its "Read before you change" table names for what changed.
 2. Look for correctness defects, a broken AGENTS.md rule a rule test does not already pin, a state with no named exit,
-   a leaking abstraction (a unit naming who uses it), a test pinning no business case, and a spec the code contradicts.
+   a leaking abstraction (a unit naming who uses it), a test pinning no business case, a spec the code contradicts, and a new kind of thing that misses what its sphere's
+   standard requires (`ARCHITECTURE.md` "The kinds").
 3. Skip style: what the rule tests AGENTS.md "Code" names pin is theirs.
 
 Report only findings, most severe first, one line each: `file:symbol`, the defect, the input that breaks it. None is a valid answer.

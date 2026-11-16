@@ -193,3 +193,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0177 A missing project program is read by its own job](0177-a-missing-project-program-is-read-by-its-own-job.md) (on 0176)
 - [0178 An MCP file is read by its own job, the agent's folder seeded](0178-an-mcp-file-is-read-by-its-own-job.md) (on 0177)
 - [0179 The Kubernetes pod is restricted, its JVM sized](0179-the-kubernetes-pod-is-restricted-and-its-jvm-sized.md) (on 0172)
+- [0180 Each sphere's industry standard is jagt's floor](0180-each-spheres-industry-standard-is-jagts-floor.md) (on 0162)
