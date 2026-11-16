@@ -17,8 +17,12 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.availability.AvailabilityChangeEvent;
+import org.springframework.boot.availability.ReadinessState;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -34,15 +38,22 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "orchestrator.auth.password-hash="
           + "$2y$04$cpM1ODse0DnRCsm1Zpa9quQKnFm0ZxoiaduZfAt4nnLFQp0rBW332"
     })
-class BoardLoginOnTomcatTest {
+class BoardOnTomcatTest {
 
   @MockitoBean private UserNotifier userNotifier;
 
-  @TempDir static Path root;
-
   @MockitoBean private EditorDriver editorDriver;
 
+  @TempDir static Path root;
+
   @LocalServerPort private int port;
+
+  private final ApplicationContext context;
+
+  @Autowired
+  BoardOnTomcatTest(ApplicationContext context) {
+    this.context = context;
+  }
 
   @DynamicPropertySource
   static void keepConfigAndStateInTheTempRoot(DynamicPropertyRegistry registry) throws IOException {
@@ -68,7 +79,6 @@ class BoardLoginOnTomcatTest {
   @ValueSource(
       strings = {
         "/login.html",
-        "/actuator/health/readiness",
         "/app.css",
         "/core/i18n.js",
         "/i18n/index.json",
@@ -173,5 +183,46 @@ class BoardLoginOnTomcatTest {
     HttpResponse<String> response = client.send(api, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(200);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "/api;x/tasks/actions/deploy?task=ABC-42",
+        "/%61pi/tasks/actions/deploy?task=ABC-42"
+      })
+  void refusesBoardWriteWithoutAnOriginHoweverItsPathIsSpelled(String path) throws Exception {
+    HttpRequest request =
+        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+
+    HttpResponse<String> response =
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
+  void readinessProbeWaitsForRunningClonesAndTheFinishedStart() {
+    String readiness =
+        context.getEnvironment().getProperty("management.endpoint.health.group.readiness.include");
+
+    assertThat(readiness).isNotNull();
+    assertThat(readiness.split(",")).contains("clones", "readinessState");
+  }
+
+  @Test
+  void isNotReadyWhileTheStartIsNotFinished() throws Exception {
+    AvailabilityChangeEvent.publish(context, ReadinessState.REFUSING_TRAFFIC);
+    HttpRequest request =
+        HttpRequest.newBuilder(
+                URI.create("http://127.0.0.1:" + port + "/actuator/health/readiness"))
+            .build();
+
+    int status =
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
+
+    assertThat(status).isEqualTo(503);
   }
 }
