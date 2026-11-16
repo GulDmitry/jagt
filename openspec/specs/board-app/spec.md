@@ -1,7 +1,8 @@
 # board-app Specification
 
 ## Purpose
-TBD - created by archiving change jagt-97-board-own-app. Update Purpose after archive.
+The board as an app of its own: the backend serves its files as opaque assets,
+coupled only through `contracts/`, and the board owns its language catalogs.
 
 ## Requirements
 

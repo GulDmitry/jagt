@@ -37,9 +37,6 @@ the machine's or the browser's locale or zone.
 `orchestrator.terminal` SHALL select the `TerminalDriver`: `kitty` (default), `ghostty` or `none`. `GhosttyTerminalDriver` SHALL
 drive Ghostty through its AppleScript dictionary, so it is macOS only; on another OS startup is refused naming the key.
 It opens each viewer as a tab attached to tmux in the window whose tab carries the viewer title, else in a new window.
-`none` is the only way to open no window: it opens no viewer, logs the attach command, and needs no terminal binary.
-A `kitty` or `ghostty` driver SHALL always open its viewer. `orchestrator.openTerminalWindow` is retired:
-startup is refused naming `terminal: none`.
 
 #### Scenario: ghostty opens a tab in the window carrying the title
 - **WHEN** `orchestrator.terminal` is `ghostty` and a viewer opens
@@ -52,6 +49,11 @@ startup is refused naming `terminal: none`.
 #### Scenario: a reveal finds no window
 - **WHEN** no Ghostty window holds a tab with the viewer title
 - **THEN** the reveal answers `NOT_RUNNING` and Ghostty is not launched
+
+### Requirement: Only terminal none opens no viewer
+`none` is the only way to open no window: it opens no viewer, logs the attach command, and needs no terminal binary.
+A `kitty` or `ghostty` driver SHALL always open its viewer. `orchestrator.openTerminalWindow` is retired:
+startup is refused naming `terminal: none`.
 
 #### Scenario: focus with no terminal
 - **WHEN** `orchestrator.terminal` is `none` and the human presses focus

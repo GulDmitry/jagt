@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -78,6 +79,30 @@ final class DocFiles {
                 .replaceAll("[^\\p{L}\\p{N} _-]", "")
                 .replace(' ', '-'))
         .toList();
+  }
+
+  static Map<String, String> requirementTexts(Path spec) {
+    return Stream.of(withoutCodeBlocks(spec).split("(?m)^### Requirement:"))
+        .skip(1)
+        .collect(
+            Collectors.toMap(
+                block -> block.lines().findFirst().orElse("").trim(),
+                block ->
+                    block
+                        .lines()
+                        .skip(1)
+                        .takeWhile(line -> !line.matches("#{1,6}\\s.*"))
+                        .map(String::trim)
+                        .filter(line -> !line.isBlank())
+                        .collect(Collectors.joining("\n")),
+                (first, second) -> first,
+                LinkedHashMap::new));
+  }
+
+  static String purpose(Path spec) {
+    Matcher found =
+        Pattern.compile("(?ms)^##[ \\t]+Purpose[ \\t]*$(.*?)(?=^#{1,2}[ \\t])").matcher(read(spec));
+    return found.find() ? found.group(1).trim() : "";
   }
 
   static List<String> namesIn(Path directory) {
