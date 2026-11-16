@@ -66,10 +66,12 @@ class DocLinksTest {
             .sorted()
             .toList();
     List<String> indexed =
-        Pattern.compile("]\\((\\d{4}-[^)#]*\\.md)")
-            .matcher(DocFiles.withoutCodeBlocks(directory.resolve("README.md")))
-            .results()
-            .map(link -> link.group(1))
+        Stream.of("index-0001-0099.md", "index-0100-0199.md")
+            .flatMap(page ->
+                Pattern.compile("]\\((\\d{4}-[^)#]*\\.md)")
+                    .matcher(DocFiles.withoutCodeBlocks(directory.resolve(page)))
+                    .results()
+                    .map(link -> link.group(1)))
             .sorted()
             .toList();
 

@@ -12,7 +12,9 @@ class DecisionIndexTest {
 
   @Test
   void indexesEveryRecordedDecision() throws Exception {
-    String index = Files.readString(Path.of("../docs/decisions/README.md"));
+    String index =
+        Files.readString(Path.of("../docs/decisions/index-0001-0099.md"))
+            + Files.readString(Path.of("../docs/decisions/index-0100-0199.md"));
     try (Stream<Path> files = Files.list(Path.of("../docs/decisions"))) {
       assertThat(
               files
