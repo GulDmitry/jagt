@@ -1,6 +1,6 @@
 # 0072 — The conversation turn is the machine's
 
-[← decisions](README.md) · cases: [`docs/cases.md`](../cases.md)
+[← decisions](README.md)
 · supersedes in part: [0065](0065-jagts-own-texts-and-loops-are-held-to-one-contract.md)
 
 ## Status
@@ -16,7 +16,7 @@ text and maps held in memory; each fix added one more key, regex or filter.
 
 ## Decision
 
-- A defect is counted: its `docs/cases.md` row and a `Defect-family:` trailer on the fix commit.
+- A defect is counted: a `Defect-family:` trailer on the fix commit (its case-registry row removed with the registry, owner 2026-11-16).
 - What a report means is a typed field on the task, never a marker parsed back out of its line.
 - The turn becomes a fact on the task: who holds it, what it waits for, which replies it takes; one function in
   `flow/` decides it, every relay opens one, every report closes one, an unexpected reply is refused at the door.

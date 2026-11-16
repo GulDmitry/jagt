@@ -2,8 +2,7 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate (AGENTS.md). Every other suite lives in `src/<name>/java`, none in `check`:
-[the suites, where and when each runs](testing-suites.md).
+`./gradlew test` is the hermetic gate (AGENTS.md). Every other suite lives in `src/<name>/java`, none in `check`: [the suites](testing-suites.md).
 **Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD`, each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo)**
@@ -12,7 +11,8 @@
 **The root's `:test` is the rule tests, run whole**. **A filtered run names its project**
 (`:<module>:test --tests '<Name>'`; a bare `test --tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
-A fixed bug's `docs/cases.md` row and `Defect-family:` trailer make defects countable per family.
+A fixed bug's commit carries `Defect-family: <A–M>`: A text vs. text. B state overwritten. C turn collision. D model overreach. E missing ending.
+F unbounded loop. G prose routing. H a guard. I vendor CLI behaviour. J git and worktrees. K the board. L the tests themselves. M anything else.
 **A new test's run is predicted first**, outcome and message; a surprise is a stop to understand, never a blind retry.
 **Every new install requirement goes in `docs/installation.md`**. **Leave no trace** (AGENTS.md "Tests"): a suite uses a throwaway tmux session plus
 `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the
@@ -30,7 +30,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - **A move is pinned by where it lands**: a report a unit sends is asserted once as the status it lands on,
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
-  string: `working` kept "esc to interrupt" after Claude 2.1.308 dropped it (`docs/cases.md` I2).
+  string: `working` kept "esc to interrupt" after Claude 2.1.308 dropped it.
 - **A test reaches an assertion** (`EveryTestAssertsTest`): `assert*`, `verify*`, `await*`, `check*`, `andExpect*`, here or in a sibling it calls.
 - Why: an edited test is the cheapest wrong fix ([pattern](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
 
@@ -55,7 +55,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - **A test boots no application**, a boot being the slowest test: a unit, then `ApplicationContextRunner`, then a slice; a `@SpringBootTest` only
   when none can pin its case, the reason at its site, on the one configuration Spring caches. Parallel, logging `none`: a boot resets no capture.
 - **A flaky test is a defect, fixed when first seen**: a red a rerun turns green is never waved through. Its cause is
-  found before the next commit (a race gets a fix and a `docs/cases.md` row); never a longer wait, a retry or `@Disabled`.
+  found before the next commit (a race gets a fix); never a longer wait, a retry or `@Disabled`.
 
 ### The board is tested in a browser
 

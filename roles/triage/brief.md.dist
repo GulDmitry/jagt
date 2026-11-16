@@ -24,7 +24,7 @@ Where the trail cannot tell two apart, name the one the evidence proves and say 
 
 ## The family
 
-The families are those of `docs/cases.md` and `docs/cases-h-m.md`, all listed here, so read neither; answer with the letter of the one the defect belongs to:
+The families are all listed here, so read no file; answer with the letter of the one the defect belongs to:
 A text vs. text, B state overwritten, C turn collision, D model overreach, E missing ending, F unbounded loop, G prose routing,
 H a guard, I vendor CLI behaviour, J git and worktrees, K the board, L the tests themselves, M anything else.
 Where `who` is `none`, or no family fits what you read, answer `unknown`.

@@ -32,7 +32,7 @@ jagt alone: `roles.triage.enabled` is set and a task stops. Never a model's answ
 
 - On by `roles.triage.enabled`; it reads through the Master's reader, its spend the Master review's.
 - `who` is one of `session`, `master`, `case`, `jagt` or `none`; the first that fits the evidence.
-- `family` is a letter A to M of `docs/cases.md`, or `unknown` where `who` is `none` or no family fits.
+- `family` is a letter A to M of the `Defect-family` list in `docs/rules/testing.md`, or `unknown` where `who` is `none` or no family fits.
 - Unsure is unsafe; `ready` means a lift is safe, `not ready` unsafe.
 
 ## Guards

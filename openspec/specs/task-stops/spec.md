@@ -153,7 +153,7 @@ under the same offer. The card carries the stop mark. A `deploy` you press lifts
 ### Requirement: Triage reads a stop onto its hover
 With `roles.triage.enabled` set, a stop SHALL be read once by the `triage` role (`StopTriagePanel`) through the Master's reader, its
 spend the Master review's. Its answer SHALL be a line of the stop's hover, `triage reads: <who> — <class> (<family>), lift looks <safe|unsafe>`:
-`<who>` one of `session`, `master`, `case`, `jagt` or `none`, `<family>` a letter A to M of `docs/cases.md` or `unknown`. The read
+`<who>` one of `session`, `master`, `case`, `jagt` or `none`, `<family>` a `Defect-family` letter A to M or `unknown`. The read
 SHALL press, send, notify and write nothing, to git or the code host included.
 
 #### Scenario: A stop is triaged

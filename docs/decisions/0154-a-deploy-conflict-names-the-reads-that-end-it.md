@@ -12,7 +12,7 @@ Accepted 2026-11-09. Beside [0110](0110-the-task-statechart-runs-on-an-engine-of
 
 - `DEPLOY_CONFLICT` has three causes (`MERGE`, `RED_PIPELINE`, `REVERT`); a later green pipeline, a closed request and a
   staged fix end it, each read by its own job with its own watch: `DeployCheckJob`, `ConflictRequestReadJob`, `DeployConflictJob`.
-- No one place said which cause each read ends; the cases E26, E33–E35, E40, E41, B26 and J7 in `docs/cases.md` were cells
+- No one place said which cause each read ends; eight rows of the case registry, removed 2026-11-16, were cells
   of that missing table.
 
 ## Decision

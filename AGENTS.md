@@ -31,7 +31,6 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 | [`docs/features.md`](docs/features.md) | what jagt does, one line each, linked to its spec |
-| [`docs/cases.md`](docs/cases.md) | every use case a defect broke, its family and what pins it |
 
 **An architectural decision gets its `docs/decisions/` record in the commit taking it.** **A behaviour change carries its
 `openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
@@ -135,8 +134,8 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - **Three groups** ([every suite](docs/rules/testing-suites.md)): a commit runs `cd orchestrator-backend && ./gradlew test --rerun-tasks`,
   every source set compiled; the heavy and stand groups run before a minor release's push. **A cached green is not a run.**
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
-- **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. It adds its row to
-  [`docs/cases.md`](docs/cases.md) and a `Defect-family: <A–M>` trailer.
+- **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. Its commit
+  carries a `Defect-family: <A–M>` trailer ([families](docs/rules/testing.md)).
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
   asserted what nothing promised. Never to turn a red run green ([`testing`](docs/rules/testing.md#every-test-pins-a-business-case)).
 - A suite that opens a window leaves no trace: `--orchestrator.terminal=none`, a throwaway tmux session, cleanup.

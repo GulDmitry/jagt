@@ -16,12 +16,12 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
    count that only counts identical rounds, as the trail's fingerprint already does for checks.
    A loop may alternate (asks A, gets X, asks B, gets Y, asks A again): compare each round with every earlier one,
    not only the last; a pair that recurs with nothing new between is a loop.
-3. **Name the class, not the case**, in two to four words, as `docs/cases.md` names its families.
+3. **Name the class, not the case**, in two to four words, as the `Defect-family` list of `docs/rules/testing.md` names its families.
 4. **Fix where it belongs**:
    - Master → `master-lesson`.
    - session → the brief or the rule it broke, proven by `promptEval`.
    - case → `cases` spec plus a case.
-   - jagt → a regression test verified RED, a `docs/cases.md` row, a `Defect-family` trailer.
+   - jagt → a regression test verified RED, a `Defect-family` trailer.
    - A stop that rightly stopped (the human really had to decide) gets no fix, with one clause why.
 5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "trigger":…, "who":…, "class":…, "fix":"<sha or why none>",
    "lift":"<safe, or what must be true first>"}`. A stop of a class already in the file reuses its class and lift verdict.
