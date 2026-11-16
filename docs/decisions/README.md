@@ -188,3 +188,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0172 Readiness is Spring Boot Actuator's probe](0172-readiness-is-spring-boot-actuators-probe.md) (beside 0171)
 - [0173 The code viewer's library is vendored and loaded on demand](0173-a-code-editor-is-vendored-and-loaded-on-demand.md) (reopens 0046's 50 KB)
 - [0174 The stand runs in jagt's container](0174-the-stand-runs-in-jagts-container.md) (builds on 0171, beside 0078)
+- [0175 An organisation builds its toolchains onto jagt's image](0175-an-organisation-builds-its-toolchains-onto-jagts-image.md) (on 0171)

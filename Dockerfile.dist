@@ -18,4 +18,17 @@ USER root
 # `glab`, for the other host (a release .deb from the CLI's releases page).
 # RUN curl -fsSL -o /tmp/glab.deb <release .deb url> && apt-get install -y /tmp/glab.deb && rm /tmp/glab.deb
 
+# mise, so each repository's .tool-versions or mise.toml picks its own Java, Node or PHP: the session's inner loop
+# (compile, unit tests, lint, language server) runs here in seconds; the acceptance role is the outer loop (0175).
+# Shims are on PATH, so a session's non-interactive shell resolves them; tools install on first use.
+# RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates build-essential && rm -rf /var/lib/apt/lists/*
+# RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+# ENV MISE_DATA_DIR=/home/jagt/.local/share/mise MISE_YES=1 MISE_TRUSTED_CONFIG_PATHS=/data
+# ENV PATH=/home/jagt/.local/share/mise/shims:${PATH}
+
+# Playwright with its browsers, for a session driving a browser; needs the Node block above.
+# The distribution's Node is 18, so the version is pinned to one that supports it; raise both together.
+# ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
+# RUN npm install -g playwright@1.49.1 && playwright install --with-deps chromium && chmod -R a+rX /opt/playwright && rm -rf /var/lib/apt/lists/*
+
 USER jagt

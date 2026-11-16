@@ -17,6 +17,9 @@ orchestrator:
   agent:
     sandbox:
       enabled: false                           # agent.sandbox
+  roles:
+    acceptance:
+      enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
   usageLimits:
     enabled: false                             # usageLimits
   auth:

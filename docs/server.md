@@ -63,6 +63,11 @@ Add the agent CLI's API key and the code host's token to the same file or Secret
 - **Token**: a credential helper in your image reading the token from the environment, with `https://` project urls.
 - `codeHost: github` or `gitlab` also needs `gh` or `glab` in your image.
 
+## Your toolchain
+
+Sessions check their work in your image, built `FROM` jagt's: [spec](../openspec/specs/server-environment/spec.md),
+[0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md), optional blocks in [`Dockerfile.dist`](../Dockerfile.dist).
+
 ## Build and deploy
 
 Your image sits on jagt's: `Dockerfile.dist` adds the agent CLI, `gh` and `glab` as optional blocks.
