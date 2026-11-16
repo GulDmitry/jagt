@@ -25,6 +25,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | H22 | a second installed checker's check is not met → its round is set off `by:` that checker's role id, so a case `by: acceptance` does not send it and the log names the checker | seen 2026-11-15: finding in a hand-back, the round read `by: acceptance` | `CaseDoorTest`, `CheckerOutcomesTest` |
 | H23 | a headless Linux server opens no terminal window → startup does not demand a kitty binary, and `terminal` is a live key again, not a retired one | seen 2026-11-15: a container refused to start without kitty, the image set `kittyCommand` to a no-op | `LinuxKittyTerminalDriverTest`, `ConfigCheckTest` |
 | H24 | the example pod's `JAGT_PUBLIC_URL` is its ingress host → that host's Host and Origin pass `LoopbackFilter` like an `allowedHosts` entry, and `auth: none` with such a publicUrl refuses the start | seen 2026-11-16: the pod answered 403 behind its ingress | `LoopbackFilterTest`, `AuthCheckTest`, `BoardUrlTest` |
+| H25 | under `auth: password` a request fails the host or origin check, which sends 403 and dispatches `/error` → it answers 403, never the 302 to the login page | seen 2026-11-16: the error dispatch met the login; `/error` permit-all fixed it unpinned | `PasswordLoginRefusalTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
