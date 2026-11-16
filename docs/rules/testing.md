@@ -2,8 +2,8 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate (AGENTS.md). Other suites in `src/<name>/java`, none in `check`: `e2eTest` git + tmux, `containerTest` docker,
-`boardTest` Chromium, `linuxDriverTest` Linux + display (`JAGT_IN_CONTAINER`), `promptEval`, `roleEval -Prole=<id>` the CLI + tokens.
+`./gradlew test` is the hermetic gate (AGENTS.md). Every other suite lives in `src/<name>/java`, none in `check`:
+[the suites, where and when each runs](testing-suites.md).
 **Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD`, each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
