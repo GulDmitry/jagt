@@ -86,6 +86,7 @@ jobs:
       packages: write
       pages: write
       id-token: write
+      attestations: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -103,6 +104,11 @@ jobs:
           mkdir -p build/release
           cp build/libs/jagt.jar "build/release/jagt-$version.jar"
           cp build/reports/sbom/jagt.cdx.json "build/release/jagt-$version.cdx.json"
+          (cd build/release && sha256sum "jagt-$version.jar" "jagt-$version.cdx.json" > "jagt-$version.sha256")
+      # actions/attest-build-provenance v4.2.2
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: orchestrator-backend/build/release/*.jar
       - name: attach them to the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -113,9 +119,24 @@ jobs:
             gh release create "$GITHUB_REF_NAME" build/release/* --generate-notes --verify-tag
           fi
       - name: publish the image
+        id: image
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: scripts/publish-image.sh "$GITHUB_REF_NAME"
+      # actions/attest-build-provenance v4.2.2
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+      - name: attach the image's digest to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          version=$(./gradlew --no-daemon -q printVersion)
+          echo "${DIGEST#sha256:}  ghcr.io image jagt:$version" > "build/release/jagt-$version.image.sha256"
+          gh release upload "$GITHUB_REF_NAME" "build/release/jagt-$version.image.sha256" --clobber
       - name: keep every patch of the last two minors
         env:
           GH_TOKEN: ${{ github.token }}

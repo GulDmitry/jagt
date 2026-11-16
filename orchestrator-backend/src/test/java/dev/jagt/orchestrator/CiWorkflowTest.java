@@ -107,4 +107,39 @@ class CiWorkflowTest {
         .contains("bootJar cyclonedxBom")
         .contains("orchestrator-backend/build/reports/sbom/jagt.cdx.json");
   }
+
+  @Test
+  void signsProvenanceOfTheJarAndTheImageByOnePinnedAction() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release)
+        .contains("actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8")
+        .contains("subject-path=orchestrator-backend/build/release/*.jar")
+        .contains("subject-digest=${{ steps.image.outputs.digest }}")
+        .contains("push-to-registry=true");
+  }
+
+  @Test
+  void grantsTheReleaseJobTheRightsToSignAndStoreAttestations() {
+    String permissions =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("release")).get("permissions"));
+
+    assertThat(permissions).contains("attestations=write").contains("id-token=write");
+  }
+
+  @Test
+  void attachesSha256FilesForTheJarAndTheImageToTheRelease() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release)
+        .contains("sha256sum \"jagt-$version.jar\" \"jagt-$version.cdx.json\"")
+        .contains("jagt-$version.image.sha256");
+  }
+
+  @Test
+  void handsTheImageDigestToTheWorkflowFromThePublishScript() {
+    assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh")))
+        .contains("--metadata-file")
+        .contains("digest=");
+  }
 }

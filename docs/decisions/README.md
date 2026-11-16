@@ -196,3 +196,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0180 Each sphere's industry standard is jagt's floor](0180-each-spheres-industry-standard-is-jagts-floor.md) (on 0162)
 - [0181 Every module keeps 80% line coverage, gating `test`](0181-every-module-keeps-80-percent-line-coverage.md) (beside 0125)
 - [0182 A release lists what is inside it, as CycloneDX](0182-a-release-lists-what-is-inside-it-as-cyclonedx.md)
+- [0183 A release is signed by the platform that built it](0183-a-release-is-signed-by-the-platform-that-built-it.md) (on 0182)
