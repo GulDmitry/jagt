@@ -1,0 +1,21 @@
+# Your own image on top of jagt's: build jagt's image first, then this one.
+#   docker build -t jagt-base .                       (in a jagt checkout)
+#   docker build -f Dockerfile.dist --build-arg BASE=jagt-base -t my-jagt .
+# Every block is optional; uncomment what your agent and host need. The names are examples only.
+ARG BASE=jagt-base
+FROM ${BASE}
+USER root
+
+# Node, for an agent CLI distributed on npm.
+# RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
+
+# An agent CLI, e.g. `npm install -g <package>`; a CLI shipping its own installer goes here the same way.
+# RUN npm install -g <your-agent-cli-package>
+
+# `gh`, when jagt.yml sets codeHost to the host that CLI serves (https://cli.github.com/packages).
+# RUN apt-get update && apt-get install -y --no-install-recommends gh && rm -rf /var/lib/apt/lists/*
+
+# `glab`, for the other host (a release .deb from the CLI's releases page).
+# RUN curl -fsSL -o /tmp/glab.deb <release .deb url> && apt-get install -y /tmp/glab.deb && rm /tmp/glab.deb
+
+USER jagt

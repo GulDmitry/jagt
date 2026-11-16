@@ -1,0 +1,88 @@
+# jagt on Kubernetes, one replica: cp kubernetes.yml.dist kubernetes.yml, edit, kubectl apply -f kubernetes.yml
+# Replace the image, host and Secret values; the Secret holds the same keys as .env.dist.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jagt
+type: Opaque
+stringData:
+  JAGT_PASSWORD_HASH: ""
+  JAGT_PUBLIC_URL: https://jagt.example.com
+---
+# Optional: drop it and set the Deployment's `data` volume to `emptyDir: {}`; a new pod then starts empty.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jagt-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jagt
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jagt
+  template:
+    metadata:
+      labels:
+        app: jagt
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: jagt
+          image: registry.example.com/my-jagt:latest
+          ports:
+            - containerPort: 8290
+          envFrom:
+            - secretRef:
+                name: jagt
+          readinessProbe:
+            httpGet:
+              path: /login.html
+              port: 8290
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: jagt-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jagt
+spec:
+  selector:
+    app: jagt
+  ports:
+    - port: 8290
+      targetPort: 8290
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jagt
+spec:
+  rules:
+    - host: jagt.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jagt
+                port:
+                  number: 8290
