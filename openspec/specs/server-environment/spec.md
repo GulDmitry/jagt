@@ -1,7 +1,7 @@
 # server-environment Specification
 
 ## Purpose
-TBD - created by archiving change jagt-109-server-environment. Update Purpose after archive.
+jagt's base image, the organisation's image built from it with the projects' toolchains, and the acceptance role on a server.
 
 ## Requirements
 
