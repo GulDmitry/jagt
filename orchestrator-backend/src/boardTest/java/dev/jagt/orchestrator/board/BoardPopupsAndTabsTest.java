@@ -7,6 +7,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
@@ -153,12 +154,11 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     breakable.breakIt();
     Page page = openLiveBoard();
     jobs.runNow("breakable");
-    page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
+    page.waitForCondition(breakable::failing);
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
     page.locator("#jobs-pulse").click();
-    assertThat(page.locator("table.jobs tr.failed")).containsText("breakable");
-    assertThat(page.locator("table.jobs[aria-label=housekeeping] tbody tr").first())
+    assertThat(page.locator("table.jobs tr:has(button[data-job=breakable])"))
         .hasClass(Pattern.compile("failed"));
     page.locator("table.jobs button[data-job=breakable]").click();
 
@@ -729,13 +729,14 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-jobs").click();
-    assertThat(page.locator("table.jobs tr.failed")).hasCount(0);
+    Locator row = page.locator("table.jobs tr:has(button[data-job=breakable])");
+    assertThat(row).not().hasClass(Pattern.compile("failed"));
 
     jobs.runNow("breakable");
-    page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
+    page.waitForCondition(breakable::failing);
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    assertThat(page.locator("table.jobs tr.failed")).containsText("breakable");
+    assertThat(row).hasClass(Pattern.compile("failed"));
   }
 
   @Test

@@ -26,9 +26,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,7 +81,8 @@ abstract class BoardPageContext {
     }
 
     boolean failing() {
-      return jobs.getObject().summary(System.currentTimeMillis()).failing() > 0;
+      return jobs.getObject().statuses(System.currentTimeMillis()).stream()
+          .anyMatch(status -> status.id().equals(id()) && status.lastError() != null);
     }
 
     @Override
@@ -93,8 +96,8 @@ abstract class BoardPageContext {
     }
 
     @Override
-    public Duration every() {
-      return Duration.ofMinutes(1);
+    public @Nullable Duration every() {
+      return null;
     }
 
     @Override
@@ -154,21 +157,19 @@ abstract class BoardPageContext {
   private static void nameTheProjectsTheBoardOffers(Path folder) throws IOException {
     try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
       for (Path file : shipped) {
-        Files.copy(
-            file,
-            folder.resolve(file.getFileName()),
-            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        replaceAtomically(file, folder.resolve(file.getFileName()));
       }
     }
     try (var shipped = Files.walk(Path.of("..", "roles"))) {
       for (Path file : shipped.filter(path -> path.toString().endsWith(".dist")).toList()) {
         Path target = folder.resolve(Path.of("..").relativize(file));
         Files.createDirectories(target.getParent());
-        Files.copy(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        replaceAtomically(file, target);
       }
     }
+    Path written = folder.resolve("jagt.yml.tmp");
     Files.writeString(
-        folder.resolve("jagt.yml"),
+        written,
         """
         orchestrator:
           projects:
@@ -177,6 +178,30 @@ abstract class BoardPageContext {
           autoReview: {enabled: true}
         """
             .formatted(folder.resolve("beta"), folder.resolve("alpha")));
+    Files.move(written, folder.resolve("jagt.yml"), StandardCopyOption.ATOMIC_MOVE);
+  }
+
+  private static void replaceAtomically(Path source, Path target) throws IOException {
+    Path staged = target.resolveSibling(target.getFileName() + ".tmp");
+    Files.copy(source, staged, StandardCopyOption.REPLACE_EXISTING);
+    Files.move(staged, target, StandardCopyOption.ATOMIC_MOVE);
+  }
+
+  private static boolean shipped(Path file) {
+    String name = file.getFileName().toString();
+    return name.endsWith(".dist") || name.equals("jagt.yml") || name.equals("jagt.log");
+  }
+
+  private static void removeTestAddedFiles(Path entry) throws IOException {
+    if (Files.isDirectory(entry) && entry.getFileName().toString().equals("roles")) {
+      try (var files = Files.walk(entry)) {
+        for (Path file : files.filter(Files::isRegularFile).filter(f -> !shipped(f)).toList()) {
+          Files.delete(file);
+        }
+      }
+    } else if (!shipped(entry)) {
+      FileSystemUtils.deleteRecursively(entry);
+    }
   }
 
   TaskStateBuilder alphaTask(String key, TaskStatus status) {
@@ -226,9 +251,7 @@ abstract class BoardPageContext {
   void emptyTheBoard(Browser browser) throws IOException {
     try (var entries = Files.newDirectoryStream(root)) {
       for (Path entry : entries) {
-        if (!entry.getFileName().toString().equals("jagt.log")) {
-          FileSystemUtils.deleteRecursively(entry);
-        }
+        removeTestAddedFiles(entry);
       }
     }
     nameTheProjectsTheBoardOffers(root);
