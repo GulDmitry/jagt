@@ -21,7 +21,7 @@ resort.
 
 | symptom | fix |
 |---------|-----|
-| `deploy` says `MERGE CONFLICT` | nothing was pushed; `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, `deploy` again |
+| `deploy` says `MERGE CONFLICT` | nothing was pushed; `code <ticket>` opens the **deploy** worktree — resolve, `git add`, `deploy` again |
 | `revert` has no record of the merge commit | the deploy predates jagt recording them: by hand, below |
 | `revert` says the revert conflicts | nothing is pushed; resolve in the `<task>-revert` worktree, `git add`, then `revert` again |
 

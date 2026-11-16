@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,7 +20,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class IdeDiffTest {
+class CodeDiffTest {
 
   private final EditorDriver editor = mock(EditorDriver.class);
   private final ConfigService config = mock(ConfigService.class);
@@ -39,7 +39,7 @@ class IdeDiffTest {
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
 
-    String opened = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
+    String opened = new CodeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     verify(editor).openDiff(Path.of("/tmp/base"), Path.of("/tmp/clean"));
     assertThat(opened)
@@ -54,7 +54,7 @@ class IdeDiffTest {
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", List.of()));
 
-    new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
+    new CodeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     verify(diffs).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1", "proj");
   }
@@ -71,7 +71,7 @@ class IdeDiffTest {
     when(config.project("web"))
         .thenReturn(new ProjectConfig("/web-repo", "origin/next", "dev", List.of()));
 
-    String opened = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
+    String opened = new CodeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     assertThat(opened).contains("(api vs origin/main, web vs origin/next)");
     verify(diffs).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
@@ -84,7 +84,7 @@ class IdeDiffTest {
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
             .build();
 
-    String answer = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
+    String answer = new CodeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     assertThat(answer)
         .isEqualTo("Nothing to diff yet: ABC-1 has no repository until its plan is approved");

@@ -18,8 +18,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.report.AgentStatusReports;
 import dev.jagt.orchestrator.service.report.OwnStatusReports;
 import dev.jagt.orchestrator.surface.mcp.refusal.CallerScope;
+import dev.jagt.orchestrator.surface.mcp.tools.CodeTools;
 import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
-import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
 import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
 import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
 import dev.jagt.orchestrator.task.TaskState;
@@ -455,7 +455,7 @@ class McpProtocolServiceTest {
                     mock(OwnStatusReports.class),
                     scope,
                     mock(Notifications.class)),
-                new IdeTools(mock(CommandService.class), scope),
+                new CodeTools(mock(CommandService.class), scope),
                 new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
@@ -470,7 +470,7 @@ class McpProtocolServiceTest {
 
     assertThat(listed)
         .extracting(tool -> tool.path("name").asString())
-        .containsExactlyInAnyOrder("update_agent_status", "notify_user", "open_in_ide");
+        .containsExactlyInAnyOrder("update_agent_status", "notify_user", "open_code");
     assertThat(listed)
         .extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(false))
         .containsOnly(true);

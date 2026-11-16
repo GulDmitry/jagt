@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DiffCapability implements TaskCapability {
 
-  private final IdeLauncher ide;
+  private final CodeLauncher ide;
 
   @Override
   public TaskAction action() {
@@ -19,6 +19,6 @@ public class DiffCapability implements TaskCapability {
 
   @Override
   public Outcome run(String taskId) {
-    return Outcome.ok(ide.open(taskId, IdeLauncher.Mode.DIFF));
+    return Outcome.ok(ide.open(taskId, CodeLauncher.Mode.DIFF));
   }
 }

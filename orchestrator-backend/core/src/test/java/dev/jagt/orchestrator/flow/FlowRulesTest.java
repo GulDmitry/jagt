@@ -246,7 +246,11 @@ class FlowRulesTest {
   void letsHumanLookAtCloseOrRestartTaskWhereverItGotTo(TaskStatus status) {
     assertThat(rules.allowed(status, Facts.defaults()))
         .contains(
-            TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF, TaskAction.RESPAWN, TaskAction.DONE);
+            TaskAction.FOCUS,
+            TaskAction.CODE,
+            TaskAction.DIFF,
+            TaskAction.RESPAWN,
+            TaskAction.DONE);
   }
 
   @ParameterizedTest
@@ -265,7 +269,7 @@ class FlowRulesTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"FOCUS,OK", "IDE,OK", "SHIP,CONFLICT", "REVERT,RELAYED"})
+  @CsvSource({"FOCUS,OK", "CODE,OK", "SHIP,CONFLICT", "REVERT,RELAYED"})
   void leavesTheTaskWhereItIsForAnOutcomeTheTableMapsNowhere(
       TaskAction action, Outcome.Kind outcome) {
     assertThat(rules.next(TaskStatus.REVIEWED, action, outcome)).isEmpty();

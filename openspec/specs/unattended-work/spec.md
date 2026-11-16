@@ -8,7 +8,7 @@ What jagt does unasked: the auto-review poll, its cadence, and every other job i
 
 ### Requirement: The auto-review poll only reads and drafts
 The poll (`AutoReviewScheduler` → `ReviewSweepService`) SHALL only read and draft: threads relayed, the agent fixing locally into
-`review_replies.md`, nothing posted without a human `ship`, the diff and drafts left for `ide <alias>`. Code review is never fully automated.
+`review_replies.md`, nothing posted without a human `ship`, the diff and drafts left for `code <alias>`. Code review is never fully automated.
 Rounds: [review](../review/spec.md).
 
 #### Scenario: Sweep by hand

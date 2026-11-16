@@ -45,8 +45,8 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `do <ticket> <projA>,<projB>` | one task, one agent, a worktree per repository |
 | `do <ticket> recreate` / `resume` | the branch already exists: cut it fresh, or take over its commits |
 | `focus <ticket>` | jump to the agent's session and talk to it directly |
-| `ide <ticket>` | open the worktree as a project — Git → Local Changes is the live diff |
-| `ide <ticket> diff` | a static snapshot against the branch the request targets |
+| `code <ticket>` | open the worktree as a project — Git → Local Changes is the live diff |
+| `code <ticket> diff` | a static snapshot against the branch the request targets |
 | `diff <ticket>` | every repository's diff against the branch its request targets |
 | `ship <ticket>` | commit, push, open or update the review request |
 | `sweep <ticket>` | pull checks + comments; the agent fixes locally and drafts replies |
@@ -104,7 +104,7 @@ treated as a typo, not as prose.
 
 ## The review loop
 
-`do → ide → ship → sweep → ide → ship` repeats once per review round until CI is green and every thread is
+`do → code → ship → sweep → code → ship` repeats once per review round until CI is green and every thread is
 resolved, then `deploy`, then `done`. `focus` is available throughout — the agent is a session you can talk
 to — and after a deploy you may ship and deploy again as often as you like. jagt refuses a move that makes no
 sense for the task's status, with a sentence rather than a git error.
@@ -137,7 +137,7 @@ or ask you; it does not implement a suggestion it thinks is wrong.
 **`resume`** takes over an existing review request: its branch comes back with its commits, its target is
 remembered, and the next `ship` updates that request.
 
-**`deploy` on conflict** pushes nothing: the task goes `DEPLOY_CONFLICT` and `ide <ticket>` opens the **deploy**
+**`deploy` on conflict** pushes nothing: the task goes `DEPLOY_CONFLICT` and `code <ticket>` opens the **deploy**
 worktree — resolve, `git add`, `deploy` again. Your task branch and request are untouched.
 
 **`revert`** reverts the merge commit `deploy` created and pushes it — it only *adds* a commit, so your branch

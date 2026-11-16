@@ -8,8 +8,8 @@ Reading a task's change in the board, without opening an editor.
 ### Requirement: The Diff tab reads a task's change
 The Diff tab SHALL show each repository of the open task under its base. It shows the unified diff from that
 base's merge-base to the worktree as it stands. Committed or not counts, untracked files too, ignored ones not.
-The base is the one the IDE diff reads. It reads on request, stores nothing and opens no editor. An added line is bold
-with a bar, a removed line struck through, a header muted: the marks of a plan's changed lines. The IDE verb stays.
+The base is the one the editor diff reads. It reads on request, stores nothing and opens no editor. An added line is bold
+with a bar, a removed line struck through, a header muted: the marks of a plan's changed lines. The code verb stays.
 
 #### Scenario: Reading the change without an editor
 - **WHEN** the human opens the Diff tab of a task whose worktree changed `a.txt`, committed or not, and added `b.txt`

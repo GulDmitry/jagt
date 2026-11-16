@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.message.IdeOpen;
+import dev.jagt.orchestrator.protocol.message.CodeOpen;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class IdeTools implements McpTools {
+public class CodeTools implements McpTools {
 
   private final CommandService commands;
   private final CallerScope callerScope;
@@ -22,15 +22,15 @@ public class IdeTools implements McpTools {
   @Override
   public void declare(McpToolRegistry tools) {
     tools.tool(
-        "open_in_ide",
+        "open_code",
         Audience.ANYONE,
         Effect.REPORTS,
-        IdeOpen.SCHEMA,
-        IdeOpen.class,
+        CodeOpen.SCHEMA,
+        CodeOpen.class,
         (said, caller) -> MessageContext.NONE,
         (said, caller) ->
             commands.execute(
                 callerScope.resolve(said.taskId(), caller),
-                said.diff() ? TaskAction.DIFF : TaskAction.IDE));
+                said.diff() ? TaskAction.DIFF : TaskAction.CODE));
   }
 }

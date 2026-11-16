@@ -9,7 +9,7 @@ import java.util.Locale;
 
 /** Opening a task's worktree for a human to look at, as a project or as a snapshot diff. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record IdeOpen(String taskId, String mode) implements Message {
+public record CodeOpen(String taskId, String mode) implements Message {
 
   public static final List<String> MODES = List.of("diff", "project");
 
@@ -25,7 +25,7 @@ public record IdeOpen(String taskId, String mode) implements Message {
               "Task id or its short alias; the calling worktree's own task where it is left out.")
           .choice("mode", MODES, "Default: project.");
 
-  public IdeOpen {
+  public CodeOpen {
     taskId = taskId == null || taskId.isBlank() ? null : taskId;
     mode = mode == null || mode.isBlank() ? null : mode;
   }

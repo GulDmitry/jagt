@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
@@ -8,17 +8,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class IdeCapability implements TaskCapability {
+public class CodeCapability implements TaskCapability {
 
-  private final IdeLauncher ide;
+  private final CodeLauncher ide;
 
   @Override
   public TaskAction action() {
-    return TaskAction.IDE;
+    return TaskAction.CODE;
   }
 
   @Override
   public Outcome run(String taskId) {
-    return Outcome.ok(ide.open(taskId, IdeLauncher.Mode.PROJECT));
+    return Outcome.ok(ide.open(taskId, CodeLauncher.Mode.PROJECT));
   }
 }

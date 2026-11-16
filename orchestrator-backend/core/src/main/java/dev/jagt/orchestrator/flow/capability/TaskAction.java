@@ -106,13 +106,13 @@ public enum TaskAction {
       "type a shell line into the session behind its CLI's shell escape",
       "run <ticket>"),
   FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
-  IDE(
+  CODE(
       50,
       Group.TOOL,
-      "ide",
-      "Open IDE",
-      "open every worktree in the IDE; its uncommitted-changes view is the live diff",
-      "ide <ticket> [diff]"),
+      "code",
+      "Code",
+      "open every worktree in the editor; its uncommitted-changes view is the live diff",
+      "code <ticket> [diff]"),
   DIFF(
       60,
       Group.TOOL,
@@ -151,7 +151,7 @@ public enum TaskAction {
    * Actions that only LOOK at a task — not the same question as which half of the card renders
    * them.
    */
-  private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
+  private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, CODE, DIFF);
 
   /** Verbs whose one argument is a line a session is typed, never a project. */
   private static final Set<TaskAction> TAKES_A_LINE = EnumSet.of(RUN);
@@ -171,10 +171,10 @@ public enum TaskAction {
    * One letter a key runs the verb by on an open task; a verb that cannot be taken back has none.
    */
   private static final Map<TaskAction, String> KEYS =
-      Map.of(SWEEP, "r", SHIP, "s", DEPLOY, "d", REVERT, "v", FOCUS, "f", IDE, "o", DIFF, "g");
+      Map.of(SWEEP, "r", SHIP, "s", DEPLOY, "d", REVERT, "v", FOCUS, "f", CODE, "o", DIFF, "g");
 
   /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
-  private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
+  private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP, "ide", CODE);
 
   private final int rank;
   private final Group group;

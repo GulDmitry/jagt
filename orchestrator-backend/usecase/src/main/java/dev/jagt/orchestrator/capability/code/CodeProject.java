@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.capability.Facts;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 /** A task opened as projects that run, or as the deploy or revert worktree holding its conflict. */
 @Component
 @RequiredArgsConstructor
-class IdeProject {
+class CodeProject {
 
   private final DeployTargets deployTargets;
   private final GitDeploy gitDeploy;

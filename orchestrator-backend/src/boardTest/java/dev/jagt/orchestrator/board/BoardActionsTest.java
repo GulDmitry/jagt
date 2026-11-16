@@ -168,7 +168,7 @@ class BoardActionsTest extends BoardPageContext {
 
       try {
         assertThat(button(page, "Focus")).isEnabled();
-        assertThat(button(page, "Open IDE")).isEnabled();
+        assertThat(button(page, "Code")).isEnabled();
         assertThat(button(page, "Diff")).isEnabled();
         assertThat(button(page, "Ship")).isDisabled();
         assertThat(button(page, "Restart agent")).isDisabled();

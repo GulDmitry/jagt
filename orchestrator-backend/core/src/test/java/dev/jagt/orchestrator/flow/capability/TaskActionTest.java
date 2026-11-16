@@ -33,7 +33,14 @@ class TaskActionTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"FOCUS,true", "IDE,true", "DIFF,true", "SHIP,false", "DEPLOY,false", "RESPAWN,false"})
+  @CsvSource({
+    "FOCUS,true",
+    "CODE,true",
+    "DIFF,true",
+    "SHIP,false",
+    "DEPLOY,false",
+    "RESPAWN,false"
+  })
   void callsOnlyTheVerbsThatLookAtTaskReadOnly(TaskAction action, boolean readOnly) {
     assertThat(action.readOnly()).isEqualTo(readOnly);
   }
@@ -67,7 +74,7 @@ class TaskActionTest {
   @Test
   void writesWhatHumanTypesAsTheVerbAndItsArgument() {
     assertThat(TaskAction.SHIP.usage()).isEqualTo("ship <ticket>");
-    assertThat(TaskAction.IDE.usage()).isEqualTo("ide <ticket> [diff]");
+    assertThat(TaskAction.CODE.usage()).isEqualTo("code <ticket> [diff]");
   }
 
   @Test

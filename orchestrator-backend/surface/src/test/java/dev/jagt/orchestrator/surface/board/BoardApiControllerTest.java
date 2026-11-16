@@ -78,7 +78,7 @@ class BoardApiControllerTest {
 
     assertThat(ids)
         .contains(
-            "ship", "sweep", "ide", "diff", "deploy", "revert", "respawn", "done", "focus", "do",
+            "ship", "sweep", "code", "diff", "deploy", "revert", "respawn", "done", "focus", "do",
             "stats");
   }
 

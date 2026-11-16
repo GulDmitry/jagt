@@ -150,3 +150,10 @@ started task by hand and wears the colour of a stopped `act`; the legend shows i
 #### Scenario: The tab icon
 - **WHEN** the board is stopped and nothing else is broken
 - **THEN** the tab icon stays unmarked, for a stop the human chose is not a break
+
+### Requirement: The editor verb is `code`
+The verb opening a task's worktrees in the configured editor SHALL be `code`, its MCP tool `open_code`, its capability `capability/code`.
+The retired spelling `ide` still answers, unadvertised (`TaskAction.RENAMED`). It launches the external editor (`editorCommand`) as before.
+#### Scenario: The old spelling is typed
+- **WHEN** the human types `ide ABC-42`
+- **THEN** it runs `code ABC-42`, and the card's button reads `Code`

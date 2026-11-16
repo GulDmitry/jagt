@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -23,7 +23,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class IdeProjectTest {
+class CodeProjectTest {
 
   private final EditorDriver editor = mock(EditorDriver.class);
   private final ConfigService config = mock(ConfigService.class);
@@ -65,7 +65,7 @@ class IdeProjectTest {
     when(deploys.deployWorktreePath(web, "ABC-1"))
         .thenReturn(Path.of("/data/worktrees/web/ABC-1-deploy"));
 
-    new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/data/worktrees/web/ABC-1-deploy"));
     verify(editor, never()).open(Path.of("/data/worktrees/api/ABC-1-deploy"));
@@ -94,7 +94,7 @@ class IdeProjectTest {
                         new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
     when(deploys.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
 
-    String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
     assertThat(out).contains("deploy worktree");
   }
@@ -107,7 +107,7 @@ class IdeProjectTest {
         TaskState.builder("gone", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT).build();
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
 
-    String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
     verify(editor).open(taskWorktree);
     assertThat(out).contains("as a project in the editor");
@@ -117,7 +117,7 @@ class IdeProjectTest {
   void showsTheHumanTheTasksOwnWorktreeAsProject() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
-    new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/wt"));
   }
@@ -130,7 +130,7 @@ class IdeProjectTest {
                 TaskStatus.REVIEW_PENDING)
             .build();
 
-    new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/api-wt"));
     verify(editor).open(Path.of("/web-wt"));
@@ -163,7 +163,7 @@ class IdeProjectTest {
     when(deploys.revertWorktreePath(repo, "ABC-1"))
         .thenReturn(Path.of("/data/worktrees/proj/ABC-1-revert"));
 
-    String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/data/worktrees/proj/ABC-1-revert"));
     assertThat(out).contains("revert worktree", "`revert ABC-1` again");

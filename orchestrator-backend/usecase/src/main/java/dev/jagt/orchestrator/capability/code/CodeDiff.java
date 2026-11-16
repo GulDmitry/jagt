@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.service.git.DiffCheckouts;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 /** A task opened as a static diff against what its request targets. */
 @Component
 @RequiredArgsConstructor
-class IdeDiff {
+class CodeDiff {
 
   private final DiffBases bases;
   private final DiffCheckouts diffCheckouts;

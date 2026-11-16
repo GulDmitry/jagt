@@ -142,9 +142,9 @@ at: any
 by: master
 The Master opens the agent's terminal window.
 
-## ide
+## code
 
-move: ide
+move: code
 at: any
 by: master
 The Master opens every worktree of the task in the editor.

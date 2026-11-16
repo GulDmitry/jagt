@@ -263,12 +263,12 @@ class McpToolScopeTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"diff, DIFF", "project, IDE"})
-  void opensAnAgentsOwnTaskInTheIdeThroughTheCommandGate(String mode, TaskAction action) {
+  @CsvSource({"diff, DIFF", "project, CODE"})
+  void opensAnAgentsOwnTaskInTheEditorThroughTheCommandGate(String mode, TaskAction action) {
     CommandService commands = mock(CommandService.class);
     Registered registered = new Registered();
-    new IdeTools(commands, new CallerScope(mock(StateService.class))).declare(registered);
-    ToolHandler handler = registered.handlers.get("open_in_ide");
+    new CodeTools(commands, new CallerScope(mock(StateService.class))).declare(registered);
+    ToolHandler handler = registered.handlers.get("open_code");
     when(commands.execute("MINE-1", action)).thenReturn("opened MINE-1");
 
     String answered =

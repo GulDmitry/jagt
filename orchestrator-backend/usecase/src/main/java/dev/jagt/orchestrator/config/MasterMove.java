@@ -29,7 +29,7 @@ public enum MasterMove {
   RESPAWN("respawn", false),
   SCENARIOS("scenarios", false),
   FOCUS("focus", false),
-  IDE("ide", false),
+  CODE("code", false),
   DIFF("diff", false),
   ROUND_NOT_READY("round-not-ready", true),
   PLAN_NOT_READY("plan-not-ready", true),

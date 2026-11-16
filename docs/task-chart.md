@@ -98,7 +98,7 @@ stateDiagram-v2
         state "all" as lifecycle_from_30
         lifecycle_from_30 --> lifecycle_from_30 : offers focus
         state "all" as lifecycle_from_31
-        lifecycle_from_31 --> lifecycle_from_31 : offers ide
+        lifecycle_from_31 --> lifecycle_from_31 : offers code
         state "all" as lifecycle_from_32
         lifecycle_from_32 --> lifecycle_from_32 : offers diff
         state "all" as lifecycle_from_33

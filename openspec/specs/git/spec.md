@@ -14,7 +14,7 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 (git refuses a push to it), else push within the repository.
 
 #### Scenario: Diff base
-- **WHEN** `ide <task> diff` shows files the task never touched
+- **WHEN** `code <task> diff` shows files the task never touched
 - **THEN** read against the request's target, never `deployBranch`
 
 ### Requirement: Nothing rewrites what left the machine

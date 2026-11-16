@@ -151,7 +151,7 @@ final class TaskOffers {
           offer(TaskAction.ESCALATE, ANY, yes(STOPPED), yes(TIER_ABOVE)),
           offer(TaskAction.SCENARIOS, OPEN, no(LIVE_DEPLOY), yes(SCENARIOS_READY)),
           offer(TaskAction.FOCUS, ANY),
-          offer(TaskAction.IDE, ANY),
+          offer(TaskAction.CODE, ANY),
           offer(TaskAction.DIFF, ANY),
           offer(TaskAction.RESPAWN, ANY),
           offer(TaskAction.DONE, ANY));

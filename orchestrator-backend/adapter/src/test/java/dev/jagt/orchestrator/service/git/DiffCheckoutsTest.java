@@ -32,7 +32,7 @@ class DiffCheckoutsTest {
   }
 
   @Test
-  void excludesGitIgnoredPlumbingFromTheIdeDiffSnapshot() throws Exception {
+  void excludesGitIgnoredPlumbingFromTheCodeDiffSnapshot() throws Exception {
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("f.txt"), "task change");

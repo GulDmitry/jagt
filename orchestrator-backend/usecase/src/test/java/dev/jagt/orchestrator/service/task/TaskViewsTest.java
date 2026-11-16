@@ -127,7 +127,7 @@ class TaskViewsTest {
     assertThat(views.listing())
         .isEqualTo(
             "ABC-1 [REVIEW_PENDING] Fix the login — ready | /wt/ABC-1 https://host/mr/7"
-                + " alias=a1 legal=ship,sweep,deploy,pause,done,focus,ide,diff,respawn");
+                + " alias=a1 legal=ship,sweep,deploy,pause,done,focus,code,diff,respawn");
   }
 
   @Test

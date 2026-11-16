@@ -44,7 +44,7 @@ Everything jagt does, one line each and linked to its spec: [Features](docs/feat
 
 | the agent session | you |
 |---|---|
-| reads the ticket, writes the code, runs your tests | look at the live diff — `ide` |
+| reads the ticket, writes the code, runs your tests | look at the live diff — `code` |
 | leaves **everything uncommitted** | `ship` — the first commit and push there is |
 | fixes the CI failures and the comments, drafts every reply | read the drafts — `replies` — then `ship` |
 | touches no shared branch and no other task | `deploy`, then `done` |

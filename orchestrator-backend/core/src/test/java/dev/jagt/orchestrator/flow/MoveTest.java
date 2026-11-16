@@ -68,7 +68,7 @@ class MoveTest {
 
     assertThat(actions).isSortedAccordingTo(Comparator.comparing(TaskAction::group));
     assertThat(actions)
-        .endsWith(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF, TaskAction.RESPAWN);
+        .endsWith(TaskAction.FOCUS, TaskAction.CODE, TaskAction.DIFF, TaskAction.RESPAWN);
   }
 
   @ParameterizedTest

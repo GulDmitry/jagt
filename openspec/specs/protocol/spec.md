@@ -160,7 +160,7 @@ A call whose `X-Working-Directory` lies in a task's worktree SHALL be that task'
 
 #### Scenario: What a sub-agent sees
 - **WHEN** a sub-agent lists or calls tools
-- **THEN** it has `update_agent_status`, `notify_user` and `open_in_ide`; every other tool is the Master's alone
+- **THEN** it has `update_agent_status`, `notify_user` and `open_code`; every other tool is the Master's alone
 
 #### Scenario: A tool name nobody declared
 - **WHEN** a caller names an unknown tool

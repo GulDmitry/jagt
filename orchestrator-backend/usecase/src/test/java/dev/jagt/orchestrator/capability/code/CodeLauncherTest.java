@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability.ide;
+package dev.jagt.orchestrator.capability.code;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,11 +14,11 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class IdeLauncherTest {
+class CodeLauncherTest {
 
   private final StateService stateService = mock(StateService.class);
-  private final IdeProject project = mock(IdeProject.class);
-  private final IdeDiff diff = mock(IdeDiff.class);
+  private final CodeProject project = mock(CodeProject.class);
+  private final CodeDiff diff = mock(CodeDiff.class);
 
   @Test
   void opensTaskAsProjectsThatRunWhenAskedForTheProject() {
@@ -28,7 +28,7 @@ class IdeLauncherTest {
     when(project.open("ABC-1", task)).thenReturn("Opened ABC-1");
 
     String opened =
-        new IdeLauncher(stateService, project, diff).open("a1", IdeLauncher.Mode.PROJECT);
+        new CodeLauncher(stateService, project, diff).open("a1", CodeLauncher.Mode.PROJECT);
 
     assertThat(opened).isEqualTo("Opened ABC-1");
     verify(diff, never()).open("ABC-1", task);
@@ -41,7 +41,8 @@ class IdeLauncherTest {
     when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
     when(diff.open("ABC-1", task)).thenReturn("Opened STATIC diff of ABC-1");
 
-    String opened = new IdeLauncher(stateService, project, diff).open("a1", IdeLauncher.Mode.DIFF);
+    String opened =
+        new CodeLauncher(stateService, project, diff).open("a1", CodeLauncher.Mode.DIFF);
 
     assertThat(opened).isEqualTo("Opened STATIC diff of ABC-1");
     verify(project, never()).open("ABC-1", task);
@@ -52,8 +53,8 @@ class IdeLauncherTest {
     when(stateService.canonicalTaskId("nope")).thenReturn("nope");
     when(stateService.task("nope")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(
-            () -> new IdeLauncher(stateService, project, diff).open("nope", IdeLauncher.Mode.DIFF))
+    assertThatThrownBy(() ->
+            new CodeLauncher(stateService, project, diff).open("nope", CodeLauncher.Mode.DIFF))
         .isInstanceOf(Refusal.class);
   }
 }

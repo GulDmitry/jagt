@@ -150,7 +150,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 - **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out
   first (`capability/done/FinishedArtifacts`) and never read back, so changing their format migrates nothing.
-- **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it.
+- **The chain is readable while the task lives** — `code <alias>` opens the worktree holding all of it.
 - **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch,
   and lands in `task_context.md`.
 
@@ -242,7 +242,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `capability` | usecase | the verbs with no feature of their own: plan, scenarios, sweep, trust, git state guard |
 | `capability/deploy` | usecase | deploy and revert: capability, runner, service |
 | `capability/done` | usecase | done: the capability, retirement and finished artifacts |
-| `capability/ide` | usecase | open a task in the IDE and its diff |
+| `capability/code` | usecase | open a task in the editor and its diff |
 | `capability/repo` | usecase | attach and remove a repository |
 | `capability/session` | usecase | focus, hand off, respawn and run a session |
 | `capability/ship` | usecase | ship: capability, service, spec fold and merged guard |

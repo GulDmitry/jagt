@@ -10,7 +10,7 @@ record CommandMappingCase(
         new CommandMappingCase(
             "the login work is ready for someone to look at", "ship", "ABC-42", "a1", ""),
         new CommandMappingCase(
-            "let me read the login diff in my editor", "ide", "ABC-42", "a1", ""),
+            "let me read the login diff in my editor", "code", "ABC-42", "a1", ""),
         new CommandMappingCase(
             "did the pipeline say anything about the cart one", "sweep", "ABC-7", "a2", ""),
         new CommandMappingCase("get going on ABC-99", "do", "", "", "ABC-99"),

@@ -2,7 +2,7 @@
 const MINUTE = 60000;
 const now = Date.now();
 const verb = (id, label, group, extra) => ({id, label, hint: label, group, apart: id === 'done', ...extra});
-const tools = [verb('ide', 'Open IDE', 'tool', {key: 'o'}), verb('diff', 'Diff', 'tool', {key: 'g'}),
+const tools = [verb('code', 'Code', 'tool', {key: 'o'}), verb('diff', 'Diff', 'tool', {key: 'g'}),
   verb('focus', 'Focus', 'tool', {onRow: true, key: 'f'}),
   verb('respawn', 'Restart agent', 'tool')];
 const task = (fields) => ({project: 'alpha', repos: [{project: 'alpha'}], pipeline: 'NONE', attention: 'NONE',
@@ -17,7 +17,7 @@ export const cards = [
     statusLabel: 'agent working', detail: 'NEEDS INPUT: which retry budget, 3 or 5?', detailKind: 'YOURS',
     ticketUrl: 'https://tracker.example/ABC-42',
     actions: [verb('done', 'Done', 'flow'), verb('focus', 'Focus', 'tool', {primary: true, onRow: true, key: 'f'}),
-      verb('ide', 'Open IDE', 'tool')]}),
+      verb('code', 'Code', 'tool')]}),
   card('agent working', {id: 'ABC-51', alias: 'a2', title: 'Invoice PDF misses the VAT line', owner: 'AGENT',
     status: 'IN_PROGRESS', statusLabel: 'agent working', actions: [verb('ship', 'Ship', 'flow'), verb('done', 'Done', 'flow'), ...tools]}),
   card('agent waiting on a dependency', {id: 'ABC-52', alias: 'a2', title: 'Sync the ledger export', owner: 'AGENT',
