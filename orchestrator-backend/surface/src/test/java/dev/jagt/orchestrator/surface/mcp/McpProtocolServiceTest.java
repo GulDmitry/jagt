@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -42,7 +41,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -210,7 +208,6 @@ class McpProtocolServiceTest {
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
 
-    ((Logger) LoggerFactory.getLogger(McpProtocolService.class)).setLevel(Level.DEBUG);
     try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
       protocol.handle(
           mapper.readTree(
