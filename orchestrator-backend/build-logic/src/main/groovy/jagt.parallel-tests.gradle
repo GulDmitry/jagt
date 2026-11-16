@@ -8,6 +8,8 @@ allprojects {
         systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
         // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
         systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+        // A context booting beside a concurrent class would reset Logback and detach its log capture.
+        systemProperty 'org.springframework.boot.logging.LoggingSystem', 'none'
         // The gate never reaches the developer's own terminal: a booted context finds no tmux and no kitty to run.
         systemProperty 'orchestrator.tmux-command', 'jagt-test-no-tmux'
         systemProperty 'orchestrator.kitty-command', 'jagt-test-no-kitty'

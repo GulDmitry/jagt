@@ -21,7 +21,6 @@ A test builder ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-sca
 defaults and `build()` calling production's constructor or builder; it holds no branch, loop, mock, assertion, clock or random value; one of outside
 state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example
 to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
-
 `StateServiceCompatibilityTest` reads each `state-<minor>.json` under `state-compatibility/`; a release adds its minor's, never regenerated.
 
 ### Every test pins a business case
@@ -53,7 +52,8 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   every file under a `@TempDir`, a port bound to 0, a log read only through its own test's capture.
 - **No `@ResourceLock`, `@Isolated` or `@Execution(SAME_THREAD)`**: what tests share is faked or stubbed, and a test that
   cannot run in parallel is rewritten or deleted. An extraordinary reason, written at the site, is the only exception.
-  Only this suite is parallel; it runs in English and UTC, as production does.
+- **A test boots no application**: a slice (`@WebMvcTest`, `@DataJpaTest`) at most; a `@SpringBootTest` needs a serious reason at its site and
+  the one shared configuration Spring's cache boots once. Only this suite is parallel, its Spring logging system `none`: a boot resets no capture.
 - **A flaky test is a defect, fixed when first seen**: a red a rerun turns green is never waved through. Its cause is
   found before the next commit (a race gets a fix and a `docs/cases.md` row); never a longer wait, a retry or `@Disabled`.
 

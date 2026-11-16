@@ -11,6 +11,9 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.logging.LoggingInitializationContext;
+import org.springframework.boot.logging.LoggingSystem;
+import org.springframework.mock.env.MockEnvironment;
 
 class FakeLogCaptureTest {
 
@@ -57,5 +60,20 @@ class FakeLogCaptureTest {
     SHARED.warn("after close");
 
     assertThat(capture.events()).isEmpty();
+  }
+
+  @Test
+  void keepsItsEventsWhenSpringInitialisesLoggingWhileItListens() {
+    try (FakeLogCapture capture = new FakeLogCapture(SHARED.getName())) {
+      LoggingSystem spring = LoggingSystem.get(getClass().getClassLoader());
+      spring.beforeInitialize();
+      spring.initialize(new LoggingInitializationContext(new MockEnvironment()), null, null);
+
+      SHARED.warn("still heard");
+
+      assertThat(capture.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("still heard");
+    }
   }
 }
