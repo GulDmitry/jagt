@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,6 +45,8 @@ class ServerContainerTest {
 
   private static final String SERVICE = "jagt";
   private static final String READINESS = "/actuator/health/readiness";
+  private static final Duration READY_BUDGET = Duration.ofSeconds(15);
+  private static final Duration STATE_P95_BUDGET = Duration.ofMillis(100);
 
   private final String password = UUID.randomUUID().toString();
   private final String passwordHash = new BCryptPasswordEncoder().encode(password);
@@ -151,6 +154,36 @@ class ServerContainerTest {
         .body("username=owner&password=" + password)
         .retrieve()
         .toBodilessEntity();
+  }
+
+  @Test
+  @Order(0)
+  void appStartsWithinTheBudgetWhenTheImageStarts() {
+    String log = stack.getContainerByServiceName(SERVICE).orElseThrow().getLogs();
+
+    double processSeconds =
+        Double.parseDouble(log.replaceAll("(?s).*process running for ([0-9.]+).*", "$1"));
+
+    assertThat(Duration.ofMillis(Math.round(processSeconds * 1000)))
+        .isLessThanOrEqualTo(READY_BUDGET);
+  }
+
+  @Test
+  @Order(0)
+  void stateAnswersWithinTheBudgetAtTheNinetyFifthPercentileWhenCalledFiftySequentialTimes() {
+    long p95Nanos =
+        IntStream.range(0, 50)
+            .mapToLong(call -> {
+              long begun = System.nanoTime();
+              board.get().uri("/state").retrieve().toBodilessEntity();
+              return System.nanoTime() - begun;
+            })
+            .sorted()
+            .skip(47)
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(Duration.ofNanos(p95Nanos)).isLessThanOrEqualTo(STATE_P95_BUDGET);
   }
 
   @Test

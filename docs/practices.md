@@ -53,7 +53,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Contract (pyramid, 25010 interoperability) | [testing](rules/testing.md), 0170 | `WholeApplicationWiringTest` against `contracts/openapi.yaml`, `SchemaTest` | `board-events.schema.json` | `WholeApplicationWiringTest` |
 | Integration and slice (pyramid) | [testing-suites](rules/testing-suites.md) | `OidcLoginOnTomcatTest`, `PasswordLoginRefusalOnTomcatTest`, `containerTest` | `boardTest` | the two `OnTomcat` tests |
 | End to end (pyramid, 12F X parity) | [testing-suites](rules/testing-suites.md) | `e2eTest`, `standTest`, `containerTest`, nightly and on a tag; same scripts in CI | `boardTest` in Chromium | `ci.yml` heavy job |
-| Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | suite ceilings only | gap: JAGT-131 | gap: JAGT-131 |
+| Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | ready 15 s, `/state` p95 100 ms | `ServerContainerTest` | `ServerContainerTest` |
 | Security tests (pyramid) | [testing](rules/testing.md) | `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap: JAGT-96 | the filter tests |
 | A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `EveryTestAssertsTest`, `ProductionConstructorTest`, `TestBuilderLogicTest`, `NoHelperMethodTest`, `TestNamingTest` | n.a. | the five tests |
 | A suite ends within a ceiling; a flaky test is registered or fixed (25010 maturity) | [testing](rules/testing.md), 0139 | `jagt.suites.gradle`, `jagt.suite-stats.gradle` | n.a. | `jagt.suites.gradle` |

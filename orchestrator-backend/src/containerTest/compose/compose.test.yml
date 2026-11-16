@@ -2,6 +2,7 @@ services:
   jagt:
     environment:
       ORCHESTRATOR_AGENT_CLI: stub
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: "false"
       ORCHESTRATOR_STUB_SCRIPT: /stub/stub-agent.sh
       GIT_CONFIG_COUNT: "1"
       GIT_CONFIG_KEY_0: safe.directory
@@ -28,6 +29,7 @@ services:
       - "${JAGT_SSO_PORT}:8290"
     environment:
       ORCHESTRATOR_AGENT_CLI: stub
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: "false"
       JAGT_SSO_SECRET: stub-secret
       JAGT__orchestrator__auth__mode: oidc
       JAGT__orchestrator__auth__oidc__issuerUri: http://sso:8080/default

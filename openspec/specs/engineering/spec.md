@@ -35,6 +35,7 @@ A project SHALL pin its behaviour by unit, property, contract, integration, end-
 - **THEN** units and rules run in `test`, with jqwik properties of the task reducer and `WholeApplicationWiringTest` against the OpenAPI contract
 - **AND** `OidcLoginOnTomcatTest` and `PasswordLoginRefusalOnTomcatTest` run over a real servlet
 - **AND** `e2eTest`, `boardTest`, `standTest`, `containerTest` run end to end
+- **AND** `containerTest` fails when app start exceeds 15 s or `/state` p95 of 50 calls exceeds 100 ms
 #### Scenario: Security tests
 - **WHEN** a security requirement of this capability is met
 - **THEN** a named test pins it, such as `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`
@@ -189,8 +190,6 @@ Every test run SHALL end in mutants on the diff, each survivor judged.
 A gate no stack meets yet SHALL be listed here with its task, never silent, and its task SHALL end by writing the gate above.
 #### Scenario: Metrics and build info
 - **WHEN** the owner reads the running process **THEN** no metrics or build info endpoint answers: gap, JAGT-130
-#### Scenario: Time behaviour
-- **WHEN** the image starts or `/state` answers **THEN** no test asserts a budget: gap, JAGT-131 (25010 time behaviour, performance tests)
 #### Scenario: Upgrade
 - **WHEN** a newer minor replaces an older one
 - **THEN** no gap is left: `StateServiceCompatibilityTest` holds every shipped minor's fixture, `docs/server.md` the rollback (JAGT-132)
