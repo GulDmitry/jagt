@@ -45,4 +45,42 @@ class CiWorkflowTest {
 
     assertThat(writing).containsExactly("release");
   }
+
+  @Test
+  void runsExactlyTheThreeGroupsOnGithub() {
+    assertThat(CiWorkflow.jobs().keySet()).containsExactlyInAnyOrder("test", "heavy", "release");
+  }
+
+  @Test
+  void runsExactlyTheThreeGroupsOnGitlab() {
+    assertThat(CiWorkflow.gitlabJobs()).containsExactlyInAnyOrder("test", "heavy", "release");
+  }
+
+  @Test
+  void startsOnGithubOnlyOnPushPullRequestScheduleAndTag() {
+    assertThat(CiWorkflow.githubTriggers())
+        .containsExactlyInAnyOrder("push", "pull_request", "schedule");
+  }
+
+  @Test
+  void startsOnGitlabOnlyOnPushMergeRequestScheduleAndTag() {
+    assertThat(CiWorkflow.gitlabText())
+        .contains("$CI_PIPELINE_SOURCE == \"push\"")
+        .contains("$CI_PIPELINE_SOURCE == \"merge_request_event\"")
+        .contains("$CI_PIPELINE_SOURCE == \"schedule\"")
+        .doesNotContain("\"web\"")
+        .doesNotContain("\"api\"");
+  }
+
+  @Test
+  void runsTheHeavyJobOnlyOnScheduleOrTag() {
+    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
+        .isEqualTo("github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/v')");
+  }
+
+  @Test
+  void runsTheTestJobNeverOnSchedule() {
+    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("if"))
+        .isEqualTo("github.event_name != 'schedule'");
+  }
 }

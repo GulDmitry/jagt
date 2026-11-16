@@ -26,6 +26,5 @@ waits for it. Times are wall clock, dated in `measurements.md`.
 
 ## Planned
 
-- JAGT-111: CI holds these groups: one job per push and pull request, one heavy job nightly and on a tag.
 - JAGT-102: kind as a second stand engine, `standTest -Pmodelfree -Pengine=kind`.
 - JAGT-96: the board's own unit tests and lint join unit + functional.
