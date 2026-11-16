@@ -24,6 +24,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,12 @@ final class FlowHarness {
     }
     E2eWorkspace.createRepositoryWithOrigin(
         workspace.resolve("origin.git"), workspace.resolve("proj"));
+    E2eWorkspace.writeConfig(
+        workspace.resolve("root/jagt.yml"), workspace.resolve("proj"), "shared", false);
+    Files.writeString(
+        workspace.resolve("root/jagt.yml"),
+        "  master: { mode: \"off\" }\n",
+        StandardOpenOption.APPEND);
   }
 
   Path configFile() {
