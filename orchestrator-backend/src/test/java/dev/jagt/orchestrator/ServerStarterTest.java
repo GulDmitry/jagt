@@ -43,6 +43,17 @@ class ServerStarterTest {
   }
 
   @Test
+  void theServerStarterTakesNoIdentityFromLiterals() {
+    String server = SourceRoots.read(SERVER);
+
+    assertThat(server).containsPattern("(?m)^\\s+mcpConfig: \\$\\{");
+    assertThat(server).containsPattern("(?m)^\\s+assignee: \\$\\{");
+    assertThat(server).containsPattern("(?m)webhookEnv: [A-Z][A-Z0-9_]*\\s*}");
+    assertThat(server)
+        .doesNotContainPattern("(?m)^\\s+(mcpConfig|assignee|passwordHash): [^$\\s#]");
+  }
+
+  @Test
   void theServerStarterTurnsTheAcceptanceRoleOn() {
     String server = SourceRoots.read(SERVER);
 

@@ -58,6 +58,19 @@ cp .env.dist .env    # JAGT_PASSWORD_HASH='<bcrypt hash>' (single quotes: compos
 
 Add the agent CLI's API key and the code host's token to the same file or Secret, under the names those tools read.
 
+## The three identities
+
+Each is set by your image's environment or a mounted file, never a value in `jagt.yml` or the image.
+
+| identity | what it is | set by |
+|----------|------------|--------|
+| tracker | the MCP servers a session and a read reach the tracker through, and the user `take` starts for | a mounted file whose path `JAGT_MCP_CONFIG` holds, `JAGT_TRACKER_USER` |
+| code host | the account `gh` or `glab` acts as | `GH_TOKEN` or `GITLAB_TOKEN` (`GITLAB_HOST` for a self-hosted host) in the environment |
+| notification | the channel's webhook | the starter's commented `chat` channel: `JAGT_NOTIFY_WEBHOOK` holds the URL, `webhookEnv` names it; unset while a route uses it, the start is refused |
+
+- The mounted MCP file carries the tracker's own `${VAR}` secrets; a `gh` or `glab` login under HOME is only their fallback.
+- Pass the variables at run time (`docker run -e`, a compose `.env`, a Kubernetes `Secret`); see `Dockerfile.dist`.
+
 ## Git reaches the code host
 
 - **SSH**: mount the bot's private key (mode 0600) and a `known_hosts` into `/home/jagt/.ssh`; the image has `openssh-client`.

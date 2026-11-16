@@ -1,4 +1,6 @@
-# jagt on a server: `cp jagt.server.yml.dist jagt.yml`, name your projects, set the two env vars.
+# jagt on a server: `cp jagt.server.yml.dist jagt.yml`, name your projects, set the env vars below.
+# Identities come from the environment or a mounted file, never a literal here (docs/server.md).
+# Code host: gh or glab read GH_TOKEN or GITLAB_TOKEN from the environment themselves.
 # Each key is described in jagt.desktop.yml.dist under the same name, and nowhere else.
 orchestrator:
   projects:
@@ -20,6 +22,17 @@ orchestrator:
   roles:
     acceptance:
       enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
+  claude:
+    mcpConfig: ${JAGT_MCP_CONFIG:}   # claude: the agent's tracker and code-host servers
+  assistant:
+    mcpConfig: ${JAGT_MCP_CONFIG:}   # assistant: the headless reads load these alone
+  tracker:
+    assignee: ${JAGT_TRACKER_USER:}            # tracker: the tracker user whose items `take` starts
+  # notifications:
+  #   channels:
+  #     chat: { kind: teams, webhookEnv: JAGT_NOTIFY_WEBHOOK }   # notifications: the variable's NAME
+  #   points:
+  #     stopped: [ { channel: chat, title: "jagt · {task} · stopped", text: "{next}" } ]
   usageLimits:
     enabled: false                             # usageLimits
   auth:

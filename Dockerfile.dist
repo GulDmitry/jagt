@@ -31,4 +31,8 @@ USER root
 # ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 # RUN npm install -g playwright@1.49.1 && playwright install --with-deps chromium && chmod -R a+rX /opt/playwright && rm -rf /var/lib/apt/lists/*
 
+# Identities (docs/server.md): never an ENV value here; pass them when the container runs.
+#   docker run -e GH_TOKEN -e JAGT_NOTIFY_WEBHOOK -e JAGT_TRACKER_USER -e JAGT_MCP_CONFIG=/run/secrets/jagt-mcp.json \
+#     --mount type=bind,src=./mcp.json,dst=/run/secrets/jagt-mcp.json,readonly my-jagt
+
 USER jagt
