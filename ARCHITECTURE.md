@@ -44,7 +44,8 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` | use cases as WHEN/THEN before code · `RoleNamesTest` |
 
 **A new kind names its sphere's standard and the check pinning it before its first code.** The gates of testing, QA,
-operations and supply chain have one inventory, `openspec/specs/engineering/spec.md` (planned).
+operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`;
+[`docs/practices.md`](docs/practices.md) is the page to copy them from.
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one

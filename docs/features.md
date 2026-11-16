@@ -61,8 +61,7 @@
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
 - **Architecture rule tests** — Kind, collaborator, complexity, duplication, mock and text ceilings, cycle-freedom and a count ratchet over
-  CI, source sets, triggers, statuses and the public surface fail the build, for every source set.
-  [kinds](../ARCHITECTURE.md#the-kinds)
+  CI, source sets, triggers, statuses and the public surface fail the build, for every source set. [kinds](../ARCHITECTURE.md#the-kinds)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
@@ -157,6 +156,7 @@
 - **Spec change and fold** — A hand-back is refused until the task's spec change validates; a ship folds it into the specs in its commit.
   [hand-back](../openspec/specs/spec-changes/spec.md#requirement-a-hand-back-carries-a-valid-change) ·
   [ship](../openspec/specs/spec-changes/spec.md#requirement-a-ship-folds-the-change-into-the-specs)
+- **Engineering gates** — Each gate and its check per stack: [spec](../openspec/specs/engineering/spec.md), [practices](practices.md).
 
 ## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
 - **Install checks** — A missing part of the installation is refused at start, with no network.
