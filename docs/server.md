@@ -24,6 +24,8 @@ cp jagt.server.yml.dist jagt.yml          # the image ships it as /app/jagt.yml;
   jagt reads that file alone, no profile or overlay involved.
 - `agent.sandbox.enabled` stays `false` in a pod: the container is the fence.
 - `usageLimits.enabled` stays `false` with an API key: the limits are read from an agent CLI's own login, which a key lacks.
+- Verify runs go one task at a time, since the verify job never overlaps itself: size the pod's limits for one
+  `verifyCommand` beside the sessions.
 - The host of `JAGT_PUBLIC_URL` is the one the ingress must forward; any other `Host` or `Origin` is refused with 403.
 
 ## Single sign-on
