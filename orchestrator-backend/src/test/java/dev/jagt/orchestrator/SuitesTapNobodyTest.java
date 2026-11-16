@@ -19,9 +19,6 @@ class SuitesTapNobodyTest {
                             + "|@MockitoBean\\(types\\s*=\\s*\\{[^}]*\\bUserNotifier\\.class)"
                             + ".*"))
             .map(path -> path.getFileName().toString())
-            .filter(name ->
-                !List.of("LinuxProfileContextTest.java", "NoneProfileContextTest.java")
-                    .contains(name))
             .sorted()
             .toList();
 

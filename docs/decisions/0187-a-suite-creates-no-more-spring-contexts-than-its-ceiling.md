@@ -11,7 +11,7 @@ Accepted 2026-11-16, owner's order.
 
 - A booted context is the slowest test; `boardTest` went from 16 context starts to 2 and from 129 s to 96 s by sharing one.
 - The class-level ratchet (`contextBootingTests`) counts classes, not the contexts a run creates.
-- Measured 2026-11-16: `test` 5, `boardTest` 2, `e2eTest` 3 to 4 (one cache per fork, classes spread by timing).
+- Measured 2026-11-16: `test` 2, `boardTest` 2, `e2eTest` 3 to 4 (one cache per fork, classes spread by timing).
 
 ## Decision
 

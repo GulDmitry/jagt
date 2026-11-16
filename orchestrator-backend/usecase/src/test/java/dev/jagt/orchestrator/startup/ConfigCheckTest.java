@@ -85,6 +85,16 @@ class ConfigCheckTest {
   }
 
   @Test
+  void anIncompleteInstallationStopsTheStartInsteadOfServingBoardThatCannotWork() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+    StartupValidation validation = new StartupValidation(List.of(check), true);
+
+    assertThatThrownBy(validation::refuseToRunWithoutWhatItNeeds)
+        .isInstanceOf(Misconfigured.class)
+        .hasMessageContaining("defines no projects");
+  }
+
+  @Test
   void saysWhereTheConfigFileShouldBeWhenThereIsNone() {
     assertThat(check.problems())
         .extracting(Problem::key)
