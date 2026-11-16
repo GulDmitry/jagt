@@ -6,10 +6,14 @@ import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 @With
-public record TestShopProjectBuilder(@Nullable String kind, List<String> pipelineCommand) {
+public record TestShopProjectBuilder(
+    @Nullable String kind,
+    List<String> pipelineCommand,
+    List<String> verifyCommand,
+    List<String> setupCommand) {
 
   public static TestShopProjectBuilder shopProject() {
-    return new TestShopProjectBuilder(null, List.of());
+    return new TestShopProjectBuilder(null, List.of(), List.of(), List.of());
   }
 
   public ProjectConfig build() {
@@ -18,7 +22,7 @@ public record TestShopProjectBuilder(@Nullable String kind, List<String> pipelin
         new ProjectConfig.Branches("origin/main", "dev", null),
         new ProjectConfig.CodeHost(
             kind, null, pipelineCommand, List.of(), List.of(), List.of(), List.of()),
-        new ProjectConfig.Verify(List.of(), null),
-        new ProjectConfig.Setup(List.of(), null));
+        new ProjectConfig.Verify(verifyCommand, null),
+        new ProjectConfig.Setup(setupCommand, null));
   }
 }

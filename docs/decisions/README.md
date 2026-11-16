@@ -190,3 +190,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0174 The stand runs in jagt's container](0174-the-stand-runs-in-jagts-container.md) (builds on 0171, beside 0078)
 - [0175 An organisation builds its toolchains onto jagt's image](0175-an-organisation-builds-its-toolchains-onto-jagts-image.md) (on 0171)
 - [0176 Every kind has a ceiling](0176-every-kind-has-a-ceiling.md) (on 0162)
+- [0177 A missing project program is read by its own job](0177-a-missing-project-program-is-read-by-its-own-job.md) (on 0176)
