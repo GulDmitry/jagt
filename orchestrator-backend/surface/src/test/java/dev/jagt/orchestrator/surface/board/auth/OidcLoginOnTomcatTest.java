@@ -14,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.SpringBootConfiguration;
@@ -58,7 +59,7 @@ class OidcLoginOnTomcatTest {
 
     @Bean
     BoardUrl boardUrl() {
-      return new BoardUrl("8290", "");
+      return new BoardUrl("8290", "https://jagt.example.org");
     }
   }
 
@@ -77,6 +78,22 @@ class OidcLoginOnTomcatTest {
   @MockitoBean UserNotifier notifier;
 
   @LocalServerPort private int port;
+
+  @Test
+  void asksTheProviderToReturnToThePublicUrl() throws Exception {
+    HttpResponse<String> start =
+        HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build()
+            .send(
+                HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/oauth2/authorization/oidc"))
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+    assertThat(start.headers().firstValue("Location").orElseThrow())
+        .contains("redirect_uri=https://jagt.example.org/login/oauth2/code/oidc");
+  }
 
   @ParameterizedTest
   @CsvSource({"owner-sub,302,200", "other-sub,403,302"})

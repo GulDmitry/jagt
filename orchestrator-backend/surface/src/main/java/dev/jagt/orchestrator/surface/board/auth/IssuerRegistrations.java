@@ -9,16 +9,19 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 final class IssuerRegistrations implements ClientRegistrationRepository {
 
   static final String ID = "oidc";
+  static final String CALLBACK = "/login/oauth2/code/" + ID;
 
   private final String issuerUri;
   private final String clientId;
   private final String clientSecret;
+  private final String redirectUri;
   private @Nullable ClientRegistration discovered;
 
-  IssuerRegistrations(String issuerUri, String clientId, String clientSecret) {
+  IssuerRegistrations(String issuerUri, String clientId, String clientSecret, String redirectUri) {
     this.issuerUri = issuerUri;
     this.clientId = clientId;
     this.clientSecret = clientSecret;
+    this.redirectUri = redirectUri;
   }
 
   @Override
@@ -32,6 +35,7 @@ final class IssuerRegistrations implements ClientRegistrationRepository {
               .registrationId(ID)
               .clientId(clientId)
               .clientSecret(clientSecret)
+              .redirectUri(redirectUri)
               .scope("openid", "email")
               .build();
     }

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.board.auth;
 
 import dev.jagt.orchestrator.service.Causes;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -49,11 +50,13 @@ class OidcLogin {
   }
 
   @Bean
-  ClientRegistrationRepository oidcRegistrations(OidcProperties oidc, Environment env) {
+  ClientRegistrationRepository oidcRegistrations(
+      OidcProperties oidc, Environment env, BoardUrl boardUrl) {
     return new IssuerRegistrations(
         Objects.requireNonNull(oidc.issuerUri()),
         Objects.requireNonNull(oidc.clientId()),
-        Objects.requireNonNull(env.getProperty(Objects.requireNonNull(oidc.clientSecretEnv()))));
+        Objects.requireNonNull(env.getProperty(Objects.requireNonNull(oidc.clientSecretEnv()))),
+        boardUrl.root() + IssuerRegistrations.CALLBACK);
   }
 
   // Without a user store Boot generates, and logs, a password of its own.

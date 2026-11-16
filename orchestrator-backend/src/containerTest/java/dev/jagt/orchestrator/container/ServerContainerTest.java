@@ -6,7 +6,10 @@ import static org.awaitility.Awaitility.await;
 import com.jayway.jsonpath.JsonPath;
 import java.net.CookieManager;
 import java.net.ServerSocket;
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -46,6 +51,8 @@ class ServerContainerTest {
   private String base;
   private RestClient anonymous;
   private RestClient board;
+  private int ssoBoardPort;
+  private int ssoProviderPort;
 
   @BeforeAll
   void startsTheServerFromItsOwnComposeFile(@TempDir Path fixtures) throws Exception {
@@ -57,6 +64,12 @@ class ServerContainerTest {
       port = free.getLocalPort();
     }
     base = "http://localhost:" + port;
+    try (ServerSocket free = new ServerSocket(0)) {
+      ssoBoardPort = free.getLocalPort();
+    }
+    try (ServerSocket free = new ServerSocket(0)) {
+      ssoProviderPort = free.getLocalPort();
+    }
     Files.setPosixFilePermissions(fixtures, PosixFilePermissions.fromString("rwxr-xr-x"));
     Files.writeString(fixtures.resolve("password-hash"), passwordHash);
     Files.writeString(
@@ -88,6 +101,8 @@ class ServerContainerTest {
             .withEnv(
                 Map.of(
                     "JAGT_PORT", String.valueOf(port),
+                    "JAGT_SSO_PORT", String.valueOf(ssoBoardPort),
+                    "JAGT_SSO_PROVIDER_PORT", String.valueOf(ssoProviderPort),
                     "JAGT_FIXTURES", fixtures.toAbsolutePath().toString(),
                     "JAGT_STUB",
                         Path.of("src", "containerTest", "compose").toAbsolutePath().toString()))
@@ -353,7 +368,7 @@ class ServerContainerTest {
   }
 
   @Test
-  @Order(12)
+  @Order(13)
   void stateHoldsTheTaskWithItsSessionGoneWhenContainerGetsSigterm() throws Exception {
     board
         .post()
@@ -382,5 +397,65 @@ class ServerContainerTest {
 
     assertThat(JsonPath.<String>read(state, "$.tasks['keep-working'].session.halt.kind"))
         .isEqualTo("GONE");
+  }
+
+  @ParameterizedTest
+  @Order(12)
+  @CsvSource({"owner@example.com,302,200", "intruder,403,302"})
+  void boardOpensOnlyForTheAllowedSubjectWhenLoggedInThroughTheProvider(
+      String subject, int callbackStatus, int boardStatus) throws Exception {
+    HttpClient browser =
+        HttpClient.newBuilder()
+            .cookieHandler(new CookieManager())
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
+    String sso = "http://localhost:" + ssoProviderPort;
+    String ssoBoard = "http://localhost:" + ssoBoardPort;
+    await()
+        .atMost(Duration.ofMinutes(3))
+        .ignoreExceptions()
+        .until(() ->
+            browser
+                    .send(
+                        HttpRequest.newBuilder(URI.create(ssoBoard + READINESS)).build(),
+                        HttpResponse.BodyHandlers.discarding())
+                    .statusCode()
+                == 200);
+
+    String authorize =
+        browser
+            .send(
+                HttpRequest.newBuilder(URI.create(ssoBoard + "/oauth2/authorization/oidc")).build(),
+                HttpResponse.BodyHandlers.discarding())
+            .headers()
+            .firstValue("Location")
+            .orElseThrow()
+            .replace("http://sso:8080", sso);
+    String callback =
+        browser
+            .send(
+                HttpRequest.newBuilder(URI.create(authorize))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString("username=" + subject))
+                    .build(),
+                HttpResponse.BodyHandlers.discarding())
+            .headers()
+            .firstValue("Location")
+            .orElseThrow();
+    int callbackResult =
+        browser
+            .send(
+                HttpRequest.newBuilder(URI.create(callback)).build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode();
+    int boardResult =
+        browser
+            .send(
+                HttpRequest.newBuilder(URI.create(ssoBoard + "/state")).build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode();
+
+    assertThat(callbackResult).isEqualTo(callbackStatus);
+    assertThat(boardResult).isEqualTo(boardStatus);
   }
 }

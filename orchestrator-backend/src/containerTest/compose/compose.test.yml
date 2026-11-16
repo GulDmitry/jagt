@@ -15,6 +15,34 @@ services:
     secrets:
       - jagt_password_hash
 
+  sso:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    ports:
+      - "${JAGT_SSO_PROVIDER_PORT}:8080"
+
+  jagt-sso:
+    build: .
+    depends_on:
+      - sso
+    ports:
+      - "${JAGT_SSO_PORT}:8290"
+    environment:
+      ORCHESTRATOR_AGENT_CLI: stub
+      JAGT_SSO_SECRET: stub-secret
+      JAGT__orchestrator__auth__mode: oidc
+      JAGT__orchestrator__auth__oidc__issuerUri: http://sso:8080/default
+      JAGT__orchestrator__auth__oidc__clientId: jagt
+      JAGT__orchestrator__auth__oidc__clientSecretEnv: JAGT_SSO_SECRET
+      JAGT__orchestrator__auth__oidc__allowed: owner@example.com
+      JAGT__orchestrator__projects__my-project__url: /fixtures/origin.git
+      JAGT__orchestrator__roles__master__mode: "off"
+      JAGT_PUBLIC_URL: http://localhost:${JAGT_SSO_PORT}
+    volumes:
+      - ${JAGT_FIXTURES}:/fixtures:ro
+      - ${JAGT_FIXTURES}/jagt.yml:/app/jagt.yml:ro
+    secrets:
+      - jagt_password_hash
+
 secrets:
   jagt_password_hash:
     file: ${JAGT_FIXTURES}/password-hash

@@ -22,3 +22,9 @@ holding the client secret, never the secret. A missing key, or a `clientSecretEn
 #### Scenario: A secret variable not set
 - **WHEN** `auth` is `oidc` and `clientSecretEnv` names a variable that is not set
 - **THEN** the start is refused naming `orchestrator.auth.oidc.clientSecretEnv`
+
+### Requirement: The provider returns to the public URL
+The redirect URI sent to the provider SHALL be the board's public address, `server.publicUrl`, followed by `/login/oauth2/code/oidc`.
+#### Scenario: Login behind an ingress
+- **WHEN** `server.publicUrl` is `https://jagt.example.org` and a login starts
+- **THEN** the provider is asked to return to `https://jagt.example.org/login/oauth2/code/oidc`
