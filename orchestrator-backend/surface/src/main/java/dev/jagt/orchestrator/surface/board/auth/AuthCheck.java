@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.board.auth;
 
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,7 @@ public class AuthCheck implements StartupCheck {
 
   private final AuthProperties auth;
   private final ServerProperties server;
+  private final BoardUrl boardUrl;
 
   @Override
   public List<Problem> problems() {
@@ -33,12 +35,13 @@ public class AuthCheck implements StartupCheck {
                     + address
                     + "': a board beyond loopback needs orchestrator.auth.mode 'password'."));
       }
-      if (!auth.allowedHosts().isEmpty()) {
+      if (!auth.allowedHosts().isEmpty() || boardUrl.reachedByName()) {
         problems.add(
             new Problem(
                 KEY,
-                "orchestrator.auth.allowedHosts is set and orchestrator.auth is 'none': a board"
-                    + " reached by name needs orchestrator.auth.mode 'password'."));
+                "orchestrator.auth.allowedHosts or server.publicUrl names a host and"
+                    + " orchestrator.auth is 'none': a board reached by name needs"
+                    + " orchestrator.auth.mode 'password'."));
       }
     } else if (auth.passwordHash() == null || !BCRYPT.matcher(auth.passwordHash()).matches()) {
       problems.add(

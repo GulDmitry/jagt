@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board.auth;
 
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import java.net.InetAddress;
 import java.util.List;
 import lombok.With;
@@ -17,9 +18,9 @@ public record TestAuthCheckBuilder(
     return new TestAuthCheckBuilder(AuthProperties.Mode.NONE, null, List.of(), "127.0.0.1");
   }
 
-  public AuthCheck build() {
+  public AuthCheck build(BoardUrl boardUrl) {
     ServerProperties server = new ServerProperties();
     server.setAddress(InetAddress.ofLiteral(address));
-    return new AuthCheck(new AuthProperties(mode, passwordHash, allowedHosts), server);
+    return new AuthCheck(new AuthProperties(mode, passwordHash, allowedHosts), server, boardUrl);
   }
 }

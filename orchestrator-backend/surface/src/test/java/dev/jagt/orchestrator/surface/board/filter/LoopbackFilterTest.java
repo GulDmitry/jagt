@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.board.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,8 @@ class LoopbackFilterTest {
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+    new LoopbackFilter(
+            new AuthProperties(AuthProperties.Mode.NONE, null, List.of()), new BoardUrl("8290", ""))
         .doFilter(request, response, chain);
 
     assertThat(response.getStatus()).isEqualTo(403);
@@ -41,9 +43,9 @@ class LoopbackFilterTest {
     request.addHeader("Origin", origin);
     MockHttpServletResponse response = new MockHttpServletResponse();
     MockFilterChain chain = new MockFilterChain();
+    AuthProperties auth = new AuthProperties(AuthProperties.Mode.NONE, null, List.of());
 
-    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
-        .doFilter(request, response, chain);
+    new LoopbackFilter(auth, new BoardUrl("8290", "")).doFilter(request, response, chain);
 
     assertThat(response.getStatus()).isEqualTo(403);
     assertThat(chain.getRequest()).isNull();
@@ -58,7 +60,8 @@ class LoopbackFilterTest {
     request.addHeader("Origin", "http://localhost:8290");
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+    new LoopbackFilter(
+            new AuthProperties(AuthProperties.Mode.NONE, null, List.of()), new BoardUrl("8290", ""))
         .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
@@ -73,7 +76,8 @@ class LoopbackFilterTest {
     request.setLocalAddr("192.168.1.20");
     MockFilterChain chain = new MockFilterChain();
 
-    new LoopbackFilter(new AuthProperties(AuthProperties.Mode.NONE, null, List.of()))
+    new LoopbackFilter(
+            new AuthProperties(AuthProperties.Mode.NONE, null, List.of()), new BoardUrl("8290", ""))
         .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
@@ -90,7 +94,8 @@ class LoopbackFilterTest {
     AuthProperties auth =
         new AuthProperties(AuthProperties.Mode.NONE, null, List.of("jagt.example.test"));
 
-    new LoopbackFilter(auth).doFilter(request, new MockHttpServletResponse(), chain);
+    new LoopbackFilter(auth, new BoardUrl("8290", ""))
+        .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
   }
@@ -106,7 +111,39 @@ class LoopbackFilterTest {
     AuthProperties auth =
         new AuthProperties(AuthProperties.Mode.NONE, null, List.of("jagt.example.test"));
 
-    new LoopbackFilter(auth).doFilter(request, response, new MockFilterChain());
+    new LoopbackFilter(auth, new BoardUrl("8290", ""))
+        .doFilter(request, response, new MockFilterChain());
+
+    assertThat(response.getStatus()).isEqualTo(403);
+  }
+
+  @Test
+  void admitsHostAndOriginOfThePublicUrl() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/commands/do");
+    request.setServerName("jagt.example.com");
+    request.setServerPort(443);
+    request.setLocalPort(8290);
+    request.addHeader("Origin", "https://jagt.example.com");
+    MockFilterChain chain = new MockFilterChain();
+    AuthProperties auth = new AuthProperties(AuthProperties.Mode.PASSWORD, null, List.of());
+
+    new LoopbackFilter(auth, new BoardUrl("8290", "https://jagt.example.com"))
+        .doFilter(request, new MockHttpServletResponse(), chain);
+
+    assertThat(chain.getRequest()).isSameAs(request);
+  }
+
+  @Test
+  void refusesHostThatIsNeitherThePublicUrlNorListed() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/state");
+    request.setServerName("evil.example");
+    request.setServerPort(443);
+    request.setLocalPort(8290);
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    AuthProperties auth = new AuthProperties(AuthProperties.Mode.PASSWORD, null, List.of());
+
+    new LoopbackFilter(auth, new BoardUrl("8290", "https://jagt.example.com"))
+        .doFilter(request, response, new MockFilterChain());
 
     assertThat(response.getStatus()).isEqualTo(403);
   }

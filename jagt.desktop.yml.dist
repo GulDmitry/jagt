@@ -314,11 +314,11 @@ orchestrator:
   # ── Who may open the board ─────────────────────────────────────────────────────────────────────────────────
   # The board can deploy, close a task and start an agent, so beyond loopback it needs a login.
   auth:
-    mode: none             # none | password. `none` is loopback only: a `server.address` beyond it, or `allowedHosts`, refuses the start.
+    mode: none             # none | password. `none` is loopback only: a `server.address` beyond it, `allowedHosts`, or a non-loopback `server.publicUrl` refuses the start.
                            # `password` guards the board, /api and its streams; sessions and the Master reach /mcp and /api/agent/
                            # by their own token and worktree header, never a login.
     # passwordHash: "$2y$10$…"   # a bcrypt hash, never the password: `htpasswd -nBC 10 "" | cut -d: -f2`
-    # allowedHosts: [jagt.example.com]   # host names an ingress forwards the board under; LoopbackFilter lets their Host and Origin through
+    # allowedHosts: [jagt.example.com]   # further host names an ingress forwards the board under; `server.publicUrl`'s host needs no entry
 
 # The board listens on loopback: with `auth.mode: none` it asks for no password and can deploy, close a task and start an agent.
 server:

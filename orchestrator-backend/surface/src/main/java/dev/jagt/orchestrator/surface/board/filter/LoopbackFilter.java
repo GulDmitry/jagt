@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board.filter;
 
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -8,7 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
@@ -26,9 +26,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class LoopbackFilter extends OncePerRequestFilter {
 
-  private static final Set<String> LOOPBACK = Set.of("127.0.0.1", "localhost", "[::1]", "::1");
-
   private final AuthProperties auth;
+  private final BoardUrl boardUrl;
 
   @Override
   protected void doFilterInternal(
@@ -64,12 +63,13 @@ public class LoopbackFilter extends OncePerRequestFilter {
    * usable.
    */
   private static boolean own(String host, HttpServletRequest request) {
-    return LOOPBACK.contains(host) || host.equals(request.getLocalAddr());
+    return BoardUrl.LOOPBACK.contains(host) || host.equals(request.getLocalAddr());
   }
 
-  /** A name an ingress forwards under: the owner listed it, so its port is the ingress's. */
+  /** A name an ingress forwards under: the owner named it, so its port is the ingress's. */
   private boolean listed(String host) {
-    return auth.allowedHosts().stream().anyMatch(host::equalsIgnoreCase);
+    return host.equalsIgnoreCase(boardUrl.host())
+        || auth.allowedHosts().stream().anyMatch(host::equalsIgnoreCase);
   }
 
   private boolean ownOrigin(String origin, HttpServletRequest request) {

@@ -20,4 +20,16 @@ class BoardUrlTest {
 
     assertThat(url.ofTask("ABC-42")).isEqualTo("http://localhost:8290/?task=ABC-42");
   }
+
+  @Test
+  void hostIsTheHostOfThePublicUrl() {
+    assertThat(new BoardUrl("8290", "https://jagt.example.com:8443/").host())
+        .isEqualTo("jagt.example.com");
+  }
+
+  @Test
+  void isReachedByNameOnlyWhenPublicUrlNamesNonLoopbackHost() {
+    assertThat(new BoardUrl("8290", "https://jagt.example.com").reachedByName()).isTrue();
+    assertThat(new BoardUrl("8290", "").reachedByName()).isFalse();
+  }
 }
