@@ -152,6 +152,8 @@
   "code.large": "Plik jest zbyt duży, by go pokazać.",
   "code.no-hits": "Żaden wiersz tego nie zawiera.",
   "code.cut": "Obcięte tutaj; zawęź wyszukiwanie.",
+  "code.files": "Pliki",
+  "code.changes": "Zmiany",
   "list.label": "zadania",
   "list.yours": "Twoje",
   "list.rest": "pozostałe",

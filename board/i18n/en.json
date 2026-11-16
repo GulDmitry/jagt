@@ -152,6 +152,8 @@
   "code.large": "The file is too large to show.",
   "code.no-hits": "No line holds it.",
   "code.cut": "Cut here; narrow the search.",
+  "code.files": "Files",
+  "code.changes": "Changes",
   "list.label": "tasks",
   "list.yours": "yours",
   "list.rest": "the rest",

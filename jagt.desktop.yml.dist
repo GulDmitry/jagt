@@ -80,8 +80,9 @@ orchestrator:
 
   # Any CLI launcher; the worktree path is appended. NOT `open -a`, which activates the app but opens nothing.
   # editor: cli           # cli | none: `none` opens no editor, and `open` and `diff` name this key
-  editorCommand: ["idea"]
-  editorDiffCommand: ["idea", "diff"]     # optional; two paths are appended: <left> <right>
+  # Unset, `code` opens the board's Code tab alone; set, it also launches the editor.
+  # editorCommand: ["idea"]
+  # editorDiffCommand: ["idea", "diff"]   # optional; two paths are appended: <left> <right>
   # VS Code: editorCommand: ["code"], editorDiffCommand: ["meld"] (brew install --cask meld) — VS Code compares no folders
 
   # ── The viewer ─────────────────────────────────────────────────────────────────────────────────────────────

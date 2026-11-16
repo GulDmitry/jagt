@@ -13,15 +13,19 @@ const GRAMMARS = {
   py: ['@codemirror/lang-python', 'python'],
 };
 
+const readOnly = ({view, state, language, highlight, search}, grammar) => [view.lineNumbers(),
+  state.EditorState.readOnly.of(true), search.search({top: true}), view.keymap.of(search.searchKeymap),
+  language.syntaxHighlighting(highlight.classHighlighter), ...grammar];
+
 const load = () => {
   loading ??= (async () => {
     const map = document.createElement('script');
     map.type = 'importmap';
     map.textContent = await (await fetch('./vendor/codemirror/importmap.json')).text();
     document.head.append(map);
-    const [view, state, language, highlight, search] = await Promise.all(['@codemirror/view', '@codemirror/state',
-      '@codemirror/language', '@lezer/highlight', '@codemirror/search'].map((name) => import(name)));
-    return {view, state, language, highlight, search};
+    const [view, state, language, highlight, search, merge] = await Promise.all(['@codemirror/view', '@codemirror/state',
+      '@codemirror/language', '@lezer/highlight', '@codemirror/search', '@codemirror/merge'].map((name) => import(name)));
+    return {view, state, language, highlight, search, merge};
   })().catch((e) => {
     loading = null;
     throw e;
@@ -44,11 +48,18 @@ export async function show(parent, text, path) {
     parent,
     state: state.EditorState.create({
       doc: text,
-      extensions: [view.lineNumbers(), state.EditorState.readOnly.of(true), search.search({top: true}),
-        view.keymap.of(search.searchKeymap), language.syntaxHighlighting(highlight.classHighlighter), ...grammar],
+      extensions: readOnly({view, state, language, highlight, search}, grammar),
     }),
   });
   return () => editor.destroy();
+}
+
+// The file before and after its change, side by side; the returned function removes it.
+export async function showChange(parent, before, after, path) {
+  const {view, state, language, highlight, search, merge} = await load();
+  const extensions = readOnly({view, state, language, highlight, search}, await grammarOf(path));
+  const pair = new merge.MergeView({parent, a: {doc: before, extensions}, b: {doc: after, extensions}});
+  return () => pair.destroy();
 }
 
 export const reveal = async (parent, line) => {

@@ -2,7 +2,8 @@ import {useEffect, useRef, useState} from 'preact/hooks';
 import {api} from '../core/api.js';
 import {t} from '../core/i18n.js';
 import {html} from '../components/html.js';
-import {reveal, show} from './codemirror.js';
+import {reveal, show, showChange} from './codemirror.js';
+import {files, original} from './patch.js';
 
 document.head.append(Object.assign(document.createElement('link'), {rel: 'stylesheet', href: new URL('./code.css', import.meta.url).href}));
 
@@ -19,6 +20,8 @@ export const Code = ({task}) => {
   const [picked, setPicked] = useState(null);
   const [file, setFile] = useState(null);
   const [found, setFound] = useState(null);
+  const [mode, setMode] = useState('files');
+  const [changes, setChanges] = useState(null);
   const [failure, setFailure] = useState('');
   const host = useRef(null);
   const id = encodeURIComponent(task.id);
@@ -32,20 +35,31 @@ export const Code = ({task}) => {
   }, [task.id]);
 
   useEffect(() => {
+    if (mode !== 'changes') return;
+    api(`/api/tasks/diff?task=${id}`).then((read) => {
+      setChanges(read.map((repo) => ({project: repo.project, cut: repo.cut, files: files(repo.diff)})));
+      setFailure('');
+    }, said);
+  }, [mode, task.id]);
+
+  useEffect(() => {
     if (!picked) return;
     setFile(null);
     api(`/api/tasks/code/file?task=${id}&project=${encodeURIComponent(picked.project)}&path=${encodeURIComponent(picked.path)}`)
-      .then((read) => { setFile(read); setFailure(''); }, said);
-  }, [picked?.project, picked?.path]);
+      .then((read) => { setFile(read); setFailure(''); },
+        (e) => (picked.change?.gone ? setFile({kind: 'TEXT', path: picked.path, text: ''}) : said(e)));
+  }, [picked?.project, picked?.path, picked?.change]);
 
   useEffect(() => {
     if (file?.kind !== 'TEXT') return undefined;
     let gone = false;
     let stop = null;
-    show(host.current, file.text, file.path).then((close) => {
+    const open = picked.change ? showChange(host.current, original(file.text, picked.change.hunks), file.text, file.path)
+      : show(host.current, file.text, file.path);
+    open.then((close) => {
       if (gone) return close();
       stop = close;
-      return picked.line ? reveal(host.current, picked.line) : undefined;
+      return picked.line && !picked.change ? reveal(host.current, picked.line) : undefined;
     }, said);
     return () => {
       gone = true;
@@ -62,9 +76,13 @@ export const Code = ({task}) => {
   };
 
   const project = picked?.project || '';
+  const changed = mode === 'changes';
+  const listed = changed ? (changes || []) : [];
   return html`<section class="code" role="tabpanel" id="panel-code" aria-labelledby="tab-code">
     <form class="code-search" onSubmit=${search}>
       <input name="q" aria-label=${t('code.search')} placeholder=${t('code.search')} autocomplete="off"/>
+      <span class="code-modes">${['files', 'changes'].map((one) => html`<button type="button" onClick=${() => { setMode(one); setFound(null); }}
+        aria-pressed=${String(mode === one)}>${t(`code.${one}`)}</button>`)}</span>
     </form>
     ${failure ? html`<p class="detail problem">${failure}</p>` : ''}
     <div class="code-body">
@@ -72,6 +90,13 @@ export const Code = ({task}) => {
         ? (found.hits.length ? found.hits.map((hit) => html`<button onClick=${() => setPicked({project, path: hit.path, line: hit.line})}
           aria-pressed=${String(picked?.path === hit.path && picked?.line === hit.line)}>${hit.path}:${hit.line}
           <span class="muted">${hit.text.trim()}</span></button>`) : html`<p class="muted">${t('code.no-hits')}</p>`)
+        : changed ? (changes === null ? html`<p class="muted">${t('reading')}</p>`
+          : !listed.some((repo) => repo.files.length) ? html`<p class="muted">${t('pane.no-diff')}</p>`
+            : listed.flatMap((repo) => [...repo.files.map((one) => html`<button class="code-change"
+              onClick=${() => setPicked({project: repo.project, path: one.path, line: 0, change: one})}
+              aria-pressed=${String(picked?.project === repo.project && picked?.path === one.path && !!picked.change)}>${one.path}
+              <span class="muted">${` +${one.added} \u2212${one.removed}`}</span></button>`),
+            repo.cut ? html`<p class="muted">${t('pane.diff-cut')}</p>` : '']))
         : trees === null ? (failure ? '' : html`<p class="muted">${t('reading')}</p>`)
           : !picked ? html`<p class="muted">${t('code.none')}</p>`
             : trees.flatMap((tree) => tree.files.map((name) => html`<button

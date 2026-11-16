@@ -24,9 +24,17 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
   private final ToolchainProperties properties;
 
   @Override
+  public boolean absent() {
+    List<String> command = properties.editorCommand();
+    return command == null || command.isEmpty();
+  }
+
+  @Override
   public List<Problem> problems() {
     return Stream.of(
-            problems(properties.editorCommand(), "orchestrator.editor-command"),
+            absent()
+                ? List.<Problem>of()
+                : problems(properties.editorCommand(), "orchestrator.editor-command"),
             diffIsSet()
                 ? problems(properties.editorDiffCommand(), "orchestrator.editor-diff-command")
                 : List.<Problem>of())

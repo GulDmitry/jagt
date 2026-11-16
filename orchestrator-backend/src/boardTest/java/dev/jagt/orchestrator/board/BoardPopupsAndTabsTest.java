@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.assertions.LocatorAssertions;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
@@ -392,6 +393,57 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
     assertThat(page.locator("#pane .code-view .cm-content")).containsText("public class A");
     assertThat(page.locator("#pane .code-view .tok-keyword").first()).isVisible();
+  }
+
+  @Test
+  void codeTabListsTheChangedFilesWithCountsAndOpensOneBesideItsSource() throws Exception {
+    Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
+    Files.writeString(worktree.resolve("A.java"), "keep\nnew\nkeep\n");
+    Files.writeString(worktree.resolve("B.java"), "one\ntwo\n");
+    new ProcessBuilder("git", "init", "-q").directory(worktree.toFile()).start().waitFor();
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = session.newPage();
+    page.route(
+        "**/api/tasks/diff*",
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setContentType("application/json")
+                    .setBody(
+                        "[{\"project\":\"alpha\",\"base\":\"origin/main\",\"cut\":false,\"diff\":"
+                            + "\"diff --git a/A.java b/A.java\\n--- a/A.java\\n+++ b/A.java\\n"
+                            + "@@ -1,3 +1,3 @@\\n keep\\n-old\\n+new\\n keep\\n"
+                            + "diff --git a/B.java b/B.java\\n--- a/B.java\\n+++ b/B.java\\n"
+                            + "@@ -1,0 +1,2 @@\\n+one\\n+two\\n\"}]")));
+    page.navigate("http://localhost:" + port + "/");
+    page.locator("#pane .tabs button[data-tab=code]").click();
+
+    page.locator("#pane .code-modes button", new Page.LocatorOptions().setHasText("Changes"))
+        .click();
+
+    assertThat(page.locator("#pane .code-change"))
+        .hasText(new String[] {"A.java +1 −1", "B.java +2 −0"});
+    page.locator("#pane .code-change").first().click();
+    assertThat(page.locator("#pane .code-view .cm-mergeView"))
+        .isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(20_000));
+    assertThat(page.locator("#pane .code-view .cm-mergeView .cm-content").first())
+        .containsText("old");
+    assertThat(page.locator("#pane .code-view .cm-mergeView .cm-content").last())
+        .containsText("new");
+  }
+
+  @Test
+  void codeVerbStillOpensTheViewerWhenAnEditorIsConfigured() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(commands.execute("ABC-1", TaskAction.CODE, null))
+        .thenReturn("Opened /wt as a project in the editor");
+    Page page = openBoard();
+
+    page.locator("#pane button[data-action=code]").click();
+
+    assertThat(page.locator("#pane .tabs button[data-tab=code]"))
+        .hasAttribute("aria-selected", "true");
+    assertThat(page.locator("#toasts .toast")).hasText("Opened /wt as a project in the editor");
   }
 
   @Test

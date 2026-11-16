@@ -97,4 +97,23 @@ class CliEditorDriverTest {
         .hasMessageContaining("[meld]");
     verifyNoInteractions(processRunner);
   }
+
+  @Test
+  void isAbsentAndStartsCleanWhenNoEditorCommandIsConfigured() {
+    CliEditorDriver driver =
+        new CliEditorDriver(mock(ProcessRunner.class), ToolchainProperties.defaults());
+
+    assertThat(driver.absent()).isTrue();
+    assertThat(driver.problems()).isEmpty();
+  }
+
+  @Test
+  void isReachableWhenAnEditorCommandIsConfigured() {
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            mock(ProcessRunner.class),
+            ToolchainProperties.defaults().withEditorCommand(List.of("sh")));
+
+    assertThat(driver.absent()).isFalse();
+  }
 }

@@ -10,3 +10,7 @@ section.code .code-view .cm-gutters { background: var(--chip-bg); color: var(--m
 section.code .code-view .tok-keyword { font-weight: 700; }
 section.code .code-view .tok-comment { color: var(--muted); font-style: italic; }
 @media (max-width: 700px) { .code-body { flex-direction: column; } .code-names { flex-basis: auto; max-height: 24vh; } }
+.code-modes { display: flex; gap: 4px; margin-top: 6px; }
+.code-modes button[aria-pressed="true"] { border-bottom: 3px solid var(--accent); }
+.code-view .cm-mergeView { display: flex; }
+.code-view .cm-mergeViewEditors { flex: 1; min-width: 0; }
