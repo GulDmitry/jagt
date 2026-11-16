@@ -6,11 +6,11 @@
 [the suites, where and when each runs](testing-suites.md).
 **Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD`, each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
-[0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
-([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
-**The root's `:test` is the rule tests, run whole** (`:test --rerun`, about a minute), never a hand-picked list. **A filtered run
-names its project** (`:<module>:test --tests '<Name>'`): a bare `test --tests` fails where the filter matches nothing.
-
+[0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo)**
+([0181](../decisions/0181-every-module-keeps-80-percent-line-coverage.md)). **A suite ends within `suiteCeilingMinutes`, a probe in
+`-PrunMinutes`** ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
+**The root's `:test` is the rule tests, run whole**. **A filtered run names its project**
+(`:<module>:test --tests '<Name>'`; a bare `test --tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
 A fixed bug's `docs/cases.md` row and `Defect-family:` trailer make defects countable per family.
 **A new test's run is predicted first**, outcome and message; a surprise is a stop to understand, never a blind retry.

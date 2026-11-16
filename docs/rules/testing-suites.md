@@ -4,7 +4,7 @@
 
 | group | suites | where | when |
 |---|---|---|---|
-| **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties, mutants on the changed lines | locally and CI | every commit; CI on a push or pull request |
+| **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties, mutants on the changed lines, 0.80 line coverage per module | locally and CI | every commit; CI on a push or pull request |
 | **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest`, `containerTest` | CI | nightly and on a release tag |
 | **Stand** | `standTest -Pmodelfree`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally only: docker, an agent login, tokens | before a minor release |
 
