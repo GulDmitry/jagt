@@ -48,7 +48,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
   @Override
   public List<Problem> problems() {
-    return Executables.unresolved(kittyCommand)
+    return properties.openTerminalWindow() && Executables.unresolved(kittyCommand)
         ? List.of(
             new Problem(
                 "orchestrator.kitty-command",

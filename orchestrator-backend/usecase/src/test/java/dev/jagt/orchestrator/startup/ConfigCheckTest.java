@@ -111,7 +111,6 @@ class ConfigCheckTest {
   static Stream<Arguments> namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt() {
     return Stream.of(
         Arguments.of("ui: tui", "orchestrator.ui"),
-        Arguments.of("terminal: warp", "orchestrator.terminal"),
         Arguments.of("openWarpWindow: false", "orchestrator.openWarpWindow"),
         Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal"),
         Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"),

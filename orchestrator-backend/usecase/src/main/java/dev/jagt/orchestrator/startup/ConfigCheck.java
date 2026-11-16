@@ -30,7 +30,6 @@ public class ConfigCheck implements StartupCheck {
   private static final Map<String, String> RETIRED_KEYS =
       Map.of(
           "ui", "the board is the only surface",
-          "terminal", "the driver comes from `platform`",
           "webTerminal", "`focus` raises the terminal window",
           "dashboard", "nothing renders a console table",
           "openWarpWindow", "renamed to `openTerminalWindow`; set it again",

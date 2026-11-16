@@ -19,7 +19,7 @@ COPY --from=build /src/orchestrator-backend/build/libs/jagt.jar jagt.jar
 COPY jagt.desktop.yml.dist mcp_client.js ./
 COPY roles roles
 COPY jagt.server.yml.dist jagt.yml
-ENV ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data ORCHESTRATOR_KITTYCOMMAND=true
+ENV ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data
 USER jagt
 EXPOSE 8290
 ENTRYPOINT ["java", "-jar", "/app/jagt.jar"]

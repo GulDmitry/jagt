@@ -18,7 +18,7 @@ Accepted 2026-11-15 by the owner's order: a server runs jagt from a container; b
 - The `Dockerfile` at the repository root builds the jar in a JDK stage and runs it on `eclipse-temurin:25-jre-noble`.
 - The root is `/app`: the jar, `mcp_client.js`, `jagt.desktop.yml.dist`, `roles/` and `jagt.server.yml.dist` as `jagt.yml`.
 - The data folder is `/data`; mounting a volume there is the user's choice, without one the container works and a new container starts empty.
-- The image sets `platform: linux` and `kittyCommand` to a no-op: no terminal window opens in a container.
+- The image sets `platform: linux` and `openTerminalWindow: false`: no terminal window opens, so no kitty is checked for.
 - The image holds git, tmux, procps, lsof and openssh-client, and runs as a non-root user.
 - No agent CLI, `gh`, `glab` or node: a user's image is `FROM` jagt's and adds what its agent needs.
 - `docker-compose.yml` runs the service on 8290 with the named volume; Secrets come from `.env`, copied from `.env.dist`.

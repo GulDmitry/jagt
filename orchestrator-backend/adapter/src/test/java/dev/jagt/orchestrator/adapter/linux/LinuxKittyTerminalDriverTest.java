@@ -19,13 +19,25 @@ class LinuxKittyTerminalDriverTest {
     var driver =
         new LinuxKittyTerminalDriver(
             mock(ProcessRunner.class),
-            OrchestratorProperties.defaults(),
+            OrchestratorProperties.defaults().withOpenTerminalWindow(true),
             new KittyOptions("no-such-kitty", ""),
             Clock.systemUTC());
 
     assertThat(driver.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.kitty-command");
+  }
+
+  @Test
+  void needsNoKittyWhenNoTerminalWindowIsOpened() {
+    var driver =
+        new LinuxKittyTerminalDriver(
+            mock(ProcessRunner.class),
+            OrchestratorProperties.defaults().withOpenTerminalWindow(false),
+            new KittyOptions("no-such-kitty", ""),
+            Clock.systemUTC());
+
+    assertThat(driver.problems()).isEmpty();
   }
 
   @Test

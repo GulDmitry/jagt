@@ -85,7 +85,7 @@ orchestrator:
   # VS Code: editorCommand: ["code"], editorDiffCommand: ["meld"] (brew install --cask meld) — VS Code compares no folders
 
   # ── The viewer ─────────────────────────────────────────────────────────────────────────────────────────────
-  openTerminalWindow: true  # false: never open a kitty window; attach to the tmux session yourself
+  openTerminalWindow: true  # false: never open a window and check for no kitty; attach to the tmux session yourself
   viewer:
     tmuxSession: jagt     # tmux reserves ':' and '.' — a name carrying either is unaddressable
     viewMode: shared      # shared | tab-per-task
