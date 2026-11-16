@@ -129,18 +129,13 @@ or local setup; such names live only in git-ignored files. **A check holds for a
 
 ## Tests
 
-- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval`,
-  `roleEval -Prole=<id>` and `pitest` are asked for by name. **A cached green is not a run.** **Every linter and test runs locally**
-  at every feature's end and before every release: every source set compiled, `test --rerun-tasks`.
-  `boardTest` and `e2eTest` run where the change reaches and before a release. A commit inside a feature runs the tests of
-  what it touched and the rule tests. CI runs them all nightly.
-- **A change to `roles/session/brief.md.dist` runs `promptEval` and `roleEval -Prole=master`** before its commit.
+- **Three groups** ([every suite](docs/rules/testing-suites.md)): a commit runs `cd orchestrator-backend && ./gradlew test --rerun-tasks`,
+  every source set compiled; the heavy and stand groups run before a minor release's push. **A cached green is not a run.**
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. It adds its row to
   [`docs/cases.md`](docs/cases.md) and a `Defect-family: <A–M>` trailer.
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
   asserted what nothing promised. Never to turn a red run green ([`testing`](docs/rules/testing.md#every-test-pins-a-business-case)).
-- Run `./gradlew boardTest` after any change to `board/`.
 - A suite that opens a window leaves no trace: `--orchestrator.terminal=none`, a throwaway tmux session, cleanup.
 - **No absolute paths in defaults**: an external binary is a bare name, resolved by `adapter/Executables`.
 
