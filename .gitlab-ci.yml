@@ -31,6 +31,7 @@ test:
     - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
     - ./gradlew --no-daemon test
+    - scripts/vulnerability-scan.sh
   artifacts:
     when: on_failure
     expire_in: 1 week
@@ -49,6 +50,7 @@ heavy:
   script:
     - sh scripts/linux-test-deps.sh
     - apt-get install -y --no-install-recommends docker.io docker-compose-v2 curl
+    - scripts/vulnerability-scan.sh
     - git config --global user.email "ci@example.com"
     - git config --global user.name "jagt ci"
     - scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest boardTest
