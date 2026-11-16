@@ -41,4 +41,11 @@ class ServerStarterTest {
     assertThat(server).containsPattern("(?m)^  onStop: end\\b");
     assertThat(server).containsPattern("(?m)^  logging: console\\b");
   }
+
+  @Test
+  void theServerStarterTurnsTheAcceptanceRoleOn() {
+    String server = SourceRoots.read(SERVER);
+
+    assertThat(server).containsPattern("(?m)^    acceptance:\\n      enabled: true\\b");
+  }
 }
