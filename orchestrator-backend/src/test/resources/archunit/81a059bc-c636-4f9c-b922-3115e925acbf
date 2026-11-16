@@ -44,6 +44,8 @@ dev.jagt.orchestrator.stand.BackendSignals
 dev.jagt.orchestrator.stand.ContextRelays
 dev.jagt.orchestrator.stand.HostSleep
 dev.jagt.orchestrator.stand.HumanStub
+dev.jagt.orchestrator.stand.JagtContainer
+dev.jagt.orchestrator.stand.JagtEngine
 dev.jagt.orchestrator.stand.JagtProcess
 dev.jagt.orchestrator.stand.JsonRpc
 dev.jagt.orchestrator.stand.Pipelines
@@ -53,6 +55,7 @@ dev.jagt.orchestrator.stand.StandBoard
 dev.jagt.orchestrator.stand.StandBooks
 dev.jagt.orchestrator.stand.StandCleanup
 dev.jagt.orchestrator.stand.StandConfig
+dev.jagt.orchestrator.stand.StandEngine
 dev.jagt.orchestrator.stand.StandEvidence
 dev.jagt.orchestrator.stand.StandFailure
 dev.jagt.orchestrator.stand.StandHost

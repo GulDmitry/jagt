@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.stand;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.LongPredicate;
 
@@ -13,7 +15,7 @@ public final class StandCleanup {
     Path failedDir = Path.of(args[1]);
     LongPredicate alive = pid -> ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
     StandRoots.Plan plan = StandRoots.plan(base, alive);
-    plan.dead().forEach(StandCleanup::stop);
+    plan.dead().forEach(found -> stop(found, StandShell::run));
     StandTraces.Removed removed = sweep(plan, failedDir, StandTraces.ofTheHuman(base), alive);
     System.out.println(
         "stand cleanup: removed "
@@ -41,8 +43,14 @@ public final class StandCleanup {
     return traces.remove(root -> !alive.test(StandRoots.pidOf(root)));
   }
 
-  private static void stop(StandRoots.Found found) {
+  static void stop(StandRoots.Found found, StandShell.Runner shell) {
     StandMarker marker = found.marker();
+    if (!marker.container().isEmpty()) {
+      shell.run(
+          found.root(),
+          List.of("docker", "compose", "-p", marker.container(), "down", "-v", "--remove-orphans"),
+          Map.of());
+    }
     jagt(marker).ifPresent(StandShell::stopTree);
     StandShell.killTmux(found.root());
   }
@@ -55,7 +63,7 @@ public final class StandCleanup {
             handle
                 .info()
                 .arguments()
-                .map(arguments -> java.util.List.of(arguments).contains(port))
+                .map(arguments -> List.of(arguments).contains(port))
                 .orElse(false));
   }
 }

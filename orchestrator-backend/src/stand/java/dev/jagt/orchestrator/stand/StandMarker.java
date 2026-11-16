@@ -5,7 +5,8 @@ import java.nio.file.Path;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
-public record StandMarker(String scenario, long pid, String outcome, long jagtPid, int port) {
+public record StandMarker(
+    String scenario, long pid, String outcome, long jagtPid, int port, String container) {
 
   public static final String FILE = "stand.json";
   public static final String RUNNING = "running";
@@ -16,23 +17,27 @@ public record StandMarker(String scenario, long pid, String outcome, long jagtPi
   private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
   public static StandMarker started(String scenario) {
-    return new StandMarker(scenario, ProcessHandle.current().pid(), RUNNING, 0, 0);
+    return new StandMarker(scenario, ProcessHandle.current().pid(), RUNNING, 0, 0, "");
   }
 
   public static StandMarker read(Path root, long pidFromName) {
     Path file = root.resolve(FILE);
     if (!Files.isRegularFile(file)) {
-      return new StandMarker("unknown", pidFromName, RUNNING, 0, 0);
+      return new StandMarker("unknown", pidFromName, RUNNING, 0, 0, "");
     }
     return MAPPER.readValue(file.toFile(), StandMarker.class);
   }
 
   public StandMarker withJagt(long jagtPid, int port) {
-    return new StandMarker(scenario, pid, outcome, jagtPid, port);
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container);
+  }
+
+  public StandMarker withContainer(String container) {
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container);
   }
 
   public StandMarker withOutcome(String outcome) {
-    return new StandMarker(scenario, pid, outcome, jagtPid, port);
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container);
   }
 
   public boolean failed() {

@@ -29,6 +29,10 @@ orchestrator-backend/bin/
 orchestrator-backend/*/bin/
 CLAUDE.local.md
 
+# Secrets a compose run reads
+.env
+.env.stand
+
 # Steps no case sends, written beside state.json
 misses.jsonl
 misses.jsonl.1

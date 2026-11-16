@@ -1,0 +1,30 @@
+services:
+  jagt:
+    image: jagt-stand
+    ports:
+      - "127.0.0.1:${JAGT_PORT}:8290"
+    volumes:
+      - ${JAGT_STAND_ROOT}:${JAGT_STAND_ROOT}
+    environment:
+      ORCHESTRATOR_ROOT: ${JAGT_STAND_ROOT}
+      ORCHESTRATOR_DATA: ${JAGT_STAND_ROOT}
+      ORCHESTRATOR_CONFIG_FILE: ${JAGT_STAND_ROOT}/jagt.yml
+      LOG_FILE: ${JAGT_STAND_ROOT}/jagt-backend.log
+      TMUX_TMPDIR: /tmp/jagt-tmux
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: "*"
+      GIT_AUTHOR_NAME: stand
+      GIT_AUTHOR_EMAIL: stand@example.com
+      GIT_COMMITTER_NAME: stand
+      GIT_COMMITTER_EMAIL: stand@example.com
+      CLAUDE_CODE_OAUTH_TOKEN:
+      ANTHROPIC_API_KEY:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - jagt_password_hash
+
+secrets:
+  jagt_password_hash:
+    file: ${JAGT_STAND_ROOT}/password-hash

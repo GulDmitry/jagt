@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -10,6 +12,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -26,9 +29,9 @@ class StandHostTest {
 
   @BeforeEach
   void startHost() throws Exception {
-    host = new StandHost(directory).start();
+    host = new StandHost(directory, InetAddress.getLoopbackAddress()).start();
     mcp =
-        HttpRequest.newBuilder(URI.create(host.mcpUrl()))
+        HttpRequest.newBuilder(URI.create(host.mcpUrl("127.0.0.1")))
             .header("Content-Type", "application/json");
   }
 
@@ -196,10 +199,32 @@ class StandHostTest {
   }
 
   @Test
+  void hostBoundToAllInterfacesAnswersOnTheMachinesOwnAddress() throws Exception {
+    InetAddress own;
+    try (DatagramSocket route = new DatagramSocket()) {
+      route.connect(InetAddress.getByName("192.0.2.1"), 9);
+      own = route.getLocalAddress();
+    }
+    Assumptions.assumeFalse(
+        own.isLoopbackAddress() || own.isAnyLocalAddress(),
+        "this machine has no address but loopback");
+
+    try (StandHost open = new StandHost(directory, InetAddress.getByName("0.0.0.0")).start()) {
+      HttpResponse<String> response =
+          client.send(
+              HttpRequest.newBuilder(URI.create(open.appUrl(own.getHostAddress()))).build(),
+              BodyHandlers.ofString());
+
+      assertThat(response.statusCode()).isEqualTo(200);
+    }
+  }
+
+  @Test
   void servesTheDeployedGreetingAtItsAppUrl() throws Exception {
     HttpResponse<String> response =
         client.send(
-            HttpRequest.newBuilder(URI.create(host.appUrl())).build(), BodyHandlers.ofString());
+            HttpRequest.newBuilder(URI.create(host.appUrl("127.0.0.1"))).build(),
+            BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(200);
     assertThat(response.body()).contains("Hello, World");

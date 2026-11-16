@@ -5,7 +5,7 @@ COPY . .
 ENV GIT_AUTHOR_NAME=build GIT_AUTHOR_EMAIL=build@localhost GIT_COMMITTER_NAME=build GIT_COMMITTER_EMAIL=build@localhost
 RUN git init -q && git commit -q --allow-empty -m build
 WORKDIR /src/orchestrator-backend
-RUN ./gradlew bootJar -x test --no-daemon
+RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar -x test --no-daemon
 
 FROM eclipse-temurin:25-jre-noble
 RUN apt-get update \

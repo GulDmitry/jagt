@@ -98,6 +98,7 @@ dependencies {
     boardTestAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     containerTestImplementation 'org.testcontainers:testcontainers'
     containerTestImplementation 'org.springframework.security:spring-security-crypto'
+    standImplementation 'org.springframework.security:spring-security-crypto'
     e2eCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     e2eAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

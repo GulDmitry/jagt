@@ -471,7 +471,8 @@ that points outward does not compile. Two folders inside one module it cannot se
   `lsof`, binaries), `:surface:test`, and the root's own few that assert what the install ships.
 - The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests
   and `WorktreeHooksTest` live in `:adapter:test`, where git is.
-- Six suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `containerTest` (docker), `boardTest` (the page in a real browser),
+- Seven suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `containerTest` and `standTest` (docker),
+  `boardTest` (the page in a real browser),
   `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, and tokens).
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
 - `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's

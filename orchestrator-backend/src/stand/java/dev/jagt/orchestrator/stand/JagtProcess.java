@@ -12,25 +12,23 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-public final class JagtProcess implements AutoCloseable {
+public final class JagtProcess implements JagtEngine {
 
   private static final Path JAR = Path.of("build", "libs", "jagt-run.jar").toAbsolutePath();
   public static final String BEFORE_RESTART = ".before-restart";
   private static final List<String> OUTPUTS = List.of("jagt.out", "jagt-backend.log");
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
+  private final Path root;
   private final Process process;
   private final int port;
   private final StandBoard board;
 
-  private JagtProcess(Process process, int port) {
+  private JagtProcess(Path root, Process process, int port) {
+    this.root = root;
     this.process = process;
     this.port = port;
     this.board = new StandBoard(port);
-  }
-
-  public static JagtProcess start(Path root) {
-    return start(root, freePort());
   }
 
   public static JagtProcess start(Path root, int port) {
@@ -57,7 +55,7 @@ public final class JagtProcess implements AutoCloseable {
     env.put("LOG_FILE", root.resolve("jagt-backend.log").toString());
     env.put("TMUX_TMPDIR", root.resolve("tmux").toString());
     try {
-      return new JagtProcess(builder.start(), port).awaitReady(root);
+      return new JagtProcess(root, builder.start(), port).awaitReady();
     } catch (IOException e) {
       throw new StandFailure("cannot launch " + JAR + " under " + root, e);
     }
@@ -77,16 +75,36 @@ public final class JagtProcess implements AutoCloseable {
     }
   }
 
+  @Override
   public long pid() {
     return process.pid();
   }
 
+  @Override
   public int port() {
     return port;
   }
 
+  @Override
   public StandBoard board() {
     return board;
+  }
+
+  @Override
+  public String windows() {
+    return StandShell.windows(root);
+  }
+
+  @Override
+  public String screens() {
+    return StandShell.screens(root);
+  }
+
+  @Override
+  public JagtEngine restart() {
+    close();
+    keepOutput(root);
+    return start(root, port);
   }
 
   @Override
@@ -94,7 +112,7 @@ public final class JagtProcess implements AutoCloseable {
     StandShell.stopTree(process.toHandle());
   }
 
-  private JagtProcess awaitReady(Path root) {
+  private JagtProcess awaitReady() {
     Instant deadline = Instant.now(Clock.systemUTC()).plus(STARTUP);
     while (!board.ready()) {
       if (!process.isAlive() || Instant.now(Clock.systemUTC()).isAfter(deadline)) {
@@ -116,7 +134,7 @@ public final class JagtProcess implements AutoCloseable {
     }
   }
 
-  private static int freePort() {
+  static int freePort() {
     try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
       return socket.getLocalPort();
     } catch (IOException e) {

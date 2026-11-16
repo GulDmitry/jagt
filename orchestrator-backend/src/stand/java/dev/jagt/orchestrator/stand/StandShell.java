@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,11 @@ public final class StandShell {
   private StandShell() {}
 
   public record Result(int exit, String output) {}
+
+  @FunctionalInterface
+  public interface Runner {
+    Result run(Path cwd, List<String> command, Map<String, String> env);
+  }
 
   public static String git(Path cwd, String... args) {
     Result result = run(cwd, gitCommand(args));
@@ -35,10 +41,15 @@ public final class StandShell {
   }
 
   public static Result run(Path cwd, List<String> command) {
+    return run(cwd, command, Map.of());
+  }
+
+  public static Result run(Path cwd, List<String> command, Map<String, String> env) {
     try {
       ProcessBuilder builder =
           new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true);
       builder.environment().keySet().removeIf(name -> name.startsWith("CLAUDE"));
+      builder.environment().putAll(env);
       Process process = builder.start();
       String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
       if (!process.waitFor(60, TimeUnit.SECONDS)) {

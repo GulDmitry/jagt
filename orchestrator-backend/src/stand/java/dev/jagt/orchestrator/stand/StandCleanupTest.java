@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -16,7 +18,7 @@ class StandCleanupTest {
       throws Exception {
     Path base = Files.createDirectories(directory.resolve("tmp")).toRealPath();
     Path root = Files.createDirectory(base.resolve("jagt-stand-41-1"));
-    new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0).writeTo(root);
+    new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "").writeTo(root);
     Files.writeString(root.resolve("timeline.log"), "t0");
     Files.writeString(root.resolve("scratch.txt"), "x");
     Path failed = directory.resolve("failed");
@@ -30,6 +32,40 @@ class StandCleanupTest {
     assertThat(kept.resolve("timeline.log")).hasContent("t0");
     assertThat(kept.resolve(StandMarker.FILE)).exists();
     assertThat(kept.resolve("scratch.txt")).doesNotExist();
+  }
+
+  @Test
+  void composesDownDeadRunsContainerBeforeRemovingItsRoot() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, "");
+        };
+    StandMarker marker =
+        new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "jagt-stand-41-1");
+
+    StandCleanup.stop(new StandRoots.Found(directory.resolve("jagt-stand-41-1"), marker), shell);
+
+    assertThat(seen)
+        .containsExactly(
+            List.of(
+                "docker", "compose", "-p", "jagt-stand-41-1", "down", "-v", "--remove-orphans"));
+  }
+
+  @Test
+  void composesNothingForDeadHostRun() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, "");
+        };
+    StandMarker marker = new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "");
+
+    StandCleanup.stop(new StandRoots.Found(directory.resolve("jagt-stand-41-1"), marker), shell);
+
+    assertThat(seen).isEmpty();
   }
 
   @Test

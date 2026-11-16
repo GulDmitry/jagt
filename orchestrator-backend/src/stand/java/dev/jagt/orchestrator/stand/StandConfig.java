@@ -9,16 +9,40 @@ import org.jspecify.annotations.Nullable;
 public final class StandConfig {
 
   private static final Path FLOWS = Path.of("src/stand/resources/flows").toAbsolutePath();
+  private static final String PASSWORD_SECRET = "${file:/run/secrets/jagt_password_hash}";
 
   private StandConfig() {}
 
   public record Replay(Path recording, String appUrl) {}
 
+  public record Target(
+      String project, String mcpUrl, String orchestrator, String sandbox, String server) {
+
+    public static Target local(Path repo, String mcpUrl) {
+      return new Target("path: \"" + repo + "\"", mcpUrl, "", "", "");
+    }
+
+    public static Target container(Path root, String mcpUrl, String publicUrl) {
+      return new Target(
+          "url: \"file://" + root.resolve("origin.git") + "\"",
+          mcpUrl,
+          "auth: { mode: password, passwordHash: \""
+              + PASSWORD_SECRET
+              + "\" }\n"
+              + "  usageLimits: { enabled: false }\n"
+              + "  platform: linux\n"
+              + "  notifier: none\n"
+              + "  keepAwake: none\n"
+              + "  editor: none",
+          "sandbox: { enabled: false }",
+          "server: { address: 0.0.0.0, publicUrl: \"" + publicUrl + "\" }");
+    }
+  }
+
   public static void write(
       Path shipped,
       Path root,
-      Path repo,
-      String mcpUrl,
+      Target target,
       String tmuxSession,
       StandMode mode,
       @Nullable Replay replay) {
@@ -34,9 +58,9 @@ public final class StandConfig {
             (Iterable<Path>)
                 files.filter(Files::isRegularFile).filter(candidate -> shipped(roles, candidate))
                     ::iterator) {
-          Path target = root.resolve("roles").resolve(roles.relativize(file).toString());
-          Files.createDirectories(target.getParent());
-          Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+          Path placed = root.resolve("roles").resolve(roles.relativize(file).toString());
+          Files.createDirectories(placed.getParent());
+          Files.copy(file, placed, StandardCopyOption.REPLACE_EXISTING);
         }
       }
       Path servers = root.resolve("servers.json");
@@ -45,10 +69,10 @@ public final class StandConfig {
           """
           {"mcpServers":{"stand-host":{"type":"http","url":"%s"}}}
           """
-              .formatted(mcpUrl));
+              .formatted(target.mcpUrl()));
       Files.writeString(
           root.resolve("jagt.yml"),
-          jagtYml(repo, servers, tmuxSession, mode, replay, acceptance(root, replay)));
+          jagtYml(target, servers, tmuxSession, mode, replay, acceptance(root, replay)));
     } catch (IOException e) {
       throw new StandFailure("cannot write the stand configuration under " + root, e);
     }
@@ -61,7 +85,7 @@ public final class StandConfig {
   }
 
   private static String jagtYml(
-      Path repo,
+      Target target,
       Path servers,
       String tmuxSession,
       StandMode mode,
@@ -71,7 +95,7 @@ public final class StandConfig {
     orchestrator:
       %s
       projects:
-        proj: { path: "%s", baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
+        proj: { %s, baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
       startupChecks: false
       terminal: none
       viewer: { tmuxSession: "%s", viewMode: shared, keepViewer: false }
@@ -81,6 +105,7 @@ public final class StandConfig {
         autoplan: { enabled: false }
         visualize: { enabled: false }
         diagnose: { enabled: false }
+        %s
       claude: { mcpConfig: "%s" }
       agentAllowedTools: mcp__stand-host
       assistant:
@@ -92,17 +117,22 @@ public final class StandConfig {
       tracker: { mode: "off" }
       replay: { file: "%s" }
       %s
+      %s
+    %s
     """
         .formatted(
             replay == null ? "" : "codeHost: replay",
-            repo,
+            target.project(),
             tmuxSession,
             replay == null ? "claude" : "replay",
+            target.sandbox(),
             servers,
             servers,
             mode.id(),
             replay == null ? "" : replay.recording(),
-            acceptance);
+            acceptance,
+            target.orchestrator(),
+            target.server());
   }
 
   private static String acceptance(Path root, @Nullable Replay replay) throws IOException {
@@ -110,13 +140,23 @@ public final class StandConfig {
         || !Files.readString(replay.recording()).contains("\"kind\":\"ACCEPTANCE_CHECK\"")) {
       return "";
     }
+    Path flows = Files.createDirectories(root.resolve("flows"));
+    try (var files = Files.list(FLOWS)) {
+      for (Path file : (Iterable<Path>) files::iterator) {
+        Files.copy(
+            file,
+            flows.resolve(file.getFileName().toString()),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.COPY_ATTRIBUTES);
+      }
+    }
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         """
         environments: [{ url: "%s" }]
         flows: { driver: playwright, path: "%s", command: ["%s"] }
         """
-            .formatted(replay.appUrl(), FLOWS, FLOWS.resolve("flows.sh")));
+            .formatted(replay.appUrl(), flows, flows.resolve("flows.sh")));
     return "roles: { acceptance: { enabled: true } }";
   }
 }

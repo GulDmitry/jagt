@@ -1,10 +1,13 @@
 package dev.jagt.orchestrator.stand;
 
 import java.io.IOException;
+import java.net.CookieManager;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
@@ -14,15 +17,25 @@ import tools.jackson.databind.json.JsonMapper;
 public final class StandBoard {
 
   private final HttpClient http =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
+      HttpClient.newBuilder()
+          .cookieHandler(new CookieManager())
+          .connectTimeout(Duration.ofSeconds(30))
+          .build();
   private final ObjectMapper mapper = JsonMapper.builder().build();
   private static final Duration READING = Duration.ofSeconds(60);
   private static final Duration OPENING = Duration.ofMinutes(10);
 
   private final String base;
+  private final String password;
+  private boolean loggedIn;
 
   public StandBoard(int port) {
-    this.base = "http://127.0.0.1:" + port;
+    this("http://127.0.0.1:" + port, "");
+  }
+
+  public StandBoard(String base, String password) {
+    this.base = base;
+    this.password = password;
   }
 
   public boolean ready() {
@@ -93,6 +106,42 @@ public final class StandBoard {
   }
 
   private HttpResponse<String> send(HttpRequest.Builder request) {
+    login();
+    HttpResponse<String> response = transmit(request);
+    boolean unauthenticated = response.statusCode() == 401 || response.statusCode() / 100 == 3;
+    if (unauthenticated && !password.isEmpty()) {
+      forget();
+      login();
+      return transmit(request);
+    }
+    return response;
+  }
+
+  private synchronized void forget() {
+    loggedIn = false;
+  }
+
+  private synchronized void login() {
+    if (password.isEmpty() || loggedIn) {
+      return;
+    }
+    HttpResponse<String> response =
+        transmit(
+            HttpRequest.newBuilder(URI.create(base + "/login"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Origin", base)
+                .timeout(READING)
+                .POST(
+                    HttpRequest.BodyPublishers.ofString(
+                        "username=owner&password="
+                            + URLEncoder.encode(password, StandardCharsets.UTF_8))));
+    if (response.statusCode() >= 400) {
+      throw new StandFailure("login at " + base + " answered " + response.statusCode());
+    }
+    loggedIn = true;
+  }
+
+  private HttpResponse<String> transmit(HttpRequest.Builder request) {
     try {
       return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
     } catch (IOException e) {

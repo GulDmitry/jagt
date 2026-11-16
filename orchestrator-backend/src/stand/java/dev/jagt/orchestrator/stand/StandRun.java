@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.stand.replay.Recorder;
 import dev.jagt.orchestrator.stand.replay.ReplayLog;
 import dev.jagt.orchestrator.stand.replay.WorktreeSnapshots;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,8 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.opentest4j.TestAbortedException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import tools.jackson.databind.JsonNode;
 
 public final class StandRun implements AutoCloseable {
@@ -46,7 +49,7 @@ public final class StandRun implements AutoCloseable {
   private final WorktreeSnapshots snapshots;
   private final Instant began = Instant.now(Clock.systemUTC());
   private final Optional<Process> awake;
-  private JagtProcess jagt;
+  private JagtEngine jagt;
   private StandMarker marker;
   private Instant polled = Instant.now(Clock.systemUTC());
   private @Nullable Duration slept;
@@ -61,7 +64,7 @@ public final class StandRun implements AutoCloseable {
       StandMode mode,
       StandProject project,
       StandHost host,
-      JagtProcess jagt,
+      JagtEngine jagt,
       @Nullable Path replayed) {
     this.root = root;
     this.replayed = replayed;
@@ -100,23 +103,46 @@ public final class StandRun implements AutoCloseable {
 
   private static StandRun begin(String scenario, StandMode mode, @Nullable Path replayed)
       throws IOException {
+    StandEngine engine =
+        new StandEngine(
+            System.getProperty("stand.engine", StandEngine.LOCAL), StandEngine::dockerRuns);
+    engine.ready();
     Path root = newRoot();
-    StandMarker marker = StandMarker.started(scenario + "/" + mode.id()).writeTo(root);
+    boolean container = engine.container();
+    StandMarker marker = StandMarker.started(scenario + "/" + mode.id());
+    marker =
+        (container ? marker.withContainer(root.getFileName().toString()) : marker).writeTo(root);
     Files.createDirectories(root.resolve("tmux"));
     StandProject project = StandProject.create(root);
-    StandHost host = new StandHost(root.resolve("host")).start();
+    String reach = container ? "host.docker.internal" : "127.0.0.1";
+    StandHost host =
+        new StandHost(
+                root.resolve("host"),
+                container ? InetAddress.getByName("0.0.0.0") : InetAddress.getLoopbackAddress())
+            .start();
     try {
+      int port = JagtProcess.freePort();
+      String password = container ? UUID.randomUUID().toString() : "";
+      StandConfig.Target target =
+          container
+              ? StandConfig.Target.container(root, host.mcpUrl(reach), "http://127.0.0.1:" + port)
+              : StandConfig.Target.local(project.repo(), host.mcpUrl(reach));
       StandConfig.write(
           Path.of(".."),
           root,
-          project.repo(),
-          host.mcpUrl(),
+          target,
           root.getFileName().toString(),
           mode,
           replayed == null
               ? null
-              : new StandConfig.Replay(placed(root, replayed, host.appUrl()), host.appUrl()));
-      JagtProcess jagt = JagtProcess.start(root);
+              : new StandConfig.Replay(
+                  placed(root, replayed, host.appUrl(reach)), host.appUrl(reach)));
+      if (container) {
+        Files.writeString(
+            root.resolve("password-hash"), new BCryptPasswordEncoder().encode(password));
+        StandShell.run(root, List.of("chmod", "-R", "a+rwX", root.toString()));
+      }
+      JagtEngine jagt = engine.start(root, port, password);
       return new StandRun(
           root,
           marker.withJagt(jagt.pid(), jagt.port()).writeTo(root),
@@ -139,10 +165,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   void restartJagt() {
-    int port = jagt.port();
-    jagt.close();
-    JagtProcess.keepOutput(root);
-    jagt = JagtProcess.start(root, port);
+    jagt = jagt.restart();
     marker = marker.withJagt(jagt.pid(), jagt.port()).writeTo(root);
   }
 
@@ -308,7 +331,7 @@ public final class StandRun implements AutoCloseable {
     JsonNode state = jagt.board().state();
     timeline.record(state, board);
     snapshots.take(state);
-    timeline.windows(StandShell.windows(root));
+    timeline.windows(jagt.windows());
     BackendSignals signals = BackendSignals.read(root.resolve("jagt-backend.log"));
     timeline.masterReads(signals.masterReads());
     sweepsWaiting = signals.waitingOnTheReviewer();
@@ -329,10 +352,10 @@ public final class StandRun implements AutoCloseable {
   }
 
   private void shutDown() throws IOException {
+    Files.writeString(root.resolve("screens.log"), jagt.screens());
     jagt.close();
     host.close();
     awake.ifPresent(Process::destroy);
-    Files.writeString(root.resolve("screens.log"), StandShell.screens(root));
     StandShell.killTmux(root);
     printUsage();
     keepRecording();

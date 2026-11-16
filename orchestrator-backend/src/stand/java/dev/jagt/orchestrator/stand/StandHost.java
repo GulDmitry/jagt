@@ -15,8 +15,8 @@ public class StandHost implements AutoCloseable {
   private final StandStore store;
   private final JsonRpc rpc;
 
-  public StandHost(Path directory) throws IOException {
-    this.server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+  public StandHost(Path directory, InetAddress bind) throws IOException {
+    this.server = HttpServer.create(new InetSocketAddress(bind, 0), 0);
     this.store = new StandStore(directory, baseUrl());
     this.rpc = new JsonRpc(new StandTools(store));
     server.createContext("/mcp", this::serve);
@@ -28,8 +28,8 @@ public class StandHost implements AutoCloseable {
     return this;
   }
 
-  public String mcpUrl() {
-    return baseUrl() + "/mcp";
+  public String mcpUrl(String host) {
+    return "http://" + host + ":" + server.getAddress().getPort() + "/mcp";
   }
 
   public String baseUrl() {
@@ -45,8 +45,8 @@ public class StandHost implements AutoCloseable {
     server.stop(0);
   }
 
-  public String appUrl() {
-    return baseUrl() + "/app";
+  public String appUrl(String host) {
+    return "http://" + host + ":" + server.getAddress().getPort() + "/app";
   }
 
   private void page(HttpExchange exchange) throws IOException {

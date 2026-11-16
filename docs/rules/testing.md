@@ -80,13 +80,13 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   asserting what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 6 JVMs.
 - `roleEval -Prole=<checker>` hands the real reader a deploy of known answer (`roles/<id>/eval/*.yml`); `-ProleBrief`, `-ProleModel`. Bar (estimate):
   false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; an acceptance step stays only if cutting it
-  loses more than it costs.
+  loses more than it costs. Cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), recording seconds, cost and stalls in `eval-stats.jsonl`.
 - `roleEval -Prole=triage` hands the stop reader a stop of known who, lift and family (`roles/triage/eval/*.yml`), one JVM. Bar (estimate): a lift
   advised safe where unsafe 0, who right on >= 80% of answered runs; the family is recorded, not asserted.
-- Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.
-  `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
-- `standTest`: real sessions on invariants (`-Pmodelfree`: no tokens); `StandSlots` caps runs at 6; kicks jobs per second; `build/stand/failed`.
-- A live stand run records its model moves (`recording.jsonl`); `ReplayStandTest` replays one, no model, a turn it never answered a divergence.
+- `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
+- `standTest`: real sessions on invariants, in jagt's container (docker; skipped naming it if absent); `-Plocal` the host; `-Pmodelfree` no tokens.
+- `StandSlots` caps runs at 6, kicks jobs per second; a run's `recording.jsonl` (model moves) and `build/stand/failed` reach the host at teardown.
+- `ReplayStandTest` replays a recording, no model: a turn it never answered is a divergence.
 
 ### Linux, and one set of steps per host
 

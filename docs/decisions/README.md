@@ -187,3 +187,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0171 jagt's image is a base without agent CLIs](0171-the-image-is-a-base-without-agent-clis.md) (supersedes 0021 for the image)
 - [0172 Readiness is Spring Boot Actuator's probe](0172-readiness-is-spring-boot-actuators-probe.md) (beside 0171)
 - [0173 The code viewer's library is vendored and loaded on demand](0173-a-code-editor-is-vendored-and-loaded-on-demand.md) (reopens 0046's 50 KB)
+- [0174 The stand runs in jagt's container](0174-the-stand-runs-in-jagts-container.md) (builds on 0171, beside 0078)

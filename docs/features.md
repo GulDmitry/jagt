@@ -159,7 +159,7 @@
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
 - **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.
   [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
-- **Server image** — No agent CLI, `Dockerfile.dist` adds it; ready once cloned; containerTest runs it. [spec](../openspec/specs/readiness/spec.md)
+- **Server image** — No agent CLI, `Dockerfile.dist` adds it; ready once cloned; docker suites run it. [spec](../openspec/specs/readiness/spec.md)
 - **One data folder** — State, worktrees, clones and logs live under `~/.jagt`, or the folder `orchestrator.data` names.
   [spec](../openspec/specs/startup/spec.md#requirement-one-data-folder-holds-everything-jagt-writes)
 - **Console logging** — `logging: console` writes every log line as one ECS JSON object on stdout and no file; `file` is the default.

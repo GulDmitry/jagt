@@ -21,16 +21,44 @@ tasks.register('standTest', Test) {
     systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '8'
     systemProperty 'stand.parallelism', standParallelism
     systemProperty 'stand.base', standBase
+    systemProperty 'stand.engine', project.hasProperty('local') ? 'local' : 'container'
     // -PstandRuns=N repeats each run; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
     ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }
     systemProperty 'stand.report', standReport.absolutePath
     // A run starts the staged jar, so a replay checks the frame as built now.
-    dependsOn 'stageJar'
+    dependsOn 'stageJar', 'standImage'
     doFirst { standReport.delete() }
     testLogging { showStandardStreams = true }
     outputs.upToDateWhen { false }
     finalizedBy 'standCleanup', 'standReport'
+}
+
+def standDocker = providers.exec { commandLine 'sh', '-c', 'docker info >/dev/null 2>&1'; ignoreExitValue = true }
+    .result.get().exitValue == 0
+def standLocal = project.hasProperty('local')
+def standRepo = layout.projectDirectory.dir('..').asFile.absolutePath
+def standCompose = layout.projectDirectory.dir('src/stand/compose').asFile.absolutePath
+
+// jagt's own image, then a test image FROM it that adds the agent CLI.
+tasks.register('standImage', Exec) {
+    description = 'Builds the images the container stand runs: jagt-stand-base (jagt as shipped) and jagt-stand (plus the agent CLI).'
+    group = 'verification'
+    commandLine 'sh', '-c',
+        'docker build -t jagt-stand-base "$0" && docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
+        standRepo, standCompose
+    onlyIf {
+        if (!standLocal && !standDocker) {
+            System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Plocal runs it on the host')
+        }
+        !standLocal && standDocker
+    }
+}
+
+tasks.register('standImageRemove', Exec) {
+    description = 'Removes the jagt-stand* image tags.'
+    commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand-base >/dev/null 2>&1 || true'
+    onlyIf { standDocker }
 }
 
 tasks.register('standReport', JavaExec) {
@@ -50,5 +78,6 @@ tasks.register('standReport', JavaExec) {
         classpath = sourceSets.stand.runtimeClasspath
         mainClass = 'dev.jagt.orchestrator.stand.StandCleanup'
         args(standBase, layout.buildDirectory.dir('stand/failed').get().asFile.absolutePath)
+        finalizedBy 'standImageRemove'
     }
 }
