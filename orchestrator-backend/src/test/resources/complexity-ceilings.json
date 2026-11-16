@@ -12,7 +12,7 @@
   "ports": 50,
   "startupChecks": 31,
   "roles": 4,
-  "specCapabilities": 45,
+  "specCapabilities": 46,
   "ruleDocs": 7,
   "contextBootingTests": 17
 }

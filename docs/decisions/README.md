@@ -10,8 +10,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - **Never edited once accepted**, typos aside: a change is a new record, marking the old `superseded by NNNN`.
   Accepted is the commit that lands its last step; until then the record's own steps amend it.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
-  **Decision**, **Rejected** (each with why), **Reopen when** (the measurement changing it).
-- At most 50 lines, else two decisions.
+  **Decision**, **Rejected** (each with why), **Reopen when** (the measurement changing it); at most 50 lines, else two.
 - **Linked**: a record names its rule first; this index lists all (`DecisionIndexTest`).
 - Taken late: `recorded retroactively`, only what history proves.
 

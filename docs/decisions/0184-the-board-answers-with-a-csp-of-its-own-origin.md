@@ -24,7 +24,7 @@ Accepted 2026-11-16 by the owner's order: gaps before features, from the JAGT-12
 - `img-src 'self' data:`: the favicon's status dot is a `data:` image.
 - `object-src 'none'`, `base-uri` and `form-action 'self'`, `frame-ancestors 'none'`.
 - Spring Security's `headers().contentSecurityPolicy` writes it on both chains (`OpenBoard`, `GuardedBoard`).
-- A new spec capability, `board-security`, holds this and the board's other protections of a login (`specCapabilities` 44 to 45):
+- A new spec capability, `board-security`, holds this and the board's other protections of a login (`specCapabilities` 45 to 46, after 0182 took 45):
   none of the 44 is about a hostile page or a guessed password.
 
 ## Rejected
