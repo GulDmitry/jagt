@@ -23,14 +23,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
-    classes = PasswordLoginRefusalTest.Board.class,
+    classes = PasswordLoginRefusalOnTomcatTest.Board.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "orchestrator.auth.mode=password",
       "orchestrator.auth.passwordHash=$2y$04$cpM1ODse0DnRCsm1Zpa9quQKnFm0ZxoiaduZfAt4nnLFQp0rBW332"
     })
 @MockitoBean(types = {UserNotifier.class})
-class PasswordLoginRefusalTest {
+class PasswordLoginRefusalOnTomcatTest {
 
   @SpringBootConfiguration
   @EnableAutoConfiguration

@@ -9,11 +9,11 @@ coupled only through `contracts/`, and the board owns its language catalogs.
 ### Requirement: The board is its own app
 The backend SHALL name no board file: the jar carries a copy of `board/` and serves it as opaque files. The only coupling is `contracts/`:
 `openapi.yaml` holds every `/api` route (the agent's and `/mcp` excluded) and the login's public paths, `board-events.schema.json` the event
-stream (`ContractRoutesTest`). `orchestrator.board.dir` SHALL serve a folder in the jar's place, a relative one against the root, so an edit
+stream (`WholeApplicationWiringTest`). `orchestrator.board.dir` SHALL serve a folder in the jar's place, a relative one against the root, so an edit
 shows on reload.
 #### Scenario: A route the contract lacks
 - **WHEN** a controller maps a route under `/api` that `contracts/openapi.yaml` lacks
-- **THEN** `ContractRoutesTest` fails naming the route
+- **THEN** `WholeApplicationWiringTest` fails naming the route
 #### Scenario: A folder served
 - **WHEN** `board.dir` is `my-board` and the root holds `my-board/probe.html`
 - **THEN** `GET /probe.html` answers that file, and an edit shows on the next request

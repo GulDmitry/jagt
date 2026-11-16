@@ -33,7 +33,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @SpringBootTest(
-    classes = OidcLoginTest.Board.class,
+    classes = OidcLoginOnTomcatTest.Board.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "orchestrator.auth.mode=oidc",
@@ -42,7 +42,7 @@ import org.springframework.web.util.UriComponentsBuilder;
       "orchestrator.auth.oidc.allowed=owner-sub",
       "SSO_SECRET=s3cret"
     })
-class OidcLoginTest {
+class OidcLoginOnTomcatTest {
 
   @SpringBootConfiguration
   @EnableAutoConfiguration
