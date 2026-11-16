@@ -233,16 +233,24 @@ public class ProcessRunner implements Processes {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
     } catch (InterruptedException e) {
-      if (process != null) {
-        destroyTree(process, "interrupted");
-      }
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while running: " + String.join(" ", command), e);
+      throw interrupted(process, command, e);
     } finally {
       if (process != null) {
         running.remove(process);
       }
     }
+  }
+
+  private RuntimeException interrupted(
+      @Nullable Process process, List<String> command, InterruptedException e) {
+    if (process != null) {
+      destroyTree(process, "interrupted");
+    }
+    Thread.currentThread().interrupt();
+    if (closing) {
+      return new Processes.Stopped(command);
+    }
+    return new IllegalStateException("Interrupted while running: " + String.join(" ", command), e);
   }
 
   private static void feed(Process process, String stdin) {

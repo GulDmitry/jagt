@@ -188,6 +188,23 @@ class ProcessRunnerTest {
   }
 
   @Test
+  void tellsTheCallerItWasStoppedWithJagtWhenInterruptedWhileJagtCloses() throws Exception {
+    ProcessRunner runner = new ProcessRunner();
+    runner.closes();
+    AtomicReference<Throwable> ended = new AtomicReference<>();
+    Thread caller =
+        Thread.startVirtualThread(() ->
+            ended.set(
+                catchThrowable(
+                    () -> runner.run(null, Duration.ofSeconds(30), List.of("sleep", "30")))));
+
+    caller.interrupt();
+    caller.join(5_000);
+
+    assertThat(ended.get()).isInstanceOf(Processes.Stopped.class);
+  }
+
+  @Test
   void killsTheCommandsStillRunningWhenJagtStops(@TempDir Path dir) throws Exception {
     ProcessRunner runner = new ProcessRunner();
     Path pid = dir.resolve("pid");
