@@ -5,6 +5,7 @@
   "theme.auto": "авто",
   "theme.light": "светлая",
   "theme.dark": "тёмная",
+  "gear.logout": "выйти",
   "gear.label": "настройки",
   "new-task": "Новая задача",
   "offline": "бэкенд недоступен",

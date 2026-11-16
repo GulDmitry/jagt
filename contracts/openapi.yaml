@@ -35,6 +35,24 @@ paths:
             schema: {$ref: '#/components/schemas/Login'}
       responses:
         '302': {description: Redirect to the board}
+  /api/session:
+    get:
+      summary: Whether the board sits behind a login, so the gear offers log out
+      responses:
+        '200':
+          description: The session's kind
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [login]
+                properties:
+                  login: {type: boolean}
+  /logout:
+    post:
+      summary: Ends the login session; the next request lands on the login page
+      responses:
+        '200': {description: Session ended}
   /api/tasks:
     get:
       summary: The board's whole projection

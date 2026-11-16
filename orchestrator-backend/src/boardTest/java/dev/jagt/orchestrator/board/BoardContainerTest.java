@@ -26,4 +26,19 @@ class BoardContainerTest {
     assertThat(page.locator("#gear")).isVisible();
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
   }
+
+  @Test
+  void logOutInTheGearEndsTheSessionAndShowsTheLoginPage(Browser browser) {
+    String url = System.getenv("JAGT_BOARD_URL");
+    Assumptions.assumeTrue(url != null, "JAGT_BOARD_URL names no running board, so it is skipped");
+    Page page = browser.newContext().newPage();
+    page.navigate(url);
+    page.fill("input[name=password]", Objects.requireNonNull(System.getenv("JAGT_BOARD_PASSWORD")));
+    page.click("button.primary");
+    page.click("#gear");
+
+    page.click("#gear-logout");
+
+    assertThat(page.locator("input[name=password]")).isVisible();
+  }
 }

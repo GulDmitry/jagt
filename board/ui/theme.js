@@ -36,9 +36,21 @@ const offer = () =>
       }),
     ),
   );
+fetch("/api/session")
+  .then((response) => response.json())
+  .then(({ login }) => {
+    document.getElementById("gear-logout").hidden = !login;
+  })
+  .catch(() => {});
 gear.addEventListener("click", offer, { once: true });
 gear.onclick = () => shut(list.hidden);
 list.onclick = ({ target }) => {
+  if (target.id === "gear-logout") {
+    fetch("/logout", { method: "POST" }).finally(() =>
+      window.location.assign("/"),
+    );
+    return;
+  }
   if (target.dataset.lang) {
     choose(target.dataset.lang);
     window.location.reload();

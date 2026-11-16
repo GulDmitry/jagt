@@ -66,6 +66,16 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
+  void theGearOffersNoLogOutWhileTheBoardSitsBehindNoLogin() {
+    Page page = openBoard();
+
+    page.click("#gear");
+
+    assertThat(page.locator("#gear-menu button[value=dark]")).isVisible();
+    assertThat(page.locator("#gear-logout")).isHidden();
+  }
+
+  @Test
   void polishChosenOnTheGearReadsInPolishAndSurvivesReload() {
     Page page = openBoard();
 

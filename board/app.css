@@ -114,6 +114,9 @@ header .waiting {
   width: auto;
   min-width: 150px;
 }
+#gear-logout {
+  order: 1;
+}
 #reports button .muted {
   display: block;
   font-size: 12px;

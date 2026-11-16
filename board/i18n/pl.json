@@ -5,6 +5,7 @@
   "theme.auto": "auto",
   "theme.light": "jasny",
   "theme.dark": "ciemny",
+  "gear.logout": "wyloguj",
   "gear.label": "ustawienia",
   "new-task": "Nowe zadanie",
   "offline": "backend niedostępny",

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.CookieManager;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -98,5 +99,39 @@ class PasswordLoginRefusalOnTomcatTest {
         .startsWith("default-src 'self'; script-src 'self' 'sha256-")
         .contains("object-src 'none'", "frame-ancestors 'none'")
         .doesNotContain("unsafe-eval", "http:", "https:", "*");
+  }
+
+  @Test
+  void nextRequestLandsOnLoginPageAfterLogout() throws Exception {
+    String base = "http://localhost:" + port;
+    HttpClient client = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+    client.send(
+        HttpRequest.newBuilder(URI.create(base + "/login"))
+            .header("Origin", base)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+            .build(),
+        HttpResponse.BodyHandlers.discarding());
+    int signedIn =
+        client
+            .send(
+                HttpRequest.newBuilder(URI.create(base + "/state")).build(),
+                HttpResponse.BodyHandlers.discarding())
+            .statusCode();
+
+    client.send(
+        HttpRequest.newBuilder(URI.create(base + "/logout"))
+            .header("Origin", base)
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build(),
+        HttpResponse.BodyHandlers.discarding());
+    HttpResponse<Void> afterwards =
+        client.send(
+            HttpRequest.newBuilder(URI.create(base + "/state")).build(),
+            HttpResponse.BodyHandlers.discarding());
+
+    assertThat(signedIn).isEqualTo(404);
+    assertThat(afterwards.statusCode()).isEqualTo(302);
+    assertThat(afterwards.headers().firstValue("Location").orElse("")).endsWith("/login.html");
   }
 }

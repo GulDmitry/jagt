@@ -5,6 +5,7 @@
   "theme.auto": "auto",
   "theme.light": "light",
   "theme.dark": "dark",
+  "gear.logout": "log out",
   "gear.label": "settings",
   "new-task": "New task",
   "offline": "backend unreachable",
