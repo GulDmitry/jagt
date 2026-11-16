@@ -193,6 +193,6 @@ A gate no stack meets yet SHALL be listed here with its task, never silent, and 
 - **WHEN** the image starts or `/state` answers **THEN** no test asserts a budget: gap, JAGT-131 (25010 time behaviour, performance tests)
 #### Scenario: Upgrade
 - **WHEN** a newer minor replaces an older one
-- **THEN** state holds one minor's fixture and no page says how to roll back: gap, JAGT-132 (25010 replaceability)
+- **THEN** no gap is left: `StateServiceCompatibilityTest` holds every shipped minor's fixture, `docs/server.md` the rollback (JAGT-132)
 #### Scenario: Threat model
 - **WHEN** the web surface changes **THEN** `docs/threat-model.md` names it (V15) and `ThreatModelTest` fails on an omitted filter or route

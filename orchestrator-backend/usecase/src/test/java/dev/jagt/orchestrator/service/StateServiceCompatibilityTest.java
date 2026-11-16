@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.TaskState;
@@ -11,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,14 +38,55 @@ class StateServiceCompatibilityTest {
 
   @ParameterizedTest
   @MethodSource("releasedStates")
-  void keepsEveryTaskStatusAndFieldOfEachReleasedState(Path released, @TempDir Path root)
+  void keepsEveryTaskAndItsStatusOfEachReleasedMinor(Path released, @TempDir Path root)
       throws IOException {
     Files.copy(released, root.resolve("state.json"));
     JsonMapper mapper = new JsonMapper();
 
     JsonNode readToday = mapper.valueToTree(stateService().withRoot(root).build().read());
 
+    Map<String, String> statusesToday =
+        readToday.get("tasks").properties().stream()
+            .collect(toMap(Map.Entry::getKey, task -> task.getValue().get("status").asString()));
+    Map<String, String> statusesWritten =
+        mapper.readTree(released).get("tasks").properties().stream()
+            .collect(toMap(Map.Entry::getKey, task -> task.getValue().get("status").asString()));
+    assertThat(statusesToday).hasSize(TaskStatus.values().length).isEqualTo(statusesWritten);
+  }
+
+  @ParameterizedTest
+  @MethodSource("releasedStates")
+  void keepsTheTicketAndRepositoryOfEachReleasedMinor(Path released, @TempDir Path root)
+      throws IOException {
+    Files.copy(released, root.resolve("state.json"));
+
+    TaskState inProgress =
+        Objects.requireNonNull(stateService().withRoot(root).build().tasks().get("ABC-3"));
+
+    assertThat(inProgress.alias()).isEqualTo("alias");
+    assertThat(inProgress.title()).isEqualTo("title");
+    assertThat(inProgress.ticketUrl()).isEqualTo("ticketUrl");
+    assertThat(inProgress.repos().get(0).project()).isEqualTo("project");
+  }
+
+  @Test
+  void keepsEveryFieldOfRelease023(@TempDir Path root) throws IOException {
+    Path released = FIXTURES.resolve("state-0.23.json");
+    Files.copy(released, root.resolve("state.json"));
+    JsonMapper mapper = new JsonMapper();
+
+    JsonNode readToday = mapper.valueToTree(stateService().withRoot(root).build().read());
+
     assertThat(readToday).isEqualTo(mapper.readTree(released));
+  }
+
+  @Test
+  void hasFixtureOfTheMinorBeingBuilt() throws IOException {
+    String build = Files.readString(Path.of("../build.gradle"));
+    Matcher version = Pattern.compile("(?m)^version = '(\\d+\\.\\d+)\\.\\d+'").matcher(build);
+    assertThat(version.find()).isTrue();
+
+    assertThat(FIXTURES.resolve("state-" + version.group(1) + ".json")).isRegularFile();
   }
 
   @Test

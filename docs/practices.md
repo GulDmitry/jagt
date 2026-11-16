@@ -125,7 +125,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |
 | Metrics and build info answer to the owner (Boot metrics, info) | none yet | gap: JAGT-130 | gap: JAGT-130 | gap: JAGT-130 |
 | Start-to-ready and latency stay under a measured budget (25010 time behaviour) | none yet | gap: JAGT-131 | gap: JAGT-131 | gap: JAGT-131 |
-| Upgrade, backup and rollback of data are documented (25010 replaceability) | [server](server.md) | state fixture of one minor: gap: JAGT-132 | n.a. | gap: JAGT-132 |
+| Upgrade, backup and rollback of data are documented (25010 replaceability) | [server](server.md) | `StateServiceCompatibilityTest` | n.a. | `StateServiceCompatibilityTest` |
 | Scale out (12F VIII) and stateless processes (12F VI) | 0179 | rejected: one replica, state on `/data` | n.a. | none |
 
 ## Supply chain

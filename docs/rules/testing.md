@@ -21,7 +21,7 @@ A test builder ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-sca
 defaults and `build()` calling production's constructor or builder; it holds no branch, loop, mock, assertion, clock or random value; one of outside
 state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example
 to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
-`StateServiceCompatibilityTest` reads each `state-<minor>.json` under `state-compatibility/`; a release adds its minor's, never regenerated.
+`StateServiceCompatibilityTest` reads each `state-<minor>.json` in `state-compatibility/`; a minor without one fails; a release adds its own.
 
 ### Every test pins a business case
 

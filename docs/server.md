@@ -136,6 +136,38 @@ One replica, `Recreate`, restricted Pod Security Standard, a service account wit
 - The first clone runs inside startup, before readiness, so a pod is never ready ahead of it. A clone retried after a
   failure does not hold the pod: the board's head shows it.
 
+## Upgrade, back up, roll back
+
+What `/data` (`ORCHESTRATOR_DATA`) holds that outlives an image:
+
+| path | what | when it changes |
+|------|------|-----------------|
+| `state.json` | every task, written atomically | every mutation |
+| `state.json.bak` | the version before the last write | every mutation |
+| `state.json.corrupt` | an unreadable primary, set aside while `.bak` stood in | on that recovery |
+| `worktrees/`, `repos/` | task worktrees (unpushed commits live here), clones | while sessions work |
+| `master-token`, `logs/` | the Master's token (drawn at each start), logs | each start |
+
+- **Read across minors**: a newer jar reads an older `state.json` as it stands: unknown keys are ignored, a missing number or flag
+  reads 0 or false. The file is rewritten in the newer shape on the next mutation, the old one kept as `.bak`.
+  `StateServiceCompatibilityTest` reads a fixture of every shipped minor (0.9 to 0.23) and a new minor without its fixture fails the build.
+- **Unreadable state**: `.bak` takes over and the log says so; with no usable `.bak` jagt refuses to start, never starts empty.
+- **Older jar reading a newer file**: untested, unknown. Roll back from a copy, never by pointing the old jar at the new file.
+
+Before an upgrade, stop jagt, then copy the folder (with sessions running only `state.json` is a consistent copy):
+
+```sh
+docker compose stop                    # or: kubectl scale deployment/<name> --replicas=0
+docker run --rm -v <volume>:/data -v "$PWD":/backup alpine tar czf /backup/jagt-data.tgz -C /data .   # <volume>: docker volume ls
+cp "$ORCHESTRATOR_DATA"/state.json* ~/backup/    # a jar install: the same files in its data folder
+```
+
+Roll back: stop, put the previous image tag (or jar) back, restore the copy over `/data` (extract the archive, or copy the two files
+back), start, and check `/actuator/health/readiness` and the board's task list.
+
+- Keep the image tag of the running minor before pulling the next one: the manifest or compose file names it.
+- Worktrees made after the copy are not in it; their branches are on the code host once pushed.
+
 ## Open the board
 
 Open `JAGT_PUBLIC_URL` and log in; under compose `http://localhost:8290`.
