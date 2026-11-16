@@ -29,7 +29,7 @@ server:
 - The login guards the board, `/api` and `/api/events`; a browser is sent to `/login.html`, `/api` answers 401.
 - The ingress must forward only the board's paths: `/mcp` and `/api/agent/` need no login and are the sessions' own, reached by
   a worktree header, so an ingress that exposes them lets the outside name a worktree. Block both there.
-- One password, no throttle and no logout: front the ingress with its own rate limit.
+- One password: a peer failing it `auth.backoff.failures` times is refused for `auth.backoff.duration`; the ingress limits the rest.
 
 ## Example: a mesh VPN (Tailscale)
 

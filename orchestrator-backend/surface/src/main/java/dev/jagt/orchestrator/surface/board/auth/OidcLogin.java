@@ -2,19 +2,15 @@ package dev.jagt.orchestrator.surface.board.auth;
 
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.log.BoardUrl;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
 import java.util.Objects;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -27,8 +23,8 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 
-@Slf4j
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "orchestrator.auth", name = "mode", havingValue = "oidc")
 class OidcLogin {
@@ -37,15 +33,27 @@ class OidcLogin {
 
   @Bean
   SecurityFilterChain oidcChain(
-      HttpSecurity http, ClientRegistrationRepository registrations, OidcProperties oidc)
+      HttpSecurity http,
+      ClientRegistrationRepository registrations,
+      OidcProperties oidc,
+      LoginAudit audit)
       throws Exception {
+    SavedRequestAwareAuthenticationSuccessHandler redirect =
+        new SavedRequestAwareAuthenticationSuccessHandler();
     GuardedBoard.guard(http, START)
         .oauth2Login(login ->
             login
                 .clientRegistrationRepository(registrations)
                 .userInfoEndpoint(
                     info -> info.oidcUserService(owner(Objects.requireNonNull(oidc.allowed()))))
-                .failureHandler(OidcLogin::refuse));
+                .successHandler((request, response, authentication) -> {
+                  audit.succeeded(request.getRemoteAddr(), "oidc");
+                  redirect.onAuthenticationSuccess(request, response, authentication);
+                })
+                .failureHandler((request, response, failure) -> {
+                  audit.failed(request.getRemoteAddr(), "oidc", Causes.of(failure));
+                  response.sendError(HttpStatus.FORBIDDEN.value());
+                }));
     return http.build();
   }
 
@@ -73,12 +81,5 @@ class OidcLogin {
       }
       return new DefaultOidcUser(Set.of(new SimpleGrantedAuthority("ROLE_OWNER")), token);
     };
-  }
-
-  private static void refuse(
-      HttpServletRequest request, HttpServletResponse response, AuthenticationException failure)
-      throws IOException {
-    log.atWarn().setMessage("login refused").addKeyValue("cause", Causes.of(failure)).log();
-    response.sendError(HttpStatus.FORBIDDEN.value());
   }
 }

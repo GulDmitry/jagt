@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.log.BoardUrl;
+import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
 import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
 import java.net.CookieManager;
@@ -48,7 +49,7 @@ class OidcLoginOnTomcatTest {
   @SpringBootConfiguration
   @EnableAutoConfiguration
   @EnableConfigurationProperties({AuthProperties.class, OidcProperties.class})
-  @Import({OidcLogin.class, LoopbackFilter.class, BoardWriteFilter.class})
+  @Import({OidcLogin.class, LoopbackFilter.class, BoardWriteFilter.class, LoginAudit.class})
   static class Board {
     @Bean
     RouterFunction<ServerResponse> state() {

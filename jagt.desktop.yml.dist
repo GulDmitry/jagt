@@ -324,6 +324,10 @@ orchestrator:
     #   clientSecretEnv: JAGT_OIDC_SECRET   # the NAME of the environment variable holding the client secret, never the secret
     #   allowed: owner@example.com          # the one subject or email let in; any other login is refused
     # passwordHash: "$2y$10$…"   # a bcrypt hash, never the password: `htpasswd -nBC 10 "" | cut -d: -f2`
+    # backoff:                           # `password`: a peer address failing the password `failures` times is refused 429 for `duration`
+    #   failures: 5
+    #   duration: 5m
+    #   peers: 10000                     # addresses remembered; the least recently seen is dropped
     # allowedHosts: [jagt.example.com]   # further host names an ingress forwards the board under; `server.publicUrl`'s host needs no entry
 
 # The board listens on loopback: with `auth.mode: none` it asks for no password and can deploy, close a task and start an agent.

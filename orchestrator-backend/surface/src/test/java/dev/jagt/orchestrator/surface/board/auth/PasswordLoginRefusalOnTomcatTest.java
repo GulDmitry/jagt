@@ -4,7 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.log.BoardUrl;
+import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAttempts;
+import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
+import dev.jagt.orchestrator.surface.board.auth.attempts.LoginBackoff;
+import dev.jagt.orchestrator.surface.board.auth.attempts.PasswordLoginOutcome;
 import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
+import dev.jagt.orchestrator.surface.board.filter.LoginBackoffFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -16,6 +21,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -33,6 +39,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "orchestrator.auth.mode=password",
+      "orchestrator.auth.backoff.failures=2",
+      "server.forward-headers-strategy=native",
       "orchestrator.auth.passwordHash=$2y$04$.W6F.lVT3xhLTvtg8hW1WuEf2QP.enJ4zNrFWqlXmuBhzZndQnIiu"
     })
 @MockitoBean(types = {UserNotifier.class})
@@ -40,12 +48,25 @@ class PasswordLoginRefusalOnTomcatTest {
 
   @SpringBootConfiguration
   @EnableAutoConfiguration
-  @EnableConfigurationProperties(AuthProperties.class)
-  @Import({PasswordLogin.class, LoopbackFilter.class, BoardWriteFilter.class})
+  @EnableConfigurationProperties({AuthProperties.class, LoginBackoff.class})
+  @Import({
+    PasswordLogin.class,
+    LoopbackFilter.class,
+    BoardWriteFilter.class,
+    LoginBackoffFilter.class,
+    LoginAttempts.class,
+    LoginAudit.class,
+    PasswordLoginOutcome.class
+  })
   static class Board {
     @Bean
     BoardUrl boardUrl() {
       return new BoardUrl("8290", "");
+    }
+
+    @Bean
+    Clock clock() {
+      return Clock.systemUTC();
     }
   }
 
@@ -133,5 +154,99 @@ class PasswordLoginRefusalOnTomcatTest {
     assertThat(signedIn).isEqualTo(404);
     assertThat(afterwards.statusCode()).isEqualTo(302);
     assertThat(afterwards.headers().firstValue("Location").orElse("")).endsWith("/login.html");
+  }
+
+  @Test
+  void refusesPeerThatFailedThePasswordTwiceEvenWithTheRightOne() throws Exception {
+    String base = "http://localhost:" + port;
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest.Builder wrong =
+        HttpRequest.newBuilder(URI.create(base + "/login"))
+            .header("Origin", base)
+            .header("X-Forwarded-For", "10.9.9.1")
+            .header("Content-Type", "application/x-www-form-urlencoded");
+    client.send(
+        wrong.POST(HttpRequest.BodyPublishers.ofString("username=owner&password=nope")).build(),
+        HttpResponse.BodyHandlers.discarding());
+    client.send(
+        wrong.POST(HttpRequest.BodyPublishers.ofString("username=owner&password=nope")).build(),
+        HttpResponse.BodyHandlers.discarding());
+
+    HttpResponse<Void> third =
+        client.send(
+            wrong
+                .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+                .build(),
+            HttpResponse.BodyHandlers.discarding());
+
+    assertThat(third.statusCode()).isEqualTo(429);
+    assertThat(third.headers().firstValue("Retry-After")).isPresent();
+  }
+
+  @Test
+  void sendsWrongPasswordBackToTheLoginPageWithTheError() throws Exception {
+    String base = "http://localhost:" + port;
+
+    HttpResponse<Void> response =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(URI.create(base + "/login"))
+                    .header("Origin", base)
+                    .header("X-Forwarded-For", "10.9.9.2")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=nope"))
+                    .build(),
+                HttpResponse.BodyHandlers.discarding());
+
+    assertThat(response.statusCode()).isEqualTo(302);
+    assertThat(response.headers().firstValue("Location").orElse("")).endsWith("/login.html?error");
+  }
+
+  @Test
+  void sendsRightPasswordToTheBoard() throws Exception {
+    String base = "http://localhost:" + port;
+
+    HttpResponse<Void> response =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(URI.create(base + "/login"))
+                    .header("Origin", base)
+                    .header("X-Forwarded-For", "10.9.9.3")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+                    .build(),
+                HttpResponse.BodyHandlers.discarding());
+
+    assertThat(response.statusCode()).isEqualTo(302);
+    assertThat(response.headers().firstValue("Location").orElse("")).endsWith("/");
+  }
+
+  @Test
+  void forgetsPeersFailureWhenItLogsInBeforeTheLimit() throws Exception {
+    String base = "http://localhost:" + port;
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest.Builder login =
+        HttpRequest.newBuilder(URI.create(base + "/login"))
+            .header("Origin", base)
+            .header("X-Forwarded-For", "10.9.9.4")
+            .header("Content-Type", "application/x-www-form-urlencoded");
+    client.send(
+        login.POST(HttpRequest.BodyPublishers.ofString("username=owner&password=nope")).build(),
+        HttpResponse.BodyHandlers.discarding());
+    client.send(
+        login.POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret")).build(),
+        HttpResponse.BodyHandlers.discarding());
+    client.send(
+        login.POST(HttpRequest.BodyPublishers.ofString("username=owner&password=nope")).build(),
+        HttpResponse.BodyHandlers.discarding());
+
+    HttpResponse<Void> next =
+        client.send(
+            login
+                .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+                .build(),
+            HttpResponse.BodyHandlers.discarding());
+
+    assertThat(next.statusCode()).isEqualTo(302);
   }
 }
