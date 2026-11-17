@@ -30,6 +30,13 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: gradle
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: board/package-lock.json
+      - run: npm ci && npm audit --audit-level=high && npm run lint && npm test
+        working-directory: board
       - run: ./gradlew --no-daemon test
       - run: ./gradlew --no-daemon cyclonedxBom
       - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
@@ -40,25 +47,6 @@ jobs:
         with:
           name: unit-test-report
           path: orchestrator-backend/build/reports/tests/test
-
-  board:
-    name: board lint + unit
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: board
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: board/package-lock.json
-      - run: npm ci
-      - run: npm audit --audit-level=high
-      - run: npm run lint
-      - run: npm test
 
   heavy:
     name: heavy suites

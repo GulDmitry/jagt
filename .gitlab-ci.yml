@@ -30,6 +30,10 @@ test:
   rules:
     - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
+    - curl -fsSLo /tmp/node.tar.xz https://nodejs.org/dist/v22.23.5/node-v22.23.5-linux-x64.tar.xz
+    - echo "cdeb8670a0c81f51b4dc4ac61919f9b1ad917b304bf8221eb939570663d240f8  /tmp/node.tar.xz" | sha256sum -c -
+    - tar -xJf /tmp/node.tar.xz -C /opt && export PATH="/opt/node-v22.23.5-linux-x64/bin:$PATH"
+    - (cd ../board && npm ci && npm audit --audit-level=high && npm run lint && npm test)
     - ./gradlew --no-daemon test
     - scripts/vulnerability-scan.sh
   artifacts:
@@ -37,19 +41,6 @@ test:
     expire_in: 1 week
     paths:
       - orchestrator-backend/build/reports/tests/test
-
-board:
-  stage: test
-  image: node:22-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule"
-  before_script:
-    - cd board
-  script:
-    - npm ci
-    - npm audit --audit-level=high
-    - npm run lint
-    - npm test
 
 heavy:
   stage: heavy
