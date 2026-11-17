@@ -482,7 +482,7 @@ the compiler's: an import that points outward does not compile. Two folders insi
 | root | `OrchestratorApplication`, `FlowWiring`, `RuntimeWiring`, `application.yml` | all four — the assembly |
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
-  `lsof`, binaries), `:surface:test`, and the root's own few that assert what the install ships.
+  `lsof`, binaries), `:surface:test`, `:stand:test` (the stand harness's own, outside the assembly), and the root's own few.
 - The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests
   and `WorktreeHooksTest` live in `:adapter:test`, where git is.
 - Seven suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `containerTest` and `standTest` (docker),

@@ -84,12 +84,8 @@ public class StandStore {
 
   public synchronized ObjectNode updateRequest(int id, String title, String description) {
     ObjectNode request = request(id);
-    if (title != null) {
-      request.put("title", title);
-    }
-    if (description != null) {
-      request.put("description", description);
-    }
+    request.put("title", title);
+    request.put("description", description);
     return save(request);
   }
 

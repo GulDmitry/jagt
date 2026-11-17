@@ -14,7 +14,8 @@ Accepted 2026-11-16 by the owner's choice of the container as the default in 0.2
 ## Decision
 
 - `standTest` starts `jagt-stand`, jagt's image plus the agent CLI, with `docker compose`; `-Plocal` keeps the host run.
-- `standImage` builds `jagt-stand-base` from the repository `Dockerfile`, then `jagt-stand` from `src/stand/compose/Dockerfile`.
+- `standImage` builds `jagt-stand-base` from the repository `Dockerfile`,
+  then `jagt-stand` from `orchestrator-backend/stand/src/stand/compose/Dockerfile`.
 - The run root is bind-mounted at its host path, so worktree paths read from `/state` and every file the checks read are the same on both sides.
 - The project is cloned from the run's `origin.git` by url; the board is behind a password login, a random hash in a compose secret.
 - The stand's MCP and app servers bind all interfaces and are reached as `host.docker.internal`.

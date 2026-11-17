@@ -34,7 +34,7 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 | `^(Dockerfile\|Dockerfile\.dist\|docker-compose\.yml\|entrypoint\.sh\|jagt\.server\.yml\.dist\|kubernetes\.yml\.dist)$` | `containerTest --rerun-tasks` |
 | `^orchestrator-backend/(docker\|src/containerTest)/` | `containerTest --rerun-tasks` |
 | `^(board\|orchestrator-backend/src/boardTest)/` | `boardTest --rerun-tasks` |
-| `^orchestrator-backend/src/stand/` | `standTest -Pmodelfree --rerun-tasks` |
+| `^orchestrator-backend/stand/` | `standTest -Pmodelfree --rerun-tasks` |
 
 ## Context ceilings
 
