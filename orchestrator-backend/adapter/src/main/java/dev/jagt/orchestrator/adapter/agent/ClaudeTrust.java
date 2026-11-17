@@ -27,7 +27,7 @@ import tools.jackson.databind.node.ObjectNode;
  * own around them.
  */
 @Slf4j
-final class ClaudeTrust {
+public final class ClaudeTrust {
 
   private static final JsonMapper JSON =
       JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
@@ -43,7 +43,7 @@ final class ClaudeTrust {
    * Relocating the whole directory is supported, so a human who did must not silently lose the
    * answer.
    */
-  static Path configFile() {
+  public static Path configFile() {
     return ClaudeConfigDir.of(
             Optional.ofNullable(System.getenv(ClaudeConfigDir.VARIABLE)),
             Path.of(System.getProperty("user.home")))
@@ -87,7 +87,7 @@ final class ClaudeTrust {
   }
 
   /** Called while the worktree still exists, so the key matches the one Claude wrote. */
-  static void forget(Path configFile, Path worktree) {
+  public static void forget(Path configFile, Path worktree) {
     rewrite(configFile, worktree, ClaudeTrust::forgotten, STALE);
   }
 

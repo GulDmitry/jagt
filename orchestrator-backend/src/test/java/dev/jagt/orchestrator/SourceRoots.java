@@ -10,6 +10,9 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class SourceRoots {
@@ -56,8 +59,27 @@ final class SourceRoots {
     return path.getName(0).toString().equals("src") ? Path.of(".") : path.getName(0);
   }
 
+  static boolean isFixture(Path root) {
+    Path module = moduleOf(root);
+    boolean harness =
+        !module.equals(Path.of(".")) && !consumedModules().contains(module.toString());
+    return isTest(root) || harness;
+  }
+
   static boolean isTest(Path root) {
     return !setOf(root).equals("main");
+  }
+
+  private static Set<String> consumedModules() {
+    Pattern project = Pattern.compile("project\\(':(\\w+)'\\)");
+    try (Stream<Path> tree = Files.walk(BACKEND, 2)) {
+      return tree.filter(path -> path.getFileName().toString().equals("build.gradle"))
+          .flatMap(path -> project.matcher(read(path)).results())
+          .map(match -> match.group(1))
+          .collect(Collectors.toSet());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private static String setOf(Path root) {

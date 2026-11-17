@@ -15,7 +15,6 @@ plugins {
     id 'jagt.stage-jar' apply false
     id 'jagt.suites' apply false
     id 'jagt.doc-inputs' apply false
-    id 'jagt.stand' apply false
     id 'jagt.evals' apply false
     id 'jagt.uncached-suites' apply false
     id 'jagt.suite-stats' apply false
@@ -48,7 +47,6 @@ apply plugin: 'jagt.stage-jar'
 apply plugin: 'jagt.parallel-tests'
 apply plugin: 'jagt.suites'
 apply plugin: 'jagt.doc-inputs'
-apply plugin: 'jagt.stand'
 apply plugin: 'jagt.evals'
 apply plugin: 'jagt.uncached-suites'
 apply plugin: 'jagt.suite-stats'

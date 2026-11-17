@@ -16,15 +16,6 @@ sourceSets {
     }
 }
 
-// Spends model tokens on a local stand, so it is asked for by name. NOT in `check`.
-sourceSets {
-    stand {
-        java.srcDirs = ['src/stand/java']
-        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
-        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
-    }
-}
-
 // Shared by the model evals and their unit test, kept out of src/test so no eval's Spring scan meets a test class.
 sourceSets {
     evalSupport {
@@ -98,7 +89,6 @@ dependencies {
     boardTestAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     containerTestImplementation 'org.testcontainers:testcontainers'
     containerTestImplementation 'org.springframework.security:spring-security-crypto'
-    standImplementation 'org.springframework.security:spring-security-crypto'
     e2eCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     e2eAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

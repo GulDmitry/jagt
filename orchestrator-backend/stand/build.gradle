@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+    id 'jagt.stand'
+}
+
+dependencies {
+    implementation project(':core')
+    implementation project(':usecase')
+    implementation project(':adapter')
+    implementation 'org.junit.jupiter:junit-jupiter-params'
+    implementation 'tools.jackson.core:jackson-databind'
+    implementation 'org.springframework.security:spring-security-crypto'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.awaitility:awaitility'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

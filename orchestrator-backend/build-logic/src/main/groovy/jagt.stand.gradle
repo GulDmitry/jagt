@@ -1,3 +1,20 @@
+// Spends model tokens on a local stand, so it is asked for by name. NOT in `check`.
+sourceSets {
+    stand {
+        java.srcDirs = ['src/stand/java']
+        resources.srcDirs = ['src/stand/resources']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+def standJar = rootProject.file('build/libs/jagt-run.jar').absolutePath
+def standRepo = rootProject.file('..').absolutePath
+
+tasks.named('test') {
+    systemProperty 'stand.repo', standRepo
+}
+
 def standBase = System.getProperty('java.io.tmpdir')
 def standReport = layout.buildDirectory.file('stand/report.txt').get().asFile
 
@@ -21,13 +38,15 @@ tasks.register('standTest', Test) {
     systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '8'
     systemProperty 'stand.parallelism', standParallelism
     systemProperty 'stand.base', standBase
+    systemProperty 'stand.jar', standJar
+    systemProperty 'stand.repo', standRepo
     systemProperty 'stand.engine', project.hasProperty('local') ? 'local' : 'container'
     // -PstandRuns=N repeats each run; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
     ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }
     systemProperty 'stand.report', standReport.absolutePath
     // A run starts the staged jar, so a replay checks the frame as built now.
-    dependsOn 'stageJar', 'standImage'
+    dependsOn ':stageJar', 'standImage'
     doFirst { standReport.delete() }
     testLogging { showStandardStreams = true }
     outputs.upToDateWhen { false }
@@ -37,7 +56,6 @@ tasks.register('standTest', Test) {
 def standDocker = providers.exec { commandLine 'sh', '-c', 'docker info >/dev/null 2>&1'; ignoreExitValue = true }
     .result.get().exitValue == 0
 def standLocal = project.hasProperty('local')
-def standRepo = layout.projectDirectory.dir('..').asFile.absolutePath
 def standCompose = layout.projectDirectory.dir('src/stand/compose').asFile.absolutePath
 
 // jagt's own image, then a test image FROM it that adds the agent CLI.

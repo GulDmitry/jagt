@@ -30,7 +30,9 @@ final class VendorNamings {
   }
 
   static Stream<Naming> outsideTheAdapters() {
-    return SourceRoots.mainJavaFiles()
+    return SourceRoots.ROOTS.stream()
+        .filter(root -> !SourceRoots.isFixture(root))
+        .flatMap(SourceRoots::javaFilesUnder)
         .filter(file -> !file.startsWith("adapter"))
         .flatMap(file -> {
           List<String> lines = SourceRoots.read(file).lines().toList();

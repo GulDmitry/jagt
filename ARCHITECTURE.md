@@ -332,6 +332,10 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `surface/mcp/tools` | surface | the MCP tool groups, each declaring its own scope |
 | `surface/ui` | surface | the console banner, failure page and startup failure |
 | `surface/ui/log` | surface | log archives and rolling, the port guard, task alias feed and filter |
+| `stand` | stand | the Blood Games harness: runs, scripts, engines, host stubs, evidence |
+| `stand/invariant` | stand | what a finished run must never show: the checks over its records |
+| `stand/mutation` | stand | the mutation book and its rewrites of a task |
+| `stand/replay` | stand | a run's recording and the snapshots it replays from |
 | `(root)` | backend | the application, its wiring and the one isolation of state writes |
 
 ### Over ten classes
@@ -345,7 +349,9 @@ partners move or are widened, never by raising the number.
 | `protocol` | package-private `Wire` is the codec of eight message and read records beside it |
 | `service` | package-private `RoundBrief`, `TaskNotes` and `WorktreeSandbox` tie `HandBack`, `RoundRelay`, `AgentSessions` and their readers |
 | `service/git` | twelve classes of one feature, no sub-kind of three; `GitStates` is package-private to `GitWorktrees` |
-| `adapter/agent` | package-private `ClaudeConfigDir`, `ClaudeTrust` and `ClaudeTranscripts` tie the Claude classes together |
+| `adapter/agent` | package-private `ClaudeConfigDir` and `ClaudeTranscripts` tie the Claude classes together |
+| `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |
+| `stand/invariant` | seventeen checks of one feature, no sub-kind of three; `StateFiles` is package-private to them |
 | `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
 
 ### A single class
@@ -462,8 +468,8 @@ key that fixes it. The composition half, and what of it exists:
 
 ## The build
 
-Six Gradle modules under `orchestrator-backend/`, one per ring and the engine, so the dependency rule is the compiler's: an import
-that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsTest`.
+Seven Gradle modules under `orchestrator-backend/`, one per ring, the engine and the stand harness, so the dependency rule is
+the compiler's: an import that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsTest`.
 
 | module | holds | sees |
 |--------|-------|------|
@@ -472,6 +478,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
 | `:surface` | `surface/` | `:core`, `:usecase` |
+| `:stand` | `stand/`: the Blood Games harness, built apart; nothing consumes it and the jar never ships it | `:core`, `:usecase`, `:adapter` |
 | root | `OrchestratorApplication`, `FlowWiring`, `RuntimeWiring`, `application.yml` | all four — the assembly |
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
@@ -479,8 +486,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 - The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests
   and `WorktreeHooksTest` live in `:adapter:test`, where git is.
 - Seven suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `containerTest` and `standTest` (docker),
-  `boardTest` (the page in a real browser),
-  `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, and tokens).
+  `boardTest` (a real browser), `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, tokens).
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
 - `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's
   `build.gradle` only applies and declares. New build logic is a new plugin there, never code in a build file.

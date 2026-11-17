@@ -12,3 +12,6 @@ include 'core'
 include 'usecase'
 include 'adapter'
 include 'surface'
+
+// The stand harness is a module nothing consumes: the assembly never holds it, so it may name vendors the rings may not.
+include 'stand'

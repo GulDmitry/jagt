@@ -21,7 +21,7 @@ final class RingFiles {
 
   static Stream<Path> outsideTheEdge(boolean withTests) {
     return SourceRoots.ROOTS.stream()
-        .filter(root -> withTests || !SourceRoots.isTest(root))
+        .filter(root -> withTests || !SourceRoots.isFixture(root))
         .filter(root -> !SourceRoots.moduleOf(root).equals(Path.of("adapter")))
         .filter(
             root -> !(SourceRoots.isTest(root) && SourceRoots.moduleOf(root).equals(Path.of("."))))
