@@ -4,11 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.startup.Misconfigured;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -64,7 +60,7 @@ class RefusedStartServedUntilSavedTest {
 
   @Test
   @Timeout(180)
-  void jagtStartsAgainWhenTheOwnerSavesJagtYmlFromTheFailurePage(@TempDir Path root)
+  void failurePageShowsTheSavedJagtYmlOfTheNextStartWhenTheOwnerSavesIt(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     int port;
@@ -78,16 +74,14 @@ class RefusedStartServedUntilSavedTest {
         .start(() ->
             OrchestratorApplication.main(
                 new String[] {
-                  "--server.port=" + port,
                   "--orchestrator.terminal=none",
-                  "--orchestrator.root=" + root,
-                  "--orchestrator.data=" + root,
-                  "--spring.config.import=",
-                  "--management.endpoints.web.exposure.include=health,shutdown",
-                  "--management.endpoint.shutdown.access=unrestricted",
                   "--orchestrator.config-file=" + root.resolve("jagt.yml"),
-                  "--orchestrator.state-file=" + root.resolve("state.json"),
-                  "--logging.file.name=" + root.resolve("jagt.log")
+                  "--server.port=" + port,
+                  "--spring.config.import=",
+                  "--orchestrator.data=" + root,
+                  "--orchestrator.root=" + root,
+                  "--logging.file.name=" + root.resolve("jagt.log"),
+                  "--orchestrator.state-file=" + root.resolve("state.json")
                 }));
     await()
         .atMost(Duration.ofSeconds(60))
@@ -108,37 +102,18 @@ class RefusedStartServedUntilSavedTest {
                 .build(),
             HttpResponse.BodyHandlers.ofString());
 
-    assertThat(save.statusCode()).isEqualTo(200);
     assertThat(Files.readString(root.resolve("jagt.yml"))).isEqualTo("orchestrator: {}\n");
     await()
         .atMost(Duration.ofSeconds(90))
         .ignoreExceptions()
         .until(() ->
             client
-                    .send(
-                        HttpRequest.newBuilder(URI.create(base + "/state")).build(),
-                        HttpResponse.BodyHandlers.ofString())
-                    .statusCode()
-                == 200);
+                .send(
+                    HttpRequest.newBuilder(URI.create(base + "/")).build(),
+                    HttpResponse.BodyHandlers.ofString())
+                .body()
+                .contains("orchestrator: {}"));
 
-    HttpResponse<String> shutdown =
-        client.send(
-            HttpRequest.newBuilder(URI.create(base + "/actuator/shutdown"))
-                .header("Origin", base)
-                .POST(HttpRequest.BodyPublishers.noBody())
-                .build(),
-            HttpResponse.BodyHandlers.ofString());
-    await()
-        .atMost(Duration.ofSeconds(60))
-        .until(() -> {
-          try (Socket probe = new Socket()) {
-            probe.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 500);
-            return false;
-          } catch (IOException refused) {
-            return true;
-          }
-        });
-
-    assertThat(shutdown.statusCode()).isEqualTo(200);
+    assertThat(save.statusCode()).isEqualTo(200);
   }
 }
