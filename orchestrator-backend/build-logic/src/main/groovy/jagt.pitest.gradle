@@ -116,8 +116,19 @@ changedLines.keySet().each { path ->
     }
     targets[owner] << type
 }
+// Pitest mutates every line of a target class; the filter drops what is off the diff before a mutant runs (0196).
+def changedLinesFile = rootProject.layout.buildDirectory.file('pitest-diff/changed-lines.txt').get().asFile
+if (targets) {
+    changedLinesFile.parentFile.mkdirs()
+    changedLinesFile.text = changedLines.collect { path, numbers ->
+        "${path.replaceFirst('^.*?src/main/java/', '')}:${numbers.sort().join(',')}"
+    }.sort().join('\n') + '\n'
+}
+def filterJar = files(project(':mutation-scope').tasks.named('jar'))
 targets.each { module, types ->
     project(module).pitest.targetClasses = types.collectMany { [it, it + '$*'] }
+    project(module).pitest.features = ["+CHANGEDLINES(lines[${changedLinesFile.absolutePath}])".toString()]
+    project(module).dependencies.add('pitest', filterJar) // a file, not a project dependency: the lock state of `pitest` stays as it is
 }
 tasks.register('pitestDiff') {
     dependsOn targets.keySet().collect { project(it).tasks.named('pitest') }

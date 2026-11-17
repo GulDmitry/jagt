@@ -468,7 +468,7 @@ key that fixes it. The composition half, and what of it exists:
 
 ## The build
 
-Seven Gradle modules under `orchestrator-backend/`, one per ring, the engine and the stand harness, so the dependency rule is
+Eight Gradle modules under `orchestrator-backend/`, one per ring, the engine, the stand harness and the mutation filter, so the dependency rule is
 the compiler's: an import that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsTest`.
 
 | module | holds | sees |
@@ -479,6 +479,7 @@ the compiler's: an import that points outward does not compile. Two folders insi
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
 | `:surface` | `surface/` | `:core`, `:usecase` |
 | `:stand` | `stand/`: the Blood Games harness, built apart; nothing consumes it and the jar never ships it | `:core`, `:usecase`, `:adapter` |
+| `:mutation-scope` | `dev.jagt.mutationscope`: the pitest filter that keeps `pitestDiff`'s mutants on changed lines, loaded by pitest's tool classpath ([0196](docs/decisions/0196-pitestdiff-mutates-only-the-changed-lines.md)) | pitest only |
 | root | `OrchestratorApplication`, `FlowWiring`, `RuntimeWiring`, `application.yml` | all four — the assembly |
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
@@ -496,5 +497,4 @@ the compiler's: an import that points outward does not compile. Two folders insi
   a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
 - **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job`
   (`LifecycleHooksTest`).
-- `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names
-  `adapter/Executables`.
+- `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names `adapter/Executables`.
