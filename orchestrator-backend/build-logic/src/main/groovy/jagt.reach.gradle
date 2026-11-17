@@ -1,0 +1,62 @@
+// 0191: a class with a branch is reached by some test of the commit gate, whichever module's.
+def modules = allprojects.toList()
+def execs = modules.collect { it.layout.buildDirectory.file('jacoco/test.exec').get().asFile }
+def classDirs = modules.collectEntries { [it.path, it.layout.buildDirectory.dir('classes/java/main').get().asFile] }
+def sourceDirs = modules.collect { it.layout.projectDirectory.dir('src/main/java').asFile }
+def xmlFile = layout.buildDirectory.file('reports/test-reach/reach.xml')
+def filteredRun = gradle.startParameter.taskNames.contains('--tests')
+def wholeGate = { !filteredRun && execs.every { it.exists() } }
+
+def report = tasks.register('testReachReport', JacocoReport) {
+    executionData.from(execs)
+    classDirectories.from(classDirs.values())
+    sourceDirectories.from(sourceDirs)
+    reports {
+        xml.required = true
+        html.required = false
+        xml.outputLocation = xmlFile
+    }
+    onlyIf(wholeGate)
+    mustRunAfter modules.collect { it.tasks.named('test') }
+}
+
+def check = tasks.register('testReachCheck') {
+    description = 'Fails each main class with a branch that no test of any module reaches.'
+    group = 'verification'
+    dependsOn report
+    inputs.file(xmlFile)
+    onlyIf(wholeGate)
+    doLast {
+        def parser = new groovy.xml.XmlSlurper(false, false, true)
+        parser.setFeature('http://apache.org/xml/features/nonvalidating/load-external-dtd', false)
+        def reached = [:].withDefault { [branches: 0, lines: 0] }
+        parser.parse(xmlFile.get().asFile).package.each { pkg ->
+            pkg.'class'.each { cls ->
+                def top = cls.@name.text().replaceFirst(/\$.*/, '')
+                cls.counter.each { c ->
+                    if (c.@type.text() == 'BRANCH') {
+                        reached[top].branches += (c.@missed.text() as int) + (c.@covered.text() as int)
+                    } else if (c.@type.text() == 'LINE') {
+                        reached[top].lines += c.@covered.text() as int
+                    }
+                }
+            }
+        }
+        def bare = reached.findAll { name, r -> r.branches > 0 && r.lines == 0 }.keySet().sort()
+        def named = bare.collect { name ->
+            def module = classDirs.find { path, dir -> new File(dir, "${name}.class").exists() }?.key
+            "${name.replace('/', '.')} (${module})".toString()
+        }
+        logger.lifecycle("testReachCheck: ${reached.size()} classes, ${named.size()} with a branch and no test reaching it")
+        if (named) {
+            throw new GradleException("Classes with a branch that no test reaches (0191):\n  " + named.join('\n  '))
+        }
+    }
+}
+
+tasks.named('test') {
+    finalizedBy check
+}
+check.configure {
+    mustRunAfter modules.collect { it.tasks.named('jacocoTestReport') }
+}
