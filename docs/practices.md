@@ -51,9 +51,9 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Unit and rule tests run whole in one gate | [testing-suites](rules/testing-suites.md) | `./gradlew test` | `npm test` is a no-op: JAGT-96 | `jagt.suites.gradle` |
 | Property-based (pyramid) | [testing](rules/testing.md) | jqwik properties of the task reducer | gap | one properties class |
 | Contract (pyramid, 25010 interoperability) | [testing](rules/testing.md), 0170 | `WholeApplicationWiringTest` against `contracts/openapi.yaml`, `SchemaTest` | `board-events.schema.json` | `WholeApplicationWiringTest` |
-| Integration and slice (pyramid) | [testing-suites](rules/testing-suites.md) | `OidcLoginOnTomcatTest`, `PasswordLoginRefusalOnTomcatTest`, `containerTest` | `boardTest` | the two `OnTomcat` tests |
-| End to end (pyramid, 12F X parity) | [testing-suites](rules/testing-suites.md) | `e2eTest`, `standTest`, `containerTest`, nightly and on a tag; same scripts in CI | `boardTest` in Chromium | `ci.yml` heavy job |
-| Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | ready 15 s, `/state` p95 100 ms | `ServerContainerTest` | `ServerContainerTest` |
+| Integration and slice (pyramid) | [testing-suites](rules/testing-suites.md) | `OidcLoginOnTomcatTest`, `PasswordLoginRefusalOnTomcatTest`, the stand's `ServerStandTest` | `boardTest` | the two `OnTomcat` tests |
+| End to end (pyramid, 12F X parity) | [testing-suites](rules/testing-suites.md) | `e2eTest`, `standTest`, nightly and on a tag; same scripts in CI | `boardTest` in Chromium | `ci.yml` heavy and stand jobs |
+| Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | ready 15 s, `/state` p95 100 ms | `ServerStandTest` | `ServerStandTest` |
 | Security tests (pyramid) | [testing](rules/testing.md) | `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap: JAGT-96 | the filter tests |
 | A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `EveryTestAssertsTest`, `ProductionConstructorTest`, `TestBuilderLogicTest`, `NoHelperMethodTest`, `TestNamingTest` | n.a. | the five tests |
 | A suite ends within a ceiling; a flaky test is registered or fixed (25010 maturity) | [testing](rules/testing.md), 0139 | `jagt.suites.gradle`, `jagt.suite-stats.gradle` | n.a. | `jagt.suites.gradle` |
@@ -121,7 +121,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | State is written atomically and read across a minor (25010 recoverability, 12F XII) | [components](rules/components.md) | `AtomicFilesTest`, `StateServiceCompatibilityTest`, `TaskStateFileCompatibilityTest` | n.a. | `AtomicFilesTest` |
 | Logs are structured to stdout with a cause (Boot logging, 12F XI) | [style](rules/style.md) | `LogbackTargetTest`, `FailureCausesTest` | n.a. | `FailureCausesTest` |
 | Every store, call, loop and task count is bounded (25010 resource use, capacity) | [components](rules/components.md), 0045, 0048, 0104, 0179 | `ImageJvmOptionsTest`, `StandSlotsTest`, `LoopBreakerTest` | n.a. | `ImageJvmOptionsTest` |
-| Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerContainerTest` | n.a. | `Dockerfile`, `kubernetes.yml.dist` |
+| Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerStandTest`, `ServerRestartStandTest` | n.a. | `Dockerfile`, `kubernetes.yml.dist` |
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |
 | Metrics and build info answer to the owner (Boot metrics, info) | [board-security](../openspec/specs/board-security/spec.md#requirement-metrics-and-build-info-answer-the-owner) | `BoardOnTomcatTest` | `BoardHeaderAndFiltersTest` | `BoardOnTomcatTest` |
 | Start-to-ready and latency stay under a measured budget (25010 time behaviour) | none yet | gap: JAGT-131 | gap: JAGT-131 | gap: JAGT-131 |

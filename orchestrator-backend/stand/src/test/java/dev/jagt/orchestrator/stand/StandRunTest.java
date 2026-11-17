@@ -132,13 +132,13 @@ class StandRunTest {
   @Test
   void worldEventsActThroughTheRunsBoardStoreProjectAndJagt() throws Exception {
     JagtEngine restarted = mock(JagtEngine.class);
-    when(jagt.restart()).thenReturn(restarted);
+    when(jagt.restart(Restart.JVM)).thenReturn(restarted);
     when(board.state()).thenReturn(JSON.readTree(DONE));
     StandRun run = TestStandRunBuilder.standRun(dir.resolve("base/jagt-stand-41-1")).build(jagt);
     WorldEvent event =
         world -> {
           world.say("go on");
-          world.restart();
+          world.restart(Restart.JVM);
           world.note("scratch " + world.scratch("outsider").getFileName());
           return world.store().equals(run.store()) && world.project().equals(run.project());
         };
@@ -159,7 +159,7 @@ class StandRunTest {
     assertThat(Files.readString(run.root().resolve("timeline.log")))
         .contains("stand scratch outsider");
     verify(board).say("ABC-42", "go on");
-    verify(jagt).restart();
+    verify(jagt).restart(Restart.JVM);
   }
 
   @Test
@@ -266,7 +266,7 @@ class StandRunTest {
   @Test
   void restartedJagtIsTheRunsJagtAndItsMarkerNamesTheNewPid() throws Exception {
     JagtEngine restarted = mock(JagtEngine.class);
-    when(jagt.restart()).thenReturn(restarted);
+    when(jagt.restart(Restart.JVM)).thenReturn(restarted);
     when(restarted.screens()).thenReturn("");
     when(restarted.pid()).thenReturn(7L);
     when(restarted.port()).thenReturn(9);

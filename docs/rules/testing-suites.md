@@ -5,11 +5,13 @@
 | group | suites | where | when |
 |---|---|---|---|
 | **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties, mutants on the changed lines, 0.80 line coverage per module | locally and CI | every commit; CI on a push or pull request |
-| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest`, `containerTest` | CI | nightly and on a release tag |
-| **Stand** | `standTest -Pmodelfree`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally only: docker, an agent login, tokens | before a minor release |
+| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | nightly and on a release tag |
+| **Stand** | `standTest -Pmodelfree -Pengine=host\|compose\|kind`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally: docker, an agent login, tokens; CI runs `standTest -Pmodelfree` in its `stand` job | before a minor release; CI per push (compose), nightly (kind) |
 
-CI sees only what is pushed, and jagt pushes at a release: a heavy break in new code shows on the release push, which
-waits for it. Times are wall clock, dated in `measurements.md`.
+CI's `stand` job runs `standTest -Pmodelfree` per `strategy.matrix.engine`: compose per push and pull request, kind nightly;
+GitLab runs compose alone, since kind needs a privileged runner.
+CI sees only what is pushed, and jagt pushes at a release: a heavy break in new code shows on the release push,
+which waits for it. Times are wall clock, dated in `measurements.md`.
 
 ## What each suite proves
 
@@ -19,8 +21,7 @@ waits for it. Times are wall clock, dated in `measurements.md`.
 | `boardTest` | the board in Chromium: cards, verbs, tabs, reports | Playwright | ~1.5 min |
 | `e2eTest` | a task's flow through real git, tmux and a scripted agent | git, tmux | ~2 min |
 | `linuxDriverTest` | the Linux terminal and desktop drivers | a Linux display | unknown |
-| `containerTest` | jagt's image under compose: start, readiness, login over HTTP | docker | ~2.5 min |
-| `standTest -Pmodelfree` | recorded task flows replayed in jagt's container, a restart mid-turn included | docker | ~2 min |
+| `standTest -Pmodelfree` | recorded task flows replayed in jagt's container, and the server scenarios (start, login, a task to review, MCP door, `/state` p95) on `-Pengine=host`, `compose` or `kind`; JVM kill, container or pod replacement and an image upgrade on the old volume | docker, kind, kubectl | see `measurements.md` |
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |
 
@@ -31,8 +32,9 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 
 | path (extended regex) | suite |
 |---|---|
-| `^(Dockerfile\|Dockerfile\.dist\|docker-compose\.yml\|entrypoint\.sh\|jagt\.server\.yml\.dist\|kubernetes\.yml\.dist)$` | `containerTest --rerun-tasks` |
-| `^orchestrator-backend/(docker\|src/containerTest)/` | `containerTest --rerun-tasks` |
+| `^(Dockerfile\|Dockerfile\.dist\|docker-compose\.yml\|entrypoint\.sh\|jagt\.server\.yml\.dist)$` | `standTest -Pmodelfree -Pengine=compose --rerun-tasks` |
+| `^kubernetes\.yml\.dist$` | `standTest -Pmodelfree -Pengine=kind --rerun-tasks` |
+| `^orchestrator-backend/docker/` | `standTest -Pmodelfree -Pengine=compose --rerun-tasks` |
 | `^(board\|orchestrator-backend/src/boardTest)/` | `boardTest --rerun-tasks` |
 | `^orchestrator-backend/stand/` | `standTest -Pmodelfree --rerun-tasks` |
 
@@ -44,4 +46,3 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 
 ## Planned
 
-- JAGT-102: kind as a second stand engine, `standTest -Pmodelfree -Pengine=kind`.

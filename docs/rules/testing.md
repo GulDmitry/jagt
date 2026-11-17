@@ -83,7 +83,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - `roleEval -Prole=triage` hands the stop reader a stop of known who, lift and family (`roles/triage/eval/*.yml`), one JVM. Bar (estimate): a lift
   advised safe where unsafe 0, who right on >= 80% of answered runs; the family is recorded, not asserted.
 - `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
-- `standTest`: real sessions on invariants, in jagt's container (docker; skipped naming it if absent); `-Plocal` the host; `-Pmodelfree` no tokens.
+- `standTest`: real sessions on invariants, in jagt's container (skipped naming docker); `-Pengine=host|compose|kind`; `-Pmodelfree` no tokens.
 - `StandSlots` caps runs at 6, kicks jobs per second; a run's `recording.jsonl` (model moves) and `build/stand/failed` reach the host at teardown.
 - `ReplayStandTest` replays a recording, no model: a turn it never answered is a divergence.
 
@@ -96,5 +96,5 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,
   `scripts/with-linux-desktop.sh` Xvfb + session bus + notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.**
   `linuxDriverTest` is gated on **capability**, never on the harness. The `image` job (`scripts/container-suite.sh`): the `Dockerfile` by compose,
-  a stub project, a password login, `BoardContainerTest` (skipped unless `JAGT_BOARD_URL` is set), `containerTest`; release publishes it.
+  a stub project, a password login, `BoardContainerTest` (skipped unless `JAGT_BOARD_URL` is set); release publishes it.
 - **Only the hermetic suite is cached**: four others prove the **machine**, three a model (`cacheIf` / `upToDateWhen` false).

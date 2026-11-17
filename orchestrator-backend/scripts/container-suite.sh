@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # jagt's own image, as CI and a laptop run it: build, start with compose and a stub project, log in by password,
-# drive one boardTest scenario against the container's URL, then run containerTest.
+# drive one boardTest scenario against the container's URL. The server scenarios are the stand's (standTest).
 # Needs docker, java and Chromium's libraries (scripts/linux-test-deps.sh). Leaves no container, volume, network or image.
 # Usage: scripts/container-suite.sh      (from any directory)
 set -euo pipefail
@@ -15,9 +15,9 @@ command -v docker >/dev/null || { echo "docker is required"; exit 2; }
 
 FIXTURES=$(mktemp -d)
 compose() {
-    JAGT_PORT=$PORT JAGT_FIXTURES=$FIXTURES JAGT_STUB="$BACKEND_DIR/src/containerTest/compose" \
+    JAGT_PORT=$PORT JAGT_FIXTURES=$FIXTURES JAGT_STUB="$BACKEND_DIR/scripts/container-suite" \
         docker compose -p "$PROJECT" -f "$REPO_ROOT/docker-compose.yml" \
-        -f "$BACKEND_DIR/src/containerTest/compose/compose.test.yml" "$@"
+        -f "$BACKEND_DIR/scripts/container-suite/compose.test.yml" "$@"
 }
 cleanup() {
     compose down --volumes --rmi local >/dev/null 2>&1 || true
@@ -54,6 +54,3 @@ JAGT_BOARD_URL="http://localhost:$PORT" JAGT_BOARD_PASSWORD="$PASSWORD" \
     ./gradlew --no-daemon boardTest --tests '*BoardContainerTest'
 
 compose down --volumes --rmi local >/dev/null
-
-echo "==> containerTest"
-./gradlew --no-daemon containerTest

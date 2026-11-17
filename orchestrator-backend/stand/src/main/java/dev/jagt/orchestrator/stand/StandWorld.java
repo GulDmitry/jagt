@@ -18,7 +18,7 @@ public interface StandWorld {
 
   void say(String line);
 
-  void restart();
+  void restart(Restart how);
 
   default Optional<JsonNode> openRequest() {
     return store().allRequests().stream()

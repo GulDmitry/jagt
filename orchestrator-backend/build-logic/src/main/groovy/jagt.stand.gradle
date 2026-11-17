@@ -30,7 +30,8 @@ tasks.register('standTest', Test) {
     }
     // Each run owns its root, port and tmux server, so runs go side by side: StandSlots caps the live runs at
     // -PstandParallelism=N (6), since 37 processes at once broke startup; the JUnit pool is wide so containers never starve runs.
-    def standParallelism = (project.findProperty('standParallelism') ?: '6').toString()
+    def standEngine = (project.findProperty('engine') ?: 'compose').toString()
+    def standParallelism = (project.findProperty('standParallelism') ?: (standEngine == 'kind' ? '2' : '6')).toString()
     systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
     systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
     systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
@@ -40,8 +41,8 @@ tasks.register('standTest', Test) {
     systemProperty 'stand.base', standBase
     systemProperty 'stand.jar', standJar
     systemProperty 'stand.repo', standRepo
-    systemProperty 'stand.engine', project.hasProperty('local') ? 'local' : 'container'
-    // -PstandRuns=N repeats each run; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
+    systemProperty 'stand.engine', standEngine
+    // -PstandRuns=N repeats each run; -Pengine=host|compose|kind picks where jagt runs; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
     ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }
     systemProperty 'stand.report', standReport.absolutePath
@@ -55,7 +56,7 @@ tasks.register('standTest', Test) {
 
 def standDocker = providers.exec { commandLine 'sh', '-c', 'docker info >/dev/null 2>&1'; ignoreExitValue = true }
     .result.get().exitValue == 0
-def standLocal = project.hasProperty('local')
+def standHost = (project.findProperty('engine') ?: 'compose') == 'host'
 def standCompose = layout.projectDirectory.dir('src/stand/compose').asFile.absolutePath
 
 // jagt's own image, then a test image FROM it that adds the agent CLI.
@@ -66,16 +67,16 @@ tasks.register('standImage', Exec) {
         'docker build -t jagt-stand-base "$0" && docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
         standRepo, standCompose
     onlyIf {
-        if (!standLocal && !standDocker) {
-            System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Plocal runs it on the host')
+        if (!standHost && !standDocker) {
+            System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Pengine=host runs it on the host')
         }
-        !standLocal && standDocker
+        !standHost && standDocker
     }
 }
 
 tasks.register('standImageRemove', Exec) {
     description = 'Removes the jagt-stand* image tags.'
-    commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand-base >/dev/null 2>&1 || true'
+    commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand-base jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true'
     onlyIf { standDocker }
 }
 

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class JagtContainerLifecycleTest {
 
@@ -72,8 +74,9 @@ class JagtContainerLifecycleTest {
     assertThat(seen.getLast()).contains("down");
   }
 
-  @Test
-  void restartKillsTheJvmWaitsForTheBoardToGoDownThenForItToComeBack() {
+  @ParameterizedTest
+  @CsvSource({"JVM,pkill", "UNIT,restart"})
+  void restartActsOnTheJvmOrTheServiceThenWaitsForTheBoardToComeBack(Restart how, String acts) {
     List<List<String>> seen = new ArrayList<>();
     StandShell.Runner shell =
         (cwd, command, env) -> {
@@ -85,10 +88,10 @@ class JagtContainerLifecycleTest {
     JagtContainer container =
         new JagtContainer(dir, 9000, board, shell, Map.of(), Duration.ofMinutes(5));
 
-    JagtEngine restarted = container.restart();
+    JagtEngine restarted = container.restart(how);
 
     assertThat(restarted).isSameAs(container);
-    assertThat(seen).anyMatch(command -> command.contains("pkill"));
+    assertThat(seen).anyMatch(command -> command.contains(acts));
   }
 
   @Test
@@ -104,9 +107,98 @@ class JagtContainerLifecycleTest {
     JagtContainer container =
         new JagtContainer(dir, 9000, board, shell, Map.of(), Duration.ofSeconds(-1));
 
-    assertThatThrownBy(container::restart)
+    assertThatThrownBy(() -> container.restart(Restart.JVM))
         .isInstanceOf(StandFailure.class)
         .hasMessageContaining("did not stop on port 9000");
+    assertThat(seen.getLast()).contains("down");
+  }
+
+  @Test
+  void upgradeTagsTheImageAndRecreatesTheContainerFromTheNewTag() {
+    List<List<String>> seen = new ArrayList<>();
+    List<Map<String, String>> environments = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          environments.add(env);
+          return new StandShell.Result(0, "log");
+        };
+    StandBoard board = mock(StandBoard.class);
+    when(board.ready()).thenReturn(true);
+    JagtContainer container =
+        new JagtContainer(dir, 9000, board, shell, Map.of(), Duration.ofMinutes(5));
+
+    container.restart(Restart.UPGRADE);
+
+    assertThat(seen)
+        .anyMatch(
+            command -> command.equals(List.of("docker", "tag", "jagt-stand", "jagt-stand-next")));
+    assertThat(seen.getLast()).contains("up", "-d", "--wait");
+    assertThat(environments.getLast()).containsEntry("JAGT_IMAGE", "jagt-stand-next");
+  }
+
+  @Test
+  void containerThatCannotBeReplacedFailsTheRestartAndIsTakenDown() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(command.contains("restart") ? 1 : 0, "no such service");
+        };
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThatThrownBy(() -> container.restart(Restart.UNIT))
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not restart: no such service");
+    assertThat(seen.getLast()).contains("down");
+  }
+
+  @Test
+  void theDataFolderIsTheRootAndTheLogIsComposes() {
+    StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(0, "line one");
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThat(container.data()).isEqualTo(dir);
+    assertThat(container.log()).isEqualTo("line one");
+  }
+
+  @Test
+  void imageThatCannotBeTaggedFailsTheUpgradeBeforeAnyContainerIsReplaced() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(command.contains("tag") ? 1 : 0, "no such image");
+        };
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThatThrownBy(() -> container.restart(Restart.UPGRADE))
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not tag the new image: no such image");
+    assertThat(seen).noneMatch(command -> command.contains("up"));
+  }
+
+  @Test
+  void imageThatCannotStartFailsTheUpgradeAndTakesTheContainerDown() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(command.contains("up") ? 1 : 0, "pull denied");
+        };
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThatThrownBy(() -> container.restart(Restart.UPGRADE))
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not start the new image: pull denied");
     assertThat(seen.getLast()).contains("down");
   }
 }

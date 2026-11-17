@@ -38,7 +38,7 @@ class StandRestartTest {
               return false;
             }
             before.set(stand.windows());
-            world.restart();
+            world.restart(Restart.JVM);
             after.set(stand.windows());
             return true;
           };

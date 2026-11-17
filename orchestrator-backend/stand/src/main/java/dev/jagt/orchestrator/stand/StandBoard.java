@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -21,6 +22,8 @@ public final class StandBoard {
           .cookieHandler(new CookieManager())
           .connectTimeout(Duration.ofSeconds(30))
           .build();
+  private final HttpClient bare =
+      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
   private final ObjectMapper mapper = JsonMapper.builder().build();
   private static final Duration READING = Duration.ofSeconds(60);
   private static final Duration OPENING = Duration.ofMinutes(10);
@@ -78,7 +81,40 @@ public final class StandBoard {
         READING);
   }
 
+  public JsonNode create(String project, String notes) {
+    String body = mapper.createObjectNode().put("project", project).put("notes", notes).toString();
+    return post("/api/tasks", body, OPENING);
+  }
+
+  public String command(String path) {
+    return postText(path, "{}", READING);
+  }
+
+  public int status(String path) {
+    return send(HttpRequest.newBuilder(URI.create(base + path)).timeout(READING).GET())
+        .statusCode();
+  }
+
+  public String text(String path) {
+    return send(HttpRequest.newBuilder(URI.create(base + path)).timeout(READING).GET()).body();
+  }
+
+  public int anonymously(String path, Map<String, String> headers, @Nullable String body) {
+    HttpRequest.Builder request =
+        HttpRequest.newBuilder(URI.create(base + path)).header("Origin", base).timeout(READING);
+    headers.forEach(request::header);
+    HttpRequest.BodyPublisher sent =
+        body == null
+            ? HttpRequest.BodyPublishers.noBody()
+            : HttpRequest.BodyPublishers.ofString(body);
+    return transmit(request.method(body == null ? "GET" : "POST", sent), bare).statusCode();
+  }
+
   private JsonNode post(String path, String body, Duration timeout) {
+    return mapper.readTree(postText(path, body, timeout));
+  }
+
+  private String postText(String path, String body, Duration timeout) {
     HttpResponse<String> response =
         send(
             HttpRequest.newBuilder(URI.create(base + path))
@@ -89,7 +125,7 @@ public final class StandBoard {
     if (response.statusCode() != 200) {
       throw new StandFailure(path + " answered " + response.statusCode() + ": " + response.body());
     }
-    return mapper.readTree(response.body());
+    return response.body();
   }
 
   public JsonNode state() {
@@ -142,8 +178,12 @@ public final class StandBoard {
   }
 
   private HttpResponse<String> transmit(HttpRequest.Builder request) {
+    return transmit(request, http);
+  }
+
+  private HttpResponse<String> transmit(HttpRequest.Builder request, HttpClient client) {
     try {
-      return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
+      return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
     } catch (IOException e) {
       throw new StandFailure("jagt at " + base + " did not answer", e);
     } catch (InterruptedException e) {

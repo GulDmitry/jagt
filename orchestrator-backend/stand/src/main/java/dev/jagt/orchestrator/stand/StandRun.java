@@ -88,7 +88,11 @@ public final class StandRun implements AutoCloseable {
   }
 
   void restartJagt() {
-    jagt = jagt.restart();
+    restartJagt(Restart.JVM);
+  }
+
+  void restartJagt(Restart how) {
+    jagt = jagt.restart(how);
     marker = marker.withJagt(jagt.pid(), jagt.port()).writeTo(root);
   }
 
@@ -328,8 +332,8 @@ public final class StandRun implements AutoCloseable {
     }
 
     @Override
-    public void restart() {
-      restartJagt();
+    public void restart(Restart how) {
+      restartJagt(how);
     }
   }
 }

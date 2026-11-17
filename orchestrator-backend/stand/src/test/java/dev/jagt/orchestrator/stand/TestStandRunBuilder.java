@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,17 +21,7 @@ public record TestStandRunBuilder(Path root, @Nullable Path replayed, Duration p
     Files.createDirectories(root);
     Path base = Objects.requireNonNull(root.getParent());
     StandTeardown teardown =
-        new StandTeardown(
-            new StandArchive(
-                base.resolve("runs"),
-                base.resolve("recordings"),
-                base.resolve("failed"),
-                (run, result) -> {},
-                parent ->
-                    new StandTraces(parent, parent.resolve("claude.json"), parent.resolve("p"))),
-            new StandSlots(1),
-            new PrintStream(OutputStream.nullOutputStream()),
-            poll);
+        TestTeardownBuilder.teardown(base).withPoll(poll).build(new StandSlots(1));
     StandSite site =
         new StandSite(
             root,

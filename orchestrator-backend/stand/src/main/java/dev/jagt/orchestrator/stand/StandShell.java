@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -45,6 +46,11 @@ public final class StandShell {
   }
 
   public static Result run(Path cwd, List<String> command, Map<String, String> env) {
+    return run(cwd, command, env, Duration.ofSeconds(60));
+  }
+
+  public static Result run(
+      Path cwd, List<String> command, Map<String, String> env, Duration limit) {
     try {
       ProcessBuilder builder =
           new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true);
@@ -52,7 +58,7 @@ public final class StandShell {
       builder.environment().putAll(env);
       Process process = builder.start();
       String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-      if (!process.waitFor(60, TimeUnit.SECONDS)) {
+      if (!process.waitFor(limit.toSeconds(), TimeUnit.SECONDS)) {
         process.destroyForcibly();
         return new Result(-1, output);
       }

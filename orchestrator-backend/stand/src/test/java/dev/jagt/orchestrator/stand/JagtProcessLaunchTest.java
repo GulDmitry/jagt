@@ -10,11 +10,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class JagtProcessLaunchTest {
 
@@ -97,8 +101,11 @@ class JagtProcessLaunchTest {
     verify(firstHandle).destroy();
   }
 
-  @Test
-  void restartKeepsTheFirstOutputThenLaunchesAgainOnTheSamePort(@TempDir Path root)
+  @ParameterizedTest
+  @EnumSource(
+      value = Restart.class,
+      names = {"JVM", "UNIT"})
+  void restartKeepsTheFirstOutputThenLaunchesAgainOnTheSamePort(Restart how, @TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.out"), "first out");
     when(board.ready()).thenReturn(true);
@@ -109,7 +116,7 @@ class JagtProcessLaunchTest {
             root, 8123, board, (dir, port) -> launches[count[0]++], Duration.ofMinutes(5));
     jagt.begin();
 
-    JagtEngine restarted = jagt.restart();
+    JagtEngine restarted = jagt.restart(how);
 
     assertThat(restarted.pid()).isEqualTo(2);
     assertThat(restarted.port()).isEqualTo(8123);
@@ -130,5 +137,78 @@ class JagtProcessLaunchTest {
         .containsEntry("TMUX_TMPDIR", root.resolve("tmux").toString())
         .doesNotContainKeys("TMUX", "TMUX_PANE", "ORCHESTRATOR_CONFIG_FILE");
     assertThat(command.environment().keySet()).noneMatch(name -> name.startsWith("CLAUDE"));
+  }
+
+  @Test
+  void upgradeIsSkippedBecauseJarHasNoImage(@TempDir Path root) {
+    when(board.ready()).thenReturn(true);
+    JagtProcess jagt =
+        new JagtProcess(root, 8123, board, (dir, port) -> first, Duration.ofMinutes(5)).begin();
+
+    assertThatThrownBy(() -> jagt.restart(Restart.UPGRADE))
+        .isInstanceOf(org.opentest4j.TestAbortedException.class)
+        .hasMessageContaining("no image to upgrade");
+    verify(firstHandle, org.mockito.Mockito.never()).destroy();
+  }
+
+  @Test
+  void theDataFolderIsTheRootAndTheLogIsJagtsOutput(@TempDir Path root) throws Exception {
+    Files.writeString(root.resolve("jagt.out"), "started");
+    JagtProcess jagt =
+        new JagtProcess(root, 8123, board, (dir, port) -> first, Duration.ofMinutes(5));
+
+    assertThat(jagt.data()).isEqualTo(root);
+    assertThat(jagt.log()).isEqualTo("started");
+  }
+
+  @Test
+  void logThatCannotBeReadFailsNamingTheRoot(@TempDir Path root) {
+    JagtProcess jagt =
+        new JagtProcess(root, 8123, board, (dir, port) -> first, Duration.ofMinutes(5));
+
+    assertThatThrownBy(jagt::log)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("cannot read jagt's output under " + root);
+  }
+
+  @Test
+  void execRunsTheProgramInTheRoot(@TempDir Path root) throws Exception {
+    JagtProcess jagt =
+        new JagtProcess(root, 8123, board, (dir, port) -> first, Duration.ofMinutes(5));
+
+    StandShell.Result result = jagt.exec("sh", "-c", "pwd -P");
+
+    assertThat(result.output().strip()).isEqualTo(root.toRealPath().toString());
+  }
+
+  @ParameterizedTest
+  @CsvSource({"JVM,true", "UNIT,false"})
+  void tmuxServerSurvivesTheJvmRestartButNotTheUnitReplacement(Restart how, boolean survives)
+      throws Exception {
+    Path base = Files.createTempDirectory(Path.of("/tmp"), "j");
+    Path root = base.resolve("jagt-stand-1-1");
+    Files.createDirectories(root.resolve("tmux/x"));
+    Path socket = root.resolve("tmux/x/default");
+    when(board.ready()).thenReturn(true);
+    Process[] launches = {first, second};
+    int[] count = {0};
+    JagtProcess jagt =
+        new JagtProcess(
+            root, 8123, board, (dir, port) -> launches[count[0]++], Duration.ofMinutes(5));
+    jagt.begin();
+    try {
+      StandShell.run(
+          root,
+          List.of(
+              "tmux", "-S", socket.toString(), "new-session", "-d", "-n", "work", "sleep", "30"));
+
+      jagt.restart(how);
+
+      assertThat(StandShell.windows(root).contains("work")).isEqualTo(survives);
+    } finally {
+      StandShell.run(base, List.of("tmux", "-S", socket.toString(), "kill-server"));
+      StandShell.deleteRoot(root);
+      Files.deleteIfExists(base);
+    }
   }
 }

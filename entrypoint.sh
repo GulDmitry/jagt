@@ -15,7 +15,7 @@ fi
 if ! whoami >/dev/null 2>&1; then
   echo "jagt:x:$(id -u):0::$HOME:/bin/bash" >>/etc/passwd
 fi
-mkdir -p /data/dumps
+mkdir -p /data/dumps "$HOME"
 while true; do
   # Unquoted: the variable holds several options.
   # shellcheck disable=SC2086

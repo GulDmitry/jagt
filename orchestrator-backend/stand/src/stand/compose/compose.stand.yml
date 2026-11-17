@@ -1,10 +1,11 @@
 services:
   jagt:
-    image: jagt-stand
+    image: ${JAGT_IMAGE:-jagt-stand}
     ports:
       - "127.0.0.1:${JAGT_PORT}:8290"
     volumes:
       - ${JAGT_STAND_ROOT}:${JAGT_STAND_ROOT}
+      - ${JAGT_STAND_ROOT}/home:/data/home
     environment:
       ORCHESTRATOR_ROOT: ${JAGT_STAND_ROOT}
       ORCHESTRATOR_DATA: ${JAGT_STAND_ROOT}

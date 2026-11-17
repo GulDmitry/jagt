@@ -13,48 +13,53 @@ import org.junit.jupiter.api.io.TempDir;
 class StandEngineLaunchTest {
 
   @Test
-  void localEngineLaunchesJagtOnTheHostAndNeverTheContainer(@TempDir Path root) {
+  void hostEngineLaunchesJagtOnTheHostAndNeverAnImage(@TempDir Path root) {
     JagtEngine onHost = mock(JagtEngine.class);
     List<Integer> ports = new ArrayList<>();
     StandEngine engine =
         new StandEngine(
-            StandEngine.LOCAL,
-            () -> false,
+            StandEngine.HOST,
+            tool -> false,
             name -> null,
-            (dir, port, password, env) -> {
-              ports.add(port);
-              return onHost;
-            },
-            (dir, port, password, env) -> {
-              throw new StandFailure("container launched");
-            });
+            Map.of(
+                StandEngine.HOST,
+                (dir, port, password, env) -> {
+                  ports.add(port);
+                  return onHost;
+                },
+                StandEngine.COMPOSE,
+                (dir, port, password, env) -> {
+                  throw new StandFailure("container launched");
+                }));
 
     JagtEngine started = engine.start(root, 8123, "");
 
     assertThat(started).isSameAs(onHost);
     assertThat(ports).containsExactly(8123);
-    assertThat(engine.container()).isFalse();
+    assertThat(engine.image()).isFalse();
   }
 
   @Test
-  void containerEngineLaunchesJagtInTheContainerWithPasswordAndItsRunEnvironment(
-      @TempDir Path root) {
+  void composeEngineLaunchesJagtInTheContainerWithPasswordAndItsRunEnvironment(@TempDir Path root) {
     JagtEngine inside = mock(JagtEngine.class);
     List<String> passwords = new ArrayList<>();
     List<Map<String, String>> environments = new ArrayList<>();
     StandEngine engine =
         new StandEngine(
-            StandEngine.CONTAINER,
-            () -> true,
+            StandEngine.COMPOSE,
+            tool -> true,
             name -> name.equals("ANTHROPIC_API_KEY") ? "key-value" : null,
-            (dir, port, password, env) -> {
-              throw new StandFailure("host launched");
-            },
-            (dir, port, password, env) -> {
-              passwords.add(password);
-              environments.add(env);
-              return inside;
-            });
+            Map.of(
+                StandEngine.HOST,
+                (dir, port, password, env) -> {
+                  throw new StandFailure("host launched");
+                },
+                StandEngine.COMPOSE,
+                (dir, port, password, env) -> {
+                  passwords.add(password);
+                  environments.add(env);
+                  return inside;
+                }));
 
     JagtEngine started = engine.start(root, 8123, "pw");
 
@@ -69,6 +74,21 @@ class StandEngineLaunchTest {
                 root.toString(),
                 "ANTHROPIC_API_KEY",
                 "key-value"));
-    assertThat(engine.container()).isTrue();
+    assertThat(engine.image()).isTrue();
+  }
+
+  @Test
+  void kindEngineLaunchesJagtInTheCluster(@TempDir Path root) {
+    JagtEngine pod = mock(JagtEngine.class);
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.KIND,
+            tool -> true,
+            name -> null,
+            Map.of(StandEngine.KIND, (dir, port, password, env) -> pod));
+
+    JagtEngine started = engine.start(root, 8123, "pw");
+
+    assertThat(started).isSameAs(pod);
   }
 }

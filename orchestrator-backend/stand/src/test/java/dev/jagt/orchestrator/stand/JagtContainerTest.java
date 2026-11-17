@@ -92,6 +92,6 @@ class JagtContainerTest {
             Duration.ofMinutes(5))
         .windows();
 
-    assertThat(seen).containsExactly(Map.of("JAGT_PORT", "9000"));
+    assertThat(seen).containsExactly(Map.of("JAGT_PORT", "9000", "JAGT_IMAGE", "jagt-stand"));
   }
 }

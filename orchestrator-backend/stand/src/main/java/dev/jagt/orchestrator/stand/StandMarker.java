@@ -6,7 +6,13 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 public record StandMarker(
-    String scenario, long pid, String outcome, long jagtPid, int port, String container) {
+    String scenario,
+    long pid,
+    String outcome,
+    long jagtPid,
+    int port,
+    String container,
+    String cluster) {
 
   public static final String FILE = "stand.json";
   public static final String RUNNING = "running";
@@ -16,28 +22,37 @@ public record StandMarker(
 
   private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
+  public StandMarker {
+    container = container == null ? "" : container;
+    cluster = cluster == null ? "" : cluster;
+  }
+
   public static StandMarker started(String scenario) {
-    return new StandMarker(scenario, ProcessHandle.current().pid(), RUNNING, 0, 0, "");
+    return new StandMarker(scenario, ProcessHandle.current().pid(), RUNNING, 0, 0, "", "");
   }
 
   public static StandMarker read(Path root, long pidFromName) {
     Path file = root.resolve(FILE);
     if (!Files.isRegularFile(file)) {
-      return new StandMarker("unknown", pidFromName, RUNNING, 0, 0, "");
+      return new StandMarker("unknown", pidFromName, RUNNING, 0, 0, "", "");
     }
     return MAPPER.readValue(file.toFile(), StandMarker.class);
   }
 
   public StandMarker withJagt(long jagtPid, int port) {
-    return new StandMarker(scenario, pid, outcome, jagtPid, port, container);
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container, cluster);
   }
 
   public StandMarker withContainer(String container) {
-    return new StandMarker(scenario, pid, outcome, jagtPid, port, container);
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container, cluster);
+  }
+
+  public StandMarker withCluster(String cluster) {
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container, cluster);
   }
 
   public StandMarker withOutcome(String outcome) {
-    return new StandMarker(scenario, pid, outcome, jagtPid, port, container);
+    return new StandMarker(scenario, pid, outcome, jagtPid, port, container, cluster);
   }
 
   public boolean failed() {

@@ -1,0 +1,21 @@
+services:
+  jagt:
+    environment:
+      ORCHESTRATOR_AGENT_CLI: stub
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: "false"
+      ORCHESTRATOR_STUB_SCRIPT: /stub/stub-agent.sh
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: "*"
+    env_file:
+      - ${JAGT_FIXTURES}/env
+    volumes:
+      - ${JAGT_FIXTURES}:/fixtures:ro
+      - ${JAGT_FIXTURES}/jagt.yml:/app/jagt.yml:ro
+      - ${JAGT_STUB}:/stub:ro
+    secrets:
+      - jagt_password_hash
+
+secrets:
+  jagt_password_hash:
+    file: ${JAGT_FIXTURES}/password-hash

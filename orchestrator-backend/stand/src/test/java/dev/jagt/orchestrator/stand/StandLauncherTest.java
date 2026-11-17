@@ -2,16 +2,23 @@ package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,8 +31,11 @@ class StandLauncherTest {
   private final StandSlots slots = new StandSlots(2);
   private final List<String> passwords = new ArrayList<>();
   private final JagtEngine jagt = mock(JagtEngine.class);
+  private Function<Path, Optional<Process>> asleep;
+  private final Duration poll = Duration.ofMillis(1);
   private StandEngine.Launch hostLaunch;
   private StandEngine.Launch containerLaunch;
+  private Map<String, StandEngine.Launch> launches;
   private StandTeardown teardown;
   private StandLauncher.Place place;
 
@@ -40,6 +50,8 @@ class StandLauncherTest {
           passwords.add(password);
           return jagt;
         };
+    asleep = root -> Optional.empty();
+    launches = Map.of(StandEngine.HOST, hostLaunch, StandEngine.COMPOSE, containerLaunch);
     teardown =
         new StandTeardown(
             new StandArchive(
@@ -59,10 +71,8 @@ class StandLauncherTest {
 
   @Test
   void liveRunStartsUnderFreshRootWithItsMarkerNamingJagt() throws Exception {
-    StandEngine engine =
-        new StandEngine(StandEngine.LOCAL, () -> false, name -> null, hostLaunch, containerLaunch);
-    StandLauncher launcher =
-        new StandLauncher(engine, teardown, place, root -> Optional.empty(), Duration.ofMillis(1));
+    StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {
       assertThat(run.root().getParent()).isEqualTo(dir.resolve("base").toRealPath());
@@ -76,10 +86,8 @@ class StandLauncherTest {
 
   @Test
   void secondRunUnderTheSameBaseTakesTheNextRootNumber() throws Exception {
-    StandEngine engine =
-        new StandEngine(StandEngine.LOCAL, () -> false, name -> null, hostLaunch, containerLaunch);
-    StandLauncher launcher =
-        new StandLauncher(engine, teardown, place, root -> Optional.empty(), Duration.ofMillis(1));
+    StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun first = launcher.start("happy", StandMode.JUDGE, null);
         StandRun second = launcher.start("happy", StandMode.JUDGE, null)) {
@@ -91,10 +99,8 @@ class StandLauncherTest {
   @Test
   void replayedRunPlacesItsRecordingWithTheHostsAppUrl() throws Exception {
     Path recording = Files.writeString(dir.resolve("kept.jsonl"), "{\"url\":\"{app}\"}");
-    StandEngine engine =
-        new StandEngine(StandEngine.LOCAL, () -> false, name -> null, hostLaunch, containerLaunch);
-    StandLauncher launcher =
-        new StandLauncher(engine, teardown, place, root -> Optional.empty(), Duration.ofMillis(1));
+    StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun run = launcher.start("happy", StandMode.JUDGE, recording)) {
       assertThat(Files.readString(run.root().resolve("recording.jsonl")))
@@ -105,11 +111,8 @@ class StandLauncherTest {
 
   @Test
   void containerRunGetsPasswordHashAndItsMarkerNamesTheContainer() throws Exception {
-    StandEngine engine =
-        new StandEngine(
-            StandEngine.CONTAINER, () -> true, name -> null, hostLaunch, containerLaunch);
-    StandLauncher launcher =
-        new StandLauncher(engine, teardown, place, root -> Optional.empty(), Duration.ofMillis(1));
+    StandEngine engine = new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {
       assertThat(run.root().resolve("password-hash")).content().startsWith("$2");
@@ -123,15 +126,15 @@ class StandLauncherTest {
   void jagtThatFailsToStartKeepsTheRootMarkedFailedAndFreesTheSlot() {
     StandEngine engine =
         new StandEngine(
-            StandEngine.LOCAL,
-            () -> false,
+            StandEngine.HOST,
+            tool -> false,
             name -> null,
-            (root, port, password, env) -> {
-              throw new StandFailure("jagt did not come up");
-            },
-            containerLaunch);
-    StandLauncher launcher =
-        new StandLauncher(engine, teardown, place, root -> Optional.empty(), Duration.ofMillis(1));
+            Map.of(
+                StandEngine.HOST,
+                (root, port, password, env) -> {
+                  throw new StandFailure("jagt did not come up");
+                }));
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
         .isInstanceOf(StandFailure.class)
@@ -151,10 +154,8 @@ class StandLauncherTest {
   @Test
   void containerEngineWithoutDockerSkipsTheRunAndFreesTheSlot() {
     StandEngine engine =
-        new StandEngine(
-            StandEngine.CONTAINER, () -> false, name -> null, hostLaunch, containerLaunch);
-    StandLauncher launcher =
-        new StandLauncher(engine, teardown, place, root -> Optional.empty(), Duration.ofMillis(1));
+        new StandEngine(StandEngine.COMPOSE, tool -> false, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
         .isInstanceOf(TestAbortedException.class);
@@ -164,5 +165,121 @@ class StandLauncherTest {
           slots.take();
           slots.take();
         });
+  }
+
+  @Test
+  void serverRunWritesItsFixturesStartsTheEngineAndMarksTheRun() throws Exception {
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.COMPOSE,
+            tool -> true,
+            name -> null,
+            Map.of(StandEngine.COMPOSE, containerLaunch));
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+
+    try (ServerRun run = launcher.server("server")) {
+      assertThat(run.root().resolve("origin.git")).isDirectory();
+      assertThat(run.root().resolve("jagt.yml")).exists();
+      assertThat(passwords).singleElement().asString().isNotEmpty();
+      assertThat(StandMarker.read(run.root(), 0).container())
+          .isEqualTo(run.root().getFileName().toString());
+      assertThat(StandMarker.read(run.root(), 0).jagtPid()).isEqualTo(99);
+    }
+  }
+
+  @Test
+  void serverRunHasItsOwnTmuxFolderSoTmuxNeverFallsBackToTheMachinesSocket() throws Exception {
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.COMPOSE,
+            tool -> true,
+            name -> null,
+            Map.of(StandEngine.COMPOSE, containerLaunch));
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+
+    try (ServerRun run = launcher.server("server")) {
+      assertThat(run.root().resolve("tmux")).isDirectory();
+    }
+  }
+
+  @Test
+  void serverRunThatFailsToStartKeepsTheRootMarkedFailedAndFreesTheSlot() {
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.HOST,
+            tool -> false,
+            name -> null,
+            Map.of(
+                StandEngine.HOST,
+                (root, port, password, env) -> {
+                  throw new StandFailure("jagt did not come up");
+                }));
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+
+    assertThatThrownBy(() -> launcher.server("server"))
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("server run server did not start; kept ");
+    assertThat(dir.resolve("base").toFile().listFiles())
+        .singleElement()
+        .satisfies(root -> assertThat(StandMarker.read(root.toPath(), 0).failed()).isTrue());
+    assertTimeoutPreemptively(Duration.ofSeconds(5), slots::take);
+    assertTimeoutPreemptively(Duration.ofSeconds(5), slots::take);
+  }
+
+  @Test
+  void runReadingTheRootIsSkippedOnKindAndFreesTheSlot() {
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.KIND,
+            tool -> true,
+            name -> null,
+            Map.of(StandEngine.KIND, containerLaunch));
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+
+    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
+        .isInstanceOf(TestAbortedException.class)
+        .hasMessageContaining("happy reads the run's root");
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(5),
+        () -> {
+          slots.take();
+          slots.take();
+        });
+  }
+
+  @Test
+  void serverRunWithoutDockerSkipsAndLeavesNoRoot() {
+    StandEngine engine =
+        new StandEngine(StandEngine.COMPOSE, tool -> false, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+
+    assertThatThrownBy(() -> launcher.server("server")).isInstanceOf(TestAbortedException.class);
+    assertThat(dir.resolve("base")).doesNotExist();
+  }
+
+  @Test
+  void serverRunWaitsForSlotWhileTheLiveRunsHoldThemAll() throws Exception {
+    StandEngine engine = new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+    slots.take();
+    slots.take();
+
+    CompletableFuture<ServerRun> waiting =
+        CompletableFuture.supplyAsync(() -> {
+          try {
+            return launcher.server("server");
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+
+    await()
+        .during(Duration.ofMillis(300))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !waiting.isDone());
+    slots.free();
+    try (ServerRun run = waiting.get(30, TimeUnit.SECONDS)) {
+      assertThat(run.root().resolve("jagt.yml")).exists();
+    }
   }
 }

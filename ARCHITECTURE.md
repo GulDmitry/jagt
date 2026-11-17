@@ -486,7 +486,7 @@ the compiler's: an import that points outward does not compile. Two folders insi
   `lsof`, binaries), `:surface:test`, `:stand:test` (the stand harness's own, outside the assembly), and the root's own few.
 - The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests
   and `WorktreeHooksTest` live in `:adapter:test`, where git is.
-- Seven suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `containerTest` and `standTest` (docker),
+- Six suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `standTest` (docker, kind),
   `boardTest` (a real browser), `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, tokens).
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
 - `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's

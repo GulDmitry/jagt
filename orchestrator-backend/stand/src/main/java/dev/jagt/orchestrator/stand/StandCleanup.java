@@ -51,6 +51,10 @@ public final class StandCleanup {
           List.of("docker", "compose", "-p", marker.container(), "down", "-v", "--remove-orphans"),
           Map.of());
     }
+    if (!marker.cluster().isEmpty()) {
+      shell.run(
+          found.root(), List.of("kind", "delete", "cluster", "--name", marker.cluster()), Map.of());
+    }
     jagt(marker).ifPresent(StandShell::stopTree);
     StandShell.killTmux(found.root());
   }

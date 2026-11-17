@@ -18,7 +18,7 @@ class StandCleanupTest {
       throws Exception {
     Path base = Files.createDirectories(directory.resolve("tmp")).toRealPath();
     Path root = Files.createDirectory(base.resolve("jagt-stand-41-1"));
-    new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "").writeTo(root);
+    new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "", "").writeTo(root);
     Files.writeString(root.resolve("timeline.log"), "t0");
     Files.writeString(root.resolve("scratch.txt"), "x");
     Path failed = directory.resolve("failed");
@@ -43,7 +43,7 @@ class StandCleanupTest {
           return new StandShell.Result(0, "");
         };
     StandMarker marker =
-        new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "jagt-stand-41-1");
+        new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "jagt-stand-41-1", "");
 
     StandCleanup.stop(new StandRoots.Found(directory.resolve("jagt-stand-41-1"), marker), shell);
 
@@ -61,7 +61,7 @@ class StandCleanupTest {
           seen.add(command);
           return new StandShell.Result(0, "");
         };
-    StandMarker marker = new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "");
+    StandMarker marker = new StandMarker("happy-path/plain", 41, StandMarker.FAILED, 0, 0, "", "");
 
     StandCleanup.stop(new StandRoots.Found(directory.resolve("jagt-stand-41-1"), marker), shell);
 
@@ -93,5 +93,22 @@ class StandCleanupTest {
     assertThat(removed).isEqualTo(new StandTraces.Removed(1, 1));
     assertThat(config).content().doesNotContain("jagt-stand-41-1").contains("jagt-stand-42-1");
     assertThat(projects.resolve(encoded + "-jagt-stand-42-1-work")).exists();
+  }
+
+  @Test
+  void deletesDeadRunsClusterBeforeRemovingItsRoot() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, "");
+        };
+    StandMarker marker =
+        new StandMarker("server", 41, StandMarker.FAILED, 0, 0, "", "jagt-stand-41-1");
+
+    StandCleanup.stop(new StandRoots.Found(directory.resolve("jagt-stand-41-1"), marker), shell);
+
+    assertThat(seen)
+        .containsExactly(List.of("kind", "delete", "cluster", "--name", "jagt-stand-41-1"));
   }
 }

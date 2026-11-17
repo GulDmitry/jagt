@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.opentest4j.TestAbortedException;
 
 public final class JagtProcess implements JagtEngine {
 
@@ -42,8 +43,8 @@ public final class JagtProcess implements JagtEngine {
     this.startup = startup;
   }
 
-  public static JagtProcess start(Path root, int port) {
-    return new JagtProcess(root, port, new StandBoard(port), JagtProcess::launch, STARTUP).begin();
+  public static JagtProcess start(Path root, int port, StandBoard board) {
+    return new JagtProcess(root, port, board, JagtProcess::launch, STARTUP).begin();
   }
 
   public static Process launch(Path root, int port) throws IOException {
@@ -125,8 +126,33 @@ public final class JagtProcess implements JagtEngine {
   }
 
   @Override
-  public JagtEngine restart() {
+  public Path data() {
+    return root;
+  }
+
+  @Override
+  public StandShell.Result exec(String... command) {
+    return StandShell.run(root, List.of(command));
+  }
+
+  @Override
+  public String log() {
+    try {
+      return Files.readString(root.resolve("jagt.out"));
+    } catch (IOException e) {
+      throw new StandFailure("cannot read jagt's output under " + root, e);
+    }
+  }
+
+  @Override
+  public JagtEngine restart(Restart how) {
+    if (how == Restart.UPGRADE) {
+      throw new TestAbortedException("the host engine runs a jar, so it has no image to upgrade");
+    }
     close();
+    if (how == Restart.UNIT) {
+      StandShell.killTmux(root);
+    }
     keepOutput(root);
     return begin();
   }

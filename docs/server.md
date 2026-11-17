@@ -86,7 +86,8 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 | settings, plugins, skills | baked into the image as a seed folder (`JAGT_AGENT_SEED`) from your plugin marketplace repository | the `Dockerfile.dist` stage clones it with a build secret and records the commit it built from |
 | MCP config holding a token | mounted from a `Secret`, its path in `JAGT_MCP_CONFIG` | never in the image |
 
-- HOME lives on the volume, which hides whatever the image bakes under it; so on every start `entrypoint.sh` copies the seed over
+- HOME is `/data/home`, on the volume: a revived session finds its conversation and login after a new pod. The volume hides whatever the
+  image bakes under it; so on every start `entrypoint.sh` copies the seed over
   the agent's folder (`JAGT_AGENT_HOME`): settings, MCP config and plugins are replaced, conversations and logins kept.
 - With either variable unset, or no seed folder, nothing is copied.
 - `claude.mcpConfig` or `assistant.mcpConfig` naming a file the container lacks is one mark on the board's head; it ends
@@ -94,7 +95,7 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 
 ## Git reaches the code host
 
-- **SSH**: mount the bot's private key (mode 0600) and a `known_hosts` into `/home/jagt/.ssh`; the image has `openssh-client`.
+- **SSH**: mount the bot's private key (mode 0600) and a `known_hosts` into `/data/home/.ssh`; the image has `openssh-client`.
   Without `known_hosts` the first clone fails on host verification: jagt never answers that prompt.
 - **Token**: a credential helper in your image reading the token from the environment, with `https://` project urls.
 - `codeHost: github` or `gitlab` also needs `gh` or `glab` in your image.

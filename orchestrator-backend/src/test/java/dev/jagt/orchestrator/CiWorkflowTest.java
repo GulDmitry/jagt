@@ -48,13 +48,15 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsExactlyTheThreeGroupsOnGithub() {
-    assertThat(CiWorkflow.jobs().keySet()).containsExactlyInAnyOrder("test", "heavy", "release");
+  void runsExactlyTheFourGroupsOnGithub() {
+    assertThat(CiWorkflow.jobs().keySet())
+        .containsExactlyInAnyOrder("test", "heavy", "stand", "release");
   }
 
   @Test
-  void runsExactlyTheThreeGroupsOnGitlab() {
-    assertThat(CiWorkflow.gitlabJobs()).containsExactlyInAnyOrder("test", "heavy", "release");
+  void runsExactlyTheFourGroupsOnGitlab() {
+    assertThat(CiWorkflow.gitlabJobs())
+        .containsExactlyInAnyOrder("test", "heavy", "stand", "release");
   }
 
   @Test

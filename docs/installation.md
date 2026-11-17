@@ -31,7 +31,7 @@ The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier) | macOS notifications you can click; without it, osascript banners you cannot |
 | [libnotify](https://gitlab.gnome.org/GNOME/libnotify) + a daemon such as [dunst](https://dunst-project.org/) | Linux notifications; GNOME and KDE bring the daemon, a bare WM does not |
 | [lsof](https://github.com/lsof-org/lsof), `pkill` | reaping a worktree's leftover processes on `done`; said once at start and skipped when absent |
-| [Docker](https://www.docker.com/) | `standTest` runs jagt's container; without it the run is skipped, `-Plocal` runs the host |
+| [Docker](https://www.docker.com/) | `standTest` runs jagt's container; without it the run is skipped, `-Pengine=host` runs the host; `-Pengine=kind` also needs [kind](https://kind.sigs.k8s.io/) and kubectl |
 | [OpenSpec](https://github.com/Fission-AI/OpenSpec) | a repository holding `openspec/`: its hand-back is gated and `ship` folds the change; `npm i -g @fission-ai/openspec` |
 
 ## Where jagt writes

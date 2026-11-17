@@ -1,6 +1,8 @@
 # The same three groups as .github/workflows/ci.yml; both call the SAME scripts, so a step can only exist in one of
 # them by mistake. The jobs run IN a Java image and apt-install what they need. Only `heavy` needs a Docker daemon: a
-# docker:dind service, so that job wants a privileged runner. The image publish and the pages stay GitHub-only.
+# docker:dind service, so that job wants a privileged runner.
+# `stand` runs the compose engine alone: kind needs a cluster node in a container, which wants a privileged runner of its
+# own, so only GitHub's nightly runs it. The image publish and the pages stay GitHub-only.
 stages:
   - test
   - heavy
@@ -66,13 +68,31 @@ heavy:
       - orchestrator-backend/build/reports/tests/e2eTest
       - orchestrator-backend/build/reports/tests/linuxDriverTest
       - orchestrator-backend/build/reports/tests/boardTest
-      - orchestrator-backend/build/reports/tests/containerTest
+
+stand:
+  stage: heavy
+  services:
+    - docker:29-dind@sha256:7bf70dcb85c822e3fa6f2d332143e474b99147b9d7b39102b0cfe8b04a7dd61b
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - sh scripts/linux-test-deps.sh
+    - apt-get install -y --no-install-recommends docker.io docker-compose-v2 curl
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "jagt ci"
+    - ./gradlew --no-daemon standTest -Pmodelfree -Pengine=compose
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - orchestrator-backend/stand/build/stand/failed
 
 release:
   stage: release
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
-  needs: [test, heavy]
+  needs: [test, heavy, stand]
   script:
     - ./gradlew --no-daemon bootJar cyclonedxBom
     - cp build/libs/jagt.jar "build/libs/jagt-$(./gradlew --no-daemon -q printVersion).jar"

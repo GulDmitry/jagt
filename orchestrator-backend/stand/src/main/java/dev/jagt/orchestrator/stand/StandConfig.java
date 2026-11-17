@@ -47,22 +47,7 @@ public final class StandConfig {
       StandMode mode,
       @Nullable Replay replay) {
     try {
-      try (var dists = Files.newDirectoryStream(shipped, "*.dist")) {
-        for (Path file : dists) {
-          Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-        }
-      }
-      Path roles = shipped.resolve("roles");
-      try (var files = Files.walk(roles)) {
-        for (Path file :
-            (Iterable<Path>)
-                files.filter(Files::isRegularFile).filter(candidate -> shipped(roles, candidate))
-                    ::iterator) {
-          Path placed = root.resolve("roles").resolve(roles.relativize(file).toString());
-          Files.createDirectories(placed.getParent());
-          Files.copy(file, placed, StandardCopyOption.REPLACE_EXISTING);
-        }
-      }
+      install(shipped, root);
       Path servers = root.resolve("servers.json");
       Files.writeString(
           servers,
@@ -75,6 +60,25 @@ public final class StandConfig {
           jagtYml(target, servers, tmuxSession, mode, replay, acceptance(root, replay)));
     } catch (IOException e) {
       throw new StandFailure("cannot write the stand configuration under " + root, e);
+    }
+  }
+
+  static void install(Path shipped, Path root) throws IOException {
+    try (var dists = Files.newDirectoryStream(shipped, "*.dist")) {
+      for (Path file : dists) {
+        Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+      }
+    }
+    Path roles = shipped.resolve("roles");
+    try (var files = Files.walk(roles)) {
+      for (Path file :
+          (Iterable<Path>)
+              files.filter(Files::isRegularFile).filter(candidate -> shipped(roles, candidate))
+                  ::iterator) {
+        Path placed = root.resolve("roles").resolve(roles.relativize(file).toString());
+        Files.createDirectories(placed.getParent());
+        Files.copy(file, placed, StandardCopyOption.REPLACE_EXISTING);
+      }
     }
   }
 

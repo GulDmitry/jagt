@@ -4,16 +4,21 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 import org.opentest4j.TestAbortedException;
 
 public final class StandEngine {
 
-  public static final String LOCAL = "local";
-  public static final String CONTAINER = "container";
+  public static final String HOST = "host";
+  public static final String COMPOSE = "compose";
+  public static final String KIND = "kind";
+
+  private static final Path POD_FIXTURES = Path.of("/data/stand");
+  private static final int IMAGE_PORT = 8290;
 
   @FunctionalInterface
   public interface Launch {
@@ -21,47 +26,91 @@ public final class StandEngine {
   }
 
   private final String engine;
-  private final BooleanSupplier dockerPresent;
+  private final Predicate<String> runs;
   private final Function<String, @Nullable String> environment;
-  private final Launch local;
-  private final Launch container;
+  private final Map<String, Launch> launchers;
 
   public StandEngine(
       String engine,
-      BooleanSupplier dockerPresent,
+      Predicate<String> runs,
       Function<String, @Nullable String> environment,
-      Launch local,
-      Launch container) {
+      Map<String, Launch> launchers) {
     this.engine = engine;
-    this.dockerPresent = dockerPresent;
+    this.runs = runs;
     this.environment = environment;
-    this.local = local;
-    this.container = container;
+    this.launchers = launchers;
   }
 
   public static StandEngine configured() {
     return new StandEngine(
-        System.getProperty("stand.engine", LOCAL),
-        StandEngine::dockerRuns,
+        System.getProperty("stand.engine", COMPOSE),
+        StandEngine::toolRuns,
         System::getenv,
-        (root, port, password, env) -> JagtProcess.start(root, port),
-        (root, port, password, env) ->
-            JagtContainer.start(
-                root, port, new StandBoard("http://127.0.0.1:" + port, password), env));
+        Map.of(
+            HOST,
+            (root, port, password, env) ->
+                JagtProcess.start(root, port, new StandBoard("http://127.0.0.1:" + port, password)),
+            COMPOSE,
+            (root, port, password, env) ->
+                JagtContainer.start(
+                    root, port, new StandBoard("http://127.0.0.1:" + port, password), env),
+            KIND,
+            (root, port, password, env) ->
+                KindEngine.start(
+                    root, port, new StandBoard("http://127.0.0.1:" + port, password), env)));
   }
 
-  public boolean container() {
-    return CONTAINER.equals(engine);
+  /**
+   * Whether jagt's image is what runs, so the run reads nothing of the host but what is mounted.
+   */
+  public boolean image() {
+    return !HOST.equals(engine);
+  }
+
+  /** Whether jagt sees the run's root at the path the host sees it. */
+  public boolean sharesRoot() {
+    return !KIND.equals(engine);
+  }
+
+  public Path inside(Path root) {
+    return sharesRoot() ? root : POD_FIXTURES;
+  }
+
+  public int insidePort(int port) {
+    return image() ? IMAGE_PORT : port;
+  }
+
+  public StandMarker mark(StandMarker marker, Path root) {
+    String name = root.getFileName().toString();
+    return switch (engine) {
+      case COMPOSE -> marker.withContainer(name);
+      case KIND -> marker.withCluster(name);
+      default -> marker;
+    };
   }
 
   public void ready() {
-    if (!LOCAL.equals(engine) && !CONTAINER.equals(engine)) {
-      throw new StandFailure("unknown stand.engine " + engine + ": " + LOCAL + " or " + CONTAINER);
+    if (!launchers.containsKey(engine)) {
+      throw new StandFailure(
+          "unknown stand.engine " + engine + ": " + HOST + ", " + COMPOSE + " or " + KIND);
     }
-    if (container() && !dockerPresent.getAsBoolean()) {
+    for (String tool : tools()) {
+      if (!runs.test(tool)) {
+        throw new TestAbortedException(
+            tool
+                + " is absent on this machine, so the stand run is skipped;"
+                + " -Pengine=host runs it on the host");
+      }
+    }
+  }
+
+  public void needsRoot(String scenario) {
+    if (!sharesRoot()) {
       throw new TestAbortedException(
-          "docker is absent on this machine, so the stand run is skipped;"
-              + " -Plocal runs it on the host");
+          scenario
+              + " reads the run's root, which the "
+              + engine
+              + " engine does not share; -Pengine=compose or host runs it");
     }
   }
 
@@ -73,10 +122,22 @@ public final class StandEngine {
     for (String key : List.of("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")) {
       Optional.ofNullable(environment.apply(key)).ifPresent(value -> env.put(key, value));
     }
-    return (container() ? container : local).start(root, port, password, env);
+    return Objects.requireNonNull(launchers.get(engine)).start(root, port, password, env);
   }
 
-  public static boolean dockerRuns() {
-    return StandShell.run(Path.of("."), List.of("docker", "info")).exit() == 0;
+  private List<String> tools() {
+    return switch (engine) {
+      case COMPOSE -> List.of("docker");
+      case KIND -> List.of("docker", "kind", "kubectl");
+      default -> List.of();
+    };
+  }
+
+  private static boolean toolRuns(String tool) {
+    List<String> probe =
+        tool.equals("docker")
+            ? List.of("docker", "info")
+            : List.of("sh", "-c", "command -v " + tool);
+    return StandShell.run(Path.of("."), probe).exit() == 0;
   }
 }

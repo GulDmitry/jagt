@@ -56,7 +56,7 @@ class JagtContainerEdgesTest {
     JagtContainer container =
         new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of(), Duration.ofMinutes(5));
 
-    assertThatThrownBy(container::restart)
+    assertThatThrownBy(() -> container.restart(Restart.JVM))
         .isInstanceOf(StandFailure.class)
         .hasMessageContaining("was not running in its container");
     assertThat(dir.resolve("jagt.out.before-restart")).hasContent("log");

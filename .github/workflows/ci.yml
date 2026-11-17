@@ -1,5 +1,6 @@
 # Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a tag,
-# `release` on a tag after both. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
+# `stand` per engine (compose on every
+# run, kind nightly: the runner ships kind and kubectl), `release` on a tag after all. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
 name: ci
 
 on:
@@ -87,14 +88,41 @@ jobs:
             orchestrator-backend/build/reports/tests/e2eTest
             orchestrator-backend/build/reports/tests/linuxDriverTest
             orchestrator-backend/build/reports/tests/boardTest
-            orchestrator-backend/build/reports/tests/containerTest
             /tmp/jagt-xvfb.log
             /tmp/jagt-dunst.log
+
+  stand:
+    name: stand (${{ matrix.engine }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: ${{ github.event_name == 'schedule' && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      - name: install what the stand shells out to
+        run: sudo scripts/linux-test-deps.sh
+      - name: give the runner an identity
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "jagt ci"
+      - name: run the stand without a model on the engine
+        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: stand-${{ matrix.engine }}-evidence
+          path: orchestrator-backend/stand/build/stand/failed
 
   release:
     name: release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, heavy]
+    needs: [test, heavy, stand]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

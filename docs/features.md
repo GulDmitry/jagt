@@ -156,7 +156,7 @@
 - **Spec change and fold** — A hand-back is refused until the task's spec change validates; a ship folds it into the specs in its commit.
   [hand-back](../openspec/specs/spec-changes/spec.md#requirement-a-hand-back-carries-a-valid-change) ·
   [ship](../openspec/specs/spec-changes/spec.md#requirement-a-ship-folds-the-change-into-the-specs)
-- **Engineering gates** — Each gate and its check per stack: [spec](../openspec/specs/engineering/spec.md), [practices](practices.md).
+- **Engineering gates** — Each gate: [spec](../openspec/specs/engineering/spec.md), [practices](practices.md), [stand](features/stand-engines.md).
 
 ## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
 - **Install checks** — A missing part of the installation is refused at start, with no network.

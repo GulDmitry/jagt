@@ -61,12 +61,13 @@ final class StandLauncher {
   private StandRun begin(String scenario, StandMode mode, @Nullable Path replayed)
       throws IOException {
     engine.ready();
+    engine.needsRoot(scenario);
     Path root = newRoot();
-    boolean container = engine.container();
-    StandMarker marker = StandMarker.started(scenario + "/" + mode.id());
-    marker =
-        (container ? marker.withContainer(root.getFileName().toString()) : marker).writeTo(root);
+    boolean container = engine.image();
+    StandMarker marker =
+        engine.mark(StandMarker.started(scenario + "/" + mode.id()), root).writeTo(root);
     Files.createDirectories(root.resolve("tmux"));
+    Files.createDirectories(root.resolve("home"));
     StandProject project = StandProject.create(root);
     String reach = container ? "host.docker.internal" : "127.0.0.1";
     StandHost host =
@@ -110,6 +111,40 @@ final class StandLauncher {
       StandShell.killTmux(root);
       marker.withOutcome(StandMarker.FAILED).writeTo(root);
       throw new StandFailure("stand run " + scenario + " did not start; kept " + root, e);
+    }
+  }
+
+  ServerRun server(String scenario) throws IOException {
+    teardown.take();
+    try {
+      return beginServer(scenario);
+    } catch (IOException | RuntimeException e) {
+      teardown.release();
+      throw e;
+    }
+  }
+
+  private ServerRun beginServer(String scenario) throws IOException {
+    engine.ready();
+    Path root = newRoot();
+    StandMarker marker = engine.mark(StandMarker.started(scenario), root).writeTo(root);
+    try {
+      int port = JagtProcess.freePort();
+      String password = UUID.randomUUID().toString();
+      ServerFixtures.write(
+          place.repo(),
+          new ServerFixtures.Where(
+              root, engine.inside(root), engine.insidePort(port), engine.image()),
+          password);
+      Files.createDirectories(root.resolve("tmux"));
+      Files.createDirectories(root.resolve("home"));
+      StandShell.run(root, List.of("chmod", "-R", "a+rwX", root.toString()));
+      JagtEngine jagt = engine.start(root, port, password);
+      return new ServerRun(
+          root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), jagt, teardown);
+    } catch (RuntimeException e) {
+      marker.withOutcome(StandMarker.FAILED).writeTo(root);
+      throw new StandFailure("server run " + scenario + " did not start; kept " + root, e);
     }
   }
 

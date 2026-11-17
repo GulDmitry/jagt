@@ -3,23 +3,19 @@ package dev.jagt.orchestrator.stand;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class JagtContainer implements JagtEngine {
+public final class JagtContainer implements UnitEngine {
 
   private static final Path COMPOSE =
       Path.of("src", "stand", "compose", "compose.stand.yml").toAbsolutePath();
   private static final String TMUX = "TMUX_TMPDIR=/tmp/jagt-tmux";
-  private static final String SCREENS =
-      "tmux list-windows -a -F '#{session_name}:#{window_index} #{window_name}'"
-          + " | while read -r target name; do echo \"=== $target $name\";"
-          + " tmux capture-pane -p -S -300 -t \"$target\"; done";
-  private static final String JAR = "jagt.jar";
+  private static final String IMAGE = "jagt-stand";
+  private static final String NEXT = "jagt-stand-next";
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
   private final Path root;
@@ -28,6 +24,7 @@ public final class JagtContainer implements JagtEngine {
   private final StandShell.Runner shell;
   private final Map<String, String> env;
   private final Duration startup;
+  private String image = IMAGE;
 
   public JagtContainer(
       Path root,
@@ -59,18 +56,6 @@ public final class JagtContainer implements JagtEngine {
   }
 
   @Override
-  public long pid() {
-    return exec("pgrep", "-f", JAR)
-        .output()
-        .lines()
-        .map(String::strip)
-        .filter(line -> line.matches("\\d+"))
-        .findFirst()
-        .map(Long::parseLong)
-        .orElse(0L);
-  }
-
-  @Override
   public int port() {
     return port;
   }
@@ -78,18 +63,6 @@ public final class JagtContainer implements JagtEngine {
   @Override
   public StandBoard board() {
     return board;
-  }
-
-  @Override
-  public String windows() {
-    StandShell.Result windows = exec("tmux", "list-windows", "-a", "-F", "#{window_name}");
-    return windows.exit() == 0 ? windows.output().strip().replace('\n', ' ') : "";
-  }
-
-  @Override
-  public String screens() {
-    StandShell.Result screens = exec("sh", "-c", SCREENS);
-    return screens.exit() == 0 ? screens.output() : "";
   }
 
   @Override
@@ -102,15 +75,47 @@ public final class JagtContainer implements JagtEngine {
   }
 
   @Override
-  public JagtEngine restart() {
+  public Path data() {
+    return root;
+  }
+
+  @Override
+  public String log() {
+    return compose("logs", "--no-color").output();
+  }
+
+  @Override
+  public JagtEngine restart(Restart how) {
     logs();
     JagtProcess.keepOutput(root);
+    switch (how) {
+      case JVM -> killJvm();
+      case UNIT -> replace(compose("restart"), "restart");
+      default -> upgrade();
+    }
+    return awaitReady();
+  }
+
+  private void killJvm() {
     StandShell.Result killed = exec("pkill", "-f", JAR);
     if (killed.exit() != 0) {
       throw new StandFailure("jagt's JVM was not running in its container: " + killed.output());
     }
     awaitDown();
-    return awaitReady();
+  }
+
+  private void upgrade() {
+    StandShell.Result tagged = shell.run(root, List.of("docker", "tag", IMAGE, NEXT), env);
+    replace(tagged, "tag the new image");
+    image = NEXT;
+    replace(compose("up", "-d", "--wait", "--pull", "never"), "start the new image");
+  }
+
+  private void replace(StandShell.Result result, String what) {
+    if (result.exit() != 0) {
+      close();
+      throw new StandFailure("jagt's container did not " + what + ": " + result.output());
+    }
   }
 
   @Override
@@ -120,31 +125,24 @@ public final class JagtContainer implements JagtEngine {
   }
 
   private void awaitDown() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
-    while (board.ready()) {
-      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
-        close();
-        throw new StandFailure(
-            "jagt did not stop on port " + port + "; read " + root.resolve("jagt.out"));
-      }
-      JagtProcess.pause(Duration.ofMillis(200));
+    if (!BoardWait.down(board, startup)) {
+      close();
+      throw new StandFailure(
+          "jagt did not stop on port " + port + "; read " + root.resolve("jagt.out"));
     }
   }
 
   private JagtContainer awaitReady() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
-    while (!board.ready()) {
-      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
-        close();
-        throw new StandFailure(
-            "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));
-      }
-      JagtProcess.pause(Duration.ofSeconds(1));
+    if (!BoardWait.up(board, startup, () -> {})) {
+      close();
+      throw new StandFailure(
+          "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));
     }
     return this;
   }
 
-  private StandShell.Result exec(String... command) {
+  @Override
+  public StandShell.Result exec(String... command) {
     List<String> args = new ArrayList<>(List.of("exec", "-T", "-e", TMUX, "jagt"));
     args.addAll(List.of(command));
     return compose(args.toArray(String[]::new));
@@ -161,6 +159,8 @@ public final class JagtContainer implements JagtEngine {
                 "-p",
                 root.getFileName().toString()));
     command.addAll(List.of(args));
-    return shell.run(root, command, env);
+    Map<String, String> withImage = new HashMap<>(env);
+    withImage.put("JAGT_IMAGE", image);
+    return shell.run(root, command, withImage);
   }
 }

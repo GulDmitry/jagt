@@ -14,7 +14,7 @@ class StandRootsTest {
   @Test
   void removesPassedRunWhoseProcessIsGone() throws Exception {
     Path root = Files.createDirectory(base.resolve("jagt-stand-41-1"));
-    new StandMarker("happy-path", 41, StandMarker.PASSED, 0, 0, "").writeTo(root);
+    new StandMarker("happy-path", 41, StandMarker.PASSED, 0, 0, "", "").writeTo(root);
 
     StandRoots.Plan plan = StandRoots.plan(base, pid -> false);
 
@@ -24,7 +24,7 @@ class StandRootsTest {
   @Test
   void removesFailedRunToo() throws Exception {
     Path root = Files.createDirectory(base.resolve("jagt-stand-41-1"));
-    new StandMarker("happy-path", 41, StandMarker.FAILED, 77, 9000, "").writeTo(root);
+    new StandMarker("happy-path", 41, StandMarker.FAILED, 77, 9000, "", "").writeTo(root);
 
     StandRoots.Plan plan = StandRoots.plan(base, pid -> false);
 
@@ -34,7 +34,7 @@ class StandRootsTest {
   @Test
   void leavesRunWhoseProcessIsStillAliveUntouched() throws Exception {
     Path root = Files.createDirectory(base.resolve("jagt-stand-41-1"));
-    new StandMarker("happy-path", 41, StandMarker.RUNNING, 0, 0, "").writeTo(root);
+    new StandMarker("happy-path", 41, StandMarker.RUNNING, 0, 0, "", "").writeTo(root);
 
     StandRoots.Plan plan = StandRoots.plan(base, pid -> pid == 41);
 

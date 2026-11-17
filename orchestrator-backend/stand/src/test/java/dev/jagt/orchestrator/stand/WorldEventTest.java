@@ -17,7 +17,7 @@ class WorldEventTest {
     boolean fired = WorldEvent.restart().fire(world);
 
     assertThat(fired).isTrue();
-    verify(world).restart();
+    verify(world).restart(Restart.JVM);
   }
 
   @Test
@@ -39,5 +39,16 @@ class WorldEventTest {
 
     assertThat(fired).isTrue();
     verify(world).say("wait");
+  }
+
+  @Test
+  void theUnitIsReplacedOnTheFirstRecognisedRelayWhenTheEventAsksForIt() {
+    StandWorld world = mock(StandWorld.class);
+    when(world.relaysSeen()).thenReturn(1);
+
+    boolean fired = WorldEvent.restart(Restart.UNIT).fire(world);
+
+    assertThat(fired).isTrue();
+    verify(world).restart(Restart.UNIT);
   }
 }

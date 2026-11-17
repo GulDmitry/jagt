@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,10 @@ class StandBoardVerbsTest {
                 new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             String path = exchange.getRequestURI().toString();
             seen.add(exchange.getRequestMethod() + " " + path + " " + body);
-            int status = path.contains("refused") ? 500 : 200;
+            boolean refusing =
+                path.contains("refused")
+                    || "refuse".equals(exchange.getRequestHeaders().getFirst("X-Probe"));
+            int status = refusing ? 500 : 200;
             byte[] answer = "{\"tasks\":[]}".getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, answer.length);
             exchange.getResponseBody().write(answer);
@@ -130,5 +134,43 @@ class StandBoardVerbsTest {
     assertThatThrownBy(board::state)
         .isInstanceOf(StandFailure.class)
         .hasMessageContaining("did not answer");
+  }
+
+  @Test
+  void createPostsTheProjectAndNotesOfNewTask() {
+    JsonNode answer = new StandBoard(base, "").create("my-project", "fix the widget");
+
+    assertThat(answer.has("tasks")).isTrue();
+    assertThat(seen)
+        .containsExactly(
+            "POST /api/tasks {\"project\":\"my-project\",\"notes\":\"fix the widget\"}");
+  }
+
+  @Test
+  void commandPostsAnEmptyBodyAndAnswersTheBoardsWords() {
+    String said = new StandBoard(base, "").command("/api/commands/stop");
+
+    assertThat(said).isEqualTo("{\"tasks\":[]}");
+    assertThat(seen).containsExactly("POST /api/commands/stop {}");
+  }
+
+  @Test
+  void statusAndTextReadWhatTheBoardAnswers() {
+    StandBoard board = new StandBoard(base, "");
+
+    assertThat(board.status("/refused")).isEqualTo(500);
+    assertThat(board.text("/api/tasks/diff?task=a")).isEqualTo("{\"tasks\":[]}");
+  }
+
+  @Test
+  void anonymousCallPostsItsBodyWithItsHeadersAndWithoutOneReads() {
+    StandBoard board = new StandBoard(base, "pw");
+
+    int posted = board.anonymously("/mcp", Map.of("X-Probe", "refuse"), "{}");
+    int read = board.anonymously("/refused", Map.of(), null);
+
+    assertThat(posted).isEqualTo(500);
+    assertThat(read).isEqualTo(500);
+    assertThat(seen).containsExactly("POST /mcp {}", "GET /refused ");
   }
 }

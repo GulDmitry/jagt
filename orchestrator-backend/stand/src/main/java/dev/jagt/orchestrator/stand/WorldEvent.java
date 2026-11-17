@@ -48,12 +48,16 @@ public interface WorldEvent {
   }
 
   static WorldEvent restart() {
+    return restart(Restart.JVM);
+  }
+
+  static WorldEvent restart(Restart how) {
     return world -> {
       if (world.relaysSeen() < 1) {
         return false;
       }
       world.note("jagt restarted while a step was pending");
-      world.restart();
+      world.restart(how);
       return true;
     };
   }

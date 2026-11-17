@@ -37,7 +37,7 @@ class ImageJvmOptionsTest {
     assertThat(dockerfile)
         .contains(
             "USER 10001:0",
-            "chgrp -R 0 /app /data /home/jagt && chmod -R g=u /app /data /home/jagt",
-            "ENV HOME=/home/jagt");
+            "chgrp -R 0 /app /data && chmod -R g=u /app /data",
+            "ENV HOME=/data/home");
   }
 }
