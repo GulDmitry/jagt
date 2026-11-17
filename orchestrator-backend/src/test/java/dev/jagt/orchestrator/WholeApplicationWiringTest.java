@@ -1,26 +1,40 @@
 package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.TicketReader;
 import dev.jagt.orchestrator.surface.mcp.McpController;
+import dev.jagt.orchestrator.surface.mcp.McpProtocolService;
+import dev.jagt.orchestrator.surface.mcp.McpTools;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +44,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.yaml.snakeyaml.Yaml;
+import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(
     properties = {
@@ -140,5 +155,49 @@ class WholeApplicationWiringTest {
             .toList();
 
     assertThat(methodless).as("routes the contract cannot list by method").isEmpty();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"master,14", "sub-agent,5"})
+  void theToolsListAnswerOfEachScopeStaysUnderItsKilobyteBudget(String scope, int budgetKb) {
+    ObjectMapper mapper = context.getBean(ObjectMapper.class);
+    StateService state = mock(StateService.class);
+    when(state.findByWorktree("/work/ABC-1"))
+        .thenReturn(
+            Optional.of(
+                Map.entry(
+                    "ABC-1",
+                    TaskState.builder("proj", "/work/ABC-1", TaskStatus.IN_PROGRESS).build())));
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.copyOf(context.getBeansOfType(McpTools.class).values()));
+
+    String answer =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"),
+                "master".equals(scope) ? null : "/work/ABC-1",
+                "master".equals(scope))
+            .orElseThrow()
+            .path("result")
+            .toString();
+
+    assertThat(answer.getBytes(StandardCharsets.UTF_8).length)
+        .as("tools/list bytes for %s", scope)
+        .isLessThan(budgetKb * 1024);
+  }
+
+  @Test
+  void theSubagentLaunchInstructionStaysUnderItsKilobyteBudget() {
+    SessionBrief brief = context.getBean(SessionBrief.class);
+
+    String launch = brief.line(Step.START) + brief.section(Step.CONTEXT).orElse("");
+
+    assertThat(launch.getBytes(StandardCharsets.UTF_8).length)
+        .as("launch instruction bytes")
+        .isLessThan(9 * 1024);
   }
 }
