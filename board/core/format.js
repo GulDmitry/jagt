@@ -18,6 +18,12 @@ export const countdown = (millis) => {
   return minutes < 60 ? `${minutes}m` : `${Math.ceil(minutes / 60)}h`;
 };
 
+/** @param {{ origin?: string, role?: string }} step */
+export const originLabel = (step) =>
+  (step.origin === "ACCEPTANCE" && step.role ? step.role : step.origin || "")
+    .toLowerCase()
+    .replace("_", "-");
+
 /** @param {{ id: string, alias?: string }} task */
 export const bothNames = (task) =>
   task.alias ? `${task.alias} \u00b7 ${task.id}` : task.id;

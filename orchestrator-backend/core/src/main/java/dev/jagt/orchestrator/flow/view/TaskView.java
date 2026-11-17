@@ -266,7 +266,8 @@ public record TaskView(
       String label,
       long at,
       @Nullable ActionOrigin origin,
-      @Nullable String why) {}
+      @Nullable String why,
+      @Nullable String role) {}
 
   /**
    * {@code primary} = the move's own verb, and the move is the human's: where an agent holds it
@@ -368,7 +369,8 @@ public record TaskView(
                         change.status().label(),
                         change.at(),
                         change.origin(),
-                        change.why()))
+                        change.why(),
+                        change.role()))
                 .toList(),
             stop),
         new Ask(

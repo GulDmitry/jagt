@@ -325,6 +325,22 @@ class StateServiceTest {
   }
 
   @Test
+  void recordsTheCheckerRoleOnTheStepAnAcceptanceRoundTook(@TempDir Path root) {
+    StateService state = stateService().withRoot(root).build();
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+    OriginContext.asChecker(
+        "security",
+        () ->
+            state.updateTask(
+                "ABC-1", task -> task.withStatus(TaskStatus.SHIPPING, "shipping", 2_000)));
+
+    assertThat(state.task("ABC-1").orElseThrow().history())
+        .extracting(StatusChange::origin, StatusChange::role)
+        .containsExactly(tuple(null, null), tuple(ActionOrigin.ACCEPTANCE, "security"));
+  }
+
+  @Test
   void recordsTheReasonOnTheStepItsRequestTook(@TempDir Path root) {
     StateService state = stateService().withRoot(root).build();
     state.putTask(

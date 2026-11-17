@@ -173,10 +173,11 @@ class LoopBreakerTest {
   void shipsOfNewWorkAnsweringNoRoundNeverTripTheCeiling() {
     List<StatusChange> history =
         List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER, null, "tree-1"),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER, null, "tree-2"),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER, null, "tree-3"),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER, null, "tree-4"));
+            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER, null, "tree-1", null),
+            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER, null, "tree-2", null),
+            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER, null, "tree-3", null),
+            new StatusChange(
+                TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER, null, "tree-4", null));
 
     assertThat(breaker.beforeShip(RoundTrail.none(), history, 5_000)).isEmpty();
   }
@@ -185,11 +186,12 @@ class LoopBreakerTest {
   void shipsOfOneUnchangedTreeAnsweringNoRoundTripTheCeiling() {
     List<StatusChange> history =
         List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER, null, "tree-1"),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER, null, "tree-1"),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER, null, "tree-1"),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER, null, "tree-1"),
-            new StatusChange(TaskStatus.SHIPPING, 4_500, ActionOrigin.MASTER, null, "tree-1"));
+            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER, null, "tree-1", null),
+            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER, null, "tree-1", null),
+            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER, null, "tree-1", null),
+            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER, null, "tree-1", null),
+            new StatusChange(
+                TaskStatus.SHIPPING, 4_500, ActionOrigin.MASTER, null, "tree-1", null));
 
     var stop = breaker.beforeShip(RoundTrail.none(), history, 5_000);
 

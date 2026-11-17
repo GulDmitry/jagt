@@ -1,4 +1,5 @@
 import { t } from "../core/i18n.js";
+import { originLabel } from "../core/format.js";
 import { dayAndMinutes, minutes, sameDay } from "../core/time.js";
 import { html } from "./html.js";
 
@@ -28,9 +29,7 @@ export const History = ({ task, now }) =>
             <span class="age">${when(step.at, now)}</span>
             ${step.label || step.status}${
               step.origin
-                ? html` <span class="muted"
-                    >${step.origin.toLowerCase().replace("_", "-")}</span
-                  >`
+                ? html` <span class="muted">${originLabel(step)}</span>`
                 : ""
             }
           </li>`,

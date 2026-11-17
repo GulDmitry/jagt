@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.plan.PlanBaseline;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -618,6 +619,28 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
     assertThat(page.locator("#tasks .row .badge.problem")).hasCount(1);
     assertThat(page.locator("#pane .history")).containsText("checks failed");
+  }
+
+  @Test
+  void historyNamesTheCheckerRoleOfAnAcceptanceRound() {
+    long now = System.currentTimeMillis();
+    state.putTask(
+        "ABC-1",
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
+            .lastActiveTimestamp(now)
+            .history(
+                List.of(
+                    new StatusChange(
+                        TaskStatus.IN_PROGRESS,
+                        now - 60_000,
+                        ActionOrigin.ACCEPTANCE,
+                        null,
+                        null,
+                        "security")))
+            .build());
+    Page page = openBoard();
+
+    assertThat(page.locator("#pane .history li .muted").first()).hasText("security");
   }
 
   @Test

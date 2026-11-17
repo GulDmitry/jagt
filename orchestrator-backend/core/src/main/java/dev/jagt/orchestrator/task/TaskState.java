@@ -725,6 +725,11 @@ public record TaskState(
     return withLastChange(step -> step.by(origin));
   }
 
+  /** The checker role behind the step just taken, stamped as its origin is. */
+  public TaskState withLastChangeRole(String role) {
+    return withLastChange(step -> step.byChecker(role));
+  }
+
   /** The reason the asker gave for the step just taken, stamped as its origin is. */
   public TaskState withLastChangeWhy(String why) {
     return withLastChange(step -> step.because(why));

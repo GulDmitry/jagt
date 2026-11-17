@@ -2,7 +2,7 @@ import { bothNames } from "./format.js";
 
 /**
  * @typedef {{ id: string, label: string, group?: string, hint?: string, key?: string, primary?: boolean, again?: boolean, apart?: boolean, onRow?: boolean, readOnly?: boolean }} Action
- * @typedef {{ status: string, at: number, label?: string, why?: string, origin?: string }} Step
+ * @typedef {{ status: string, at: number, label?: string, why?: string, origin?: string, role?: string }} Step
  * @typedef {{ project: string, reviewRequestUrl?: string }} TaskRepo
  * @typedef {{ state?: string, note?: string, label?: string, nextPollAt: number }} Watch
  * @typedef {{

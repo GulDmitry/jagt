@@ -248,4 +248,20 @@ class TaskStateFileCompatibilityTest {
         .contains("\"ACCEPTANCE\"", "\"ACCEPTANCE_FAILED\"")
         .doesNotContain("\"QA\"", "QA_FAILED");
   }
+
+  @Test
+  void historyEntryWithoutCheckerRoleLoadsAndWritesNoRoleKey() {
+    String json =
+        """
+        {"status":"IN_PROGRESS","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+         "repos":[{"project":"proj","worktreePath":"/wt"}],
+         "history":[{"status":"IN_PROGRESS","at":1,"origin":"ACCEPTANCE"}]}
+        """;
+    JsonMapper mapper = new JsonMapper();
+
+    TaskState task = mapper.readValue(json, TaskState.class);
+
+    assertThat(task.history().getFirst().role()).isNull();
+    assertThat(mapper.writeValueAsString(task)).doesNotContain("\"role\"");
+  }
 }

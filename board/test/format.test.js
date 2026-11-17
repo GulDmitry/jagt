@@ -4,6 +4,7 @@ import {
   bothNames,
   countdown,
   duration,
+  originLabel,
   reportParts,
   stopLines,
   switchLines,
@@ -176,4 +177,22 @@ test("stopLinesKeepOnlyWhatWasSaid whenTheStopHasNoTriage", () => {
 
 test("noStopLinesExist whenTheTaskIsNotStopped", () => {
   assert.deepEqual(stopLines({}), []);
+});
+
+test("historyLabelNamesTheCheckerRole whenAnAcceptanceStepCarriesOne", () => {
+  assert.equal(
+    originLabel({ origin: "ACCEPTANCE", role: "security" }),
+    "security",
+  );
+});
+
+test("historyLabelKeepsAcceptance whenTheStepCarriesNoRole", () => {
+  assert.equal(originLabel({ origin: "ACCEPTANCE" }), "acceptance");
+});
+
+test("historyLabelKeepsTheOrigin whenAnotherOriginCarriesARole", () => {
+  assert.equal(
+    originLabel({ origin: "AUTO_REVIEW", role: "security" }),
+    "auto-review",
+  );
 });

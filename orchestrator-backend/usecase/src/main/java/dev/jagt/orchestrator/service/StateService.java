@@ -215,8 +215,10 @@ public class StateService implements ReducingStore {
     }
     ActionOrigin origin = OriginContext.current();
     String why = OriginContext.why();
+    String role = OriginContext.checker();
     TaskState byOrigin = origin == null ? after : after.withLastChangeOrigin(origin);
-    return why == null ? byOrigin : byOrigin.withLastChangeWhy(why);
+    TaskState byRole = role == null ? byOrigin : byOrigin.withLastChangeRole(role);
+    return why == null ? byRole : byRole.withLastChangeWhy(why);
   }
 
   private static boolean tookStep(@Nullable TaskState before, TaskState after) {
