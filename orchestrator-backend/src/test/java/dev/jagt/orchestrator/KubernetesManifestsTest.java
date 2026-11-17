@@ -99,11 +99,11 @@ class KubernetesManifestsTest {
     String manifests = SourceRoots.read(MANIFESTS);
 
     assertThat(manifests)
-        .contains(
-            "runAsNonRoot: true", "runAsUser: 10001", "fsGroup: 10001", "type: RuntimeDefault")
+        .contains("runAsNonRoot: true", "type: RuntimeDefault")
         .contains("allowPrivilegeEscalation: false", "drop: [ALL]")
         .contains("automountServiceAccountToken: false")
-        .doesNotContain("privileged", "hostNetwork", "hostPath");
+        .doesNotContain(
+            "privileged", "hostNetwork", "hostPath", "runAsUser: ", "runAsGroup", "fsGroup");
   }
 
   @Test
@@ -128,7 +128,7 @@ class KubernetesManifestsTest {
 
     assertThat(manifests)
         .contains("replicas: 1", "type: Recreate", "terminationGracePeriodSeconds: 60")
-        .containsSubsequence("requests:", "memory: 8Gi", "limits:", "memory: 8Gi");
+        .containsSubsequence("requests:", "memory: 2Gi", "limits:", "cpu: \"4\"", "memory: 4Gi");
   }
 
   @Test

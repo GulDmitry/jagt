@@ -11,18 +11,17 @@ FROM eclipse-temurin:25-jre-noble@sha256:e3b6f7887a50f20d8f07abf279d8a81a5953fb3
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git tmux tini procps lsof openssh-client \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd --gid 10001 jagt \
- && useradd --create-home --uid 10001 --gid 10001 jagt \
- && mkdir -p /app /data \
- && chown jagt /data
+ && useradd --create-home --uid 10001 --gid 0 jagt \
+ && mkdir -p /app /data
 WORKDIR /app
 COPY --from=build /src/orchestrator-backend/build/libs/jagt.jar jagt.jar
 COPY jagt.desktop.yml.dist mcp_client.js ./
 COPY entrypoint.sh ./
 COPY roles roles
 COPY jagt.server.yml.dist jagt.yml
-ENV ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data
-ENV JAGT_JAVA_OPTIONS="-XX:MaxRAMPercentage=25 -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/dumps"
-USER jagt
+RUN chgrp -R 0 /app /data /home/jagt && chmod -R g=u /app /data /home/jagt /etc/passwd
+ENV HOME=/home/jagt ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data
+ENV JAGT_JAVA_OPTIONS="-Xmx512m -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/dumps"
+USER 10001:0
 EXPOSE 8290
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]

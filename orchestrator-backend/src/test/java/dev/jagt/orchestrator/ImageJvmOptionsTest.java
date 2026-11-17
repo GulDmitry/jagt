@@ -16,7 +16,7 @@ class ImageJvmOptionsTest {
 
     assertThat(dockerfile)
         .contains(
-            "ENV JAGT_JAVA_OPTIONS=\"-XX:MaxRAMPercentage=25 -XX:+UseSerialGC",
+            "ENV JAGT_JAVA_OPTIONS=\"-Xmx512m -XX:+UseSerialGC",
             "-XX:+ExitOnOutOfMemoryError",
             "-XX:+HeapDumpOnOutOfMemoryError",
             "-XX:HeapDumpPath=/data/dumps");
@@ -31,11 +31,13 @@ class ImageJvmOptionsTest {
   }
 
   @Test
-  void theImageRunsAsFixedUserAndGroupThePodSpecNames() {
+  void theImageRunsAsAnyUserInGroupZeroWithGroupWritableDirectories() {
     String dockerfile = SourceRoots.read(DOCKERFILE);
 
     assertThat(dockerfile)
         .contains(
-            "groupadd --gid 10001 jagt", "useradd --create-home --uid 10001 --gid 10001 jagt");
+            "USER 10001:0",
+            "chgrp -R 0 /app /data /home/jagt && chmod -R g=u /app /data /home/jagt",
+            "ENV HOME=/home/jagt");
   }
 }

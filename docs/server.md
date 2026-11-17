@@ -124,14 +124,16 @@ curl -s localhost:8290/actuator/health/readiness     # 200 once startup checks a
 
 **Kubernetes**: `cp kubernetes.yml.dist kubernetes.yml`, set the image, host and Secret values, `kubectl apply -f kubernetes.yml`
 ([0179](decisions/0179-the-kubernetes-pod-is-restricted-and-its-jvm-sized.md)).
-One replica, `Recreate`, restricted Pod Security Standard, a service account without a token, one optional PVC, Secrets
+One replica, `Recreate`, restricted Pod Security Standard, no fixed UID (the image runs as any UID in group 0, as OpenShift
+assigns; [0192](decisions/0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-sized.md)),
+a service account without a token, one optional PVC, Secrets
 (identities; the MCP file mounted at `JAGT_MCP_CONFIG`), Service, Ingress (host = `JAGT_PUBLIC_URL`), a `NetworkPolicy`.
 [`KubernetesManifestsTest`](../orchestrator-backend/src/test/java/dev/jagt/orchestrator/KubernetesManifestsTest.java) pins them.
 
 | knob | where | default |
 |------|-------|---------|
-| JVM options | `JAGT_JAVA_OPTIONS`, jagt's JVM alone | heap a quarter of the limit, serial GC, exit on out-of-memory, dump to `/data/dumps` |
-| memory, CPU | `resources` | 8Gi requested and limited (estimate), 2 CPUs requested, no CPU limit |
+| JVM options | `JAGT_JAVA_OPTIONS`, jagt's JVM alone | heap `-Xmx512m`, serial GC, exit on out-of-memory, dump to `/data/dumps` |
+| memory, CPU | `resources` | 2Gi requested, 4Gi limit, 1 CPU requested, 4 limited, small ephemeral storage (estimates) |
 | shutdown | `terminationGracePeriodSeconds` | 60: preStop 5 s, `spring.lifecycle.timeout-per-shutdown-phase` 20 s twice |
 | probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min, liveness 3 misses |
 | egress | `NetworkPolicy` | DNS, then HTTPS and SSH to public addresses; add acceptance environments |

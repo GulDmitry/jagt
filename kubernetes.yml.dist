@@ -1,6 +1,7 @@
 # jagt on Kubernetes, one replica: cp kubernetes.yml.dist kubernetes.yml, edit, kubectl apply -f kubernetes.yml
 # Replace the image, host and Secret values; the Secret holds the same keys as .env.dist, then the identities (docs/server.md).
-# Passes the restricted Pod Security Standard. To keep one file per concern, list this file under `resources:` of a kustomization.
+# Passes the restricted Pod Security Standard and OpenShift's restricted-v2.
+# To keep one file per concern, list this file under `resources:` of a kustomization.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -64,9 +65,7 @@ spec:
       terminationGracePeriodSeconds: 60
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        # No fixed UID: OpenShift assigns one in group 0, which the image accepts; a plain cluster may set runAsUser here.
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -84,15 +83,18 @@ spec:
           env:
             - name: JAGT_MCP_CONFIG
               value: /run/secrets/jagt/mcp.json
-            # JAGT_JAVA_OPTIONS overrides the image's JVM options (docs/server.md); the image's heap is a quarter of the limit.
-          # Estimates: one verify run beside the sessions (verify runs go one at a time); measure and adjust.
-          # Memory is requested as limited; no CPU limit, so a verify run is not throttled.
+            # JAGT_JAVA_OPTIONS overrides the image's JVM options (docs/server.md); the image's heap is fixed at 512m.
+          # Estimates: a 512m heap, the agent CLIs of at most 4 open tasks and one verify run; measure and adjust.
+          # An explicit CPU limit: a missing one becomes the namespace's LimitRange default.
           resources:
             requests:
-              cpu: "2"
-              memory: 8Gi
+              cpu: "1"
+              memory: 2Gi
+              ephemeral-storage: 128Mi
             limits:
-              memory: 8Gi
+              cpu: "4"
+              memory: 4Gi
+              ephemeral-storage: 384Mi
           startupProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -130,7 +132,7 @@ spec:
             claimName: jagt-data
         - name: tmp
           emptyDir:
-            sizeLimit: 1Gi
+            sizeLimit: 256Mi
         - name: mcp
           secret:
             secretName: jagt-mcp

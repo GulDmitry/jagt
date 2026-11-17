@@ -6,13 +6,13 @@ rule: [`server-environment`](../../openspec/specs/server-environment/spec.md)
 ## Status
 
 Accepted 2026-11-16 by the owner's order: the manifests are what an organisation runs in-house.
+Amended by [0192](0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-sized.md): no fixed UID, a fixed heap, quota-sized resources.
 
 ## Context
 
 - One pod holds jagt's JVM, tmux, agent CLIs and one verify run (verify runs go one at a time).
 - A JVM sizes its heap from the container's memory; the default is a quarter of it. Spring Boot's graceful shutdown waits 20 s
   per phase and `ShutdownEndings` is a second phase ([0169](0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).
-- Measured 2026-11-16 in the built image, 8 GB and 4 CPUs: `MaxHeapSize` 2147483648, `UseSerialGC` true, `UseG1GC` false.
 
 ## Decision
 

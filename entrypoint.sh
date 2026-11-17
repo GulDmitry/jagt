@@ -11,6 +11,10 @@ if [ -n "$JAGT_AGENT_SEED" ] && [ -n "$JAGT_AGENT_HOME" ] && [ -d "$JAGT_AGENT_S
   mkdir -p "$JAGT_AGENT_HOME"
   cp -a "$JAGT_AGENT_SEED"/. "$JAGT_AGENT_HOME"/
 fi
+# An arbitrary UID (OpenShift) has no passwd entry, which ssh refuses; the image leaves /etc/passwd group-writable for it.
+if ! whoami >/dev/null 2>&1; then
+  echo "jagt:x:$(id -u):0::$HOME:/bin/bash" >>/etc/passwd
+fi
 mkdir -p /data/dumps
 while true; do
   # Unquoted: the variable holds several options.
