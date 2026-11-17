@@ -23,8 +23,7 @@ public final class StandReport {
         lines.isEmpty() ? "stand report: no run recorded" : String.join("\n", rates(lines)));
   }
 
-  static synchronized void append(String run, String result) {
-    String file = System.getProperty("stand.report", "");
+  static synchronized void append(String file, String run, String result) {
     if (file.isBlank()) {
       return;
     }

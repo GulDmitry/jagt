@@ -11,6 +11,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public final class JagtProcess implements JagtEngine {
 
@@ -20,19 +22,35 @@ public final class JagtProcess implements JagtEngine {
   private static final List<String> OUTPUTS = List.of("jagt.out", "jagt-backend.log");
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
+  @FunctionalInterface
+  public interface Launcher {
+    Process launch(Path root, int port) throws IOException;
+  }
+
   private final Path root;
-  private final Process process;
   private final int port;
   private final StandBoard board;
+  private final Launcher launcher;
+  private final Duration startup;
+  private @Nullable Process process;
 
-  private JagtProcess(Path root, Process process, int port) {
+  public JagtProcess(Path root, int port, StandBoard board, Launcher launcher, Duration startup) {
     this.root = root;
-    this.process = process;
     this.port = port;
-    this.board = new StandBoard(port);
+    this.board = board;
+    this.launcher = launcher;
+    this.startup = startup;
   }
 
   public static JagtProcess start(Path root, int port) {
+    return new JagtProcess(root, port, new StandBoard(port), JagtProcess::launch, STARTUP).begin();
+  }
+
+  public static Process launch(Path root, int port) throws IOException {
+    return command(root, port).start();
+  }
+
+  public static ProcessBuilder command(Path root, int port) {
     String java = ProcessHandle.current().info().command().orElse("java");
     ProcessBuilder builder =
         new ProcessBuilder(
@@ -55,11 +73,16 @@ public final class JagtProcess implements JagtEngine {
     env.put("ORCHESTRATOR_DATA", root.toString());
     env.put("LOG_FILE", root.resolve("jagt-backend.log").toString());
     env.put("TMUX_TMPDIR", root.resolve("tmux").toString());
+    return builder;
+  }
+
+  public JagtProcess begin() {
     try {
-      return new JagtProcess(root, builder.start(), port).awaitReady();
+      process = launcher.launch(root, port);
     } catch (IOException e) {
       throw new StandFailure("cannot launch " + JAR + " under " + root, e);
     }
+    return awaitReady();
   }
 
   public static void keepOutput(Path root) {
@@ -78,7 +101,7 @@ public final class JagtProcess implements JagtEngine {
 
   @Override
   public long pid() {
-    return process.pid();
+    return running().pid();
   }
 
   @Override
@@ -105,18 +128,22 @@ public final class JagtProcess implements JagtEngine {
   public JagtEngine restart() {
     close();
     keepOutput(root);
-    return start(root, port);
+    return begin();
   }
 
   @Override
   public void close() {
-    StandShell.stopTree(process.toHandle());
+    StandShell.stopTree(running().toHandle());
+  }
+
+  private Process running() {
+    return Objects.requireNonNull(process, "jagt is not launched");
   }
 
   private JagtProcess awaitReady() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(STARTUP);
+    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
     while (!board.ready()) {
-      if (!process.isAlive() || Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+      if (!running().isAlive() || Instant.now(Clock.systemUTC()).isAfter(deadline)) {
         close();
         throw new StandFailure(
             "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));

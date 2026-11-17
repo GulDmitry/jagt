@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,7 +19,8 @@ class JagtContainerEdgesTest {
     StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(0, "=== s:0 work\nhi\n");
     StandBoard board = new StandBoard(9000);
 
-    JagtContainer container = new JagtContainer(dir, 9000, board, shell, Map.of());
+    JagtContainer container =
+        new JagtContainer(dir, 9000, board, shell, Map.of(), Duration.ofMinutes(5));
 
     assertThat(container.screens()).isEqualTo("=== s:0 work\nhi\n");
     assertThat(container.port()).isEqualTo(9000);
@@ -29,7 +31,8 @@ class JagtContainerEdgesTest {
   void noScreensWhenTheTmuxServerIsNotRunning() {
     StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(1, "no server");
 
-    JagtContainer container = new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of());
+    JagtContainer container =
+        new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of(), Duration.ofMinutes(5));
 
     assertThat(container.screens()).isEmpty();
   }
@@ -38,7 +41,8 @@ class JagtContainerEdgesTest {
   void theJagtPidIsZeroWhenNoJvmRuns() {
     StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(1, "");
 
-    JagtContainer container = new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of());
+    JagtContainer container =
+        new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of(), Duration.ofMinutes(5));
 
     assertThat(container.pid()).isZero();
   }
@@ -49,7 +53,8 @@ class JagtContainerEdgesTest {
         (cwd, command, env) -> {
           return new StandShell.Result(command.contains("pkill") ? 1 : 0, "log");
         };
-    JagtContainer container = new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of());
+    JagtContainer container =
+        new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of(), Duration.ofMinutes(5));
 
     assertThatThrownBy(container::restart)
         .isInstanceOf(StandFailure.class)
@@ -62,8 +67,25 @@ class JagtContainerEdgesTest {
   void theLogOfContainerWhoseRootIsGoneCannotBeKept() {
     StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(0, "log");
     JagtContainer container =
-        new JagtContainer(dir.resolve("gone"), 9000, new StandBoard(9000), shell, Map.of());
+        new JagtContainer(
+            dir.resolve("gone"),
+            9000,
+            new StandBoard(9000),
+            shell,
+            Map.of(),
+            Duration.ofMinutes(5));
 
     assertThatThrownBy(container::logs).isInstanceOf(StandFailure.class);
+  }
+
+  @Test
+  void theJagtPidSkipsOutputLinesThatAreNotNumbers() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> new StandShell.Result(0, "no such process\n4242\n");
+
+    JagtContainer container =
+        new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThat(container.pid()).isEqualTo(4242);
   }
 }

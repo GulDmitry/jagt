@@ -8,8 +8,7 @@
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo)**
 ([0181](../decisions/0181-every-module-keeps-80-percent-line-coverage.md)). **A suite ends within `suiteCeilingMinutes`, a probe in
 `-PrunMinutes`** ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
-**The root's `:test` is the rule tests, run whole**. **A filtered run names its project**
-(`:<module>:test --tests '<Name>'`; a bare `test --tests` fails on no match).
+**Root `:test` runs the rule tests whole; a filtered run names its project**, `:<module>:test --tests '<Name>'` (bare `--tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
 A fixed bug's commit carries `Defect-family: <A–M>`: A text vs. text. B state overwritten. C turn collision. D model overreach. E missing ending.
 F unbounded loop. G prose routing. H a guard. I vendor CLI behaviour. J git and worktrees. K the board. L the tests themselves. M anything else.
@@ -39,6 +38,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - **`ProductionConstructorTest`** exempts a record's canonical constructor, a bean's or a `spring.factories` type's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
   `RuntimeWiring`, `OrchestratorPaths` or `port/host/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
+- **A class a unit test cannot build through that constructor is a design defect**: refactor it until it can, never cover around or exempt it.
 - Why: a second constructor builds in tests a class production never builds, and it sidesteps `MockCeilingTest`.
 
 ### Bare binary names, and a concurrent unit suite

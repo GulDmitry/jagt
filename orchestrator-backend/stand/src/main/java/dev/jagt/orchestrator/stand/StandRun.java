@@ -2,15 +2,11 @@ package dev.jagt.orchestrator.stand;
 
 import dev.jagt.orchestrator.stand.invariant.RunRecord;
 import dev.jagt.orchestrator.stand.invariant.Violation;
-import dev.jagt.orchestrator.stand.replay.Recorder;
 import dev.jagt.orchestrator.stand.replay.ReplayLog;
 import dev.jagt.orchestrator.stand.replay.WorktreeSnapshots;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,15 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.opentest4j.TestAbortedException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import tools.jackson.databind.JsonNode;
 
 public final class StandRun implements AutoCloseable {
 
-  private static final Duration POLL = Duration.ofSeconds(1);
   private static final Duration PIPELINE = Duration.ofSeconds(1);
   private static final List<String> KICKED =
       List.of(
@@ -49,6 +42,8 @@ public final class StandRun implements AutoCloseable {
   private final WorktreeSnapshots snapshots;
   private final Instant began = Instant.now(Clock.systemUTC());
   private final Optional<Process> awake;
+  private final StandTeardown teardown;
+  private final Duration poll;
   private JagtEngine jagt;
   private StandMarker marker;
   private Instant polled = Instant.now(Clock.systemUTC());
@@ -58,38 +53,29 @@ public final class StandRun implements AutoCloseable {
   private boolean sweepsWaiting;
   private @Nullable RunEnd end;
 
-  private StandRun(
-      Path root,
+  StandRun(
+      StandSite site,
       StandMarker marker,
       StandMode mode,
-      StandProject project,
-      StandHost host,
       JagtEngine jagt,
-      @Nullable Path replayed) {
-    this.root = root;
+      @Nullable Path replayed,
+      StandTeardown teardown,
+      Duration poll) {
+    this.root = site.root();
+    this.project = site.project();
+    this.host = site.host();
+    this.awake = site.awake();
     this.replayed = replayed;
     this.snapshots = new WorktreeSnapshots(root);
     this.marker = marker;
     this.mode = mode;
-    this.project = project;
-    this.host = host;
     this.jagt = jagt;
-    this.awake = StandShell.holdAwake(root);
+    this.teardown = teardown;
+    this.poll = poll;
   }
 
   public static StandRun start(String scenario, StandMode mode) throws IOException {
-    return start(scenario, mode, null);
-  }
-
-  private static StandRun start(String scenario, StandMode mode, @Nullable Path replayed)
-      throws IOException {
-    StandSlots.LIVE.take();
-    try {
-      return begin(scenario, mode, replayed);
-    } catch (IOException | RuntimeException e) {
-      StandSlots.LIVE.free();
-      throw e;
-    }
+    return StandLauncher.standard().start(scenario, mode, null);
   }
 
   /**
@@ -98,70 +84,7 @@ public final class StandRun implements AutoCloseable {
    */
   public static StandRun replay(String scenario, StandMode mode, Path recording)
       throws IOException {
-    return start(scenario, mode, recording);
-  }
-
-  private static StandRun begin(String scenario, StandMode mode, @Nullable Path replayed)
-      throws IOException {
-    StandEngine engine =
-        new StandEngine(
-            System.getProperty("stand.engine", StandEngine.LOCAL), StandEngine::dockerRuns);
-    engine.ready();
-    Path root = newRoot();
-    boolean container = engine.container();
-    StandMarker marker = StandMarker.started(scenario + "/" + mode.id());
-    marker =
-        (container ? marker.withContainer(root.getFileName().toString()) : marker).writeTo(root);
-    Files.createDirectories(root.resolve("tmux"));
-    StandProject project = StandProject.create(root);
-    String reach = container ? "host.docker.internal" : "127.0.0.1";
-    StandHost host =
-        new StandHost(
-                root.resolve("host"),
-                container ? InetAddress.getByName("0.0.0.0") : InetAddress.getLoopbackAddress())
-            .start();
-    try {
-      int port = JagtProcess.freePort();
-      String password = container ? UUID.randomUUID().toString() : "";
-      StandConfig.Target target =
-          container
-              ? StandConfig.Target.container(root, host.mcpUrl(reach), "http://127.0.0.1:" + port)
-              : StandConfig.Target.local(project.repo(), host.mcpUrl(reach));
-      StandConfig.write(
-          Path.of(System.getProperty("stand.repo", "../..")),
-          root,
-          target,
-          root.getFileName().toString(),
-          mode,
-          replayed == null
-              ? null
-              : new StandConfig.Replay(
-                  placed(root, replayed, host.appUrl(reach)), host.appUrl(reach)));
-      if (container) {
-        Files.writeString(
-            root.resolve("password-hash"), new BCryptPasswordEncoder().encode(password));
-        StandShell.run(root, List.of("chmod", "-R", "a+rwX", root.toString()));
-      }
-      JagtEngine jagt = engine.start(root, port, password);
-      return new StandRun(
-          root,
-          marker.withJagt(jagt.pid(), jagt.port()).writeTo(root),
-          mode,
-          project,
-          host,
-          jagt,
-          replayed);
-    } catch (RuntimeException e) {
-      host.close();
-      StandShell.killTmux(root);
-      marker.withOutcome(StandMarker.FAILED).writeTo(root);
-      throw new StandFailure("stand run " + scenario + " did not start; kept " + root, e);
-    }
-  }
-
-  private static Path placed(Path root, Path recording, String appUrl) throws IOException {
-    return Files.writeString(
-        root.resolve("recording.jsonl"), Files.readString(recording).replace("{app}", appUrl));
+    return StandLauncher.standard().start(scenario, mode, recording);
   }
 
   void restartJagt() {
@@ -324,7 +247,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   private JsonNode tick(Timeline timeline) {
-    JagtProcess.pause(POLL);
+    JagtProcess.pause(poll);
     Instant now = Instant.now(Clock.systemUTC());
     if (HostSleep.between(polled, now)) {
       slept = Duration.between(polled, now);
@@ -351,7 +274,7 @@ public final class StandRun implements AutoCloseable {
     try {
       shutDown();
     } finally {
-      StandSlots.LIVE.free();
+      teardown.release();
     }
   }
 
@@ -361,106 +284,7 @@ public final class StandRun implements AutoCloseable {
     host.close();
     awake.ifPresent(Process::destroy);
     StandShell.killTmux(root);
-    printUsage();
-    keepRecording();
-    boolean suspended = last != null && last.suspended();
-    if (suspended) {
-      marker = marker.withOutcome(StandMarker.SUSPENDED);
-    }
-    StandReport.append(
-        marker.scenario(),
-        marker.outcome().equals(StandMarker.PASSED)
-            ? StandMarker.PASSED
-            : suspended ? StandMarker.SUSPENDED : StandMarker.FAILED);
-    keepRunRecord();
-    if (suspended) {
-      System.out.println(
-          "stand run "
-              + marker.scenario()
-              + " host suspended: "
-              + Objects.requireNonNull(last).detail());
-    } else if (!marker.outcome().equals(StandMarker.PASSED)) {
-      marker.withOutcome(StandMarker.FAILED).writeTo(root);
-      System.out.println(
-          "stand run "
-              + marker.scenario()
-              + " failed; evidence: "
-              + StandEvidence.keep(root, marker.scenario(), StandEvidence.DIR).toAbsolutePath());
-    }
-    StandShell.deleteRoot(root);
-    StandTraces.ofTheHuman(Objects.requireNonNull(root.getParent()))
-        .remove(root.getFileName().toString()::equals);
-  }
-
-  private void keepRunRecord() {
-    List<String> found;
-    try {
-      found = violations().stream().map(Violation::toString).toList();
-    } catch (RuntimeException e) {
-      found = List.of("invariants unreadable: " + e);
-    }
-    String[] named = marker.scenario().split("/", 2);
-    StandRunLog.keep(
-        StandRunLog.DIR,
-        new StandRunLog.Entry(
-            Instant.now(Clock.systemUTC()),
-            named[0],
-            named.length > 1 ? named[1] : "",
-            replayed == null ? "live" : "replay",
-            new StandRunLog.Verdict(
-                marker.outcome().equals(StandMarker.PASSED),
-                last == null ? "not driven" : last.ending().words(),
-                last == null ? "" : last.detail(),
-                found),
-            Duration.between(began, Instant.now(Clock.systemUTC())).toSeconds(),
-            StandSpend.read(root)),
-        root.getFileName().toString());
-  }
-
-  private void keepRecording() {
-    if (replayed != null) {
-      return;
-    }
-    try {
-      Path kept =
-          Files.createDirectories(StandRecordings.DIR)
-              .resolve(marker.scenario().replace('/', '-') + "-" + root.getFileName() + ".jsonl");
-      Files.copy(Recorder.write(root, POLL), kept, StandardCopyOption.REPLACE_EXISTING);
-      StandRecordings.fold(StandRecordings.DIR);
-      System.out.println("stand run " + marker.scenario() + " recorded: " + kept.toAbsolutePath());
-    } catch (IOException | RuntimeException e) {
-      System.out.println("stand run " + marker.scenario() + " not recorded: " + e);
-    }
-  }
-
-  private void printUsage() {
-    Path usage = root.resolve("records/usage-by-day.jsonl");
-    try {
-      String spent = Files.isRegularFile(usage) ? Files.readString(usage).strip() : "none recorded";
-      System.out.println("stand run " + marker.scenario() + " usage: " + spent);
-    } catch (IOException e) {
-      System.out.println("stand run " + marker.scenario() + " usage unreadable: " + e.getMessage());
-    }
-  }
-
-  private static Path newRoot() throws IOException {
-    Path base = Path.of(System.getProperty("stand.base", System.getProperty("java.io.tmpdir")));
-    String prefix = StandRoots.PREFIX + ProcessHandle.current().pid() + "-";
-    Files.createDirectories(base);
-    int run = 1;
-    while (!created(base.resolve(prefix + run))) {
-      run++;
-    }
-    return base.resolve(prefix + run).toRealPath();
-  }
-
-  private static boolean created(Path root) throws IOException {
-    try {
-      Files.createDirectory(root);
-      return true;
-    } catch (FileAlreadyExistsException taken) {
-      return false;
-    }
+    teardown.keep(root, marker, last, replayed != null, began);
   }
 
   private final class World implements StandWorld {

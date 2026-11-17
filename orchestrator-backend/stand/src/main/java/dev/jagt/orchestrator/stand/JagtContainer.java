@@ -27,25 +27,35 @@ public final class JagtContainer implements JagtEngine {
   private final StandBoard board;
   private final StandShell.Runner shell;
   private final Map<String, String> env;
+  private final Duration startup;
 
   public JagtContainer(
-      Path root, int port, StandBoard board, StandShell.Runner shell, Map<String, String> env) {
+      Path root,
+      int port,
+      StandBoard board,
+      StandShell.Runner shell,
+      Map<String, String> env,
+      Duration startup) {
     this.root = root;
     this.port = port;
     this.board = board;
     this.shell = shell;
     this.env = env;
+    this.startup = startup;
   }
 
   public static JagtContainer start(
       Path root, int port, StandBoard board, Map<String, String> env) {
-    JagtContainer container = new JagtContainer(root, port, board, StandShell::run, env);
-    StandShell.Result up = container.compose("up", "-d", "--wait", "--pull", "never");
+    return new JagtContainer(root, port, board, StandShell::run, env, STARTUP).up();
+  }
+
+  public JagtContainer up() {
+    StandShell.Result up = compose("up", "-d", "--wait", "--pull", "never");
     if (up.exit() != 0) {
-      container.close();
+      close();
       throw new StandFailure("jagt's container did not start under " + root + ": " + up.output());
     }
-    return container.awaitReady();
+    return awaitReady();
   }
 
   @Override
@@ -110,7 +120,7 @@ public final class JagtContainer implements JagtEngine {
   }
 
   private void awaitDown() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(STARTUP);
+    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
     while (board.ready()) {
       if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
         close();
@@ -122,7 +132,7 @@ public final class JagtContainer implements JagtEngine {
   }
 
   private JagtContainer awaitReady() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(STARTUP);
+    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
     while (!board.ready()) {
       if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
         close();
