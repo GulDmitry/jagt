@@ -1,12 +1,22 @@
 import { make, span } from "../../core/dom.js";
 import { t } from "../../core/i18n.js";
 
+/** @param {string} owner */
 const edge = (owner) => span(`legend-edge ${owner}`, "");
 
+/**
+ * @param {string} className
+ * @param {string} text
+ * @param {string} age
+ */
 const aged = (className, text, age) =>
   make("span", className, text, " ", span("age", age));
 
 // The board draws this one as an anchor, and the dotted underline is half of what it says.
+/**
+ * @param {string} className
+ * @param {string} text
+ */
 const requestChip = (className, text) => make("a", className, text);
 
 const repositories = () =>
@@ -21,6 +31,7 @@ const repositories = () =>
     span("tick", "✓"),
   );
 
+/** @param {boolean} on */
 const flagButton = (on) => {
   const button = make("button", "flag", on ? "⚑" : "⚐");
   button.setAttribute("aria-pressed", String(on));
@@ -36,6 +47,10 @@ const draftedTab = () => {
 const blockHead = () =>
   make("span", "block", "1 · ", span("verdict ok", "FIXED"), " · thread 4");
 
+/**
+ * @param {string} className
+ * @param {string} text
+ */
 const detailLine = (className, text) => make("div", className, text);
 
 export const cardRows = () => [

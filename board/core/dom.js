@@ -15,7 +15,7 @@ export const make = (tag, className, text = "", ...children) => {
 };
 
 /**
- * @param {string} [className]
+ * @param {string | null} [className]
  * @param {string} [text]
  */
 export const span = (className, text = "") => {

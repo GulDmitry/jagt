@@ -1,7 +1,11 @@
+/** @typedef {Record<string, any>} Module */
+
+/** @type {{ loading: Promise<Record<string, Module>> | null }} */
 const held = {
   loading: null,
 };
 
+/** @type {Record<string, [string, string]>} */
 const GRAMMARS = {
   java: ["@codemirror/lang-java", "java"],
   js: ["@codemirror/lang-javascript", "javascript"],
@@ -15,6 +19,10 @@ const GRAMMARS = {
   py: ["@codemirror/lang-python", "python"],
 };
 
+/**
+ * @param {Record<string, Module>} modules
+ * @param {unknown[]} grammar
+ */
 const readOnly = ({ view, state, language, highlight, search }, grammar) => [
   view.lineNumbers(),
   state.EditorState.readOnly.of(true),
@@ -50,14 +58,23 @@ const load = () => {
   return held.loading;
 };
 
+/**
+ * @param {string} path
+ * @returns {Promise<unknown[]>}
+ */
 const grammarOf = async (path) => {
-  const known = GRAMMARS[path.split(".").pop().toLowerCase()];
+  const known = GRAMMARS[(path.split(".").pop() ?? "").toLowerCase()];
   if (!known) return [];
   const module = await import(known[0]);
   return [module[known[1]]()];
 };
 
 // A read-only view of one file; the returned function removes it.
+/**
+ * @param {HTMLElement} parent
+ * @param {string} text
+ * @param {string} path
+ */
 export async function show(parent, text, path) {
   const { view, state, language, highlight, search } = await load();
   const grammar = await grammarOf(path);
@@ -75,6 +92,12 @@ export async function show(parent, text, path) {
 }
 
 // The file before and after its change, side by side; the returned function removes it.
+/**
+ * @param {HTMLElement} parent
+ * @param {string} before
+ * @param {string} after
+ * @param {string} path
+ */
 export async function showChange(parent, before, after, path) {
   const { view, state, language, highlight, search, merge } = await load();
   const extensions = readOnly(
@@ -89,6 +112,10 @@ export async function showChange(parent, before, after, path) {
   return () => pair.destroy();
 }
 
+/**
+ * @param {HTMLElement} parent
+ * @param {number} line
+ */
 export const reveal = async (parent, line) => {
   const { view } = await load();
   const editor = view.EditorView.findFromDOM(parent);

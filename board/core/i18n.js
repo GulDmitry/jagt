@@ -33,12 +33,11 @@ const platform = {
 
 /**
  * @param {string} key
- * @param {Record<string, string | undefined>} [values]
+ * @param {Record<string, string | number | undefined>} [values]
  */
 export const t = (key, values = {}) =>
-  (chosen[key] ?? english[key] ?? key).replace(
-    /\{(\w+)\}/g,
-    (hole, name) => values[name] ?? platform[name] ?? hole,
+  (chosen[key] ?? english[key] ?? key).replace(/\{(\w+)\}/g, (hole, name) =>
+    String(values[name] ?? platform[name] ?? hole),
   );
 
 export const current = () => chosenLanguage.code;

@@ -11,6 +11,19 @@ document.head.append(
   }),
 );
 
+/**
+ * @typedef {import("./read.js").Tree} Tree
+ * @typedef {import("./read.js").Repo} Repo
+ * @typedef {import("./read.js").Content} Content
+ * @typedef {import("./read.js").Found} Found
+ * @typedef {import("./read.js").Picked} Picked
+ * @typedef {(picked: Picked) => void} Pick
+ */
+
+/**
+ * @param {Tree[]} trees
+ * @returns {Picked | null}
+ */
 const firstOf = (trees) => {
   const tree = trees.find((each) => each.files.length);
   if (!tree) return null;
@@ -21,8 +34,10 @@ const firstOf = (trees) => {
   };
 };
 
+/** @type {Record<string, string>} */
 const SAID = { BINARY: "code.binary", TOO_LARGE: "code.large" };
 
+/** @param {{ found: Found, picked: Picked | null, project: string, pick: Pick }} props */
 const Hits = ({ found, picked, project, pick }) =>
   found.hits.length
     ? found.hits.map(
@@ -37,6 +52,7 @@ const Hits = ({ found, picked, project, pick }) =>
       )
     : html`<p class="muted">${t("code.no-hits")}</p>`;
 
+/** @param {{ changes: Repo[] | null, picked: Picked | null, pick: Pick }} props */
 const Changes = ({ changes, picked, pick }) => {
   if (changes === null) return html`<p class="muted">${t("reading")}</p>`;
   if (!changes.some((repo) => repo.files.length))
@@ -57,6 +73,7 @@ const Changes = ({ changes, picked, pick }) => {
   ]);
 };
 
+/** @param {{ trees: Tree[] | null, picked: Picked | null, failure: string, pick: Pick }} props */
 const Files = ({ trees, picked, failure, pick }) => {
   if (trees === null)
     return failure ? "" : html`<p class="muted">${t("reading")}</p>`;
@@ -74,6 +91,17 @@ const Files = ({ trees, picked, failure, pick }) => {
   );
 };
 
+/**
+ * @param {{
+ *   found: Found | null,
+ *   changed: boolean,
+ *   changes: Repo[] | null,
+ *   trees: Tree[] | null,
+ *   picked: Picked | null,
+ *   failure: string,
+ *   pick: Pick,
+ * }} props
+ */
 const Names = ({ found, changed, changes, trees, picked, failure, pick }) => {
   if (found)
     return html`<${Hits}
@@ -96,16 +124,18 @@ const Names = ({ found, changed, changes, trees, picked, failure, pick }) => {
   />`;
 };
 
+/** @param {{ task: { id: string } }} props */
 export const Code = ({ task }) => {
-  const [trees, setTrees] = useState(null);
-  const [picked, setPicked] = useState(null);
-  const [file, setFile] = useState(null);
-  const [found, setFound] = useState(null);
+  const [trees, setTrees] = useState(/** @type {Tree[] | null} */ (null));
+  const [picked, setPicked] = useState(/** @type {Picked | null} */ (null));
+  const [file, setFile] = useState(/** @type {Content | null} */ (null));
+  const [found, setFound] = useState(/** @type {Found | null} */ (null));
   const [mode, setMode] = useState("files");
-  const [changes, setChanges] = useState(null);
+  const [changes, setChanges] = useState(/** @type {Repo[] | null} */ (null));
   const [failure, setFailure] = useState("");
-  const host = useRef(null);
+  const host = useRef(/** @type {HTMLDivElement | null} */ (null));
   const id = task.id;
+  /** @param {Error} e */
   const said = (e) => setFailure(e.message);
 
   useEffect(() => {
@@ -141,12 +171,15 @@ export const Code = ({ task }) => {
   useEffect(() => {
     if (file?.kind !== "TEXT") return undefined;
     let gone = false;
+    /** @type {(() => void) | null} */
     let stop = null;
-    openEditor(host.current, file, picked).then((close) => {
+    const view = host.current;
+    if (!view || !picked) return undefined;
+    openEditor(view, file, picked).then((close) => {
       if (gone) return close();
       stop = close;
       return picked.line && !picked.change
-        ? reveal(host.current, picked.line)
+        ? reveal(view, picked.line)
         : undefined;
     }, said);
     return () => {
@@ -155,9 +188,10 @@ export const Code = ({ task }) => {
     };
   }, [file]);
 
+  /** @param {SubmitEvent & { currentTarget: HTMLFormElement }} event */
   const search = (event) => {
     event.preventDefault();
-    const q = event.target.elements.q.value.trim();
+    const q = String(new FormData(event.currentTarget).get("q")).trim();
     if (!q) return setFound(null);
     return read.search(id, picked?.project || "", q).then(setFound, said);
   };

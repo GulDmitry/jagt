@@ -4,6 +4,11 @@ import { t } from "../../core/i18n.js";
 const yoursHead = () =>
   make("div", "group yours", "", span("group-head", `${t("list.yours")} 2`));
 
+/**
+ * @param {string} className
+ * @param {string} text
+ * @param {string} [key]
+ */
 const verbButton = (className, text, key) => {
   const button = make("button", className, text);
   if (key) button.dataset.key = key;
@@ -28,9 +33,14 @@ const failedLastRun = () =>
     ),
   );
 
+/**
+ * @param {string} className
+ * @param {string} text
+ */
 const planChange = (className, text) =>
   make("div", "doc", "", span(className, text));
 
+/** @param {string} className */
 const toastEdge = (className) =>
   make(
     "div",
@@ -38,10 +48,13 @@ const toastEdge = (className) =>
     t(className.includes("error") ? "sample.refused" : "sample.done"),
   );
 
+/** @param {string} className */
 const rowVerb = (className) => make("button", className, "▸_");
 
 const gearButton = () => {
-  const button = document.getElementById("gear").cloneNode(true);
+  const button = /** @type {HTMLElement} */ (
+    document.getElementById("gear")?.cloneNode(true)
+  );
   button.removeAttribute("id");
   return button;
 };

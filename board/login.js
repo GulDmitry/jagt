@@ -1,2 +1,3 @@
 import "./core/i18n.js";
-document.getElementById("failed").hidden = !location.search.includes("error");
+const failed = document.getElementById("failed");
+if (failed) failed.hidden = !location.search.includes("error");
