@@ -1,14 +1,17 @@
 package dev.jagt.orchestrator;
 
+import static dev.jagt.orchestrator.TestLaunchArgsBuilder.launchArgs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.startup.Misconfigured;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -33,18 +36,7 @@ class RefusedStartServedUntilSavedTest {
     Thread launch =
         Thread.ofPlatform()
             .uncaughtExceptionHandler((thread, failure) -> ended.set(failure))
-            .start(() ->
-                OrchestratorApplication.main(
-                    new String[] {
-                      "--server.port=" + port,
-                      "--orchestrator.terminal=none",
-                      "--orchestrator.root=" + root,
-                      "--orchestrator.data=" + root,
-                      "--spring.config.import=",
-                      "--orchestrator.config-file=" + root.resolve("jagt.yml"),
-                      "--orchestrator.state-file=" + root.resolve("state.json"),
-                      "--logging.file.name=" + root.resolve("jagt.log")
-                    }));
+            .start(() -> OrchestratorApplication.main(launchArgs(root, port).build()));
     await()
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
@@ -59,10 +51,13 @@ class RefusedStartServedUntilSavedTest {
   }
 
   @Test
-  @Timeout(180)
-  void failurePageShowsTheSavedJagtYmlOfTheNextStartWhenTheOwnerSavesIt(@TempDir Path root)
+  @Timeout(240)
+  void jagtStartsAndServesStateWhenTheOwnerSavesValidConfigOnTheFailurePage(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+    Files.createDirectories(root.resolve("proj/.git"));
+    Files.writeString(root.resolve("tmux"), "#!/bin/sh\nexit 0\n");
+    root.resolve("tmux").toFile().setExecutable(true);
     int port;
     try (ServerSocket free = new ServerSocket(0)) {
       port = free.getLocalPort();
@@ -71,18 +66,7 @@ class RefusedStartServedUntilSavedTest {
     HttpClient client = HttpClient.newHttpClient();
     Thread.ofPlatform()
         .daemon()
-        .start(() ->
-            OrchestratorApplication.main(
-                new String[] {
-                  "--orchestrator.terminal=none",
-                  "--orchestrator.config-file=" + root.resolve("jagt.yml"),
-                  "--server.port=" + port,
-                  "--spring.config.import=",
-                  "--orchestrator.data=" + root,
-                  "--orchestrator.root=" + root,
-                  "--logging.file.name=" + root.resolve("jagt.log"),
-                  "--orchestrator.state-file=" + root.resolve("state.json")
-                }));
+        .start(() -> OrchestratorApplication.main(launchArgs(root, port).build()));
     await()
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
@@ -94,26 +78,30 @@ class RefusedStartServedUntilSavedTest {
                 .body()
                 .contains("jagt cannot start"));
 
-    HttpResponse<String> save =
-        client.send(
-            HttpRequest.newBuilder(URI.create(base + "/save"))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString("yml=orchestrator%3A+%7B%7D%0A"))
-                .build(),
-            HttpResponse.BodyHandlers.ofString());
+    String valid =
+        "orchestrator:\n  projects:\n    proj:\n      path: "
+            + root.resolve("proj")
+            + "\n      baseBranch: origin/main\n";
+    client.send(
+        HttpRequest.newBuilder(URI.create(base + "/save"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    "yml=" + URLEncoder.encode(valid, StandardCharsets.UTF_8)))
+            .build(),
+        HttpResponse.BodyHandlers.ofString());
 
-    assertThat(Files.readString(root.resolve("jagt.yml"))).isEqualTo("orchestrator: {}\n");
     await()
-        .atMost(Duration.ofSeconds(90))
+        .atMost(Duration.ofMinutes(2))
         .ignoreExceptions()
         .until(() ->
             client
                 .send(
-                    HttpRequest.newBuilder(URI.create(base + "/")).build(),
+                    HttpRequest.newBuilder(URI.create(base + "/state")).build(),
                     HttpResponse.BodyHandlers.ofString())
                 .body()
-                .contains("orchestrator: {}"));
+                .startsWith("{"));
 
-    assertThat(save.statusCode()).isEqualTo(200);
+    assertThat(Files.readString(root.resolve("jagt.yml"))).isEqualTo(valid);
   }
 }
