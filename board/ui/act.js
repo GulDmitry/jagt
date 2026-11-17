@@ -4,6 +4,11 @@ import { refresh } from "./refresh.js";
 import { refocus, render } from "./render.js";
 import { post } from "./verbs.js";
 
+/**
+ * @param {string} taskId
+ * @param {string} actionId
+ * @param {string} [project]
+ */
 export async function run(taskId, actionId, project = "") {
   const chosen = intent(taskId, actionId);
   if (!chosen) return;

@@ -5,8 +5,8 @@ import { full } from "../core/time.js";
 import { html } from "./html.js";
 
 /**
- * @typedef {import("./Card.js").CardTask} CardTask
- * @typedef {import("./Card.js").Watch} Watch
+ * @typedef {import("../core/store.js").Task} CardTask
+ * @typedef {import("../core/store.js").Watch} Watch
  * @typedef {{ line: string, stalled?: boolean }} Stalled
  */
 

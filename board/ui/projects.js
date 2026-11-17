@@ -3,17 +3,22 @@ import { make, span } from "../core/dom.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 
-const group = document.getElementById("project");
+const group = /** @type {HTMLElement} */ (document.getElementById("project"));
+/** @type {{ rendered: string | null }} */
 const state = {
   rendered: null,
 };
 
+/** @param {string} selector */
+const boxes = (selector) =>
+  [...group.querySelectorAll(selector)].filter(
+    (box) => box instanceof HTMLInputElement,
+  );
+
 // The order they were ticked in is not kept, so the CONFIGURED order decides which repository the agent's
 // session runs in. None ticked sends nothing: naming a project skips the ticket read.
 export const chosen = () => {
-  const ticked = new Set(
-    [...group.querySelectorAll("input:checked")].map((box) => box.value),
-  );
+  const ticked = new Set(boxes("input:checked").map((box) => box.value));
   return store
     .projects()
     .filter((project) => ticked.has(project))
@@ -21,11 +26,12 @@ export const chosen = () => {
 };
 
 export const forget = () => {
-  group.querySelectorAll("input").forEach((box) => {
+  boxes("input").forEach((box) => {
     box.checked = false;
   });
 };
 
+/** @param {Record<string, string | string[]>} card */
 const said = (card) =>
   Object.entries(card)
     .filter(([, value]) => value?.length)
@@ -36,7 +42,9 @@ const said = (card) =>
 export const cards = () =>
   Promise.all(
     [...group.querySelectorAll("label")].map(async (label) => {
-      const key = label.firstElementChild.value;
+      const box = label.firstElementChild;
+      if (!(box instanceof HTMLInputElement)) return;
+      const key = box.value;
       label.dataset.tip = await api(
         `/api/projects/${encodeURIComponent(key)}/card`,
       ).then(said, (e) => `${key}: ${refusal(e)}`);

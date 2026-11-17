@@ -1,13 +1,24 @@
 import { api } from "../core/api.js";
+
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import * as chips from "./chips.js";
 import * as phasebar from "./phasebar.js";
 
-const waitingLabel = document.getElementById("waiting");
-const autoReviewChip = document.getElementById("auto-review");
-const masterChip = document.getElementById("master-mode");
+const waitingLabel = /** @type {HTMLElement} */ (
+  document.getElementById("waiting")
+);
+const autoReviewChip = /** @type {HTMLElement} */ (
+  document.getElementById("auto-review")
+);
+const masterChip = /** @type {HTMLElement} */ (
+  document.getElementById("master-mode")
+);
 
+/**
+ * @param {import("../core/store.js").Task[]} tasks
+ * @param {number} showing
+ */
 export function render(tasks, showing) {
   const waiting = tasks.filter((task) => task.attention === "REQUIRED").length;
   waitingLabel.hidden = waiting === 0;
@@ -27,6 +38,7 @@ export async function showVersion() {
   const info = await api("/actuator/info").catch(() => ({}));
   const version = info.build?.version;
   if (version) {
-    document.getElementById("title").dataset.tip = `jagt ${version}`;
+    /** @type {HTMLElement} */ (document.getElementById("title")).dataset.tip =
+      `jagt ${version}`;
   }
 }

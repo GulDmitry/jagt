@@ -4,6 +4,10 @@ import { blockedOn, offersOn } from "./offers.js";
 import * as repliesOpened from "./repliesOpened.js";
 import * as tabs from "./tabs.js";
 
+/**
+ * @param {import("./view.js").OpenView} view
+ * @param {() => void} repaint
+ */
 export const pane = ({ open, manyProjects, flagged, now }, repaint) =>
   html`<${Pane}
     card=${{

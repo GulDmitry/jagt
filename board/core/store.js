@@ -1,13 +1,40 @@
 import { bothNames } from "./format.js";
 
 /**
- * @typedef {{ id: string, alias?: string }} Task
- * @typedef {{ id: string, part?: string, aliases?: string[], takesTask?: boolean, takesProject?: boolean, hint?: string }} Verb
+ * @typedef {{ id: string, label: string, group?: string, hint?: string, key?: string, primary?: boolean, again?: boolean, apart?: boolean, onRow?: boolean, readOnly?: boolean }} Action
+ * @typedef {{ status: string, at: number, label?: string, why?: string, origin?: string }} Step
+ * @typedef {{ project: string, reviewRequestUrl?: string }} TaskRepo
+ * @typedef {{ state?: string, note?: string, label?: string, nextPollAt: number }} Watch
+ * @typedef {{
+ *   id: string, alias?: string, title?: string, project: string, repos?: TaskRepo[], phase?: string,
+ *   confirmations?: Record<string, string>, repliesWrittenAt?: number,
+ *   owner: string, attention: string, ask?: string, hint?: string, detail?: string, detailKind?: string,
+ *   tier?: string, ticketUrl?: string, status?: string, statusLabel: string, statusSince: number,
+ *   actions?: Action[], history?: Step[], switches?: Record<string, string>,
+ *   stop?: { reason?: string, evidence?: string, next?: string, at: number, triage?: string },
+ *   reviewRequestUrl?: string, requestOpenedAt?: number, approved?: boolean | null,
+ *   pipeline: string, pipelineSaid?: string, pipelineUnread?: boolean,
+ *   autoReview?: Watch | null, waiting?: string, deployed?: boolean
+ * }} CardTask
  */
 
 /**
- * @type {{ tasks: Task[], verbs: Verb[], offers: Record<string, string[]> } & Record<string, any>}
+ * @typedef {CardTask} Task
+ * @typedef {{ id: string, part?: string, aliases?: string[], takesTask?: boolean, takesProject?: boolean, hint?: string, report?: boolean, aboutOneTask?: boolean, confirmation?: string }} Verb
+ * @typedef {{ id: string, hint: string }} BranchStrategy
+ * @typedef {{ id: string, label: string }} Phase
+ * @typedef {{ said: string, fix: string[], retryAt?: number }} Reach
+ * @typedef {{ failing?: number, count: number, nextRunAt?: number }} Jobs
+ * @typedef {{ cause: string, at: number }} ActStop
+ * @typedef {{ summary: string | null, enabled: boolean }} AutoReview
+ * @typedef {{
+ *   tasks: Task[], projects: string[], autoReview: AutoReview, jobs: Jobs | null, actStop: ActStop | null,
+ *   assistant: null, reach: Reach[], masterMode: string, verbs: Verb[], branchStrategies: BranchStrategy[],
+ *   phases: Phase[], offers: Record<string, string[]>
+ * }} Data
  */
+
+/** @type {Data} */
 const data = {
   tasks: [],
   projects: [],
@@ -60,7 +87,7 @@ export const nameOf = (ref) => {
 /** @param {string} id */
 export const taskById = (id) => data.tasks.find((task) => task.id === id);
 
-/** @param {Record<string, any>} next */
+/** @param {Partial<Data>} next */
 export function set(next) {
   Object.assign(data, next);
 }

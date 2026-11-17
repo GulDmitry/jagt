@@ -5,7 +5,7 @@ import { html } from "./html.js";
 import { Report } from "./Report.js";
 
 /**
- * @typedef {import("./Card.js").CardTask} CardTask
+ * @typedef {import("../core/store.js").Task} CardTask
  * @typedef {{ names: string[], name?: string, html: string }} Doc
  * @typedef {{ project: string, base: string, diff?: string, cut?: boolean }} DiffRepo
  */

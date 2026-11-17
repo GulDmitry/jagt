@@ -3,6 +3,7 @@ import { html } from "../components/html.js";
 import { said } from "./keyhint.js";
 import * as seen from "./seen.js";
 
+/** @param {import("./view.js").OpenView} view */
 export const list = ({ groups, shown, open, now }) => {
   const rowVerb = shown
     .flatMap((task) => task.actions || [])

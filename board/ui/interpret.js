@@ -2,6 +2,11 @@ import { api } from "../core/api.js";
 import { t } from "../core/i18n.js";
 import { sending } from "./submit.js";
 
+/**
+ * @param {HTMLFormElement} form
+ * @param {string} text
+ * @param {() => void} done
+ */
 export const interpret = (form, text, done) =>
   sending(form, {
     waiting: t("palette.interpreting"), // a model call: seconds

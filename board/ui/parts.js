@@ -4,11 +4,16 @@ import * as launch from "./launch.js";
 import * as legend from "./legend.js";
 import * as palette from "./palette.js";
 
-document.getElementById("new-task").onclick = launch.open;
-document.getElementById("empty-new").onclick = launch.open;
-document.getElementById("add-project").onclick = addProject.open;
-document.getElementById("empty-project").onclick = addProject.open;
+/** @type {HTMLElement} */ (document.getElementById("new-task")).onclick =
+  launch.open;
+/** @type {HTMLElement} */ (document.getElementById("empty-new")).onclick =
+  launch.open;
+/** @type {HTMLElement} */ (document.getElementById("add-project")).onclick =
+  addProject.open;
+/** @type {HTMLElement} */ (document.getElementById("empty-project")).onclick =
+  addProject.open;
 
+/** @type {Record<string, import("./execute.js").Part>} */
 export const parts = {
   launch: { focus: launch.open },
   project: { focus: addProject.open, argued: addProject.argued },
@@ -16,4 +21,4 @@ export const parts = {
   jobs: { section: jobs.node },
 };
 
-palette.wire({ partFor: (part) => parts[part] || {} });
+palette.wire({ partFor: (part = "") => parts[part] || {} });

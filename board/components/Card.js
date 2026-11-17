@@ -5,20 +5,8 @@ import { html } from "./html.js";
 import { Meta } from "./Meta.js";
 
 /**
- * @typedef {{ id: string, label: string, group?: string, hint?: string, key?: string, primary?: boolean, again?: boolean, apart?: boolean, onRow?: boolean }} Action
- * @typedef {{ status: string, at: number, label?: string, why?: string, origin?: string }} Step
- * @typedef {{ project: string, reviewRequestUrl?: string }} TaskRepo
- * @typedef {{ state?: string, note?: string, label?: string, nextPollAt: number }} Watch
- * @typedef {{
- *   id: string, alias?: string, title?: string, project: string, repos?: TaskRepo[],
- *   owner: string, attention: string, ask?: string, hint?: string, detail?: string, detailKind?: string,
- *   tier?: string, ticketUrl?: string, status?: string, statusLabel: string, statusSince: number,
- *   actions?: Action[], history?: Step[], switches?: Record<string, string>,
- *   stop?: { reason?: string, evidence?: string, next?: string, at: number, triage?: string },
- *   reviewRequestUrl?: string, requestOpenedAt?: number, approved?: boolean | null,
- *   pipeline: string, pipelineSaid?: string, pipelineUnread?: boolean,
- *   autoReview?: Watch | null, waiting?: string, deployed?: boolean
- * }} CardTask
+ * @typedef {import("../core/store.js").CardTask} CardTask
+ * @typedef {import("../core/store.js").Action} Action
  */
 
 /** @param {{ taskId: string, on: boolean }} props */

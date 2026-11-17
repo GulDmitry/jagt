@@ -1,13 +1,18 @@
 import { api } from "../core/api.js";
+
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import * as projects from "./projects.js";
 import { submits } from "./submit.js";
 
-const dialog = document.getElementById("launch-dialog");
-const form = document.getElementById("launch");
-const ref = document.getElementById("ref");
-const strategy = document.getElementById("strategy");
+const dialog = /** @type {HTMLDialogElement} */ (
+  document.getElementById("launch-dialog")
+);
+const form = /** @type {HTMLFormElement} */ (document.getElementById("launch"));
+const ref = /** @type {HTMLInputElement} */ (document.getElementById("ref"));
+const strategy = /** @type {HTMLSelectElement} */ (
+  document.getElementById("strategy")
+);
 
 export const open = () => {
   if (!dialog.open) dialog.showModal();
@@ -15,7 +20,8 @@ export const open = () => {
   projects.cards();
 };
 
-document.getElementById("close-launch").onclick = () => dialog.close();
+/** @type {HTMLElement} */ (document.getElementById("close-launch")).onclick =
+  () => dialog.close();
 
 // ⌘↵ starts from any field.
 form.addEventListener("keydown", (event) => {
@@ -25,6 +31,7 @@ form.addEventListener("keydown", (event) => {
   }
 });
 
+/** @type {{ rendered: string | null }} */
 const state = {
   rendered: null,
 };
@@ -46,8 +53,10 @@ export function render() {
   }
 }
 
-const plan = document.getElementById("plan");
-const notes = document.getElementById("notes");
+const plan = /** @type {HTMLInputElement} */ (document.getElementById("plan"));
+const notes = /** @type {HTMLInputElement} */ (
+  document.getElementById("notes")
+);
 
 const problem = () => {
   const ticket = ref.value.trim();
@@ -59,7 +68,9 @@ const problem = () => {
 };
 
 form.addEventListener("change", () =>
-  document.getElementById("launch-state").classList.remove("bad"),
+  /** @type {HTMLElement} */ (
+    document.getElementById("launch-state")
+  ).classList.remove("bad"),
 );
 
 submits(form, {
@@ -74,7 +85,9 @@ submits(form, {
         project: projects.chosen(),
         mode: plan.checked ? "plan" : null,
         strategy: strategy.value,
-        baseBranch: document.getElementById("base-branch").value,
+        baseBranch: /** @type {HTMLInputElement} */ (
+          document.getElementById("base-branch")
+        ).value,
         notes: notes.value,
       }),
     }),

@@ -1,21 +1,38 @@
 import { render } from "preact";
 import { html } from "../components/html.js";
 import { Report } from "../components/Report.js";
+
 import { reportParts } from "../core/format.js";
 import * as store from "../core/store.js";
 
-const report = document.getElementById("report");
-const reportTitle = document.getElementById("report-title");
-const reportBody = document.getElementById("report-body");
-const reportScroll = document.getElementById("report-scroll");
-const reportSection = document.getElementById("report-section");
-const reportLine = document.getElementById("report-line");
-const sayInput = document.getElementById("say");
+const report = /** @type {HTMLDialogElement} */ (
+  document.getElementById("report")
+);
+const reportTitle = /** @type {HTMLElement} */ (
+  document.getElementById("report-title")
+);
+const reportBody = /** @type {HTMLElement} */ (
+  document.getElementById("report-body")
+);
+const reportScroll = /** @type {HTMLElement} */ (
+  document.getElementById("report-scroll")
+);
+const reportSection = /** @type {HTMLElement} */ (
+  document.getElementById("report-section")
+);
+const reportLine = /** @type {HTMLElement} */ (
+  document.getElementById("report-line")
+);
+const sayInput = /** @type {HTMLInputElement} */ (
+  document.getElementById("say")
+);
 
 export const isOpen = () => report.open;
 
+/** @param {() => void} listener */
 export const onClose = (listener) => report.addEventListener("close", listener);
 
+/** @param {string} said */
 const drawn = (said) =>
   render(
     html`<${Report}
@@ -27,6 +44,11 @@ const drawn = (said) =>
     reportBody,
   );
 
+/**
+ * @param {string} title
+ * @param {string} said
+ * @param {import("./dialogs.js").Showing} showing
+ */
 export function paint(title, said, { extra, about }) {
   reportTitle.textContent = title;
   drawn(said);
@@ -38,6 +60,7 @@ export function paint(title, said, { extra, about }) {
   reportScroll.scrollTop = 0;
 }
 
+/** @param {string} said */
 export function redraw(said) {
   const where = reportScroll.scrollTop;
   drawn(said);
@@ -45,6 +68,7 @@ export function redraw(said) {
 }
 
 // Which element the press STARTED on decides: selecting text inside and releasing outside asks for nothing.
+/** @param {HTMLDialogElement} dialog */
 function closeOnBackdrop(dialog) {
   let pressedBackdrop = false;
   dialog.addEventListener("mousedown", (event) => {
@@ -55,5 +79,6 @@ function closeOnBackdrop(dialog) {
   });
 }
 
-document.getElementById("close-report").onclick = () => report.close();
+/** @type {HTMLElement} */ (document.getElementById("close-report")).onclick =
+  () => report.close();
 closeOnBackdrop(report);

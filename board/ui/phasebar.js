@@ -1,21 +1,32 @@
-import { make, span } from "../core/dom.js";
+import { closest, make, span } from "../core/dom.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import * as filters from "./filters.js";
 import * as order from "./order.js";
 
-const phaseBar = document.getElementById("phases");
+const phaseBar = /** @type {HTMLElement} */ (document.getElementById("phases"));
 
 // An empty board is nothing created yet or everything filtered out: two elements, so neither shows the other's text.
+/**
+ * @param {number} held
+ * @param {number} showing
+ */
 function renderEmpty(held, showing) {
-  document.getElementById("empty").hidden = held > 0;
-  const filtered = document.getElementById("filtered");
+  /** @type {HTMLElement} */ (document.getElementById("empty")).hidden =
+    held > 0;
+  const filtered = /** @type {HTMLElement} */ (
+    document.getElementById("filtered")
+  );
   filtered.hidden = !(held > 0 && showing === 0);
   if (!filtered.hidden) {
     filtered.textContent = t("header.filtered", { on: filters.on(), held });
   }
 }
 
+/**
+ * @param {import("../core/store.js").Task[]} tasks
+ * @param {number} showing
+ */
 export function render(tasks, showing) {
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;
@@ -28,7 +39,7 @@ export function render(tasks, showing) {
         "button",
         held ? "phase" : "phase empty",
         `${label} `,
-        span("count", held),
+        span("count", String(held)),
       );
       segment.disabled = held === 0;
       segment.dataset.phase = phase;
@@ -61,9 +72,10 @@ export function render(tasks, showing) {
   }
 }
 
+/** @param {() => void} repaint */
 export const onBarClick = (repaint) => {
   phaseBar.onclick = (event) => {
-    const button = event.target.closest("button");
+    const button = closest(event, "button");
     if (!button) return;
     if (button.dataset.phase) filters.togglePhase(button.dataset.phase);
     else if (button.hasAttribute("data-order")) order.toggle();

@@ -4,15 +4,18 @@ import { enterKey, letterKey, letters } from "./keyletter.js";
 import { verbKey } from "./keyverb.js";
 import * as palette from "./palette.js";
 
+/** @param {EventTarget | null} target */
 const typingInto = (target) =>
   target instanceof HTMLInputElement ||
   target instanceof HTMLTextAreaElement ||
   target instanceof HTMLSelectElement;
 
+/** @param {KeyboardEvent} event */
 const toggling = (event) =>
   (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
 
 // The keys the board answers whatever is focused, and the ones a field keeps for itself.
+/** @param {KeyboardEvent} event */
 function claimed(event) {
   if (toggling(event)) {
     event.preventDefault();

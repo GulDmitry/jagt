@@ -15,10 +15,11 @@ const STALE = [
   "empty-project",
 ];
 
+/** @param {boolean} yes */
 export const connected = (yes) => {
-  document.getElementById("offline").hidden = yes;
+  /** @type {HTMLElement} */ (document.getElementById("offline")).hidden = yes;
   document.body.classList.toggle("stale", !yes);
   STALE.forEach((id) => {
-    document.getElementById(id).inert = !yes;
+    /** @type {HTMLElement} */ (document.getElementById(id)).inert = !yes;
   });
 };

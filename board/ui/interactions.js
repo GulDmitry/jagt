@@ -1,10 +1,12 @@
 import { api } from "../core/api.js";
+import { closest, within } from "../core/dom.js";
 import * as store from "../core/store.js";
 
 const BATCH = 50;
 const QUEUE = 200;
 const SETTLE = 2000;
 
+/** @type {{ queue: { at: number, control: string, status: string | null }[], due: number, required: Set<string> | null, jobsFailed: boolean, sighting: boolean }} */
 const state = {
   queue: [],
   due: 0,
@@ -13,6 +15,7 @@ const state = {
   sighting: !navigator.locks,
 };
 
+/** @param {HTMLElement | SVGElement} node */
 const named = (node) => {
   const { action, verb, phase, place } = node.dataset;
   if (action) return place ? `action:${action}.${place}` : `action:${action}`;
@@ -28,6 +31,7 @@ const named = (node) => {
 };
 
 // The server refuses a whole batch over one malformed name, so a name is made to fit before it is queued.
+/** @param {string} name */
 const fitted = (name) =>
   name
     .toLowerCase()
@@ -35,6 +39,10 @@ const fitted = (name) =>
     .replace(/^[^a-z0-9]+/, "")
     .slice(0, 48);
 
+/**
+ * @param {string | null} name
+ * @param {string} [taskId]
+ */
 export const note = (name, taskId) => {
   const control = name && fitted(name);
   if (!control) return;
@@ -55,6 +63,10 @@ navigator.locks?.request(
 );
 
 // A sighting is logged when it BEGINS: the first board seen only seeds, since when it turned required is unknown.
+/**
+ * @param {import("../core/store.js").Task[]} tasks
+ * @param {boolean} failing
+ */
 export function watch(tasks, failing) {
   if (failing && !state.jobsFailed) note("shown:jobs-failed");
   state.jobsFailed = failing;
@@ -64,9 +76,10 @@ export function watch(tasks, failing) {
       .filter((task) => task.attention === "REQUIRED")
       .map((task) => task.id),
   );
-  if (state.required && state.sighting)
+  const before = state.required;
+  if (before && state.sighting)
     tasks
-      .filter((task) => now.has(task.id) && !state.required.has(task.id))
+      .filter((task) => now.has(task.id) && !before.has(task.id))
       .forEach((task) => note("shown:required", task.id));
   state.required = now;
 }
@@ -88,17 +101,19 @@ function flush() {
 document.addEventListener(
   "click",
   (event) => {
-    const control = event.target.closest?.(
-      "button, a, input[type=checkbox], select",
-    );
+    const control = closest(event, "button, a, input[type=checkbox], select");
     if (control)
       note(
         named(control),
-        control.closest("[data-task]")?.dataset.task ||
-          control.closest("[data-row]")?.dataset.row,
+        within(control, "[data-task]")?.dataset.task ||
+          within(control, "[data-row]")?.dataset.row,
       );
   },
   true,
 );
-document.addEventListener("submit", (event) => note(named(event.target)), true);
+document.addEventListener(
+  "submit",
+  (event) => event.target instanceof HTMLElement && note(named(event.target)),
+  true,
+);
 window.addEventListener("pagehide", flush);

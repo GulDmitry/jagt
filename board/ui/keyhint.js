@@ -1,5 +1,6 @@
 import { t } from "../core/i18n.js";
 
+/** @param {import("../core/store.js").Action | undefined} rowVerb */
 export const said = (rowVerb) =>
   [
     t("keys.walk"),

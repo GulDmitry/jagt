@@ -28,7 +28,7 @@ const KEYS = [
 ];
 
 /**
- * @typedef {import("./Card.js").CardTask} CardTask
+ * @typedef {import("../core/store.js").Task} CardTask
  * @typedef {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, now: number }} CardProps
  * @typedef {CardProps & { offers: { part?: string }[] }} PaneCard
  * @typedef {{ name?: string, names?: string[], held?: boolean, shown?: string }} Window

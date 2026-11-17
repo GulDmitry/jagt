@@ -1,55 +1,66 @@
+import { closest } from "../core/dom.js";
 import * as flags from "./flags.js";
-import { render } from "./render.js";
 import { press } from "./say.js";
 import * as selection from "./selection.js";
 import * as tabs from "./tabs.js";
 
-const board = document.getElementById("board");
+/** @typedef {HTMLElement | SVGElement} Hit */
+/** @typedef {[selector: string, handle: (hit: Hit) => void, repaints: boolean]} Route */
+
+const board = /** @type {HTMLElement} */ (document.getElementById("board"));
+
+/**
+ * @param {Hit} hit
+ * @param {string} name
+ */
+const datum = (hit, name) => hit.dataset[name] ?? "";
+
+/** @type {Route[]} */
+const routes = [
+  ["button[data-back]", () => selection.back(), true],
+  ["button[data-tab]", (hit) => tabs.choose(datum(hit, "tab")), true],
+  [
+    "button[data-window]",
+    (hit) => tabs.pickWindow(hit.dataset.window || null),
+    true,
+  ],
+  [
+    "button[data-file]",
+    (hit) => tabs.pick(datum(hit, "task"), datum(hit, "file")),
+    true,
+  ],
+  [
+    "button[data-select]",
+    (hit) => selection.choose(datum(hit, "select")),
+    true,
+  ],
+  ["button[data-flag]", (hit) => flags.toggle(datum(hit, "flag")), true],
+  [
+    "button[data-press]",
+    (hit) => press(datum(hit, "task"), datum(hit, "press")),
+    false,
+  ],
+];
 
 // A click carries NAMES, never a captured task: a rebuilt row cannot act for the old one.
-export const onClick = ({ action }) => {
+/** @param {{ action: (taskId: string, actionId: string) => void, repaint: () => void }} handlers */
+export const onClick = ({ action, repaint }) => {
+  /** @type {Route[]} */
+  const all = [
+    ...routes,
+    [
+      "button[data-action]",
+      (hit) => action(datum(hit, "task"), datum(hit, "action")),
+      false,
+    ],
+  ];
   board.onclick = (event) => {
-    if (event.target.closest("button[data-back]")) {
-      selection.back();
-      render();
+    for (const [selector, handle, repaints] of all) {
+      const hit = closest(event, selector);
+      if (!hit) continue;
+      handle(hit);
+      if (repaints) repaint();
       return;
     }
-    const tab = event.target.closest("button[data-tab]");
-    if (tab) {
-      tabs.choose(tab.dataset.tab);
-      render();
-      return;
-    }
-    const named = event.target.closest("button[data-window]");
-    if (named) {
-      tabs.pickWindow(named.dataset.window || null);
-      render();
-      return;
-    }
-    const file = event.target.closest("button[data-file]");
-    if (file) {
-      tabs.pick(file.dataset.task, file.dataset.file);
-      render();
-      return;
-    }
-    const picked = event.target.closest("button[data-select]");
-    if (picked) {
-      selection.choose(picked.dataset.select);
-      render();
-      return;
-    }
-    const flagged = event.target.closest("button[data-flag]");
-    if (flagged) {
-      flags.toggle(flagged.dataset.flag);
-      render();
-      return;
-    }
-    const key = event.target.closest("button[data-press]");
-    if (key) {
-      press(key.dataset.task, key.dataset.press);
-      return;
-    }
-    const button = event.target.closest("button[data-action]");
-    if (button) action(button.dataset.task, button.dataset.action);
   };
 };

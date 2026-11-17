@@ -1,16 +1,18 @@
-import { api } from "../core/api.js";
+import { api, cause } from "../core/api.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import { render } from "./render.js";
 import { toast } from "./toast.js";
 
+/** @type {{ asked: number, painted: number, boardRead: () => void, verbsFailed: boolean, verbsRead: () => void }} */
 const state = {
   asked: 0,
   painted: 0,
-  boardRead: undefined,
+  boardRead: () => {},
   verbsFailed: false,
-  verbsRead: undefined,
+  verbsRead: () => {},
 };
+/** @type {Promise<void>} */
 export const boardArrived = new Promise((resolve) => {
   state.boardRead = resolve;
 });
@@ -36,13 +38,14 @@ export async function refresh() {
     });
     render();
   } catch (e) {
-    toast(t("refresh.backend", { cause: e.message }), true);
+    toast(t("refresh.backend", { cause: cause(e) }), true);
   } finally {
     state.boardRead();
   }
 }
 
 // Settles once the first read of the verbs does, failed or not: a line parsed before it would go to the model.
+/** @type {Promise<void>} */
 export const verbsArrived = new Promise((resolve) => {
   state.verbsRead = resolve;
 });
@@ -56,7 +59,7 @@ export async function refreshVerbs() {
   } catch (e) {
     store.set({ verbs: [] });
     if (!state.verbsFailed)
-      toast(t("refresh.commands", { cause: e.message }), true);
+      toast(t("refresh.commands", { cause: cause(e) }), true);
     state.verbsFailed = true;
   } finally {
     state.verbsRead();

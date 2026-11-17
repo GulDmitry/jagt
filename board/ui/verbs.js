@@ -3,6 +3,7 @@ import { refresh } from "./refresh.js";
 import * as tabs from "./tabs.js";
 import { toast } from "./toast.js";
 
+/** @param {string} verbId */
 export async function runGlobal(verbId) {
   try {
     const result = await api(`/api/commands/${encodeURIComponent(verbId)}`, {
@@ -16,6 +17,11 @@ export async function runGlobal(verbId) {
   }
 }
 
+/**
+ * @param {import("../core/store.js").Task} task
+ * @param {import("../core/store.js").Action} action
+ * @param {string} project
+ */
 export async function post(task, action, project) {
   try {
     const named = project ? `&project=${encodeURIComponent(project)}` : "";

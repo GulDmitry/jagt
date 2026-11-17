@@ -1,10 +1,15 @@
 import { api } from "../core/api.js";
+import { fieldOf } from "../core/dom.js";
 import { t } from "../core/i18n.js";
 import { sending } from "./submit.js";
 
-const form = document.getElementById("project-form");
+const form = /** @type {HTMLFormElement} */ (
+  document.getElementById("project-form")
+);
 
-const said = (name) => form.elements[name].value.trim();
+/** @param {string} name */
+const said = (name) => fieldOf(form, name).value.trim();
+/** @param {string} name */
 const list = (name) => {
   const each = said(name)
     .split(",")
@@ -13,7 +18,10 @@ const list = (name) => {
   return each.length ? each : null;
 };
 
-/** The form adds a project, or saves `editing()`'s; `done` runs once the backend took it. */
+/**
+ * The form adds a project, or saves `editing()`'s; `done` runs once the backend took it.
+ * @param {{ editing: () => string | null, done: () => void }} handlers
+ */
 export const save = ({ editing, done }) => {
   form.onsubmit = (event) => {
     event.preventDefault();

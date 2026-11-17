@@ -5,8 +5,14 @@ import { toast } from "./toast.js";
 import { judge } from "./verdict.js";
 
 // Tier 1 answers for itself, so there is no one message to show and nothing to say while it happens.
+/**
+ * @param {import("./execute.js").Parsed} parsed
+ * @param {{ form: HTMLFormElement, partFor: (part?: string) => import("./execute.js").Part, clear: () => void }} wiring
+ */
 export async function tier1(parsed, { form, partFor, clear }) {
-  const button = form.querySelector("button[type=submit]");
+  const button = /** @type {HTMLButtonElement} */ (
+    form.querySelector("button[type=submit]")
+  );
   button.disabled = true;
   try {
     const answered = await execute(parsed, partFor);

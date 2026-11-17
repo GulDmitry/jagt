@@ -16,13 +16,16 @@ export function node() {
       .catch((e) => toast(refusal(e), true));
   holder.addEventListener("reread", paint);
   holder.onclick = async (event) => {
-    const button = event.target.closest("button[data-job]");
-    if (!button) return;
+    const button =
+      event.target instanceof Element
+        ? event.target.closest("button[data-job]")
+        : null;
+    if (!(button instanceof HTMLElement)) return;
     try {
       toast(
         (
           await api(
-            `/api/commands/run?about=${encodeURIComponent(button.dataset.job)}`,
+            `/api/commands/run?about=${encodeURIComponent(button.dataset.job ?? "")}`,
             { method: "POST" },
           )
         ).message,

@@ -1,11 +1,16 @@
 import { sayTo } from "../core/api.js";
+
 import { t } from "../core/i18n.js";
 import { sending } from "./submit.js";
 import { toast } from "./toast.js";
 
-const reportLine = document.getElementById("report-line");
-const sayInput = document.getElementById("say");
-const working = document.getElementById("said");
+const reportLine = /** @type {HTMLFormElement} */ (
+  document.getElementById("report-line")
+);
+const sayInput = /** @type {HTMLInputElement} */ (
+  document.getElementById("say")
+);
+const working = /** @type {HTMLElement} */ (document.getElementById("said"));
 
 // A worktree file fires no event and the agent's report comes at a round's END: a line just said is followed.
 const EVERY = 3000;
@@ -27,6 +32,7 @@ function giveUp() {
   toast(t("report.silent"));
 }
 
+/** @param {() => void} repaint */
 function waitForTheAnswer(repaint) {
   stopWaiting();
   working.hidden = false;
@@ -37,17 +43,21 @@ function waitForTheAnswer(repaint) {
   );
 }
 
-/** The line typed at an open report goes to `about()`'s session, and the answer is followed with `repaint`. */
+/**
+ * The line typed at an open report goes to `about()`'s session, and the answer is followed with `repaint`.
+ * @param {{ about: () => string | null, repaint: () => void }} handlers
+ */
 export const follow = ({ about, repaint }) => {
   reportLine.onsubmit = (event) => {
     event.preventDefault();
     const line = sayInput.value.trim();
-    if (!line) {
+    const task = about();
+    if (!line || !task) {
       return;
     }
     sending(reportLine, {
       waiting: "",
-      send: () => sayTo(about(), line),
+      send: () => sayTo(task, line),
       done: () => {
         sayInput.value = "";
         waitForTheAnswer(repaint);

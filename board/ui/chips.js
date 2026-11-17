@@ -3,19 +3,27 @@ import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import { full } from "../core/time.js";
 
-const jobsChip = document.getElementById("jobs-pulse");
-const reachChip = document.getElementById("reach-lost");
-const actChip = document.getElementById("act-stopped");
+const jobsChip = /** @type {HTMLButtonElement} */ (
+  document.getElementById("jobs-pulse")
+);
+const reachChip = /** @type {HTMLButtonElement} */ (
+  document.getElementById("reach-lost")
+);
+const actChip = /** @type {HTMLButtonElement} */ (
+  document.getElementById("act-stopped")
+);
 
+/** @param {number} due */
 const left = (due) => (due > 0 ? countdown(due) : t("due"));
 
 // Only a failed run is news: the next one sits in the hover.
 function renderJobs() {
   const jobs = store.jobs();
-  jobsChip.hidden = !jobs || !jobs.failing;
-  if (jobsChip.hidden) {
+  if (!jobs || !jobs.failing) {
+    jobsChip.hidden = true;
     return;
   }
+  jobsChip.hidden = false;
   // The stamp is the last change's, so it goes into the past: past means DUE.
   const due = jobs.nextRunAt ? jobs.nextRunAt - Date.now() : null;
   jobsChip.textContent = t("jobs-failed", {
@@ -66,12 +74,14 @@ export function render() {
   renderStop();
 }
 
+/** @param {(verb: string) => void} press */
 export const onVerbClick = (press) => {
   [actChip, reachChip].forEach((chip) => {
-    chip.onclick = () => press(chip.dataset.verb);
+    chip.onclick = () => press(chip.dataset.verb ?? "");
   });
 };
 
+/** @param {() => void} open */
 export const onJobsClick = (open) => {
   jobsChip.onclick = open;
 };

@@ -9,7 +9,7 @@ import { html } from "./html.js";
  */
 const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
 
-/** @param {{ task: import("./Card.js").CardTask, now: number }} props */
+/** @param {{ task: import("../core/store.js").Task, now: number }} props */
 export const History = ({ task, now }) =>
   html`<section
     class="history"

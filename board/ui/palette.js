@@ -4,20 +4,29 @@ import { boardArrived, verbsArrived } from "./refresh.js";
 import { tier1 } from "./tier1.js";
 import { ask, judge } from "./verdict.js";
 
-const form = document.getElementById("palette");
-const opener = document.getElementById("open-palette");
+const form = /** @type {HTMLFormElement} */ (
+  document.getElementById("palette")
+);
+const opener = /** @type {HTMLElement} */ (
+  document.getElementById("open-palette")
+);
+
+/** @typedef {{ partFor: (part?: string) => import("./execute.js").Part }} Forms */
 
 // Asked here, decided at wiring time, so this module knows no form and no verb by name.
+/** @type {{ forms: Forms }} */
 const state = {
   forms: { partFor: () => ({}) },
 };
 
+/** @param {Forms} wired */
 export const wire = (wired) => {
   state.forms = wired;
 };
 
 export const isOpen = () => !form.hidden;
 
+/** @param {boolean} open */
 function show(open) {
   form.hidden = !open;
   opener.setAttribute("aria-pressed", String(open));
@@ -34,7 +43,7 @@ export const close = () => {
 };
 
 export function toggle() {
-  show(form.hidden);
+  show(Boolean(form.hidden));
   judge();
 }
 

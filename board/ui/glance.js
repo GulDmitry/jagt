@@ -1,15 +1,19 @@
-const icon = document.querySelector('link[rel=icon][type="image/svg+xml"]');
+const found = document.querySelector('link[rel=icon][type="image/svg+xml"]');
+const icon = found instanceof HTMLLinkElement ? found : null;
 const source = icon?.getAttribute("href");
+/** @type {{ drawn: string | null, svg: string | null }} */
 const state = {
   drawn: null,
   svg: null,
 };
 
+/** @param {string} name */
 const token = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+/** @param {string} colour */
 async function dot(colour) {
-  if (!icon) return;
+  if (!icon || !source) return;
   if (!colour) {
     icon.href = source;
     return;
@@ -27,6 +31,7 @@ async function dot(colour) {
 }
 
 // Broken outranks waiting: a red dot is what stopped, an amber one is what only waits on the human.
+/** @param {{ waiting: number, broken: boolean }} counts */
 export function render({ waiting, broken }) {
   document.title = waiting ? `(${waiting}) jagt` : "jagt";
   const colour = broken ? token("--danger") : waiting ? token("--you") : "";

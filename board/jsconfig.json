@@ -10,16 +10,6 @@
     "lib": ["es2023", "dom", "dom.iterable"],
     "skipLibCheck": true
   },
-  "include": [
-    "components/**/*.js",
-    "core/**/*.js",
-    "login.js",
-    "styleguide/**/*.js",
-    "ui/legend/**/*.js",
-    "ui/mermaid*.js",
-    "ui/tips*.js",
-    "ui/toast*.js",
-    "viewer/**/*.js"
-  ],
+  "include": ["**/*.js"],
   "exclude": ["node_modules", "vendor"]
 }

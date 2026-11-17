@@ -1,7 +1,14 @@
-import { text, api } from "../core/api.js";
+import { text, api, cause } from "../core/api.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 
+/** @typedef {import("../core/store.js").Task} Task */
+/** @typedef {import("../core/store.js").Verb} Verb */
+/** @typedef {import("../components/Pane.js").Shown} Shown */
+/** @typedef {import("../components/Pane.js").Reading} Reading */
+/** @typedef {import("../components/Pane.js").Peek & { id?: string }} Peeked */
+
+/** @type {{ tab: string, read: { key: string | null, shown: Shown, stale: boolean }, asked: number, windowName: string | null, peeked: Peeked, again: () => void, viewer: Reading | null }} */
 const state = {
   tab: "overview",
   read: { key: null, shown: null, stale: false },
@@ -12,8 +19,10 @@ const state = {
   viewer: null,
 };
 
+/** @type {Map<string, string>} */
 const picked = new Map();
 
+/** @param {Task} task */
 const artifacts = async (task) => {
   const id = encodeURIComponent(task.id);
   const names = await api(`/api/tasks/files?task=${id}`);
@@ -27,6 +36,7 @@ const artifacts = async (task) => {
 };
 
 // The task's session, or a window jagt opened that is no task's.
+/** @param {Task} task */
 async function sessionOf(task) {
   const names = await api("/api/windows").catch(() => []);
   const name = names.includes(state.windowName) ? state.windowName : null;
@@ -35,12 +45,16 @@ async function sessionOf(task) {
     : `/api/tasks/screen?task=${encodeURIComponent(task.id)}`;
   const screen = await api(path).catch((e) => ({
     held: true,
-    shown: t("tabs.unread", { cause: e.message }),
+    shown: t("tabs.unread", { cause: cause(e) }),
   }));
   return { ...screen, names, name };
 }
 
 // The Session tab reads the whole screen itself.
+/**
+ * @param {Task} task
+ * @param {() => void} repaint
+ */
 function glance(task, repaint) {
   if (state.tab === "session") return;
   api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`).then(
@@ -56,25 +70,32 @@ function glance(task, repaint) {
   );
 }
 
+/** @param {Task} task */
 export const peek = (task) => (state.peeked.id === task.id ? state.peeked : {});
 
+/** @param {string | null} name */
 export const pickWindow = (name) => {
   state.windowName = name;
   forget();
 };
 
+/** @type {Record<string, (task: Task, offer?: Verb) => Promise<Shown>>} */
 const sources = {
   artifacts,
   diff: (task) => api(`/api/tasks/diff?task=${encodeURIComponent(task.id)}`),
   session: sessionOf,
   round: (task, offer) =>
     text(
-      `/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`,
+      `/api/commands/${offer?.id}?about=${encodeURIComponent(task.alias || task.id)}`,
     ),
 };
 
 export const current = () => state.tab;
 
+/**
+ * @param {string} task
+ * @param {string} name
+ */
 export const pick = (task, name) => {
   picked.set(task, name);
   forget();
@@ -90,12 +111,17 @@ const EVERY = 5000;
 
 setInterval(() => state.again(), EVERY);
 
+/** @param {string} id */
 export const choose = (id) => {
   state.tab = id;
   if (id === "code" && state.viewer?.failure) state.viewer = null;
   if (id === "diff") forget();
 };
 
+/**
+ * @param {Task} task
+ * @param {() => void} repaint
+ */
 export function shown(task, repaint) {
   state.again = () =>
     state.tab === "session" ? (forget(), repaint()) : glance(task, repaint);
@@ -108,7 +134,7 @@ export function shown(task, repaint) {
           repaint();
         },
         (e) => {
-          state.viewer = { failure: t("tabs.unread", { cause: e.message }) };
+          state.viewer = { failure: t("tabs.unread", { cause: cause(e) }) };
           repaint();
         },
       );
@@ -134,7 +160,7 @@ export function shown(task, repaint) {
       if (mine !== state.asked) return;
       state.read = {
         key,
-        shown: t("tabs.unread", { cause: e.message }),
+        shown: t("tabs.unread", { cause: cause(e) }),
         stale: false,
       };
       repaint();

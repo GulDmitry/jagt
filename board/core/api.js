@@ -76,8 +76,15 @@ export const pressKey = (taskId, key) =>
 // Every action reloads the board: by the time such a refusal is read the view is right; say so.
 const STALE_VIEW = ["NO_SUCH_TASK", "ACTION_NOT_AVAILABLE"];
 
-/** @param {{ code?: string, message: string }} e */
-export const refusal = (e) =>
-  STALE_VIEW.includes(e.code ?? "")
-    ? `${e.message}\n\nThe board is up to date now.`
-    : e.message;
+/** @param {unknown} e */
+export const refusal = (e) => {
+  const failure = e instanceof Error ? e : new Error(String(e));
+  const code =
+    "code" in failure && typeof failure.code === "string" ? failure.code : "";
+  return STALE_VIEW.includes(code)
+    ? `${failure.message}\n\nThe board is up to date now.`
+    : failure.message;
+};
+
+/** @param {unknown} e */
+export const cause = (e) => (e instanceof Error ? e.message : String(e));

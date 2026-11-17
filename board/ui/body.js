@@ -1,13 +1,24 @@
 import { render as paint } from "preact";
+
 import { list } from "./list.js";
 import { pane } from "./pane.js";
 import * as selection from "./selection.js";
 import { hideStaleTip } from "./tips.js";
 
-const board = document.getElementById("board");
+/** @typedef {import("./view.js").View} View */
 
+const board = /** @type {HTMLElement} */ (document.getElementById("board"));
+
+/**
+ * @param {View} view
+ * @param {() => void} repaint
+ */
 export function body(view, repaint) {
+  const { open } = view;
   board.classList.toggle("open", selection.isOpen());
-  paint(view.open ? [list(view), pane(view, repaint)] : null, board);
+  paint(
+    open ? [list({ ...view, open }), pane({ ...view, open }, repaint)] : null,
+    board,
+  );
   hideStaleTip(null);
 }

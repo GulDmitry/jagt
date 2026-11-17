@@ -1,12 +1,15 @@
+import { closest } from "../core/dom.js";
 import * as filters from "./filters.js";
 import { render } from "./render.js";
 import * as selection from "./selection.js";
 
-document.getElementById("report-body").addEventListener("click", (event) => {
-  const id = event.target.closest("a[data-task]")?.dataset.task;
+/** @type {HTMLElement} */ (
+  document.getElementById("report-body")
+).addEventListener("click", (event) => {
+  const id = closest(event, "a[data-task]")?.dataset.task;
   if (!id) return;
   event.preventDefault();
-  document.getElementById("report").close();
+  /** @type {HTMLDialogElement} */ (document.getElementById("report")).close();
   filters.box.value = id;
   selection.choose(id);
   render();

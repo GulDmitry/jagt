@@ -7,8 +7,8 @@ import { html } from "./html.js";
 import { marked, watchLine } from "./Meta.js";
 
 /**
- * @typedef {import("./Card.js").CardTask} CardTask
- * @typedef {import("./Card.js").Action} Action
+ * @typedef {import("../core/store.js").Task} CardTask
+ * @typedef {import("../core/store.js").Action} Action
  * @typedef {{ name: string, kind: string, tasks: CardTask[], named?: boolean }} Group
  */
 

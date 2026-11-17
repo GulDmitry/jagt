@@ -1,6 +1,6 @@
 /**
- * @typedef {import("../components/Card.js").Action} Action
- * @typedef {import("../components/Card.js").CardTask} CardTask
+ * @typedef {import("../core/store.js").Action} Action
+ * @typedef {import("../core/store.js").Task} CardTask
  */
 
 const MINUTE = 60000;

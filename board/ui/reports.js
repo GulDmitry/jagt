@@ -4,10 +4,11 @@ import { openReport } from "./dialogs.js";
 import * as menu from "./menu.js";
 import { parts } from "./parts.js";
 
+/** @param {string} id */
 const openVerb = (id) => {
   const verb = store.verbs().find((each) => each.id === id);
   return openReport(verb ? `${id} — ${verb.hint}` : id, `/api/commands/${id}`, {
-    extra: parts[verb?.part]?.section?.(),
+    extra: parts[verb?.part ?? ""]?.section?.(),
   });
 };
 

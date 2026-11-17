@@ -4,6 +4,10 @@ import * as flags from "./flags.js";
 import * as selection from "./selection.js";
 import { shown } from "./shown.js";
 
+/** @typedef {ReturnType<typeof view>} View */
+/** @typedef {Omit<View, "open"> & { open: import("../core/store.js").Task }} OpenView */
+
+/** @type {{ walked: import("../core/store.js").Task[] }} */
 const state = {
   walked: [],
 };

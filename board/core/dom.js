@@ -1,10 +1,12 @@
 // Built, never interpolated into markup: ids, aliases and project keys come out of a file a human edits by hand.
 
 /**
- * @param {string} tag
+ * @template {keyof HTMLElementTagNameMap} K
+ * @param {K} tag
  * @param {string} [className]
  * @param {string} [text]
  * @param {...(Node | string)} children
+ * @returns {HTMLElementTagNameMap[K]}
  */
 export const make = (tag, className, text = "", ...children) => {
   const node = document.createElement(tag);
@@ -56,4 +58,39 @@ export const link = (href, text) => {
   anchor.rel = "noreferrer";
   anchor.textContent = text;
   return anchor;
+};
+
+/**
+ * @param {EventTarget | null} node
+ * @param {string} selector
+ */
+export const within = (node, selector) => {
+  const found = node instanceof Element ? node.closest(selector) : null;
+  return found instanceof HTMLElement || found instanceof SVGElement
+    ? found
+    : null;
+};
+
+/**
+ * @param {Event} event
+ * @param {string} selector
+ */
+export const closest = (event, selector) => within(event.target, selector);
+
+/** @param {HTMLFormElement} form */
+export const submitButton = (form) => {
+  const button = form.querySelector("button[type=submit]");
+  if (!(button instanceof HTMLButtonElement))
+    throw new Error("no submit button");
+  return button;
+};
+
+/**
+ * @param {HTMLFormElement} form
+ * @param {string} name
+ */
+export const fieldOf = (form, name) => {
+  const field = form.elements.namedItem(name);
+  if (!(field instanceof HTMLInputElement)) throw new Error(`no input ${name}`);
+  return field;
 };

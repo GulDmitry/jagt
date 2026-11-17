@@ -1,20 +1,24 @@
-import { make } from "../core/dom.js";
+import { make, within } from "../core/dom.js";
 import { choose, current, languages, t } from "../core/i18n.js";
 
-const gear = document.getElementById("gear");
-const list = document.getElementById("gear-menu");
+const gear = /** @type {HTMLElement} */ (document.getElementById("gear"));
+const list = /** @type {HTMLElement} */ (document.getElementById("gear-menu"));
 const root = document.documentElement;
 
+/** @param {string} choice */
 const paint = (choice) => {
   if (choice === "auto") delete root.dataset.theme;
   else root.dataset.theme = choice;
   list
     .querySelectorAll("button[value]")
-    .forEach((button) =>
-      button.setAttribute("aria-pressed", String(button.value === choice)),
+    .forEach(
+      (button) =>
+        button instanceof HTMLButtonElement &&
+        button.setAttribute("aria-pressed", String(button.value === choice)),
     );
 };
 
+/** @param {boolean} open */
 const shut = (open) => {
   list.hidden = !open;
   gear.setAttribute("aria-expanded", String(open));
@@ -39,12 +43,14 @@ const offer = () =>
 fetch("/api/session")
   .then((response) => response.json())
   .then(({ login }) => {
-    document.getElementById("gear-logout").hidden = !login;
+    /** @type {HTMLElement} */ (document.getElementById("gear-logout")).hidden =
+      !login;
   })
   .catch(() => {});
 gear.addEventListener("click", offer, { once: true });
-gear.onclick = () => shut(list.hidden);
+gear.onclick = () => shut(Boolean(list.hidden));
 list.onclick = ({ target }) => {
+  if (!(target instanceof HTMLElement)) return;
   if (target.id === "gear-logout") {
     fetch("/logout", { method: "POST" }).finally(() =>
       window.location.assign("/"),
@@ -56,20 +62,20 @@ list.onclick = ({ target }) => {
     window.location.reload();
     return;
   }
-  if (!target.value) return;
+  const choice = target instanceof HTMLButtonElement ? target.value : "";
+  if (!choice) return;
   try {
-    if (target.value === "auto") localStorage.removeItem("theme");
-    else localStorage.theme = target.value;
+    if (choice === "auto") localStorage.removeItem("theme");
+    else localStorage.theme = choice;
   } catch {
     // the choice then lasts until reload
   }
-  paint(target.value);
+  paint(choice);
   shut(false);
 };
 document.addEventListener(
   "pointerdown",
-  (event) => event.target.closest(".menu") || shut(false),
+  (event) => within(event.target, ".menu") || shut(false),
 );
-paint(
-  ["light", "dark"].includes(root.dataset.theme) ? root.dataset.theme : "auto",
-);
+const stored = root.dataset.theme;
+paint(stored === "light" || stored === "dark" ? stored : "auto");

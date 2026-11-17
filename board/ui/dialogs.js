@@ -5,12 +5,20 @@ import { toast } from "./toast.js";
 
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
 // A poll and the board's own event overlap: the read sent last paints.
+/** @typedef {{ path: string | null, about: string | null, body: string, extra: HTMLElement | null }} Showing */
+
+/** @type {{ showing: Showing, asked: number, reread: number }} */
 const state = {
   showing: { path: null, about: null, body: "", extra: null },
   asked: 0,
   reread: 0,
 };
 
+/**
+ * @param {string} title
+ * @param {string} said
+ * @param {HTMLElement | null} [extra]
+ */
 export function showReport(title, said, extra = null) {
   state.asked++;
   state.showing = { path: null, about: null, body: said, extra };
@@ -19,6 +27,11 @@ export function showReport(title, said, extra = null) {
 }
 
 /** False when the report could not be read, the caller deciding what a failed read costs it. */
+/**
+ * @param {string} title
+ * @param {string} path
+ * @param {{ extra?: HTMLElement | null, about?: string | null }} [options]
+ */
 export async function openReport(
   title,
   path,
@@ -50,6 +63,7 @@ export async function repaintReport() {
   state.showing.extra?.dispatchEvent(new Event("reread"));
   const read = state.showing.path;
   const mine = ++state.reread;
+  /** @type {string} */
   let said;
   try {
     said = await text(read);
