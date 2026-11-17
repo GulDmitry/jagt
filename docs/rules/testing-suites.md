@@ -45,4 +45,4 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 ## Planned
 
 - JAGT-102: kind as a second stand engine, `standTest -Pmodelfree -Pengine=kind`.
-- JAGT-96: the board's own unit tests and lint join unit + functional.
+- JAGT-96: the board's own track is built; its `board` CI job runs beside `test`.

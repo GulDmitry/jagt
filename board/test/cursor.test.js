@@ -20,6 +20,18 @@ test("firstWaitingTaskIsCurrent whenTheChoiceLeftTheView", () => {
   assert.equal(current(LIST, "gone", null)?.id, "b");
 });
 
+test("firstWaitingTaskIsCurrent whenTheChoiceLeftTheViewAndAnAliasIsLinked", () => {
+  assert.equal(current(LIST, "gone", "p3")?.id, "b");
+});
+
+test("linkedAliasPicksItsTask whenAnotherTaskComesFirst", () => {
+  assert.equal(current(LIST, null, "p3")?.id, "c");
+});
+
+test("linkedIdPicksItsTask whenAnotherTaskComesFirst", () => {
+  assert.equal(current(LIST, null, "c")?.id, "c");
+});
+
 test("noTaskIsCurrent whenNothingIsShown", () => {
   assert.equal(current([], null, null), null);
 });
@@ -30,7 +42,24 @@ test("stepStopsAtTheEnds whenWalkingPastThem", () => {
   assert.equal(stepTarget(LIST, "a", 1), "b");
 });
 
+test("stepMovesOneTask whenWalkingInsideTheList", () => {
+  assert.equal(stepTarget(LIST, "b", 1), "c");
+  assert.equal(stepTarget(LIST, "b", -1), "a");
+});
+
+test("noStepTarget whenTheListIsEmpty", () => {
+  assert.equal(stepTarget([], undefined, 1), undefined);
+});
+
 test("nextRequiredWraps whenNoneWaitsAfterTheCursor", () => {
   assert.equal(nextRequiredTarget(LIST, "c"), "b");
   assert.equal(nextRequiredTarget(LIST, "a"), "b");
+});
+
+test("nextRequiredSkipsTheCursor whenWaitingTasksLieOnBothSides", () => {
+  assert.equal(nextRequiredTarget(LIST, "b"), "c");
+});
+
+test("noRequiredTarget whenTheListIsEmpty", () => {
+  assert.equal(nextRequiredTarget([], undefined), undefined);
 });

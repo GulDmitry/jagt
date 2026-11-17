@@ -59,11 +59,11 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### The board is tested in a browser
 
-- `boardTest` drives `board/` on the real backend in headless Chromium: grid, buttons, repaint. Pure modules: `cd board && npm test`.
-- Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its
-  `@MockitoBean`s stub whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`,
-  `EditorDriver`, a `ReviewRepliesReport` spy; e2e's stub only ports.
-- Browser libraries are one list (`scripts/linux-test-deps.sh`); geometry is an element in a sized viewport, never a screenshot.
+- `boardTest` drives `board/` on the real backend in headless Chromium (libraries: `scripts/linux-test-deps.sh`): grid, buttons, repaint.
+- Its own track, `cd board`: `npm run lint` (Prettier, ESLint, tsc, jscpd), `npm test` (node --test, c8), `npm run mutate` (Stryker); CI job `board`.
+- Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its `@MockitoBean`s stub
+  whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`,
+  a `ReviewRepliesReport` spy; e2e's stub only ports. Geometry is an element in a sized viewport, never a screenshot.
 
 ### The e2e matrix and the model evals
 

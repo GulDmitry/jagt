@@ -20,7 +20,8 @@ dependencies {
 
 processResources {
     from('../../board') {
-        exclude 'node_modules/**', 'test/**', 'package*.json', 'eslint.config.js', 'jsconfig.json', '.prettierignore'
+        exclude 'node_modules/**', 'test/**', 'package*.json', 'eslint.config.js', 'jsconfig.json', '.prettierignore',
+                '.c8rc.json', '.jscpd.json', 'stryker.config.mjs', 'coverage/**', '.stryker-tmp/**'
         into 'static'
     }
     from('../../contracts') {

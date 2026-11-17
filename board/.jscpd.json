@@ -1,0 +1,16 @@
+{
+  "minTokens": 75,
+  "format": ["javascript", "css", "markup"],
+  "path": ["."],
+  "ignore": [
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/i18n/**",
+    "**/coverage/**",
+    "**/.stryker-tmp/**",
+    "**/reports/**"
+  ],
+  "threshold": 0,
+  "reporters": ["console"],
+  "gitignore": false
+}

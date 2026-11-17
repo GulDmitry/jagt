@@ -4,3 +4,5 @@ i18n/
 *.webmanifest
 package-lock.json
 coverage/
+.stryker-tmp/
+reports/

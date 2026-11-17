@@ -1,0 +1,17 @@
+{
+  "include": [
+    "ui/aliasorder.js",
+    "ui/cursor.js",
+    "ui/route.js",
+    "ui/taskfilter.js",
+    "core/api.js",
+    "core/format.js",
+    "core/grammar.js",
+    "core/i18n.js",
+    "core/store.js",
+    "core/time.js"
+  ],
+  "check-coverage": true,
+  "per-file": true,
+  "lines": 80
+}

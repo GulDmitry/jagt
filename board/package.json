@@ -3,12 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "prettier --check . && eslint . && tsc -p jsconfig.json && tsc -p test/jsconfig.json",
+    "lint": "prettier --check . && eslint . && tsc -p jsconfig.json && tsc -p test/jsconfig.json && jscpd",
     "format": "prettier --write .",
-    "test": "c8 --check-coverage --per-file --lines 80 --include=ui/aliasorder.js --include=ui/cursor.js --include=ui/route.js --include=ui/taskfilter.js --include=core/api.js--include=core/format.js --include=core/grammar.js --include=core/i18n.js --include=core/store.js --include=core/time.js node --test \"test/**/*.test.js\""
+    "test": "c8 node --test \"test/**/*.test.js\"",
+    "mutate": "stryker run"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@stryker-mutator/core": "10.1.1",
     "@types/node": "22.19.0",
     "c8": "12.0.0",
     "eslint": "10.15.0",
@@ -16,6 +18,7 @@
     "eslint-plugin-import-x": "4.18.1",
     "globals": "17.14.0",
     "htm": "3.1.1",
+    "jscpd": "5.4.3",
     "preact": "11.0.1",
     "prettier": "3.10.1",
     "typescript": "7.0.2"

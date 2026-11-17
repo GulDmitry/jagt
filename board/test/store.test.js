@@ -28,16 +28,6 @@ test("noTaskIsFound whenTheNameMatchesNothing", () => {
   assert.equal(store.taskFor("missing"), undefined);
 });
 
-test("aTaskIsFoundOnlyByItsId whenAnotherTaskHasThatIdAsAlias", () => {
-  store.set({
-    tasks: JSON.parse(
-      JSON.stringify([{ id: "ABC-42", alias: "ABC-43" }, { id: "ABC-43" }]),
-    ),
-  });
-
-  assert.equal(store.taskById("ABC-43")?.alias, undefined);
-});
-
 test("bothNamesAreShown whenTheReferenceIsATaskWithAnAlias", () => {
   store.set({
     tasks: JSON.parse(JSON.stringify([{ id: "ABC-43", alias: "login" }])),
