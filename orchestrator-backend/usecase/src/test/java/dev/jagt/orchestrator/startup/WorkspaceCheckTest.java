@@ -18,6 +18,7 @@ class WorkspaceCheckTest {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
+            .withData(root.toString())
             .withStateFile(root.resolve("state.json").toString());
 
     assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems()).isEmpty();
@@ -28,6 +29,7 @@ class WorkspaceCheckTest {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
+            .withData(root.toString())
             .withStateFile(root.resolve("gone").resolve("state.json").toString());
 
     assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
@@ -55,6 +57,7 @@ class WorkspaceCheckTest {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
+            .withData(root.toString())
             .withStateFile(stateDir.resolve("state.json").toString());
     assertThat(stateDir.toFile().setWritable(false)).isTrue();
 
@@ -74,7 +77,10 @@ class WorkspaceCheckTest {
   void refusesStateFileItCannotWrite(@TempDir Path root) throws Exception {
     Path state = Files.createFile(root.resolve("state.json"));
     OrchestratorProperties properties =
-        OrchestratorProperties.defaults().withRoot(root.toString()).withStateFile(state.toString());
+        OrchestratorProperties.defaults()
+            .withRoot(root.toString())
+            .withData(root.toString())
+            .withStateFile(state.toString());
     assertThat(state.toFile().setWritable(false)).isTrue();
 
     assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())

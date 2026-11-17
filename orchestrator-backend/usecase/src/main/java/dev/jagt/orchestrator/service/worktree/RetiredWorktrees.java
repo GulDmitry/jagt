@@ -34,7 +34,7 @@ public class RetiredWorktrees {
     for (TaskRepo repo : repos) {
       if (repo.project() == null) {
         sessions.forgetWorktree(Path.of(repo.worktreePath()));
-        removeScratch(Path.of(repo.worktreePath()));
+        removeScratch(taskId, Path.of(repo.worktreePath()));
         continue;
       }
       // The agent's record of the worktree goes too, or the next session there stops at the prompt
@@ -57,6 +57,9 @@ public class RetiredWorktrees {
       // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
       gitWorktrees.removeDeployWorktreeIfPresent(
           projectPath, paths.deployWorktree(repo.project(), taskId), taskId);
+      Path recorded = Path.of(repo.worktreePath());
+      gitWorktrees.removeDeployWorktreeIfPresent(
+          projectPath, recorded.resolveSibling(recorded.getFileName() + "-deploy"), taskId);
       // A diff opened from the board cuts throwaway checkouts in the temp directory; nothing else
       // ends them.
       gitWorktrees.removeDiffWorktrees(projectPath, taskId, Objects.requireNonNull(repo.project()));
@@ -64,8 +67,8 @@ public class RetiredWorktrees {
     return anyProjectMissing;
   }
 
-  private void removeScratch(Path folder) {
-    if (folder.toAbsolutePath().normalize().startsWith(paths.scratch())) {
+  private void removeScratch(String taskId, Path folder) {
+    if (paths.isScratchOf(folder, taskId)) {
       WorktreeFiles.deleteTree(folder);
     }
   }

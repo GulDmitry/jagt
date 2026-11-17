@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-11-15.
+Accepted 2026-11-15; the default is superseded by [0190](0190-the-data-folder-is-data-under-the-root.md).
 
 ## Context
 

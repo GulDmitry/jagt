@@ -20,13 +20,15 @@ class DebugReadsTest {
 
   @Test
   void returnsTheLastLinesOfTheStopRecord(@TempDir Path root) throws IOException {
-    Files.writeString(root.resolve("stops.jsonl"), "one\ntwo\nthree\n");
+    Files.createDirectories(root.resolve("records"));
+    Files.writeString(root.resolve("records/stops.jsonl"), "one\ntwo\nthree\n");
 
     assertThat(
             new DebugReads(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
+                            .withData(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
                     mock(StateService.class),
                     mock(AgentRuntime.class))
@@ -36,8 +38,9 @@ class DebugReadsTest {
 
   @Test
   void returnsTheLinesOfRecordHoldingMalformedByte(@TempDir Path root) throws IOException {
+    Files.createDirectories(root.resolve("records"));
     Files.write(
-        root.resolve("stops.jsonl"),
+        root.resolve("records/stops.jsonl"),
         new byte[] {
           'o', 'n', 'e', '\n', 't', 'w', (byte) 0xC3, '\n', 't', 'h', 'r', 'e', 'e', '\n'
         });
@@ -47,6 +50,7 @@ class DebugReadsTest {
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
+                            .withData(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
                     mock(StateService.class),
                     mock(AgentRuntime.class))
@@ -56,13 +60,15 @@ class DebugReadsTest {
 
   @Test
   void returnsTheReviewedStopsBesideTheStateFile(@TempDir Path root) throws IOException {
-    Files.writeString(root.resolve("stops-reviewed.jsonl"), "verdict\n");
+    Files.createDirectories(root.resolve("records"));
+    Files.writeString(root.resolve("records/stops-reviewed.jsonl"), "verdict\n");
 
     assertThat(
             new DebugReads(
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
+                            .withData(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
                     mock(StateService.class),
                     mock(AgentRuntime.class))
@@ -78,6 +84,7 @@ class DebugReadsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
+                        .withData(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
                 mock(StateService.class),
                 mock(AgentRuntime.class))
@@ -91,7 +98,8 @@ class DebugReadsTest {
 
   @Test
   void leavesTheRecordAndTheSessionUntouchedByAnyRead(@TempDir Path root) throws IOException {
-    Files.writeString(root.resolve("stops.jsonl"), "one\ntwo\n");
+    Files.createDirectories(root.resolve("records"));
+    Files.writeString(root.resolve("records/stops.jsonl"), "one\ntwo\n");
     StateService state = mock(StateService.class);
     AgentRuntime runtime = mock(AgentRuntime.class);
     DebugReads reads =
@@ -99,6 +107,7 @@ class DebugReadsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
+                    .withData(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
             state,
             runtime);
@@ -106,7 +115,7 @@ class DebugReadsTest {
     reads.stops(1);
     reads.stopsReviewed(1);
 
-    assertThat(Files.readString(root.resolve("stops.jsonl"))).isEqualTo("one\ntwo\n");
+    assertThat(Files.readString(root.resolve("records/stops.jsonl"))).isEqualTo("one\ntwo\n");
     verifyNoInteractions(state, runtime);
   }
 }

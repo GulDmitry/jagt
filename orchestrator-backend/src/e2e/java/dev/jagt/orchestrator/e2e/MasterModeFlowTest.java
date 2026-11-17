@@ -221,7 +221,7 @@ class MasterModeFlowTest extends FlowHarness.World {
         @Test
         void handsDeployConflictToTheSessionAndFinishesTheDeployOnceItIsResolved()
             throws Exception {
-          Path resolveIn = flow.worktree().resolveSibling(TASK + "-deploy");
+          Path resolveIn = flow.worktree().resolveSibling("proj-deploy");
           assertThat(
                   Files.readString(flow.worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE))
                       .lines())

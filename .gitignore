@@ -84,3 +84,5 @@ roles/*/*
 
 # dated measurements, the owner's own data
 /measurements.md
+# Everything jagt writes: state, records, clones, worktrees, logs
+/data/

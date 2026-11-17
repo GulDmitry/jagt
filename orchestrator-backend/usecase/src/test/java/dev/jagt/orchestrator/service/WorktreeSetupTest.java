@@ -43,7 +43,8 @@ class WorktreeSetupTest {
   @BeforeEach
   void setUp() throws Exception {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()));
     setup = new WorktreeSetup(runtime, paths, config, new FreshWorktree(briefing, processes));
     project = Files.createDirectories(root.resolve("repo"));
     worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
@@ -116,7 +117,7 @@ class WorktreeSetupTest {
   void letsTheSessionReachTheDeployWorktreeItsConflictsWouldWaitIn() throws Exception {
     setup.fill(NewTask.builder("ABC-1", "repo").build(), deployRepo, List.of(deployRepo));
 
-    verify(runtime).admit(worktree, root.resolve("worktrees/repo/ABC-1-deploy"));
+    verify(runtime).admit(worktree, root.resolve("tasks/ABC-1/worktrees/repo-deploy"));
   }
 
   @Test
@@ -243,8 +244,8 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void plansInFolderBesideTheStateFileThatHoldsNoGit() {
-    Path folder = root.resolve("scratch/ABC-1");
+  void plansInTheTaskFolderThatHoldsNoGit() {
+    Path folder = root.resolve("tasks/ABC-1/scratch");
     when(runtime.systemKnowledgeFile(folder)).thenReturn(folder.resolve("AGENTS.md"));
     when(briefing.ofScratch(any(), any(), any(), any())).thenReturn("the scratch briefing");
 

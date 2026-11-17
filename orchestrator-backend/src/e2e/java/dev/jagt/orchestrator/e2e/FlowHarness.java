@@ -167,7 +167,7 @@ final class FlowHarness {
   }
 
   Path webWorktree() {
-    return workspace.resolve("root/worktrees/web").resolve(task);
+    return workspace.resolve("root/tasks").resolve(task).resolve("worktrees/web");
   }
 
   String webRequest() {
@@ -267,6 +267,6 @@ final class FlowHarness {
   }
 
   Path worktree() {
-    return workspace.resolve("root/worktrees/proj").resolve(task);
+    return workspace.resolve("root/tasks").resolve(task).resolve("worktrees/proj");
   }
 }

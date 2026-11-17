@@ -94,12 +94,12 @@ public class TmuxSessionHost implements SessionHost {
   }
 
   /**
-   * A scratch folder sits beside state.json, which may lie inside a repository: git must not climb
-   * out to it.
+   * A data folder may lie inside a repository: git must not climb out of a scratch folder to it.
    */
   private String outsideGit(Path worktreePath) {
-    return worktreePath.toAbsolutePath().normalize().startsWith(paths.scratch())
-        ? "GIT_CEILING_DIRECTORIES='" + paths.scratch().toString().replace("'", "'\\''") + "' "
+    Path ceiling = paths.scratchCeiling(worktreePath);
+    return ceiling != null
+        ? "GIT_CEILING_DIRECTORIES='" + ceiling.toString().replace("'", "'\\''") + "' "
         : "";
   }
 

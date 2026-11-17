@@ -30,14 +30,14 @@ public record StandSpend(String unknown, Map<String, Figures> kinds) {
     Map<String, Figures> kinds = new TreeMap<>();
     List<String> unknown = new ArrayList<>();
     try {
-      kinds.putAll(headless(root.resolve("usage-by-day.jsonl")));
+      kinds.putAll(headless(root.resolve("records/usage-by-day.jsonl")));
     } catch (NoSuchFileException e) {
       unknown.add("no usage file");
     } catch (IOException | RuntimeException e) {
       unknown.add("usage file unreadable: " + e);
     }
     try {
-      Figures sessions = sessions(root.resolve("state.json"));
+      Figures sessions = sessions(root.resolve("jagt/state.json"));
       if (sessions == null) {
         unknown.add("no session spend in state.json");
       } else {

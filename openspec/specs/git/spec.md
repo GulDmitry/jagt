@@ -68,7 +68,7 @@ the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 - **THEN** status untouched, naming what is already live
 
 ### Requirement: Deploy and revert worktrees live under the data folder
-A deploy worktree SHALL be `<data>/worktrees/<project>/<taskId>-deploy`, a revert one `<taskId>-revert` beside it.
+A deploy worktree SHALL be `<data>/tasks/<taskId>/worktrees/<project>-deploy`, a revert one `<project>-revert` beside it.
 `hasDeployWorktree` asks git who cut it, `mergeIntoAndPush` **refuses** another repository's, only DEPLOY_CONFLICT resumes.
 Every press starts the merge over unless the human's own work sits there
 (staged, committed or part done; committed only with its base on the target).
@@ -84,7 +84,7 @@ Every press starts the merge over unless the human's own work sits there
 
 #### Scenario: Where a deploy cuts
 - **WHEN** a deploy or revert conflicts in a project at any path
-- **THEN** its worktree stands under `<data>/worktrees/<project>/` and nothing is created beside the repository
+- **THEN** its worktree stands under `<data>/tasks/<taskId>/worktrees/` and nothing is created beside the repository
 
 ### Requirement: Commits carry task work, approved once
 A commit SHALL carry task work, never jagt's plumbing (`WorktreeFiles.generated`, out of every diff jagt reads); a modified `AGENTS.md` is the

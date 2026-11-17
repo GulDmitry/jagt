@@ -33,6 +33,7 @@ class UsageLedgerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
+                    .withData(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
             Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
   }
@@ -43,7 +44,7 @@ class UsageLedgerTest {
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(40_000, 0, 900, 0.30));
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(2_000, 50_000, 800, 0.05));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .singleElement()
         .asString()
         .contains(
@@ -55,8 +56,9 @@ class UsageLedgerTest {
 
   @Test
   void foldsDaysPastNinetyIntoTheirMonthSoTheFileStaysBounded() throws Exception {
+    Files.createDirectories(root.resolve("records"));
     Files.writeString(
-        root.resolve("usage-by-day.jsonl"),
+        root.resolve("records/usage-by-day.jsonl"),
         """
         {"period":"2026-06-02","kind":"ROUTE","usage":{"calls":1,"inputTokens":100,"cachedInputTokens":0,"outputTokens":0,"costUsd":0,"coldStarts":0,"warmStarts":0}}
         {"period":"2026-06-20","kind":"ROUTE","usage":{"calls":2,"inputTokens":300,"cachedInputTokens":0,"outputTokens":0,"costUsd":0,"coldStarts":0,"warmStarts":0}}
@@ -64,7 +66,7 @@ class UsageLedgerTest {
 
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .hasSize(2)
         .first()
         .asString()
@@ -77,7 +79,7 @@ class UsageLedgerTest {
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(40_000, 0, 900, 0.30));
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(2_000, 0, 800, 0.05));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .singleElement()
         .asString()
         .contains("\"costUsd\":0.35", "\"maxCallCostUsd\":0.3");
@@ -85,15 +87,16 @@ class UsageLedgerTest {
 
   @Test
   void readsRowWrittenBeforeTheDearestCallWasKept() throws Exception {
+    Files.createDirectories(root.resolve("records"));
     Files.writeString(
-        root.resolve("usage-by-day.jsonl"),
+        root.resolve("records/usage-by-day.jsonl"),
         """
         {"period":"2026-10-13","kind":"ROUTE","usage":{"calls":2,"inputTokens":300,"cachedInputTokens":0,"outputTokens":0,"costUsd":0.5,"coldStarts":0,"warmStarts":0}}
         """);
 
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofCall(1_000, 0, 10, 0.07));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .singleElement()
         .asString()
         .contains("\"calls\":3", "\"maxCallCostUsd\":0.07");
@@ -112,23 +115,26 @@ class UsageLedgerTest {
 
   @Test
   void keepsLineItCannotReadRatherThanDroppingIt() throws Exception {
+    Files.createDirectories(root.resolve("records"));
     Files.writeString(
-        root.resolve("usage-by-day.jsonl"), "{\"period\":\"2026-09-01\",\"kind\":\"GONE_KIND\"}\n");
+        root.resolve("records/usage-by-day.jsonl"),
+        "{\"period\":\"2026-09-01\",\"kind\":\"GONE_KIND\"}\n");
 
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .contains("{\"period\":\"2026-09-01\",\"kind\":\"GONE_KIND\"}")
         .hasSize(2);
   }
 
   @Test
   void dropsBlankLineInsteadOfKeepingItAsOneItCannotRead() throws Exception {
-    Files.writeString(root.resolve("usage-by-day.jsonl"), "\n\n");
+    Files.createDirectories(root.resolve("records"));
+    Files.writeString(root.resolve("records/usage-by-day.jsonl"), "\n\n");
 
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .singleElement()
         .asString()
         .contains("\"kind\":\"MASTER_REVIEW\"");
@@ -140,7 +146,7 @@ class UsageLedgerTest {
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofUnpricedCall(1_000, 0, 10));
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofUnpricedCall(1_000, 0, 10));
 
-    assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/usage-by-day.jsonl")))
         .singleElement()
         .asString()
         .contains("\"unpricedCalls\":2");

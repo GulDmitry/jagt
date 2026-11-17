@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +34,7 @@ public class OrchestratorPaths {
     Path data =
         properties.data() != null && !properties.data().isBlank()
             ? Path.of(properties.data()).toAbsolutePath().normalize()
-            : root;
+            : root.resolve("data");
     this.layout =
         new Layout(
             data,
@@ -41,13 +43,27 @@ public class OrchestratorPaths {
                 : null);
   }
 
-  /** Everything jagt writes; the root where none is configured. */
+  /** Everything jagt writes; {@code data} under the root where none is configured. */
   public Path data() {
     return layout.data();
   }
 
-  public Path worktrees() {
-    return layout.worktrees();
+  /** The folders jagt creates at start. */
+  public List<Path> folders() {
+    return layout.folders();
+  }
+
+  public Path tasks() {
+    return layout.tasks();
+  }
+
+  /** Where a task's checkout of one project is cut. */
+  public Path worktree(String projectKey, String taskId) {
+    return layout.worktree(TaskName.slug(taskId), projectKey);
+  }
+
+  public Path legacyWorktrees(String projectKey) {
+    return layout.legacyWorktrees(projectKey);
   }
 
   /** Where a project named by url is cloned. */
@@ -57,7 +73,7 @@ public class OrchestratorPaths {
 
   /** Where a task's deploy worktree stands in one project. */
   public Path deployWorktree(String projectKey, String taskId) {
-    return worktrees().resolve(projectKey).resolve(TaskName.slug(taskId) + "-deploy");
+    return layout.deployWorktree(TaskName.slug(taskId), projectKey);
   }
 
   /** Every deploy worktree a task of these repositories can stand in, each once. */
@@ -72,12 +88,20 @@ public class OrchestratorPaths {
 
   /** Separate from the deploy worktree, which may be sitting in a conflict. */
   public Path revertWorktree(String projectKey, String taskId) {
-    return worktrees().resolve(projectKey).resolve(TaskName.slug(taskId) + "-revert");
+    return layout.revertWorktree(TaskName.slug(taskId), projectKey);
   }
 
-  /** Where older versions kept the state, before the data folder. */
-  public Path legacyStateFile() {
-    return root.resolve("state.json");
+  /** What an older version kept flat in an older folder, by name, with where it belongs now. */
+  public Map<String, Path> placed() {
+    return layout.placed();
+  }
+
+  public Map<String, Function<String, Path>> placedEntries() {
+    return layout.placedEntries();
+  }
+
+  public @Nullable Path placedVerdicts(String name) {
+    return layout.placedVerdicts(name);
   }
 
   public Path root() {
@@ -143,23 +167,40 @@ public class OrchestratorPaths {
     return layout.usageAlerts();
   }
 
-  /** One copy of the last approved plan per task, named by the task's slug. */
-  public Path planBaselines() {
-    return layout.planBaselines();
+  /** Everything of one task: its worktrees, plan baseline, ticket text and scratch. */
+  public Path task(String taskId) {
+    return layout.task(TaskName.slug(taskId));
   }
 
-  /** One copy of each task's ticket text as first read, named by the task's slug. */
-  public Path ticketTexts() {
-    return layout.ticketTexts();
+  /** The last approved plan of a task. */
+  public Path planBaseline(String taskId) {
+    return layout.planBaseline(TaskName.slug(taskId));
   }
 
-  /** One folder per task that plans before it has a repository, named by the task's slug. */
-  public Path scratch() {
-    return layout.scratch();
+  /** A task's ticket text as first read. */
+  public Path ticketText(String taskId) {
+    return layout.ticketText(TaskName.slug(taskId));
+  }
+
+  /** The folder a task with no repository plans in. */
+  public Path scratch(String taskId) {
+    return layout.scratch(TaskName.slug(taskId));
+  }
+
+  public boolean isScratchOf(Path folder, String taskId) {
+    return layout.isScratchOf(folder, TaskName.slug(taskId));
+  }
+
+  public @Nullable Path scratchCeiling(Path folder) {
+    return layout.scratchCeiling(folder);
   }
 
   public Path archive() {
     return layout.archive();
+  }
+
+  public Path memory() {
+    return layout.memory();
   }
 
   public Path openCodeGate() {
@@ -206,13 +247,7 @@ public class OrchestratorPaths {
     if (override != null && !override.isBlank()) {
       return Path.of(override).toAbsolutePath().normalize();
     }
-    String rootOverride = named(args, "--orchestrator.root=");
-    String rootEnv = System.getenv("ORCHESTRATOR_ROOT");
-    String root = rootOverride != null ? rootOverride : rootEnv;
-    return (root != null && !root.isBlank()
-            ? Path.of(root).toAbsolutePath().normalize()
-            : findRoot())
-        .resolve("jagt.yml");
+    return rootOutside(args).resolve("jagt.yml");
   }
 
   private static @Nullable String named(String[] args, String flag) {
@@ -222,6 +257,20 @@ public class OrchestratorPaths {
       }
     }
     return null;
+  }
+
+  /** Answered WITHOUT a Spring context, as {@link #configFileOutside}. */
+  public static Path dataOutside(String[] args) {
+    return rootOutside(args).resolve("data");
+  }
+
+  private static Path rootOutside(String[] args) {
+    String named = named(args, "--orchestrator.root=");
+    String env = System.getenv("ORCHESTRATOR_ROOT");
+    String root = named != null ? named : env;
+    return root != null && !root.isBlank()
+        ? Path.of(root).toAbsolutePath().normalize()
+        : findRoot();
   }
 
   private static Path findRoot() {

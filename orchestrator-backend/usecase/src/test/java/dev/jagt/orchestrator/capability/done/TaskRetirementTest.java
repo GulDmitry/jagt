@@ -118,15 +118,13 @@ class TaskRetirementTest {
   void leavesNeitherTicketTextNorPlanBaselineForLaterTaskOnTheSameId() throws java.io.IOException {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    java.nio.file.Files.createDirectories(paths.ticketTexts());
-    java.nio.file.Files.writeString(
-        paths.ticketTexts().resolve("ABC-1.md"), "Widget layout is off");
-    java.nio.file.Files.createDirectories(paths.planBaselines());
-    java.nio.file.Files.writeString(paths.planBaselines().resolve("ABC-1.md"), "old plan");
+    java.nio.file.Files.createDirectories(paths.ticketText("ABC-1").getParent());
+    java.nio.file.Files.writeString(paths.ticketText("ABC-1"), "Widget layout is off");
+    java.nio.file.Files.writeString(paths.planBaseline("ABC-1"), "old plan");
 
     retirement.retire("a1");
 
-    assertThat(paths.ticketTexts().resolve("ABC-1.md")).doesNotExist();
-    assertThat(paths.planBaselines().resolve("ABC-1.md")).doesNotExist();
+    assertThat(paths.ticketText("ABC-1")).doesNotExist();
+    assertThat(paths.planBaseline("ABC-1")).doesNotExist();
   }
 }

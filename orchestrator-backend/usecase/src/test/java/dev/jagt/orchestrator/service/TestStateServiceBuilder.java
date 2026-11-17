@@ -27,6 +27,7 @@ public record TestStateServiceBuilder(Path root) {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
+                .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
         new TaskReducer(new TaskChart(Composition.builtIn())),
         events);

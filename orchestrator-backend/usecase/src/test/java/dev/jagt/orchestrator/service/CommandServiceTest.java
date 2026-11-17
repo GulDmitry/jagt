@@ -138,7 +138,7 @@ class CommandServiceTest {
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 
     verify(flow, never()).run("ABC-1", TaskAction.DEPLOY);
-    assertThat(Files.readString(root.resolve("misses.jsonl")))
+    assertThat(Files.readString(root.resolve("records/misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
                 + ":\"master\"}\n");

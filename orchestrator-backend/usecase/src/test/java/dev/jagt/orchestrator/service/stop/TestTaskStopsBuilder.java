@@ -30,7 +30,9 @@ public record TestTaskStopsBuilder(Path root, Arbiter.Profile profile) {
                 new StopLog(
                     new JsonMapper(),
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))),
+                        OrchestratorProperties.defaults()
+                            .withRoot(root.toString())
+                            .withData(root.toString()))))),
         state,
         clock,
         new FlowRules(new TaskChart(Composition.builtIn())));

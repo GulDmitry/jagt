@@ -82,7 +82,8 @@ public class OrchestratorApplication {
                 .filter(arg -> !arg.startsWith("--orchestrator.config-file=")),
             java.util.stream.Stream.of(
                 "--spring.config.additional-location=optional:file:" + resolved,
-                "--orchestrator.config-file=" + resolved))
+                "--orchestrator.config-file=" + resolved,
+                "--orchestrator.default-data=" + OrchestratorPaths.dataOutside(args)))
         .toArray(String[]::new);
   }
 

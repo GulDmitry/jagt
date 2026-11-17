@@ -50,7 +50,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 - **A verb runs in the backend process**, no LLM, no MCP round-trip; the **Master** is a root session.
 - **`TaskChart`, `TaskReducer`, `Checkers` and `FlowRules` are instances** `FlowWiring` builds from the installed roles;
   a class takes the one it needs through its constructor ([0160](../decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)).
-- **Sub-agents** are agent-CLI sessions in worktrees `<data>/worktrees/<projectKey>/<task slug>`
+- **Sub-agents** are agent-CLI sessions in worktrees `<data>/tasks/<task slug>/worktrees/<projectKey>`
   ([0168](../decisions/0168-one-data-folder-holds-everything-jagt-writes.md)),
   briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and `task_context.md`.
 - **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every
@@ -83,3 +83,18 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   alone: a check of jagt's own files answers `machine()` false and runs always.
 - `surface/board/filter/AbortedConnectionFilter` drops the aborted-peer `setSoLinger` `SocketException`. Never
   silence `NioEndpoint` instead.
+
+## The data folder
+
+`orchestrator.data`: `<root>/data` by default (one `/data/` ignore line), `/data` in the container, built only by `port/host/Layout`
+([0190](../decisions/0190-the-data-folder-is-data-under-the-root.md)).
+
+| path | what |
+|------|------|
+| `jagt/` | `state.json` and its `.bak`, `.corrupt`; every mark: `master-token`, `act-stopped`, `alive`, `*-verdicts` |
+| `projects/<name>` | the clone a project url makes |
+| `tasks/<task>/` | `worktrees/<project>` (`-deploy`, `-revert`), `plan-baseline.md`, `ticket-text.md`, `scratch/` |
+| `archive/`, `records/` | a finished task's snapshot; `*.jsonl`, never read back |
+| `memory/`, `logs/` | what the router learned; `jagt-backend.log`, `jagt-master.log` |
+
+An older layout (root, `~/.jagt`, flat here) moves in once, from the folder holding `state.json`: logged, never over a file; its master token goes.

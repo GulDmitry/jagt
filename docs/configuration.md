@@ -49,8 +49,8 @@ orchestrator:
 
 ## What a key does not say for itself
 
-**`data`** is the one folder jagt writes in (`~/.jagt`); `jagt.yml` stays outside it.
-A task's worktree is `data/worktrees/<project>/<task>`.
+**`data`** is the one folder jagt writes in (`<root>/data`, [the tree](rules/components.md#the-data-folder)); `jagt.yml` stays outside it.
+A task's worktrees are `data/tasks/<task>/worktrees/<project>`.
 A project's own `path` is used in place, and the folder holding it must stay writable for `deploy`.
 
 **`worktree.copyGlobs`** is one top-level list for every project, and what makes a fresh worktree buildable.

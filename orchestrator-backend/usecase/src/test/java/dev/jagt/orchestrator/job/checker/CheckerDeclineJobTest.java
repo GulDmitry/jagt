@@ -73,7 +73,11 @@ class CheckerDeclineJobTest {
   void anAcceptanceRoleWatchingOneEnvironment() throws IOException {
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),

@@ -434,7 +434,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   private void printUsage() {
-    Path usage = root.resolve("usage-by-day.jsonl");
+    Path usage = root.resolve("records/usage-by-day.jsonl");
     try {
       String spent = Files.isRegularFile(usage) ? Files.readString(usage).strip() : "none recorded";
       System.out.println("stand run " + marker.scenario() + " usage: " + spent);

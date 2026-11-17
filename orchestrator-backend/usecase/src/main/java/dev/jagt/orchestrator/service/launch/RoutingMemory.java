@@ -41,7 +41,7 @@ public class RoutingMemory {
    */
   private static final int MAX_RULES = 60;
 
-  private static final String FILE = "memory/routing.md";
+  private static final String FILE = "routing.md";
   private static final String SEPARATOR = " -> ";
 
   /**
@@ -272,6 +272,6 @@ public class RoutingMemory {
   }
 
   private Path file() {
-    return paths.root().resolve(FILE);
+    return paths.memory().resolve(FILE);
   }
 }

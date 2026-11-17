@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.GitCommands;
 import dev.jagt.orchestrator.service.git.WorktreeOrphans;
+import dev.jagt.orchestrator.service.task.ArchivedTaskFolder;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,7 +32,9 @@ public record TestWorktreeOrphanScannerBuilder(Path repo, List<String> copyGlobs
       StateService state,
       GitCommands git,
       OrchestratorPaths paths,
+      ArchivedTaskFolder folders,
       Notifications notifications) {
-    return new WorktreeOrphanScanner(new WorktreeOrphans(config, state, git, paths), notifications);
+    return new WorktreeOrphanScanner(
+        new WorktreeOrphans(config, state, git, paths, folders), notifications);
   }
 }

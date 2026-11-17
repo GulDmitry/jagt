@@ -64,7 +64,7 @@ class HeadlessOpenCodeTest {
         .contains(
             "\"default_agent\":\"jagt-read\"",
             "local/qwen-4b",
-            "\"plugin\":[\"" + state.resolve("opencode-gate") + "\"]");
+            "\"plugin\":[\"" + state.resolve("jagt/opencode-gate") + "\"]");
     assertThat(env.getValue().get("JAGT_READ_GATE"))
         .startsWith("http://127.0.0.1:8290/api/agent/read/");
     assertThat(command.getValue().subList(0, 5))

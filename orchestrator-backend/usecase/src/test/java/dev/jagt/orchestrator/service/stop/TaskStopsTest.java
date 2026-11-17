@@ -351,7 +351,7 @@ class TaskStopsTest {
     stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "later");
 
-    assertThat(Files.readAllLines(root.resolve("stops.jsonl")))
+    assertThat(Files.readAllLines(root.resolve("records/stops.jsonl")))
         .containsExactly(
             "{\"at\":100000000,\"task\":\"ABC-42\",\"alias\":\"cart\",\"trigger\":\"CHECKS\","
                 + "\"status\":\"CI_POLLING\",\"evidence\":\"3 reads could not list the checks\"}");
@@ -364,7 +364,7 @@ class TaskStopsTest {
 
     stops.lift("ABC-42");
 
-    assertThat(Files.readAllLines(root.resolve("stops.jsonl"))).hasSize(1);
+    assertThat(Files.readAllLines(root.resolve("records/stops.jsonl"))).hasSize(1);
     assertThat(stops.stopped("ABC-42")).isFalse();
   }
 

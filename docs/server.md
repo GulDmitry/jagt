@@ -144,11 +144,11 @@ What `/data` (`ORCHESTRATOR_DATA`) holds that outlives an image:
 
 | path | what | when it changes |
 |------|------|-----------------|
-| `state.json` | every task, written atomically | every mutation |
-| `state.json.bak` | the version before the last write | every mutation |
-| `state.json.corrupt` | an unreadable primary, set aside while `.bak` stood in | on that recovery |
-| `worktrees/`, `repos/` | task worktrees (unpushed commits live here), clones | while sessions work |
-| `master-token`, `logs/` | the Master's token (drawn at each start), logs | each start |
+| `jagt/state.json` | every task, written atomically | every mutation |
+| `jagt/state.json.bak` | the version before the last write | every mutation |
+| `jagt/state.json.corrupt` | an unreadable primary, set aside while `.bak` stood in | on that recovery |
+| `tasks/`, `projects/` | task worktrees (unpushed commits live here), clones | while sessions work |
+| `jagt/master-token`, `logs/` | the Master's token (drawn at each start), logs | each start |
 
 - **Read across minors**: a newer jar reads an older `state.json` as it stands: unknown keys are ignored, a missing number or flag
   reads 0 or false. The file is rewritten in the newer shape on the next mutation, the old one kept as `.bak`.
@@ -161,7 +161,7 @@ Before an upgrade, stop jagt, then copy the folder (with sessions running only `
 ```sh
 docker compose stop                    # or: kubectl scale deployment/<name> --replicas=0
 docker run --rm -v <volume>:/data -v "$PWD":/backup alpine tar czf /backup/jagt-data.tgz -C /data .   # <volume>: docker volume ls
-cp "$ORCHESTRATOR_DATA"/state.json* ~/backup/    # a jar install: the same files in its data folder
+cp "$ORCHESTRATOR_DATA"/jagt/state.json* ~/backup/    # a jar install: the same files in its data folder
 ```
 
 Roll back: stop, put the previous image tag (or jar) back, restore the copy over `/data` (extract the archive, or copy the two files
@@ -189,6 +189,6 @@ curl -s -H "X-Jagt-Master: $(cat <token file>)" -H 'Content-Type: application/js
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"read_record","arguments":{"record":"stops"}}}'
 ```
 
-- `<token file>` is `master-token` beside `state.json`; point a CLI's MCP config at `http://localhost:8290/mcp` with that header.
+- `<token file>` is `master-token` beside `jagt/state.json`; point a CLI's MCP config at `http://localhost:8290/mcp` with that header.
 - Under `auth.mode: password`, `/api/debug/…` needs the login session; `/mcp` needs the token.
 - Records: `backend-log`, `master-log`, `stops`, `stops-reviewed`; under `orchestrator.logging: console` the two logs are what stdout carried.

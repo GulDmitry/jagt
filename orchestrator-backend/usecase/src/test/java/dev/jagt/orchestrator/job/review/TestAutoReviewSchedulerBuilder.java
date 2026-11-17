@@ -38,6 +38,7 @@ public record TestAutoReviewSchedulerBuilder(Path root) {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
+                .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     return new AutoReviewScheduler(
         state,

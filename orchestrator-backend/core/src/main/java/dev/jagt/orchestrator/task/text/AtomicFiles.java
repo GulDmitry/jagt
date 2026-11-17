@@ -10,7 +10,8 @@ public final class AtomicFiles {
   private AtomicFiles() {}
 
   public static void write(Path file, byte[] content) throws IOException {
-    Path temp = Files.createTempFile(file.toAbsolutePath().getParent(), ".atomic", ".tmp");
+    Path parent = Files.createDirectories(file.toAbsolutePath().getParent());
+    Path temp = Files.createTempFile(parent, ".atomic", ".tmp");
     try {
       Files.write(temp, content);
       Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);

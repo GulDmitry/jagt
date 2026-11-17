@@ -11,7 +11,8 @@ class StandSpendTest {
 
   @Test
   void sumsEveryDayOfKindIntoOneFigure(@TempDir Path dir) throws Exception {
-    Path usage = dir.resolve("usage-by-day.jsonl");
+    Files.createDirectories(dir.resolve("records"));
+    Path usage = dir.resolve("records/usage-by-day.jsonl");
     Files.writeString(
         usage,
         """
@@ -37,7 +38,8 @@ class StandSpendTest {
 
   @Test
   void namesTheCauseWhenTheFileCannotBeRead(@TempDir Path dir) throws Exception {
-    Path usage = dir.resolve("usage-by-day.jsonl");
+    Files.createDirectories(dir.resolve("records"));
+    Path usage = dir.resolve("records/usage-by-day.jsonl");
     Files.writeString(usage, "not json\n");
 
     StandSpend spend = StandSpend.read(dir);
@@ -47,13 +49,15 @@ class StandSpendTest {
 
   @Test
   void addsTheTaskSessionsSpendFromStateNextToTheHeadlessKinds(@TempDir Path dir) throws Exception {
+    Files.createDirectories(dir.resolve("records"));
+    Files.createDirectories(dir.resolve("jagt"));
     Files.writeString(
-        dir.resolve("usage-by-day.jsonl"),
+        dir.resolve("records/usage-by-day.jsonl"),
         """
         {"period":"2026-10-24","kind":"INTAKE","usage":{"calls":3,"inputTokens":7,"cachedInputTokens":0,"outputTokens":1,"costUsd":0.25,"maxCallCostUsd":0.0}}
         """);
     Files.writeString(
-        dir.resolve("state.json"),
+        dir.resolve("jagt/state.json"),
         """
         {"tasks":{
           "ABC-1":{"usage":{"calls":9,"inputTokens":1,"cachedInputTokens":0,"outputTokens":1,"costUsd":9.0},
@@ -71,8 +75,10 @@ class StandSpendTest {
 
   @Test
   void namesTheCauseWhenNoTaskHoldsSessionSpend(@TempDir Path dir) throws Exception {
-    Files.writeString(dir.resolve("usage-by-day.jsonl"), "");
-    Files.writeString(dir.resolve("state.json"), "{\"tasks\":{\"ABC-1\":{}}}");
+    Files.createDirectories(dir.resolve("records"));
+    Files.createDirectories(dir.resolve("jagt"));
+    Files.writeString(dir.resolve("records/usage-by-day.jsonl"), "");
+    Files.writeString(dir.resolve("jagt/state.json"), "{\"tasks\":{\"ABC-1\":{}}}");
 
     StandSpend spend = StandSpend.read(dir);
 

@@ -25,11 +25,14 @@ class PressLogTest {
 
   @Test
   void writesOneLinePerPress() throws IOException {
-    Path file = dir.resolve("interactions.jsonl");
+    Path file = dir.resolve("records/interactions.jsonl");
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     presses.record(
@@ -46,19 +49,23 @@ class PressLogTest {
 
   @Test
   void rollsIntoOneArchiveReplacingTheLastWhenPastItsCeiling() throws IOException {
-    Path file = dir.resolve("interactions.jsonl");
-    Files.writeString(dir.resolve("interactions.jsonl.1"), "older archive\n");
+    Path file = dir.resolve("records/interactions.jsonl");
+    Files.createDirectories(dir.resolve("records"));
+    Files.writeString(dir.resolve("records/interactions.jsonl.1"), "older archive\n");
     Files.writeString(file, "#".repeat(1024 * 1024));
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     presses.record(List.of(new Interaction(NOW, "action:deploy", "APPROVED")), NOW);
 
     assertThat(file).doesNotExist();
-    assertThat(Files.readString(dir.resolve("interactions.jsonl.1")))
+    assertThat(Files.readString(dir.resolve("records/interactions.jsonl.1")))
         .contains("action:deploy")
         .doesNotContain("older");
   }
@@ -71,11 +78,14 @@ class PressLogTest {
   })
   void refusesTheWholeBatchWhenOnePressCarriesMoreThanControlAndStatus(
       String control, String status, long at) {
-    Path file = dir.resolve("interactions.jsonl");
+    Path file = dir.resolve("records/interactions.jsonl");
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     assertThatThrownBy(() ->
@@ -93,7 +103,10 @@ class PressLogTest {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     assertThatThrownBy(
@@ -106,12 +119,15 @@ class PressLogTest {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     presses.record(Collections.nCopies(50, new Interaction(NOW, "flag", null)), NOW);
 
-    assertThat(Files.readAllLines(dir.resolve("interactions.jsonl"))).hasSize(50);
+    assertThat(Files.readAllLines(dir.resolve("records/interactions.jsonl"))).hasSize(50);
   }
 
   @Test
@@ -119,21 +135,27 @@ class PressLogTest {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     presses.record(List.of(new Interaction(NOW - 24L * 60 * 60 * 1000, "flag", null)), NOW);
 
-    assertThat(dir.resolve("interactions.jsonl")).exists();
+    assertThat(dir.resolve("records/interactions.jsonl")).exists();
   }
 
   @Test
   void writesNothingWhenSwitchedOff() {
-    Path file = dir.resolve("interactions.jsonl");
+    Path file = dir.resolve("records/interactions.jsonl");
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             false);
 
     presses.record(List.of(new Interaction(NOW, "action:ship", null)), NOW);
@@ -146,7 +168,10 @@ class PressLogTest {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withData(dir.toString())),
             true);
 
     assertThatThrownBy(() ->

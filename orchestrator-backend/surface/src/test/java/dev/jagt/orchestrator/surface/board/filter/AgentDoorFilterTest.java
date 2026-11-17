@@ -35,7 +35,10 @@ class AgentDoorFilterTest {
     new AgentDoorFilter(
             PASSWORD,
             new MasterToken(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withData(root.toString()))))
         .doFilter(request, response, chain);
 
     assertThat(response.getStatus()).isEqualTo(401);
@@ -55,7 +58,10 @@ class AgentDoorFilterTest {
     new AgentDoorFilter(
             PASSWORD,
             new MasterToken(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withData(root.toString()))))
         .doFilter(request, response, new MockFilterChain());
 
     assertThat(response.getStatus()).isEqualTo(401);
@@ -70,7 +76,10 @@ class AgentDoorFilterTest {
     new AgentDoorFilter(
             PASSWORD,
             new MasterToken(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withData(root.toString()))))
         .doFilter(request, response, new MockFilterChain());
 
     assertThat(response.getStatus()).isEqualTo(401);
@@ -80,10 +89,13 @@ class AgentDoorFilterTest {
   void admitsPeerOffLoopbackPresentingTheMasterToken(@TempDir Path root) throws Exception {
     MasterToken token =
         new MasterToken(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withData(root.toString())));
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
     request.setRemoteAddr("192.168.1.20");
-    request.addHeader(MasterToken.HEADER, Files.readString(root.resolve("master-token")));
+    request.addHeader(MasterToken.HEADER, Files.readString(root.resolve("jagt/master-token")));
     MockFilterChain chain = new MockFilterChain();
 
     new AgentDoorFilter(PASSWORD, token).doFilter(request, new MockHttpServletResponse(), chain);
@@ -103,7 +115,10 @@ class AgentDoorFilterTest {
     new AgentDoorFilter(
             PASSWORD,
             new MasterToken(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withData(root.toString()))))
         .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
@@ -118,7 +133,10 @@ class AgentDoorFilterTest {
     new AgentDoorFilter(
             PASSWORD,
             new MasterToken(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withData(root.toString()))))
         .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);
@@ -133,7 +151,10 @@ class AgentDoorFilterTest {
     new AgentDoorFilter(
             new AuthProperties(AuthProperties.Mode.NONE, null, List.of()),
             new MasterToken(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withData(root.toString()))))
         .doFilter(request, new MockHttpServletResponse(), chain);
 
     assertThat(chain.getRequest()).isSameAs(request);

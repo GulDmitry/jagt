@@ -54,7 +54,7 @@ class ProjectClonesJobTest {
 
   @Test
   void clonesTheUrlIntoTheFolderTheProjectIsPlacedAtWhereNothingStandsThere() {
-    Path folder = dir.resolve("repos/api");
+    Path folder = dir.resolve("projects/api");
     ProjectConfig api =
         clonedProject().withUrl(origin.toString()).withPath(folder.toString()).build();
     when(config.load())
@@ -82,8 +82,8 @@ class ProjectClonesJobTest {
 
   @Test
   void marksTheBoardsHeadWithTheProjectAndCauseWhereTheUrlCannotBeClonedAndClonesTheOthers() {
-    Path bad = dir.resolve("repos/bad");
-    Path good = dir.resolve("repos/good");
+    Path bad = dir.resolve("projects/bad");
+    Path good = dir.resolve("projects/good");
     Map<String, ProjectConfig> both = new LinkedHashMap<>();
     both.put(
         "bad",
@@ -108,7 +108,7 @@ class ProjectClonesJobTest {
 
   @Test
   void clearsTheMarkWhenTheNextRunClones() {
-    Path folder = dir.resolve("repos/api");
+    Path folder = dir.resolve("projects/api");
     Path later = dir.resolve("later.git");
     ProjectConfig api =
         clonedProject().withUrl(later.toString()).withPath(folder.toString()).build();
@@ -137,7 +137,7 @@ class ProjectClonesJobTest {
     ProjectConfig api =
         clonedProject()
             .withUrl(origin.toString())
-            .withPath(dir.resolve("repos/api").toString())
+            .withPath(dir.resolve("projects/api").toString())
             .build();
     when(config.load())
         .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", api)));

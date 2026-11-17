@@ -720,7 +720,7 @@ class GitWorktreesTest {
   @Test
   void removesTheDeployWorktreeAndItsBranchWhenOneIsWaiting() throws Exception {
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
-    Path deploy = dir.resolve("data/worktrees/repo/ABC-1-deploy");
+    Path deploy = dir.resolve("data/tasks/ABC-1/worktrees/repo-deploy");
     GitRepos.git(
         runner,
         repo,

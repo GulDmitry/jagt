@@ -18,7 +18,10 @@ public record TestOpenCodeGateBuilder(Path state) {
 
   public OpenCodeGate build(McpHealth health, ReadScopes scopes) {
     return new OpenCodeGate(
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(state.toString())),
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(state.toString())
+                .withData(state.toString())),
         new ReadOnlyTools(
             health,
             AssistantProperties.empty(),

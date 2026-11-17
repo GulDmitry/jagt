@@ -21,7 +21,10 @@ public record TestPointWatchBuilder(Path root, Arbiter.Profile profile) {
         state,
         sink,
         new InstalledRoles(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withData(root.toString()))),
         ignored -> profile);
   }
 }

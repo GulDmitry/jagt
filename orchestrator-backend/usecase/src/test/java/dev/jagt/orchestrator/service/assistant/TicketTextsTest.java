@@ -75,7 +75,7 @@ class TicketTextsTest {
   @Test
   void answersNoTextWhereTheKeepingFolderCannotBeMade() throws java.io.IOException {
     KeptTicketTexts kept = new KeptTicketTexts(orchestratorPaths().withRoot(root).build());
-    java.nio.file.Files.writeString(root.resolve("ticket-texts"), "in the way");
+    java.nio.file.Files.writeString(root.resolve("tasks"), "in the way");
     TicketTexts texts = new TicketTexts(assistants, usage, kept);
     when(assistants.tracker().readTicketText("ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Widget layout is off"), TokenUsage.NONE));

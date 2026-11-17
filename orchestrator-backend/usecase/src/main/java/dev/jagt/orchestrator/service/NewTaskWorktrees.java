@@ -266,7 +266,7 @@ public class NewTaskWorktrees {
               projectKey,
               project,
               projectPath,
-              paths.worktrees().resolve(projectKey).resolve(TaskName.slug(request.taskId())),
+              paths.worktree(projectKey, request.taskId()),
               gitWorktrees.gitCommonDir(projectPath),
               override != null ? override : project.baseBranch(),
               gitWorktrees.remoteUrl(projectPath),

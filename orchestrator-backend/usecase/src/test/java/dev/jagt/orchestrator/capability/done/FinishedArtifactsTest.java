@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -107,6 +108,15 @@ class FinishedArtifactsTest {
     Path kept = root.resolve("archive/261028-101530-ABC-42");
     assertThat(kept.resolve("finished.json")).exists();
     assertThat(kept.resolve("plan.md")).doesNotExist();
+  }
+
+  @Test
+  void namesTheSnapshotItKept() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+
+    Optional<Path> kept = artifacts.keep(FinishedTask.of("ABC-42", task, 1L));
+
+    assertThat(kept).contains(root.resolve("archive/261028-101530-ABC-42"));
   }
 
   @Test

@@ -21,6 +21,7 @@ public final class RollingFile {
   }
 
   public synchronized void append(String lines) throws IOException {
+    Files.createDirectories(file.getParent());
     Files.writeString(
         file, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     if (Files.size(file) > MAX_BYTES) {

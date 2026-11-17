@@ -187,7 +187,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       assertThat(E2eWorkspace.git(flow.webOrigin(), "log", "-1", "--format=%s", "dev"))
           .doesNotContain("Merge branch '" + TASK + "' into dev");
 
-      Path resolveIn = flow.webWorktree().resolveSibling(TASK + "-deploy");
+      Path resolveIn = flow.webWorktree().resolveSibling("web-deploy");
       Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
       E2eWorkspace.git(resolveIn, "add", "widget.txt");
 

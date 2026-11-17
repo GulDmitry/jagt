@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.GitCommands;
+import dev.jagt.orchestrator.service.task.ArchivedTaskFolder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,6 +50,7 @@ class WorktreeOrphanScannerTest {
                 state,
                 mock(GitCommands.class),
                 orchestratorPaths().withRoot(root).build(),
+                mock(ArchivedTaskFolder.class),
                 notifications);
   }
 

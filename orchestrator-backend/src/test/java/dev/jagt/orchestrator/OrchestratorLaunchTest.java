@@ -16,4 +16,12 @@ class OrchestratorLaunchTest {
         .filteredOn(arg -> arg.startsWith("--orchestrator.config-file="))
         .containsExactly("--orchestrator.config-file=/opt/jagt.yml");
   }
+
+  @Test
+  void pinsTheDefaultDataFolderUnderTheNamedRoot() {
+    String[] launched =
+        OrchestratorApplication.withConfigFile(new String[] {"--orchestrator.root=/opt/jagt"});
+
+    assertThat(launched).contains("--orchestrator.default-data=/opt/jagt/data");
+  }
 }

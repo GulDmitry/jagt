@@ -192,9 +192,9 @@ class ProjectRoutingTest {
         .thenReturn(
             new Answer<>(
                 Optional.of(new RoutingAnswer("api", "importing quotes")), TokenUsage.NONE));
-    Files.createDirectories(root.resolve("memory"));
+    Files.createDirectories(root.resolve("data/memory"));
     Files.writeString(
-        root.resolve("memory/routing.md"),
+        root.resolve("data/memory/routing.md"),
         "quote import -> api\n"
             + IntStream.rangeClosed(1, 58)
                 .mapToObj(n -> "used rule " + n + " -> web #1\n")

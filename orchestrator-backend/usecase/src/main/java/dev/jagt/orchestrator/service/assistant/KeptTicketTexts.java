@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service.assistant;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.service.Causes;
-import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -77,6 +76,6 @@ public class KeptTicketTexts {
   }
 
   private Path file(String taskId) {
-    return paths.ticketTexts().resolve(TaskName.slug(taskId) + ".md");
+    return paths.ticketText(taskId);
   }
 }

@@ -19,9 +19,9 @@ class OrchestratorPathsTest {
             OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
 
     assertThat(paths.deployWorktree("web", "ABC-1"))
-        .isEqualTo(data.resolve("worktrees/web/ABC-1-deploy"));
+        .isEqualTo(data.resolve("tasks/ABC-1/worktrees/web-deploy"));
     assertThat(paths.revertWorktree("web", "ABC-1"))
-        .isEqualTo(data.resolve("worktrees/web/ABC-1-revert"));
+        .isEqualTo(data.resolve("tasks/ABC-1/worktrees/web-revert"));
   }
 
   @Test
@@ -38,8 +38,8 @@ class OrchestratorPathsTest {
                     web(data).withProject("web2").build()),
                 "ABC-1"))
         .containsExactly(
-            data.resolve("worktrees/api/ABC-1-deploy"),
-            data.resolve("worktrees/web2/ABC-1-deploy"));
+            data.resolve("tasks/ABC-1/worktrees/api-deploy"),
+            data.resolve("tasks/ABC-1/worktrees/web2-deploy"));
   }
 
   @Test
@@ -78,14 +78,16 @@ class OrchestratorPathsTest {
   }
 
   @Test
-  void keepsScratchFoldersBesideTheStateFile(@TempDir Path root) {
+  void keepsTaskScratchAndWorktreesInItsFolderWhateverTheStateFile(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("work/state.json").toString()));
 
-    assertThat(paths.scratch()).isEqualTo(root.resolve("work/scratch"));
+    assertThat(paths.scratch("ABC-1")).isEqualTo(root.resolve("data/tasks/ABC-1/scratch"));
+    assertThat(paths.worktree("web", "ABC-1"))
+        .isEqualTo(root.resolve("data/tasks/ABC-1/worktrees/web"));
   }
 
   @Test
@@ -96,19 +98,28 @@ class OrchestratorPathsTest {
                 .withRoot(root.toString())
                 .withData(root.resolve("vault").toString()));
 
-    assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/state.json"));
-    assertThat(paths.masterToken()).isEqualTo(root.resolve("vault/master-token"));
-    assertThat(paths.worktrees()).isEqualTo(root.resolve("vault/worktrees"));
+    assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
+    assertThat(paths.masterToken()).isEqualTo(root.resolve("vault/jagt/master-token"));
+    assertThat(paths.worktree("web", "ABC-1"))
+        .isEqualTo(root.resolve("vault/tasks/ABC-1/worktrees/web"));
   }
 
   @Test
-  void keepsTheOldStatePlaceInTheRoot(@TempDir Path root) {
+  void keepsEverythingInTheDataFolderUnderTheRootWhereNoneIsNamed(@TempDir Path root) {
     OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withData(root.resolve("vault").toString()));
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-    assertThat(paths.legacyStateFile()).isEqualTo(root.resolve("state.json"));
+    assertThat(paths.data()).isEqualTo(root.resolve("data"));
+    assertThat(paths.stateFile()).isEqualTo(root.resolve("data/jagt/state.json"));
+  }
+
+  @Test
+  void stopsGitAtTheTasksFolderFromTaskScratchAndRecognisesItOnlyForThatTask(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    assertThat(paths.scratchCeiling(paths.scratch("ABC-1"))).isEqualTo(root.resolve("data/tasks"));
+    assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-1")).isTrue();
+    assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-2")).isFalse();
   }
 }

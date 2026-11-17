@@ -47,11 +47,7 @@ public class WorktreesCommand implements GlobalCommand {
     for (WorktreeOrphans.Orphan orphan : orphans) {
       lines.add(
           "  %-24s %-12s %2d copied secret file(s)   delete-worktree %s"
-              .formatted(
-                  orphan.path().getFileName(),
-                  orphan.projectKey(),
-                  orphan.secretFiles(),
-                  orphan.path().getFileName()));
+              .formatted(orphan.name(), orphan.projectKey(), orphan.secretFiles(), orphan.name()));
     }
     return String.join("\n", lines);
   }

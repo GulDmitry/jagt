@@ -17,6 +17,7 @@ public record TestWatchdogServiceBuilder(Path root) {
   public OrchestratorProperties properties() {
     return OrchestratorProperties.defaults()
         .withRoot(root.toString())
+        .withData(root.toString())
         .withStateFile(root.resolve("state.json").toString());
   }
 

@@ -70,6 +70,19 @@ class RetiredWorktreesTest {
   }
 
   @Test
+  void removesTheDeployWorktreeBesideTheWorktreeTheTaskRecorded() {
+    new RetiredWorktrees(git, sessions, paths)
+        .remove(
+            "ABC-1",
+            List.of(TaskRepo.of("demo", "/old-data/worktrees/demo/ABC-1")),
+            Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())));
+
+    verify(git)
+        .removeDeployWorktreeIfPresent(
+            Path.of("/repo"), Path.of("/old-data/worktrees/demo/ABC-1-deploy"), "ABC-1");
+  }
+
+  @Test
   void deletesTheThrowawayDiffCheckoutsOfTheRetiredTask() {
     new RetiredWorktrees(git, sessions, paths)
         .remove(
@@ -94,7 +107,7 @@ class RetiredWorktreesTest {
   @Test
   void removesTheDeployWorktreeAnAbandonedConflictLeftBehind() {
     when(paths.deployWorktree("demo", "ABC-1"))
-        .thenReturn(Path.of("/data/worktrees/demo/ABC-1-deploy"));
+        .thenReturn(Path.of("/data/tasks/ABC-1/worktrees/demo-deploy"));
     new RetiredWorktrees(git, sessions, paths)
         .remove(
             "ABC-1",
@@ -103,7 +116,7 @@ class RetiredWorktreesTest {
 
     verify(git)
         .removeDeployWorktreeIfPresent(
-            Path.of("/repo"), Path.of("/data/worktrees/demo/ABC-1-deploy"), "ABC-1");
+            Path.of("/repo"), Path.of("/data/tasks/ABC-1/worktrees/demo-deploy"), "ABC-1");
   }
 
   @Test
@@ -164,7 +177,7 @@ class RetiredWorktreesTest {
   void deletesTheScratchFolderOfTaskThatNeverLeftIt(@TempDir Path root) throws Exception {
     OrchestratorPaths real =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Path folder = Files.createDirectories(real.scratch().resolve("ABC-1"));
+    Path folder = Files.createDirectories(real.scratch("ABC-1"));
     Files.writeString(folder.resolve("plan.md"), "plan");
 
     new RetiredWorktrees(git, sessions, real)
@@ -173,6 +186,20 @@ class RetiredWorktreesTest {
     assertThat(folder).doesNotExist();
     verify(sessions).forgetWorktree(folder);
     verify(git, never()).removeWorktree(any(), any(), any());
+  }
+
+  @Test
+  void deletesTheScratchFolderTheStateRecordsWhereAnOlderVersionCutIt(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths real =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Path folder = Files.createDirectories(root.resolve("older/scratch/ABC-1"));
+    Files.writeString(folder.resolve("plan.md"), "plan");
+
+    new RetiredWorktrees(git, sessions, real)
+        .remove("ABC-1", List.of(TaskRepo.of(null, folder.toString())), Map.of());
+
+    assertThat(folder).doesNotExist();
   }
 
   @Test

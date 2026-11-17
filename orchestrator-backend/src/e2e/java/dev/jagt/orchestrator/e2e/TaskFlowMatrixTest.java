@@ -71,7 +71,7 @@ class TaskFlowMatrixTest {
   @AfterEach
   void leaveNothingBehindForTheNextCombinationEvenOneThatFailedEarly() {
     E2eWorkspace.forgetTask(
-        workspace.resolve("proj"), workspace.resolve("root/worktrees/proj/ABC-1"), "ABC-1");
+        workspace.resolve("proj"), workspace.resolve("root/tasks/ABC-1/worktrees/proj"), "ABC-1");
     E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
     stateService.removeTask("ABC-1");
   }
@@ -81,7 +81,7 @@ class TaskFlowMatrixTest {
   void taskIsCreatedProvisionedAndThenTornDownLeavingOnlyItsBranch(TaskFlowCase flowCase)
       throws Exception {
     E2eWorkspace.writeConfig(paths.configFile(), workspace.resolve("proj"), flowCase);
-    Path worktree = workspace.resolve("root/worktrees/proj/ABC-1");
+    Path worktree = workspace.resolve("root/tasks/ABC-1/worktrees/proj");
 
     String created =
         provisioning.initializeTask(

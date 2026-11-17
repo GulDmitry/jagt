@@ -43,8 +43,8 @@ public record RunRecord(
             BackendLog.relays(root.resolve("jagt-backend.log")),
             sampled.standWrites());
     return new RunRecord(
-        StateFiles.histories(root.resolve("state.json")),
-        StateFiles.misses(root.resolve("misses.jsonl")),
+        StateFiles.histories(root.resolve("jagt/state.json")),
+        StateFiles.misses(root.resolve("records/misses.jsonl")),
         timeline,
         Map.of(
             BASE,

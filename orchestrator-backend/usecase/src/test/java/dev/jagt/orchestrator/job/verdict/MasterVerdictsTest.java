@@ -379,7 +379,7 @@ class MasterVerdictsTest {
 
     verdicts.act("ABC-1", task, guardInverted, acting);
 
-    assertThat(Files.readString(root.resolve("misses.jsonl")))
+    assertThat(Files.readString(root.resolve("records/misses.jsonl")))
         .contains("\"step\":\"round-not-ready\"", "\"by\":\"master\"");
   }
 

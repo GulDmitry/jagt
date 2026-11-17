@@ -210,7 +210,7 @@ class ServerContainerTest {
             stack
                 .getContainerByServiceName(SERVICE)
                 .orElseThrow()
-                .execInContainer("test", "-d", "/data/repos/my-project/.git")
+                .execInContainer("test", "-d", "/data/projects/my-project/.git")
                 .getExitCode())
         .isZero();
   }
@@ -300,7 +300,7 @@ class ServerContainerTest {
             .post()
             .uri("/mcp")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("X-Working-Directory", "/data/worktrees/my-project/fix-the-widget")
+            .header("X-Working-Directory", "/data/tasks/fix-the-widget/worktrees/my-project")
             .body("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}")
             .exchange((request, response) -> response.getStatusCode().value());
 
@@ -315,7 +315,7 @@ class ServerContainerTest {
             .getContainerByServiceName(SERVICE)
             .orElseThrow()
             .copyFileFromContainer(
-                "/data/master-token",
+                "/data/jagt/master-token",
                 in -> new String(in.readAllBytes(), StandardCharsets.UTF_8).strip());
 
     int status =
@@ -336,7 +336,8 @@ class ServerContainerTest {
     var jagt = stack.getContainerByServiceName(SERVICE).orElseThrow();
 
     String origin =
-        jagt.execInContainer("git", "-C", "/data/repos/my-project", "remote", "get-url", "origin")
+        jagt.execInContainer(
+                "git", "-C", "/data/projects/my-project", "remote", "get-url", "origin")
             .getStdout()
             .strip();
 
@@ -348,7 +349,7 @@ class ServerContainerTest {
   @Order(10)
   void taskAndCloneSurviveWhenContainerRestartsWithTheVolume() throws Exception {
     var jagt = stack.getContainerByServiceName(SERVICE).orElseThrow();
-    jagt.execInContainer("touch", "/data/repos/my-project/.marker");
+    jagt.execInContainer("touch", "/data/projects/my-project/.marker");
 
     jagt.getDockerClient().restartContainerCmd(jagt.getContainerId()).exec();
     await()
@@ -374,7 +375,8 @@ class ServerContainerTest {
             JsonPath.<Map<String, Object>>read(
                 board.get().uri("/state").retrieve().body(String.class), "$.tasks"))
         .containsKey("fix-the-widget");
-    assertThat(jagt.execInContainer("test", "-f", "/data/repos/my-project/.marker").getExitCode())
+    assertThat(
+            jagt.execInContainer("test", "-f", "/data/projects/my-project/.marker").getExitCode())
         .isZero();
   }
 
@@ -394,9 +396,12 @@ class ServerContainerTest {
                 .exchange((request, response) -> response.getStatusCode().is2xxSuccessful()));
 
     assertThat(
-            fresh.execInContainer("grep", "-q", "fix-the-widget", "/data/state.json").getExitCode())
+            fresh
+                .execInContainer("grep", "-q", "fix-the-widget", "/data/jagt/state.json")
+                .getExitCode())
         .isNotZero();
-    assertThat(fresh.execInContainer("test", "-f", "/data/repos/my-project/.marker").getExitCode())
+    assertThat(
+            fresh.execInContainer("test", "-f", "/data/projects/my-project/.marker").getExitCode())
         .isNotZero();
   }
 
@@ -426,7 +431,7 @@ class ServerContainerTest {
     await().atMost(Duration.ofSeconds(30)).until(() -> !jagt.isRunning());
     String state =
         jagt.copyFileFromContainer(
-            "/data/state.json", in -> new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            "/data/jagt/state.json", in -> new String(in.readAllBytes(), StandardCharsets.UTF_8));
 
     assertThat(JsonPath.<String>read(state, "$.tasks['keep-working'].session.halt.kind"))
         .isEqualTo("GONE");

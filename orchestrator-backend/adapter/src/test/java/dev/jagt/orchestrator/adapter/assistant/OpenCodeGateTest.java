@@ -29,16 +29,19 @@ class OpenCodeGateTest {
   @Test
   void writesThePluginBesideStateJsonAndReplacesWhatAnEarlierStartLeft(@TempDir Path root)
       throws IOException {
-    Files.createDirectories(root.resolve("opencode-gate"));
-    Files.writeString(root.resolve("opencode-gate/index.js"), "stale");
+    Files.createDirectories(root.resolve("jagt/opencode-gate"));
+    Files.writeString(root.resolve("jagt/opencode-gate/index.js"), "stale");
 
     OpenCodeGate gate =
         new OpenCodeGate(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withData(root.toString())),
             tools,
             hooks);
 
-    assertThat(gate.directory()).isEqualTo(root.resolve("opencode-gate"));
+    assertThat(gate.directory()).isEqualTo(root.resolve("jagt/opencode-gate"));
     assertThat(Files.readString(gate.directory().resolve("index.js")))
         .contains("id: \"jagt-gate\"", "JAGT_READ_GATE");
     assertThat(Files.readString(gate.directory().resolve("package.json")))
@@ -49,7 +52,10 @@ class OpenCodeGateTest {
   void namesTheFencesUrlToThePluginAndHoldsTheScopeUnderIt(@TempDir Path root) {
     OpenCodeGate gate =
         new OpenCodeGate(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withData(root.toString())),
             tools,
             hooks);
 
@@ -63,7 +69,10 @@ class OpenCodeGateTest {
   void hearsCallOnlyOnceTheGateWasAsked(@TempDir Path root) {
     OpenCodeGate gate =
         new OpenCodeGate(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withData(root.toString())),
             tools,
             hooks);
     gate.open("fence-1", new ReadScope(List.of(root), List.of(), true));

@@ -94,6 +94,7 @@ class OwnStatusReportsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
+                .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     realDoor =
         new CaseDoor(
@@ -256,7 +257,7 @@ class OwnStatusReportsTest {
 
     assertThatThrownBy(() -> doorReports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
-    assertThat(Files.readString(root.resolve("misses.jsonl")))
+    assertThat(Files.readString(root.resolve("records/misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by\":"
                 + "\"session\",\"got\":\"REVIEW_PENDING;"

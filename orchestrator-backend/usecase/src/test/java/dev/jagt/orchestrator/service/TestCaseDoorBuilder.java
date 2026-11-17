@@ -20,7 +20,8 @@ public record TestCaseDoorBuilder(Path root) {
 
   public CaseDoor build(StateService state, TaskStops stops, Clock clock) {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()));
     return new CaseDoor(
         new SessionCases(paths),
         new MasterCases(paths),

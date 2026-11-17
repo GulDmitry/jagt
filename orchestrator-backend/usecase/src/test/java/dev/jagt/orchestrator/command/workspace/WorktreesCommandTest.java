@@ -14,8 +14,8 @@ class WorktreesCommandTest {
     String report =
         WorktreesCommand.render(
             List.of(
-                new WorktreeOrphans.Orphan(Path.of("/w/ABC-40-demo"), "demo", 2),
-                new WorktreeOrphans.Orphan(Path.of("/w/ABC-41-demo"), "demo", 0)));
+                new WorktreeOrphans.Orphan("ABC-40-demo", Path.of("/w/ABC-40-demo"), "demo", 2),
+                new WorktreeOrphans.Orphan("ABC-41-demo", Path.of("/w/ABC-41-demo"), "demo", 0)));
 
     assertThat(report)
         .contains(

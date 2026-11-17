@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.port.worktree.LineChange;
 import dev.jagt.orchestrator.port.worktree.LineDiff;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.task.TaskArtifacts;
-import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -70,6 +69,6 @@ public class PlanBaseline {
   }
 
   private Path file(String taskId) {
-    return paths.planBaselines().resolve(TaskName.slug(taskId) + ".md");
+    return paths.planBaseline(taskId);
   }
 }

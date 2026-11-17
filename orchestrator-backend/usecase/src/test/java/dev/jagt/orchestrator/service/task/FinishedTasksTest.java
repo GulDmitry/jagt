@@ -40,6 +40,7 @@ class FinishedTasksTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
+                .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     state = new StateService(mapper, paths, reducer, event -> {});
     finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
@@ -69,8 +70,8 @@ class FinishedTasksTest {
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
     finished.record("ABC-1");
     Files.writeString(
-        root.resolve("finished.jsonl"),
-        Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");
+        root.resolve("records/finished.jsonl"),
+        Files.readString(root.resolve("records/finished.jsonl")) + "{ this is not json\n");
 
     assertThat(finished.all())
         .singleElement()
@@ -88,8 +89,10 @@ class FinishedTasksTest {
     finished.record("ABC-1");
     finished.record("ABC-2");
     Files.writeString(
-        root.resolve("finished.jsonl"),
-        Files.readString(root.resolve("finished.jsonl")) + "#".repeat(10 * 1024 * 1024) + "\n");
+        root.resolve("records/finished.jsonl"),
+        Files.readString(root.resolve("records/finished.jsonl"))
+            + "#".repeat(10 * 1024 * 1024)
+            + "\n");
 
     finished.record("ABC-3");
 

@@ -122,6 +122,7 @@ public class FinishedTasks {
 
   private synchronized void append(FinishedTask finished) {
     try {
+      Files.createDirectories(file.getParent());
       Files.writeString(
           file,
           mapper.writeValueAsString(finished) + "\n",

@@ -146,7 +146,9 @@ class NewTaskWorktreesTest {
                         "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
     attaching =
         TaskState.builder(
-                "api", root.resolve("data/worktrees/api/ABC-7").toString(), TaskStatus.IN_PROGRESS)
+                "api",
+                root.resolve("data/tasks/ABC-7/worktrees/api").toString(),
+                TaskStatus.IN_PROGRESS)
             .alias("a1")
             .repoRequest("registry")
             .build();
@@ -237,7 +239,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("data/worktrees/proj/feature-ABC-42"),
+            root.resolve("data/tasks/feature-ABC-42/worktrees/proj"),
             "feature/ABC-42",
             "origin/main",
             BranchStrategy.FRESH);
@@ -317,7 +319,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("data/worktrees/proj/ABC-99"),
+            root.resolve("data/tasks/ABC-99/worktrees/proj"),
             "ABC-99",
             "origin/main",
             BranchStrategy.FRESH);
@@ -333,7 +335,8 @@ class NewTaskWorktreesTest {
         .isInstanceOf(IllegalStateException.class);
 
     verify(git)
-        .removeWorktree(root.resolve("repo"), root.resolve("data/worktrees/proj/ABC-9"), "ABC-9");
+        .removeWorktree(
+            root.resolve("repo"), root.resolve("data/tasks/ABC-9/worktrees/proj"), "ABC-9");
   }
 
   @Test
@@ -346,7 +349,8 @@ class NewTaskWorktreesTest {
         .isInstanceOf(IllegalStateException.class);
 
     verify(git)
-        .removeWorktree(root.resolve("repo"), root.resolve("data/worktrees/proj/ABC-4"), null);
+        .removeWorktree(
+            root.resolve("repo"), root.resolve("data/tasks/ABC-4/worktrees/proj"), null);
   }
 
   @Test
@@ -362,14 +366,14 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("api-repo"),
-            root.resolve("data/worktrees/api/ABC-7"),
+            root.resolve("data/tasks/ABC-7/worktrees/api"),
             "ABC-7",
             "origin/main",
             BranchStrategy.FRESH);
     verify(git)
         .createWorktree(
             root.resolve("web-repo"),
-            root.resolve("data/worktrees/web/ABC-7"),
+            root.resolve("data/tasks/ABC-7/worktrees/web"),
             "ABC-7",
             "origin/release",
             BranchStrategy.FRESH);
@@ -391,10 +395,10 @@ class NewTaskWorktreesTest {
 
     verify(git)
         .removeWorktree(
-            root.resolve("api-repo"), root.resolve("data/worktrees/api/ABC-8"), "ABC-8");
+            root.resolve("api-repo"), root.resolve("data/tasks/ABC-8/worktrees/api"), "ABC-8");
     verify(git)
         .removeWorktree(
-            root.resolve("web-repo"), root.resolve("data/worktrees/web/ABC-8"), "ABC-8");
+            root.resolve("web-repo"), root.resolve("data/tasks/ABC-8/worktrees/web"), "ABC-8");
   }
 
   @Test
@@ -430,7 +434,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("data/worktrees/proj/ABC-3"),
+            root.resolve("data/tasks/ABC-3/worktrees/proj"),
             "ABC-3",
             "feature/parent",
             BranchStrategy.FRESH);
@@ -459,7 +463,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("repo"),
-            root.resolve("data/worktrees/proj/ABC-3"),
+            root.resolve("data/tasks/ABC-3/worktrees/proj"),
             "ABC-3",
             "feature/parent",
             BranchStrategy.FRESH);
@@ -611,7 +615,7 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             root.resolve("registry-repo"),
-            root.resolve("data/worktrees/registry/ABC-7"),
+            root.resolve("data/tasks/ABC-7/worktrees/registry"),
             "ABC-7",
             "origin/release",
             BranchStrategy.FRESH);
@@ -657,7 +661,9 @@ class NewTaskWorktreesTest {
 
     verify(git)
         .removeWorktree(
-            root.resolve("registry-repo"), root.resolve("data/worktrees/registry/ABC-7"), "ABC-7");
+            root.resolve("registry-repo"),
+            root.resolve("data/tasks/ABC-7/worktrees/registry"),
+            "ABC-7");
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api");
     assertThat(task.repoRequest()).isEqualTo("registry");
@@ -676,7 +682,7 @@ class NewTaskWorktreesTest {
     assertThat(state.task("ABC-7").orElseThrow().repos())
         .extracting(TaskRepo::worktreePath)
         .containsExactly(
-            root.resolve("data/worktrees/api/ABC-7").toString(),
+            root.resolve("data/tasks/ABC-7/worktrees/api").toString(),
             root.resolve("cut-by-hand").toString());
   }
 
@@ -721,12 +727,14 @@ class NewTaskWorktreesTest {
   @Test
   void trustsTheAddedRepositorysGitStateAsItStandsAndKeepsTheRecordOfTheOthers() {
     when(config.load()).thenReturn(registryMain);
-    when(git.gitState(List.of(root.resolve("data/worktrees/registry/ABC-7"))))
+    when(git.gitState(List.of(root.resolve("data/tasks/ABC-7/worktrees/registry"))))
         .thenReturn(Map.of("core.bare in registry", "d2"));
     state.putTask(
         "ABC-7",
         TaskState.builder(
-                "api", root.resolve("data/worktrees/api/ABC-7").toString(), TaskStatus.IN_PROGRESS)
+                "api",
+                root.resolve("data/tasks/ABC-7/worktrees/api").toString(),
+                TaskStatus.IN_PROGRESS)
             .alias("a1")
             .repoRequest("registry")
             .gitTrust(GitTrust.of(Map.of("core.bare in api", "d1")))
@@ -751,7 +759,9 @@ class NewTaskWorktreesTest {
     state.putTask(
         "ABC-7",
         TaskState.builder(
-                "api", root.resolve("data/worktrees/api/ABC-7").toString(), TaskStatus.IN_PROGRESS)
+                "api",
+                root.resolve("data/tasks/ABC-7/worktrees/api").toString(),
+                TaskStatus.IN_PROGRESS)
             .alias("a1")
             .repoRequest("api")
             .build());
@@ -798,14 +808,14 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             Path.of("/api"),
-            root.resolve("data/worktrees/api/ABC-9"),
+            root.resolve("data/tasks/ABC-9/worktrees/api"),
             "ABC-9",
             "origin/main",
             BranchStrategy.FRESH);
     verify(git)
         .createWorktree(
             Path.of("/web"),
-            root.resolve("data/worktrees/web/ABC-9"),
+            root.resolve("data/tasks/ABC-9/worktrees/web"),
             "ABC-9",
             "origin/main",
             BranchStrategy.FRESH);
@@ -825,14 +835,14 @@ class NewTaskWorktreesTest {
     verify(git)
         .createWorktree(
             Path.of("/api"),
-            root.resolve("data/worktrees/api/ABC-9"),
+            root.resolve("data/tasks/ABC-9/worktrees/api"),
             "ABC-9",
             "origin/main",
             BranchStrategy.RESUME);
     verify(git)
         .createWorktree(
             Path.of("/web"),
-            root.resolve("data/worktrees/web/ABC-9"),
+            root.resolve("data/tasks/ABC-9/worktrees/web"),
             "ABC-9",
             "origin/main",
             BranchStrategy.RECREATE);
@@ -935,7 +945,7 @@ class NewTaskWorktreesTest {
         .when(git)
         .createWorktree(
             Path.of("/web"),
-            root.resolve("data/worktrees/web/ABC-9"),
+            root.resolve("data/tasks/ABC-9/worktrees/web"),
             "ABC-9",
             "origin/main",
             BranchStrategy.FRESH);
@@ -947,7 +957,8 @@ class NewTaskWorktreesTest {
                 repos -> {}))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(Path.of("/api"), root.resolve("data/worktrees/api/ABC-9"), "ABC-9");
+    verify(git)
+        .removeWorktree(Path.of("/api"), root.resolve("data/tasks/ABC-9/worktrees/api"), "ABC-9");
     verify(git, never()).removeWorktree(eq(Path.of("/web")), any(), any());
   }
 
@@ -964,7 +975,9 @@ class NewTaskWorktreesTest {
                 }))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(git).removeWorktree(Path.of("/api"), root.resolve("data/worktrees/api/ABC-9"), "ABC-9");
-    verify(git).removeWorktree(Path.of("/web"), root.resolve("data/worktrees/web/ABC-9"), "ABC-9");
+    verify(git)
+        .removeWorktree(Path.of("/api"), root.resolve("data/tasks/ABC-9/worktrees/api"), "ABC-9");
+    verify(git)
+        .removeWorktree(Path.of("/web"), root.resolve("data/tasks/ABC-9/worktrees/web"), "ABC-9");
   }
 }

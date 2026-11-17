@@ -36,9 +36,10 @@ The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
 
 ## Where jagt writes
 
-Everything jagt writes lives in one data folder, `~/.jagt` by default: `state.json` and its siblings, `worktrees/<project>/<task>`,
-`repos/<name>` and `logs/`. Name another with `orchestrator.data` in `jagt.yml`, `ORCHESTRATOR_DATA` or `JAGT__orchestrator__data`.
-A repository stays where it is. A `state.json` an older version left in the repository root is moved into the folder at the first start.
+Everything jagt writes lives in one data folder, `data/` in the jagt folder by default ([the tree](rules/components.md#the-data-folder)).
+Name another with `orchestrator.data` in `jagt.yml`, `ORCHESTRATOR_DATA` or `JAGT__orchestrator__data`.
+A repository stays where it is.
+What an older version kept in the jagt folder's root, `~/.jagt` or flat in the data folder moves into the tree at the first start.
 
 ## MCP access comes first
 

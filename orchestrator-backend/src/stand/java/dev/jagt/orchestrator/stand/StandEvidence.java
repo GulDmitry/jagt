@@ -16,8 +16,8 @@ public final class StandEvidence {
           "screens.log",
           "jagt.out" + JagtProcess.BEFORE_RESTART,
           "jagt-backend.log" + JagtProcess.BEFORE_RESTART,
-          "state.json",
-          "misses.jsonl",
+          "jagt/state.json",
+          "records/misses.jsonl",
           "recording.jsonl",
           StandMarker.FILE);
 
@@ -31,6 +31,7 @@ public final class StandEvidence {
       Files.createDirectories(target);
       for (String name : FILES) {
         if (Files.isRegularFile(root.resolve(name))) {
+          Files.createDirectories(target.resolve(name).getParent());
           Files.copy(root.resolve(name), target.resolve(name), StandardCopyOption.REPLACE_EXISTING);
         }
       }

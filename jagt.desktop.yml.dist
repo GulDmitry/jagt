@@ -15,7 +15,7 @@ orchestrator:
   projects:
     my-project:
       path: /absolute/path/to/base/repository   # used as is when it exists; nothing is cloned there
-      # url: https://example.com/team/repo.git   # cloned into <data>/repos/<project> where `path` is blank or missing;
+      # url: https://example.com/team/repo.git   # cloned into <data>/projects/<project> where `path` is blank or missing;
       #                             # fetched before each task starts; the clone CLI's own credentials; a failure marks the board's head
       # localFiles: /path/to/local-files   # the folder `worktree.copyGlobs` copies from into every new worktree (an .env a clone lacks);
       #                             # blank = the project's path
@@ -266,9 +266,10 @@ orchestrator:
   startupChecks: true     # refuse to start when part of the installation is missing
 
   # ── Almost nobody sets these ───────────────────────────────────────────────────────────────────────────────
-  # data: /data                  # everything jagt writes: state, worktrees/<project>/<task>, repos, logs; default ~/.jagt
+  # data: /data                  # everything jagt writes: state, tasks/<task>/worktrees/<project>, projects, logs; default <root>/data
   # root: /path/to/jagt          # where jagt finds `jagt.desktop.yml.dist` and the roles; default the jagt checkout
-  # stateFile: /path/to/state.json   # where the tasks are kept; default `data`/state.json
+  # previousData: ~/.jagt         # the older default data folder; what it holds is moved into the data folder once; default ~/.jagt
+  # stateFile: /path/to/state.json   # where the tasks are kept; default `data`/jagt/state.json
   # board:
   #   dir: /path/to/board       # serve the board from this folder, relative: against `root`; an edit shows on reload; default the jar's copy
   # mcpUrl: http://127.0.0.1:8290/mcp                   # these three follow `server.port`

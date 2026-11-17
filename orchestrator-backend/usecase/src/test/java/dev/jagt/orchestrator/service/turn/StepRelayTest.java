@@ -339,7 +339,7 @@ class StepRelayTest {
 
     assertThat(told).isFalse();
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(Files.readString(root.resolve("misses.jsonl")))
+    assertThat(Files.readString(root.resolve("records/misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"IN_PROGRESS\",\""
                 + "by\":\"jagt\"}\n");
@@ -359,7 +359,7 @@ class StepRelayTest {
 
     assertThat(told).isFalse();
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(Files.readString(root.resolve("misses.jsonl")))
+    assertThat(Files.readString(root.resolve("records/misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by"
                 + "\":\"human\"}\n");

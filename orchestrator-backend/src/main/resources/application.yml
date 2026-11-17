@@ -68,8 +68,10 @@ orchestrator:
   root: ${ORCHESTRATOR_ROOT:}
   config-file: ${ORCHESTRATOR_CONFIG_FILE:}
   state-file: ${ORCHESTRATOR_STATE_FILE:}
-  # Everything jagt writes: state, worktrees, clones, logs.
-  data: ${ORCHESTRATOR_DATA:${user.home}/.jagt}
+  # Everything jagt writes: the layout is docs/rules/components.md. <root>/data unless named; the launch pins default-data.
+  data: ${ORCHESTRATOR_DATA:${orchestrator.default-data:${orchestrator.root}/data}}
+  # The previous default data folder; what it holds is moved into the data folder once.
+  previous-data: ${user.home}/.jagt
   # macos | linux — selects the notifier.
   platform: macos
   # kitty | ghostty | none — the viewer terminal, none opens no window and needs no kitty; ghostty needs macOS and Ghostty 1.3 or newer.

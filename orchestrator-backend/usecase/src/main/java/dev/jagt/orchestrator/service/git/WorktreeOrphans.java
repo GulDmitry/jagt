@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.task.ArchivedTaskFolder;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.service.worktree.WorktreeNoise;
 import dev.jagt.orchestrator.task.launch.TaskName;
@@ -37,18 +38,20 @@ import org.springframework.util.FileSystemUtils;
 @Slf4j
 public class WorktreeOrphans {
 
-  public record Orphan(Path path, String projectKey, int secretFiles) {}
+  /** {@code name} is what {@code delete-worktree} takes. */
+  public record Orphan(String name, Path path, String projectKey, int secretFiles) {}
 
   private final ConfigService configService;
   private final StateService stateService;
   private final GitCommands git;
   private final OrchestratorPaths paths;
+  private final ArchivedTaskFolder folders;
 
   /** Deletes the one orphan directory called {@code name}; any other path is refused. */
   public String delete(String name) {
     Orphan orphan =
         scan().stream()
-            .filter(found -> found.path().getFileName().toString().equals(name))
+            .filter(found -> found.name().equals(name))
             .findFirst()
             .orElseThrow(() ->
                 new IllegalArgumentException(
@@ -57,7 +60,9 @@ public class WorktreeOrphans {
       ProjectConfig project = configService.load().projects().get(orphan.projectKey());
       Path repository = project == null ? null : Path.of(project.path());
       if (repository != null && registeredIn(repository, orphan.path())) {
-        return removeRegistered(repository, orphan.path());
+        String said = removeRegistered(repository, orphan.path());
+        shelveTaskFolderOf(orphan);
+        return said;
       }
       FileSystemUtils.deleteRecursively(orphan.path());
     } catch (IOException e) {
@@ -70,7 +75,22 @@ public class WorktreeOrphans {
       return "could not delete " + orphan.path() + ": " + e;
     }
     log.atInfo().setMessage("worktree deleted").addKeyValue("path", orphan.path()).log();
+    shelveTaskFolderOf(orphan);
     return "deleted " + orphan.path();
+  }
+
+  private void shelveTaskFolderOf(Orphan orphan) {
+    Path worktrees = orphan.path().getParent();
+    Path folder = worktrees == null ? null : worktrees.getParent();
+    if (folder == null || !paths.tasks().equals(folder.getParent())) {
+      return;
+    }
+    String slug = folder.getFileName().toString();
+    boolean live =
+        stateService.tasks().keySet().stream().anyMatch(id -> TaskName.slug(id).equals(slug));
+    if (!live) {
+      folders.shelve(slug, null);
+    }
   }
 
   private boolean registeredIn(Path repository, Path directory) {
@@ -112,7 +132,8 @@ public class WorktreeOrphans {
         .forEach((projectKey, project) -> {
           Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
           besideRepository(projectKey, projectPath, owned, secretMatchers, found);
-          underData(projectKey, owned, secretMatchers, found);
+          underData(projectKey, secretMatchers, found);
+          underLegacyWorktrees(projectKey, owned, secretMatchers, found);
         });
     return List.copyOf(found.values());
   }
@@ -136,26 +157,65 @@ public class WorktreeOrphans {
       Path path = parent.resolve(name);
       if (!path.equals(projectPath) && !somebodyElses(name, path)) {
         found.putIfAbsent(
-            path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers)));
+            path, new Orphan(name, path, projectKey, countSecretFiles(path, secretMatchers)));
       }
     }
   }
 
   private void underData(
+      String projectKey, List<PathMatcher> secretMatchers, Map<Path, Orphan> found) {
+    if (!Files.isDirectory(paths.tasks())) {
+      return;
+    }
+    Set<String> live = new java.util.HashSet<>();
+    Set<Path> recorded = new java.util.HashSet<>();
+    stateService
+        .tasks()
+        .forEach((taskId, task) -> {
+          live.add(TaskName.slug(taskId));
+          task.repos().stream()
+              .map(TaskRepo::worktreePath)
+              .filter(path -> path != null && !path.isBlank())
+              .forEach(path -> recorded.add(Path.of(path).toAbsolutePath().normalize()));
+        });
+    for (String slug : directoryNames(paths.tasks())) {
+      Path worktree = paths.worktree(projectKey, slug);
+      List<Path> candidates =
+          List.of(
+              worktree,
+              paths.deployWorktree(projectKey, slug),
+              paths.revertWorktree(projectKey, slug));
+      for (Path path : candidates) {
+        boolean owned = live.contains(slug) && (!path.equals(worktree) || recorded.contains(path));
+        if (Files.isDirectory(path) && !owned) {
+          found.putIfAbsent(
+              path,
+              new Orphan(
+                  slug + "/" + path.getFileName(),
+                  path,
+                  projectKey,
+                  countSecretFiles(path, secretMatchers)));
+        }
+      }
+    }
+  }
+
+  private void underLegacyWorktrees(
       String projectKey,
       Set<String> owned,
       List<PathMatcher> secretMatchers,
       Map<Path, Orphan> found) {
-    Path own = paths.worktrees().resolve(projectKey);
+    Path own = paths.legacyWorktrees(projectKey);
     if (!Files.isDirectory(own)) {
       return;
     }
     directoryNames(own).stream()
         .filter(name -> !owned.contains(name))
-        .map(own::resolve)
-        .forEach(path ->
-            found.putIfAbsent(
-                path, new Orphan(path, projectKey, countSecretFiles(path, secretMatchers))));
+        .forEach(name -> {
+          Path path = own.resolve(name);
+          found.putIfAbsent(
+              path, new Orphan(name, path, projectKey, countSecretFiles(path, secretMatchers)));
+        });
   }
 
   /**

@@ -16,16 +16,19 @@ class MasterTokenTest {
   void admitsWhatItLeftBesideTheStateForTheRootsOwnConfigOnly(@TempDir Path root) throws Exception {
     MasterToken token =
         new MasterToken(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withData(root.toString())));
 
-    String written = Files.readString(root.resolve("master-token"));
+    String written = Files.readString(root.resolve("jagt/master-token"));
 
     assertThat(token.matches(written)).isTrue();
     assertThat(token.matches(written + "0")).isFalse();
     assertThat(token.matches("")).isFalse();
     assertThat(
             PosixFilePermissions.toString(
-                Files.getPosixFilePermissions(root.resolve("master-token"))))
+                Files.getPosixFilePermissions(root.resolve("jagt/master-token"))))
         .isEqualTo("rw-------");
   }
 
@@ -48,9 +51,10 @@ class MasterTokenTest {
   @Test
   void drawsNewTokenAtEachStart(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()));
     new MasterToken(paths);
-    String first = Files.readString(root.resolve("master-token"));
+    String first = Files.readString(root.resolve("jagt/master-token"));
 
     MasterToken restarted = new MasterToken(paths);
 

@@ -703,14 +703,13 @@ class TmuxSessionHostTest {
         new TmuxSessionHost(
             processes, new TmuxReads(processes, properties), paths, terminal, agent);
 
-    host.openTaskWindow(
-        "jagt", "agents", "ABC-1", null, paths.scratch().resolve("ABC-1"), true, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, paths.scratch("ABC-1"), true, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
         .anySatisfy(command ->
             assertThat(command.getLast())
-                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.scratch() + "' "));
+                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.tasks() + "' "));
   }
 
   @Test

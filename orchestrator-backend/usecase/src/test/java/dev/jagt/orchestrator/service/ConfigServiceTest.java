@@ -56,6 +56,7 @@ class ConfigServiceTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
+                .withData(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString()));
     stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC()));
@@ -421,7 +422,7 @@ class ConfigServiceTest {
 
     String path = service.project("api").path();
 
-    assertThat(path).isEqualTo(root.resolve("repos/api").toString());
+    assertThat(path).isEqualTo(root.resolve("projects/api").toString());
   }
 
   @Test
@@ -447,7 +448,7 @@ class ConfigServiceTest {
 
     String path = service.project("api").path();
 
-    assertThat(path).isEqualTo(root.resolve("repos/api").toString());
+    assertThat(path).isEqualTo(root.resolve("projects/api").toString());
   }
 
   @ParameterizedTest

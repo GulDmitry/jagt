@@ -9,7 +9,7 @@
 | asset | where | why it matters |
 |-------|-------|----------------|
 | state | `state.json`, `finished.jsonl`, `/data` on a server | tasks, history, who asked; read whole by `GET /state` |
-| Master token | `master-token` beside `state.json`, mode `rw-------`, drawn at each start (`MasterToken`) | whoever presents it is the Master and holds every verb |
+| Master token | `jagt/master-token` beside `state.json`, mode `rw-------`, drawn at each start (`MasterToken`) | whoever presents it is the Master and holds every verb |
 | worktrees | one per task, plus the repositories | code a session writes; a push leaves from here |
 | credential references | env names (`passwordHash`, `clientSecretEnv`, `webhookEnv`), a mounted MCP file, `GH_TOKEN`/`GITLAB_TOKEN` | jagt holds names, never values in `jagt.yml` or an image |
 | the board | HTTP on `server.address:8290`, default `127.0.0.1` | acts as the human: every verb a human holds |

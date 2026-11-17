@@ -30,7 +30,8 @@ class BoardInteractionLogTest extends BoardPageContext {
 
     page.waitForResponse("**/api/interactions", () -> button(page, "Focus").click());
 
-    org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
+    org.assertj.core.api.Assertions.assertThat(
+            Files.readString(root.resolve("records/interactions.jsonl")))
         .contains("\"control\":\"action:focus\",\"status\":\"IN_PROGRESS\"")
         .doesNotContain("ABC-1")
         .doesNotContain("a1");
@@ -44,7 +45,8 @@ class BoardInteractionLogTest extends BoardPageContext {
 
     page.waitForResponse("**/api/interactions", () -> page.locator("#tasks .row .pick").click());
 
-    org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
+    org.assertj.core.api.Assertions.assertThat(
+            Files.readString(root.resolve("records/interactions.jsonl")))
         .contains("\"control\":\"select\",\"status\":\"IN_PROGRESS\"")
         .doesNotContain("ABC-1");
   }
@@ -57,7 +59,8 @@ class BoardInteractionLogTest extends BoardPageContext {
 
     page.waitForResponse("**/api/interactions", () -> page.keyboard().press("j"));
 
-    org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
+    org.assertj.core.api.Assertions.assertThat(
+            Files.readString(root.resolve("records/interactions.jsonl")))
         .contains("\"control\":\"key:j\",\"status\":\"IN_PROGRESS\"");
   }
 
@@ -78,7 +81,7 @@ class BoardInteractionLogTest extends BoardPageContext {
         });
     second.waitForResponse("**/api/interactions", () -> second.keyboard().press("j"));
 
-    String log = Files.readString(root.resolve("interactions.jsonl"));
+    String log = Files.readString(root.resolve("records/interactions.jsonl"));
     org.assertj.core.api.Assertions.assertThat(log)
         .contains("\"control\":\"shown:required\",\"status\":\"REVIEWED\"")
         .doesNotContain("ABC-1")
@@ -99,7 +102,8 @@ class BoardInteractionLogTest extends BoardPageContext {
           state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
         });
 
-    org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
+    org.assertj.core.api.Assertions.assertThat(
+            Files.readString(root.resolve("records/interactions.jsonl")))
         .contains("\"control\":\"shown:jobs-failed\",\"status\":null");
   }
 }

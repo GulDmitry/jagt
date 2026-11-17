@@ -22,12 +22,13 @@ class StopLogTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
+                    .withData(root.toString())
                     .withStateFile(root.resolve("state.json").toString())));
 
     log.record(
         new StopLog.Stop(100, "ABC-42", "cart", "STALLED", TaskStatus.CI_POLLING, "3 rounds"));
 
-    assertThat(Files.readString(root.resolve("stops.jsonl")))
+    assertThat(Files.readString(root.resolve("records/stops.jsonl")))
         .isEqualTo(
             "{\"at\":100,\"task\":\"ABC-42\",\"alias\":\"cart\",\"trigger\":\"STALLED\","
                 + "\"status\":\"CI_POLLING\",\"evidence\":\"3 rounds\"}\n");

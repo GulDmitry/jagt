@@ -177,7 +177,7 @@ class SubAgentBriefingTest {
     assertThat(briefing)
         .contains(
             "- Also yours while jagt hands you a deploy conflict there: "
-                + root.resolve("worktrees/web/ABC-42-deploy")
+                + root.resolve("data/tasks/ABC-42/worktrees/web-deploy")
                 + ".");
   }
 

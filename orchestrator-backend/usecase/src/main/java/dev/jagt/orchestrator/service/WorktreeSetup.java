@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.launch.NewTask;
-import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.io.IOException;
@@ -106,7 +105,7 @@ public class WorktreeSetup {
    * without git.
    */
   public Path scratch(NewTask request) {
-    Path folder = paths.scratch().resolve(TaskName.slug(request.taskId()));
+    Path folder = paths.scratch(request.taskId());
     try {
       Files.createDirectories(folder);
     } catch (IOException e) {

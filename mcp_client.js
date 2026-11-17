@@ -16,7 +16,7 @@ const readline = require('node:readline');
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://127.0.0.1:8290/mcp';
 const CWD = process.cwd();
 
-// Beside state.json, wherever `stateFile` in jagt.yml (or ORCHESTRATOR_STATEFILE) puts it; else the root.
+// Beside state.json, wherever `stateFile` in jagt.yml (or ORCHESTRATOR_STATEFILE) puts it; else in the data folder's `jagt/`.
 function tokenFile() {
   let stateFile = process.env.ORCHESTRATOR_STATEFILE;
   if (!stateFile) {
@@ -27,7 +27,8 @@ function tokenFile() {
       stateFile = undefined;
     }
   }
-  return path.join(path.dirname(path.resolve(__dirname, stateFile || 'state.json')), 'master-token');
+  const data = path.resolve(__dirname, process.env.ORCHESTRATOR_DATA || 'data');
+  return path.join(path.dirname(path.resolve(__dirname, stateFile || path.join(data, 'jagt', 'state.json'))), 'master-token');
 }
 
 // Read per call: jagt draws a new token at each start. `__dirname` is the root, the symlink resolved.

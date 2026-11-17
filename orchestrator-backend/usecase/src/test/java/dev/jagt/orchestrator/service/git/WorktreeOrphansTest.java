@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.git;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.task.ArchivedTaskFolder;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -40,6 +42,7 @@ class WorktreeOrphansTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final GitCommands git = mock(GitCommands.class);
+  private final ArchivedTaskFolder folders = mock(ArchivedTaskFolder.class);
   private Path repo;
   private Path registered;
   private StateService state;
@@ -52,9 +55,10 @@ class WorktreeOrphansTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
+                .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    orphans = new WorktreeOrphans(config, state, git, paths);
+    orphans = new WorktreeOrphans(config, state, git, paths, folders);
     registered = root.resolve("ABC-48-demo");
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(
@@ -127,7 +131,53 @@ class WorktreeOrphansTest {
 
   @Test
   void listsFolderUnderTheDataFolderNoTaskOwns() throws IOException {
-    Path left = Files.createDirectories(root.resolve("worktrees/demo/ABC-43"));
+    Path left = Files.createDirectories(root.resolve("tasks/ABC-43/worktrees/demo"));
+
+    assertThat(orphans.scan())
+        .singleElement()
+        .satisfies(found -> {
+          assertThat(found.path()).isEqualTo(left);
+          assertThat(found.name()).isEqualTo("ABC-43/demo");
+          assertThat(found.projectKey()).isEqualTo("demo");
+        });
+  }
+
+  @Test
+  void leavesFolderUnderTheDataFolderOfLiveTaskAlone() throws IOException {
+    Path live = Files.createDirectories(root.resolve("tasks/ABC-44/worktrees/demo"));
+    state.putTask(
+        "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+
+    assertThat(orphans.scan()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"-deploy", "-revert"})
+  void leavesTheDeployAndRevertWorktreeUnderTheDataFolderOfLiveTaskAlone(String name)
+      throws IOException {
+    Path live = Files.createDirectories(root.resolve("tasks/ABC-44/worktrees/demo"));
+    Files.createDirectories(root.resolve("tasks/ABC-44/worktrees").resolve("demo" + name));
+    state.putTask(
+        "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+
+    assertThat(orphans.scan()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"-deploy", "-revert"})
+  void listsTheDeployAndRevertWorktreeUnderTheDataFolderOfTaskThatIsGone(String name)
+      throws IOException {
+    Path left =
+        Files.createDirectories(root.resolve("tasks/ABC-45/worktrees").resolve("demo" + name));
+
+    assertThat(orphans.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.path()).isEqualTo(left));
+  }
+
+  @Test
+  void listsWorktreeLeftInTheOldWorktreesFolderOfTheDataFolderThatNoTaskOwns() throws IOException {
+    Path left = Files.createDirectories(root.resolve("worktrees/demo/ABC-50"));
 
     assertThat(orphans.scan())
         .singleElement()
@@ -138,35 +188,55 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void leavesFolderUnderTheDataFolderOfLiveTaskAlone() throws IOException {
-    Path live = Files.createDirectories(root.resolve("worktrees/demo/ABC-44"));
+  void leavesWorktreeInTheOldWorktreesFolderThatLiveTaskRecordedAlone() throws IOException {
+    Path live = Files.createDirectories(root.resolve("worktrees/demo/ABC-51"));
+    Files.createDirectories(root.resolve("worktrees/demo/ABC-51-deploy"));
     state.putTask(
-        "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+        "ABC-51", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
 
     assertThat(orphans.scan()).isEmpty();
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"ABC-44-deploy", "ABC-44-revert"})
-  void leavesTheDeployAndRevertWorktreeUnderTheDataFolderOfLiveTaskAlone(String name)
-      throws IOException {
-    Path live = Files.createDirectories(root.resolve("worktrees/demo/ABC-44"));
-    Files.createDirectories(root.resolve("worktrees/demo").resolve(name));
+  @Test
+  void shelvesTheTaskFolderOfFinishedTaskOnceItsLeftWorktreeIsDeleted() throws IOException {
+    Files.createDirectories(root.resolve("tasks/ABC-52/worktrees/demo"));
+    Path other = Files.createDirectories(root.resolve("tasks/ABC-99/worktrees/demo"));
     state.putTask(
-        "ABC-44", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+        "ABC-99", TaskState.builder("demo", other.toString(), TaskStatus.IN_PROGRESS).build());
+    when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
+        .thenReturn(new Processes.Result(0, "worktree " + repo + "\n", ""));
 
-    assertThat(orphans.scan()).isEmpty();
+    orphans.delete("ABC-52/demo");
+
+    verify(folders).shelve("ABC-52", null);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"ABC-45-deploy", "ABC-45-revert"})
-  void listsTheDeployAndRevertWorktreeUnderTheDataFolderOfTaskThatIsGone(String name)
-      throws IOException {
-    Path left = Files.createDirectories(root.resolve("worktrees/demo").resolve(name));
+  @Test
+  void shelvesTheTaskFolderOfFinishedTaskOnceItsRegisteredWorktreeIsRemoved() throws IOException {
+    Path left = Files.createDirectories(root.resolve("tasks/ABC-54/worktrees/demo"));
+    when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
+        .thenReturn(
+            new Processes.Result(0, "worktree " + repo + "\n\nworktree " + left + "\n", ""));
+    when(git.run(repo, List.of("git", "worktree", "remove", "--force", left.toString())))
+        .thenReturn(new Processes.Result(0, "", ""));
 
-    assertThat(orphans.scan())
-        .singleElement()
-        .satisfies(found -> assertThat(found.path()).isEqualTo(left));
+    orphans.delete("ABC-54/demo");
+
+    verify(folders).shelve("ABC-54", null);
+  }
+
+  @Test
+  void keepsTheTaskFolderOfLiveTaskWhenAnotherOfItsWorktreesIsDeleted() throws IOException {
+    Path live = Files.createDirectories(root.resolve("tasks/ABC-53/worktrees/api"));
+    Files.createDirectories(root.resolve("tasks/ABC-53/worktrees/demo"));
+    state.putTask(
+        "ABC-53", TaskState.builder("api", live.toString(), TaskStatus.IN_PROGRESS).build());
+    when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
+        .thenReturn(new Processes.Result(0, "worktree " + repo + "\n", ""));
+
+    orphans.delete("ABC-53/demo");
+
+    verify(folders, never()).shelve(any(), any());
   }
 
   @Test

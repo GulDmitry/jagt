@@ -16,6 +16,7 @@ public record TestOrchestratorPathsBuilder(Path root) {
     return new OrchestratorPaths(
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
+            .withData(root.toString())
             .withStateFile(root.resolve("state.json").toString()));
   }
 }

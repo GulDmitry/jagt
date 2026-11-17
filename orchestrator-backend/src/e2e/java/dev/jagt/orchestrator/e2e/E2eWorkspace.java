@@ -193,13 +193,13 @@ final class E2eWorkspace {
         "worktree",
         "remove",
         "--force",
-        worktree.resolveSibling(branch + "-deploy").toString());
+        worktree.resolveSibling(worktree.getFileName() + "-deploy").toString());
     gitQuietly(
         repo,
         "worktree",
         "remove",
         "--force",
-        worktree.resolveSibling(branch + "-revert").toString());
+        worktree.resolveSibling(worktree.getFileName() + "-revert").toString());
     for (Path diffCheckout : diffCheckouts(repo)) {
       gitQuietly(repo, "worktree", "remove", "--force", diffCheckout.toString());
     }
