@@ -2,8 +2,9 @@ package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -674,20 +676,24 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theSessionTabKeepsItsScreenWhilePushMakesItReadAgain() throws Exception {
-    CountDownLatch release = new CountDownLatch(1);
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(sessions.screen("ABC-1"))
-        .thenReturn(Optional.of("compiling"), Optional.of("compiling"))
-        .thenAnswer(call -> {
-          release.await();
-          return Optional.of("tests pass");
-        });
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
     Page page = openBoard();
     page.locator("#pane .tabs button[data-tab=session]").click();
     assertThat(page.locator("#pane .session .screen")).hasText("compiling");
+    CountDownLatch reading = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    doAnswer(
+            call -> {
+              reading.countDown();
+              release.await();
+              return Optional.of("tests pass");
+            })
+        .when(sessions)
+        .screen("ABC-1");
 
     state.putTask("ABC-1", state.task("ABC-1").orElseThrow().touched(System.currentTimeMillis()));
-    verify(sessions, timeout(5000).times(3)).screen("ABC-1");
+    assertTrue(reading.await(5, TimeUnit.SECONDS));
 
     assertThat(page.locator("#pane .session .screen")).hasText("compiling");
     release.countDown();
