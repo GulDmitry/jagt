@@ -15,12 +15,19 @@ public class StandHost implements AutoCloseable {
   private final StandStore store;
   private final JsonRpc rpc;
 
-  public StandHost(Path directory, InetAddress bind) throws IOException {
-    this.server = HttpServer.create(new InetSocketAddress(bind, 0), 0);
-    this.store = new StandStore(directory, baseUrl());
-    this.rpc = new JsonRpc(new StandTools(store));
+  private StandHost(HttpServer server, StandStore store, JsonRpc rpc) {
+    this.server = server;
+    this.store = store;
+    this.rpc = rpc;
     server.createContext("/mcp", this::serve);
     server.createContext("/app", this::page);
+  }
+
+  public static StandHost listen(Path directory, InetAddress bind) throws IOException {
+    HttpServer server = HttpServer.create(new InetSocketAddress(bind, 0), 0);
+    StandStore store =
+        new StandStore(directory, "http://127.0.0.1:" + server.getAddress().getPort());
+    return new StandHost(server, store, new JsonRpc(new StandTools(store)));
   }
 
   public StandHost start() {

@@ -40,7 +40,7 @@ class ContextRelaysTest {
             .readTree("{\"repos\":[{\"worktreePath\":\"" + root.resolve("abc-42") + "\"}]}");
 
     Optional<List<String>> steps =
-        new ContextRelays(new StandBooks(root).brief()).changed("ABC-42", task);
+        new ContextRelays(StandBooks.at(root).brief()).changed("ABC-42", task);
 
     assertThat(steps).contains(List.of("round-threads", "round-threads-done"));
   }
@@ -55,7 +55,7 @@ class ContextRelaysTest {
         JsonMapper.builder()
             .build()
             .readTree("{\"repos\":[{\"worktreePath\":\"" + root.resolve("abc-42") + "\"}]}");
-    ContextRelays relays = new ContextRelays(new StandBooks(root).brief());
+    ContextRelays relays = new ContextRelays(StandBooks.at(root).brief());
     relays.changed("ABC-42", task);
 
     Optional<List<String>> again = relays.changed("ABC-42", task);

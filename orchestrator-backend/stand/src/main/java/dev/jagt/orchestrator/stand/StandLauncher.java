@@ -70,7 +70,7 @@ final class StandLauncher {
     StandProject project = StandProject.create(root);
     String reach = container ? "host.docker.internal" : "127.0.0.1";
     StandHost host =
-        new StandHost(
+        StandHost.listen(
                 root.resolve("host"),
                 container ? InetAddress.getByName("0.0.0.0") : InetAddress.getLoopbackAddress())
             .start();

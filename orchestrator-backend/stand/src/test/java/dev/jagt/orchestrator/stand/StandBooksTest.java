@@ -14,12 +14,12 @@ class StandBooksTest {
   void runThatRecordedNothingHasNoViolations() {
     StandProject.create(root);
 
-    assertThat(new StandBooks(root).violations()).isEmpty();
+    assertThat(StandBooks.at(root).violations()).isEmpty();
   }
 
   @Test
   void theShippedBriefAndCasesAreRead() {
-    StandBooks books = new StandBooks(root);
+    StandBooks books = StandBooks.at(root);
 
     assertThat(books.brief()).isNotNull();
     assertThat(books.cases()).isNotNull();

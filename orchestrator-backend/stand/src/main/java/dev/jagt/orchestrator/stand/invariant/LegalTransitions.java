@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.stand.invariant;
 
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskChart;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,8 +9,11 @@ public final class LegalTransitions implements Invariant {
 
   public static final String NAME = "legal-transitions";
 
-  private final LegalMoves moves =
-      new LegalMoves(new FlowRules(new TaskChart(Composition.builtIn())));
+  private final LegalMoves moves;
+
+  public LegalTransitions(LegalMoves moves) {
+    this.moves = moves;
+  }
 
   @Override
   public List<Violation> check(RunRecord run) {

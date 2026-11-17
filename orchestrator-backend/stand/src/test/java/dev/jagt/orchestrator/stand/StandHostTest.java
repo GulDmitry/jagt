@@ -29,7 +29,7 @@ class StandHostTest {
 
   @BeforeEach
   void startHost() throws Exception {
-    host = new StandHost(directory, InetAddress.getLoopbackAddress()).start();
+    host = StandHost.listen(directory, InetAddress.getLoopbackAddress()).start();
     mcp =
         HttpRequest.newBuilder(URI.create(host.mcpUrl("127.0.0.1")))
             .header("Content-Type", "application/json");
@@ -209,7 +209,7 @@ class StandHostTest {
         own.isLoopbackAddress() || own.isAnyLocalAddress(),
         "this machine has no address but loopback");
 
-    try (StandHost open = new StandHost(directory, InetAddress.getByName("0.0.0.0")).start()) {
+    try (StandHost open = StandHost.listen(directory, InetAddress.getByName("0.0.0.0")).start()) {
       HttpResponse<String> response =
           client.send(
               HttpRequest.newBuilder(URI.create(open.appUrl(own.getHostAddress()))).build(),

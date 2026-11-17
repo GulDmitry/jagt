@@ -38,7 +38,7 @@ public record TestStandRunBuilder(Path root, @Nullable Path replayed, Duration p
         new StandSite(
             root,
             StandProject.create(root),
-            new StandHost(root.resolve("host"), InetAddress.getLoopbackAddress()),
+            StandHost.listen(root.resolve("host"), InetAddress.getLoopbackAddress()),
             Optional.empty());
     return new StandRun(
         site, StandMarker.started("happy/judge"), StandMode.JUDGE, jagt, replayed, teardown, poll);

@@ -3,6 +3,9 @@ package dev.jagt.orchestrator.stand.invariant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.role.CaseBook;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.TaskChart;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -23,7 +26,11 @@ class InvariantCheckerTest {
     Path root = Path.of(InvariantCheckerTest.class.getResource("/runs/clean").toURI());
 
     List<Violation> violations =
-        new InvariantChecker(book, (commit, from) -> true).check(RunRecord.read(root));
+        new InvariantChecker(
+                book,
+                (commit, from) -> true,
+                new LegalMoves(new FlowRules(new TaskChart(Composition.builtIn()))))
+            .check(RunRecord.read(root));
 
     assertThat(violations).isEmpty();
   }
@@ -49,7 +56,10 @@ class InvariantCheckerTest {
     Path root = Path.of(InvariantCheckerTest.class.getResource("/runs/" + run).toURI());
 
     List<Violation> violations =
-        new InvariantChecker(book, (commit, from) -> !commit.startsWith("bad"))
+        new InvariantChecker(
+                book,
+                (commit, from) -> !commit.startsWith("bad"),
+                new LegalMoves(new FlowRules(new TaskChart(Composition.builtIn()))))
             .check(RunRecord.read(root));
 
     assertThat(violations)

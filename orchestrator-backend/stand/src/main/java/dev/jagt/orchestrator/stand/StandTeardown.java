@@ -76,7 +76,7 @@ final class StandTeardown {
       Path root, StandMarker marker, @Nullable StandOutcome last, boolean replayed, Instant began) {
     List<String> found;
     try {
-      found = new StandBooks(root).violations().stream().map(Violation::toString).toList();
+      found = StandBooks.at(root).violations().stream().map(Violation::toString).toList();
     } catch (RuntimeException e) {
       found = List.of("invariants unreadable: " + e);
     }

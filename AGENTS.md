@@ -86,7 +86,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   group them into a component, never add a field.
 - **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
 - **No static state, no lifecycle hook that does work**: a static field is final and immutable.
-  A holder's inputs are its arguments; a collaborator arrives through the constructor.
+  A holder's inputs are its arguments; a collaborator arrives through the constructor (`CollaboratorOwnersTest`).
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`; stop work is a `SmartLifecycle` after the web server
   (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
   [0169](docs/decisions/0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).

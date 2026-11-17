@@ -8,13 +8,13 @@ public final class InvariantChecker {
 
   private final List<Invariant> invariants;
 
-  public InvariantChecker(CaseBook book, Ancestry ancestry) {
+  public InvariantChecker(CaseBook book, Ancestry ancestry, LegalMoves moves) {
     this.invariants =
         List.of(
             new BaseUnchanged(),
             new DeployBranchByDeploy(),
             new NoForcePush(ancestry),
-            new LegalTransitions(),
+            new LegalTransitions(moves),
             new StepsWithinCases(book),
             new MissStopsTheMaster());
   }

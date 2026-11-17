@@ -5,8 +5,12 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.CaseBook;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.config.role.SessionCases;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.stand.invariant.GitAncestry;
 import dev.jagt.orchestrator.stand.invariant.InvariantChecker;
+import dev.jagt.orchestrator.stand.invariant.LegalMoves;
 import dev.jagt.orchestrator.stand.invariant.RunRecord;
 import dev.jagt.orchestrator.stand.invariant.Violation;
 import java.nio.file.Path;
@@ -17,9 +21,14 @@ public final class StandBooks {
   private final Path root;
   private final OrchestratorPaths paths;
 
-  public StandBooks(Path root) {
+  private StandBooks(Path root, OrchestratorPaths paths) {
     this.root = root;
-    this.paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    this.paths = paths;
+  }
+
+  public static StandBooks at(Path root) {
+    return new StandBooks(
+        root, new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
   }
 
   public SessionBrief brief() {
@@ -31,7 +40,10 @@ public final class StandBooks {
   }
 
   public List<Violation> violations() {
-    return new InvariantChecker(cases(), new GitAncestry(root.resolve("origin.git")))
+    return new InvariantChecker(
+            cases(),
+            new GitAncestry(root.resolve("origin.git")),
+            new LegalMoves(new FlowRules(new TaskChart(Composition.builtIn()))))
         .check(RunRecord.read(root));
   }
 }

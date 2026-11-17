@@ -136,12 +136,12 @@ public final class StandRun implements AutoCloseable {
   }
 
   public List<Violation> violations() {
-    return new StandBooks(root).violations();
+    return StandBooks.at(root).violations();
   }
 
   public StandOutcome drive(Script script) {
     Timeline timeline =
-        new Timeline(root.resolve("timeline.log"), new ContextRelays(new StandBooks(root).brief()));
+        new Timeline(root.resolve("timeline.log"), new ContextRelays(StandBooks.at(root).brief()));
     final Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
     final HumanStub human = new HumanStub(mode);
     end = new RunEnd(mode, script.expectsDeployConflict(), script.conflictStepComes());
