@@ -264,43 +264,43 @@ class BoardReportsTest extends BoardPageContext {
     Page page = openLiveBoard();
     ask(page, "replies a19");
     assertThat(page.locator("#report-body")).containsText("Renamed it.");
-    List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
-    List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
+    List<Runnable> answers = new java.util.concurrent.CopyOnWriteArrayList<>();
+    List<String> bodies = new java.util.concurrent.CopyOnWriteArrayList<>();
     page.route(
         "**/api/commands/replies**",
         route -> {
-          read.add(route.fetch());
-          held.add(route);
+          String read;
+          try (java.io.InputStream in =
+              java.net.URI.create(route.request().url()).toURL().openStream()) {
+            read = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+          bodies.add(read);
+          answers.add(() -> route.fulfill(new Route.FulfillOptions().setBody(read)));
         });
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The older read.\n").build();
-    page.waitForRequest(
-        "**/api/commands/replies**",
-        () ->
-            state.putTask(
-                "ABC-19",
-                state
-                    .task("ABC-19")
-                    .orElseThrow()
-                    .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis())));
-    page.waitForCondition(() -> !held.isEmpty());
-    int olderReads = held.size();
+    state.putTask(
+        "ABC-19",
+        state
+            .task("ABC-19")
+            .orElseThrow()
+            .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis()));
+    page.waitForCondition(() -> bodies.stream().anyMatch(body -> body.contains("The older read.")));
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The newer read.\n").build();
-    page.waitForRequest(
-        "**/api/commands/replies**",
-        () ->
-            state.putTask(
-                "ABC-19",
-                state
-                    .task("ABC-19")
-                    .orElseThrow()
-                    .withStatus(TaskStatus.REVIEW_PENDING, "newer", System.currentTimeMillis())));
-    page.waitForCondition(() -> held.size() > olderReads);
-    int newest = held.size() - 1;
-    held.get(newest).fulfill(new Route.FulfillOptions().setResponse(read.get(newest)));
+    state.putTask(
+        "ABC-19",
+        state
+            .task("ABC-19")
+            .orElseThrow()
+            .withStatus(TaskStatus.REVIEW_PENDING, "newer", System.currentTimeMillis()));
+    page.waitForCondition(() -> bodies.stream().anyMatch(body -> body.contains("The newer read.")));
+    int newest = answers.size() - 1;
+    answers.get(newest).run();
     assertThat(page.locator("#report-body")).containsText("The newer read.");
 
-    page.waitForRequestFinished(
-        () -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(read.get(0))));
+    page.waitForRequestFinished(() -> answers.subList(0, newest).forEach(Runnable::run));
+    page.evaluate("() => new Promise(done => requestAnimationFrame(() => done()))");
 
     org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
         .contains("The newer read.");
