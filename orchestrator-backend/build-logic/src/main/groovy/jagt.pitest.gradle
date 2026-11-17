@@ -23,7 +23,7 @@ allprojects {
         if (project.path == ':adapter') {
             additionalMutableCodePaths = project(':usecase').sourceSets.main.output.classesDirs.files
         }
-        threads = Runtime.runtime.availableProcessors()
+        threads = (project.findProperty('pitestThreads') ?: Runtime.runtime.availableProcessors().intdiv(2)) as int
         outputFormats = ['HTML', 'XML']
         // Every killing test per mutant, not the first: the refresh finds tests that kill nothing another test does not.
         fullMutationMatrix = providers.gradleProperty('fullMatrix').isPresent()
