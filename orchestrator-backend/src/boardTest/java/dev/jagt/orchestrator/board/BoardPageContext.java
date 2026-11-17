@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.scenario.OpenedWindows;
+import dev.jagt.orchestrator.service.session.SessionStreams;
 import dev.jagt.orchestrator.surface.board.task.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskState.TaskStateBuilder;
@@ -128,6 +129,7 @@ abstract class BoardPageContext {
   @MockitoBean EditorDriver editorDriver;
   @MockitoBean AgentSessions sessions;
   @MockitoBean OpenedWindows windows;
+  @MockitoBean SessionStreams streams;
   @MockitoBean SessionHost sessionHost;
   @MockitoSpyBean ReviewRepliesReport replies;
 

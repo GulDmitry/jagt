@@ -2,9 +2,14 @@ package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +18,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.port.terminal.WindowStream;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.plan.PlanBaseline;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -24,8 +30,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -170,15 +174,20 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theSessionTabShowsTheScreenAndSendsLineToThatSession() {
+  void theSessionTabStreamsTheSessionsTerminalAndSendsLineToThatSession() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(sessions.screen("ABC-1")).thenReturn(Optional.of("✗ two tests fail"));
+    WindowStream.View view = mock(WindowStream.View.class);
+    when(streams.ofTask(eq("ABC-1"), anyInt(), anyInt(), any()))
+        .thenAnswer(call -> {
+          call.<WindowStream.Sink>getArgument(3).output("✗ two tests fail".getBytes(UTF_8));
+          return Optional.of(view);
+        });
     when(sessions.say("ABC-1", "mock the storage")).thenReturn("Said to the agent.");
     Page page = openBoard();
     assertThat(page.locator("#pane article .alias")).hasText("a1");
 
     page.locator("#pane .tabs button[data-tab=session]").click();
-    assertThat(page.locator("#pane .session .screen")).hasText("✗ two tests fail");
+    assertThat(page.locator("#pane .session .terminal")).containsText("✗ two tests fail");
     page.locator("#pane .say input").fill("mock the storage");
     page.locator("#pane .say input").press("Enter");
 
@@ -187,18 +196,63 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theSessionTabShowsTheLoginWindowWholeAndSaysToIt() {
+  void whatIsTypedInTheSessionTabsTerminalReachesTheSession() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    WindowStream.View view = mock(WindowStream.View.class);
+    when(streams.ofTask(eq("ABC-1"), anyInt(), anyInt(), any())).thenReturn(Optional.of(view));
+    Page page = openBoard();
+    page.locator("#pane .tabs button[data-tab=session]").click();
+
+    page.locator("#pane .session .terminal textarea").focus();
+    page.keyboard().type("l");
+
+    verify(view, timeout(5000)).type("l");
+  }
+
+  @Test
+  void leavingTheSessionTabClosesTheLiveView() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    WindowStream.View view = mock(WindowStream.View.class);
+    doReturn(Optional.of(view)).when(streams).ofTask(eq("ABC-1"), anyInt(), anyInt(), any());
+    Page page = openBoard();
+    page.locator("#pane .tabs button[data-tab=session]").click();
+    assertThat(page.locator("#pane .session .terminal")).isVisible();
+    verify(view, never()).close();
+
+    page.locator("#pane .tabs button[data-tab=overview]").click();
+
+    verify(view, timeout(5000)).close();
+  }
+
+  @Test
+  void theSessionTabSaysNoWindowHoldsTheSessionWhereTheStreamFindsNone() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(streams.ofTask(eq("ABC-1"), anyInt(), anyInt(), any())).thenReturn(Optional.empty());
+    Page page = openBoard();
+
+    page.locator("#pane .tabs button[data-tab=session]").click();
+
+    assertThat(page.locator("#pane .session")).containsText("no window holds this session");
+  }
+
+  @Test
+  void theSessionTabStreamsTheLoginWindowAndSaysToIt() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(windows.open()).thenReturn(List.of("login"));
-    when(windows.screen("login"))
-        .thenReturn(Optional.of("code ABCD-1234 at https://host.example.invalid/device"));
+    WindowStream.View view = mock(WindowStream.View.class);
+    when(streams.ofWindow(eq("login"), anyInt(), anyInt(), any()))
+        .thenAnswer(call -> {
+          call.<WindowStream.Sink>getArgument(3)
+              .output("code ABCD-1234 at https://host.example.invalid/device".getBytes(UTF_8));
+          return Optional.of(view);
+        });
     when(windows.say("login", "y")).thenReturn("Said to login.");
     Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=session]").click();
     page.locator("#pane .session button[data-window=login]").click();
-    assertThat(page.locator("#pane .session .screen"))
-        .hasText("code ABCD-1234 at https://host.example.invalid/device");
+    assertThat(page.locator("#pane .session .terminal"))
+        .containsText("code ABCD-1234 at https://host.example.invalid/device");
     page.locator("#pane .say input").fill("y");
     page.locator("#pane .say input").press("Enter");
 
@@ -588,22 +642,6 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theSessionTabReadsTheScreenAgainWhileItStaysOpen() {
-    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(sessions.screen("ABC-1"))
-        .thenReturn(Optional.of("compiling"), Optional.of("compiling"), Optional.of("tests pass"));
-    Page page = session.newPage();
-    page.clock().install();
-    page.navigate("http://localhost:" + port + "/");
-    page.locator("#pane .tabs button[data-tab=session]").click();
-    assertThat(page.locator("#pane .session .screen")).hasText("compiling");
-
-    page.clock().runFor(5_000);
-
-    assertThat(page.locator("#pane .session .screen")).hasText("tests pass");
-  }
-
-  @Test
   void jobThatHasNotRunYetIsNotCalledFine() {
     Page page = session.newPage();
 
@@ -698,32 +736,6 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theSessionTabKeepsItsScreenWhilePushMakesItReadAgain() throws Exception {
-    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
-    Page page = openBoard();
-    page.locator("#pane .tabs button[data-tab=session]").click();
-    assertThat(page.locator("#pane .session .screen")).hasText("compiling");
-    CountDownLatch reading = new CountDownLatch(1);
-    CountDownLatch release = new CountDownLatch(1);
-    doAnswer(
-            call -> {
-              reading.countDown();
-              release.await();
-              return Optional.of("tests pass");
-            })
-        .when(sessions)
-        .screen("ABC-1");
-
-    state.putTask("ABC-1", state.task("ABC-1").orElseThrow().touched(System.currentTimeMillis()));
-    assertTrue(reading.await(5, TimeUnit.SECONDS));
-
-    assertThat(page.locator("#pane .session .screen")).hasText("compiling");
-    release.countDown();
-    assertThat(page.locator("#pane .session .screen")).hasText("tests pass");
-  }
-
-  @Test
   void theRoundTabReadsRepliesThatAppearedWithoutAnyPush() throws Exception {
     Files.createDirectories(root.resolve("ABC-4-alpha"));
     putReviewTask("ABC-4");
@@ -739,17 +751,6 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     page.locator("#launch button[type=submit]").click();
 
     assertThat(page.locator("#pane .round")).containsText("Renamed it.");
-  }
-
-  @Test
-  void sessionNoWindowHoldsSaysSoAndBlankLiveScreenDoesNot() {
-    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(sessions.screen("ABC-1")).thenReturn(Optional.of(""));
-    Page page = openBoard();
-
-    page.locator("#pane .tabs button[data-tab=session]").click();
-
-    assertThat(page.locator("#pane .session .screen")).isEmpty();
   }
 
   @Test

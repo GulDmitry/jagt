@@ -542,8 +542,13 @@ public class TmuxSessionHost implements SessionHost {
   private static final Path VIEWER_CWD = Path.of(System.getProperty("user.home"));
 
   private void ensureViewer(String session, String dedicatedTitle) {
-    var clients = processRunner.run(null, TIMEOUT, tmux("list-clients", "-t", "=" + session));
-    if (clients.exitCode() == 0 && !clients.stdout().isBlank()) {
+    // A control client is no screen to look at.
+    var clients =
+        processRunner.run(
+            null,
+            TIMEOUT,
+            tmux("list-clients", "-t", "=" + session, "-F", "#{client_control_mode}"));
+    if (clients.exitCode() == 0 && clients.stdout().lines().anyMatch("0"::equals)) {
       return;
     }
     terminalDriver.openViewer(tmux("attach", "-t", session), dedicatedTitle, VIEWER_CWD);

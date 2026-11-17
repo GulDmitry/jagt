@@ -175,6 +175,37 @@ class AgentSessionsTest {
   }
 
   @Test
+  void namesTheWindowOfTaskByItsIdWhateverNameItWasAskedBy() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+
+    assertThat(sessions.windowOf("a1"))
+        .isEqualTo(new dev.jagt.orchestrator.service.session.SessionWindow("jagt", "ABC-1"));
+  }
+
+  @Test
+  void namesTheTaskWindowInTheSessionOfItsOwnWhenViewModeIsTabPerTask() throws Exception {
+    state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        """
+        orchestrator:
+          projects: {}
+          viewer:
+            tmuxSession: jagt
+            viewMode: tab-per-task
+        """);
+    when(tmux.sessionName("jagt")).thenReturn("jagt");
+
+    assertThat(sessions.windowOf("TEST-1").session()).isEqualTo("jagt-TEST-1");
+  }
+
+  @Test
+  void refusesToNameTheWindowOfTaskNobodyOwns() {
+    assertThatThrownBy(() -> sessions.windowOf("ABC-9")).isInstanceOf(Refusal.class);
+  }
+
+  @Test
   void refusesToCloseTheTabOfTaskNobodyOwns() {
 
     assertThatThrownBy(() -> sessions.closeTaskTab("ABC-9"))

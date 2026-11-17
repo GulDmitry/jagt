@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.scenario;
 
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.session.SessionWindow;
 import dev.jagt.orchestrator.task.text.Ansi;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,13 @@ public class OpenedWindows {
   /** The names of those that are open now. */
   public List<String> open() {
     String session = session();
-    return candidates().stream().filter(name -> host.screenOf(session, name).isPresent()).toList();
+    return candidates().stream()
+        .filter(name -> host.taskWindowState(session, name) != SessionHost.WindowState.MISSING)
+        .toList();
+  }
+
+  public SessionWindow windowOf(String name) {
+    return new SessionWindow(session(), known(name));
   }
 
   public Optional<String> screen(String name) {

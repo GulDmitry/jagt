@@ -5,7 +5,6 @@ The map of the code: **what kinds of thing jagt has, and where a new one goes.**
 
 Every path below is a package under `dev.jagt.orchestrator`, inside `orchestrator-backend/` — where `gradlew` lives,
 **not** the root. So `flow/` is `orchestrator-backend/core/src/main/java/dev/jagt/orchestrator/flow`.
-
 Status is part of the map: *built* means built; fix a stale row, never delete it.
 
 ## Contents
@@ -326,6 +325,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `surface/board/auth/attempts` | surface | the board's login attempts: per-peer back-off, the login audit line, the password outcome events |
 | `surface/board/files` | surface | what the board is served from: the jar's copy or `board.dir`, the user's i18n overlay, the manifest MIME |
 | `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
+| `surface/board/terminal` | surface | the Session tab's live terminal: the WebSocket a window's output goes out on and a human's keys come in |
 | `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
 | `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, token, handlers |
 | `surface/mcp/refusal` | surface | how a tool refuses: caller scope, failure, refusal |

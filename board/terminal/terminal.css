@@ -1,0 +1,7 @@
+.terminal-host {
+  height: 60vh;
+  min-height: 12rem;
+  padding: 0.25rem;
+  background: #000;
+  overflow: hidden;
+}

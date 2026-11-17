@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-22.
+Accepted 2026-10-22; its read of the tab's screen superseded by
+[0194](0194-the-session-tab-streams-the-windows-terminal-from-tmux-control-mode.md).
 
 ## Context
 

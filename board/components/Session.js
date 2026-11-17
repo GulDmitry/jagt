@@ -49,8 +49,12 @@ export const Session = ({ task, shown }) =>
           </div>`
         : ""
     }
-    <pre class="screen">
-${shown === null ? t("reading") : shown.held ? shown.shown : t("pane.no-window")}</pre>
+    ${
+      shown?.Terminal
+        ? html`<${shown.Terminal} task=${task.id} name=${shown.name} />`
+        : html`<pre class="screen">
+${shown === null ? t("reading") : shown.held ? shown.shown : t("pane.no-window")}</pre>`
+    }
     ${
       shown && shown.name
         ? ""

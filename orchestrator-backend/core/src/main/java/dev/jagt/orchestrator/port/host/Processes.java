@@ -50,6 +50,12 @@ public interface Processes {
       List<String> command);
 
   /**
+   * Starts a command whose input and output the caller holds; it ends with jagt, unlike {@link
+   * #runDetached}. The caller closes it.
+   */
+  Process start(@Nullable Path workingDir, List<String> command);
+
+  /**
    * Starts a command that OUTLIVES jagt and does not share its signals. The returned handle is the
    * command itself, so {@code destroy()} still reaches it.
    */

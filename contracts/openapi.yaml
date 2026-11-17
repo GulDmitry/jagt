@@ -315,6 +315,16 @@ paths:
       parameters: [{$ref: '#/components/parameters/name'}]
       responses:
         '200': {$ref: '#/components/responses/Screen'}
+  /api/windows/stream:
+    get:
+      description: Upgrades to a WebSocket of one window's terminal, a task's by `task` or an opened window's by `name`; closes 4404 where no window holds it
+      parameters:
+        - {name: task, in: query, schema: {type: string}}
+        - {name: name, in: query, schema: {type: string}}
+        - {name: cols, in: query, schema: {type: integer}}
+        - {name: rows, in: query, schema: {type: integer}}
+      responses:
+        '101': {description: Binary frames carry the terminal's output; text frames carry data and resize}
   /api/windows/say:
     post:
       parameters: [{$ref: '#/components/parameters/name'}]

@@ -2,7 +2,9 @@
 [← Features](../features.md) · Each line names one thing the open task's tabs do and links to the requirement that defines it.
 
 ## Board workspace · [spec](../../openspec/specs/board-workspace/spec.md)
-- **Session, Artifacts, Code and Diff tabs** — Read the session's screen and answer it, a task's plan and notes, its worktree and its diff.
+- **Live terminal** — The Session tab streams the session's terminal and takes typing from every browser; the window follows its size while open.
+  [spec](../../openspec/specs/session-stream/spec.md)
+- **Session, Artifacts, Code and Diff tabs** — Watch the session and answer it, read a task's plan and notes, its worktree and its diff.
   [spec](../../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-its-six-tabs) ·
   [diff](../../openspec/specs/board-diff/spec.md) · [verbs](../../openspec/specs/board-verbs/spec.md)
 - **Run a shell line** — The Session tab runs a shell line behind the CLI's escape, in a warm or a cold session; a CLI with none offers no run.

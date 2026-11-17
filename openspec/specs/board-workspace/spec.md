@@ -146,14 +146,14 @@ router is asked only where no label matched and several projects are configured;
 
 ### Requirement: The open task has its six tabs
 The open task SHALL have the tabs Overview, Drafted review, Artifacts, Code, Diff and Session, in that order. Overview shows its status
-history, newest first. Session shows its session's screen without colour codes, and the Keys row. Drafted review shows its drafted replies, or
+history, newest first. Session is the session's live terminal (`session-stream`), and the Keys row. Drafted review shows its drafted replies, or
 that none are drafted. Artifacts lists the task's documents (`Artifact`) in its worktree now, in declared order, the one picked rendered. Code
 reads its worktree, Diff the task's change (`board-diff`).
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
-- **THEN** the session's screen as it reads now stands there, with the one message line under it and no second form
-- **WHEN** a window holds the session and its screen is blank
-- **THEN** the tab shows it blank; it says no window holds the session only when none does
+- **THEN** the session's terminal streams there, with the one message line under it and no second form
+- **WHEN** no window holds the session
+- **THEN** the tab says no window holds the session
 #### Scenario: Reading the replies
 - **WHEN** the human opens the Drafted review tab
 - **THEN** it shows the drafted review replies, read from the command whose `part` is `round`, or that none are drafted

@@ -24,6 +24,17 @@ class BoardWriteFilterTest {
   }
 
   @Test
+  void refusesWebSocketUpgradeCarryingNoOriginBecauseItTypesAsTheHuman() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/windows/stream");
+    request.addHeader("Upgrade", "websocket");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+
+    new BoardWriteFilter().doFilter(request, response, new MockFilterChain());
+
+    assertThat(response.getStatus()).isEqualTo(403);
+  }
+
+  @Test
   void refusesWriteCarryingOnlyTheMastersToken() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/tasks/say");
     request.addHeader(MasterToken.HEADER, "t0ken");

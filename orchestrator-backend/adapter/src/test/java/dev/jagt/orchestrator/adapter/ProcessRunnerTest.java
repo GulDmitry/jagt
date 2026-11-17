@@ -42,6 +42,36 @@ class ProcessRunnerTest {
   }
 
   @Test
+  void startsCommandWhoseInputAndOutputTheCallerHolds() throws Exception {
+    Process started = new ProcessRunner().start(null, List.of("cat"));
+
+    started.getOutputStream().write("hello\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    started.getOutputStream().close();
+    String echoed =
+        new String(
+            started.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(echoed).isEqualTo("hello\n");
+  }
+
+  @Test
+  void startsCommandInTheFolderItWasGiven(@TempDir Path folder) throws Exception {
+    Process started = new ProcessRunner().start(folder, List.of("pwd", "-P"));
+
+    String printed =
+        new String(
+            started.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(printed.trim()).isEqualTo(folder.toRealPath().toString());
+  }
+
+  @Test
+  void refusesToStartCommandThatIsNotThere() {
+    assertThatThrownBy(() -> new ProcessRunner().start(null, List.of("jagt-no-such-binary")))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
   void readsNothingFromTheConsoleWhenTheCommandWasGivenNoInput() {
     String stdinIsNull =
         new ProcessRunner()

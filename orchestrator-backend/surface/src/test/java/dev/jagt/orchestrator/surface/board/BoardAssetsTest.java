@@ -90,6 +90,21 @@ class BoardAssetsTest {
     assertThat(digest).isEqualTo(sha256);
   }
 
+  @ParameterizedTest
+  @CsvSource({
+    "xterm.mjs, b336ec65a086c056d4804b3d4c2347da5663d3f23c3f25be866467bd8857ad59",
+    "addon-fit.mjs, 2d87e1bddc73be9111de8beee5370c3bb7aac9c94e18e6f245f02ca741ef1769",
+    "xterm.css, 854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6"
+  })
+  void vendoredTerminalFileIsTheExactFileTheRegistryServed(String file, String sha256)
+      throws IOException, NoSuchAlgorithmException {
+    byte[] bytes = Files.readAllBytes(STATIC.resolve("vendor/xterm").resolve(file));
+
+    String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+
+    assertThat(digest).isEqualTo(sha256);
+  }
+
   @Test
   void theBoardInstallsAsStandaloneAppStartingAtItsOwnRoot() throws IOException {
     JsonNode manifest =
@@ -143,6 +158,8 @@ class BoardAssetsTest {
               .filter(path -> !path.endsWith("hooks.mjs"))
               .filter(path -> !path.startsWith(STATIC.resolve("vendor/codemirror")))
               .filter(path -> !path.startsWith(STATIC.resolve("viewer")))
+              .filter(path -> !path.startsWith(STATIC.resolve("terminal")))
+              .filter(path -> !path.startsWith(STATIC.resolve("vendor/xterm")))
               .mapToLong(path -> path.toFile().length())
               .sum();
     }

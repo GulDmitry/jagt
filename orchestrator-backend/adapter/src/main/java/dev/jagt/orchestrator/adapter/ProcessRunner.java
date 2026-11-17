@@ -58,6 +58,23 @@ public class ProcessRunner implements Processes {
     return execute(workingDir, timeout, env, stdin, command);
   }
 
+  @Override
+  public Process start(@Nullable Path workingDir, List<String> command) {
+    try {
+      ProcessBuilder builder = new ProcessBuilder(command);
+      if (workingDir != null) {
+        builder.directory(workingDir.toFile());
+      }
+      builder.redirectError(ProcessBuilder.Redirect.DISCARD);
+      Process started = builder.start();
+      running.add(started);
+      CompletableFuture<Void> _ = started.onExit().thenAccept(running::remove);
+      return started;
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
+    }
+  }
+
   /**
    * A GUI launcher's CLI blocks until its window closes, so waiting would time out and destroy that
    * window.

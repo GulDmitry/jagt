@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.log.BoardUrl;
+import dev.jagt.orchestrator.service.session.SessionStreams;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAttempts;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginBackoff;
@@ -11,17 +12,25 @@ import dev.jagt.orchestrator.surface.board.auth.attempts.PasswordLoginOutcome;
 import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoginBackoffFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
+import dev.jagt.orchestrator.surface.board.terminal.SessionSocket;
+import dev.jagt.orchestrator.surface.board.terminal.SessionSocketRoute;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.CookieManager;
+import java.net.HttpCookie;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -43,7 +52,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "server.forward-headers-strategy=native",
       "orchestrator.auth.passwordHash=$2y$04$.W6F.lVT3xhLTvtg8hW1WuEf2QP.enJ4zNrFWqlXmuBhzZndQnIiu"
     })
-@MockitoBean(types = {UserNotifier.class})
+@MockitoBean(types = {UserNotifier.class, SessionStreams.class})
 class PasswordLoginRefusalOnTomcatTest {
 
   @SpringBootConfiguration
@@ -56,7 +65,9 @@ class PasswordLoginRefusalOnTomcatTest {
     LoginBackoffFilter.class,
     LoginAttempts.class,
     LoginAudit.class,
-    PasswordLoginOutcome.class
+    PasswordLoginOutcome.class,
+    SessionSocket.class,
+    SessionSocketRoute.class
   })
   static class Board {
     @Bean
@@ -278,5 +289,70 @@ class PasswordLoginRefusalOnTomcatTest {
             HttpResponse.BodyHandlers.discarding());
 
     assertThat(next.statusCode()).isEqualTo(302);
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "Origin: http://localhost:%d|401",
+        "Accept: */*|403",
+      })
+  void refusesTheStreamOpenedWithoutLoginOrWithoutThePagesOrigin(String header, int status)
+      throws Exception {
+    String request =
+        "GET /api/windows/stream?task=ABC-1 HTTP/1.1\r\nHost: localhost:"
+            + port
+            + "\r\n"
+            + header.formatted(port)
+            + "\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+            + "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n";
+
+    String line;
+    try (Socket socket = new Socket(InetAddress.getLoopbackAddress(), port)) {
+      socket.getOutputStream().write(request.getBytes(StandardCharsets.US_ASCII));
+      line =
+          new BufferedReader(
+                  new InputStreamReader(socket.getInputStream(), StandardCharsets.US_ASCII))
+              .readLine();
+    }
+
+    assertThat(line).contains(" " + status);
+  }
+
+  @Test
+  void letsSignedInHumanOpenTheStreamAndClosesItWhereNoWindowHoldsTheSession() throws Exception {
+    String base = "http://localhost:" + port;
+    CookieManager cookies = new CookieManager();
+    HttpClient client = HttpClient.newBuilder().cookieHandler(cookies).build();
+    client.send(
+        HttpRequest.newBuilder(URI.create(base + "/login"))
+            .header("Origin", base)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+            .build(),
+        HttpResponse.BodyHandlers.discarding());
+    String session =
+        cookies.getCookieStore().getCookies().stream()
+            .map(HttpCookie::toString)
+            .collect(Collectors.joining("; "));
+    CompletableFuture<Integer> closed = new CompletableFuture<>();
+
+    client
+        .newWebSocketBuilder()
+        .header("Origin", base)
+        .header("Cookie", session)
+        .buildAsync(
+            URI.create("ws://localhost:" + port + "/api/windows/stream?task=ABC-1"),
+            new WebSocket.Listener() {
+              @Override
+              public CompletionStage<?> onClose(WebSocket socket, int code, String reason) {
+                closed.complete(code);
+                return CompletableFuture.completedFuture(null);
+              }
+            })
+        .join();
+
+    assertThat(closed.get(5, TimeUnit.SECONDS)).isEqualTo(4404);
   }
 }

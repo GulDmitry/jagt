@@ -36,6 +36,11 @@ record FakeHearingProcesses(ReadScopes scopes, String tool, String detail, Resul
   }
 
   @Override
+  public Process start(@Nullable Path workingDir, List<String> command) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Process runDetached(@Nullable Path workingDir, List<String> command) {
     throw new UnsupportedOperationException();
   }

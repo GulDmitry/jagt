@@ -23,6 +23,7 @@ public final class FakeProcesses implements Processes {
   private final List<List<String>> issued = new ArrayList<>();
   private final List<@Nullable Path> directories = new ArrayList<>();
   private @Nullable RuntimeException failure;
+  private @Nullable Process started;
 
   public FakeProcesses answering(Result result, String... parts) {
     rules.add(new Rule(List.of(parts), List.of(result)));
@@ -79,6 +80,20 @@ public final class FakeProcesses implements Processes {
       String stdin,
       List<String> command) {
     return answer(workingDir, command);
+  }
+
+  public FakeProcesses starting(Process process) {
+    started = process;
+    return this;
+  }
+
+  @Override
+  public Process start(@Nullable Path workingDir, List<String> command) {
+    issued.add(command);
+    if (started == null) {
+      throw new UnsupportedOperationException();
+    }
+    return started;
   }
 
   @Override

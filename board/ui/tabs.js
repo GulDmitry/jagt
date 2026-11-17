@@ -35,22 +35,24 @@ const artifacts = async (task) => {
   return { names, name, html: rendered ? rendered.html : "" };
 };
 
-// The task's session, or a window jagt opened that is no task's.
-/** @param {Task} task */
-async function sessionOf(task) {
+// The task's session, or a window jagt opened that is no task's; its terminal streams, so only the names are read.
+async function sessionOf() {
   const names = await api("/api/windows").catch(() => []);
   const name = names.includes(state.windowName) ? state.windowName : null;
-  const path = name
-    ? `/api/windows/screen?name=${encodeURIComponent(name)}`
-    : `/api/tasks/screen?task=${encodeURIComponent(task.id)}`;
-  const screen = await api(path).catch((e) => ({
-    held: true,
-    shown: t("tabs.unread", { cause: cause(e) }),
-  }));
-  return { ...screen, names, name };
+  try {
+    const { Terminal } = await import("../terminal/Terminal.js");
+    return { held: true, Terminal, names, name };
+  } catch (e) {
+    return {
+      held: true,
+      shown: t("tabs.unread", { cause: cause(e) }),
+      names,
+      name,
+    };
+  }
 }
 
-// The Session tab reads the whole screen itself.
+// The Session tab streams its own screen; the other tabs peek at its last line.
 /**
  * @param {Task} task
  * @param {() => void} repaint

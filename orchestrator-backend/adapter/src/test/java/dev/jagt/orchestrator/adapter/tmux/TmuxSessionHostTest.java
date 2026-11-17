@@ -288,12 +288,24 @@ class TmuxSessionHostTest {
   void opensNoSecondViewerWhereClientIsAlreadyAttached() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
     processes.answering(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""), "list-windows");
-    processes.answering(new Processes.Result(0, "/dev/ttys001: jagt", ""), "list-clients");
+    processes.answering(new Processes.Result(0, "0", ""), "list-clients");
     TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
 
     host.focusTaskWindow("jagt", "agents", "ABC-1");
 
     verify(terminal, never()).openViewer(any(), any(), any());
+  }
+
+  @Test
+  void opensViewerWhereOnlyControlClientIsAttached() {
+    FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
+    processes.answering(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""), "list-windows");
+    processes.answering(new Processes.Result(0, "1", ""), "list-clients");
+    TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
+
+    host.focusTaskWindow("jagt", "agents", "ABC-1");
+
+    verify(terminal).openViewer(any(), any(), any());
   }
 
   @Test

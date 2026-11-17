@@ -31,9 +31,11 @@ class OpenedWindowsTest {
                         "alpha", TestProjectConfigBuilder.projectConfig().build(),
                         "beta", TestProjectConfigBuilder.projectConfig().build())));
     when(host.sessionName(any())).thenReturn("jagt");
-    when(host.screenOf("jagt", "login")).thenReturn(Optional.of("code"));
-    when(host.screenOf("jagt", "acceptance-alpha")).thenReturn(Optional.of(""));
-    when(host.screenOf("jagt", "acceptance-beta")).thenReturn(Optional.empty());
+    when(host.taskWindowState("jagt", "login")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(host.taskWindowState("jagt", "acceptance-alpha"))
+        .thenReturn(SessionHost.WindowState.DEAD_SHELL);
+    when(host.taskWindowState("jagt", "acceptance-beta"))
+        .thenReturn(SessionHost.WindowState.MISSING);
 
     assertThat(windows.open()).containsExactlyInAnyOrder("login", "acceptance-alpha");
   }
@@ -46,6 +48,23 @@ class OpenedWindowsTest {
         .thenReturn(Optional.of("\u001b[1mcode ABCD-1234\u001b[0m  \n"));
 
     assertThat(windows.screen("login")).contains("code ABCD-1234");
+  }
+
+  @Test
+  void namesTheLoginWindowInTheSessionItIsIn() {
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(host.sessionName(any())).thenReturn("jagt");
+
+    assertThat(windows.windowOf("login").session()).isEqualTo("jagt");
+    assertThat(windows.windowOf("login").name()).isEqualTo("login");
+  }
+
+  @Test
+  void namesNoWindowJagtDoesNotOpen() {
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+    assertThatThrownBy(() -> windows.windowOf("ABC-42"))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

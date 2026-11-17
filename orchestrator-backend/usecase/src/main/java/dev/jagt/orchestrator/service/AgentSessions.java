@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.service.session.SessionLines;
+import dev.jagt.orchestrator.service.session.SessionWindow;
 import dev.jagt.orchestrator.service.worktree.FileStamps;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
@@ -94,6 +95,13 @@ public class AgentSessions implements SessionLines {
 
   private TaskState requireTask(String taskId) {
     return stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
+  }
+
+  /** The window a task's session lives in, whether or not it is open now. */
+  public SessionWindow windowOf(String taskId) {
+    String id = stateService.canonicalTaskId(taskId);
+    requireTask(id);
+    return new SessionWindow(agentSession(configService.load(), id), id);
   }
 
   public String openTaskTab(String taskId, @Nullable String mode) {
