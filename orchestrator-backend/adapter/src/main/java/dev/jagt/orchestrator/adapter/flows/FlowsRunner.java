@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FlowsRunner implements AcceptanceRunner {
 
-  static final String PLAYWRIGHT = "playwright";
+  public static final String PLAYWRIGHT = "playwright";
   static final List<String> DRIVERS = List.of("none", PLAYWRIGHT);
 
   private final RoleKits kits;

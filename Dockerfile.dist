@@ -26,7 +26,8 @@ USER root
 # ENV MISE_DATA_DIR=/home/jagt/.local/share/mise MISE_YES=1 MISE_TRUSTED_CONFIG_PATHS=/data
 # ENV PATH=/home/jagt/.local/share/mise/shims:${PATH}
 
-# Playwright with its browsers, for a session driving a browser; needs the Node block above.
+# Playwright with Chromium only, for a session driving a browser and for the acceptance role's flows (driver playwright,
+# run as `npx playwright test`); needs the Node block above.
 # The distribution's Node is 18, so the version is pinned to one that supports it; raise both together.
 # ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 # RUN npm install -g playwright@1.49.1 && playwright install --with-deps chromium && chmod -R a+rX /opt/playwright && rm -rf /var/lib/apt/lists/*

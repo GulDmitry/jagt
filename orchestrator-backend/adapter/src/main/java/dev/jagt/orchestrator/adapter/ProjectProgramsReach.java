@@ -1,23 +1,25 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.flows.FlowsRunner;
+import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.role.RoleKits;
 import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
-/**
- * A project's verify or setup program the image lacks is jagt's own reach failing, never a card's.
- */
+/** A verify, setup or flows program the image lacks is jagt's own reach failing, never a card's. */
 @Component
 @RequiredArgsConstructor
 public class ProjectProgramsReach implements Job {
 
   private final ConfigService configService;
+  private final RoleKits kits;
   private final Reach reach;
 
   @Override
@@ -27,7 +29,7 @@ public class ProjectProgramsReach implements Job {
 
   @Override
   public String describe() {
-    return "reads whether each project's verifyCommand and setupCommand program is installed";
+    return "reads whether each verify, setup and flows program is installed";
   }
 
   @Override
@@ -44,9 +46,22 @@ public class ProjectProgramsReach implements Job {
           read("verifyCommand", name, project.verifyCommand());
           read("setupCommand", name, project.setupCommand());
         });
+    kits.all().forEach(kit -> flows(kit.settings().role().id(), kit.settings().load()));
+  }
+
+  private void flows(String role, RoleOptions options) {
+    List<String> command =
+        options.enabled() && FlowsRunner.PLAYWRIGHT.equals(options.flows().driver())
+            ? options.flows().command()
+            : List.of();
+    read("flows.command", role, command, "role '" + role + "'");
   }
 
   private void read(String driver, String project, List<String> command) {
+    read(driver, project, command, "project '" + project + "'");
+  }
+
+  private void read(String driver, String project, List<String> command, String owner) {
     String program = missing(command);
     if (program == null) {
       reach.reached(driver, project);
@@ -57,9 +72,8 @@ public class ProjectProgramsReach implements Job {
             driver,
             project,
             List.of(),
-            "project '"
-                + project
-                + "' runs '"
+            owner
+                + " runs '"
                 + program
                 + "', which is not on PATH nor in the usual install directories. Extend the image"
                 + " (docs/server.md)."),
