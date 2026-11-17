@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "prettier --check . && eslint . && tsc -p jsconfig.json && tsc -p test/jsconfig.json",
     "format": "prettier --write .",
-    "test": "c8 --check-coverage --per-file --lines 80 --include=core/api.js --include=core/format.js --include=core/grammar.js --include=core/i18n.js --include=core/store.js --include=core/time.js node --test \"test/**/*.test.js\""
+    "test": "c8 --check-coverage --per-file --lines 80 --include=ui/aliasorder.js --include=ui/cursor.js --include=ui/route.js --include=ui/taskfilter.js --include=core/api.js--include=core/format.js --include=core/grammar.js --include=core/i18n.js --include=core/store.js --include=core/time.js node --test \"test/**/*.test.js\""
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

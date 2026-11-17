@@ -1,3 +1,5 @@
+import { current as pick, nextRequiredTarget, stepTarget } from "./cursor.js";
+
 /** @typedef {import("../core/store.js").Task} Task */
 
 /** @type {{ chosen: string | null, linked: string | null, opened: boolean }} */
@@ -31,18 +33,8 @@ const narrow = window.matchMedia("(max-width: 1199px)");
 // Wide, the open task always stands beside the list; narrow, only once the human opened it.
 export const paneShown = () => !narrow.matches || state.opened;
 
-// A choice that left the view falls back to the first task waiting on the human, so the pane is never empty.
 /** @param {Task[]} shown */
-export const current = (shown) =>
-  shown.find((task) => task.id === state.chosen) ||
-  (state.chosen === null &&
-    state.linked !== null &&
-    shown.find(
-      (task) => task.alias === state.linked || task.id === state.linked,
-    )) ||
-  shown.find((task) => task.attention === "REQUIRED") ||
-  shown[0] ||
-  null;
+export const current = (shown) => pick(shown, state.chosen, state.linked);
 
 // A walk moves the cursor through the list; on a narrow window Enter is what opens the task it rests on.
 /**
@@ -50,9 +42,8 @@ export const current = (shown) =>
  * @param {number} by
  */
 export const step = (ordered, by) => {
-  const at = ordered.findIndex((task) => task.id === current(ordered)?.id);
-  const next = ordered[Math.min(ordered.length - 1, Math.max(0, at + by))];
-  if (next) state.chosen = next.id;
+  const next = stepTarget(ordered, current(ordered)?.id, by);
+  if (next) state.chosen = next;
 };
 
 // A row the keyboard moved the cursor to is also where the focus goes, so the next key starts from it.
@@ -63,9 +54,6 @@ export const focusSelected = () => {
 
 /** @param {Task[]} ordered */
 export const nextRequired = (ordered) => {
-  const at = ordered.findIndex((task) => task.id === current(ordered)?.id);
-  const waiting = [...ordered.slice(at + 1), ...ordered.slice(0, at + 1)].find(
-    (task) => task.attention === "REQUIRED",
-  );
-  if (waiting) state.chosen = waiting.id;
+  const waiting = nextRequiredTarget(ordered, current(ordered)?.id);
+  if (waiting) state.chosen = waiting;
 };

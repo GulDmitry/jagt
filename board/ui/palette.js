@@ -1,6 +1,6 @@
-import { parse } from "../core/grammar.js";
 import { interpret } from "./interpret.js";
 import { boardArrived, verbsArrived } from "./refresh.js";
+import { routeLine } from "./route.js";
 import { tier1 } from "./tier1.js";
 import { ask, judge } from "./verdict.js";
 
@@ -58,13 +58,12 @@ opener.onclick = toggle;
 form.onsubmit = async (event) => {
   event.preventDefault();
   await Promise.all([verbsArrived, boardArrived]);
-  const parsed = parse(ask.value);
-  // A verb typed ALONE is answered here; one whose argument named no task is prose and stays tier 2's job.
-  if (parsed && parsed.verb.takesTask && !parsed.task && !parsed.argument) {
+  const { route, parsed } = routeLine(ask.value);
+  if (route === "judge") {
     judge();
     return;
   }
-  if (parsed && (!parsed.verb.takesTask || parsed.task)) {
+  if (route === "run" && parsed) {
     await tier1(parsed, { form, partFor: state.forms.partFor, clear });
     return;
   }

@@ -1,3 +1,5 @@
+import { byPhases, byText } from "./taskfilter.js";
+
 /** @typedef {import("../core/store.js").Task} Task */
 
 export const box = /** @type {HTMLInputElement} */ (
@@ -9,28 +11,13 @@ export const box = /** @type {HTMLInputElement} */ (
 /** @type {Set<string>} */
 const phases = new Set();
 
-/**
- * @param {Task} task
- * @param {string} needle
- */
-const matches = (task, needle) =>
-  [task.alias, task.id, task.title].some((field) =>
-    (field || "").toLowerCase().includes(needle),
-  );
-
 // The counts read the set narrowed by everything EXCEPT the phase choice: one that obeyed it would read
 // `build 0` the moment `review` was picked, and nothing could be clicked back.
 /** @param {Task[]} tasks */
-export const narrowed = (tasks) => {
-  const needle = box.value.trim().toLowerCase();
-  return tasks.filter((task) => !needle || matches(task, needle));
-};
+export const narrowed = (tasks) => byText(tasks, box.value);
 
 /** @param {Task[]} tasks */
-export const shown = (tasks) =>
-  narrowed(tasks).filter(
-    (task) => phases.size === 0 || phases.has(task.phase ?? ""),
-  );
+export const shown = (tasks) => byPhases(narrowed(tasks), phases);
 
 export const on = () => (box.value.trim() ? 1 : 0) + phases.size;
 
