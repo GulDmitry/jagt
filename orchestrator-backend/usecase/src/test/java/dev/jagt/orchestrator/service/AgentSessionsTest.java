@@ -79,7 +79,9 @@ class AgentSessionsTest {
   @BeforeEach
   void readableConfigOverAnEmptyStateFile() throws Exception {
     Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        Files.writeString(
+            root.resolve("jagt.yml"),
+            "orchestrator:\n  projects: {}\n  agent:\n    submitWait: 0\n    draftPoll: 0\n");
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())

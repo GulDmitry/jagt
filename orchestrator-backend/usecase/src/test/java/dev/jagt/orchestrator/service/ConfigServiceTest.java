@@ -748,6 +748,24 @@ class ConfigServiceTest {
         .isEqualTo(expected);
   }
 
+  @ParameterizedTest
+  @CsvSource({",PT0.7S", "2s,PT2S", "0,PT0S", "nonsense,PT0.7S"})
+  void resolvesHowLongNudgeSitsBeforeEnterIsPressedAgain(String written, Duration expected) {
+    AgentConfig agent =
+        AgentConfig.defaults()
+            .withCadence(new AgentConfig.Cadence(null, null, null, written, null));
+    assertThat(agent.submitWaitOrDefault()).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @CsvSource({",PT1S", "3s,PT3S", "0,PT0S", "nonsense,PT1S"})
+  void resolvesHowOftenNudgeLooksAtWindowTheHumanTypesIn(String written, Duration expected) {
+    AgentConfig agent =
+        AgentConfig.defaults()
+            .withCadence(new AgentConfig.Cadence(null, null, null, null, written));
+    assertThat(agent.draftPollOrDefault()).isEqualTo(expected);
+  }
+
   @Test
   void readsTheStopThatStandsOnTheMaster() throws Exception {
     Path configFile = root.resolve("jagt.yml");

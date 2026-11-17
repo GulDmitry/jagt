@@ -34,8 +34,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AgentSessions implements SessionLines {
 
-  private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
-  private static final Duration SUBMIT_WAIT = Duration.ofMillis(700);
   private static final int RESUBMITS = 3;
 
   /** The one line jagt types into a session; whatever else arrives there is the human's. */
@@ -524,10 +522,11 @@ public class AgentSessions implements SessionLines {
         .addKeyValue("alias", alias)
         .addKeyValue("cause", "the human is typing in the agent's window")
         .log();
+    Duration draftPoll = configService.load().agent().draftPollOrDefault();
     Thread.startVirtualThread(() -> {
       try {
         while (running(session, taskId) && composing(session, taskId)) {
-          Thread.sleep(DRAFT_POLL);
+          Thread.sleep(draftPoll);
         }
         stateService
             .task(taskId)
@@ -554,9 +553,10 @@ public class AgentSessions implements SessionLines {
    * again.
    */
   private Optional<String> undelivered(String session, String taskId, String line) {
+    Duration submitWait = configService.load().agent().submitWaitOrDefault();
     try {
       for (int pressed = 0; pressed <= RESUBMITS; pressed++) {
-        Thread.sleep(SUBMIT_WAIT);
+        Thread.sleep(submitWait);
         if (!stillTyped(session, taskId, line)) {
           return Optional.empty();
         }

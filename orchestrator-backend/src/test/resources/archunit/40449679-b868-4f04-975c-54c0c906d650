@@ -122,6 +122,8 @@ Method <dev.jagt.orchestrator.protocol.AgentStatusMessage.of(java.lang.String, j
 Method <dev.jagt.orchestrator.protocol.AgentStatusMessage.withOutcome(java.lang.String)> does not satisfy be called from main in (AgentStatusMessage.java:30)
 Method <dev.jagt.orchestrator.protocol.AgentStatusMessage.withRequest(dev.jagt.orchestrator.protocol.AgentStatusMessage$Request)> does not satisfy be called from main in (AgentStatusMessage.java:31)
 Method <dev.jagt.orchestrator.protocol.read.RetryPolicy.lastAttempt(int)> does not satisfy be called from main in (RetryPolicy.java:27)
+Method <dev.jagt.orchestrator.service.ConfigService$ConfigFile$AgentConfig$Cadence.withDraftPoll(java.lang.String)> does not satisfy be called from main in (ConfigService.java:247)
+Method <dev.jagt.orchestrator.service.ConfigService$ConfigFile$AgentConfig$Cadence.withSubmitWait(java.lang.String)> does not satisfy be called from main in (ConfigService.java:246)
 Method <dev.jagt.orchestrator.service.ConfigService$ConfigFile$AgentConfig$Models.withTiers(java.util.List)> does not satisfy be called from main in (ConfigService.java:247)
 Method <dev.jagt.orchestrator.service.ConfigService$ConfigFile$AgentConfig.withCacheLifetime(java.lang.String)> does not satisfy be called from main in (ConfigService.java:274)
 Method <dev.jagt.orchestrator.service.ConfigService$ConfigFile$AgentConfig.withModel(java.lang.String)> does not satisfy be called from main in (ConfigService.java:262)

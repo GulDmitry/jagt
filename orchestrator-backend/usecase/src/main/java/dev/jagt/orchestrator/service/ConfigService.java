@@ -242,11 +242,18 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       public record Cadence(
           @Nullable Integer probeSeconds,
           @Nullable String cacheLifetime,
-          @Nullable String notesEvery) {}
+          @Nullable String notesEvery,
+          @Nullable String submitWait,
+          @Nullable String draftPoll) {}
 
       public static AgentConfig defaults() {
         return new AgentConfig(
-            new Models(null, null, null), new Cadence(null, null, null), null, null, null, null);
+            new Models(null, null, null),
+            new Cadence(null, null, null, null, null),
+            null,
+            null,
+            null,
+            null);
       }
 
       public AgentConfig withModel(@Nullable String model) {
@@ -283,6 +290,16 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
        */
       public Duration notesEveryOrDefault() {
         return duration(cadence.notesEvery(), Duration.ofMinutes(30));
+      }
+
+      /** How long a nudge sits in a window's input before Enter is pressed again. */
+      public Duration submitWaitOrDefault() {
+        return duration(cadence.submitWait(), Duration.ofMillis(700));
+      }
+
+      /** How often a nudge looks again at a window whose input holds a line the human is typing. */
+      public Duration draftPollOrDefault() {
+        return duration(cadence.draftPoll(), Duration.ofSeconds(1));
       }
 
       private static Duration duration(@Nullable String written, Duration unset) {

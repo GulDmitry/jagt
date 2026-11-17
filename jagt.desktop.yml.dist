@@ -101,6 +101,8 @@ orchestrator:
     tiers: [sonnet, opus] # models a stopped session may be moved up through with `escalate`, lowest first; the first stands for the start model; []: none
     cacheLifetime: 1h     # idle past this, a prompt goes to a fresh session; 0: never (a local model)
     notesEvery: 30m       # task_notes.md older than this at a turn end: the session rewrites it once; 0: never
+    submitWait: 700ms     # a nudge left in a window's input gets Enter again after this wait, three times at most; 0: no wait
+    draftPoll: 1s         # a nudge waits for the human's line in a window, looking again this often; 0: no wait
     probeSeconds: 600    # how often every running session's liveness is probed
     sandbox:              # true: a session's shell writes only in its task's worktrees, /tmp, the user's temp dir and the tool caches;
                           # a write beyond asks you in the session's window. Claude's sandbox then lets only its web proxy out, which
