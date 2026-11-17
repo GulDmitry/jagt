@@ -23,11 +23,11 @@ Accepted 2026-11-16; reopens [0046](0046-the-board-renders-preact-components-wit
 - The files sit in `board/vendor/codemirror/` byte for byte as the registry served them, named `<scope>-<package>.js`.
 - `vendor/codemirror/importmap.json` maps every bare specifier to its file; the loader appends it as an
   import map before its first `import()`.
-- The map is no inline `<script>` in `index.html`: the 192 KB budget has no room for its 4 KB.
+- The map is no inline `<script>` in `index.html`: the 224 KB budget has no room for its 4 KB.
 - The files load on demand by `import()`: the first paint fetches none, as with mermaid.
-- `BoardAssetsTest` pins each file's SHA-256 and leaves the folder out of the 192 KB budget; the number stays.
+- `BoardAssetsTest` pins each file's SHA-256 and leaves the folder out of the 224 KB budget; the number stays.
 - The viewer's own code sits in `board/viewer/`, `import()`ed when the Code tab first opens.
-- `BoardAssetsTest` leaves `board/viewer/` and `vendor/hooks.mjs`, which only the viewer imports, out of the 192 KB: the eager part has no room.
+- `BoardAssetsTest` leaves `board/viewer/` and `vendor/hooks.mjs`, which only the viewer imports, out of the 224 KB: the eager part has no room.
 - `@codemirror/autocomplete` is vendored because `lang-javascript` and `lang-markdown` import it.
 - `commands` and `lint` are not vendored: no vendored file imports them.
 - Three LICENSE files, one per holder text: codemirror, lezer, lezer-json.
