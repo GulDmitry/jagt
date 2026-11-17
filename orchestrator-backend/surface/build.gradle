@@ -20,7 +20,7 @@ dependencies {
 
 processResources {
     from('../../board') {
-        exclude 'node_modules/**', 'package*.json', 'eslint.config.js', 'jsconfig.json', '.prettierignore'
+        exclude 'node_modules/**', 'test/**', 'package*.json', 'eslint.config.js', 'jsconfig.json', '.prettierignore'
         into 'static'
     }
     from('../../contracts') {

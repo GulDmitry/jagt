@@ -138,6 +138,7 @@ class BoardAssetsTest {
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
               .filter(path -> !path.startsWith(STATIC.resolve("node_modules")))
+              .filter(path -> !path.startsWith(STATIC.resolve("test")))
               .filter(path -> !path.endsWith("mermaid.min.js"))
               .filter(path -> !path.endsWith("hooks.mjs"))
               .filter(path -> !path.startsWith(STATIC.resolve("vendor/codemirror")))

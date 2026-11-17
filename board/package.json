@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "prettier --check . && eslint . && tsc -p jsconfig.json",
+    "lint": "prettier --check . && eslint . && tsc -p jsconfig.json && tsc -p test/jsconfig.json",
     "format": "prettier --write .",
-    "test": "node -e \"process.exit(0)\""
+    "test": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-include=core/format.js --test-coverage-include=core/time.js --test-coverage-include=core/store.js \"test/**/*.test.js\""
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@types/node": "22.19.0",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import-x": "4.18.1",

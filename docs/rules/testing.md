@@ -59,7 +59,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### The board is tested in a browser
 
-- `boardTest` drives `board/` on the real backend in headless Chromium: only it proves grid order, a card's buttons, the SSE repaint, the palette.
+- `boardTest` drives `board/` on the real backend in headless Chromium: grid, buttons, repaint. Pure modules: `cd board && npm test`.
 - Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its
   `@MockitoBean`s stub whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`,
   `EditorDriver`, a `ReviewRepliesReport` spy; e2e's stub only ports.
