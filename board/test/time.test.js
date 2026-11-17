@@ -5,6 +5,7 @@ import {
   full,
   minutes,
   sameDay,
+  stamp,
   withSeconds,
 } from "../core/time.js";
 
@@ -42,4 +43,12 @@ test("twoInstantsDoNotShareADay whenUtcMidnightSeparatesThem", () => {
     sameDay(Date.UTC(2026, 10, 17, 23, 59), Date.UTC(2026, 10, 18, 0, 0)),
     false,
   );
+});
+
+test("onlyTheMinutesAreShown whenTheStepIsFromTheSameDay", () => {
+  assert.equal(stamp(MORNING, MORNING + 3600000), "09:05");
+});
+
+test("theDayIsShownToo whenTheStepIsFromAnEarlierDay", () => {
+  assert.equal(stamp(MORNING, MORNING + 86400000), "17 Nov, 09:05");
 });

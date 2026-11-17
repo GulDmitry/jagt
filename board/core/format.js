@@ -135,3 +135,13 @@ export const stopLines = (task) =>
         task.stop.triage,
       ].flatMap((line) => (line ? [line] : []))
     : [];
+
+/** @param {string} line */
+export const diffLineClass = (line) =>
+  /^(\+\+\+|---|diff|index|@@)/.test(line)
+    ? "muted"
+    : line[0] === "+"
+      ? "changed"
+      : line[0] === "-"
+        ? "removed"
+        : "";

@@ -1,4 +1,4 @@
-import { reportParts, switchLines } from "../core/format.js";
+import { diffLineClass, reportParts, switchLines } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import { draw } from "../ui/mermaid.js";
 import { html } from "./html.js";
@@ -63,16 +63,6 @@ export const Artifacts = ({ task, shown }) =>
     }
   </section>`;
 
-/** @param {string} line */
-const kind = (line) =>
-  /^(\+\+\+|---|diff|index|@@)/.test(line)
-    ? "muted"
-    : line[0] === "+"
-      ? "changed"
-      : line[0] === "-"
-        ? "removed"
-        : "";
-
 /** @param {{ shown: string | DiffRepo[] | null }} props */
 export const Diff = ({ shown }) =>
   html`<section
@@ -90,7 +80,7 @@ export const Diff = ({ shown }) =>
               (repo) =>
                 html`<h2 class="group-head">${repo.project} · ${repo.base}</h2>
                   <pre class="screen">
-${repo.diff ? repo.diff.split("\n").map((line) => html`<span class=${kind(line)}>${line} </span>`) : t("pane.no-diff")}</pre>
+${repo.diff ? repo.diff.split("\n").map((line) => html`<span class=${diffLineClass(line)}>${line} </span>`) : t("pane.no-diff")}</pre>
                   ${repo.cut ? html`<p class="muted">${t("pane.diff-cut")}</p>` : ""}`,
             )
     }

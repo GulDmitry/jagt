@@ -1,47 +1,32 @@
-// TWO questions, because they refuse different clicks: this exact button, and any other WRITING one on the task.
+import * as rules from "./inflightrules.js";
 
 /** @typedef {import("../core/store.js").Task} Task */
 /** @typedef {import("../core/store.js").Action} Action */
 
-/** @type {Set<string>} */
-const pending = new Set();
-/** @type {Map<string, string>} */
-const writing = new Map();
-
-/**
- * @param {Task} task
- * @param {Action} action
- */
-const key = (task, action) => `${task.id}:${action.id}`;
+const state = rules.create();
 
 // What DISABLES a button also refuses the click: a typed line reaches `run` with no button in between.
 /**
  * @param {Task} task
  * @param {Action} action
  */
-export const blocked = (task, action) =>
-  pending.has(key(task, action)) || (!action.readOnly && writing.has(task.id));
+export const blocked = (task, action) => rules.blocked(state, task, action);
 
 /**
  * @param {Task} task
  * @param {Action} action
  */
-export const waitingFor = (task, action) => writing.get(task.id) || action.id;
+export const waitingFor = (task, action) =>
+  rules.waitingFor(state, task, action);
 
 /**
  * @param {Task} task
  * @param {Action} action
  */
-export function hold(task, action) {
-  pending.add(key(task, action));
-  if (!action.readOnly) writing.set(task.id, action.id);
-}
+export const hold = (task, action) => rules.hold(state, task, action);
 
 /**
  * @param {Task} task
  * @param {Action} action
  */
-export function release(task, action) {
-  pending.delete(key(task, action));
-  if (!action.readOnly) writing.delete(task.id);
-}
+export const release = (task, action) => rules.release(state, task, action);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { originLabel, reportParts } from "../core/format.js";
+import { diffLineClass, originLabel, reportParts } from "../core/format.js";
 
 test("anEmptyLabelIsGiven whenTheStepHasNoOrigin", () => {
   assert.equal(originLabel({}), "");
@@ -66,4 +66,17 @@ test("aLinkStaysALink whenItsAddressContainsATaskId", () => {
     },
     { kind: "text", text: "" },
   ]);
+});
+
+test.describe("aDiffLineIsClassedByItsMark", () => {
+  for (const [line, expected] of [
+    ["+++ b/a", "muted"],
+    ["@@ -1 +1 @@", "muted"],
+    ["+added", "changed"],
+    ["-gone", "removed"],
+    [" same", ""],
+  ]) {
+    test(`${JSON.stringify(line)} is ${expected || "plain"}`, () =>
+      assert.equal(diffLineClass(line), expected));
+  }
 });

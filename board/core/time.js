@@ -43,3 +43,10 @@ export const full = (at) => `${FULL.format(at)} UTC`;
 export const sameDay = (a, b) =>
   new Date(a).toISOString().slice(0, 10) ===
   new Date(b).toISOString().slice(0, 10);
+
+/**
+ * @param {Instant} at
+ * @param {Instant} now
+ */
+export const stamp = (at, now) =>
+  sameDay(at, now) ? minutes(at) : dayAndMinutes(at);

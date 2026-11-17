@@ -9,7 +9,14 @@
     "core/grammar.js",
     "core/i18n.js",
     "core/store.js",
-    "core/time.js"
+    "core/time.js",
+    "components/cardfacts.js",
+    "components/facts.js",
+    "components/jobfacts.js",
+    "components/panefacts.js",
+    "components/rows.js",
+    "ui/inflightrules.js",
+    "ui/phasefacts.js"
   ],
   "check-coverage": true,
   "per-file": true,

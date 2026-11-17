@@ -1,72 +1,50 @@
 import { closest, make, span } from "../core/dom.js";
-import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import * as filters from "./filters.js";
 import * as order from "./order.js";
+import { clearLabel, emptyFacts, orderFacts, segments } from "./phasefacts.js";
 
 const phaseBar = /** @type {HTMLElement} */ (document.getElementById("phases"));
-
-// An empty board is nothing created yet or everything filtered out: two elements, so neither shows the other's text.
-/**
- * @param {number} held
- * @param {number} showing
- */
-function renderEmpty(held, showing) {
-  /** @type {HTMLElement} */ (document.getElementById("empty")).hidden =
-    held > 0;
-  const filtered = /** @type {HTMLElement} */ (
-    document.getElementById("filtered")
-  );
-  filtered.hidden = !(held > 0 && showing === 0);
-  if (!filtered.hidden) {
-    filtered.textContent = t("header.filtered", { on: filters.on(), held });
-  }
-}
 
 /**
  * @param {import("../core/store.js").Task[]} tasks
  * @param {number} showing
  */
 export function render(tasks, showing) {
-  renderEmpty(tasks.length, showing);
+  const empty = emptyFacts(tasks.length, showing, filters.on());
+  /** @type {HTMLElement} */ (document.getElementById("empty")).hidden =
+    empty.emptyHidden;
+  const filtered = /** @type {HTMLElement} */ (
+    document.getElementById("filtered")
+  );
+  filtered.hidden = empty.filteredHidden;
+  if (!filtered.hidden) filtered.textContent = empty.filtered;
   phaseBar.hidden = tasks.length === 0;
-  const perPhase = filters.narrowed(tasks);
   // The separator is content, not a gap: the words stay apart without the stylesheet.
   phaseBar.replaceChildren(
-    ...store.phases().flatMap(({ id: phase, label }, index) => {
-      const held = perPhase.filter((task) => task.phase === phase).length;
-      const segment = make(
-        "button",
-        held ? "phase" : "phase empty",
-        `${label} `,
-        span("count", String(held)),
-      );
-      segment.disabled = held === 0;
-      segment.dataset.phase = phase;
-      segment.setAttribute("aria-pressed", String(filters.holds(phase)));
-      segment.dataset.tip = filters.holds(phase)
-        ? t("header.phase.off", { label })
-        : t("header.phase.on", { label });
-      return index === 0 ? [segment] : [span("sep", " · "), segment];
-    }),
+    ...segments(store.phases(), filters.narrowed(tasks), filters.holds).flatMap(
+      (one, index) => {
+        const segment = make(
+          "button",
+          one.className,
+          `${one.label} `,
+          span("count", String(one.held)),
+        );
+        segment.disabled = one.held === 0;
+        segment.dataset.phase = one.phase;
+        segment.setAttribute("aria-pressed", String(one.pressed));
+        segment.dataset.tip = one.tip;
+        return index === 0 ? [segment] : [span("sep", " · "), segment];
+      },
+    ),
   );
-  // Names the order the board is in; the hover, the one a press takes it to.
-  const sort = make(
-    "button",
-    "order",
-    t(order.holds() ? "header.order.alias" : "header.order.added"),
-  );
+  const facts = orderFacts(order.holds());
+  const sort = make("button", "order", facts.label);
   sort.dataset.order = "";
-  sort.dataset.tip = order.holds()
-    ? t("header.order.added.tip")
-    : t("header.order.alias.tip");
+  sort.dataset.tip = facts.tip;
   phaseBar.append(span("sep", " · "), sort);
   if (filters.on()) {
-    const clear = make(
-      "button",
-      "clear-filters",
-      t("header.clear", { n: filters.on() }),
-    );
+    const clear = make("button", "clear-filters", clearLabel(filters.on()));
     clear.dataset.clear = "";
     phaseBar.append(clear);
   }

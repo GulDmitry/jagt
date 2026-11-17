@@ -3,58 +3,17 @@
 
 import { duration } from "../core/format.js";
 import { t } from "../core/i18n.js";
+import { marked } from "./facts.js";
 import { html } from "./html.js";
-import { marked, watchLine } from "./Meta.js";
+import { pickLabel, quickClass, rowClass, stoppedLine } from "./rows.js";
+
+export { grouped } from "./rows.js";
 
 /**
  * @typedef {import("../core/store.js").Task} CardTask
  * @typedef {import("../core/store.js").Action} Action
- * @typedef {{ name: string, kind: string, tasks: CardTask[], named?: boolean }} Group
+ * @typedef {import("./rows.js").Group} Group
  */
-
-/** @param {Action} action */
-const quickClass = (action) =>
-  action.primary ? "row-verb primary" : "row-verb";
-
-/**
- * @param {CardTask} task
- * @param {number} now
- */
-const stoppedLine = (task, now) => {
-  const watch = watchLine(task.autoReview, now);
-  return watch?.stalled ? watch.line : null;
-};
-
-/**
- * @param {CardTask} task
- * @param {boolean} selected
- */
-const rowClass = (task, selected) =>
-  [
-    "row",
-    task.owner.toLowerCase(),
-    task.attention === "OPTIONAL" && "optional",
-    selected && "selected",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-/**
- * @param {CardTask} task
- * @param {boolean} changed
- * @param {string | null} stopped
- */
-const pickLabel = (task, changed, stopped) =>
-  [
-    `${task.alias || task.id} ${task.title || ""}`,
-    task.statusLabel,
-    marked(task) &&
-      `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`,
-    stopped,
-    changed && t("list.changed"),
-  ]
-    .filter(Boolean)
-    .join(", ");
 
 /** @param {{ task: CardTask }} props */
 const Badge = ({ task }) =>
@@ -159,53 +118,6 @@ const Group = ({ name, kind, tasks, named, selected, changed, now }) =>
         />`,
     )}
   </section>`;
-
-// The rows in the order the keyboard walks them: the human's band first, then each project by name;
-// a flagged row leads its group.
-/**
- * @param {CardTask[]} shown
- * @param {boolean} manyProjects
- * @param {(task: CardTask) => boolean} [flagged]
- * @returns {Group[]}
- */
-export function grouped(shown, manyProjects, flagged = () => false) {
-  const leading = shown.filter(flagged);
-  const ordered = [
-    ...leading,
-    ...shown.filter((task) => !leading.includes(task)),
-  ];
-  const yours = ordered.filter((task) => task.attention === "REQUIRED");
-  const rest = ordered.filter((task) => task.attention !== "REQUIRED");
-  const projects = [...new Set(rest.map((task) => task.project))].sort((a, b) =>
-    a.localeCompare(b, "en"),
-  );
-  const groups = manyProjects
-    ? projects.map((project) => ({
-        name: project,
-        kind: "project",
-        tasks: rest.filter((task) => task.project === project),
-      }))
-    : [
-        {
-          name: yours.length ? t("list.rest") : "",
-          kind: "project",
-          tasks: rest,
-        },
-      ];
-  return [
-    ...(yours.length
-      ? [
-          {
-            name: t("list.yours"),
-            kind: "yours",
-            tasks: yours,
-            named: manyProjects,
-          },
-        ]
-      : []),
-    ...groups,
-  ].filter((group) => group.tasks.length);
-}
 
 /** @param {{ groups: Group[], selected?: string | null, changed: (task: CardTask) => boolean, now: number, keys?: string }} props */
 export const TaskList = ({ groups, selected, changed, now, keys }) =>

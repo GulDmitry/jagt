@@ -1,38 +1,8 @@
-import { countdown } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import { html } from "./html.js";
+import { ago, dot, next, tables, verdict } from "./jobfacts.js";
 
-/**
- * @typedef {{ id: string, serves: string, describe: string, running?: boolean, lastError?: string | null, lastStartedAt?: number | null, nextRunAt?: number | null }} Job
- */
-
-/**
- * @param {number | null | undefined} at
- * @param {number} now
- */
-const ago = (at, now) =>
-  at ? t("jobs.ago", { when: countdown(now - at) }) : t("jobs.not-yet");
-
-/** @param {Job} job */
-const dot = (job) =>
-  job.lastError
-    ? "red"
-    : job.running
-      ? "running"
-      : job.lastStartedAt
-        ? "green"
-        : "";
-
-/**
- * @param {Job} job
- * @param {number} now
- */
-const next = (job, now) =>
-  job.nextRunAt
-    ? job.nextRunAt <= now
-      ? t("due")
-      : t("jobs.in", { when: countdown(job.nextRunAt - now) })
-    : t(job.lastStartedAt ? "jobs.not-again" : "jobs.at-start");
+/** @typedef {import("./jobfacts.js").Job} Job */
 
 /** @param {{ job: Job, now: number }} props */
 const Row = ({ job, now }) =>
@@ -44,7 +14,7 @@ const Row = ({ job, now }) =>
       <span
         class=${`checks ${dot(job)}`}
         role="img"
-        aria-label=${t(job.lastError ? "jobs.failed" : job.running ? "jobs.running" : job.lastStartedAt ? "jobs.fine" : "jobs.never")}
+        aria-label=${verdict(job)}
       ></span>
     </td>
     <td class="job-id">${job.id}</td>
@@ -68,8 +38,8 @@ const Row = ({ job, now }) =>
 
 /** @param {{ jobs: Job[], now: number }} props */
 export const JobsTable = ({ jobs, now }) =>
-  html`${[...new Set(jobs.map((job) => job.serves))].map(
-    (group) =>
+  html`${tables(jobs).map(
+    ({ group, jobs: rows }) =>
       html` <table class="jobs" aria-label=${group}>
         <caption class="group-head">
           ${group}
@@ -84,14 +54,7 @@ export const JobsTable = ({ jobs, now }) =>
           </tr>
         </thead>
         <tbody>
-          ${jobs
-            .filter((job) => job.serves === group)
-            .sort(
-              (one, other) =>
-                Number(Boolean(other.lastError)) -
-                Number(Boolean(one.lastError)),
-            )
-            .map((job) => html`<${Row} key=${job.id} job=${job} now=${now} />`)}
+          ${rows.map((job) => html`<${Row} key=${job.id} job=${job} now=${now} />`)}
         </tbody>
       </table>`,
   )}`;

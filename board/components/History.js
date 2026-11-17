@@ -1,14 +1,7 @@
 import { t } from "../core/i18n.js";
 import { originLabel } from "../core/format.js";
-import { dayAndMinutes, minutes, sameDay } from "../core/time.js";
+import { stamp } from "../core/time.js";
 import { html } from "./html.js";
-
-// Today's steps by the clock; older ones by day too.
-/**
- * @param {number} at
- * @param {number} now
- */
-const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
 
 /** @param {{ task: import("../core/store.js").Task, now: number }} props */
 export const History = ({ task, now }) =>
@@ -26,7 +19,7 @@ export const History = ({ task, now }) =>
             data-tip=${step.why || undefined}
             tabindex=${step.why ? 0 : undefined}
           >
-            <span class="age">${when(step.at, now)}</span>
+            <span class="age">${stamp(step.at, now)}</span>
             ${step.label || step.status}${
               step.origin
                 ? html` <span class="muted">${originLabel(step)}</span>`
