@@ -2,9 +2,18 @@ import { countdown } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import { html } from "./html.js";
 
+/**
+ * @typedef {{ id: string, serves: string, describe: string, running?: boolean, lastError?: string | null, lastStartedAt?: number | null, nextRunAt?: number | null }} Job
+ */
+
+/**
+ * @param {number | null | undefined} at
+ * @param {number} now
+ */
 const ago = (at, now) =>
   at ? t("jobs.ago", { when: countdown(now - at) }) : t("jobs.not-yet");
 
+/** @param {Job} job */
 const dot = (job) =>
   job.lastError
     ? "red"
@@ -14,6 +23,10 @@ const dot = (job) =>
         ? "green"
         : "";
 
+/**
+ * @param {Job} job
+ * @param {number} now
+ */
 const next = (job, now) =>
   job.nextRunAt
     ? job.nextRunAt <= now
@@ -21,6 +34,7 @@ const next = (job, now) =>
       : t("jobs.in", { when: countdown(job.nextRunAt - now) })
     : t(job.lastStartedAt ? "jobs.not-again" : "jobs.at-start");
 
+/** @param {{ job: Job, now: number }} props */
 const Row = ({ job, now }) =>
   html`<tr
     class=${job.lastError ? "failed" : undefined}
@@ -52,6 +66,7 @@ const Row = ({ job, now }) =>
     </td>
   </tr>`;
 
+/** @param {{ jobs: Job[], now: number }} props */
 export const JobsTable = ({ jobs, now }) =>
   html`${[...new Set(jobs.map((job) => job.serves))].map(
     (group) =>

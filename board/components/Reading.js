@@ -4,6 +4,13 @@ import { draw } from "../ui/mermaid.js";
 import { html } from "./html.js";
 import { Report } from "./Report.js";
 
+/**
+ * @typedef {import("./Card.js").CardTask} CardTask
+ * @typedef {{ names: string[], name?: string, html: string }} Doc
+ * @typedef {{ project: string, base: string, diff?: string, cut?: boolean }} DiffRepo
+ */
+
+/** @param {{ shown: string | null, offered: boolean }} props */
 export const Round = ({ shown, offered }) =>
   html`<section
     class="round"
@@ -22,6 +29,7 @@ export const Round = ({ shown, offered }) =>
     }
   </section>`;
 
+/** @param {{ task: CardTask, shown: Doc | null }} props */
 export const Artifacts = ({ task, shown }) =>
   html`<section
     class="artifacts"
@@ -49,12 +57,13 @@ export const Artifacts = ({ task, shown }) =>
               </div>
               <div
                 class="doc"
-                ref=${(root) => draw(root)}
+                ref=${(/** @type {Element | null} */ root) => draw(root)}
                 dangerouslySetInnerHTML=${{ __html: shown.html }}
               ></div>`
     }
   </section>`;
 
+/** @param {string} line */
 const kind = (line) =>
   /^(\+\+\+|---|diff|index|@@)/.test(line)
     ? "muted"
@@ -64,6 +73,7 @@ const kind = (line) =>
         ? "removed"
         : "";
 
+/** @param {{ shown: string | DiffRepo[] | null }} props */
 export const Diff = ({ shown }) =>
   html`<section
     class="diff"

@@ -1,20 +1,27 @@
 import { make } from "../core/dom.js";
 import { toast } from "./toast.js";
 
+/** @typedef {{ initialize: (config: object) => void, run: (options: { nodes: Element[] }) => Promise<void> }} Mermaid */
+
+/** @type {{ loading: Promise<Mermaid> | null }} */
 const state = {
   loading: null,
 };
+
+const vendored = () =>
+  /** @type {{ mermaid: Mermaid }} */ (/** @type {unknown} */ (globalThis))
+    .mermaid;
 
 const load = () => {
   state.loading ??= new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = "./vendor/mermaid.min.js";
     script.onload = () => {
-      globalThis.mermaid.initialize({
+      vendored().initialize({
         startOnLoad: false,
         securityLevel: "strict",
       });
-      resolve(globalThis.mermaid);
+      resolve(vendored());
     };
     script.onerror = () => {
       state.loading = null;
@@ -25,17 +32,24 @@ const load = () => {
   return state.loading;
 };
 
+/** @param {ParentNode | null | undefined} root */
 export function draw(root) {
   const fences = root
     ? [...root.querySelectorAll("pre > code.language-mermaid")]
     : [];
   if (!fences.length) return;
   const nodes = fences.map((code) => {
-    const node = make("div", "mermaid", code.textContent);
-    code.parentElement.replaceWith(node);
+    const node = make("div", "mermaid", code.textContent ?? "");
+    code.parentElement?.replaceWith(node);
     return node;
   });
   load()
     .then((mermaid) => mermaid.run({ nodes }))
-    .catch((e) => toast(`could not draw the diagram: ${e.message}`, true));
+    .catch(
+      /** @param {unknown} e */ (e) =>
+        toast(
+          `could not draw the diagram: ${e instanceof Error ? e.message : String(e)}`,
+          true,
+        ),
+    );
 }

@@ -6,14 +6,29 @@ import { t } from "../core/i18n.js";
 import { html } from "./html.js";
 import { marked, watchLine } from "./Meta.js";
 
+/**
+ * @typedef {import("./Card.js").CardTask} CardTask
+ * @typedef {import("./Card.js").Action} Action
+ * @typedef {{ name: string, kind: string, tasks: CardTask[], named?: boolean }} Group
+ */
+
+/** @param {Action} action */
 const quickClass = (action) =>
   action.primary ? "row-verb primary" : "row-verb";
 
+/**
+ * @param {CardTask} task
+ * @param {number} now
+ */
 const stoppedLine = (task, now) => {
   const watch = watchLine(task.autoReview, now);
   return watch?.stalled ? watch.line : null;
 };
 
+/**
+ * @param {CardTask} task
+ * @param {boolean} selected
+ */
 const rowClass = (task, selected) =>
   [
     "row",
@@ -24,6 +39,11 @@ const rowClass = (task, selected) =>
     .filter(Boolean)
     .join(" ");
 
+/**
+ * @param {CardTask} task
+ * @param {boolean} changed
+ * @param {string | null} stopped
+ */
 const pickLabel = (task, changed, stopped) =>
   [
     `${task.alias || task.id} ${task.title || ""}`,
@@ -36,12 +56,14 @@ const pickLabel = (task, changed, stopped) =>
     .filter(Boolean)
     .join(", ");
 
+/** @param {{ task: CardTask }} props */
 const Badge = ({ task }) =>
   html`<span
     class=${`badge ${task.attention.toLowerCase()}${task.detailKind === "PROBLEM" ? " problem" : ""}`}
     >${task.ask}</span
   >`;
 
+/** @param {{ task: CardTask, stopped: string | null, project?: boolean, now: number }} props */
 const RowFacts = ({ task, stopped, project, now }) =>
   html`<span class="row-line row-facts">
     <span
@@ -54,6 +76,7 @@ const RowFacts = ({ task, stopped, project, now }) =>
     ${marked(task) ? html`<span class=${`checks ${task.pipeline.toLowerCase()}`} aria-hidden="true"></span>` : ""}
   </span>`;
 
+/** @param {{ task: CardTask, selected: boolean, changed: boolean, stopped: string | null, project?: boolean, now: number }} props */
 const Pick = ({ task, selected, changed, stopped, project, now }) =>
   html`<button
     class="pick"
@@ -77,6 +100,7 @@ const Pick = ({ task, selected, changed, stopped, project, now }) =>
     />
   </button>`;
 
+/** @param {{ task: CardTask, quick: Action, selected: boolean }} props */
 const QuickVerb = ({ task, quick, selected }) =>
   html`<button
     class=${quickClass(quick)}
@@ -103,6 +127,7 @@ const QuickVerb = ({ task, quick, selected }) =>
     </svg>
   </button>`;
 
+/** @param {{ task: CardTask, selected: boolean, changed: boolean, project?: boolean, now: number }} props */
 const Row = ({ task, selected, changed, project, now }) => {
   const quick = (task.actions || []).find((action) => action.onRow);
   return html`<div class=${rowClass(task, selected)} data-row=${task.id}>
@@ -118,6 +143,7 @@ const Row = ({ task, selected, changed, project, now }) => {
   </div>`;
 };
 
+/** @param {Group & { selected?: string | null, changed: (task: CardTask) => boolean, now: number }} props */
 const Group = ({ name, kind, tasks, named, selected, changed, now }) =>
   html`<section class=${`group ${kind}`} aria-label=${name}>
     ${name ? html`<h2 class="group-head">${name} <span class="count">${tasks.length}</span></h2>` : ""}
@@ -136,6 +162,12 @@ const Group = ({ name, kind, tasks, named, selected, changed, now }) =>
 
 // The rows in the order the keyboard walks them: the human's band first, then each project by name;
 // a flagged row leads its group.
+/**
+ * @param {CardTask[]} shown
+ * @param {boolean} manyProjects
+ * @param {(task: CardTask) => boolean} [flagged]
+ * @returns {Group[]}
+ */
 export function grouped(shown, manyProjects, flagged = () => false) {
   const leading = shown.filter(flagged);
   const ordered = [
@@ -175,6 +207,7 @@ export function grouped(shown, manyProjects, flagged = () => false) {
   ].filter((group) => group.tasks.length);
 }
 
+/** @param {{ groups: Group[], selected?: string | null, changed: (task: CardTask) => boolean, now: number, keys?: string }} props */
 export const TaskList = ({ groups, selected, changed, now, keys }) =>
   html`<nav id="tasks" aria-label=${t("list.label")}>
     ${groups.map(

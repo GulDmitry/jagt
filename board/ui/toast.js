@@ -4,17 +4,23 @@ import { withSeconds } from "../core/time.js";
 
 // A toast is gone in seconds, so every one is kept here for the session; the log file keeps what matters longer.
 
-const toasts = document.getElementById("toasts");
-const opener = document.getElementById("show-log");
+const toasts = /** @type {HTMLElement} */ (document.getElementById("toasts"));
+const opener = /** @type {HTMLElement} */ (document.getElementById("show-log"));
+/** @type {string[]} */
 const messages = [];
 
 export const sessionLog = () => messages.join("\n");
 
 // The dialog is not this module's to own, so the click is handed over.
+/** @param {() => void} open */
 export const showLog = (open) => {
   opener.onclick = open;
 };
 
+/**
+ * @param {string} message
+ * @param {boolean} [isError]
+ */
 export function toast(message, isError) {
   messages.push(`${withSeconds(Date.now())}  ${message}`);
   opener.hidden = false;

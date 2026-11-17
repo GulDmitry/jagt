@@ -1,5 +1,17 @@
+/**
+ * @typedef {import("../components/Card.js").Action} Action
+ * @typedef {import("../components/Card.js").CardTask} CardTask
+ */
+
 const MINUTE = 60000;
 const now = Date.now();
+/**
+ * @param {string} id
+ * @param {string} label
+ * @param {string} group
+ * @param {Partial<Action>} [extra]
+ * @returns {Action}
+ */
 const verb = (id, label, group, extra) => ({
   id,
   label,
@@ -14,6 +26,10 @@ const tools = [
   verb("focus", "Focus", "tool", { onRow: true, key: "f" }),
   verb("respawn", "Restart agent", "tool"),
 ];
+/**
+ * @param {Partial<CardTask> & { id: string, statusLabel: string }} fields
+ * @returns {CardTask}
+ */
 const task = (fields) => ({
   project: "alpha",
   repos: [{ project: "alpha" }],
@@ -28,6 +44,11 @@ const task = (fields) => ({
   actions: [verb("done", "Done", "flow"), ...tools],
   ...fields,
 });
+/**
+ * @param {string} name
+ * @param {Parameters<typeof task>[0]} fields
+ * @param {{ manyProjects?: boolean, flagged?: boolean, blocked?: Set<string>, now?: number, offers?: { part?: string }[] }} [extra]
+ */
 const card = (name, fields, extra) => ({
   name,
   props: {
@@ -283,6 +304,7 @@ export const cards = [
       state: "STALLED",
       label: "poll stopped",
       note: "request unreadable",
+      nextPollAt: 0,
     },
   }),
   card("stopped: nothing polls again", {
@@ -298,6 +320,7 @@ export const cards = [
       state: "STALLED",
       label: "poll stopped",
       note: "request unreadable",
+      nextPollAt: 0,
     },
   }),
   card("stopped by jagt: the reason on the line, the evidence in the hover", {

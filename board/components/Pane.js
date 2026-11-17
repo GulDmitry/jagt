@@ -27,6 +27,19 @@ const KEYS = [
   ["CTRL_U", "^U"],
 ];
 
+/**
+ * @typedef {import("./Card.js").CardTask} CardTask
+ * @typedef {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, now: number }} CardProps
+ * @typedef {CardProps & { offers: { part?: string }[] }} PaneCard
+ * @typedef {{ name?: string, names?: string[], held?: boolean, shown?: string }} Window
+ * @typedef {{ Code?: import("preact").FunctionComponent<{ task: CardTask }>, failure?: string }} Reading
+ * @typedef {import("./Reading.js").Doc} Doc
+ * @typedef {import("./Reading.js").DiffRepo} DiffRepo
+ * @typedef {null | string | DiffRepo[] | Doc | Window | Reading} Shown
+ * @typedef {{ held?: boolean, line?: string }} Peek
+ */
+
+/** @param {{ task: CardTask, shown: Window | null }} props */
 const Session = ({ task, shown }) =>
   html`<section
     class="session"
@@ -71,6 +84,7 @@ ${shown === null ? t("reading") : shown.held ? shown.shown : t("pane.no-window")
     }
   </section>`;
 
+/** @param {{ task: CardTask, held: boolean | null | undefined, named: string | null | undefined, line: string | undefined }} props */
 const Dock = ({ task, held, named, line }) => {
   const off = held === false;
   return html`<div class="dock">
@@ -96,6 +110,7 @@ const Dock = ({ task, held, named, line }) => {
   </div>`;
 };
 
+/** @param {{ task: CardTask, shown: Reading | null }} props */
 const CodePane = ({ task, shown }) =>
   shown?.Code
     ? html`<${shown.Code} key=${task.id} task=${task} />`
@@ -103,6 +118,7 @@ const CodePane = ({ task, shown }) =>
         ${shown ? shown.failure : t("reading")}
       </p>`;
 
+/** @param {{ card: PaneCard, tab: string, shown: Shown }} props */
 const Panel = ({ card, tab, shown }) =>
   tab === "session"
     ? html`<${Session} task=${card.task} shown=${shown} />`
@@ -119,6 +135,12 @@ const Panel = ({ card, tab, shown }) =>
               />`
             : html`<${History} task=${card.task} now=${card.now} />`;
 
+/**
+ * @param {string} tab
+ * @param {PaneCard} card
+ * @param {Window | null} shown
+ * @param {Peek} peek
+ */
 const dockOf = (tab, card, shown, peek) => {
   const session = tab === "session";
   return {
@@ -132,6 +154,7 @@ const dockOf = (tab, card, shown, peek) => {
   };
 };
 
+/** @param {{ card: PaneCard, tab: string, shown: Shown, peek?: Peek, fresh?: boolean }} props */
 export const Pane = ({ card, tab, shown, peek = {}, fresh = false }) =>
   html`<section id="pane" aria-label=${t("pane.label")}>
     <button class="back" data-back="">${t("pane.back")}</button>
@@ -155,6 +178,6 @@ export const Pane = ({ card, tab, shown, peek = {}, fresh = false }) =>
     <${Dock}
       key=${card.task.id}
       task=${card.task}
-      ...${dockOf(tab, card, shown, peek)}
+      ...${dockOf(tab, card, /** @type {Window | null} */ (shown), peek)}
     />
   </section>`;

@@ -4,6 +4,17 @@ import { t } from "../core/i18n.js";
 import { full } from "../core/time.js";
 import { html } from "./html.js";
 
+/**
+ * @typedef {import("./Card.js").CardTask} CardTask
+ * @typedef {import("./Card.js").Watch} Watch
+ * @typedef {{ line: string, stalled?: boolean }} Stalled
+ */
+
+/**
+ * @param {Watch | null | undefined} watch
+ * @param {number} now
+ * @returns {Stalled | null}
+ */
 export const watchLine = (watch, now) => {
   if (!watch || !watch.note) return null;
   if (watch.state === "WATCHING") {
@@ -18,14 +29,21 @@ export const watchLine = (watch, now) => {
 };
 
 // Equality rather than a negation: a projection missing the field would throw inside the render and blank the board.
+/** @param {CardTask} task */
 export const marked = (task) =>
   task.pipeline === "RED" ||
   task.pipeline === "RUNNING" ||
   task.pipeline === "GREEN";
 
+/** @param {...(string | false | null | undefined)} names */
 const classes = (...names) => names.filter(Boolean).join(" ");
 
 // `sole` is false for one link among several: the approval is every repository's, not one link's.
+/**
+ * @param {CardTask} task
+ * @param {number} openedAt
+ * @param {Stalled | null} watch
+ */
 const requestLines = (task, openedAt, watch) => {
   const lines = [
     openedAt > 0
@@ -47,7 +65,8 @@ const requestLines = (task, openedAt, watch) => {
   return lines;
 };
 
-const RequestChip = ({ url, label, openedAt, task, sole, now }) => {
+/** @param {{ url: string, label: string, openedAt?: number, task: CardTask, sole: boolean, now: number }} props */
+const RequestChip = ({ url, label, openedAt = 0, task, sole, now }) => {
   const watch = watchLine(task.autoReview, now);
   const lines = requestLines(task, openedAt, watch);
   const approved = sole && task.approved;
@@ -73,6 +92,7 @@ const ApprovalTick = () =>
     >✓</span
   >`;
 
+/** @param {{ task: CardTask }} props */
 const ChecksDot = ({ task }) => {
   const said = t("meta.checks", {
     said: task.pipelineSaid || task.pipeline.toLowerCase(),
@@ -87,8 +107,16 @@ const ChecksDot = ({ task }) => {
 };
 
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
+/**
+ * @param {string} tip
+ * @param {string} next
+ */
 const joined = (tip, next) => (tip ? `${tip}\n\n${next}` : next);
 
+/**
+ * @param {CardTask} task
+ * @param {Stalled | null} stalled
+ */
 const statusTip = (task, stalled) => {
   let tip = stalled ? stalled.line : "";
   if (task.waiting) tip = joined(tip, task.waiting);
@@ -99,6 +127,7 @@ const statusTip = (task, stalled) => {
   return { tip, live };
 };
 
+/** @param {{ task: CardTask, stalled: Stalled | null, now: number }} props */
 const StatusChip = ({ task, stalled, now }) => {
   const { tip, live } = statusTip(task, stalled);
   return html`<span
@@ -113,10 +142,11 @@ const StatusChip = ({ task, stalled, now }) => {
 };
 
 // Each repository named once, its request on its name: a chip beside every name would crowd the row.
+/** @param {{ task: CardTask, now: number }} props */
 const Repositories = ({ task, now }) =>
   html`<span
     class=${classes("repos", watchLine(task.autoReview, now)?.stalled && "stalled")}
-    >${task.repos.map(
+    >${(task.repos || []).map(
       (repo, index) =>
         html`${index ? " + " : ""}${
           repo.reviewRequestUrl
@@ -133,6 +163,7 @@ const Repositories = ({ task, now }) =>
     )}${task.approved ? html` <${ApprovalTick} />` : ""}</span
   >`;
 
+/** @param {{ task: CardTask, manyProjects: boolean, now: number }} props */
 export function Meta({ task, manyProjects, now }) {
   const many = (task.repos || []).length > 1;
   // A stopped poll with no request chip to ring rings the state instead.

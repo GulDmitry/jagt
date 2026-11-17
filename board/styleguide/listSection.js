@@ -14,6 +14,7 @@ const DRAFTED = [
 const keys =
   "j k walk · ↵ open · n next yours · f focus · t new task · / filter · ⌘K command";
 const tasks = cards.map(({ props }) => props.task);
+/** @param {import("../components/Card.js").CardTask} task */
 const changed = (task) => task.alias === "a3";
 
 export const listSection = html`<section aria-label="Task list">

@@ -1,6 +1,9 @@
 import { httpOnly } from "../core/dom.js";
 import { html } from "./html.js";
 
+/** @typedef {import("../core/format.js").Part} PartData */
+
+/** @param {{ part: PartData }} props */
 const Part = ({ part }) => {
   switch (part.kind) {
     case "link":
@@ -19,12 +22,13 @@ const Part = ({ part }) => {
     case "block":
     case "quote":
       return html`<span class=${part.kind}
-        >${part.parts.map((one) => html`<${Part} part=${one} />`)}</span
+        >${(part.parts ?? []).map((one) => html`<${Part} part=${one} />`)}</span
       >`;
     default:
       return part.text;
   }
 };
 
+/** @param {{ parts: PartData[] }} props */
 export const Report = ({ parts }) =>
   parts.map((part) => html`<${Part} part=${part} />`);

@@ -3,8 +3,13 @@ import { dayAndMinutes, minutes, sameDay } from "../core/time.js";
 import { html } from "./html.js";
 
 // Today's steps by the clock; older ones by day too.
+/**
+ * @param {number} at
+ * @param {number} now
+ */
 const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
 
+/** @param {{ task: import("./Card.js").CardTask, now: number }} props */
 export const History = ({ task, now }) =>
   html`<section
     class="history"

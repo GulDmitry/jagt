@@ -4,7 +4,5 @@ import { cardSection } from "./cardSection.js";
 import { checksSection, jobsSection } from "./jobsSection.js";
 import { listSection } from "./listSection.js";
 
-render(
-  [cardSection, listSection, jobsSection, checksSection],
-  document.getElementById("styleguide"),
-);
+const host = document.getElementById("styleguide");
+if (host) render([cardSection, listSection, jobsSection, checksSection], host);

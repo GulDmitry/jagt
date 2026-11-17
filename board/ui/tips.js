@@ -6,11 +6,13 @@ const tip = Object.assign(document.createElement("div"), {
 });
 document.body.append(tip);
 
+/** @type {{ shownFor: Element | null }} */
 const state = {
   shownFor: null,
 };
 
 // Text the stylesheet cuts with an ellipsis is its own tip, whole, wherever it is cut.
+/** @param {EventTarget | null} node */
 const clipped = (node) => {
   for (let at = node; at instanceof Element; at = at.parentElement) {
     if (getComputedStyle(at).textOverflow === "ellipsis")
@@ -19,14 +21,17 @@ const clipped = (node) => {
   return null;
 };
 
+/** @param {Element} node */
 const said = (node) =>
-  node.dataset.tip || (clipped(node) === node ? node.textContent : "");
+  node.getAttribute("data-tip") ||
+  (clipped(node) === node ? node.textContent : "");
 
 export function hideTip() {
   tip.hidden = true;
 }
 
 // A repaint keeps an open tip, in its node's new words, on the node or on the one rebuilt in its place.
+/** @param {Element | null | undefined} [rebuilt] */
 export function hideStaleTip(rebuilt) {
   if (!state.shownFor?.isConnected && rebuilt) state.shownFor = rebuilt;
   if (!state.shownFor?.isConnected || !said(state.shownFor)) hideTip();
@@ -34,6 +39,7 @@ export function hideStaleTip(rebuilt) {
     showTip(state.shownFor);
 }
 
+/** @param {Element} target */
 function showTip(target) {
   // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
   (target.closest("dialog[open]") || document.body).append(tip);
@@ -55,9 +61,9 @@ function showTip(target) {
 
 for (const event of ["pointerover", "focusin"]) {
   document.addEventListener(event, (moved) => {
-    if (moved.target.closest?.("#tip")) return;
-    const target =
-      moved.target.closest?.("[data-tip]") || clipped(moved.target);
+    const from = moved.target instanceof Element ? moved.target : null;
+    if (from?.closest("#tip")) return;
+    const target = from?.closest("[data-tip]") || clipped(moved.target);
     if (target && said(target)) showTip(target);
     else hideTip();
   });
