@@ -3,3 +3,4 @@ vendor/
 i18n/
 *.webmanifest
 package-lock.json
+coverage/

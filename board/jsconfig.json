@@ -11,5 +11,5 @@
     "skipLibCheck": true
   },
   "include": ["**/*.js"],
-  "exclude": ["node_modules", "vendor", "test"]
+  "exclude": ["node_modules", "vendor", "test", "coverage"]
 }

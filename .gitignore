@@ -8,6 +8,7 @@ opencode-gate/
 build/
 .gradle/
 node_modules/
+coverage/
 .DS_Store
 .classpath
 .project

@@ -4,7 +4,7 @@ import importX from "eslint-plugin-import-x";
 import globals from "globals";
 
 export default [
-  { ignores: ["node_modules/", "vendor/"] },
+  { ignores: ["node_modules/", "vendor/", "coverage/"] },
   js.configs.recommended,
   prettier,
   {
