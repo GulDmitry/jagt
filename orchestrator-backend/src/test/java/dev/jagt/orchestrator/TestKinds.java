@@ -116,6 +116,7 @@ final class TestKinds {
   private static boolean isTestBuilderFakeOrScanner(JavaClass type) {
     String name = type.getSimpleName();
     return name.endsWith("Test")
+        || name.endsWith("Properties")
         || (name.startsWith("Test") && name.endsWith("Builder") && type.isRecord())
         || (name.startsWith("Fake") && extendsMainType(type))
         || location(type).contains(ROOT_TEST_SET);
