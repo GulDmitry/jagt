@@ -8,7 +8,8 @@
 | **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | nightly and on a release tag |
 | **Stand** | `standTest -Pmodelfree -Pengine=host\|compose\|kind`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally: docker, an agent login, tokens; CI runs `standTest -Pmodelfree` in its `stand` job | before a minor release; CI per push (compose), nightly (kind) |
 
-CI's `stand` job runs `standTest -Pmodelfree` per `strategy.matrix.engine`: compose per push and pull request, kind nightly;
+CI's `stand` job runs `standTest -Pmodelfree -Pbudgets=false` (absolute time budgets hold on the reference machine)
+per `strategy.matrix.engine`: compose per push and pull request, kind nightly;
 GitLab runs compose alone, since kind needs a privileged runner.
 CI sees only what is pushed, and jagt pushes at a release: a heavy break in new code shows on the release push,
 which waits for it. Times are wall clock, dated in `measurements.md`.

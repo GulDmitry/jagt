@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.IOException;
@@ -22,6 +23,8 @@ class ServerStandTest {
 
   private static final Duration READY_BUDGET = Duration.ofSeconds(15);
   private static final Duration STATE_P95_BUDGET = Duration.ofMillis(100);
+  private static final String OFF_REFERENCE =
+      "budgets hold on the reference machine; -Pbudgets=false skips them";
   private static final String JSON = "application/json";
   private static final String TOOLS = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}";
   private static final String SCREEN = "/api/tasks/screen?task=fix-the-widget";
@@ -49,6 +52,7 @@ class ServerStandTest {
         dynamicTest(
             "appStartsWithinTheBudgetWhenTheEngineStartsIt",
             () -> {
+              assumeTrue(Boolean.getBoolean("stand.budgets"), OFF_REFERENCE);
               String log = server.engine().log();
 
               double seconds =
@@ -60,6 +64,7 @@ class ServerStandTest {
         dynamicTest(
             "stateAnswersWithinTheBudgetAtTheNinetyFifthPercentileOverFiftySequentialCalls",
             () -> {
+              assumeTrue(Boolean.getBoolean("stand.budgets"), OFF_REFERENCE);
               long p95Nanos =
                   IntStream.range(0, 50)
                       .mapToLong(call -> {

@@ -113,7 +113,7 @@ jobs:
           git config --global user.email "ci@example.com"
           git config --global user.name "jagt ci"
       - name: run the stand without a model on the engine
-        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }}
+        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Pbudgets=false
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
