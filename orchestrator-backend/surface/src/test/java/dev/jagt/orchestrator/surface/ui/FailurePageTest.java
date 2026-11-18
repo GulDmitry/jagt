@@ -9,6 +9,8 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -48,6 +50,29 @@ class FailurePageTest {
 
       assertThat(config).hasContent("new: 2\n");
       assertThat(dir.resolve("jagt.yml.bak")).hasContent("old: 1\n");
+    }
+  }
+
+  @Test
+  void answersTheSaveBeforeTheWaitingStartClosesThePage(@TempDir Path dir) throws Exception {
+    Path config = Files.writeString(dir.resolve("jagt.yml"), "old: 1\n");
+
+    try (FailurePage page = FailurePage.listen(0, config, "problem").get();
+        ExecutorService start = Executors.newVirtualThreadPerTaskExecutor()) {
+      var _ =
+          start.submit(() -> {
+            page.awaitSave();
+            page.close();
+            return null;
+          });
+      HttpResponse<String> response =
+          client.send(
+              HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + page.port() + "/save"))
+                  .POST(HttpRequest.BodyPublishers.ofString("yml=new%3A+2"))
+                  .build(),
+              HttpResponse.BodyHandlers.ofString());
+
+      assertThat(response.body()).contains("Saved: starting again.");
     }
   }
 

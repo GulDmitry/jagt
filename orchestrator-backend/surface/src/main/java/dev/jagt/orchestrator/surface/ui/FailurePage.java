@@ -105,6 +105,7 @@ public final class FailurePage implements AutoCloseable {
     Files.writeString(configFile, yml);
     log.atInfo().setMessage("failure page saved").addKeyValue("file", configFile).log();
     reply(exchange, 200, "<!doctype html><meta charset=\"utf-8\">Saved: starting again.");
+    exchange.close();
     saved.countDown();
   }
 
