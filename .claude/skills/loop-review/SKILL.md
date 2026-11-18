@@ -16,15 +16,18 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
    count that only counts identical rounds, as the trail's fingerprint already does for checks.
    A loop may alternate (asks A, gets X, asks B, gets Y, asks A again): compare each round with every earlier one,
    not only the last; a pair that recurs with nothing new between is a loop.
+   **Name the origin**: walk `trail` and `history` back from the stop to the first step whose output was already
+   wrong; its time, its actor (same four kinds) and the step. It may lie rounds before the loop.
 3. **Name the class, not the case**, in two to four words, as the `Defect-family` list of `docs/rules/testing.md` names its families.
-4. **Fix where it belongs**:
+4. **Fix where it belongs**, at the origin's actor when it differs from who looped:
    - Master → `master-lesson`.
    - session → the brief or the rule it broke, proven by `promptEval`.
    - case → `cases` spec plus a case.
    - jagt → a regression test verified RED, a `Defect-family` trailer.
    - A stop that rightly stopped (the human really had to decide) gets no fix, with one clause why.
-5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "trigger":…, "who":…, "class":…, "fix":"<sha or why none>",
-   "lift":"<safe, or what must be true first>"}`. A stop of a class already in the file reuses its class and lift verdict.
+5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "trigger":…, "who":…,
+   "origin":{"at":…, "who":…, "step":…}, "class":…, "fix":"<sha or why none>", "lift":"<safe, or what must be true first>"}`.
+   A stop of a class already in the file reuses its class and lift verdict.
 6. Tell the human which stops may be lifted now, and what changed for each. No lift is advised before its line exists.
 7. **A verdict that changes when a class may be lifted rewrites that trigger's `next` in `task/stop/TaskStop`**, in the
    fix's commit, so every install reads it on the card's hover. Generic words only: no task, project, path, host or
