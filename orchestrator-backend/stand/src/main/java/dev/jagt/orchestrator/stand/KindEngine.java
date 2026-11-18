@@ -256,6 +256,7 @@ public final class KindEngine implements UnitEngine {
       name: seed
     spec:
       restartPolicy: Never
+      terminationGracePeriodSeconds: 0
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -320,7 +321,16 @@ public final class KindEngine implements UnitEngine {
   }
 
   private void ok(String what, String... command) {
+    long began = System.nanoTime();
     StandShell.Result result = run(command);
+    System.out.println(
+        "stand step "
+            + cluster()
+            + " "
+            + what
+            + ": "
+            + Duration.ofNanos(System.nanoTime() - began).toMillis()
+            + " ms");
     if (result.exit() != 0) {
       throw new StandFailure("cannot " + what + " in " + cluster() + ": " + result.output());
     }

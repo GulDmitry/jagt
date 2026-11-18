@@ -83,7 +83,8 @@ class KindEngineTest {
   }
 
   @Test
-  void upCopiesEveryFixtureIntoTheVolumeThroughTheSeedPodBeforeTheJagtPodStarts() {
+  void upCopiesEveryFixtureIntoTheVolumeThroughTheSeedPodBeforeTheJagtPodStarts()
+      throws IOException {
     StandShell.Runner shell =
         (cwd, command, env) -> {
           seen.add(command);
@@ -109,6 +110,8 @@ class KindEngineTest {
     assertThat(seen.stream().map(command -> command.contains("scale")).toList())
         .containsSubsequence(false, true);
     assertThat(seen).anyMatch(command -> command.contains("pod/seed"));
+    assertThat(Files.readString(root.resolve("seed.yml")))
+        .contains("terminationGracePeriodSeconds: 0");
   }
 
   @Test
