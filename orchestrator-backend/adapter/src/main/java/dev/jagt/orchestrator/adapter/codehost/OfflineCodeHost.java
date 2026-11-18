@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
@@ -17,6 +18,16 @@ abstract class OfflineCodeHost implements CodeHostDriver {
   @Override
   public Answer<List<FailedJob>> failedJobs(HostSettings host, String pipelineUrl) {
     return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
+  }
+
+  @Override
+  public Answer<String> openRequest(HostSettings host, String remoteUrl, RequestDraft draft) {
+    return Answer.unavailable();
+  }
+
+  @Override
+  public Answer<String> openRequestOf(HostSettings host, String remoteUrl, String branch) {
+    return Answer.unavailable();
   }
 
   @Override

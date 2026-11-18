@@ -112,6 +112,11 @@ final class HostCli {
     return Answer.failed(TokenUsage.NONE, "not the address of a request: " + OneLine.clipped(url));
   }
 
+  static <T> Answer<T> notRemote(String url) {
+    return Answer.failed(
+        TokenUsage.NONE, "not the address of a repository: " + OneLine.clipped(url));
+  }
+
   // A host hides a private project from a CLI signed out of it behind the same 404 as one that does
   // not exist.
   private boolean signedIn(String hostname) {

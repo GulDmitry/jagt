@@ -124,8 +124,7 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the
   reducer alone ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other
   marks are bookkeeping, written by `withMark` from anywhere.
-- `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
-  (`service/TaskProvisioning`).
+- `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW (`service/TaskProvisioning`).
 - **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
@@ -170,7 +169,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/worktree/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/agent/{codex/Codex,opencode/OpenCode}AgentRuntime`, `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `reach/ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
-| `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
+| `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline, closing a request and opening the acceptance workspace's request are jagt's code-host writes |
 | `CodeHostCommands` | `adapter/codehost/cli/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/gate/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
@@ -264,6 +263,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, the worktree sweep |
 | `job/checker` | usecase | one checker role's jobs: check, decline, wait, records and prompts |
 | `job/checker/wiring` | usecase | the set of those jobs per installed checker, and what they share |
+| `job/checker/workspace` | usecase | a checker's workspace offered as a request after a check, once the role turns it on |
 | `job/conflict` | usecase | deploy-conflict jobs and the reads that end them |
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |

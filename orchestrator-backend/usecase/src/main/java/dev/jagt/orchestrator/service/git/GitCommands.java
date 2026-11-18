@@ -154,10 +154,15 @@ public class GitCommands {
     forceDeleteDir(temp);
   }
 
-  /** Best-effort: the checkout and its branch are scaffolding, not state. */
-  void removeWorktreeAndBranch(Path projectPath, Path worktree, String branch) {
+  /** Best-effort: the checkout is scaffolding, not state. */
+  void removeWorktree(Path projectPath, Path worktree) {
     run(projectPath, List.of("git", "worktree", "remove", "--force", worktree.toString()));
     run(projectPath, List.of("git", "worktree", "prune"));
+  }
+
+  /** Best-effort: the checkout and its branch are scaffolding, not state. */
+  void removeWorktreeAndBranch(Path projectPath, Path worktree, String branch) {
+    removeWorktree(projectPath, worktree);
     run(projectPath, List.of("git", "branch", "-D", branch));
   }
 

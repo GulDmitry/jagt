@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
 import java.util.List;
@@ -17,6 +18,10 @@ public interface CodeHostDriver {
   Answer<String> retryFailed(HostSettings host, String pipelineUrl);
 
   Answer<String> closeRequest(HostSettings host, String requestUrl);
+
+  Answer<String> openRequest(HostSettings host, String remoteUrl, RequestDraft draft);
+
+  Answer<String> openRequestOf(HostSettings host, String remoteUrl, String branch);
 
   /**
    * The newest note's id of each unresolved thread of the request not answered last by the account

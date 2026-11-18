@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.adapter.codehost.cli.GitHubCli;
 import dev.jagt.orchestrator.adapter.codehost.cli.GitLabCli;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -210,6 +211,41 @@ class ChosenCodeHostTest {
 
       verify(processes).run(any(), any(Duration.class), command.capture());
       assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString("glab");
+    }
+
+    @Test
+    void requestIsOpenedThroughTheDriverTheKeyChooses() {
+      when(processes.run(any(), any(Duration.class), anyList()))
+          .thenReturn(
+              new Processes.Result(
+                  0,
+                  "[{\"web_url\":\"https://git.example.invalid/shop/web/-/merge_requests/7\"}]",
+                  ""));
+
+      Answer<String> answer =
+          pipelines.openRequest("shop", REMOTE, new RequestDraft("b", "main", "t", "d"));
+
+      verify(processes).run(any(), any(Duration.class), command.capture());
+      assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString("glab");
+      assertThat(answer.facts())
+          .contains("https://git.example.invalid/shop/web/-/merge_requests/7");
+    }
+
+    @Test
+    void openRequestIsLookedUpThroughTheDriverTheKeyChooses() {
+      when(processes.run(any(), any(Duration.class), anyList()))
+          .thenReturn(
+              new Processes.Result(
+                  0,
+                  "[{\"web_url\":\"https://git.example.invalid/shop/web/-/merge_requests/7\"}]",
+                  ""));
+
+      Answer<String> answer = pipelines.openRequestOf("shop", REMOTE, "b");
+
+      verify(processes).run(any(), any(Duration.class), command.capture());
+      assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString("glab");
+      assertThat(answer.facts())
+          .contains("https://git.example.invalid/shop/web/-/merge_requests/7");
     }
 
     @Test

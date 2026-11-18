@@ -25,6 +25,16 @@ class OrchestratorPathsTest {
   }
 
   @Test
+  void cutsTheCheckoutOfRolesBranchUnderTheDataFolder(@TempDir Path data) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
+
+    assertThat(paths.roleBranchWorktree("web", "jagt/acceptance-qa"))
+        .isEqualTo(data.resolve("role-branches/web-jagt-acceptance-qa"));
+  }
+
+  @Test
   void listsTheDeployWorktreeOnlyOfRepositoriesThatHaveDeployBranch(@TempDir Path data) {
     OrchestratorPaths paths =
         new OrchestratorPaths(

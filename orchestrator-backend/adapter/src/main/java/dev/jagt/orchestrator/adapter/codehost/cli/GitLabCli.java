@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.adapter.codehost.CodeHostDriver;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
@@ -101,6 +102,57 @@ public class GitLabCli implements CodeHostDriver {
                     "-R",
                     address.hostname() + "/" + address.project())))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
+  }
+
+  @Override
+  public Answer<String> openRequest(HostSettings host, String remoteUrl, RequestDraft draft) {
+    return HostAddress.ofRemote(remoteUrl, draft.branch(), host.host().name(), true)
+        .map(address ->
+            HostCli.then(
+                open(address, draft.branch()),
+                open ->
+                    open.isEmpty()
+                        ? cli.parsed(
+                            cli.run(address.hostname(), create(address, draft)),
+                            output -> JSON.readTree(output).path("web_url").asString(""))
+                        : new Answer<>(Optional.of(open), TokenUsage.NONE)))
+        .orElseGet(() -> HostCli.notRemote(remoteUrl));
+  }
+
+  @Override
+  public Answer<String> openRequestOf(HostSettings host, String remoteUrl, String branch) {
+    return HostAddress.ofRemote(remoteUrl, branch, host.host().name(), true)
+        .map(address -> open(address, branch))
+        .orElseGet(() -> HostCli.notRemote(remoteUrl));
+  }
+
+  private Answer<String> open(HostAddress address, String branch) {
+    return cli.parsed(
+        cli.run(
+            address.hostname(),
+            api(
+                address,
+                "/merge_requests?state=opened&per_page=1&source_branch="
+                    + URLEncoder.encode(branch, StandardCharsets.UTF_8))),
+        output -> JSON.readTree(output).path(0).path("web_url").asString(""));
+  }
+
+  private static List<String> create(HostAddress address, RequestDraft draft) {
+    return List.of(
+        "api",
+        "--hostname",
+        address.hostname(),
+        "-X",
+        "POST",
+        "projects/" + encoded(address) + "/merge_requests",
+        "-f",
+        "source_branch=" + draft.branch(),
+        "-f",
+        "target_branch=" + draft.target(),
+        "-f",
+        "title=" + draft.title(),
+        "-f",
+        "description=" + draft.description());
   }
 
   @Override

@@ -24,6 +24,14 @@ class LayoutTest {
   }
 
   @Test
+  void cutsOneCheckoutOfRoleBranchPerProjectUnderTheDataFolder() {
+    Layout layout = new Layout(Path.of("/d"), null);
+
+    assertThat(layout.roleBranchWorktree("web", "jagt/acceptance-qa"))
+        .isEqualTo(Path.of("/d/role-branches/web-jagt-acceptance-qa"));
+  }
+
+  @Test
   void followsConfiguredStateFileWithJagtsMarksBesideIt() {
     Layout layout = new Layout(Path.of("/d"), Path.of("/s/own.json"));
 

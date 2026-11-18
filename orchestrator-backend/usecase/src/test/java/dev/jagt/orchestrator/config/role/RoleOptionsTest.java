@@ -38,7 +38,7 @@ class RoleOptionsTest {
   }
 
   @Test
-  void anEnvironmentNamingNoUrlIsLeftOut(@TempDir Path folder) throws Exception {
+  void environmentNamingNoUrlIsLeftOut(@TempDir Path folder) throws Exception {
     Files.writeString(
         folder.resolve("role.yml"),
         "environments: [{landed: https://a.test/up}, {url: https://b.test}]\n");
@@ -76,5 +76,44 @@ class RoleOptionsTest {
     assertThat(none).isEmpty();
     assertThat(absent).isEmpty();
     assertThat(absolute).isEqualTo(other.toAbsolutePath());
+  }
+
+  @Test
+  void workspaceMergeRequestIsOffUntilTheRoleFolderTurnsItOn(@TempDir Path folder)
+      throws Exception {
+    final boolean absent = RoleOptions.read(folder).workspaceMergeRequest();
+    Files.writeString(folder.resolve("role.yml"), "workspace: ws\n");
+    final boolean scalar = RoleOptions.read(folder).workspaceMergeRequest();
+    Files.writeString(folder.resolve("role.yml"), "workspace:\n  path: ws\n  mergeRequest: true\n");
+    RoleOptions on = RoleOptions.read(folder);
+
+    assertThat(absent).isFalse();
+    assertThat(scalar).isFalse();
+    assertThat(on.workspaceMergeRequest()).isTrue();
+    assertThat(on.workspacePath()).contains(folder.toAbsolutePath().resolve("ws"));
+  }
+
+  @Test
+  void mergeRequestSwitchThatIsNoBooleanIsNamedAndStaysOff(@TempDir Path folder) throws Exception {
+    Files.writeString(
+        folder.resolve("role.yml"), "workspace:\n  path: ws\n  mergeRequest: maybe\n");
+
+    RoleOptions options = RoleOptions.read(folder);
+
+    assertThat(options.workspaceMergeRequest()).isFalse();
+    assertThat(options.unread())
+        .containsExactly("workspace.mergeRequest maybe is neither true nor false");
+  }
+
+  @Test
+  void workspaceMergeRequestAloneKeepsTheDistPath(@TempDir Path folder) throws Exception {
+    Files.writeString(
+        folder.resolve("role.yml.dist"), "workspace:\n  path: ws\n  mergeRequest: false\n");
+    Files.writeString(folder.resolve("role.yml"), "workspace:\n  mergeRequest: true\n");
+
+    RoleOptions options = RoleOptions.read(folder);
+
+    assertThat(options.workspaceMergeRequest()).isTrue();
+    assertThat(options.workspacePath()).contains(folder.toAbsolutePath().resolve("ws"));
   }
 }

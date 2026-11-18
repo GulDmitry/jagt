@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+import lombok.AccessLevel;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.convert.DurationStyle;
@@ -25,6 +26,7 @@ public record RoleOptions(
     Flows flows,
     List<String> mcp,
     String workspace,
+    @With(AccessLevel.NONE) boolean workspaceMergeRequest,
     List<String> unread) {
 
   private static final String NONE = "none";
@@ -36,7 +38,7 @@ public record RoleOptions(
   }
 
   public static RoleOptions defaults() {
-    return new RoleOptions(false, "", List.of(), Flows.defaults(), List.of(), "", List.of());
+    return new RoleOptions(false, "", List.of(), Flows.defaults(), List.of(), "", false, List.of());
   }
 
   /** {@code landed} answers once the change is up, where the host reports no deploy job. */
@@ -89,6 +91,8 @@ public record RoleOptions(
     Map<?, ?> flows = document.get("flows") instanceof Map<?, ?> named ? named : Map.of();
     String timeout = text(flows, "timeout");
     Optional<Duration> parsed = duration(timeout);
+    Map<?, ?> workspace = document.get("workspace") instanceof Map<?, ?> named ? named : Map.of();
+    String mergeRequest = text(workspace, "mergeRequest");
     Map<?, ?> tools = document.get("tools") instanceof Map<?, ?> named ? named : Map.of();
     return new RoleOptions(
         false,
@@ -98,10 +102,23 @@ public record RoleOptions(
         tools.get("mcp") instanceof List<?> listed
             ? listed.stream().map(String::valueOf).toList()
             : List.of(),
-        workspace(text(document, "workspace"), folder),
-        timeout.isEmpty() || parsed.isPresent()
-            ? List.of()
-            : List.of("flows.timeout " + timeout + " is no duration such as 10m"));
+        workspace(
+            document.get("workspace") instanceof Map<?, ?>
+                ? text(workspace, "path")
+                : text(document, "workspace"),
+            folder),
+        Boolean.parseBoolean(mergeRequest),
+        Stream.of(
+                timeout.isEmpty() || parsed.isPresent()
+                    ? ""
+                    : "flows.timeout " + timeout + " is no duration such as 10m",
+                mergeRequest.isEmpty()
+                        || "true".equals(mergeRequest)
+                        || "false".equals(mergeRequest)
+                    ? ""
+                    : "workspace.mergeRequest " + mergeRequest + " is neither true nor false")
+            .filter(problem -> !problem.isEmpty())
+            .toList());
   }
 
   private static String workspace(String written, Path folder) {

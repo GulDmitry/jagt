@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.job.checker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -14,6 +16,7 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.job.checker.workspace.CheckerWorkspace;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.StateService;
@@ -95,7 +98,8 @@ class CheckerReadsTest {
             reader,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            mock(CheckerFlows.class))
+            mock(CheckerFlows.class),
+            mock(CheckerWorkspace.class))
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
     TaskState after = state.task("ABC-42").orElseThrow();
@@ -150,9 +154,69 @@ class CheckerReadsTest {
                 reader,
                 new TaskTurns(
                     state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-                flows)
+                flows,
+                mock(CheckerWorkspace.class))
             .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
     assertThat(answer.facts()).contains(withFlows);
+  }
+
+  @Test
+  void theWorkspaceIsOfferedOnceTheReadAnswered(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    state.putTask("ABC-42", DEPLOYED);
+    AcceptanceVerdict read = AcceptanceVerdict.failed("proj@0123", "");
+    CheckerReader reader = mock(CheckerReader.class);
+    when(reader.read(any())).thenReturn(new Answer<>(Optional.of(read), TokenUsage.NONE));
+    CheckerFlows flows = mock(CheckerFlows.class);
+    when(flows.run(any(), any(), any())).thenReturn(read);
+    CheckerWorkspace workspace = mock(CheckerWorkspace.class);
+
+    new CheckerReads(
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+            reader,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            flows,
+            workspace)
+        .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
+
+    verify(workspace).offer("ABC-42");
+  }
+
+  @Test
+  void theWorkspaceIsNotOfferedWhenTheReadAnsweredNothing(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    state.putTask("ABC-42", DEPLOYED);
+    CheckerReader reader = mock(CheckerReader.class);
+    when(reader.read(any())).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+    CheckerWorkspace workspace = mock(CheckerWorkspace.class);
+
+    new CheckerReads(
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+            reader,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            mock(CheckerFlows.class),
+            workspace)
+        .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
+
+    verifyNoInteractions(workspace);
   }
 }

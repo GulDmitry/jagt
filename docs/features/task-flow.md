@@ -17,6 +17,9 @@
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-keeps-its-checks-in-its-workspace)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-analyses-a-ticket-before-its-plan)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-has-an-interactive-session)
+- **Workspace merge request** — Where the acceptance workspace is inside a project, jagt commits it on `jagt/acceptance-<role>` and opens or updates
+  one request, never the base branch; off by default (`workspace.mergeRequest` in `roles/acceptance/role.yml`).
+  [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-the-workspace-is-proposed-by-a-request-of-jagts-own)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.

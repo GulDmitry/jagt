@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.checker;
 
 import dev.jagt.orchestrator.config.role.RoleDefinition;
+import dev.jagt.orchestrator.job.checker.workspace.CheckerWorkspace;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
@@ -20,12 +21,18 @@ public class CheckerReads {
   private final CheckerReader reader;
   private final TaskTurns turns;
   private final CheckerFlows flows;
+  private final CheckerWorkspace workspace;
 
   public Answer<AcceptanceVerdict> check(
       String taskId, String step, String digest, CheckerReader.Run run) {
     turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
     try {
-      return reader.read(run).map(verdict -> flows.run(verdict, run.worktree(), verdict.flows()));
+      Answer<AcceptanceVerdict> answer =
+          reader.read(run).map(verdict -> flows.run(verdict, run.worktree(), verdict.flows()));
+      if (answer.facts().isPresent()) {
+        workspace.offer(taskId);
+      }
+      return answer;
     } finally {
       turns.closed(taskId, role.id(), step, digest);
     }

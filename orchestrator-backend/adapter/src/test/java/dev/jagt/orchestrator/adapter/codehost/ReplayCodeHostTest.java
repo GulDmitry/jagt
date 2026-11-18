@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
 import java.nio.file.Path;
 import java.util.List;
@@ -48,5 +49,15 @@ class ReplayCodeHostTest {
                 .closeRequest(host, "https://git.example.invalid/shop/web/-/merge_requests/7")
                 .facts())
         .isEmpty();
+  }
+
+  @Test
+  void noRequestIsOpenedAndNothingFailed() {
+    Answer<String> answer =
+        replay.openRequest(
+            host, "git@git.example.invalid:shop/web.git", new RequestDraft("b", "main", "t", "d"));
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).isEmpty();
   }
 }

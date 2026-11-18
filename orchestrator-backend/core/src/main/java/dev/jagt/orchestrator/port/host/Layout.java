@@ -100,6 +100,10 @@ public class Layout {
     return SCRATCH.equals(String.valueOf(parent.getFileName())) ? parent : null;
   }
 
+  public Path roleBranchWorktree(String projectKey, String branch) {
+    return data.resolve("role-branches").resolve(projectKey + "-" + branch.replace('/', '-'));
+  }
+
   public Path clone(String projectKey) {
     return data.resolve("projects").resolve(projectKey);
   }

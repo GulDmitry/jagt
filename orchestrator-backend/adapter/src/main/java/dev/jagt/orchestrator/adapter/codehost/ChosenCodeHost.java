@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
@@ -45,6 +46,16 @@ public class ChosenCodeHost implements CodeHost {
                 : LinkRefusal.of(remoteUrl, host.host().name(), requestUrl)
                     .map(refusal -> refused(project, requestUrl, refusal))
                     .orElseGet(() -> driver.closeRequest(host, requestUrl)));
+  }
+
+  @Override
+  public Answer<String> openRequest(String project, String remoteUrl, RequestDraft draft) {
+    return ask(project, (driver, host) -> driver.openRequest(host, remoteUrl, draft));
+  }
+
+  @Override
+  public Answer<String> openRequestOf(String project, String remoteUrl, String branch) {
+    return ask(project, (driver, host) -> driver.openRequestOf(host, remoteUrl, branch));
   }
 
   @Override

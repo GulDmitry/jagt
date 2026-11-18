@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
@@ -293,7 +294,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void anAddressThatIsNoRequestIsNotClosedAndNothingIsRun() {
+  void addressThatIsNoRequestIsNotClosedAndNothingIsRun() {
     Answer<String> answer =
         github.closeRequest(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");
 
@@ -313,7 +314,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void anUnresolvedThreadAnsweredLastByAnotherAccountGivesItsNewestNoteId() {
+  void unresolvedThreadAnsweredLastByAnotherAccountGivesItsNewestNoteId() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -358,7 +359,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void anAddressThatIsNoRequestHasNoFingerprintAndNothingIsRun() {
+  void addressThatIsNoRequestHasNoFingerprintAndNothingIsRun() {
     Answer<String> answer =
         github.requestFingerprint(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");
 
@@ -367,11 +368,132 @@ class GitHubCliTest {
   }
 
   @Test
-  void anAddressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
+  void addressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
     Answer<List<String>> answer =
         github.unresolvedNotes(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");
 
     assertThat(answer.failure()).startsWith("not the address of a request");
+    verifyNoInteractions(processes);
+  }
+
+  @Test
+  void openPullRequestForTheBranchIsTheOneReturnedAndNoSecondIsCreated() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0, "[{\"url\":\"https://github.example.invalid/shop/web/pull/7\"}]", ""));
+
+    Answer<String> answer =
+        github.openRequest(
+            host,
+            "git@github.example.invalid:shop/web.git",
+            new RequestDraft("jagt/acceptance-acceptance", "main", "title", "body"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue())
+        .containsSubsequence(
+            "pr",
+            "list",
+            "--head",
+            "jagt/acceptance-acceptance",
+            "--state",
+            "open",
+            "-R",
+            "github.example.invalid/shop/web");
+    assertThat(answer.facts()).contains("https://github.example.invalid/shop/web/pull/7");
+  }
+
+  @Test
+  void pullRequestIsCreatedFromTheBranchIntoTheTargetWhereNoneIsOpen() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "[]", ""))
+        .thenReturn(
+            new Processes.Result(
+                0, "a first line\nhttps://github.example.invalid/shop/web/pull/8\n", "Creating"));
+
+    Answer<String> answer =
+        github.openRequest(
+            host,
+            "git@github.example.invalid:shop/web.git",
+            new RequestDraft("jagt/acceptance-acceptance", "main", "the title", "the body"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getAllValues().get(1))
+        .containsSubsequence(
+            "pr",
+            "create",
+            "--head",
+            "jagt/acceptance-acceptance",
+            "--base",
+            "main",
+            "--title",
+            "the title",
+            "--body",
+            "the body",
+            "-R",
+            "github.example.invalid/shop/web");
+    assertThat(answer.facts()).contains("https://github.example.invalid/shop/web/pull/8");
+  }
+
+  @Test
+  void pullRequestIsNotCreatedWhenTheListOfOpenOnesCouldNotBeRead() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", "boom"));
+
+    Answer<String> answer =
+        github.openRequest(
+            host,
+            "git@github.example.invalid:shop/web.git",
+            new RequestDraft("jagt/acceptance-acceptance", "main", "title", "body"));
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).contains("boom");
+    verify(processes).run(isNull(), any(Duration.class), anyList());
+  }
+
+  @Test
+  void openRequestOfBranchIsEmptyWhereNoPullRequestIsOpenAndNoneIsCreated() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "[]", ""));
+
+    Answer<String> answer =
+        github.openRequestOf(
+            host, "git@github.example.invalid:shop/web.git", "jagt/acceptance-acceptance");
+
+    assertThat(answer.facts()).contains("");
+    verify(processes).run(isNull(), any(Duration.class), anyList());
+  }
+
+  @Test
+  void openRequestOfBranchIsTheOpenPullRequest() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0, "[{\"url\":\"https://github.example.invalid/shop/web/pull/7\"}]", ""));
+
+    Answer<String> answer =
+        github.openRequestOf(
+            host, "git@github.example.invalid:shop/web.git", "jagt/acceptance-acceptance");
+
+    assertThat(answer.facts()).contains("https://github.example.invalid/shop/web/pull/7");
+  }
+
+  @Test
+  void remoteThatIsNoRepositoryAddressOpensNothingAndRunsNothing() {
+    Answer<String> answer =
+        github.openRequest(host, "", new RequestDraft("b", "main", "title", "body"));
+
+    assertThat(answer.failure()).startsWith("not the address of a repository");
+    verifyNoInteractions(processes);
+  }
+
+  @Test
+  void remoteThatIsNoRepositoryAddressHasNoOpenRequestToLookUp() {
+    Answer<String> answer = github.openRequestOf(host, "", "b");
+
+    assertThat(answer.failure()).startsWith("not the address of a repository");
     verifyNoInteractions(processes);
   }
 }

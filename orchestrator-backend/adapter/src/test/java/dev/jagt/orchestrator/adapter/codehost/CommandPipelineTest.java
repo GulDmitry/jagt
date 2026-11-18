@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.ReachLost;
@@ -266,5 +267,24 @@ class CommandPipelineTest {
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure())
         .isEqualTo("orchestrator.projects.shop.notesCommand exited 2: rate limited");
+  }
+
+  @Test
+  void noRequestIsOpenedAndNothingFailed() {
+    Answer<String> answer =
+        command.openRequest(
+            host, "git@git.example.invalid:shop/web.git", new RequestDraft("b", "main", "t", "d"));
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).isEmpty();
+  }
+
+  @Test
+  void noOpenRequestCanBeReadAndNothingFailed() {
+    Answer<String> answer =
+        command.openRequestOf(host, "git@git.example.invalid:shop/web.git", "b");
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).isEmpty();
   }
 }

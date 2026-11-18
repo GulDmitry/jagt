@@ -6,9 +6,10 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * jagt's code-host writes, the re-run of a pipeline's failed jobs and the closing of a request, and
- * its reads: why they failed, what ran on a commit or after it, and which notes of a request still
- * await an answer. {@code project} is the key in {@code jagt.yml} whose code host answers.
+ * jagt's code-host writes, the re-run of a pipeline's failed jobs, the opening and the closing of a
+ * request, and its reads: why they failed, what ran on a commit or after it, and which notes of a
+ * request still await an answer. {@code project} is the key in {@code jagt.yml} whose code host
+ * answers.
  */
 public interface CodeHost {
 
@@ -29,6 +30,18 @@ public interface CodeHost {
    * refusal, or says the address is on no such host.
    */
   Answer<String> closeRequest(String project, @Nullable String remoteUrl, String requestUrl);
+
+  /**
+   * The address of the one open request from {@code draft.branch()}, opened where none is; an empty
+   * answer with no failure where the host opens no request.
+   */
+  Answer<String> openRequest(String project, String remoteUrl, RequestDraft draft);
+
+  /**
+   * The address of the open request from {@code branch}, an empty string where none is open; an
+   * empty answer where the host cannot say, its failure where it failed.
+   */
+  Answer<String> openRequestOf(String project, String remoteUrl, String branch);
 
   /**
    * The host's id of the newest note of each unresolved thread of the request at {@code requestUrl}

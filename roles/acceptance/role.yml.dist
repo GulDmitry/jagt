@@ -38,8 +38,14 @@ tools:
 #   path: /path/to/flows    # the flows repository, the command's working directory; it holds any login
 #   command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
 #   timeout: 10m            # a run past it is unprovable
-# workspace: the one folder the role writes: scenarios, steps and flows it keeps; a relative path is the role folder's, none = memoryless
-workspace: workspace
+# workspace: the one folder the role writes: scenarios, steps and flows it keeps; `workspace: <path>` alone is the path
+#   path: a relative path is the role folder's, none = memoryless
+#   mergeRequest: true = after a check that changed a workspace inside a project of jagt.yml, jagt commits its files git does not
+#   ignore on `jagt/acceptance-<role>`, pushes it and opens or updates the one request for it against the project's base branch;
+#   never the base branch itself, and a project with codeHost none gets the push alone
+workspace:
+  path: workspace
+  mergeRequest: false
 answer:
   - required: failure
   - records: rows

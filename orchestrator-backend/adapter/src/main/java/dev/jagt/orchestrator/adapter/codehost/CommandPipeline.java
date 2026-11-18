@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
@@ -61,6 +62,16 @@ public class CommandPipeline implements CodeHostDriver {
       return Answer.failed(TokenUsage.NONE, host.key("closeCommand") + " is not set");
     }
     return run(host, "closeCommand", host.host().closeCommand(), "{request}", requestUrl);
+  }
+
+  @Override
+  public Answer<String> openRequest(HostSettings host, String remoteUrl, RequestDraft draft) {
+    return Answer.unavailable();
+  }
+
+  @Override
+  public Answer<String> openRequestOf(HostSettings host, String remoteUrl, String branch) {
+    return Answer.unavailable();
   }
 
   @Override

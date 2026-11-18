@@ -1,6 +1,6 @@
 // No threshold: a survivor is judged by the one who wrote its line.
-def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'GitStates', 'GitCommands', 'WorktreeHooks', 'DiffCheckouts']
-    .collect { "dev.jagt.orchestrator.service.git.${it}" }
+def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'GitStates', 'GitCommands', 'WorktreeHooks', 'DiffCheckouts', 'WorkspaceBranch']
+    .collect { "dev.jagt.orchestrator.service.git.${it}".toString() } + ['dev.jagt.orchestrator.job.checker.workspace.WorkspaceRequests']
 
 allprojects {
     apply plugin: 'info.solidsoft.pitest'

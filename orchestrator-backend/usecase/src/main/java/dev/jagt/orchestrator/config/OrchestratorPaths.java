@@ -91,6 +91,11 @@ public class OrchestratorPaths {
     return layout.revertWorktree(TaskName.slug(taskId), projectKey);
   }
 
+  /** Where a project's checkout of a role's branch is cut for one commit. */
+  public Path roleBranchWorktree(String projectKey, String branch) {
+    return layout.roleBranchWorktree(projectKey, branch);
+  }
+
   /** What an older version kept flat in an older folder, by name, with where it belongs now. */
   public Map<String, Path> placed() {
     return layout.placed();

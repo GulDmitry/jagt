@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
@@ -66,7 +67,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void theConfiguredHostNameAnswersInPlaceOfTheOneAnSshRemoteNames() {
+  void theConfiguredHostNameAnswersInPlaceOfTheOneSshRemoteNames() {
     HostSettings named =
         new HostSettings(
             "shop",
@@ -212,7 +213,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void branchListingTheHostRefusesIsFailureNotAnAnswer() {
+  void branchListingTheHostRefusesIsFailureNotAnswer() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 500"));
 
@@ -296,7 +297,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void anAddressThatIsNoPipelineIsRefusedWithoutRunningAnything() {
+  void addressThatIsNoPipelineIsRefusedWithoutRunningAnything() {
     Answer<List<FailedJob>> answer =
         gitlab.failedJobs(host, "https://git.example.invalid/shop/web/-/merge_requests/4");
 
@@ -320,7 +321,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void anAddressThatIsNoRequestIsNotClosedAndNothingIsRun() {
+  void addressThatIsNoRequestIsNotClosedAndNothingIsRun() {
     Answer<String> answer =
         gitlab.closeRequest(host, "https://git.example.invalid/shop/web/-/pipelines/77");
 
@@ -329,7 +330,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void anUnresolvedDiscussionAnsweredLastByAnotherAccountGivesItsNewestNoteId() {
+  void unresolvedDiscussionAnsweredLastByAnotherAccountGivesItsNewestNoteId() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "{\"username\":\"agent\"}", ""))
         .thenReturn(
@@ -411,7 +412,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void anAddressThatIsNoRequestHasNoFingerprintAndNothingIsRun() {
+  void addressThatIsNoRequestHasNoFingerprintAndNothingIsRun() {
     Answer<String> answer =
         gitlab.requestFingerprint(host, "https://git.example.invalid/shop/web/-/pipelines/7");
 
@@ -420,11 +421,137 @@ class GitLabCliTest {
   }
 
   @Test
-  void anAddressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
+  void addressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
     Answer<List<String>> answer =
         gitlab.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/pipelines/7");
 
     assertThat(answer.failure()).startsWith("not the address of a request");
+    verifyNoInteractions(processes);
+  }
+
+  @Test
+  void openRequestForTheBranchIsTheOneReturnedAndNoSecondIsCreated() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                "[{\"web_url\":\"https://git.example.invalid/shop/web/-/merge_requests/7\"}]",
+                ""));
+
+    Answer<String> answer =
+        gitlab.openRequest(
+            host,
+            "git@git.example.invalid:shop/web.git",
+            new RequestDraft("jagt/acceptance-acceptance", "main", "title", "body"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue())
+        .containsSubsequence(
+            "api",
+            "--hostname",
+            "git.example.invalid",
+            "projects/shop%2Fweb/merge_requests?state=opened&per_page=1&source_branch="
+                + "jagt%2Facceptance-acceptance");
+    assertThat(answer.facts()).contains("https://git.example.invalid/shop/web/-/merge_requests/7");
+  }
+
+  @Test
+  void openRequestOfBranchIsEmptyWhereNoRequestIsOpenAndNoneIsCreated() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "[]", ""));
+
+    Answer<String> answer =
+        gitlab.openRequestOf(
+            host, "git@git.example.invalid:shop/web.git", "jagt/acceptance-acceptance");
+
+    assertThat(answer.facts()).contains("");
+    verify(processes).run(isNull(), any(Duration.class), anyList());
+  }
+
+  @Test
+  void openRequestOfBranchIsTheOpenRequest() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                "[{\"web_url\":\"https://git.example.invalid/shop/web/-/merge_requests/7\"}]",
+                ""));
+
+    Answer<String> answer =
+        gitlab.openRequestOf(
+            host, "git@git.example.invalid:shop/web.git", "jagt/acceptance-acceptance");
+
+    assertThat(answer.facts()).contains("https://git.example.invalid/shop/web/-/merge_requests/7");
+  }
+
+  @Test
+  void requestIsCreatedFromTheBranchIntoTheTargetWhereNoneIsOpen() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "[]", ""))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                "{\"web_url\":\"https://git.example.invalid/shop/web/-/merge_requests/8\"}",
+                ""));
+
+    Answer<String> answer =
+        gitlab.openRequest(
+            host,
+            "git@git.example.invalid:shop/web.git",
+            new RequestDraft("jagt/acceptance-acceptance", "main", "the title", "the body"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getAllValues().get(1))
+        .containsSubsequence(
+            "api",
+            "--hostname",
+            "git.example.invalid",
+            "-X",
+            "POST",
+            "projects/shop%2Fweb/merge_requests",
+            "-f",
+            "source_branch=jagt/acceptance-acceptance",
+            "-f",
+            "target_branch=main",
+            "-f",
+            "title=the title",
+            "-f",
+            "description=the body");
+    assertThat(answer.facts()).contains("https://git.example.invalid/shop/web/-/merge_requests/8");
+  }
+
+  @Test
+  void requestIsNotCreatedWhenTheListOfOpenOnesCouldNotBeRead() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", "boom"));
+
+    Answer<String> answer =
+        gitlab.openRequest(
+            host,
+            "git@git.example.invalid:shop/web.git",
+            new RequestDraft("jagt/acceptance-acceptance", "main", "title", "body"));
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).contains("boom");
+    verify(processes).run(isNull(), any(Duration.class), anyList());
+  }
+
+  @Test
+  void remoteThatIsNoRepositoryAddressOpensNothingAndRunsNothing() {
+    Answer<String> answer =
+        gitlab.openRequest(host, "", new RequestDraft("b", "main", "title", "body"));
+
+    assertThat(answer.failure()).startsWith("not the address of a repository");
+    verifyNoInteractions(processes);
+  }
+
+  @Test
+  void remoteThatIsNoRepositoryAddressHasNoOpenRequestToLookUp() {
+    Answer<String> answer = gitlab.openRequestOf(host, "", "b");
+
+    assertThat(answer.failure()).startsWith("not the address of a repository");
     verifyNoInteractions(processes);
   }
 }

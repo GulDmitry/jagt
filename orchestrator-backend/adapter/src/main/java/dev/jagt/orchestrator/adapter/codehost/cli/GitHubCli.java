@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
@@ -108,6 +109,67 @@ public class GitHubCli implements CodeHostDriver {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false)
         .map(address -> cli.run(address.hostname(), List.of("pr", "close", requestUrl.strip())))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
+  }
+
+  @Override
+  public Answer<String> openRequest(HostSettings host, String remoteUrl, RequestDraft draft) {
+    return HostAddress.ofRemote(remoteUrl, draft.branch(), host.host().name(), false)
+        .map(address ->
+            HostCli.then(
+                open(address, draft.branch()),
+                open ->
+                    open.isEmpty()
+                        ? cli.run(address.hostname(), create(address, draft))
+                            .map(GitHubCli::lastLine)
+                        : new Answer<>(Optional.of(open), TokenUsage.NONE)))
+        .orElseGet(() -> HostCli.notRemote(remoteUrl));
+  }
+
+  @Override
+  public Answer<String> openRequestOf(HostSettings host, String remoteUrl, String branch) {
+    return HostAddress.ofRemote(remoteUrl, branch, host.host().name(), false)
+        .map(address -> open(address, branch))
+        .orElseGet(() -> HostCli.notRemote(remoteUrl));
+  }
+
+  private Answer<String> open(HostAddress address, String branch) {
+    return cli.parsed(
+        cli.run(
+            address.hostname(),
+            List.of(
+                "pr",
+                "list",
+                "--head",
+                branch,
+                "--state",
+                "open",
+                "--json",
+                "url",
+                "--limit",
+                "1",
+                "-R",
+                repository(address))),
+        output -> JSON.readTree(output).path(0).path("url").asString(""));
+  }
+
+  private static String lastLine(String output) {
+    return output.strip().lines().reduce((first, second) -> second).orElse("");
+  }
+
+  private static List<String> create(HostAddress address, RequestDraft draft) {
+    return List.of(
+        "pr",
+        "create",
+        "--head",
+        draft.branch(),
+        "--base",
+        draft.target(),
+        "--title",
+        draft.title(),
+        "--body",
+        draft.description(),
+        "-R",
+        repository(address));
   }
 
   @Override

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
+import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -55,5 +56,15 @@ class NoCodeHostTest {
             none.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/merge_requests/7")
                 .facts())
         .contains(List.of());
+  }
+
+  @Test
+  void noRequestIsOpenedAndNothingFailed() {
+    Answer<String> answer =
+        none.openRequest(
+            host, "git@git.example.invalid:shop/web.git", new RequestDraft("b", "main", "t", "d"));
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).isEmpty();
   }
 }

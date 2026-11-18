@@ -36,6 +36,8 @@ jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environment
 - **WHEN** you press `scenarios` on ABC-42 before its plan is approved
   **THEN** acceptance asks one question per gap or contradiction in the ticket and writes `scenarios/ABC-42.md`, each row
   tagged `from-ticket` or `inferred`; the session's plan copies its rows
+- **WHEN** a check wrote a new flow into a workspace inside a project of `jagt.yml` and `workspace.mergeRequest` is on
+  **THEN** one merge request carries it on `jagt/acceptance-<role>`, a later check updates that request, the base branch is untouched
 - **WHEN** `workspace: none`
   **THEN** acceptance reads memoryless and writes nothing, as before workspaces
 
@@ -43,7 +45,8 @@ jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environment
 
 - On by `roles.acceptance.enabled`; everything else in `roles/acceptance/role.yml`.
 - The workspace is `roles/acceptance/workspace/` by default, or a repository of the user's; `setup.md` asks the
-  technology the project has, the path and the layout.
+  technology the project has, the path and the layout. A path inside a project of `jagt.yml` can be proposed by request
+  (`workspace.mergeRequest`).
 - Layout: `index.md` read first (environments, roles and how each signs in, scenarios known), `scenarios/`, `steps/`, `flows/`.
 
 ## Guards
@@ -51,7 +54,11 @@ jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environment
 - Write and Edit under the workspace alone; the one extra command is the flows command with a listed `BASE_URL`.
 - A flow may click and create data on a listed environment, never production; no push, no base branch, no credential in
   context: a flow reads its login from the workspace's gitignored `.env`.
-- jagt never commits the workspace; every report names the flows it wrote or changed, for the user to review.
+- The role never commits or pushes; every report names the flows it wrote or changed, for the user to review.
+- With `workspace.mergeRequest` on (default off), jagt's own code, never the role, commits the workspace's files git does
+  not ignore on `jagt/acceptance-<role>`, pushes that branch alone and opens or updates the one request for it through the
+  code-host seam ([0198](../../docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)).
+  The base branch, the deploy branch and the human's checkout are never written; at most one request is open per role.
 
 ## Cost against a session doing the same
 

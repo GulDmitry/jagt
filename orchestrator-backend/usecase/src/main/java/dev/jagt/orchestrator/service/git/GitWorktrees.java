@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service.git;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import dev.jagt.orchestrator.task.repo.GitRemote;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.Remote;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -623,6 +624,23 @@ public class GitWorktrees {
    */
   public void discardDiffWorktrees(String taskId, String project) {
     DiffCheckouts.diffWorktreePaths(taskId, project).forEach(git::forceDeleteDir);
+  }
+
+  /**
+   * The folder's files git does not ignore, committed on {@code branch} in {@code checkout} and
+   * pushed there alone; whether the branch differs from the base branch. It continues the branch's
+   * remote tip only if {@code fromBranch}.
+   */
+  public boolean publishFolder(
+      String projectKey,
+      ProjectConfig project,
+      Path folder,
+      String branch,
+      String message,
+      Path checkout,
+      boolean fromBranch) {
+    return new WorkspaceBranch(git)
+        .publish(projectKey, project, folder, branch, message, checkout, fromBranch);
   }
 
   /** The remote's address; blank for a repository kept on this machine. */

@@ -25,7 +25,7 @@ Its curl and its navigation reach a listed environment alone.
 ### Requirement: Acceptance writes nothing outside its workspace
 With a `workspace` acceptance SHALL also hold Write and Edit under that path and run the flows command there.
 With `workspace: none` it holds no Write.
-jagt writes `acceptance-report.md` from acceptance's answer and never commits the workspace.
+jagt writes `acceptance-report.md` from acceptance's answer and commits the workspace only through its merge request.
 Acceptance never pushes, never touches the base branch and holds no credential; a flow reads its login itself. Off, it reads no acceptance file.
 
 #### Scenario: A write outside the workspace
@@ -39,6 +39,10 @@ Acceptance never pushes, never touches the base branch and holds no credential; 
 #### Scenario: Acceptance is off
 - **WHEN** `orchestrator.roles.acceptance.enabled` is off
 - **THEN** no acceptance turn exists, no acceptance file is read and the session's own deploy check runs as today
+
+#### Scenario: The merge request is off
+- **WHEN** `workspace.mergeRequest` is `false`, its default, and a check wrote a new flow into the workspace
+- **THEN** jagt commits, pushes and opens nothing, and the report names the flow for the human to commit
 
 ### Requirement: Acceptance keeps its checks in its workspace
 With a `workspace`, acceptance SHALL read its `index.md` first and reuse a scenario or step written there. A criterion none covers SHALL be
@@ -88,3 +92,60 @@ acceptance question. The session ends when its terminal closes, its ending named
 #### Scenario: A second session
 - **WHEN** an acceptance session already runs for the project and you run `acceptance`
 - **THEN** the running one is focused and no second opens
+
+### Requirement: The workspace is proposed by a request of jagt's own
+With `workspace.mergeRequest` on and a workspace inside a project of `jagt.yml`, jagt SHALL propose a check's change to it.
+It commits the files git does not ignore, as the check left the folder in the working tree, in a detached checkout.
+The start is `jagt/acceptance-<role>` on the remote while its request is open, else the base branch; links are skipped.
+It pushes that branch alone, unforced, and opens its request through `CodeHost.openRequest`.
+
+#### Scenario: A new flow
+- **WHEN** a check writes `flows/login.md` into a workspace inside project `specs`, `workspace.mergeRequest` on
+- **THEN** one request carries `flows/login.md` on `jagt/acceptance-acceptance` against the base branch
+- **AND** the base branch is untouched
+
+#### Scenario: A later check
+- **WHEN** a second check changes the workspace while that request is open
+- **THEN** a commit lands on the same branch and no second request opens
+
+#### Scenario: A check that changed nothing
+- **WHEN** the workspace equals the base branch
+- **THEN** nothing is committed, pushed or opened
+- **AND** where it equals the branch's tip, no commit is made and the open request stays the one
+
+#### Scenario: A branch merged and left standing
+- **WHEN** the request for `jagt/acceptance-<role>` was squash-merged and no request for it is open
+- **THEN** the next commit is cut from the base branch and carries no commit already merged
+
+#### Scenario: A local branch of the same name
+- **WHEN** a human holds a local branch `jagt/acceptance-<role>`, checked out or with unpushed commits
+- **THEN** a check neither fails nor changes it
+
+#### Scenario: A symbolic link
+- **WHEN** the workspace holds a symbolic link to a file outside the repository
+- **THEN** the link and its target's content are not committed
+
+#### Scenario: A gitignored file
+- **WHEN** the workspace holds a gitignored `.env`
+- **THEN** it is never committed
+
+#### Scenario: A host that cannot be reached
+- **WHEN** the push or the request fails
+- **THEN** the check's verdict stands, the failure is logged with its cause, and the next check tries again
+
+### Requirement: The workspace request never writes the base branch
+jagt SHALL write neither the base branch nor the human's checkout for it; a role branch named like the base or deploy branch is refused.
+A project with `remote: none` gets nothing, and one with `codeHost: none` gets the push alone, as a ship does.
+The cause is logged.
+
+#### Scenario: A project with no code host
+- **WHEN** the workspace's project has `codeHost: none`
+- **THEN** the branch is pushed and no request is opened
+
+#### Scenario: A project kept on this machine
+- **WHEN** the workspace's project has `remote: none`
+- **THEN** nothing is pushed or opened
+
+#### Scenario: A branch named like the base
+- **WHEN** the base branch is named `jagt/acceptance-<role>`
+- **THEN** nothing is pushed or opened
