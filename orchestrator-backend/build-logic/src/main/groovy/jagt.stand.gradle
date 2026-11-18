@@ -65,9 +65,11 @@ def standCompose = layout.projectDirectory.dir('src/stand/compose').asFile.absol
 tasks.register('standImage', Exec) {
     description = 'Builds the images the container stand runs: jagt-stand-base (jagt as shipped) and jagt-stand (plus the agent CLI).'
     group = 'verification'
+    dependsOn ':bootJar'
     commandLine 'sh', '-c',
-        'docker build -t jagt-stand-base "$0" && docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
-        standRepo, standCompose
+        'docker build --build-context "jar=$2" -t jagt-stand-base "$0" && ' +
+            'docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
+        standRepo, standCompose, rootProject.layout.buildDirectory.dir('libs').get().asFile.absolutePath
     onlyIf {
         if (!standHost && !standDocker) {
             System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Pengine=host runs it on the host')

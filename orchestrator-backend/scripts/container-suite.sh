@@ -15,7 +15,7 @@ command -v docker >/dev/null || { echo "docker is required"; exit 2; }
 
 FIXTURES=$(mktemp -d)
 compose() {
-    JAGT_PORT=$PORT JAGT_FIXTURES=$FIXTURES JAGT_STUB="$BACKEND_DIR/scripts/container-suite" \
+    JAGT_PORT=$PORT JAGT_JAR_DIR="$BACKEND_DIR/build/libs" JAGT_FIXTURES=$FIXTURES JAGT_STUB="$BACKEND_DIR/scripts/container-suite" \
         docker compose -p "$PROJECT" -f "$REPO_ROOT/docker-compose.yml" \
         -f "$BACKEND_DIR/scripts/container-suite/compose.test.yml" "$@"
 }
@@ -42,7 +42,8 @@ sed 's|${JAGT_PASSWORD_HASH}|${file:/run/secrets/jagt_password_hash}|' "$REPO_RO
 )
 chmod -R a+rX "$FIXTURES"
 
-echo "==> building and starting the image"
+echo "==> building the jar and starting the image"
+(cd "$BACKEND_DIR" && ./gradlew --no-daemon bootJar -x test)
 compose up --detach --build
 for _ in $(seq 1 90); do
     curl -fsS "http://localhost:$PORT/actuator/health/readiness" >/dev/null 2>&1 && break

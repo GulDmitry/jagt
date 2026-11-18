@@ -1,5 +1,8 @@
 services:
   jagt:
+    build:
+      additional_contexts:
+        jar: ${JAGT_JAR_DIR}
     environment:
       ORCHESTRATOR_AGENT_CLI: stub
       SERVER_SERVLET_SESSION_COOKIE_SECURE: "false"

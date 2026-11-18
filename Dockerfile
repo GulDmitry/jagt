@@ -7,6 +7,10 @@ RUN git init -q && git commit -q --allow-empty -m build
 WORKDIR /src/orchestrator-backend
 RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar -x test --no-daemon
 
+# A context named jar (docker build --build-context jar=<dir holding jagt.jar>) overrides this stage, so no Gradle runs here.
+FROM build AS jar
+RUN cp /src/orchestrator-backend/build/libs/jagt.jar /jagt.jar
+
 FROM eclipse-temurin:25-jre-noble@sha256:e3b6f7887a50f20d8f07abf279d8a81a5953fb398a9555bd9edd56b9bd15968c
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git tmux tini procps lsof openssh-client \
@@ -14,7 +18,7 @@ RUN apt-get update \
  && useradd --no-create-home --home-dir /data/home --uid 10001 --gid 0 jagt \
  && mkdir -p /app /data/home
 WORKDIR /app
-COPY --from=build /src/orchestrator-backend/build/libs/jagt.jar jagt.jar
+COPY --from=jar /jagt.jar jagt.jar
 COPY jagt.desktop.yml.dist mcp_client.js ./
 COPY entrypoint.sh ./
 COPY roles roles

@@ -15,8 +15,9 @@ trap 'rm -f "$metadata"' EXIT
 printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 docker run --privileged --rm tonistiigi/binfmt --install arm64 >/dev/null
 docker buildx create --use >/dev/null
+(cd "$REPO_ROOT/orchestrator-backend" && ./gradlew --no-daemon bootJar -x test)
 docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=mode=max --tag "$image" --push \
-  --metadata-file "$metadata" "$REPO_ROOT"
+  --build-context "jar=$REPO_ROOT/orchestrator-backend/build/libs" --metadata-file "$metadata" "$REPO_ROOT"
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   echo "name=${image%:*}" >> "$GITHUB_OUTPUT"

@@ -6,7 +6,8 @@
 ## Status
 
 Accepted 2026-11-15 by the owner's order: a server runs jagt from a container; builds on [0168](0168-one-data-folder-holds-everything-jagt-writes.md).
-Amended by [0192](0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-sized.md).
+Amended by [0192](0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-sized.md),
+[0199](0199-the-image-layers-a-prebuilt-jar-on-published-base-images.md).
 
 ## Context
 

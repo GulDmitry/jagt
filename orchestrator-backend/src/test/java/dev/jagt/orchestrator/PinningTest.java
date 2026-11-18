@@ -81,6 +81,7 @@ class PinningTest {
               .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
               .filter(line -> line.matches(".*: FROM .*"))
               .filter(line -> !line.contains("${"))
+              .filter(line -> !line.matches(".*: FROM build AS \\S+$"))
               .filter(line -> !line.matches(".*: FROM \\S+:\\S+@sha256:[0-9a-f]{64}( AS \\S+)?$"))
               .toList();
     }
