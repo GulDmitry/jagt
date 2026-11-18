@@ -327,6 +327,33 @@ class FlowEngineTest {
   }
 
   @Test
+  void leavesTheReportTheAgentMadeWhileTheRelayedShipWasStillRunning() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
+    FlowEngine engine =
+        new FlowEngine(
+            stateService,
+            new Capabilities(
+                List.of(
+                    new FixedCapability(
+                        TaskAction.SHIP, Outcome.relayed("ship ABC-1: relayed", "shipping"))),
+                List.of()),
+            facts,
+            Clock.systemUTC(),
+            rules);
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
+
+    engine.run("ABC-1", TaskAction.SHIP);
+
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    TaskState reported =
+        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).message("request 1 open").build();
+    TaskState written = write.getValue().apply(reducer, reported);
+    assertThat(written.status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(written.message()).isEqualTo("request 1 open");
+  }
+
+  @Test
   void writesNothingAtAllForWorkThatOnlyLooksAtTheTask() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))

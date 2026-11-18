@@ -20,6 +20,8 @@ compose() {
         -f "$BACKEND_DIR/scripts/container-suite/compose.test.yml" "$@"
 }
 cleanup() {
+    status=$?
+    [ "$status" -eq 0 ] || compose logs --no-color --tail 200 || true
     compose down --volumes --rmi local >/dev/null 2>&1 || true
     rm -rf "$FIXTURES"
 }
@@ -46,7 +48,7 @@ for _ in $(seq 1 90); do
     curl -fsS "http://localhost:$PORT/actuator/health/readiness" >/dev/null 2>&1 && break
     sleep 2
 done
-curl -fsS "http://localhost:$PORT/actuator/health/readiness" >/dev/null || { compose logs --tail 100; exit 1; }
+curl -fsS "http://localhost:$PORT/actuator/health/readiness" >/dev/null
 
 echo "==> boardTest against the container"
 cd "$BACKEND_DIR"

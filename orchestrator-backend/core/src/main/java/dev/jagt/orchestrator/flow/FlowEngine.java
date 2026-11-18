@@ -140,26 +140,33 @@ public class FlowEngine {
   private String apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {
     Optional<TaskStatus> next = rules.next(was, action, outcome.kind());
     if (next.isPresent() || outcome.stamp() != null) {
-      TaskMove move = new TaskMove.Ran(action, outcome.kind());
       // Recorded even when the status is unchanged: a second round onto the same request happened.
-      tasks.reduce(
-          taskId,
-          (reducer, task) -> {
-            String line = outcome.stamp() == null ? task.message() : outcome.stamp();
-            long at = clock.millis();
-            TaskState written =
-                next.isPresent()
-                    ? reducer.reduce(task, move, line, true, at)
-                    : reducer.stayed(task, line, true, at);
-            return outcome.stamp() == null
-                ? written
-                : reducer.stamped(written, outcome.stampMeans());
-          });
+      tasks.reduce(taskId, (reducer, task) -> landed(reducer, task, was, next, action, outcome));
     }
     if (outcome.kind().refuses()) {
       throw new IllegalStateException(outcome.message(), outcome.cause());
     }
     return outcome.message();
+  }
+
+  private TaskState landed(
+      TaskReducer reducer,
+      TaskState task,
+      TaskStatus was,
+      Optional<TaskStatus> next,
+      TaskAction action,
+      Outcome outcome) {
+    // A report that landed while the work ran is newer than the work's outcome.
+    if (next.isPresent() && task.status() != was) {
+      return task;
+    }
+    String line = outcome.stamp() == null ? task.message() : outcome.stamp();
+    long at = clock.millis();
+    TaskState written =
+        next.isPresent()
+            ? reducer.reduce(task, new TaskMove.Ran(action, outcome.kind()), line, true, at)
+            : reducer.stayed(task, line, true, at);
+    return outcome.stamp() == null ? written : reducer.stamped(written, outcome.stampMeans());
   }
 
   /** The real liveness probe, unlike the projection's: this one is about to act on the answer. */
