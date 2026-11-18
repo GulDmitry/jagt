@@ -6,8 +6,8 @@ allprojects {
         systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
         systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
         systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
-        // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
-        systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', project.findProperty('testFactor') ?: '3'
+        // One thread per core: factors 2 and 3 bought no wall time, only load.
+        systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', project.findProperty('testFactor') ?: '1'
         // A context booting beside a concurrent class would reset Logback and detach its log capture.
         systemProperty 'org.springframework.boot.logging.LoggingSystem', 'none'
         // The gate never reaches the developer's own terminal: a booted context finds no tmux and no kitty to run.
