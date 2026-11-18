@@ -88,11 +88,9 @@ public final class KindEngine implements UnitEngine {
       ok("start the pod", "kubectl", "scale", DEPLOYMENT, "--replicas=1");
       return awaitReady();
     } catch (IOException e) {
-      close();
-      throw new StandFailure("cannot write the manifests under " + root, e);
+      throw abandoned(new StandFailure("cannot write the manifests under " + root, e));
     } catch (RuntimeException e) {
-      close();
-      throw e;
+      throw abandoned(e);
     }
   }
 
@@ -152,7 +150,25 @@ public final class KindEngine implements UnitEngine {
     logs();
     usage();
     stopForward();
-    run("kind", "delete", "cluster", "--name", cluster());
+    StandShell.Result deleted = run("kind", "delete", "cluster", "--name", cluster());
+    if (deleted.exit() != 0) {
+      throw new StandFailure(
+          "cluster "
+              + cluster()
+              + " still exists: kind delete cluster exited "
+              + deleted.exit()
+              + ": "
+              + deleted.output());
+    }
+  }
+
+  private <T extends RuntimeException> T abandoned(T failure) {
+    try {
+      close();
+    } catch (StandFailure left) {
+      failure.addSuppressed(left);
+    }
+    return failure;
   }
 
   private void killJvm() {
@@ -161,8 +177,7 @@ public final class KindEngine implements UnitEngine {
       throw new StandFailure("jagt's JVM was not running in its pod: " + killed.output());
     }
     if (!BoardWait.down(board, startup)) {
-      close();
-      throw new StandFailure("jagt did not stop on port " + port + " in " + cluster());
+      throw abandoned(new StandFailure("jagt did not stop on port " + port + " in " + cluster()));
     }
   }
 
@@ -298,9 +313,9 @@ public final class KindEngine implements UnitEngine {
 
   private KindEngine awaitReady() {
     if (!BoardWait.up(board, startup, this::forwarding)) {
-      close();
-      throw new StandFailure(
-          "jagt did not come up on port " + port + " in " + cluster() + "; read " + root);
+      throw abandoned(
+          new StandFailure(
+              "jagt did not come up on port " + port + " in " + cluster() + "; read " + root));
     }
     return this;
   }

@@ -177,6 +177,50 @@ class KindEngineTest {
   }
 
   @Test
+  void closeFailsNamingTheClusterAndTheExitWhenTheClusterCannotBeDeleted() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> new StandShell.Result(command.contains("delete") ? -1 : 0, "");
+    KindEngine kind =
+        new KindEngine(
+            root,
+            9000,
+            board,
+            shell,
+            (where, local) -> forwarding,
+            manifest,
+            Duration.ofMinutes(5));
+
+    assertThatThrownBy(kind::close)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("cluster jagt-stand-41-1 still exists")
+        .hasMessageContaining("exited -1");
+  }
+
+  @Test
+  void startFailureKeepsItsCauseWhenTheClusterCannotBeDeletedEither() {
+    StandShell.Runner shell =
+        (cwd, command, env) ->
+            new StandShell.Result(
+                command.contains("create") || command.contains("delete") ? 1 : 0, "");
+    KindEngine kind =
+        new KindEngine(
+            root,
+            9000,
+            board,
+            shell,
+            (where, local) -> forwarding,
+            manifest,
+            Duration.ofMinutes(5));
+
+    assertThatThrownBy(kind::up)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("cannot create the cluster in jagt-stand-41-1")
+        .hasSuppressedException(
+            new StandFailure(
+                "cluster jagt-stand-41-1 still exists: kind delete cluster exited 1: "));
+  }
+
+  @Test
   void execRunsInsideTheDeploymentsPod() {
     StandShell.Runner shell =
         (cwd, command, env) -> {
