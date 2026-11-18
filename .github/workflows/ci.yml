@@ -2,6 +2,7 @@
 # `stand` per engine (compose on every
 # run, kind nightly: the runner ships kind and kubectl), `release` on a tag after all. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
 name: ci
+run-name: "${{ github.event_name == 'schedule' && 'nightly: heavy suites and the kind stand' || github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}"
 
 on:
   push:
