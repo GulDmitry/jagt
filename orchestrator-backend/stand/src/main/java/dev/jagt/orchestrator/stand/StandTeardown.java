@@ -66,6 +66,7 @@ final class StandTeardown {
               + StandEvidence.keep(root, settled.scenario(), archive.failed()).toAbsolutePath());
     }
     StandShell.deleteRoot(root);
+    StandTmuxServers.stopOrphaned(Objects.requireNonNull(root.getParent()));
     archive
         .traces()
         .apply(Objects.requireNonNull(root.getParent()))

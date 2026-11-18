@@ -16,6 +16,7 @@ public final class StandCleanup {
     LongPredicate alive = pid -> ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
     StandRoots.Plan plan = StandRoots.plan(base, alive);
     plan.dead().forEach(found -> stop(found, StandShell::run));
+    StandTmuxServers.stopOrphaned(base);
     StandTraces.Removed removed = sweep(plan, failedDir, StandTraces.ofTheHuman(base), alive);
     System.out.println(
         "stand cleanup: removed "

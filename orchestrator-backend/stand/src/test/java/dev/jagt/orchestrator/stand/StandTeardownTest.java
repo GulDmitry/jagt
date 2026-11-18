@@ -87,6 +87,22 @@ class StandTeardownTest {
   }
 
   @Test
+  void tmuxServerOfEarlierDeletedRootIsStoppedWhenRunEnds() throws Exception {
+    Path earlier = Files.createDirectories(dir.resolve("base/jagt-stand-42-1"));
+    StandMarker marker = StandMarker.started("happy/judge").writeTo(root);
+    TestTmuxServerBuilder.Server server = TestTmuxServerBuilder.tmuxServer(dir, earlier).build();
+    try {
+      Files.delete(earlier);
+
+      teardown.keep(root, marker, null, false, BEGAN);
+
+      assertThat(server.running()).isFalse();
+    } finally {
+      server.stop();
+    }
+  }
+
+  @Test
   void suspendedHostIsReportedSuspendedWithItsDetailAndNoEvidence() throws Exception {
     StandMarker marker = StandMarker.started("happy/judge");
     StandOutcome suspended =
