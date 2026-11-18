@@ -1,6 +1,7 @@
 services:
   jagt:
     image: ${JAGT_IMAGE:-jagt-stand}
+    user: ${JAGT_USER:-10001:0}
     ports:
       - "127.0.0.1:${JAGT_PORT}:8290"
     volumes:

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -92,6 +93,25 @@ class JagtContainerTest {
             Duration.ofMinutes(5))
         .windows();
 
-    assertThat(seen).containsExactly(Map.of("JAGT_PORT", "9000", "JAGT_IMAGE", "jagt-stand"));
+    assertThat(seen.getFirst())
+        .containsEntry("JAGT_PORT", "9000")
+        .containsEntry("JAGT_IMAGE", "jagt-stand");
+  }
+
+  @Test
+  void containerRunsAsTheRootsOwnerSoTheRunnerCanDeleteWhatItWrote(@TempDir Path dir)
+      throws IOException {
+    List<Map<String, String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(env);
+          return new StandShell.Result(0, "");
+        };
+
+    new JagtContainer(dir, 9000, new StandBoard(9000), shell, Map.of(), Duration.ofMinutes(5))
+        .windows();
+
+    assertThat(seen.getFirst())
+        .containsEntry("JAGT_USER", Files.getAttribute(dir, "unix:uid") + ":0");
   }
 }

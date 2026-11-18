@@ -174,6 +174,17 @@ public final class JagtContainer implements UnitEngine {
     command.addAll(List.of(args));
     Map<String, String> withImage = new HashMap<>(env);
     withImage.put("JAGT_IMAGE", image);
+    withImage.put("JAGT_USER", owner() + ":0");
     return shell.run(root, command, withImage);
+  }
+
+  // The bind-mounted root stays the runner's: a Linux engine keeps container uids, Docker Desktop
+  // hides them.
+  private String owner() {
+    try {
+      return Files.getAttribute(root, "unix:uid").toString();
+    } catch (IOException | UnsupportedOperationException unread) {
+      throw new StandFailure("cannot read the owner of " + root, unread);
+    }
   }
 }
