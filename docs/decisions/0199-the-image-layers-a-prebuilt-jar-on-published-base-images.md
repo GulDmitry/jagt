@@ -21,6 +21,7 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
 - The OS layer (git, tmux, tini, procps, lsof, openssh-client, uid 10001, gid-0 permissions) and the stand layer are
   Dockerfiles of their own, published to ghcr.io and named by digest, never a floating tag.
 - Base images are built amd64 and arm64 with signed provenance, an SBOM and the osv-scanner scan the app image carries.
+- The OS layer is `base/Dockerfile`, built by `.github/workflows/base-images.yml` (push to `base/**`, weekly, manual).
 - They rebuild in their own workflow on a change to a base Dockerfile and weekly for OS security fixes.
 - Renovate bumps the temurin digest in a base Dockerfile and the base digest in an app Dockerfile, as a request passing full CI.
 - CI caches Gradle with `gradle/actions/setup-gradle`, `cache-provider: basic`, written only from `main`.

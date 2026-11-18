@@ -152,6 +152,18 @@ class CiWorkflowTest {
   }
 
   @Test
+  void buildsTheBaseImageForBothPlatformsAndSignsItsProvenance() {
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+    String script = SourceRoots.read(Path.of("scripts/publish-base-image.sh"));
+
+    assertThat(script).contains("--platform linux/amd64,linux/arm64").contains("--sbom=true");
+    assertThat(workflow)
+        .contains("actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8")
+        .contains("subject-digest: ${{ steps.image.outputs.digest }}")
+        .contains("attestations: write");
+  }
+
+  @Test
   void handsTheImageDigestToTheWorkflowFromThePublishScript() {
     assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh")))
         .contains("--metadata-file")
