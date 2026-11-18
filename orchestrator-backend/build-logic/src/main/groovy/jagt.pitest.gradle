@@ -62,9 +62,13 @@ allprojects {
 // Every `test` ends in `pitestDiff` (0127): pitest on the main classes changed against `-PpitestDiff=<base>` (default
 // HEAD, the tree included), listing the survivors standing on a changed line; nothing else is judged.
 def base = providers.gradleProperty('pitestDiff').map { it ?: 'HEAD' }.getOrElse('HEAD')
+def repoRoot = rootDir.parentFile
+def git = { List<String> args -> providers.exec { workingDir repoRoot; commandLine(['git'] + args) }.standardOutput.asText.get() }
+// A branch behind its base is diffed from where it forked, so the base's newer lines are not its own.
+def forkPoint = base == 'HEAD' ? 'HEAD' : git(['merge-base', base, 'HEAD']).trim()
 def diff = providers.exec {
     workingDir rootDir
-    commandLine 'git', 'diff', '-U0', base, '--', '*/src/main/java/*.java', 'src/main/java/*.java'
+    commandLine 'git', 'diff', '-U0', forkPoint, '--', '*/src/main/java/*.java', 'src/main/java/*.java'
 }.standardOutput.asText.get()
 def changedLines = [:].withDefault { [] as Set }
 def file = null
@@ -80,9 +84,7 @@ diff.eachLine { line ->
     }
 }
 // A line only a `.git-blame-ignore-revs` commit touched in the range (a mass reformat) is not a change to judge.
-def repoRoot = rootDir.parentFile
 def ignoreRevs = new File(repoRoot, '.git-blame-ignore-revs')
-def git = { List<String> args -> providers.exec { workingDir repoRoot; commandLine(['git'] + args) }.standardOutput.asText.get() }
 def ignored = ignoreRevs.exists() ? ignoreRevs.readLines().findAll { it ==~ /[0-9a-f]{40}/ } as Set : [] as Set
 def inRange = base == 'HEAD' ? [] as Set : git(['rev-list', "${base}..HEAD"]).readLines() as Set
 if (ignored.intersect(inRange)) {

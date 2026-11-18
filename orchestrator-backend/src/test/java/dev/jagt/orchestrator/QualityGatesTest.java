@@ -18,6 +18,7 @@ class QualityGatesTest {
       value = {
         "JaCoCo" + CONVENTIONS + "finalizedBy tasks.named.*jacocoTestCoverageVerification",
         "PIT" + PITEST + "finalizedBy ':pitestDiff'",
+        "PIT on a branch's own lines" + PITEST + "'merge-base', base, 'HEAD'",
         "Spotless" + CONVENTIONS + "dependsOn tasks.named.*spotlessApply",
         "Checkstyle" + CONVENTIONS + "dependsOn tasks.withType.Checkstyle",
         "Error Prone" + CONVENTIONS + "apply plugin: 'net.ltgt.errorprone'",
