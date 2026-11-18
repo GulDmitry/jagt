@@ -9,7 +9,7 @@ on:
     tags: ['v*']
   pull_request:
   schedule:
-    - cron: '0 4 * * *'
+    - cron: '17 3 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}
