@@ -250,6 +250,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=session]").click();
+    assertThat(page.locator("#pane .session")).containsText("no window holds this session");
     page.locator("#pane .session button[data-window=login]").click();
     assertThat(page.locator("#pane .session .terminal"))
         .containsText("code ABCD-1234 at https://host.example.invalid/device");

@@ -56,12 +56,14 @@ export const Terminal = ({ task, name }) => {
     const mount = host.current;
     if (!mount) return undefined;
     setGone(false);
-    const attached = attach(mount, { task, name }, () => setGone(true));
+    let live = true;
+    const attached = attach(mount, { task, name }, () => live && setGone(true));
     return () => {
+      live = false;
       attached.then((detach) => detach());
     };
   }, [task, name]);
-  return gone
-    ? html`<p class="muted">${t("pane.no-window")}</p>`
-    : html`<div class="terminal-host" ref=${host}></div>`;
+  // The host stays mounted while gone, so picking another window has somewhere to attach.
+  return html`${gone ? html`<p class="muted">${t("pane.no-window")}</p>` : ""}
+    <div class="terminal-host" ref=${host} hidden=${gone}></div>`;
 };
