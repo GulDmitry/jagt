@@ -9,7 +9,8 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
 
 1. **Read jagt's records only**: the task in `state.json` (`stop`, `trail`, `history`, `refusals`), the worktree's
    `.jagt/master-review.json` and `master-rounds.json`, `task_context.md`, `task_notes.md`, `misses.jsonl`, and the
-   `jagt-backend.log*` lines of the task around `at`. Never a ticket's or a customer's business content.
+   `jagt-backend.log*` lines of the task around `at`.
+   Once the task has left `state.json`, the `steps` (`history`, `trail`, newest last) of its stop line stand in for `trail` and `history`. Never a ticket's or a customer's business content.
 2. **Name who looped**, one of: the session (asked again without new work), the Master (sent the same verdict on new
    work, or a round no work could pass), a case (no case moves the task on), jagt (a sweep, a count or a stale read).
    Rounds whose input changed (a new commit, new notes, a different verdict) are work, not a loop: the fix then is a

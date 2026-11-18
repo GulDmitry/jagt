@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.log.StopLog;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,14 @@ public class StopAnnouncements {
         .addKeyValue("fix", "lift " + alias)
         .log();
     journal.record(
-        new StopLog.Stop(stop.at(), taskId, alias, trigger, task.status(), stop.evidence()));
+        new StopLog.Stop(
+            stop.at(),
+            taskId,
+            alias,
+            trigger,
+            task.status(),
+            stop.evidence(),
+            new StopLog.Steps(
+                task.history(), task.trail() == null ? List.of() : task.trail().rounds())));
   }
 }

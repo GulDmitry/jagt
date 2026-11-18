@@ -354,7 +354,8 @@ class TaskStopsTest {
     assertThat(Files.readAllLines(root.resolve("records/stops.jsonl")))
         .containsExactly(
             "{\"at\":100000000,\"task\":\"ABC-42\",\"alias\":\"cart\",\"trigger\":\"CHECKS\","
-                + "\"status\":\"CI_POLLING\",\"evidence\":\"3 reads could not list the checks\"}");
+                + "\"status\":\"CI_POLLING\",\"evidence\":\"3 reads could not list the checks\","
+                + "\"steps\":{\"history\":[{\"status\":\"CI_POLLING\",\"at\":0}],\"trail\":[]}}");
   }
 
   @Test
