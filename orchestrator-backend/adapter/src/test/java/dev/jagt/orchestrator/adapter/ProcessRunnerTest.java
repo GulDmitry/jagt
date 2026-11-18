@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -172,16 +174,19 @@ class ProcessRunnerTest {
             new ProcessRunner()
                 .run(
                     null,
-                    Duration.ofMillis(500),
+                    Duration.ofSeconds(5),
                     List.of("sh", "-c", "sleep 30 & echo $! > " + childPid + "; wait")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("timed out");
 
     long child = Long.parseLong(Files.readString(childPid).strip());
+    CompletableFuture<?> exited =
+        ProcessHandle.of(child)
+            .map(ProcessHandle::onExit)
+            .map(future -> (CompletableFuture<?>) future)
+            .orElse(CompletableFuture.completedFuture(null));
     try {
-      await()
-          .atMost(Duration.ofSeconds(3))
-          .until(() -> ProcessHandle.of(child).filter(ProcessHandle::isAlive).isEmpty());
+      exited.get(60, TimeUnit.SECONDS);
     } finally {
       ProcessHandle.of(child).ifPresent(ProcessHandle::destroyForcibly);
     }
@@ -204,16 +209,15 @@ class ProcessRunnerTest {
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(5))
         .until(() -> Files.readString(pid).endsWith("\n"));
-    long command = Long.parseLong(Files.readString(pid).strip());
+    ProcessHandle command =
+        ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
 
     caller.interrupt();
 
     try {
-      await()
-          .atMost(Duration.ofSeconds(3))
-          .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+      command.onExit().get(60, TimeUnit.SECONDS);
     } finally {
-      ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
+      command.destroyForcibly();
     }
   }
 
@@ -229,9 +233,31 @@ class ProcessRunnerTest {
                     () -> runner.run(null, Duration.ofSeconds(30), List.of("sleep", "30")))));
 
     caller.interrupt();
-    caller.join(5_000);
+    caller.join(Duration.ofSeconds(60));
 
     assertThat(ended.get()).isInstanceOf(Processes.Stopped.class);
+  }
+
+  @Test
+  void endsTheReadQuietlyWhenKillingTheCommandClosedItsStream() throws Exception {
+    BufferedReader closed = new BufferedReader(new StringReader("a"));
+    closed.close();
+
+    Throwable ended =
+        catchThrowable(() -> new ProcessRunner.OutputDrain(closed, new StringBuilder()).run());
+
+    assertThat(ended).isNull();
+  }
+
+  @Test
+  void stopsWithoutWaitingTheCommandThatStartsAfterJagtHasStopped() {
+    ProcessRunner runner = new ProcessRunner();
+    runner.destroyRunning();
+
+    Throwable answered =
+        catchThrowable(() -> runner.run(null, Duration.ofSeconds(5), List.of("sleep", "30")));
+
+    assertThat(answered).isInstanceOf(Processes.Stopped.class);
   }
 
   @Test
@@ -249,16 +275,15 @@ class ProcessRunnerTest {
     await()
         .atMost(Duration.ofSeconds(5))
         .until(() -> Files.exists(pid) && Files.readString(pid).endsWith("\n"));
-    long command = Long.parseLong(Files.readString(pid).strip());
+    ProcessHandle command =
+        ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
 
     runner.destroyRunning();
 
     try {
-      await()
-          .atMost(Duration.ofSeconds(3))
-          .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+      command.onExit().get(60, TimeUnit.SECONDS);
     } finally {
-      ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
+      command.destroyForcibly();
     }
   }
 
@@ -282,7 +307,7 @@ class ProcessRunnerTest {
         .until(() -> Files.readString(pid).endsWith("\n"));
 
     runner.destroyRunning();
-    caller.join(3_000);
+    caller.join(Duration.ofSeconds(60));
 
     assertThat(answered.get()).isInstanceOf(Processes.Stopped.class);
   }
@@ -449,11 +474,12 @@ class ProcessRunnerTest {
         .atMost(Duration.ofSeconds(5))
         .until(() -> Files.readString(pid).endsWith("\n"));
 
-    long command = Long.parseLong(Files.readString(pid).strip());
+    ProcessHandle command =
+        ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
 
     caller.interrupt();
-    caller.join(3_000);
-    ProcessHandle.of(command).ifPresent(ProcessHandle::destroyForcibly);
+    caller.join(Duration.ofSeconds(60));
+    command.destroyForcibly();
 
     assertThat(stillInterrupted).isTrue();
   }

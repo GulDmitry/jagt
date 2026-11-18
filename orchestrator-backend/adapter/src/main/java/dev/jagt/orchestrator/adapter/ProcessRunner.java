@@ -3,7 +3,9 @@ package dev.jagt.orchestrator.adapter;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.OneLine;
 import jakarta.annotation.PreDestroy;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -36,6 +38,7 @@ public class ProcessRunner implements Processes {
   private final Set<Process> running = ConcurrentHashMap.newKeySet();
   private final Set<Process> stopped = ConcurrentHashMap.newKeySet();
   private volatile boolean closing;
+  private volatile boolean destroyed;
 
   @Override
   public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
@@ -220,6 +223,10 @@ public class ProcessRunner implements Processes {
       }
       process = builder.start();
       running.add(process);
+      if (destroyed) {
+        stopped.add(process);
+        destroyTree(process, "shutdown");
+      }
       if (stdin != null) {
         feed(process, stdin);
       }
@@ -228,12 +235,8 @@ public class ProcessRunner implements Processes {
       var stderrReader = process.errorReader();
       StringBuilder stdout = new StringBuilder();
       StringBuilder stderr = new StringBuilder();
-      Thread outThread =
-          Thread.startVirtualThread(
-              () -> stdoutReader.lines().forEach(l -> stdout.append(l).append('\n')));
-      Thread errThread =
-          Thread.startVirtualThread(
-              () -> stderrReader.lines().forEach(l -> stderr.append(l).append('\n')));
+      Thread outThread = Thread.startVirtualThread(new OutputDrain(stdoutReader, stdout));
+      Thread errThread = Thread.startVirtualThread(new OutputDrain(stderrReader, stderr));
       boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
       if (!finished) {
         destroyTree(process, "timeout");
@@ -270,6 +273,30 @@ public class ProcessRunner implements Processes {
     return new IllegalStateException("Interrupted while running: " + String.join(" ", command), e);
   }
 
+  /**
+   * Reads a command's stream to its end; a stream closed under it ends the read, keeping what was
+   * read.
+   */
+  static final class OutputDrain implements Runnable {
+
+    private final BufferedReader reader;
+    private final StringBuilder into;
+
+    OutputDrain(BufferedReader reader, StringBuilder into) {
+      this.reader = reader;
+      this.into = into;
+    }
+
+    @Override
+    public void run() {
+      try {
+        reader.lines().forEach(line -> into.append(line).append('\n'));
+      } catch (UncheckedIOException e) {
+        // Killing the command closes its streams; its caller reports that ending.
+      }
+    }
+  }
+
   private static void feed(Process process, String stdin) {
     Thread.startVirtualThread(() -> {
       try (var out = process.getOutputStream()) {
@@ -292,6 +319,7 @@ public class ProcessRunner implements Processes {
   /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
   @PreDestroy
   void destroyRunning() {
+    destroyed = true;
     stopped.addAll(running);
     running.forEach(process -> destroyTree(process, "shutdown"));
   }
