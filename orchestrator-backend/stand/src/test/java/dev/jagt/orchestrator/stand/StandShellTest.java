@@ -49,7 +49,11 @@ class StandShellTest {
               "-d",
               "sh",
               "-c",
-              "trap '' HUP; while :; do : > " + root + "/w/f$RANDOM; done"));
+              "trap '' HUP; while kill -0 "
+                  + ProcessHandle.current().pid()
+                  + " 2>/dev/null; do : > "
+                  + root
+                  + "/w/f$RANDOM; done"));
       await()
           .atMost(Duration.ofSeconds(5))
           .until(() -> root.resolve("w").toFile().list().length > 0);
@@ -61,7 +65,7 @@ class StandShellTest {
     } finally {
       StandShell.run(base, List.of("tmux", "-S", socket.toString(), "kill-server"));
       StandShell.run(base, List.of("pkill", "-f", root.toString()));
-      Files.deleteIfExists(base);
+      StandShell.deleteTree(base);
     }
   }
 }

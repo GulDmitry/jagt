@@ -224,7 +224,7 @@ class ToolGateTest {
         "sudo gh pr merge 1",
         "timeout 9 gh pr merge 1",
         "eval gh pr merge 1",
-        "while true; do glab mr merge 1; done",
+        "while kill -0 1; do glab mr merge 1; done",
         ">/dev/null gh pr merge 1",
         "find . -exec gh pr merge 1 ;",
         "builtin exec gh pr merge 1",
