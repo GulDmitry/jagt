@@ -11,16 +11,16 @@ import java.util.List;
 import lombok.With;
 
 @With
-public record TestConflictedTaskBuilder(Deployment.Cause cause) {
+public record TestConflictedTaskBuilder(Deployment.Cause cause, String worktree) {
 
   public static TestConflictedTaskBuilder conflictedTask() {
-    return new TestConflictedTaskBuilder(Deployment.Cause.MERGE);
+    return new TestConflictedTaskBuilder(Deployment.Cause.MERGE, "/wt");
   }
 
   public TaskState build() {
     TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
     TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
+        TaskState.builder("web", worktree, TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =

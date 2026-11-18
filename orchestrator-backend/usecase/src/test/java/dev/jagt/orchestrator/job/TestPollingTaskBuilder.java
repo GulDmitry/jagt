@@ -11,14 +11,15 @@ public record TestPollingTaskBuilder(
     @Nullable String mrUrl,
     boolean autoReview,
     long mrCreatedAt,
-    long lastPolledAt) {
+    long lastPolledAt,
+    String worktree) {
 
   public static TestPollingTaskBuilder pollingTask() {
-    return new TestPollingTaskBuilder(TaskStatus.CI_POLLING, "http://mr/1", true, 0, 0);
+    return new TestPollingTaskBuilder(TaskStatus.CI_POLLING, "http://mr/1", true, 0, 0, "/wt");
   }
 
   public TaskState build() {
-    return TaskState.builder("proj", "/wt", status)
+    return TaskState.builder("proj", worktree, status)
         .mrUrl(mrUrl)
         .autoReview(autoReview)
         .mrCreatedAt(mrCreatedAt)
