@@ -96,6 +96,19 @@ public final class JagtContainer implements UnitEngine {
     return awaitReady();
   }
 
+  @Override
+  public void terminate() {
+    StandShell.Result killed = compose("kill", "-s", "TERM", "jagt");
+    if (killed.exit() != 0) {
+      throw new StandFailure("jagt's container did not take SIGTERM: " + killed.output());
+    }
+    if (!BoardWait.until(
+        () -> compose("ps", "--status", "running", "-q").output().isBlank(), startup)) {
+      close();
+      throw new StandFailure("jagt's container did not exit after SIGTERM; read " + root);
+    }
+  }
+
   private void killJvm() {
     StandShell.Result killed = exec("pkill", "-f", JAR);
     if (killed.exit() != 0) {

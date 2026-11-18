@@ -211,4 +211,16 @@ class JagtProcessLaunchTest {
       Files.deleteIfExists(base);
     }
   }
+
+  @Test
+  void terminateStopsJagtsProcessTree() {
+    when(board.ready()).thenReturn(true);
+    JagtProcess jagt =
+        new JagtProcess(Path.of("."), 8123, board, (dir, port) -> first, Duration.ofMinutes(5))
+            .begin();
+
+    jagt.terminate();
+
+    verify(firstHandle).destroy();
+  }
 }

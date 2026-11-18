@@ -201,4 +201,54 @@ class JagtContainerLifecycleTest {
         .hasMessageContaining("did not start the new image: pull denied");
     assertThat(seen.getLast()).contains("down");
   }
+
+  @Test
+  void terminateSendsSigtermToTheServiceThenWaitsUntilNoContainerRuns() {
+    List<List<String>> seen = new ArrayList<>();
+    int[] polls = {0};
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, command.contains("ps") && polls[0]++ < 1 ? "abc123" : "");
+        };
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    container.terminate();
+
+    assertThat(seen.getFirst()).containsSubsequence("kill", "-s", "TERM", "jagt");
+    assertThat(polls[0]).isEqualTo(2);
+  }
+
+  @Test
+  void signalThatCannotBeSentFailsTheTermination() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> new StandShell.Result(command.contains("kill") ? 1 : 0, "no such");
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThatThrownBy(container::terminate)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not take SIGTERM: no such");
+  }
+
+  @Test
+  void containerThatKeepsRunningAfterSigtermFailsTheTerminationAndIsTakenDown() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, "abc123");
+        };
+    JagtContainer container =
+        new JagtContainer(
+            dir, 9000, mock(StandBoard.class), shell, Map.of(), Duration.ofSeconds(-1));
+
+    assertThatThrownBy(container::terminate)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not exit after SIGTERM");
+    assertThat(seen.getLast()).contains("down");
+  }
 }

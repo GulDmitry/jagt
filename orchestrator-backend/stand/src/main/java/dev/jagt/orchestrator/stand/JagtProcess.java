@@ -158,6 +158,11 @@ public final class JagtProcess implements JagtEngine {
   }
 
   @Override
+  public void terminate() {
+    close();
+  }
+
+  @Override
   public void close() {
     StandShell.stopTree(running().toHandle());
   }

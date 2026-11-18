@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.stand;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public interface JagtEngine extends AutoCloseable {
@@ -24,6 +26,19 @@ public interface JagtEngine extends AutoCloseable {
   String log();
 
   JagtEngine restart(Restart how);
+
+  /** Sends jagt SIGTERM and returns once it has exited and nothing revives it. */
+  void terminate();
+
+  /** The task state jagt left in its data folder, read without jagt. */
+  default String state() {
+    Path file = data().resolve("jagt").resolve("state.json");
+    try {
+      return Files.readString(file);
+    } catch (IOException e) {
+      throw new StandFailure("cannot read " + file, e);
+    }
+  }
 
   default void logs() {}
 

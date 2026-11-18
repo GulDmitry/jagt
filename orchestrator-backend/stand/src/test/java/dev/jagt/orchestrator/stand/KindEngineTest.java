@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.stand;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -107,6 +108,7 @@ class KindEngineTest {
             "seed:/data/stand/origin.git");
     assertThat(seen.stream().map(command -> command.contains("scale")).toList())
         .containsSubsequence(false, true);
+    assertThat(seen).anyMatch(command -> command.contains("pod/seed"));
   }
 
   @Test
@@ -450,5 +452,78 @@ class KindEngineTest {
         .up();
 
     assertThat(count[0]).isEqualTo(2);
+  }
+
+  @Test
+  void terminateScalesThePodAwayAndWaitsForItsExit() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, "");
+        };
+
+    when(board.ready()).thenReturn(false, true);
+    KindEngine kind =
+        new KindEngine(
+                root,
+                9000,
+                board,
+                shell,
+                (where, local) -> forwarding,
+                manifest,
+                Duration.ofMinutes(5))
+            .up();
+    seen.clear();
+
+    kind.terminate();
+
+    assertThat(seen.getFirst())
+        .containsSubsequence("kubectl", "scale", "deployment/jagt", "--replicas=0");
+    assertThat(seen.getLast()).containsSubsequence("kubectl", "wait", "--for=delete", "pod");
+    verify(forwarding).destroy();
+  }
+
+  @Test
+  void stateIsReadFromTheVolumeThroughTheSeedPodThatIsRemovedAfterwards() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, command.contains("cat") ? "{\"tasks\":{}}" : "");
+        };
+
+    String state =
+        new KindEngine(
+                root,
+                9000,
+                board,
+                shell,
+                (where, local) -> forwarding,
+                manifest,
+                Duration.ofMinutes(5))
+            .state();
+
+    assertThat(state).isEqualTo("{\"tasks\":{}}");
+    assertThat(seen.getFirst()).containsSubsequence("kubectl", "apply", "-f");
+    assertThat(seen.getLast()).containsSubsequence("kubectl", "delete", "pod", "seed");
+  }
+
+  @Test
+  void stateThatCannotBeReadFailsNamingTheCluster() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> new StandShell.Result(command.contains("cat") ? 1 : 0, "no file");
+
+    KindEngine kind =
+        new KindEngine(
+            root,
+            9000,
+            board,
+            shell,
+            (where, local) -> forwarding,
+            manifest,
+            Duration.ofMinutes(5));
+
+    assertThatThrownBy(kind::state)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("cannot read state.json in jagt-stand-41-1: no file");
   }
 }

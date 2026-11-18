@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 class ServerRestartStandTest {
 
@@ -41,6 +44,25 @@ class ServerRestartStandTest {
               assertThat(server.board().text("/api/tasks/screen?task=keep-working"))
                   .contains(shown)
                   .contains("remember this"));
+      server.passed();
+    }
+  }
+
+  @Test
+  void stateHoldsTheTaskWithItsSessionGoneWhenJagtGetsSigterm() throws Exception {
+    try (ServerRun server = ServerRun.start("sigterm")) {
+      server.board().create("my-project", "keep working");
+      await()
+          .atMost(Duration.ofMinutes(2))
+          .ignoreExceptions()
+          .untilAsserted(() ->
+              assertThat(server.board().text("/api/tasks/screen?task=keep-working"))
+                  .contains("agent working"));
+
+      server.engine().terminate();
+
+      JsonNode state = JsonMapper.builder().build().readTree(server.engine().state());
+      assertThat(state.at("/tasks/keep-working/session/halt/kind").asString()).isEqualTo("GONE");
       server.passed();
     }
   }

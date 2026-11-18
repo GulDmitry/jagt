@@ -146,6 +146,32 @@ public final class KindEngine implements UnitEngine {
   }
 
   @Override
+  public void terminate() {
+    stopForward();
+    ok("stop the pod", "kubectl", "scale", DEPLOYMENT, "--replicas=0");
+    ok(
+        "await the pod's exit",
+        "kubectl",
+        "wait",
+        "--for=delete",
+        "pod",
+        "-l",
+        "app=jagt",
+        "--timeout=120s");
+  }
+
+  @Override
+  public String state() {
+    startSeedPod();
+    StandShell.Result read = run("kubectl", "exec", "seed", "--", "cat", "/data/jagt/state.json");
+    ok("remove the seed pod", "kubectl", "delete", "pod", "seed", "--wait=true");
+    if (read.exit() != 0) {
+      throw new StandFailure("cannot read state.json in " + cluster() + ": " + read.output());
+    }
+    return read.output();
+  }
+
+  @Override
   public void close() {
     logs();
     usage();
@@ -189,7 +215,7 @@ public final class KindEngine implements UnitEngine {
     ok("roll out the new image", "kubectl", "rollout", "status", DEPLOYMENT, "--timeout=300s");
   }
 
-  private void seed() {
+  private void startSeedPod() {
     ok("start the seed pod", "kubectl", "apply", "-f", root.resolve("seed.yml").toString());
     ok(
         "await the seed pod",
@@ -198,6 +224,10 @@ public final class KindEngine implements UnitEngine {
         "--for=condition=Ready",
         "pod/seed",
         "--timeout=180s");
+  }
+
+  private void seed() {
+    startSeedPod();
     ok(
         "make the fixtures folder",
         "kubectl",

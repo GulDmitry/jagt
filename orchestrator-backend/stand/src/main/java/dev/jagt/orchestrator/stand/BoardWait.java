@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.stand;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.BooleanSupplier;
 
 final class BoardWait {
 
@@ -16,6 +17,17 @@ final class BoardWait {
       }
       between.run();
       JagtProcess.pause(Duration.ofSeconds(1));
+    }
+    return true;
+  }
+
+  static boolean until(BooleanSupplier done, Duration limit) {
+    Instant deadline = Instant.now(Clock.systemUTC()).plus(limit);
+    while (!done.getAsBoolean()) {
+      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+        return false;
+      }
+      JagtProcess.pause(Duration.ofMillis(200));
     }
     return true;
   }

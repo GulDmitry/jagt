@@ -51,3 +51,10 @@ After each the board SHALL open on the state it held before, and a session SHALL
 #### Scenario: A new image on the old volume
 - **WHEN** a new image starts on the old volume
 - **THEN** the board opens on the old state
+
+### Requirement: A stop is an event of the stand
+The stand SHALL stop jagt with SIGTERM on every engine and read `state.json` before anything revives it.
+
+#### Scenario: SIGTERM with a session working
+- **WHEN** jagt gets SIGTERM, by `docker compose kill` under compose, the process signal on `host`, or the pod scaled away under `kind`
+- **THEN** `state.json` holds the task with its session gone
