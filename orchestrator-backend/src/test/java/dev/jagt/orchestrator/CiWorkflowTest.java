@@ -9,6 +9,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CiWorkflowTest {
 
@@ -108,6 +110,17 @@ class CiWorkflowTest {
     assertThat(CiWorkflow.gitlabText())
         .contains("bootJar cyclonedxBom")
         .contains("orchestrator-backend/build/reports/sbom/jagt.cdx.json");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"test", "heavy", "stand", "release"})
+  void keepsGradleCachesBetweenRunsByThePinnedSetupGradleOnItsOpenSourceProvider(String job) {
+    String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .contains("gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c")
+        .contains("cache-provider=basic")
+        .doesNotContain("cache=gradle");
   }
 
   @Test
