@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class CaseBookTest {
 
@@ -182,6 +186,17 @@ class CaseBookTest {
         .satisfies(fault ->
             assertThat(fault.text())
                 .isEqualTo("roles/session/cases.md: case wake is written twice"));
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = TaskStatus.class, names = "DONE", mode = EnumSource.Mode.EXCLUDE)
+  void shippedBookTellsRestartAtEveryStatusAnOpenTurnCanHold(TaskStatus status) throws IOException {
+    CaseBook shipped =
+        CaseBook.parse(
+            "roles/session/cases.md.dist",
+            Files.readString(Path.of("../../roles/session/cases.md.dist")));
+
+    assertThat(shipped.sends("restarted", status)).isTrue();
   }
 
   @Test
