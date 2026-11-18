@@ -35,6 +35,7 @@ class BoardContainerTest {
     page.navigate(url);
     page.fill("input[name=password]", Objects.requireNonNull(System.getenv("JAGT_BOARD_PASSWORD")));
     page.click("button.primary");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     page.click("#gear");
 
     page.click("#gear-logout");

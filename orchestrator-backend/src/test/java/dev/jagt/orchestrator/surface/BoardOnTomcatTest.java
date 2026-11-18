@@ -79,7 +79,9 @@ class BoardOnTomcatTest {
   @ValueSource(
       strings = {
         "/login.html",
+        "/login.js",
         "/app.css",
+        "/ui/translate.js",
         "/core/i18n.js",
         "/i18n/index.json",
         "/i18n/en.json",
