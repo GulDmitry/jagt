@@ -48,6 +48,7 @@ jobs:
         if: failure()
         with:
           name: unit-test-report
+          retention-days: 14
           path: orchestrator-backend/build/reports/tests/test
 
   heavy:
@@ -85,6 +86,7 @@ jobs:
         if: failure()
         with:
           name: heavy-test-reports
+          retention-days: 14
           path: |
             orchestrator-backend/build/reports/tests/e2eTest
             orchestrator-backend/build/reports/tests/linuxDriverTest
@@ -118,6 +120,7 @@ jobs:
         if: failure()
         with:
           name: stand-${{ matrix.engine }}-evidence
+          retention-days: 14
           path: orchestrator-backend/stand/build/stand/failed
 
   release:
