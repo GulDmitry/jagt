@@ -164,4 +164,4 @@ It does not run your CI or run on Windows.
 
 ## License
 
-[Apache 2.0](LICENSE)
+[Apache 2.0](LICENSE); a redistribution keeps [`NOTICE`](NOTICE).
