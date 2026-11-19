@@ -22,6 +22,7 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
   Dockerfiles of their own, published to ghcr.io and named by digest, never a floating tag.
 - Base images are built amd64 and arm64 with signed provenance, an SBOM and the osv-scanner scan the app image carries.
 - The OS layer is `base/Dockerfile`, built by `.github/workflows/base-images.yml` (push to `base/**`, weekly, manual).
+- The stand layer is `base/Dockerfile.stand`, published as `<repository>-stand-base` after the OS base, `FROM` it by tag.
 - They rebuild in their own workflow on a change to a base Dockerfile and weekly for OS security fixes.
 - Renovate bumps the temurin digest in a base Dockerfile and the base digest in an app Dockerfile, as a request passing full CI.
 - After each publish the workflow keeps the newest 10 untagged base images with their per-arch and attestation children

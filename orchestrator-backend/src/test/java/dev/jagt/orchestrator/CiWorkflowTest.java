@@ -172,7 +172,7 @@ class CiWorkflowTest {
 
   @Test
   void buildsTheBaseImageForBothPlatformsAndSignsItsProvenance() {
-    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-image.yml"));
     String script = SourceRoots.read(Path.of("scripts/publish-base-image.sh"));
 
     assertThat(script).contains("--platform linux/amd64,linux/arm64").contains("--sbom=true");
@@ -180,6 +180,21 @@ class CiWorkflowTest {
         .contains("actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8")
         .contains("subject-digest: ${{ steps.image.outputs.digest }}")
         .contains("attestations: write");
+  }
+
+  @Test
+  void buildsTheStandBaseAfterTheOsBaseFromItsOwnDockerfileOnTheOsBaseTag() {
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+    String script = SourceRoots.read(Path.of("scripts/publish-base-image.sh"));
+    String dockerfile = SourceRoots.read(Path.of("../base/Dockerfile.stand"));
+
+    assertThat(workflow)
+        .containsSubsequence(
+            "name: base\n      dockerfile: Dockerfile\n",
+            "needs: base",
+            "name: stand-base\n      dockerfile: Dockerfile.stand\n      from: base");
+    assertThat(script).contains("BASE=ghcr.io/${GITHUB_REPOSITORY,,}-${from}:base");
+    assertThat(dockerfile).contains("FROM ${BASE}").contains("@anthropic-ai/claude-code");
   }
 
   @Test
@@ -197,7 +212,7 @@ class CiWorkflowTest {
 
   @Test
   void scansTheBaseImageByDigestWithTheChecksumVerifiedScanBinary() {
-    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-image.yml"));
     String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
 
     assertThat(workflow)
@@ -210,11 +225,11 @@ class CiWorkflowTest {
 
   @Test
   void keepsTheNewestTenUntaggedBaseImagesWithTheirChildrenByOnePinnedAction() {
-    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-image.yml"));
 
     assertThat(workflow)
         .containsPattern("dataaxiom/ghcr-cleanup-action@[0-9a-f]{40}")
-        .contains("packages: ${{ github.event.repository.name }}-base")
+        .contains("packages: ${{ github.event.repository.name }}-${{ inputs.name }}")
         .contains("keep-n-untagged: 10")
         .contains("delete-partial-images: true")
         .contains("delete-orphaned-images: true")
