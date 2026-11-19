@@ -911,7 +911,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     Map<Object, Object> merged = new java.util.LinkedHashMap<>();
     Stream.of(layers)
         .filter(Map.class::isInstance)
-        .map(Map.class::cast)
+        .map(layer -> (Map<?, ?>) layer)
         .forEach(layer ->
             layer.forEach((key, value) -> {
               if (value != null) {

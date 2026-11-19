@@ -4,9 +4,11 @@ import java.util.Collection;
 import java.util.List;
 
 /** A plan names repositories that cannot be cut: the human adds them, then approves again. */
-public class Unplaceable extends RuntimeException {
+public final class Unplaceable extends RuntimeException {
 
-  private final List<String> projects;
+  private static final long serialVersionUID = 1L;
+
+  private final transient List<String> projects;
   private final String question;
   private final String revision;
 

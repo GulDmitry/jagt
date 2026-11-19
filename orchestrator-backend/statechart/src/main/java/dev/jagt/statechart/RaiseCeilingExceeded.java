@@ -4,6 +4,8 @@ import java.util.List;
 
 public final class RaiseCeilingExceeded extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   RaiseCeilingExceeded(int ceiling, List<String> moves) {
     super(
         "more than "

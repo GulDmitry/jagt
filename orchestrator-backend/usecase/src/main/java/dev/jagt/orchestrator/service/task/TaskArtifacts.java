@@ -24,6 +24,9 @@ public class TaskArtifacts {
 
   /** The name is not one of {@link Artifact}. */
   public static class UnknownArtifact extends IllegalArgumentException {
+
+    private static final long serialVersionUID = 1L;
+
     UnknownArtifact(String name) {
       super("'" + name + "' is not a document of a task");
     }
@@ -31,6 +34,9 @@ public class TaskArtifacts {
 
   /** The name is a document of a task, and the worktree holds no such file. */
   public static class ArtifactAbsent extends IllegalStateException {
+
+    private static final long serialVersionUID = 1L;
+
     ArtifactAbsent(String name) {
       super(name + " is not in the worktree");
     }
@@ -38,6 +44,9 @@ public class TaskArtifacts {
 
   /** The file is there and could not be read, or is too large to. */
   public static class ArtifactUnreadable extends IllegalStateException {
+
+    private static final long serialVersionUID = 1L;
+
     ArtifactUnreadable(String message, Throwable cause) {
       super(message, cause);
     }

@@ -22,6 +22,7 @@ final class AssertionlessTestRule extends AbstractJavaRule {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Object visit(ASTMethodDeclaration method, Object data) {
     if (isTest(method) && !asserts(method) && !callsAssertingSibling(method)) {
       asCtx(data)

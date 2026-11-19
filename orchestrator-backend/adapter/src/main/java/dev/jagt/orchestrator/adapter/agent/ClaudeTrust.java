@@ -142,7 +142,7 @@ public final class ClaudeTrust {
     try (FileChannel channel =
             FileChannel.open(
                 lockFile(configFile), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        FileLock held = channel.lock()) {
+        FileLock _ = channel.lock()) {
       String current = Files.exists(configFile) ? Files.readString(configFile) : "{}";
       String updated = edit.apply(current, resolved(worktree));
       if (updated == null) {

@@ -28,7 +28,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 @Service
 @Slf4j
-public class McpProtocolService implements McpToolRegistry {
+public final class McpProtocolService implements McpToolRegistry {
 
   private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
 

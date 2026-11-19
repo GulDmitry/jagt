@@ -84,12 +84,18 @@ final class PaidRead {
   }
 
   private static final class Unusable extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
     Unusable() {
       super(null, null, false, false);
     }
   }
 
   private static final class Refused extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
     Refused() {
       super(null, null, false, false);
     }

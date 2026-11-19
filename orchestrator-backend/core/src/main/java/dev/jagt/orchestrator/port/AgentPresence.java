@@ -9,6 +9,8 @@ public interface AgentPresence {
   /** The window could not be read, so neither answer holds. */
   class Unread extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     public Unread(String reason) {
       super(reason);
     }

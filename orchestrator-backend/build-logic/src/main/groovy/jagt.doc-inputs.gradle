@@ -19,10 +19,13 @@ tasks.named('test') {
         include 'contracts/openapi.yaml'
         include 'roles/**/*.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
-    // CiWorkflowTest reads the workflow, TestTmuxCleanupTest the script.
+    // CiWorkflowTest reads the workflow, TestTmuxCleanupTest the script, AcceptedWarningsTest the register and the versions it names.
     inputs.files(fileTree(projectDir.parentFile) {
         include '.github/workflows/*.yml'
         include 'orchestrator-backend/gradle/*.sh'
+        include 'orchestrator-backend/build-logic/accepted-warnings.txt'
+        include 'orchestrator-backend/build-logic/build.gradle'
+        include 'orchestrator-backend/gradle/wrapper/gradle-wrapper.properties'
     }).withPropertyName('buildFiles').withPathSensitivity(PathSensitivity.RELATIVE)
     // Outside the tree above: a file tree drops `.gitignore` by default.
     inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')

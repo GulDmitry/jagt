@@ -10,6 +10,8 @@ import org.jspecify.annotations.Nullable;
 @Getter
 public class ConfigValueRefused extends IllegalStateException {
 
+  private static final long serialVersionUID = 1L;
+
   private final String key;
   private final String input;
 

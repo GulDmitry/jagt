@@ -13,8 +13,10 @@ public final class ConfigWriteFailed extends RuntimeException {
     UNREADABLE_NOT_RESTORED
   }
 
+  private static final long serialVersionUID = 1L;
+
   private final Reason reason;
-  private final Path file;
+  private final transient Path file;
 
   public ConfigWriteFailed(Reason reason, Path file, String detail, @Nullable Throwable cause) {
     super(sentence(reason, file, detail), cause);

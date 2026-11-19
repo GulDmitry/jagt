@@ -54,6 +54,7 @@ class FailurePageTest {
   }
 
   @Test
+  @SuppressWarnings("try")
   void answersTheSaveBeforeTheWaitingStartClosesThePage(@TempDir Path dir) throws Exception {
     Path config = Files.writeString(dir.resolve("jagt.yml"), "old: 1\n");
 

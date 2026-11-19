@@ -31,6 +31,8 @@ public interface Processes {
    */
   final class Stopped extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     public Stopped(List<String> command) {
       super("Stopped with jagt: " + String.join(" ", command));
     }

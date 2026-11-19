@@ -4,6 +4,8 @@ import java.util.List;
 
 public final class ChartInvalid extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   private final transient List<String> problems;
 
   ChartInvalid(List<String> problems) {

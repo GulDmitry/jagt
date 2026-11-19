@@ -4,6 +4,8 @@ import java.util.List;
 
 public final class InvalidConfiguration extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   private final transient List<String> problems;
 
   InvalidConfiguration(List<String> problems) {

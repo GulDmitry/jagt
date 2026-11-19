@@ -91,7 +91,7 @@ public final class EvalStats {
                 file.resolveSibling(file.getFileName() + ".lock"),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE);
-        FileLock held = guard.lock()) {
+        FileLock _ = guard.lock()) {
       appendHeld(file, entry);
     }
   }

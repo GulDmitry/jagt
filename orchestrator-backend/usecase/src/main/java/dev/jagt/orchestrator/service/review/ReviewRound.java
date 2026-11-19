@@ -94,6 +94,8 @@ public class ReviewRound {
 
   private static final class LastReads extends LinkedHashMap<String, LastRead> {
 
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected boolean removeEldestEntry(Map.Entry<String, LastRead> eldest) {
       return size() > KEPT;

@@ -63,7 +63,9 @@ class MasterDecisionsTest {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     when(changes.state(task))
-        .thenReturn(Optional.of("abc:1;"), Optional.of("abc:1;"), Optional.of("abc:2;"));
+        .thenReturn(Optional.of("abc:1;"))
+        .thenReturn(Optional.of("abc:1;"))
+        .thenReturn(Optional.of("abc:2;"));
 
     decisions.answered(task);
     decisions.answered(task);

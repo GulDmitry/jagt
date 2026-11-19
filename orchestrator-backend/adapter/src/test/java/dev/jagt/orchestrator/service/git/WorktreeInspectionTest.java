@@ -366,7 +366,7 @@ class WorktreeInspectionTest {
         new WorktreeInspection(
             GitRepos.commands(runner), new StubAgentRuntime(StubAgentProperties.defaults()));
 
-    try (OriginContext.Scope ignored = SweepFetches.create().open()) {
+    try (OriginContext.Scope _ = SweepFetches.create().open()) {
       git.mergedIntoTarget(repo, repo, "main");
       git.mergedIntoTarget(repo, repo, "main");
     }

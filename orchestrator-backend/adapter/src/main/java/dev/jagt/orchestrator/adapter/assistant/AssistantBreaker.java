@@ -24,6 +24,8 @@ class AssistantBreaker {
 
   private static final class ProviderFailure extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     ProviderFailure(String why) {
       super(why, null, false, false);
     }

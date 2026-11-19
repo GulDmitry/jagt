@@ -9,6 +9,8 @@ import java.util.List;
  */
 public class Misconfigured extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   public Misconfigured(List<Problem> problems) {
     super(describe(problems), null, false, false);
   }

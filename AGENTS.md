@@ -94,6 +94,8 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   in tests. Never raise the number.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
+- **A compiler or Gradle warning fails the build**: fixed, never suppressed without its reason; only upstream's go in
+  `build-logic/accepted-warnings.txt`, each row naming what ends it (`AcceptedWarningsTest`).
 - **A test wiring over 5 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
 - **A test shares a `Test<Thing>Builder`, a fake or a file scanner, nothing else**: no helper method or class, no logic in a builder
   ([0163](docs/decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)).

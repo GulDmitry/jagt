@@ -68,7 +68,7 @@ class AutoReviewPolls {
   private void pollNow(String taskId, long round, SweepFetches fetches, Runnable finished) {
     try {
       ReviewSweepService.SweepResult result;
-      try (OriginContext.Scope ignored = fetches.open()) {
+      try (OriginContext.Scope _ = fetches.open()) {
         result = OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
       }
       // A round nobody could read is the one outcome an unattended poll must not keep to itself:

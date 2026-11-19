@@ -38,7 +38,10 @@ allprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-        options.compilerArgs.addAll(['-parameters', '-Werror'])
+        // -processing: javac warns about every annotation no processor claims (@NullMarked), which no code can fix.
+        // -classfile: a ring that deliberately does not see Spring cannot resolve the Spring annotations on a class
+        // it consumes, and the annotation is metadata nothing there reads.
+        options.compilerArgs.addAll(['-parameters', '-Xlint:all,-processing,-classfile', '-Werror'])
         options.errorprone {
             error('NullAway')
             option('NullAway:AnnotatedPackages', 'dev.jagt')

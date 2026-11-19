@@ -124,7 +124,9 @@ class VerifyJobTest {
 
     @Test
     void verifiesChangedTreeAgainAfterFailedVerification() {
-      when(verification.key(any())).thenReturn(Optional.of("tree-1"), Optional.of("tree-2"));
+      when(verification.key(any()))
+          .thenReturn(Optional.of("tree-1"))
+          .thenReturn(Optional.of("tree-2"));
       job.runOn(state.tasks());
 
       job.runOn(state.tasks());

@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.flow.view;
 /** A refusal a caller may need to ACT on, not merely show. */
 public class Refusal extends IllegalArgumentException {
 
+  private static final long serialVersionUID = 1L;
+
   public enum Code {
     /** The task is gone — whoever asked is looking at a view that no longer describes anything. */
     NO_SUCH_TASK,

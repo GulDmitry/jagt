@@ -3,8 +3,8 @@ plugins {
 }
 
 tasks.named('cyclonedxBom') {
-    projectType = 'application'
-    schemaVersion = 'VERSION_16'
+    projectType = org.cyclonedx.model.Component.Type.APPLICATION
+    schemaVersion = org.cyclonedx.Version.VERSION_16
     jsonOutput = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
     includeBomSerialNumber = false
 }

@@ -3,7 +3,14 @@ def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'Git
     .collect { "dev.jagt.orchestrator.service.git.${it}".toString() } + ['dev.jagt.orchestrator.job.checker.workspace.WorkspaceRequests']
 
 allprojects {
-    apply plugin: 'info.solidsoft.pitest'
+    // The register's one row for this plugin: its deprecation is Gradle-reported at apply time and only upstream can end it.
+    def pitestWarningAccepted = file("${rootDir}/build-logic/accepted-warnings.txt").readLines().any { it.startsWith('Configuration.setVisible(boolean)') }
+    def applyPitest = { apply plugin: 'info.solidsoft.pitest' }
+    if (pitestWarningAccepted) {
+        org.gradle.internal.deprecation.DeprecationLogger.whileDisabled(applyPitest as Runnable)
+    } else {
+        applyPitest()
+    }
     def pitestTargets = providers.gradleProperty('pitestTargets').map { it.split(',').toList() }
     // Only `:adapter`'s real-git tests run the `:usecase` classes listed above, so `:adapter` mutates them and `:usecase` does not.
     def ownTargets = project.path == ':adapter' ? ['dev.jagt.orchestrator.adapter.*'] + usecaseGitClasses : ['dev.jagt.*']

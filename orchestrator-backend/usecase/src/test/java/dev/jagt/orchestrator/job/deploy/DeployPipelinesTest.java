@@ -378,9 +378,8 @@ class DeployPipelinesTest {
   @Test
   void deployStaysOpenWhileTheHostDoesNotAnswerAndStandsOnceItDoes() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
-        .thenReturn(
-            Answer.failed(TokenUsage.NONE, "glab exited 1"),
-            new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE));
+        .thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1"))
+        .thenReturn(new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE));
 
     DeployPipelines.Reading unanswered = deploys.read("ABC-42", deployed);
     DeployPipelines.Reading answered = deploys.read("ABC-42", deployed);
