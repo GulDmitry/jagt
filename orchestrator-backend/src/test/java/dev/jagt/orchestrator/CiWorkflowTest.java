@@ -249,6 +249,23 @@ class CiWorkflowTest {
   }
 
   @Test
+  void failsTheStandJobWhenOneTimingPassesTwiceItsHistoryKeptInTheActionsCache() {
+    String stand =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps"));
+
+    assertThat(stand)
+        .containsPattern("benchmark-action/github-action-benchmark@[0-9a-f]{40}")
+        .contains("tool=customSmallerIsBetter")
+        .contains(
+            "external-data-json-path=orchestrator-backend/stand/build/stand/timings-history.json")
+        .contains("fail-on-alert=true")
+        .contains("alert-threshold=200%")
+        .contains("-Prunner=ubuntu-24.04")
+        .doesNotContain("auto-push")
+        .doesNotContain("gh-pages");
+  }
+
+  @Test
   void handsTheImageDigestToTheWorkflowFromThePublishScript() {
     assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh")))
         .contains("--metadata-file")

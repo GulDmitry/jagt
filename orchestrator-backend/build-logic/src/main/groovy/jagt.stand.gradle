@@ -44,6 +44,9 @@ tasks.register('standTest', Test) {
     systemProperty 'stand.jar', standJar
     systemProperty 'stand.repo', standRepo
     systemProperty 'stand.engine', standEngine
+    // -Prunner=<label> names the machine class a timing series belongs to; the server scenario writes them to stand.timings.
+    systemProperty 'stand.runner', project.findProperty('runner') ?: 'local'
+    systemProperty 'stand.timings', layout.buildDirectory.file('stand/timings.json').get().asFile.absolutePath
     // -PstandRuns=N repeats each run; -Pengine=host|compose|kind picks where jagt runs; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
     ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }

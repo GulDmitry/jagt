@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -78,6 +79,39 @@ class ServerStandTest {
                       .orElseThrow();
 
               assertThat(Duration.ofNanos(p95Nanos)).isLessThanOrEqualTo(STATE_P95_BUDGET);
+            }),
+        dynamicTest(
+            "startupAndStateP95AreRecordedWhateverTheBudgetsSay",
+            () -> {
+              String log = server.engine().log();
+              double seconds =
+                  Double.parseDouble(log.replaceAll("(?s).*process running for ([0-9.]+).*", "$1"));
+              double medianP95Millis =
+                  IntStream.range(0, 5)
+                          .mapToLong(round ->
+                              IntStream.range(0, 50)
+                                  .mapToLong(call -> {
+                                    long begun = System.nanoTime();
+                                    server.board().status("/state");
+                                    return System.nanoTime() - begun;
+                                  })
+                                  .sorted()
+                                  .skip(47)
+                                  .findFirst()
+                                  .orElseThrow())
+                          .sorted()
+                          .skip(2)
+                          .findFirst()
+                          .orElseThrow()
+                      / 1_000_000.0;
+
+              StandTimings.standard()
+                  .write(
+                      Path.of(System.getProperty("stand.timings", "build/stand/timings.json")),
+                      seconds,
+                      medianP95Millis);
+
+              assertThat(medianP95Millis).isPositive();
             }),
         dynamicTest(
             "taskReachesReviewWhenAgentWorksOnTheClonedProject",
