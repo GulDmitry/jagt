@@ -51,11 +51,9 @@
   [keys](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key) ·
   [who](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
 
-## Cases · [spec](../openspec/specs/cases/spec.md)
+## Cases · [spec](../openspec/specs/cases/spec.md) · [debug reads](../openspec/specs/debug-reads/spec.md)
 - **Your own cases** — A case sends a step and opens a turn, or lets the Master move.
   [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
-
-## Debug reads · [spec](../openspec/specs/debug-reads/spec.md)
 - **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
@@ -161,6 +159,8 @@
 ## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
 - **Install checks** — A missing part of the installation is refused at start, with no network.
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
+- **One-line install** — `install.sh` installs a checksum-verified jar and Java runtime per user, no sudo.
+  [spec](../openspec/specs/release-artifacts/spec.md#requirement-one-line-installs-jagt-per-user)
 - **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.
   [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
 - **Server image** — Yours adds tools, agent seed. [spec](../openspec/specs/readiness/spec.md) · [env](../openspec/specs/server-environment/spec.md)
