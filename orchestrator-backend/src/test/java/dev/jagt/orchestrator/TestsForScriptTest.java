@@ -97,4 +97,21 @@ class TestsForScriptTest {
         .anyMatch(l -> l.endsWith(":test --tests '*TextBudgetTest' -x pitestDiff"))
         .noneMatch(l -> l.contains("compileJava"));
   }
+
+  @Test
+  void ruleTestAlsoNamingTheChangedWorkflowRunsOnceWhenWorkflowChanges(@TempDir Path repo)
+      throws Exception {
+    Files.createDirectories(repo.resolve(ROOT_TESTS));
+    Files.createDirectories(repo.resolve(".github/workflows"));
+    Files.writeString(
+        repo.resolve(ROOT_TESTS + "CiWorkflowTest.java"),
+        "class CiWorkflowTest { String f = \"ci.yml\"; }");
+    Files.writeString(repo.resolve(".github/workflows/ci.yml"), "on: push");
+
+    Process run = TestTestsForProcessBuilder.over(repo).build(".github/workflows/ci.yml").start();
+    String out = new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
+    assertThat(out).containsOnlyOnce("'*CiWorkflowTest'");
+  }
 }

@@ -187,7 +187,9 @@ if [ -n "$touched_tests" ]; then gradle 900 "$(tests_line "$touched_tests") -x p
 
 rule_entries=""
 for r in $rule_names; do
-  if git ls-files --error-unmatch -- "$backend/src/test/java/dev/jagt/orchestrator/${r}Test.java" > /dev/null 2>&1; then
+  if case " $touched_tests " in *" root:${r}Test "*) true ;; *) false ;; esac; then
+    continue
+  elif git ls-files --error-unmatch -- "$backend/src/test/java/dev/jagt/orchestrator/${r}Test.java" > /dev/null 2>&1; then
     rule_entries="$rule_entries root:${r}Test"
   else
     echo "tests-for: no rule test ${r}Test, dropped" >&2
