@@ -62,9 +62,9 @@ class CiWorkflowTest {
   }
 
   @Test
-  void startsOnGithubOnlyOnPushPullRequestScheduleAndTag() {
+  void startsOnGithubOnlyOnPushPullRequestWorkflowCallAndTag() {
     assertThat(CiWorkflow.githubTriggers())
-        .containsExactlyInAnyOrder("push", "pull_request", "schedule");
+        .containsExactlyInAnyOrder("push", "pull_request", "workflow_call");
   }
 
   @Test
@@ -80,13 +80,32 @@ class CiWorkflowTest {
   @Test
   void runsTheHeavyJobOnlyOnScheduleOrTag() {
     assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
-        .isEqualTo("github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/v')");
+        .isEqualTo("inputs.nightly || startsWith(github.ref, 'refs/tags/v')");
   }
 
   @Test
   void runsTheTestJobNeverOnSchedule() {
     assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("if"))
-        .isEqualTo("github.event_name != 'schedule'");
+        .isEqualTo("!inputs.nightly");
+  }
+
+  @Test
+  void runsTheNightlyAsItsOwnWorkflowCallingCiOnTheSchedule() {
+    String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
+
+    assertThat(nightly)
+        .contains("name: nightly")
+        .contains("cron: '17 3 * * *'")
+        .contains("uses: ./.github/workflows/ci.yml")
+        .contains("nightly: true")
+        .contains("secrets: inherit");
+  }
+
+  @Test
+  void startsCiOnNoScheduleSoThePushDoesNotRunTheNightly() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .doesNotContain("schedule")
+        .doesNotContain("run-name");
   }
 
   @Test

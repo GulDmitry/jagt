@@ -1,0 +1,19 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: write
+  packages: write
+  pages: write
+  id-token: write
+  attestations: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+    with:
+      nightly: true

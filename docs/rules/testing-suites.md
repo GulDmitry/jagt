@@ -5,7 +5,7 @@
 | group | suites | where | when |
 |---|---|---|---|
 | **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties, mutants on the changed lines, 0.80 line coverage per module | locally and CI | every commit; CI on a push or pull request |
-| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | nightly and on a release tag |
+| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | the `nightly` workflow (03:17 UTC schedule, calls `ci.yml`) and on a release tag |
 | **Stand** | `standTest -Pmodelfree -Pengine=host\|compose\|kind`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally: docker, an agent login, tokens; CI runs `standTest -Pmodelfree` in its `stand` job | before a minor release; CI per push (compose), nightly (kind) |
 
 CI's `stand` job runs `standTest -Pmodelfree -Pbudgets=false` (absolute time budgets hold on the reference machine)
