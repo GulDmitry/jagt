@@ -27,6 +27,7 @@ orchestrator:
   deploy:
     onApproval: true                           # deploy: an approved request deploys itself, then its deploy check runs
   autoReview:
+    enabled: true                              # autoReview: reads open requests; an approval moves the task on
     waitingMaxIntervalMinutes: 60              # autoReview: a request waiting for an approval is read this often
   claude:
     mcpConfig: ${JAGT_MCP_CONFIG:}   # claude: the agent's tracker and code-host servers
