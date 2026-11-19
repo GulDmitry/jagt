@@ -6,20 +6,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.job.release.ReleaseCheckJob;
-import dev.jagt.orchestrator.job.release.ReleaseSwitch;
+import dev.jagt.orchestrator.service.release.Releases;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class UpgradeCommandTest {
 
-  private static final ReleaseCheckJob.Kept KEPT =
-      new ReleaseCheckJob.Kept(Path.of("install"), "0.25.0");
+  private static final Releases.Kept KEPT = new Releases.Kept(Path.of("install"), "0.25.0");
 
-  private final ReleaseCheckJob releases = mock(ReleaseCheckJob.class);
-  private final ReleaseSwitch release = mock(ReleaseSwitch.class);
-  private final UpgradeCommand command = new UpgradeCommand(releases, release);
+  private final Releases releases = mock(Releases.class);
+  private final UpgradeCommand command = new UpgradeCommand(releases);
 
   @Test
   void isOfferedWhileNewerReleaseIsKept() {
@@ -38,8 +35,8 @@ class UpgradeCommandTest {
   @Test
   void tellsTheHumanToRestartOnceCurrentNamesTheNewVersion() {
     when(releases.kept()).thenReturn(Optional.of(KEPT));
-    when(release.switchTo(Path.of("install"), "0.25.0"))
-        .thenReturn(new ReleaseSwitch.Switched("0.25.0"));
+    when(releases.switchTo(Path.of("install"), "0.25.0"))
+        .thenReturn(new Releases.Switched("0.25.0"));
 
     String reply = command.run("");
 
@@ -50,8 +47,8 @@ class UpgradeCommandTest {
   @Test
   void namesTheRefusalWhenTheSwitchIsRefused() {
     when(releases.kept()).thenReturn(Optional.of(KEPT));
-    when(release.switchTo(Path.of("install"), "0.25.0"))
-        .thenReturn(new ReleaseSwitch.Refused(ReleaseSwitch.Refusal.MISMATCH));
+    when(releases.switchTo(Path.of("install"), "0.25.0"))
+        .thenReturn(new Releases.Refused(Releases.Refusal.MISMATCH));
 
     assertThatThrownBy(() -> command.run(""))
         .isInstanceOf(IllegalArgumentException.class)

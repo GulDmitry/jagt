@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.command.host;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
-import dev.jagt.orchestrator.job.release.ReleaseCheckJob;
-import dev.jagt.orchestrator.job.release.ReleaseSwitch;
+import dev.jagt.orchestrator.service.release.Releases;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,8 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UpgradeCommand implements GlobalCommand {
 
-  private final ReleaseCheckJob releases;
-  private final ReleaseSwitch release;
+  private final Releases releases;
 
   @Override
   public String id() {
@@ -41,14 +39,14 @@ public class UpgradeCommand implements GlobalCommand {
 
   @Override
   public String run(String tail) {
-    ReleaseCheckJob.Kept kept =
+    Releases.Kept kept =
         releases.kept().orElseThrow(() -> new IllegalArgumentException("no newer release is kept"));
-    return switch (release.switchTo(kept.root(), kept.version())) {
-      case ReleaseSwitch.Switched switched -> {
+    return switch (releases.switchTo(kept.root(), kept.version())) {
+      case Releases.Switched switched -> {
         releases.switched(switched.version());
         yield "restart to run " + switched.version();
       }
-      case ReleaseSwitch.Refused refused ->
+      case Releases.Refused refused ->
           throw new IllegalArgumentException(
               "upgrade to " + kept.version() + " refused: " + refused.reason());
     };

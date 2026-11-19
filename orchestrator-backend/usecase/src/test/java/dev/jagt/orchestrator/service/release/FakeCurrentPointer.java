@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.release;
+package dev.jagt.orchestrator.service.release;
 
 import dev.jagt.orchestrator.port.host.CurrentPointer;
 import java.io.IOException;

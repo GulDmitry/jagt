@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.host;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;

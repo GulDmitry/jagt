@@ -1,10 +1,13 @@
-package dev.jagt.orchestrator.job.release;
+package dev.jagt.orchestrator.job.host;
 
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.ReleaseFeed;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
+import dev.jagt.orchestrator.service.release.Releases;
+import dev.jagt.orchestrator.service.release.Sha256;
+import dev.jagt.orchestrator.service.release.Versions;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -33,25 +36,13 @@ public class ReleaseCheckJob implements Job {
   private final Host host;
   private final ReleaseFeed feed;
   private final Reach reach;
-  private volatile Optional<Kept> kept = Optional.empty();
+  private final Releases releases;
 
-  public ReleaseCheckJob(Host host, ReleaseFeed feed, Reach reach) {
+  public ReleaseCheckJob(Host host, ReleaseFeed feed, Reach reach, Releases releases) {
     this.host = host;
     this.feed = feed;
     this.reach = reach;
-  }
-
-  /** A verified release waiting under {@code <root>/versions/<version>/}. */
-  public record Kept(Path root, String version) {}
-
-  /** The newer release the last check found kept and verified; empty until one is. */
-  public Optional<Kept> kept() {
-    return kept;
-  }
-
-  /** {@code current} names the version now, so it no longer waits. */
-  public void switched(String version) {
-    kept = kept.filter(waiting -> !waiting.version().equals(version));
+    this.releases = releases;
   }
 
   /** The running version, and the folder holding every installed one. */
@@ -121,10 +112,9 @@ public class ReleaseCheckJob implements Job {
     newest
         .filter(version -> !Files.exists(installed.versions().resolve(version).resolve(JAR)))
         .ifPresent(version -> keep(installed.versions(), version));
-    kept =
-        newest
-            .filter(version -> Files.exists(installed.versions().resolve(version).resolve(JAR)))
-            .map(version -> new Kept(installed.root(), version));
+    newest
+        .filter(version -> Files.exists(installed.versions().resolve(version).resolve(JAR)))
+        .ifPresentOrElse(version -> releases.keep(installed.root(), version), releases::keepNone);
   }
 
   private static boolean newer(String candidate, String running) {

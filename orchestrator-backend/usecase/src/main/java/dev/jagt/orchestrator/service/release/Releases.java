@@ -1,20 +1,21 @@
-package dev.jagt.orchestrator.job.release;
+package dev.jagt.orchestrator.service.release;
 
 import dev.jagt.orchestrator.port.host.CurrentPointer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
- * Points {@code current} at a kept release once its jar still matches the checksum it was kept
- * with.
+ * Keeps the newer verified release found beside the running one, and points {@code current} at it
+ * once its jar still matches the checksum it was kept with.
  */
 @Service
 @Slf4j
-public class ReleaseSwitch {
+public class Releases {
 
   /** Why {@code current} stayed where it was. */
   public enum Refusal {
@@ -33,10 +34,32 @@ public class ReleaseSwitch {
   /** {@code current} is unchanged. */
   public record Refused(Refusal reason) implements Outcome {}
 
-  private final CurrentPointer pointer;
+  /** A verified release waiting under {@code <root>/versions/<version>/}. */
+  public record Kept(Path root, String version) {}
 
-  public ReleaseSwitch(CurrentPointer pointer) {
+  private final CurrentPointer pointer;
+  private volatile Optional<Kept> kept = Optional.empty();
+
+  public Releases(CurrentPointer pointer) {
     this.pointer = pointer;
+  }
+
+  /** The newer release the last check found kept and verified; empty until one is. */
+  public Optional<Kept> kept() {
+    return kept;
+  }
+
+  public void keep(Path root, String version) {
+    kept = Optional.of(new Kept(root, version));
+  }
+
+  public void keepNone() {
+    kept = Optional.empty();
+  }
+
+  /** {@code current} names the version now, so it no longer waits. */
+  public void switched(String version) {
+    kept = kept.filter(waiting -> !waiting.version().equals(version));
   }
 
   public Outcome switchTo(Path root, String version) {

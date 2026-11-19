@@ -15,7 +15,8 @@ class VendorNamesTest {
   private static final Map<String, String> ALLOWED =
       Map.ofEntries(
           Map.entry(
-              JOB + "RunningJarWatch.java gradlew", "names jagt's own build tool; iteration 2"),
+              JOB + "host/RunningJarWatch.java gradlew",
+              "names jagt's own build tool; iteration 2"),
           Map.entry(
               SERVICE + "WorktreeSandbox.java gradle",
               "build tools' cache directories; iteration 2"),

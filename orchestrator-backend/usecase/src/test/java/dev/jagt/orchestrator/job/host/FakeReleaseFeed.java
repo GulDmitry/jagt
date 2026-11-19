@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.release;
+package dev.jagt.orchestrator.job.host;
 
 import dev.jagt.orchestrator.port.host.ReleaseFeed;
 import java.io.IOException;

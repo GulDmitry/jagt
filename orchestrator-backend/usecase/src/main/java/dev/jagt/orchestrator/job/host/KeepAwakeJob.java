@@ -1,5 +1,6 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.host;
 
+import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.host.KeepAwake;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;

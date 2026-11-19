@@ -1,6 +1,7 @@
-package dev.jagt.orchestrator.job;
+package dev.jagt.orchestrator.job.host;
 
 import dev.jagt.orchestrator.flow.role.Point;
+import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.channel.Notification;
 import dev.jagt.orchestrator.port.host.Host;

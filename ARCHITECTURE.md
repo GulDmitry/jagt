@@ -264,9 +264,9 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/checker/workspace` | usecase | a checker's workspace offered as a request after a check, once the role turns it on |
 | `job/conflict` | usecase | deploy-conflict jobs and the reads that end them |
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
+| `job/host` | usecase | jobs about the install: keep-awake, the running-jar watch and the newer-release check |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
-| `job/release` | usecase | the job keeping a newer release verified beside the running one |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
 | `job/stop` | usecase | stop reads |
 | `job/triage` | usecase | the triage role's job, panel and failure |
@@ -286,6 +286,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/presence` | usecase | session presence: ledger, probe, wakes, keep-alive |
 | `service/project` | usecase | projects: cards, folders, setup, removal; the basic settings and the line-wise writer of `jagt.yml` |
 | `service/reach` | usecase | the reach ledger and what writes it |
+| `service/release` | usecase | the kept newer release and the switch of `current` to it |
 | `service/repo` | usecase | repositories: remotes, departures, hostless ships, merged requests |
 | `service/report` | usecase | status reports and their effects |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |

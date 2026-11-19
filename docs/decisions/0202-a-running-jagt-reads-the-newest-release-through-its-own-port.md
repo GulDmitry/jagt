@@ -18,6 +18,8 @@ Accepted 2026-11-19 (JAGT-92, JAGT-134).
 - `ReleaseCheckJob` is a `Job` reading the feed; `releaseFeed.kind` in `jagt.yml` picks the driver.
 - **Ceilings raised by one** ([0176](0176-every-kind-has-a-ceiling.md)): `ports` 52 (`ReleaseFeed`),
   `startTriggers` 57 (`ReleaseCheckJob`).
+- **Ceilings raised by one** ([0176](0176-every-kind-has-a-ceiling.md)): `ports` 53 (`CurrentPointer`),
+  `publicSurface` 84 (`UpgradeCommand`).
 
 ## Rejected
 

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.release;
+package dev.jagt.orchestrator.service.release;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,13 +9,13 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 /** The {@code sha256sum} format the release publishes: {@code <hex> <file name>} per line. */
-final class Sha256 {
+public final class Sha256 {
 
   private static final int CHUNK = 64 * 1024;
 
   private Sha256() {}
 
-  static String of(Path file) throws IOException {
+  public static String of(Path file) throws IOException {
     try (InputStream in = Files.newInputStream(file)) {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       byte[] chunk = new byte[CHUNK];
@@ -29,7 +29,7 @@ final class Sha256 {
   }
 
   /** The hash a sums file lists for {@code name}; fails when it lists none. */
-  static String listed(Path sums, String name) throws IOException {
+  public static String listed(Path sums, String name) throws IOException {
     return Files.readAllLines(sums).stream()
         .map(String::strip)
         .filter(line -> line.endsWith(" " + name) || line.endsWith(" *" + name))
