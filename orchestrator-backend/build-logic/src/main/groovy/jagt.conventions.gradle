@@ -143,6 +143,8 @@ allprojects {
         systemProperty 'junit.platform.discovery.issue.severity.critical', 'WARNING'
         // Mockito's inline mock maker appends to the bootstrap classpath, which a shared archive warns about on every fork.
         jvmArgs '-Xshare:off'
+        // 50 tries per property in a run, 200 at the release gate (-PjqwikTries=200); pitest keeps its own 100.
+        systemProperty 'jqwik.tries.default', providers.gradleProperty('jqwikTries').getOrElse('50')
         // Never the developer's own log file: `activity` reads that file back, so a fixture task would come
         // out as work jagt did unattended. Relative on purpose too — an absolute path is a task input that
         // differs per worktree, so nothing would ever be a cache hit across them.
