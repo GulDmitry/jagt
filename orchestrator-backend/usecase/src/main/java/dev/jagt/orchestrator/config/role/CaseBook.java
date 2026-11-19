@@ -87,7 +87,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         case BOARD, PALETTE -> HUMAN;
         case MASTER -> MASTER;
         case ACCEPTANCE -> new Role(checker == null ? Checkers.ACCEPTANCE : checker);
-        case MCP, ROOT, AUTO_REVIEW, TRACKER, JAGT -> JAGT;
+        case MCP, ROOT, AUTO_REVIEW, TRACKER, JAGT, CODE_HOST -> JAGT;
       };
     }
   }

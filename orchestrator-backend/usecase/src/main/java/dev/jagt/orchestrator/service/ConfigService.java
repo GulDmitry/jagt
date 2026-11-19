@@ -76,7 +76,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     public record Reviewing(
         @Nullable CodeReviewConfig codeReview,
         @Nullable AutoReviewConfig autoReview,
-        @Nullable MasterConfig master) {}
+        @Nullable MasterConfig master,
+        @With(AccessLevel.NONE) @Nullable DeployConfig deploy) {}
 
     @With
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -543,6 +544,18 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record DeployConfig(@Nullable Boolean onApproval) {
+
+      public static DeployConfig defaults() {
+        return new DeployConfig(null);
+      }
+
+      public boolean onApprovalOrDefault() {
+        return onApproval != null && onApproval;
+      }
+    }
+
     /** The numbers only; {@code AutoReviewCadence} is the policy that reads them. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
@@ -580,7 +593,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       public int waitingMaxIntervalMinutesOrDefault() {
         int max = maxIntervalMinutesOrDefault();
         return waitingMaxIntervalMinutes == null || waitingMaxIntervalMinutes < max
-            ? Math.max(240, max)
+            ? Math.max(60, max)
             : waitingMaxIntervalMinutes;
       }
     }
@@ -708,7 +721,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           null,
           null,
           new Sessions(null, null, null, null, null, null),
-          new Reviewing(null, null, null),
+          new Reviewing(null, null, null, null),
           new Outside(null, null, null));
     }
 
@@ -807,6 +820,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     public WorktreeConfig worktree() {
       return sessions.worktree() == null ? WorktreeConfig.defaults() : sessions.worktree();
+    }
+
+    public DeployConfig deploy() {
+      return reviewing.deploy() == null ? DeployConfig.defaults() : reviewing.deploy();
     }
 
     public AutoReviewConfig autoReview() {

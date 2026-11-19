@@ -246,7 +246,12 @@ orchestrator:
     windowHours: 24         # stop polling a round this old
     minIntervalMinutes: 10
     maxIntervalMinutes: 60
-    waitingMaxIntervalMinutes: 240   # a request only a reviewer can move on is read past the window too, lengthening to this
+    waitingMaxIntervalMinutes: 60    # a request only a reviewer can move on is read past the window too, lengthening to this
+
+  # An approved request waits for your `deploy`. On, jagt presses it once when the code host approves,
+  # after the same guards: checks green, no conflict, the base branch read-only. A conflict waits for you.
+  # deploy:
+  #   onApproval: false
 
   # ── Infrastructure failures ────────────────────────────────────────────────────────────────────────────────
   # A pipeline the host says died on infrastructure, not on the code, is re-run by jagt after each wait here; one

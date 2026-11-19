@@ -22,6 +22,12 @@ orchestrator:
   roles:
     acceptance:
       enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
+    master:
+      mode: act                                # roles: the Master presses what a human would; `mine` keeps its default
+  deploy:
+    onApproval: true                           # deploy: an approved request deploys itself, then its deploy check runs
+  autoReview:
+    waitingMaxIntervalMinutes: 60              # autoReview: a request waiting for an approval is read this often
   claude:
     mcpConfig: ${JAGT_MCP_CONFIG:}   # claude: the agent's tracker and code-host servers
   assistant:

@@ -85,6 +85,9 @@ starting jagt from another loses the derived path to a session's log.
 **`autoReview`** polls every task with an open review request: approval advances it, comments are drafted for
 you. **It never posts, pushes or deploys.** One model call per poll.
 
+**`deploy.onApproval`** deploys an approved request once, with the guards of your own `deploy`; off by default,
+on in `jagt.server.yml.dist`. The history names the code host as who acted.
+
 **`startupChecks`.** What is missing is [said at startup, all of it at
 once](rules/components.md#what-is-missing-is-said-at-startup-not-at-the-click-that-needed-it). Nothing reaches
 the network, so a token that is present but wrong surfaces at the first read instead. Test suites and smoke

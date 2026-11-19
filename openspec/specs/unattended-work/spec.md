@@ -26,7 +26,7 @@ The one write to a code host is the re-run of a pipeline the host says died on i
 
 ### Requirement: An open request is what the poller watches
 `AutoReviewCadence.polls` SHALL watch an open request, never a status: an unmerged one exists and the task is not DONE. At `REVIEWED`, `APPROVED` or
-`DEPLOYED` only a reviewer moves it on: it is read every `maxIntervalMinutes`, and past its window up to `waitingMaxIntervalMinutes` (240).
+`DEPLOYED` only a reviewer moves it on: it is read every `maxIntervalMinutes`, and past its window up to `waitingMaxIntervalMinutes` (60).
 
 #### Scenario: Comments after hand-back
 - **WHEN** comments arrive after the agent handed back
@@ -41,7 +41,7 @@ The one write to a code host is the re-run of a pipeline the host says died on i
 The window SHALL run per round from `mrCreatedAt`, restamped on each entry into CI_POLLING, kept by a repeat, else `requestOpenedAt`.
 
 #### Scenario: A wait on the reviewers outlives the window
-- **WHEN** ABC-42 is `REVIEWED` and 36h have passed since its round began
+- **WHEN** ABC-42 is `REVIEWED`, `waitingMaxIntervalMinutes` is 240 and 36h have passed since its round began
 - **THEN** it is still watched and read every 150 minutes, owned by CI with no attention asked, until approved, merged or closed
 
 #### Scenario: Polling stopped

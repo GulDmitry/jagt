@@ -160,6 +160,19 @@ class ConfigServiceTest {
   }
 
   @Test
+  void deployOnApprovalIsOffUntilJagtYmlTurnsItOn() throws Exception {
+    Path configFile = root.resolve("jagt.yml");
+    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+    boolean unset = service.load().deploy().onApprovalOrDefault();
+    Files.writeString(configFile, "orchestrator:\n  deploy:\n    onApproval: true\n");
+
+    boolean written = service.load().deploy().onApprovalOrDefault();
+
+    assertThat(unset).isFalse();
+    assertThat(written).isTrue();
+  }
+
+  @Test
   void jagtYmlWithTheOldMasterKeyStillActs() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");
@@ -478,9 +491,9 @@ class ConfigServiceTest {
   @ParameterizedTest
   @CsvSource(
       value = {
-        "null,null,240",
+        "null,null,60",
         "null,300,300",
-        "null,30,240",
+        "null,30,60",
         "null,100,100",
         "100,300,300",
         "100,100,100"
