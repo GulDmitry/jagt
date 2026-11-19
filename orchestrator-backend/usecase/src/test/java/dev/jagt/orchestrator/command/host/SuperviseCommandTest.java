@@ -44,7 +44,7 @@ class SuperviseCommandTest {
     when(supervisor.install(jar)).thenReturn(new Supervision.Done("installed"));
 
     assertThat(new SuperviseCommand(supervisor, host, exit).run("")).isEqualTo("installed");
-    verify(exit, never()).afterAnswer();
+    verify(exit, never()).afterAnswer(0);
   }
 
   @Test
@@ -56,7 +56,7 @@ class SuperviseCommandTest {
     String answer = new SuperviseCommand(supervisor, host, exit).run("");
 
     assertThat(answer).isEqualTo("back under launchd");
-    verify(exit).afterAnswer();
+    verify(exit).afterAnswer(0);
   }
 
   @Test
@@ -67,7 +67,7 @@ class SuperviseCommandTest {
 
     assertThatThrownBy(() -> new SuperviseCommand(supervisor, host, exit).run(""))
         .isInstanceOf(IllegalArgumentException.class);
-    verify(exit, never()).afterAnswer();
+    verify(exit, never()).afterAnswer(0);
   }
 
   @Test

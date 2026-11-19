@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.command.host;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
+import dev.jagt.orchestrator.port.host.Exit;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.service.release.Releases;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Component;
 public class UpgradeCommand implements GlobalCommand {
 
   private final Releases releases;
+  private final Host host;
+  private final Exit exit;
 
   @Override
   public String id() {
@@ -44,6 +48,10 @@ public class UpgradeCommand implements GlobalCommand {
     return switch (releases.switchTo(kept.root(), kept.version())) {
       case Releases.Switched switched -> {
         releases.switched(switched.version());
+        if (host.env(Exit.LAUNCHER_ENV).isPresent()) {
+          exit.afterAnswer(Exit.RUN_AGAIN);
+          yield "restarting on " + switched.version();
+        }
         yield "restart to run " + switched.version();
       }
       case Releases.Refused refused ->

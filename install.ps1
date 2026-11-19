@@ -101,8 +101,12 @@ try {
   $lines = @(
     '@echo off',
     'setlocal',
+    'set JAGT_LAUNCHER=1',
+    ':run',
     "set /p JAGT_VERSION=<`"$(Join-Path $root 'current')`"",
-    "`"$(Join-Path $runtime "bin/$javaName")`" -jar `"$(Join-Path $versions '%JAGT_VERSION%/jagt.jar')`" %*"
+    "`"$(Join-Path $runtime "bin/$javaName")`" -jar `"$(Join-Path $versions '%JAGT_VERSION%/jagt.jar')`" %*",
+    'if %ERRORLEVEL% equ 75 goto run',
+    'exit /b %ERRORLEVEL%'
   )
   Set-Content -Path "$launcher.new" -Value $lines -Encoding ascii
   Move-Item -Force -Path "$launcher.new" -Destination $launcher

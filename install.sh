@@ -114,7 +114,12 @@ launcher="$BIN/jagt"
   echo '#!/bin/sh'
   echo "root='$ROOT'"
   echo 'if [ -x "$root/runtime/Contents/Home/bin/java" ]; then java="$root/runtime/Contents/Home/bin/java"; else java="$root/runtime/bin/java"; fi'
-  echo 'exec "$java" -jar "$root/current/jagt.jar" "$@"'
+  echo 'export JAGT_LAUNCHER=1'
+  echo 'while :; do'
+  echo '  "$java" -jar "$root/current/jagt.jar" "$@"'
+  echo '  code=$?'
+  echo '  [ "$code" -eq 75 ] || exit "$code"'
+  echo 'done'
 } >"$launcher.new"
 chmod 755 "$launcher.new"
 mv -f "$launcher.new" "$launcher"

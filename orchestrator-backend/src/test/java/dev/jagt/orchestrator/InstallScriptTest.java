@@ -66,6 +66,23 @@ class InstallScriptTest {
     assertThat(launchOutput).contains("fake-java-25").contains("-version");
     assertThat(dir.resolve("home/versions/1.2.3/jagt.jar")).hasBinaryContent(jar);
     assertThat(dir.resolve("home/current/jagt.jar")).exists();
+
+    Path runs = dir.resolve("runs");
+    Path fakeJava = dir.resolve("home/runtime/bin/java");
+    Files.writeString(
+        fakeJava,
+        "#!/bin/sh\necho \"$JAGT_LAUNCHER $*\" >> '"
+            + runs
+            + "'\n"
+            + "[ \"$(wc -l < '"
+            + runs
+            + "')\" -eq 1 ] && exit 75\nexit 3\n");
+    Process looped = new ProcessBuilder(dir.resolve("bin/jagt").toString(), "--port", "1").start();
+    assertThat(looped.waitFor(30, TimeUnit.SECONDS)).isTrue();
+    assertThat(looped.exitValue()).isEqualTo(3);
+    assertThat(Files.readAllLines(runs))
+        .hasSize(2)
+        .allMatch(run -> run.startsWith("1 -jar") && run.endsWith("--port 1"));
   }
 
   @Test
