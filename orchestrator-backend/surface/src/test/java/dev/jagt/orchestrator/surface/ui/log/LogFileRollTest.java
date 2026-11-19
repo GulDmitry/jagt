@@ -155,6 +155,13 @@ class LogFileRollTest {
   }
 
   @Test
+  void createsTheLogsFolderBeforeTheAppenderOpensItsFile(@TempDir Path root) {
+    roll.start(root.resolve("logs/master.log"));
+
+    assertThat(root.resolve("logs")).isDirectory();
+  }
+
+  @Test
   void rollsTheMasterFeedAsWellAsTheMainLog(@TempDir Path root) throws IOException {
     Path feed = root.resolve("master.log");
     Files.writeString(feed, "yesterday's steps\n");

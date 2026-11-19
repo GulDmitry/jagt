@@ -76,12 +76,15 @@ public class LogFileRoll
     Path absolute = logFile.toAbsolutePath().normalize();
     Path directory = absolute.getParent();
     Path fileName = absolute.getFileName();
-    if (directory == null || fileName == null || !Files.isDirectory(directory)) {
+    if (directory == null || fileName == null) {
       return;
     }
     String name = fileName.toString();
     Path previous = directory.resolve(name + ".1");
     try {
+      // On a host bind mount, a folder Logback creates and opens in one instant is intermittently
+      // missing.
+      Files.createDirectories(directory);
       if (Files.isRegularFile(previous)) {
         Files.move(
             previous, LogArchives.archiveName(previous, name), StandardCopyOption.REPLACE_EXISTING);
