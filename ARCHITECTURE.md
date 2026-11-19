@@ -284,7 +284,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/master` | usecase | what the Master reads: panels, briefs, decisions, brake |
 | `service/plan` | usecase | plan approval, baseline and placement |
 | `service/presence` | usecase | session presence: ledger, probe, wakes, keep-alive |
-| `service/project` | usecase | projects: cards, folders, setup, removal |
+| `service/project` | usecase | projects: cards, folders, setup, removal; the basic settings and the line-wise writer of `jagt.yml` |
 | `service/reach` | usecase | the reach ledger and what writes it |
 | `service/repo` | usecase | repositories: remotes, departures, hostless ships, merged requests |
 | `service/report` | usecase | status reports and their effects |

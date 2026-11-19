@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service.project;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -8,9 +7,6 @@ import dev.jagt.orchestrator.port.worktree.BuildTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.GitRemote;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
-import dev.jagt.orchestrator.task.text.AtomicFiles;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -19,7 +15,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -28,8 +23,8 @@ import org.springframework.stereotype.Service;
 /**
  * A repository read before it becomes a project, and its entry written into the configuration file
  * the human keeps. The file stays theirs: one block is inserted, changed or deleted under {@code
- * projects:}, every other line is left as it was, and a file that no longer reads afterwards is put
- * back.
+ * projects:}, every other line is left as it was, and the {@link ConfigWriter} puts back a file
+ * that no longer reads afterwards.
  */
 @Service
 @RequiredArgsConstructor
@@ -73,7 +68,7 @@ public class ProjectSetup {
       @Nullable List<String> humanPaths) {}
 
   private final ConfigService configService;
-  private final OrchestratorPaths paths;
+  private final ConfigWriter writer;
   private final Processes processes;
   private final BuildTools buildTools;
 
@@ -131,7 +126,7 @@ public class ProjectSetup {
               : "git could not read " + path + ": " + firstLine(top.stderr()));
     }
     String toplevel = top.stdout().strip();
-    return real(Path.of(toplevel)).equals(real(path))
+    return ConfigWriter.real(Path.of(toplevel)).equals(ConfigWriter.real(path))
         ? Optional.empty()
         : Optional.of("a folder inside the repository at " + toplevel + " — add that instead");
   }
@@ -176,11 +171,12 @@ public class ProjectSetup {
   }
 
   private boolean taken(Path path, @Nullable String own) {
-    Path real = real(path);
+    Path real = ConfigWriter.real(path);
     return configService.load().projects().entrySet().stream()
         .filter(project -> !project.getKey().equals(own))
         .anyMatch(project ->
-            real(Path.of(expand(project.getValue().path())).toAbsolutePath().normalize())
+            ConfigWriter.real(
+                    Path.of(expand(project.getValue().path())).toAbsolutePath().normalize())
                 .equals(real));
   }
 
@@ -211,7 +207,7 @@ public class ProjectSetup {
       throw new IllegalArgumentException("The key " + entry.key() + " is taken: pick another");
     }
     check(entry);
-    return rewrite(
+    return writer.rewrite(
         entry.key(),
         file ->
             ProjectBlocks.inserted(file, entry, normalized(entry), keptLocally(normalized(entry))),
@@ -250,7 +246,7 @@ public class ProjectSetup {
       throw new IllegalArgumentException("No project " + entry.key() + " in jagt.yml to change");
     }
     check(entry);
-    return rewrite(
+    return writer.rewrite(
         entry.key(),
         file -> ProjectBlocks.replaced(file, entry, normalized(entry)),
         "Changed " + entry.key() + " in jagt.yml");
@@ -266,7 +262,7 @@ public class ProjectSetup {
       throw new IllegalArgumentException(
           key + " is the only project, and jagt does not start without one");
     }
-    return rewrite(
+    return writer.rewrite(
         null, file -> ProjectBlocks.removed(file, key), "Removed " + key + " from jagt.yml");
   }
 
@@ -296,54 +292,6 @@ public class ProjectSetup {
     }
   }
 
-  /** {@code readBack} is the project the result must still hold, or null to read the file whole. */
-  private String rewrite(@Nullable String readBack, UnaryOperator<String> change, String done) {
-    Path file = real(paths.configFile());
-    if (!Files.isWritable(file)) {
-      throw editByHand(file, "it is not writable here", null);
-    }
-    try {
-      String before = Files.readString(file, StandardCharsets.UTF_8);
-      AtomicFiles.write(file, change.apply(before).getBytes(StandardCharsets.UTF_8));
-      try {
-        if (readBack == null) {
-          configService.load();
-        } else {
-          configService.project(readBack);
-        }
-      } catch (RuntimeException unreadable) {
-        putBack(file, before, unreadable);
-      }
-      return done;
-    } catch (IOException e) {
-      throw editByHand(file, String.valueOf(e.getMessage()), e);
-    }
-  }
-
-  private static IllegalArgumentException editByHand(
-      Path file, String reason, @Nullable IOException cause) {
-    return new IllegalArgumentException(
-        "Cannot change " + file + ": " + reason + ", edit that file by hand", cause);
-  }
-
-  private static void putBack(Path file, String before, RuntimeException unreadable) {
-    try {
-      AtomicFiles.write(file, before.getBytes(StandardCharsets.UTF_8));
-    } catch (IOException cannotRestore) {
-      throw new IllegalStateException(
-          file.getFileName()
-              + " did not read after the change and could"
-              + " not be put back; fix it by hand: "
-              + cannotRestore.getMessage(),
-          cannotRestore);
-    }
-    throw new IllegalStateException(
-        file.getFileName()
-            + " did not read after the change, so it was put back: "
-            + unreadable.getMessage(),
-        unreadable);
-  }
-
   private Processes.Result git(Path path, String... args) {
     List<String> command = new ArrayList<>(List.of("git", "-C", path.toString()));
     command.addAll(List.of(args));
@@ -371,14 +319,5 @@ public class ProjectSetup {
     String home = System.getProperty("user.home");
     String typed = path == null ? "" : path.strip();
     return typed.equals("~") || typed.startsWith("~/") ? home + typed.substring(1) : typed;
-  }
-
-  /** Where a path really leads, so a link to a configured repository is the same repository. */
-  private static Path real(Path path) {
-    try {
-      return path.toRealPath();
-    } catch (IOException e) {
-      return path;
-    }
   }
 }

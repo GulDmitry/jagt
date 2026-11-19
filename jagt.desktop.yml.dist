@@ -228,14 +228,14 @@ orchestrator:
                           # doubling to twice a day, so a deploy nobody finishes stops costing reads
   # It writes what placed an item no label could place to `memory/routing.md`, one rule per line, each with
   # how many items it has placed. Past 60 the least used goes, not the oldest. A rule stops being used when
-  # the router changes its mind or when you place by hand an item it had placed elsewhere, and is kept,
+  # the router changes its mind or when you place yourself an item it had placed elsewhere, and is kept,
   # commented out with the date. Open the file and fix a line: it outranks everything else the router is shown, and you can
   # write rules there before the first item of their kind ever arrives.
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:
     mrTitlePattern: "{ticket} {title}"
-    postReviewReplies: true    # false leaves every reply a draft for you to post by hand
+    postReviewReplies: true    # false leaves every reply a draft that you post yourself
     reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.

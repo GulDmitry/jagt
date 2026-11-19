@@ -4,7 +4,7 @@
   "sourceSets": 26,
   "startTriggers": 55,
   "taskStatuses": 14,
-  "publicSurface": 81,
+  "publicSurface": 83,
   "gradleModules": 7,
   "buildLogic": 16,
   "dependencyLinesInBuildGradle": 75,

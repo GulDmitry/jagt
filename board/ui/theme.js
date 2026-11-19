@@ -1,5 +1,6 @@
 import { make, within } from "../core/dom.js";
 import { choose, current, languages, t } from "../core/i18n.js";
+import "./settings.js";
 
 const gear = /** @type {HTMLElement} */ (document.getElementById("gear"));
 const list = /** @type {HTMLElement} */ (document.getElementById("gear-menu"));
@@ -55,6 +56,11 @@ list.onclick = ({ target }) => {
     fetch("/logout", { method: "POST" }).finally(() =>
       window.location.assign("/"),
     );
+    return;
+  }
+  if (target.id === "gear-settings") {
+    shut(false);
+    document.dispatchEvent(new Event("settings-open"));
     return;
   }
   if (target.dataset.lang) {

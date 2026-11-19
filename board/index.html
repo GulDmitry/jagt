@@ -101,6 +101,11 @@
         </button>
         <div id="gear-menu" hidden>
           <button
+            id="gear-settings"
+            type="button"
+            data-t="gear.settings"
+          ></button>
+          <button
             id="gear-logout"
             type="button"
             hidden
@@ -207,6 +212,25 @@
           ></button>
         </footer>
       </form>
+    </dialog>
+
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <header class="report-head">
+        <strong id="settings-title" data-t="settings.title"></strong
+        ><span class="grow"></span>
+        <button type="button" id="close-settings" data-t="close"></button>
+      </header>
+      <div id="settings-body"></div>
+      <footer id="settings-restart" class="dialog-foot" hidden>
+        <span class="muted" id="settings-restart-text"></span
+        ><span class="grow"></span>
+        <button
+          type="button"
+          id="settings-restart-go"
+          class="primary"
+          data-t="settings.restart.go"
+        ></button>
+      </footer>
     </dialog>
 
     <dialog id="project-dialog" aria-labelledby="project-title">

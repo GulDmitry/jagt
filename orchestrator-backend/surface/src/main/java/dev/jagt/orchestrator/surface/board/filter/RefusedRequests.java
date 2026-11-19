@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.board.filter;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.Causes;
+import dev.jagt.orchestrator.service.project.ConfigWriteFailed;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,16 @@ public class RefusedRequests {
             e instanceof Refusal refusal
                 ? Map.of("error", message, "code", refusal.code().name())
                 : Map.of("error", message));
+  }
+
+  @ExceptionHandler(ConfigWriteFailed.class)
+  public ResponseEntity<Map<String, String>> notWritten(ConfigWriteFailed e) {
+    HttpStatus status =
+        e.reason() == ConfigWriteFailed.Reason.NOT_WRITABLE
+            ? HttpStatus.CONFLICT
+            : HttpStatus.INTERNAL_SERVER_ERROR;
+    return ResponseEntity.status(status)
+        .body(Map.of("error", String.valueOf(e.getMessage()), "code", e.reason().name()));
   }
 
   /** A request the framework could not bind answers in the same shape as a refusal. */

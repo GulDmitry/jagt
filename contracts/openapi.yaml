@@ -303,6 +303,53 @@ paths:
                 properties:
                   key: {type: string}
                   remoteUrl: {type: string}
+  /api/settings:
+    get:
+      responses:
+        '200':
+          description: The basic jagt.yml settings and what the file holds; value is null where the default stands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [setting]
+                  properties:
+                    setting:
+                      type: object
+                      required: [key, section, kind, options, restart]
+                      properties:
+                        key: {type: string}
+                        section: {type: string}
+                        kind: {type: string, enum: [BOOLEAN, INTEGER, TEXT, CHOICE, LIST, NAMES]}
+                        options: {type: array, items: {type: string}}
+                        restart: {type: boolean}
+                    value: {}
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key]
+              properties:
+                key: {type: string}
+                value: {}
+      responses:
+        '200':
+          description: What was done, and whether it applies only after a restart
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, restart]
+                properties:
+                  message: {type: string}
+                  restart: {type: boolean}
+        '409': {description: 'jagt.yml is not writable here; code NOT_WRITABLE'}
+        '500': {description: 'The write failed or the result did not read, the last good file is back; code WRITE_FAILED, UNREADABLE_RESTORED or UNREADABLE_NOT_RESTORED'}
   /api/windows:
     get:
       responses:

@@ -76,8 +76,9 @@ class ProjectSetupTest {
     doReturn(new Processes.Result(0, repo + "\n", ""))
         .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    setup = new ProjectSetup(config, paths, git, checkout -> List.of());
-    bareSetup = new ProjectSetup(config, paths, bareGit, checkout -> List.of());
+    setup = new ProjectSetup(config, new ConfigWriter(config, paths), git, checkout -> List.of());
+    bareSetup =
+        new ProjectSetup(config, new ConfigWriter(config, paths), bareGit, checkout -> List.of());
   }
 
   @AfterEach
@@ -275,10 +276,15 @@ class ProjectSetupTest {
   void putsTheFileBackWhenTheInsertedEntryDoesNotRead() throws Exception {
     ConfigService spied = spy(config);
     doThrow(new IllegalStateException("bad yaml")).when(spied).project("billing");
-    ProjectSetup spying = new ProjectSetup(spied, paths, git, checkout -> List.of());
+    ProjectSetup spying =
+        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of());
 
     assertThatThrownBy(() -> spying.add(billingEntry))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOfSatisfying(
+            ConfigWriteFailed.class,
+            failure ->
+                assertThat(failure.reason())
+                    .isEqualTo(ConfigWriteFailed.Reason.UNREADABLE_RESTORED))
         .hasMessage("jagt.yml did not read after the change, so it was put back: bad yaml");
     assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
   }
@@ -294,12 +300,17 @@ class ProjectSetupTest {
             })
         .when(spied)
         .project("billing");
-    ProjectSetup spying = new ProjectSetup(spied, paths, git, checkout -> List.of());
+    ProjectSetup spying =
+        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of());
 
     assertThatThrownBy(() -> spying.add(billingEntry))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOfSatisfying(
+            ConfigWriteFailed.class,
+            failure ->
+                assertThat(failure.reason())
+                    .isEqualTo(ConfigWriteFailed.Reason.UNREADABLE_NOT_RESTORED))
         .hasMessageStartingWith(
-            "jagt.yml did not read after the change and could not be put back; fix it by hand:");
+            "jagt.yml did not read after the change and the last good file was not put back:");
   }
 
   @Test
@@ -427,7 +438,11 @@ class ProjectSetupTest {
         .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup scripted =
-        new ProjectSetup(config, paths, bareGit, checkout -> List.of("./gradlew", "test"));
+        new ProjectSetup(
+            config,
+            new ConfigWriter(config, paths),
+            bareGit,
+            checkout -> List.of("./gradlew", "test"));
 
     ProjectSetup.Reading reading = scripted.read(repo.toString());
 
@@ -678,14 +693,18 @@ class ProjectSetupTest {
   }
 
   @Test
-  void editRefusesAnEntryWrittenInlineAndLeavesTheFileUnchanged() throws Exception {
-    String before =
-        "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n";
-    Files.writeString(configFile, before);
-    assertThatThrownBy(() -> setup.edit(billingEntry))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("written inline");
-    assertThat(Files.readString(configFile)).isEqualTo(before);
+  void editRewritesEntryWrittenInlineAsBlock() throws Exception {
+    Files.writeString(
+        configFile,
+        "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n");
+
+    setup.edit(billingEntry);
+
+    assertThat(Files.readString(configFile))
+        .isEqualTo(
+            "orchestrator:\n  projects:\n    billing:\n      path: \""
+                + repo
+                + "\"\n      baseBranch: \"origin/main\"\n");
   }
 
   @Test
@@ -768,7 +787,8 @@ class ProjectSetupTest {
   }
 
   @Test
-  void addRefusesAndLeavesTheFileUnchangedWhereItsFolderCannotBeWritten() throws Exception {
+  void addFailsAsTypedWriteFailureAndLeavesTheFileUnchangedWhereItsFolderCannotBeWritten()
+      throws Exception {
     String before =
         """
         orchestrator:
@@ -780,12 +800,13 @@ class ProjectSetupTest {
     Files.writeString(configFile, before);
     confFolder.toFile().setWritable(false);
 
-    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(ConfigWriteFailed.class);
     assertThat(Files.readString(configFile)).isEqualTo(before);
   }
 
   @Test
-  void addRefusesAsAnArgumentAndLeavesTheFileUnchangedWhereJagtYmlIsReadOnly() throws Exception {
+  void addFailsAsTypedWriteFailureAndLeavesTheFileUnchangedWhereJagtYmlIsReadOnly()
+      throws Exception {
     String before =
         """
         orchestrator:
@@ -797,7 +818,7 @@ class ProjectSetupTest {
     Files.writeString(configFile, before);
     configFile.toFile().setWritable(false);
 
-    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(ConfigWriteFailed.class);
     assertThat(Files.readString(configFile)).isEqualTo(before);
   }
 

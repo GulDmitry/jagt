@@ -17,3 +17,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 ## Index
 - [0001-0099](index-0001-0099.md)
 - [0100-0199](index-0100-0199.md)
+- [0200-0299](index-0200-0299.md)
