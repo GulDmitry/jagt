@@ -183,6 +183,19 @@ class CiWorkflowTest {
   }
 
   @Test
+  void scansTheBaseImageByDigestWithTheChecksumVerifiedScanBinary() {
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+    String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
+
+    assertThat(workflow)
+        .contains(
+            "scripts/vulnerability-scan.sh scan image ${{ steps.image.outputs.name }}@${{"
+                + " steps.image.outputs.digest }}")
+        .doesNotContain("osv-scanner-action");
+    assertThat(scan).contains("sha256sum -c").contains("\"$tool\" \"$@\"");
+  }
+
+  @Test
   void handsTheImageDigestToTheWorkflowFromThePublishScript() {
     assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh")))
         .contains("--metadata-file")

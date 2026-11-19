@@ -36,6 +36,6 @@ jobs:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
-      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
-        with:
-          scan-args: --image=${{ steps.image.outputs.name }}@${{ steps.image.outputs.digest }}
+      - name: scan the image for known vulnerabilities
+        working-directory: orchestrator-backend
+        run: scripts/vulnerability-scan.sh scan image ${{ steps.image.outputs.name }}@${{ steps.image.outputs.digest }}
