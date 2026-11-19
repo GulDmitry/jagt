@@ -15,7 +15,7 @@ class ToolFailureTest {
   static Stream<Arguments> thrown() {
     return Stream.of(
         Arguments.of(
-            new ToolRefusal(ToolFailure.PERMISSION, "deploy_task is Master-only"),
+            new ToolRefusal(ToolFailure.PERMISSION, "deploy_task is root-only"),
             ToolFailure.PERMISSION),
         Arguments.of(
             new IllegalArgumentException("mode must be one of [diff, project]"),

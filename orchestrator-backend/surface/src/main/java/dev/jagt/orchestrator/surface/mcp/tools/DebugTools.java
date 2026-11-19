@@ -23,7 +23,7 @@ public class DebugTools implements McpTools {
   public void declare(McpToolRegistry tools) {
     tools.tool(
         "read_record",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.REPORTS,
         RecordTail.SCHEMA,
         RecordTail.class,
@@ -32,7 +32,7 @@ public class DebugTools implements McpTools {
 
     tools.tool(
         "read_transcript",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.REPORTS,
         TranscriptRead.SCHEMA,
         TranscriptRead.class,

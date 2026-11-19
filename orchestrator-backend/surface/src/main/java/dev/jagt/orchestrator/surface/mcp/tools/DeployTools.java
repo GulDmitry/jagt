@@ -21,7 +21,7 @@ public class DeployTools implements McpTools {
   public void declare(McpToolRegistry tools) {
     tools.tool(
         "deploy_task",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         TaskRef.schema(
             "Merge the task's branch into the project's deployBranch (jagt.yml) and push it. Stops"
@@ -33,7 +33,7 @@ public class DeployTools implements McpTools {
 
     tools.tool(
         "revert_task",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         TaskRef.schema(
             "Undo a task's deploy: revert the merge commit it created on the deployBranch and push"

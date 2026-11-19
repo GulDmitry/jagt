@@ -22,7 +22,7 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.service.task.TaskViews;
-import dev.jagt.orchestrator.surface.mcp.MasterToken;
+import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.launch.TicketFacts;

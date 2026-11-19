@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.board.filter;
 
 import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
-import dev.jagt.orchestrator.surface.mcp.MasterToken;
+import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class AgentDoorFilter extends OncePerRequestFilter {
 
   private final AuthProperties auth;
-  private final MasterToken masterToken;
+  private final RootToken rootToken;
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -38,11 +38,11 @@ public class AgentDoorFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
-    if (!onThisMachine(request) && !masterToken.matches(request.getHeader(MasterToken.HEADER))) {
+    if (!onThisMachine(request) && !rootToken.presentedBy(request::getHeader)) {
       log.atWarn()
           .setMessage("request refused")
           .addKeyValue("url", request.getRequestURI())
-          .addKeyValue("cause", "no Master token from a peer off loopback")
+          .addKeyValue("cause", "no root token from a peer off loopback")
           .log();
       response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
       return;

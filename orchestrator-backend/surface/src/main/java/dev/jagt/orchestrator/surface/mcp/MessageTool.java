@@ -40,7 +40,7 @@ public final class MessageTool {
       if (!audience.admits(callerTaskId)) {
         throw new ToolRefusal(
             ToolFailure.PERMISSION,
-            name + " is Master-only: a sub-agent may only act" + " inside its own worktree");
+            name + " is root-only: a sub-agent may only act" + " inside its own worktree");
       }
       T said;
       try {

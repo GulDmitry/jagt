@@ -7,7 +7,7 @@ Reading a running jagt's records and sessions from outside, over its own door, w
 
 ### Requirement: A running jagt is read, never changed, through its own door
 `read_record` (`backend-log`, `master-log`, `stops`, `stops-reviewed`; the last `lines`, at most 1000) and `read_transcript`
-(a task's conversation, newest `maxChars`) SHALL be `Audience.MASTER` and `Effect.REPORTS`; `GET /api/debug/records/{record}` and
+(a task's conversation, newest `maxChars`) SHALL be `Audience.ROOT` and `Effect.REPORTS`; `GET /api/debug/records/{record}` and
 `GET /api/debug/transcript` answer the same reads under `/api`. State and reports are read by `list_tasks` and `GET /state`.
 A read SHALL change no state, file or session.
 
@@ -30,3 +30,7 @@ A read SHALL change no state, file or session.
 #### Scenario: Console logging
 - **WHEN** `orchestrator.logging` is `console` and `read_record` asks for `backend-log` or `master-log`
 - **THEN** it returns the lines stdout carried
+
+#### Scenario: A role names its own log
+- **WHEN** an installed role contributes a log file and `read_record` asks for the record it names
+- **THEN** it returns that file's tail, and `surface` lists no role's record itself

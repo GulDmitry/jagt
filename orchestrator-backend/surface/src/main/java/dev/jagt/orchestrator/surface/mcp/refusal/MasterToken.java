@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.mcp;
+package dev.jagt.orchestrator.surface.mcp.refusal;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import java.io.IOException;
@@ -10,6 +10,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Component;
  * presents it.
  */
 @Component
-public class MasterToken {
+public class MasterToken implements RootToken {
 
   public static final String HEADER = "X-Jagt-Master";
 
@@ -30,6 +31,11 @@ public class MasterToken {
     String value = HexFormat.of().formatHex(random);
     this.token = value.getBytes(StandardCharsets.UTF_8);
     write(paths.masterToken(), value);
+  }
+
+  @Override
+  public boolean presentedBy(Function<String, @Nullable String> header) {
+    return matches(header.apply(HEADER));
   }
 
   public boolean matches(@Nullable String presented) {

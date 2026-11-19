@@ -51,12 +51,12 @@ class DebugToolsTest {
 
   @ParameterizedTest
   @CsvSource({"read_record", "read_transcript"})
-  void declaresEachDebugReadAsTheMastersAndAsChangingNothing(String tool) {
+  void declaresEachDebugReadAsTheRootsAndAsChangingNothing(String tool) {
     Registered registered = new Registered();
 
     new DebugTools(mock(LogReads.class), mock(DebugReads.class)).declare(registered);
 
-    assertThat(registered.tools).containsEntry(tool, "MASTER REPORTS");
+    assertThat(registered.tools).containsEntry(tool, "ROOT REPORTS");
   }
 
   @ParameterizedTest

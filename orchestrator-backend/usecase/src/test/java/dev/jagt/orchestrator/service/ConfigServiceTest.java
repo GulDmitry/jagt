@@ -379,21 +379,6 @@ class ConfigServiceTest {
   }
 
   @Test
-  void readsNoStopWhereNothingStopsTheMaster() throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-
-    ConfigService config =
-        new ConfigService(
-            new ConfigSource(paths, new FakeConfigInputs()),
-            mock(AgentRuntime.class),
-            stops,
-            checkers);
-
-    assertThat(config.actStop()).isEmpty();
-  }
-
-  @Test
   void readsAnEmptySectionAsAnEmptyConfigurationWithItsMasterDefault() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "other: 1\n");
@@ -777,22 +762,6 @@ class ConfigServiceTest {
         AgentConfig.defaults()
             .withCadence(new AgentConfig.Cadence(null, null, null, null, written));
     assertThat(agent.draftPollOrDefault()).isEqualTo(expected);
-  }
-
-  @Test
-  void readsTheStopThatStandsOnTheMaster() throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-
-    ConfigService config =
-        new ConfigService(
-            new ConfigSource(paths, new FakeConfigInputs()),
-            mock(AgentRuntime.class),
-            stops,
-            checkers);
-
-    assertThat(config.actStop()).isPresent();
   }
 
   @Test

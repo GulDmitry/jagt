@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.SwitchJudgements;
 import dev.jagt.orchestrator.service.reach.SessionReach;
-import dev.jagt.orchestrator.service.stop.ActStop;
 import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.launch.TrackerMode;
@@ -969,10 +968,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         .filter(Files::isDirectory)
         .map(WorktreeSandbox::real)
         .toList();
-  }
-
-  public Optional<ActStop> actStop() {
-    return actStops.standing();
   }
 
   /**

@@ -327,8 +327,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
 | `surface/board/terminal` | surface | the Session tab's live terminal: the WebSocket a window's output goes out on and a human's keys come in |
 | `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
-| `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, token, handlers |
-| `surface/mcp/refusal` | surface | how a tool refuses: caller scope, failure, refusal |
+| `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, handlers |
+| `surface/mcp/refusal` | surface | how a tool refuses and who may call: caller scope, root token, failure, refusal |
 | `surface/mcp/tools` | surface | the MCP tool groups, each declaring its own scope |
 | `surface/ui` | surface | the console banner, failure page and startup failure |
 | `surface/ui/log` | surface | log archives and rolling, the port guard, task alias feed and filter |
@@ -340,14 +340,14 @@ row with no package, on a package of more than ten classes and on one of a singl
 
 ### Over ten classes
 
-A package-private partner that cannot move without being widened keeps its package whole. An exception ends when its
-partners move or are widened, never by raising the number.
+A package-private partner that cannot move without widening keeps its package whole, until its partners move; never by raising the number.
 
 | package | why |
 |---------|-----|
 | `flow` | package-private chart types (`Fact`, `Landing`, `TaskMove`, `Phases`, `Role`) are partners of `TaskChart` and `TaskReducer` |
 | `protocol` | package-private `Wire` is the codec of eight message and read records beside it |
 | `service` | package-private `RoundBrief`, `TaskNotes` and `WorktreeSandbox` tie `HandBack`, `RoundRelay`, `AgentSessions` and their readers |
+| `service/master` | package-private `RoundQuotes` and `RoundFacts` are partners of `MasterPanel` |
 | `service/git` | twelve classes of one feature, no sub-kind of three; `GitStates` is package-private to `GitWorktrees` |
 | `adapter/agent` | package-private `ClaudeConfigDir` and `ClaudeTranscripts` tie the Claude classes together |
 | `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |

@@ -4,7 +4,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import dev.jagt.orchestrator.protocol.debug.RecordTail;
 import dev.jagt.orchestrator.service.log.DebugReads;
+import dev.jagt.orchestrator.service.role.RoleLog;
 import java.nio.file.Path;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -20,15 +22,19 @@ public class LogReads {
   private final LoggerContext context;
   private final Environment environment;
   private final DebugReads reads;
+  private final List<RoleLog> roleLogs;
 
   public String read(RecordTail request) {
     int lines = request.count();
-    return switch (request.record()) {
-      case "backend-log" -> of("logging.file.name", lines);
-      case "master-log" -> of("logging.master.name", lines);
-      case "stops" -> reads.stops(lines);
-      default -> reads.stopsReviewed(lines);
-    };
+    String record = request.record();
+    if (record.equals("backend-log")) {
+      return of("logging.file.name", lines);
+    }
+    return roleLogs.stream()
+        .filter(log -> log.record().equals(record))
+        .findFirst()
+        .map(log -> of(log.fileKey(), lines))
+        .orElseGet(() -> record.equals("stops") ? reads.stops(lines) : reads.stopsReviewed(lines));
   }
 
   private String of(String fileKey, int lines) {

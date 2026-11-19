@@ -8,7 +8,7 @@ public enum Audience {
   /**
    * Writes outside the caller's own worktree, so a sub-agent is neither shown it nor let through.
    */
-  MASTER;
+  ROOT;
 
   public boolean admits(@Nullable String callerTaskId) {
     return this == ANYONE || callerTaskId == null;

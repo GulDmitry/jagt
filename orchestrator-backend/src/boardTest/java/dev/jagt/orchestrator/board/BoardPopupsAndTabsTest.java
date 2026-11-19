@@ -603,11 +603,13 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
                         route
                             .fetch()
                             .text()
-                            .replaceFirst("\"masterMode\":\"[a-z]+\"", "\"masterMode\":\"act\""))));
+                            .replaceFirst(
+                                "\"chips\":\\[\\]",
+                                "\"chips\":[{\"key\":\"header.acting\",\"broken\":false}]"))));
 
     page.navigate("http://localhost:" + port + "/");
 
-    assertThat(page.locator("#master-mode")).hasText("Master: act");
+    assertThat(page.locator("#role-chips .chip")).hasText("Master: act");
   }
 
   @Test

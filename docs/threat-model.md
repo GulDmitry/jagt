@@ -98,7 +98,7 @@ nothing), `AbortedConnectionFilter` (drops an aborted peer's socket error), `Ref
 | a script or frame from a foreign origin | CSP of the board's own origin, no CDN | `BoardAssetsTest`, `BoardVendorLoadTest`, `BoardCsp` | V3.4 |
 | a secret in a log, a card or the config | values only by env name; log filter | `TaskAliasLogFilterTest`, `AuthProperties.toString` | V14 |
 | the token file read by another user | mode `rw-------` | `MasterTokenTest` | V14 |
-| `/state` or `/api/debug` read by a peer | behind the login; debug reads are `Audience.MASTER` | `GuardedBoard` | V8, V14 |
+| `/state` or `/api/debug` read by a peer | behind the login; debug reads are `Audience.ROOT` | `GuardedBoard` | V8, V14 |
 | management exposes more than health | `include: health` alone | `KubernetesManifestsTest` | V13 |
 
 ### Denial of service
@@ -113,7 +113,7 @@ nothing), `AbortedConnectionFilter` (drops an aborted peer's socket error), `Ref
 
 | threat | defence | holds it | ASVS |
 |--------|---------|----------|------|
-| a sub-agent calls a Master verb | the tool list and the call are `Audience.MASTER` only for the Master | `McpToolScopeTest` | V8 |
+| a sub-agent calls a Master verb | the tool list and the call are `Audience.ROOT` only for the root session | `McpToolScopeTest` | V8 |
 | a headless read runs a write | `ReadGate` allow-list, fails closed | `ReadGateControllerTest` | V8 |
 | a session pushes to a shared branch | `ToolGate`, pre-push hook, host branch protection | `ToolGateTest` | V8, V1 |
 | a request path reaches a file | a resource handler only | `BoardFolderTest` | V5 |

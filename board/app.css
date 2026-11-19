@@ -50,6 +50,9 @@ header {
   top: 0;
   z-index: 3;
 }
+.role-chips {
+  display: contents;
+}
 header .chip,
 header .waiting {
   font-size: 13px;

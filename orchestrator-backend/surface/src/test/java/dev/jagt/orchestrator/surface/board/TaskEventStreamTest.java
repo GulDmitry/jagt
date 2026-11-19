@@ -253,7 +253,8 @@ class TaskEventStreamTest {
                             mock(StateService.class),
                             mock(BoardStop.class)),
                         new ReachLedger(),
-                        Clock.systemUTC())))
+                        Clock.systemUTC(),
+                        List.of())))
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();

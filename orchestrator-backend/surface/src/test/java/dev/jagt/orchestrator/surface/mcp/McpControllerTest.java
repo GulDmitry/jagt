@@ -16,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
+import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -163,8 +165,7 @@ class McpControllerTest {
   void passesTheMasterThatPresentsItsToken() throws Exception {
     McpProtocolService protocol = mock(McpProtocolService.class);
     when(protocol.handle(any(), any(), anyBoolean())).thenReturn(Optional.empty());
-    MasterToken token = mock(MasterToken.class);
-    when(token.matches("s3cret")).thenReturn(true);
+    RootToken token = header -> "s3cret".equals(header.apply(MasterToken.HEADER));
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(protocol, mock(StateService.class), new JsonMapper(), token))

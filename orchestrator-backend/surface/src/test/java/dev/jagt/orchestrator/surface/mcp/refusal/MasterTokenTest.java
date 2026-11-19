@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.mcp;
+package dev.jagt.orchestrator.surface.mcp.refusal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

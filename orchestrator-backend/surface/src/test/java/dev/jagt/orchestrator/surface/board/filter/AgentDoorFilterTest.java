@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
-import dev.jagt.orchestrator.surface.mcp.MasterToken;
+import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

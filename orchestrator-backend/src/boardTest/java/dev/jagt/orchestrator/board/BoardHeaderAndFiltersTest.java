@@ -366,27 +366,29 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   void keepsTheTabIconCalmWhereTheHumanStoppedTheBoard() throws Exception {
     Files.writeString(root.resolve("board-stopped"), Long.toString(System.currentTimeMillis()));
     Page page = openBoard();
-    assertThat(page.locator("#act-stopped")).isVisible();
+    assertThat(page.locator("#role-chips .chip")).isVisible();
 
     page.waitForTimeout(500);
 
     assertThat(page.locator("link[rel=icon][type='image/svg+xml']"))
         .hasAttribute("href", "favicon.svg");
 
-    page.locator("#act-stopped").click();
+    page.locator("#role-chips .chip").click();
 
-    assertThat(page.locator("#act-stopped")).isHidden();
+    assertThat(page.locator("#role-chips .chip")).isHidden();
   }
 
   @Test
   void givesActBackFromTheHeaderWhereItStoppedItself() throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "brief");
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
     Page page = openBoard();
-    assertThat(page.locator("#act-stopped")).isVisible();
+    assertThat(page.locator("#role-chips .chip")).isVisible();
 
-    page.locator("#act-stopped").click();
+    page.locator("#role-chips .chip").click();
 
-    assertThat(page.locator("#act-stopped")).isHidden();
+    assertThat(page.locator("#role-chips .chip")).isHidden();
   }
 
   @Test

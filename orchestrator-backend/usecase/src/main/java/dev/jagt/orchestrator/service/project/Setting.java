@@ -22,15 +22,15 @@ public record Setting(
 
   private static final Pattern DOT = Pattern.compile("\\.");
 
-  static Setting of(String section, String key, Kind kind) {
+  public static Setting of(String section, String key, Kind kind) {
     return new Setting(key, section, kind, List.of(), false);
   }
 
-  static Setting choice(String section, String key, String... options) {
+  public static Setting choice(String section, String key, String... options) {
     return new Setting(key, section, Kind.CHOICE, List.of(options), false);
   }
 
-  Setting needingRestart() {
+  public Setting needingRestart() {
     return new Setting(key, section, kind, options, true);
   }
 

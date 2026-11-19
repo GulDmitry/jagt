@@ -1,3 +1,4 @@
+import { make } from "../core/dom.js";
 import { countdown } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
@@ -9,8 +10,8 @@ const jobsChip = /** @type {HTMLButtonElement} */ (
 const reachChip = /** @type {HTMLButtonElement} */ (
   document.getElementById("reach-lost")
 );
-const actChip = /** @type {HTMLButtonElement} */ (
-  document.getElementById("act-stopped")
+const roleChips = /** @type {HTMLElement} */ (
+  document.getElementById("role-chips")
 );
 
 /** @param {number} due */
@@ -55,30 +56,37 @@ function renderReach() {
       .join("\n") + `\n${t("header.reach.clears")}`;
 }
 
-function renderStop() {
-  const stop = store.actStop();
-  const board = stop?.cause === "BOARD";
-  actChip.hidden = !stop;
-  actChip.dataset.verb = board ? "unstop" : "act";
-  actChip.textContent = t(board ? "board-stopped" : "act-stopped");
-  actChip.dataset.tip = !stop
-    ? ""
-    : board
-      ? t("header.board-stop", { since: full(stop.at) })
-      : t("header.act-stop");
+/** @param {import("../core/store.js").Chip} one */
+const roleChip = (one) => {
+  const node = make(
+    one.verb ? "button" : "span",
+    one.verb ? "chip stalled" : "chip",
+    t(one.key),
+  );
+  if (one.verb) node.dataset.verb = one.verb;
+  node.dataset.tip = t(`${one.key}.tip`, one.at ? { since: full(one.at) } : {});
+  return node;
+};
+
+function renderRoleChips() {
+  roleChips.replaceChildren(...store.chips().map(roleChip));
 }
 
 export function render() {
   renderJobs();
   renderReach();
-  renderStop();
+  renderRoleChips();
 }
 
 /** @param {(verb: string) => void} press */
 export const onVerbClick = (press) => {
-  [actChip, reachChip].forEach((chip) => {
-    chip.onclick = () => press(chip.dataset.verb ?? "");
-  });
+  reachChip.onclick = () => press(reachChip.dataset.verb ?? "");
+  roleChips.onclick = (event) => {
+    const verb = /** @type {HTMLElement} */ (event.target).closest(
+      "[data-verb]",
+    );
+    if (verb instanceof HTMLElement) press(verb.dataset.verb ?? "");
+  };
 };
 
 /** @param {() => void} open */

@@ -573,14 +573,13 @@ components:
         verifyCommand: {type: array, items: {type: string}}
     Board:
       type: object
-      required: [tasks, projects, offers, masterMode, autoReview, autoReviewEnabled, jobs, reach, branchStrategies, phases]
+      required: [tasks, projects, offers, autoReview, autoReviewEnabled, jobs, reach, branchStrategies, phases]
       properties:
         tasks: {type: array, items: {$ref: '#/components/schemas/Task'}}
         projects: {type: array, items: {type: string}}
         offers:
           type: object
           additionalProperties: {type: array, items: {type: string}}
-        masterMode: {type: string}
         autoReview: {type: string}
         autoReviewEnabled: {type: boolean}
         jobs:
@@ -590,11 +589,16 @@ components:
             count: {type: integer}
             nextRunAt: {type: [integer, 'null']}
             failing: {type: integer}
-        actStop:
-          type: [object, 'null']
-          properties:
-            cause: {enum: [STRIKES, BOARD]}
-            at: {type: [integer, 'null']}
+        chips:
+          type: array
+          items:
+            type: object
+            required: [key, broken]
+            properties:
+              key: {type: string}
+              verb: {type: [string, 'null']}
+              broken: {type: boolean}
+              at: {type: [integer, 'null']}
         reach:
           type: array
           items:

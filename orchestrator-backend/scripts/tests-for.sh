@@ -92,7 +92,7 @@ for p in $paths; do
     *.java)
       add_rules Duplication CognitiveComplexity CollaboratorCeiling CollaboratorOwners ProductionConstructor MockCeiling \
         NoHelperMethod TestBuilderLogic Withers EveryTestAsserts TestNaming StaticState LifecycleHooks Rings Packages \
-        VendorNames NullMarked EnglishAndUtc
+        VendorNames NullMarked EnglishAndUtc RoleNames RoleNamesOutside
       loc=$(locate "$p")
       if [ -n "$loc" ]; then
         mod=${loc%% *}
@@ -134,7 +134,7 @@ for p in $paths; do
       ;;
     board/*) board_touched=1 ;;
     site/*) add_rules Site ;;
-    roles/*) add_rules RoleModules RoleNames RoleVocabulary MasterBriefShipped ;;
+    roles/*) add_rules RoleModules RoleNames RoleNamesOutside RoleVocabulary MasterBriefShipped ;;
   esac
   case "$p" in
     *.yml.dist) add_rules ConfigReference ;;
@@ -195,7 +195,7 @@ for r in $rule_names; do
     echo "tests-for: no rule test ${r}Test, dropped" >&2
   fi
 done
-if [ "$board_touched" = 1 ]; then rule_entries="$rule_entries surface:BoardAssetsTest"; fi
+if [ "$board_touched" = 1 ]; then rule_entries="$rule_entries surface:BoardAssetsTest root:RoleNamesOutsideTest"; fi
 if [ -n "$rule_entries" ]; then gradle 900 "$(tests_line "$rule_entries") -x pitestDiff"; fi
 if [ "$board_touched" = 1 ]; then echo "cd board && timeout 600 sh -c 'npm run lint && npm test'"; fi
 exit 0

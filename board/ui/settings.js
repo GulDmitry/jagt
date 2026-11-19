@@ -7,8 +7,6 @@ import { runGlobal } from "./verbs.js";
 /** @typedef {{ key: string, section: string, kind: string, options: string[], restart: boolean }} Setting */
 /** @typedef {{ setting: Setting, value: unknown }} View */
 
-const SECTIONS = ["projects", "review", "tracker", "master", "notifications"];
-
 const dialog = /** @type {HTMLDialogElement} */ (
   document.getElementById("settings-dialog")
 );
@@ -157,7 +155,7 @@ const projectRow = (value) => {
 /** @param {View[]} views */
 const paint = (views) => {
   body.replaceChildren(
-    ...SECTIONS.map((name) => {
+    ...[...new Set(views.map(({ setting }) => setting.section))].map((name) => {
       const section = make(
         "section",
         "",

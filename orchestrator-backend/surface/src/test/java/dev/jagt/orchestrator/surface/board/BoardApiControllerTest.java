@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.job.JobSource;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
@@ -70,7 +71,8 @@ class BoardApiControllerTest {
                   mock(StateService.class),
                   idleStop),
               new ReachLedger(),
-              Clock.systemUTC()));
+              Clock.systemUTC(),
+              List.of()));
 
   @Test
   void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -151,14 +153,37 @@ class BoardApiControllerTest {
             "tasks",
             "projects",
             "offers",
-            "masterMode",
             "autoReview",
             "autoReviewEnabled",
             "jobs",
-            "actStop",
+            "chips",
             "reach",
             "branchStrategies",
             "phases");
+  }
+
+  @Test
+  void servesTheMarksEverySourceAddsToTheHead() {
+    when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
+    var acting = new HeaderChip("header.acting", null, false, null);
+    var stopped = new HeaderChip("board-stopped", "unstop", false, 7L);
+    BoardApiController board =
+        new BoardApiController(
+            taskViews,
+            mock(TaskEventStream.class),
+            new GlobalCommands(List.of()),
+            new HeaderState(
+                new Jobs(
+                    new Jobs.Catalog(List.of(), List.of()),
+                    scheduler,
+                    Clock.systemUTC(),
+                    mock(StateService.class),
+                    idleStop),
+                new ReachLedger(),
+                Clock.systemUTC(),
+                List.of(() -> List.of(acting), () -> List.of(stopped))));
+
+    assertThat(board.tasks().header().chips()).containsExactly(acting, stopped);
   }
 
   @Test
@@ -185,7 +210,8 @@ class BoardApiControllerTest {
                     mock(StateService.class),
                     idleStop),
                 reach,
-                Clock.systemUTC()));
+                Clock.systemUTC(),
+                List.of()));
 
     assertThat(board.tasks().header().reach()).containsExactly(lost);
   }
@@ -207,7 +233,8 @@ class BoardApiControllerTest {
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                Clock.systemUTC(),
+                List.of()));
 
     assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
   }
@@ -230,7 +257,8 @@ class BoardApiControllerTest {
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                Clock.systemUTC(),
+                List.of()));
 
     assertThat(board.tasks().header().jobs().count()).isEqualTo(1);
   }
@@ -253,7 +281,8 @@ class BoardApiControllerTest {
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                Clock.systemUTC(),
+                List.of()));
 
     assertThat(board.events()).isSameAs(browser);
   }
@@ -315,7 +344,8 @@ class BoardApiControllerTest {
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                Clock.systemUTC(),
+                List.of()));
     TaskView drafted =
         TaskView.of(
             new FlowRules(new TaskChart(Composition.builtIn())),

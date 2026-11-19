@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.surface.board.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.surface.mcp.MasterToken;
+import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;

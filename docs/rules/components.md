@@ -59,11 +59,11 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/refusal/CallerScope` enforces X-Working-Directory; the
-  Master presents `surface/mcp/MasterToken`, written to `master-token` beside `state.json` so a read-only root still
+  Master presents `surface/mcp/refusal/MasterToken`, written to `master-token` beside `state.json` so a read-only root still
   starts; anyone else is refused. A tool taking a taskId gets a `McpToolScopeTest` row. A sub-agent is listed and
-  answered `update_agent_status`, `notify_user` and `open_code` alone, the rest being `Audience.MASTER`; its every call
+  answered `update_agent_status`, `notify_user` and `open_code` alone, the rest being `Audience.ROOT`; its every call
   bumps `lastActiveTimestamp`. Byte budgets (`WholeApplicationWiringTest`): `tools/list` 14 KB Master, 5 KB sub-agent, launch text 9 KB.
-  The debug reads (`read_record`, `read_transcript`, `/api/debug`) are `Audience.MASTER` and write nothing ([server](../server.md)).
+  The debug reads (`read_record`, `read_transcript`, `/api/debug`) are `Audience.ROOT` and write nothing ([server](../server.md)).
 - **A task id is any name git accepts as a branch** (`core/task/launch/TaskName`): a task IS its branch, and every
   directory, tmux session, socket and temp file goes through `TaskName.slug`.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a

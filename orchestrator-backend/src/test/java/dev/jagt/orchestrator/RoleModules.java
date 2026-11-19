@@ -20,7 +20,7 @@ final class RoleModules {
               "command.master.",
               "config.Master",
               "startup.role.Master",
-              "surface.mcp.MasterToken",
+              "surface.mcp.refusal.MasterToken",
               "eval.Master")
           .map(prefix -> ROOT + prefix)
           .toList();

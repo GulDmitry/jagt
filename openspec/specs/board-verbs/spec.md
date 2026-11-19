@@ -151,6 +151,28 @@ started task by hand and wears the colour of a stopped `act`; the legend shows i
 - **WHEN** the board is stopped and nothing else is broken
 - **THEN** the tab icon stays unmarked, for a stop the human chose is not a break
 
+### Requirement: The head's role marks come from the roles
+`/api/tasks` SHALL carry `chips`, each `{key, verb, broken, at}` from a `HeaderChips` bean, never a role's own field.
+The Master's `MasterChips` is empty where `roles/master` is absent; `BoardStopChips` is the board's own.
+The board draws each from the catalog, `key.tip` its hover; one with a `verb` is a `.stalled` button running it.
+The glance reads broken where any chip is `broken`.
+
+#### Scenario: The Master acts
+- **WHEN** the Master is installed and its mode is `act`
+- **THEN** `chips` holds one entry without a verb, and the head shows its plain chip
+
+#### Scenario: The Master is not installed
+- **WHEN** `roles/master` is absent
+- **THEN** `chips` holds no Master entry and the head shows none
+
+#### Scenario: Act stopped itself
+- **WHEN** three bad endings stopped act
+- **THEN** `chips` holds an entry with verb `act` and `broken`, and pressing its button runs `act`
+
+#### Scenario: The board is stopped
+- **WHEN** the human stopped the board
+- **THEN** `chips` holds an entry with verb `unstop` and the moment of the stop, installed Master or not
+
 ### Requirement: The editor verb is `code`
 The verb opening a task's worktrees in the configured editor SHALL be `code`, its MCP tool `open_code`, its capability `capability/code`.
 The retired spelling `ide` still answers, unadvertised (`TaskAction.RENAMED`). It launches the external editor (`editorCommand`), and with none

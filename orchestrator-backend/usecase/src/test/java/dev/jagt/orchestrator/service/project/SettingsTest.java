@@ -12,6 +12,8 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.master.MasterSettings;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
@@ -29,6 +31,9 @@ class SettingsTest {
 
   private Path configFile;
   private Settings settings;
+  private OrchestratorPaths paths;
+  private ConfigSource source;
+  private ConfigWriter writer;
 
   @BeforeEach
   void wire() throws Exception {
@@ -46,19 +51,22 @@ class SettingsTest {
                 channels:
                   desktop: { kind: desktop }
             """);
-    OrchestratorPaths paths =
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md.dist"), "brief");
+    paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withConfigFile(configFile.toString()));
-    ConfigSource source = new ConfigSource(paths, new FakeConfigInputs());
+    source = new ConfigSource(paths, new FakeConfigInputs());
     ConfigService config =
         new ConfigService(
             source,
             mock(AgentRuntime.class),
             mock(ActStops.class),
             new Checkers(new TaskChart(Composition.builtIn())));
-    settings = new Settings(source, new ConfigWriter(config, paths));
+    writer = new ConfigWriter(config, paths);
+    settings = new Settings(source, writer, List.of(new MasterSettings(new InstalledRoles(paths))));
   }
 
   @Test
@@ -84,12 +92,27 @@ class SettingsTest {
   }
 
   @Test
-  void showsNoRoleExceptTheMastersModeAndNoModelOrAgentSetting() {
+  void showsNoRoleExceptTheInstalledMastersModeAndNoModelOrAgentSetting() {
     assertThat(settings.read())
         .extracting(view -> view.setting().key())
         .noneMatch(key -> key.contains("model") || key.startsWith("agent"))
         .filteredOn(key -> key.startsWith("roles."))
         .containsExactly("roles.master.mode");
+  }
+
+  @Test
+  void showsNoMasterKeyAndRefusesToChangeOneWhenTheMasterIsNotInstalled() throws Exception {
+    Files.delete(root.resolve("roles/master/brief.md.dist"));
+    Settings without =
+        new Settings(source, writer, List.of(new MasterSettings(new InstalledRoles(paths))));
+
+    assertThat(without.read())
+        .extracting(view -> view.setting().section())
+        .doesNotContain("master");
+    assertThatThrownBy(() -> without.change("roles.master.mode", "act"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> without.change("loopBreaker.rounds", 3))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

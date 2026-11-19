@@ -412,6 +412,31 @@ class TaskChartTest {
     assertThat(taskChart.land(from, move)).contains(to);
   }
 
+  @Test
+  void taskReachesDoneByTheHumansVerbsAloneWhenNoRoleIsComposed() {
+    TaskChart noRole = new TaskChart(new Composition(List.of()));
+    Facts facts =
+        Facts.defaults()
+            .withDelivery(
+                Facts.Delivery.defaults().withHasReviewRequest(true).withLiveDeploy(true));
+    FlowRules rules = new FlowRules(noRole);
+
+    assertThat(rules.allows(TaskStatus.IN_PROGRESS, TaskAction.SHIP, facts)).isTrue();
+    assertThat(
+            noRole.land(TaskStatus.IN_PROGRESS, new TaskMove.Ran(TaskAction.SHIP, Outcome.Kind.OK)))
+        .contains(TaskStatus.CI_POLLING);
+    assertThat(noRole.land(TaskStatus.CI_POLLING, new TaskMove.Read(TaskStatus.REVIEWED)))
+        .contains(TaskStatus.REVIEWED);
+    assertThat(rules.allows(TaskStatus.REVIEWED, TaskAction.DEPLOY, facts)).isTrue();
+    assertThat(
+            noRole.land(TaskStatus.REVIEWED, new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.OK)))
+        .contains(TaskStatus.DEPLOYED);
+    assertThat(rules.allows(TaskStatus.DEPLOYED, TaskAction.DONE, facts)).isTrue();
+    assertThat(
+            noRole.land(TaskStatus.DEPLOYED, new TaskMove.Ran(TaskAction.DONE, Outcome.Kind.GONE)))
+        .contains(TaskStatus.DONE);
+  }
+
   static Stream<Arguments> acceptanceEdges() {
     return Stream.of(
         arguments(
