@@ -21,7 +21,7 @@ class NoByHandTextTest {
                   Stream.of(
                       Path.of("../jagt.desktop.yml.dist"),
                       Path.of("../jagt.server.yml.dist"),
-                      Path.of("../kubernetes.yml.dist")))
+                      Path.of("../examples/kubernetes.yml")))
               .toList();
     }
 

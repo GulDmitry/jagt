@@ -41,7 +41,7 @@ class KindEngineTest {
   @BeforeEach
   void placeTheRootAndTheDistributedManifest() throws IOException {
     root = Files.createDirectories(dir.resolve("jagt-stand-41-1"));
-    manifest = Files.writeString(dir.resolve("kubernetes.yml.dist"), DIST);
+    manifest = Files.writeString(dir.resolve("kubernetes.yml"), DIST);
     when(forwarding.isAlive()).thenReturn(true);
   }
 

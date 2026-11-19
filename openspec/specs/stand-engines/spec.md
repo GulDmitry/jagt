@@ -7,7 +7,7 @@ Where the stand starts jagt, on the host, under compose or in a kind cluster, an
 
 ### Requirement: The stand runs on an engine chosen by name
 `standTest` SHALL start jagt on the engine named by `-Pengine`: `host` the staged jar, `compose` jagt's image under docker compose,
-`kind` jagt's image in a Kubernetes cluster applying `kubernetes.yml.dist`. Without it the engine SHALL be `compose`.
+`kind` jagt's image in a Kubernetes cluster applying `examples/kubernetes.yml`. Without it the engine SHALL be `compose`.
 A missing docker SHALL skip the run naming it. An unknown name SHALL fail the run naming the three.
 
 #### Scenario: An engine is named

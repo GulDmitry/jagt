@@ -13,7 +13,7 @@ tasks.named('test') {
         include 'orchestrator-backend/src/*/java/**/*.java'
         include 'jagt.desktop.yml.dist'
         include 'jagt.server.yml.dist'
-        include 'kubernetes.yml.dist'
+        include 'examples/kubernetes.yml'
         include 'Dockerfile'
         include 'entrypoint.sh'
         include 'contracts/openapi.yaml'

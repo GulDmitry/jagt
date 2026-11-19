@@ -1,6 +1,6 @@
 # Your own image on top of jagt's: build jagt's image first, then this one.
 #   docker build -t jagt-base .                       (in a jagt checkout)
-#   docker build -f Dockerfile.dist --build-arg BASE=jagt-base -t my-jagt .
+#   docker build -f examples/agent-image.Dockerfile --build-arg BASE=jagt-base -t my-jagt .
 # Every block is optional; uncomment what your agent and host need. The names are examples only.
 ARG BASE=jagt-base
 FROM ${BASE}

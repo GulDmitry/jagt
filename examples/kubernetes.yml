@@ -1,5 +1,5 @@
-# jagt on Kubernetes, one replica: cp kubernetes.yml.dist kubernetes.yml, edit, kubectl apply -f kubernetes.yml
-# Replace the image, host and Secret values; the Secret holds the same keys as .env.dist, then the identities (docs/server.md).
+# jagt on Kubernetes, one replica: cp examples/kubernetes.yml kubernetes.yml, edit, kubectl apply -f kubernetes.yml
+# Replace the image, host and Secret values; the Secret holds the same keys as examples/server.env, then the identities (docs/server.md).
 # Passes the restricted Pod Security Standard and OpenShift's restricted-v2.
 # To keep one file per concern, list this file under `resources:` of a kustomization.
 apiVersion: v1

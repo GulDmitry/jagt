@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 public final class KindEngine implements UnitEngine {
 
   private static final Path MANIFEST =
-      Path.of(System.getProperty("stand.repo", "../..")).resolve("kubernetes.yml.dist");
+      Path.of(System.getProperty("stand.repo", "../..")).resolve("examples/kubernetes.yml");
   private static final String BUILT = "jagt-stand";
   private static final String RUN = "jagt-stand:run";
   private static final String NEXT = "jagt-stand:next";

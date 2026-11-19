@@ -27,7 +27,7 @@ cp jagt.server.yml.dist jagt.yml          # the image ships it as /app/jagt.yml;
 - Verify runs go one task at a time, since the verify job never overlaps itself: size the pod's limits for one
   `verifyCommand` beside the sessions.
 - The board's head names a `verifyCommand`, `setupCommand` or acceptance flows program the image lacks:
-  extend the image (`Dockerfile.dist` has the Node and Chromium layers).
+  extend the image (`examples/agent-image.Dockerfile` has the Node and Chromium layers).
 - The host of `JAGT_PUBLIC_URL` is the one the ingress must forward; any other `Host` or `Origin` is refused with 403.
 - The ingress ends TLS (the manifest's `tls` Secret); the starter reads `X-Forwarded-*`, sets the cookie Secure
   and ends an idle login after 30 minutes.
@@ -56,10 +56,10 @@ orchestrator:
 
 ## Secrets
 
-`.env` for compose, a `Secret` for Kubernetes, the same keys (`.env.dist`), never in `jagt.yml` or an image:
+`.env` for compose, a `Secret` for Kubernetes, the same keys (`examples/server.env`), never in `jagt.yml` or an image:
 
 ```sh
-cp .env.dist .env    # JAGT_PASSWORD_HASH='<bcrypt hash>' (single quotes: compose reads a bare $), JAGT_PUBLIC_URL
+cp examples/server.env .env    # JAGT_PASSWORD_HASH='<bcrypt hash>' (single quotes: compose reads a bare $), JAGT_PUBLIC_URL
 ```
 
 Add the agent CLI's API key and the code host's token to the same file or Secret, under the names those tools read.
@@ -75,7 +75,7 @@ Each is set by your image's environment or a mounted file, never a value in `jag
 | notification | the channel's webhook | the starter's commented `chat` channel: `JAGT_NOTIFY_WEBHOOK` holds the URL, `webhookEnv` names it; unset while a route uses it, the start is refused |
 
 - The mounted MCP file carries the tracker's own `${VAR}` secrets; a `gh` or `glab` login under HOME is only their fallback.
-- Pass the variables at run time (`docker run -e`, a compose `.env`, a Kubernetes `Secret`); see `Dockerfile.dist`.
+- Pass the variables at run time (`docker run -e`, a compose `.env`, a Kubernetes `Secret`); see `examples/agent-image.Dockerfile`.
 
 ## The agent's settings, plugins and MCP servers
 
@@ -83,7 +83,7 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 
 | what | where | how |
 |------|-------|-----|
-| settings, plugins, skills | baked into the image as a seed folder (`JAGT_AGENT_SEED`) from your plugin marketplace repository | the `Dockerfile.dist` stage clones it with a build secret and records the commit it built from |
+| settings, plugins, skills | baked into the image as a seed folder (`JAGT_AGENT_SEED`) from your plugin marketplace repository | the `examples/agent-image.Dockerfile` stage clones it with a build secret and records the commit it built from |
 | MCP config holding a token | mounted from a `Secret`, its path in `JAGT_MCP_CONFIG` | never in the image |
 
 - HOME is `/data/home`, on the volume: a revived session finds its conversation and login after a new pod. The volume hides whatever the
@@ -103,15 +103,16 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 ## Your toolchain
 
 Sessions check their work in your image, built `FROM` jagt's: [spec](../openspec/specs/server-environment/spec.md),
-[0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md), optional blocks in [`Dockerfile.dist`](../Dockerfile.dist).
+[0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md),
+[optional blocks](../examples/agent-image.Dockerfile).
 
 ## Build and deploy
 
-Your image sits on jagt's: `Dockerfile.dist` adds the agent CLI, `gh` and `glab` as optional blocks.
+Your image sits on jagt's: `examples/agent-image.Dockerfile` adds the agent CLI, `gh` and `glab` as optional blocks.
 
 ```sh
 docker build -t jagt-base .                                              # in a jagt checkout
-docker build -f Dockerfile.dist --build-arg BASE=jagt-base -t my-jagt .
+docker build -f examples/agent-image.Dockerfile --build-arg BASE=jagt-base -t my-jagt .
 ```
 
 **Compose** builds jagt's own image and mounts one volume, `jagt-data`, at `/data`: state, artifacts, repositories,
@@ -123,7 +124,7 @@ docker compose up -d --build
 curl -s localhost:8290/actuator/health/readiness     # 200 once startup checks are green and clones are done
 ```
 
-**Kubernetes**: `cp kubernetes.yml.dist kubernetes.yml`, set the image, host and Secret values, `kubectl apply -f kubernetes.yml`
+**Kubernetes**: `cp examples/kubernetes.yml kubernetes.yml`, set the image, host and Secret values, `kubectl apply -f kubernetes.yml`
 ([0179](decisions/0179-the-kubernetes-pod-is-restricted-and-its-jvm-sized.md)).
 One replica, `Recreate`, restricted Pod Security Standard, no fixed UID (the image runs as any UID in group 0, as OpenShift
 assigns; [0192](decisions/0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-sized.md)),
