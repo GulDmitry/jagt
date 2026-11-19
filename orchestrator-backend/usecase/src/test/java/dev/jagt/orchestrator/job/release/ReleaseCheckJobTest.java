@@ -2,12 +2,18 @@ package dev.jagt.orchestrator.job.release;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -19,6 +25,7 @@ class ReleaseCheckJobTest {
       "fba6a4ac61e440c7309ae013e5c5c7ac0a9000c8a3bab7def760b499d587b1d0  jagt-0.25.0.jar\n";
 
   private final Host host = mock(Host.class);
+  private final Reach reach = mock(Reach.class);
 
   @Test
   void keepsNewerReleaseVerifiedBesideTheRunningOne(@TempDir Path root) throws Exception {
@@ -27,7 +34,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed).run();
+    new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(root.resolve("versions/0.25.0/jagt.jar")).hasContent("jar bytes");
     assertThat(running.resolve("jagt.jar")).hasContent("running");
@@ -44,7 +51,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "tampered", SUMS, false);
 
-    new ReleaseCheckJob(host, feed).run();
+    new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(root.resolve("versions/0.25.0")).doesNotExist();
     assertThat(root.toFile().list()).containsExactly("versions");
@@ -56,7 +63,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(jar));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed).run();
+    new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(feed.downloads).isZero();
     try (Stream<Path> entries = Files.list(folder)) {
@@ -73,7 +80,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed).run();
+    new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(feed.downloads).isZero();
     assertThat(kept.resolve("jagt.jar")).hasContent("kept earlier");
@@ -86,7 +93,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.24.9"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed).run();
+    new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(feed.downloads).isZero();
   }
@@ -99,7 +106,7 @@ class ReleaseCheckJobTest {
     FakeReleaseFeed feed =
         new FakeReleaseFeed(Optional.of("9.0.0/../../x"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed).run();
+    new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(feed.downloads).isZero();
   }
@@ -111,7 +118,50 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.empty(), "", "", true);
 
-    assertThatCode(() -> new ReleaseCheckJob(host, feed).run()).doesNotThrowAnyException();
+    assertThatCode(() -> new ReleaseCheckJob(host, feed, reach).run()).doesNotThrowAnyException();
     assertThat(feed.downloads).isZero();
+  }
+
+  @Test
+  void marksTheBoardHeadWhenTheFeedCannotBeRead(@TempDir Path root) throws Exception {
+    Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
+    when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
+    FakeReleaseFeed feed = new FakeReleaseFeed(Optional.empty(), "", "", true);
+
+    new ReleaseCheckJob(host, feed, reach).run();
+
+    verify(reach)
+        .marked(
+            new ReachLost(
+                "fake",
+                "releases.example.invalid",
+                List.of(),
+                "fake cannot read the release feed on releases.example.invalid"));
+    verify(reach, never()).reached("fake", "releases.example.invalid");
+  }
+
+  @Test
+  void clearsTheMarkWhenTheFeedIsReadAgain(@TempDir Path root) throws Exception {
+    Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
+    when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
+    FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.24.1"), "", "", false);
+
+    new ReleaseCheckJob(host, feed, reach).run();
+
+    verify(reach).reached("fake", "releases.example.invalid");
+    verify(reach, never()).marked(any());
+  }
+
+  @Test
+  void removesStagingFoldersAnInterruptedRunLeft(@TempDir Path root) throws Exception {
+    Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
+    when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
+    Path leftover = Files.createDirectories(root.resolve(".staging.12345"));
+    Files.writeString(leftover.resolve("jagt-0.25.0.jar"), "half");
+    FakeReleaseFeed feed = new FakeReleaseFeed(Optional.empty(), "", "", false);
+
+    new ReleaseCheckJob(host, feed, reach).run();
+
+    assertThat(root.toFile().list()).containsExactly("versions");
   }
 }

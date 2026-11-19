@@ -46,6 +46,16 @@ class GithubReleaseFeed implements ReleaseFeed {
   }
 
   @Override
+  public String driver() {
+    return "github";
+  }
+
+  @Override
+  public String host() {
+    return URI.create(base).getHost();
+  }
+
+  @Override
   public Optional<String> latest() throws IOException {
     HttpResponse<Void> answer =
         send(

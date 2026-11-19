@@ -3,12 +3,16 @@ package dev.jagt.orchestrator.job.release;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.ReleaseFeed;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
@@ -30,14 +34,16 @@ public class ReleaseCheckJob implements Job {
 
   private final Host host;
   private final ReleaseFeed feed;
+  private final Reach reach;
 
-  public ReleaseCheckJob(Host host, ReleaseFeed feed) {
+  public ReleaseCheckJob(Host host, ReleaseFeed feed, Reach reach) {
     this.host = host;
     this.feed = feed;
+    this.reach = reach;
   }
 
   /** The running version, and the folder holding every installed one. */
-  private record Installed(String running, Path versions) {}
+  private record Installed(String running, Path versions, Path root) {}
 
   @Override
   public String id() {
@@ -68,19 +74,29 @@ public class ReleaseCheckJob implements Job {
   private static Optional<Installed> within(Path jar) {
     Path folder = jar.getParent();
     Path versions = folder == null ? null : folder.getParent();
+    Path root = versions == null ? null : versions.getParent();
     if (folder == null
         || versions == null
+        || root == null
         || !VERSIONS.equals(String.valueOf(versions.getFileName()))) {
       return Optional.empty();
     }
-    return Optional.of(new Installed(String.valueOf(folder.getFileName()), versions));
+    return Optional.of(new Installed(String.valueOf(folder.getFileName()), versions, root));
   }
 
   private void check(Installed installed) {
+    sweepLeftovers(installed.root());
     Optional<String> latest;
     try {
       latest = feed.latest();
+      reach.reached(feed.driver(), feed.host());
     } catch (IOException e) {
+      reach.marked(
+          new ReachLost(
+              feed.driver(),
+              feed.host(),
+              List.of(),
+              feed.driver() + " cannot read the release feed on " + feed.host()));
       log.atWarn()
           .setMessage("release read failed")
           .addKeyValue("cause", e.toString())
@@ -153,6 +169,20 @@ public class ReleaseCheckJob implements Job {
     Path folder = Files.createDirectory(staging.resolve(version));
     Files.move(jar, folder.resolve(JAR));
     return folder;
+  }
+
+  private static void sweepLeftovers(Path root) {
+    try (DirectoryStream<Path> leftovers = Files.newDirectoryStream(root, ".staging.*")) {
+      leftovers.forEach(ReleaseCheckJob::sweep);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("staging leftovers not listed")
+          .addKeyValue("path", root)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "an interrupted run's hidden folders stay until the next check")
+          .setCause(e)
+          .log();
+    }
   }
 
   private static void sweep(@Nullable Path staging) {

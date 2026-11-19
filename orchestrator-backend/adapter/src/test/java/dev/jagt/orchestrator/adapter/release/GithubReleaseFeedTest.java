@@ -15,6 +15,14 @@ import org.junit.jupiter.api.io.TempDir;
 class GithubReleaseFeedTest {
 
   @Test
+  void namesItsDriverAndTheHostOfItsUrl() {
+    GithubReleaseFeed feed = new GithubReleaseFeed("https://git.example.invalid/org/app/releases/");
+
+    assertThat(feed.driver()).isEqualTo("github");
+    assertThat(feed.host()).isEqualTo("git.example.invalid");
+  }
+
+  @Test
   void readsTheLatestVersionFromTheRedirectOfLatest() throws Exception {
     HttpServer server =
         HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);

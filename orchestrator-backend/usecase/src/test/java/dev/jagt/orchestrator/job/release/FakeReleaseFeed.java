@@ -22,6 +22,16 @@ final class FakeReleaseFeed implements ReleaseFeed {
   }
 
   @Override
+  public String driver() {
+    return "fake";
+  }
+
+  @Override
+  public String host() {
+    return "releases.example.invalid";
+  }
+
+  @Override
   public Optional<String> latest() throws IOException {
     if (unreachable) {
       throw new IOException("connection refused");

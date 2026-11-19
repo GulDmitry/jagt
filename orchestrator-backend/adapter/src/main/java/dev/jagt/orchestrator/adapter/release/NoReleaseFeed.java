@@ -12,6 +12,16 @@ import org.springframework.stereotype.Component;
 class NoReleaseFeed implements ReleaseFeed {
 
   @Override
+  public String driver() {
+    return "none";
+  }
+
+  @Override
+  public String host() {
+    return "";
+  }
+
+  @Override
   public Optional<String> latest() {
     return Optional.empty();
   }

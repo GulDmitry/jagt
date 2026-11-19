@@ -17,6 +17,12 @@ class NoReleaseFeedTest {
   }
 
   @Test
+  void namesNoHostWhenNoFeedIsChosen() {
+    assertThat(feed.driver()).isEqualTo("none");
+    assertThat(feed.host()).isEmpty();
+  }
+
+  @Test
   void downloadsNothingWhenNoFeedIsChosen() {
     assertThatThrownBy(() -> feed.jar("0.25.0", Path.of("a.jar"))).isInstanceOf(IOException.class);
     assertThatThrownBy(() -> feed.checksums("0.25.0", Path.of("a.sha256")))
