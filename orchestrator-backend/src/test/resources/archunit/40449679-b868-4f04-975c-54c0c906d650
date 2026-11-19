@@ -198,7 +198,6 @@ Method <dev.jagt.orchestrator.service.master.MasterReview$Verdict.ready()> does 
 Method <dev.jagt.orchestrator.service.review.ReviewDrafts.pending(dev.jagt.orchestrator.task.TaskState, dev.jagt.orchestrator.task.TaskStatus)> does not satisfy be called from main in (ReviewDrafts.java:42)
 Method <dev.jagt.orchestrator.service.turn.TaskTurns.asked(dev.jagt.orchestrator.task.TaskState)> does not satisfy be called from main in (TaskTurns.java:182)
 Method <dev.jagt.orchestrator.surface.board.task.MarkdownHtml.render(java.lang.String)> does not satisfy be called from main in (MarkdownHtml.java:37)
-Method <dev.jagt.orchestrator.job.release.ReleaseSwitch.switchTo(java.nio.file.Path, java.lang.String)> does not satisfy be called from main in (ReleaseSwitch.java:43)
 Method <dev.jagt.orchestrator.task.FinishedTask$Course.withChecks(java.lang.String)> does not satisfy be called from main in (FinishedTask.java:63)
 Method <dev.jagt.orchestrator.task.FinishedTask$Course.withHistory(java.util.List)> does not satisfy be called from main in (FinishedTask.java:60)
 Method <dev.jagt.orchestrator.task.FinishedTask$Course.withMasterVerdict(java.lang.String)> does not satisfy be called from main in (FinishedTask.java:68)

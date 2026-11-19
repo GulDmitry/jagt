@@ -41,6 +41,42 @@ class CommandReferenceTest {
   }
 
   @Test
+  void leavesVerbOutWhileItHasNothingToDo() {
+    GlobalCommand idle =
+        new GlobalCommand() {
+          @Override
+          public String id() {
+            return "idle";
+          }
+
+          @Override
+          public String hint() {
+            return "nothing to do";
+          }
+
+          @Override
+          public int rank() {
+            return 15;
+          }
+
+          @Override
+          public boolean available() {
+            return false;
+          }
+
+          @Override
+          public String run(String tail) {
+            return "ran";
+          }
+        };
+
+    assertThat(CommandReference.verbs(List.of(idle)))
+        .extracting(CommandReference.Verb::id)
+        .doesNotContain("idle");
+    assertThat(CommandReference.text(List.of(idle))).doesNotContain("nothing to do");
+  }
+
+  @Test
   void handsThePaletteTheRetiredSpellingSoMuscleMemoryStillRuns() {
     assertThat(CommandReference.verbs(List.of()))
         .filteredOn(verb -> verb.id().equals("sweep"))

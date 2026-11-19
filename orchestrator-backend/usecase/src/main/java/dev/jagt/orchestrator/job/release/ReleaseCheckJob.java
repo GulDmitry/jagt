@@ -33,11 +33,25 @@ public class ReleaseCheckJob implements Job {
   private final Host host;
   private final ReleaseFeed feed;
   private final Reach reach;
+  private volatile Optional<Kept> kept = Optional.empty();
 
   public ReleaseCheckJob(Host host, ReleaseFeed feed, Reach reach) {
     this.host = host;
     this.feed = feed;
     this.reach = reach;
+  }
+
+  /** A verified release waiting under {@code <root>/versions/<version>/}. */
+  public record Kept(Path root, String version) {}
+
+  /** The newer release the last check found kept and verified; empty until one is. */
+  public Optional<Kept> kept() {
+    return kept;
+  }
+
+  /** {@code current} names the version now, so it no longer waits. */
+  public void switched(String version) {
+    kept = kept.filter(waiting -> !waiting.version().equals(version));
   }
 
   /** The running version, and the folder holding every installed one. */
@@ -103,10 +117,14 @@ public class ReleaseCheckJob implements Job {
           .log();
       return;
     }
-    latest
-        .filter(version -> newer(version, installed.running()))
+    Optional<String> newest = latest.filter(version -> newer(version, installed.running()));
+    newest
         .filter(version -> !Files.exists(installed.versions().resolve(version).resolve(JAR)))
         .ifPresent(version -> keep(installed.versions(), version));
+    kept =
+        newest
+            .filter(version -> Files.exists(installed.versions().resolve(version).resolve(JAR)))
+            .map(version -> new Kept(installed.root(), version));
   }
 
   private static boolean newer(String candidate, String running) {

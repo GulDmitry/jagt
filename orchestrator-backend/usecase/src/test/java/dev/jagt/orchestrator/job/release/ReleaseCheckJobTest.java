@@ -63,10 +63,13 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "tampered", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach).run();
+    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach);
+
+    job.run();
 
     assertThat(root.resolve("versions/0.25.0")).doesNotExist();
     assertThat(root.toFile().list()).containsExactly("versions");
+    assertThat(job.kept()).isEmpty();
   }
 
   @Test
@@ -175,5 +178,32 @@ class ReleaseCheckJobTest {
     new ReleaseCheckJob(host, feed, reach).run();
 
     assertThat(root.toFile().list()).containsExactly("versions");
+  }
+
+  @Test
+  void namesTheNewerReleaseItKeptAsWaitingUntilItIsSwitched(@TempDir Path root) throws Exception {
+    Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
+    when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
+    FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
+    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach);
+
+    job.run();
+    Optional<ReleaseCheckJob.Kept> waiting = job.kept();
+    job.switched("0.25.0");
+
+    assertThat(waiting).contains(new ReleaseCheckJob.Kept(root, "0.25.0"));
+    assertThat(job.kept()).isEmpty();
+  }
+
+  @Test
+  void namesNothingWaitingWhenTheLatestIsNotNewer(@TempDir Path root) throws Exception {
+    Path running = Files.createDirectories(root.resolve("versions").resolve("0.25.0"));
+    when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
+    FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
+    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach);
+
+    job.run();
+
+    assertThat(job.kept()).isEmpty();
   }
 }
