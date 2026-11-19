@@ -108,7 +108,7 @@ class MoveTest {
             rules,
             status,
             Facts.defaults(),
-            RoundState.of(AgentReport.PLAIN, false).withMasterReading(true),
+            RoundState.of(AgentReport.PLAIN, false).withArbiterReading(true),
             false);
 
     assertThat(move.owner()).isEqualTo(Owner.AGENT);

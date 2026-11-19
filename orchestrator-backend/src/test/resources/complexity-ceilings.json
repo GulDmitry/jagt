@@ -10,7 +10,7 @@
   "dependencyLinesInBuildGradle": 75,
   "capabilities": 19,
   "ports": 52,
-  "startupChecks": 31,
+  "startupChecks": 33,
   "roles": 4,
   "specCapabilities": 50,
   "ruleDocs": 7,

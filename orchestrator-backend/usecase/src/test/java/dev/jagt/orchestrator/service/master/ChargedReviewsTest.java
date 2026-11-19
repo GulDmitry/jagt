@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.assistant;
+package dev.jagt.orchestrator.service.master;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -11,6 +11,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.usage.TokenUsage;

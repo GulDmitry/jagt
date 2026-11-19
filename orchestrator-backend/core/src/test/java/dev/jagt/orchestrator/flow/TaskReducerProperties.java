@@ -386,12 +386,13 @@ class TaskReducerProperties {
                       Optional.of(next)
                           .filter(moved ->
                               MasterPhase.of(moved) != MasterPhase.LEFT
-                                  && FlowRules.readByTheMaster(moved.status()))
+                                  && FlowRules.readByTheArbiter(moved.status()))
                           .ifPresent(moved -> {
                             TaskState read =
-                                reducer.masterSealed(moved, "fingerprint", moved.turnOrNone().id());
+                                reducer.arbiterSealed(
+                                    moved, "fingerprint", moved.turnOrNone().id());
                             assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
-                            assertThat(MasterPhase.of(reducer.masterVerdictGone(read)))
+                            assertThat(MasterPhase.of(reducer.arbiterVerdictGone(read)))
                                 .isEqualTo(MasterPhase.STANDS_IN);
                           });
                       return next;

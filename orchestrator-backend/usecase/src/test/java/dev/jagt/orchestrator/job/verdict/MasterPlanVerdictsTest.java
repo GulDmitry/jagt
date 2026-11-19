@@ -52,12 +52,12 @@ class MasterPlanVerdictsTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final ApprovedPlan plan = mock(ApprovedPlan.class);
   private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
-  private final ConfigService.ConfigFile.MasterConfig acting =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-  private final ConfigService.ConfigFile.MasterConfig actingWithoutKeepList =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-  private final ConfigService.ConfigFile.MasterConfig keepingPlan =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
+  private final ConfigService.ConfigFile.ArbiterConfig acting =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of(), null);
+  private final ConfigService.ConfigFile.ArbiterConfig actingWithoutKeepList =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig keepingPlan =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of("plan"), null);
   private final MasterReview.Verdict planHolds =
       new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
   private StateService state;
@@ -102,7 +102,7 @@ class MasterPlanVerdictsTest {
                 read,
                 new MasterReview.Verdict(
                     MasterReview.Kind.READY, List.of(), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
+                new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of(), null)))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.flows;
 
 import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner;
+import dev.jagt.orchestrator.port.worktree.FlowRunner;
 import dev.jagt.orchestrator.service.role.RoleKit;
 import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.role.RoleSettings;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 /** The driver is read from the role's folder on every run, so an edit needs no restart. */
 @Component
 @RequiredArgsConstructor
-public class FlowsRunner implements AcceptanceRunner {
+public class FlowsRunner implements FlowRunner {
 
   public static final String PLAYWRIGHT = "playwright";
   static final List<String> DRIVERS = List.of("none", PLAYWRIGHT);

@@ -12,7 +12,10 @@ class RoleModulesTest {
     assertThat(
             Stream.concat(
                     RoleModules.ARBITER.stream(),
-                    RoleModules.CHECKERS.values().stream().flatMap(java.util.List::stream))
+                    Stream.concat(
+                        RoleModules.CHECKERS.values().stream().flatMap(java.util.List::stream),
+                        Stream.concat(
+                            RoleModules.STOP_KIND.stream(), RoleModules.CHECKER_KIND.stream())))
                 .filter(prefix ->
                     MainClasses.CODE.stream().noneMatch(type -> type.getName().startsWith(prefix))))
         .isEmpty();

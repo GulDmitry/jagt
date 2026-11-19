@@ -232,7 +232,7 @@ class JobsTest {
   @ParameterizedTest
   @CsvSource({
     "TASKS,your tasks",
-    "MASTER,the master",
+    "ARBITER,the arbiter",
     "TRACKER,the tracker",
     "HOUSEKEEPING,housekeeping"
   })

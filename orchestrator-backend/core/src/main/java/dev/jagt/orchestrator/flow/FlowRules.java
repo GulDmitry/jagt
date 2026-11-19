@@ -211,8 +211,8 @@ public final class FlowRules {
    * A stop of this trigger is a loop jagt suspected, which in act the Master decides; the others
    * are the human's or end on a read.
    */
-  public static boolean liftedByTheMaster(TaskStop.Trigger trigger) {
-    return LIFTED_BY_THE_MASTER.contains(trigger);
+  public static boolean liftedByTheArbiter(TaskStop.Trigger trigger) {
+    return LIFTED_BY_THE_ARBITER.contains(trigger);
   }
 
   /** A closed task: its worktree is gone, so nothing can be relayed into it. */
@@ -237,13 +237,13 @@ public final class FlowRules {
   }
 
   /** A plan or a round handed back, which the Master reads before the human where it runs. */
-  public static boolean readByTheMaster(TaskStatus status) {
-    return TaskChart.readByTheMaster(status);
+  public static boolean readByTheArbiter(TaskStatus status) {
+    return TaskChart.readByTheArbiter(status);
   }
 
   /** A hand-back the Master reads next, once verification has passed where one runs. */
-  public static boolean headedForTheMaster(TaskStatus status) {
-    return awaitingVerification(status) || readByTheMaster(status);
+  public static boolean headedForTheArbiter(TaskStatus status) {
+    return awaitingVerification(status) || readByTheArbiter(status);
   }
 
   /** Read and green, with only the approval or the deploy still to come. */
@@ -254,7 +254,7 @@ public final class FlowRules {
   /**
    * A request green with every thread closed, which in act the Master deploys as the human would.
    */
-  public static boolean deployedByTheMaster(TaskStatus status) {
+  public static boolean deployedByTheArbiter(TaskStatus status) {
     return TaskChart.waitsForDeploy(status);
   }
 
@@ -340,7 +340,7 @@ public final class FlowRules {
     return chart.verifiable();
   }
 
-  private static final Set<TaskStop.Trigger> LIFTED_BY_THE_MASTER =
+  private static final Set<TaskStop.Trigger> LIFTED_BY_THE_ARBITER =
       EnumSet.of(
           TaskStop.Trigger.STALLED,
           TaskStop.Trigger.SHIPS,

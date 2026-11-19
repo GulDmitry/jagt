@@ -61,8 +61,8 @@ class AgentStatusReportsTest {
   private final ConfigService configService = mock(ConfigService.class);
   private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
 
-  private final ConfigService.ConfigFile.MasterConfig actMaster =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig actMaster =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final ConfigService.ConfigFile verifying =
       ConfigService.ConfigFile.defaults()
           .withProjects(
@@ -203,13 +203,13 @@ class AgentStatusReportsTest {
   void tellsTheSessionTheMasterReadsItsHandBackNext() {
     state.putTask("ABC-1", inProgress);
     when(configService.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withMaster(actMaster));
+        .thenReturn(ConfigService.ConfigFile.defaults().withArbiter(actMaster));
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
     assertThat(answer)
         .isEqualTo(
-            "Task ABC-1 -> REVIEW_PENDING (done); the Master reads this round next;"
+            "Task ABC-1 -> REVIEW_PENDING (done); the arbiter reads this round next;"
                 + " end your turn");
   }
 
@@ -831,13 +831,13 @@ class AgentStatusReportsTest {
   @Test
   void tellsTheSessionItsHandBackIsVerifiedBeforeTheMasterReadsIt() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(verifying.withMaster(actMaster));
+    when(configService.load()).thenReturn(verifying.withArbiter(actMaster));
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
     assertThat(answer)
         .endsWith(
-            "verification runs first, and the Master reads this round once it passes;"
+            "verification runs first, and the arbiter reads this round once it passes;"
                 + " end your turn");
   }
 

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.task.acceptance;
+package dev.jagt.orchestrator.task.turn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

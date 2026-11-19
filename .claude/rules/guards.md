@@ -4,7 +4,7 @@ paths:
   - "**/service/gate/ReadGate.java"
   - "**/service/gate/HostCliLine.java"
   - "**/service/gate/ToolGate.java"
-  - "**/service/scenario/AcceptanceProbing.java"
+  - "**/service/plan/PlanProbing.java"
   - "**/service/gate/ReadScopes.java"
   - "**/service/git/WorktreeHooks.java"
   - "**/BoardWriteFilter.java"

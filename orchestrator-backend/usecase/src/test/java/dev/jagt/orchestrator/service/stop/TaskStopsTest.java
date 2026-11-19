@@ -632,10 +632,10 @@ class TaskStopsTest {
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).build());
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.lift("ABC-42"));
-    int afterTheMasters = state.task("ABC-42").orElseThrow().masterOrNone().liftedStops();
+    int afterTheMasters = state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops();
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
     OriginContext.as(ActionOrigin.BOARD, () -> stops.lift("ABC-42"));
-    int afterTheHumans = state.task("ABC-42").orElseThrow().masterOrNone().liftedStops();
+    int afterTheHumans = state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops();
 
     assertThat(afterTheMasters).isEqualTo(1);
     assertThat(afterTheHumans).isZero();
@@ -646,7 +646,7 @@ class TaskStopsTest {
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
     state.putTask(
         "ABC-42",
-        reducer.masterLiftedStops(
+        reducer.arbiterLiftedStops(
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .stop(stop)
                 .build()
@@ -658,7 +658,7 @@ class TaskStopsTest {
     TaskState escalated = state.task("ABC-42").orElseThrow();
     assertThat(escalated.stopped()).isFalse();
     assertThat(Objects.requireNonNull(escalated.tier()).current()).isEqualTo("opus");
-    assertThat(escalated.masterOrNone().liftedStops()).isZero();
+    assertThat(escalated.arbiterOrNone().liftedStops()).isZero();
   }
 
   @Test
@@ -685,7 +685,7 @@ class TaskStopsTest {
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.escalate("ABC-42"));
 
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().liftedStops()).isEqualTo(1);
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops()).isEqualTo(1);
   }
 
   @Test
@@ -697,7 +697,7 @@ class TaskStopsTest {
             .withProfile(new Arbiter.Profile(MasterMode.ACT, Set.of("done")))
             .build(state, clock);
 
-    assertThat(masterStops.masterKeeps("ABC-42", TaskAction.DONE)).isTrue();
-    assertThat(masterStops.masterKeeps("ABC-42", TaskAction.TRUST)).isFalse();
+    assertThat(masterStops.arbiterKeeps("ABC-42", TaskAction.DONE)).isTrue();
+    assertThat(masterStops.arbiterKeeps("ABC-42", TaskAction.TRUST)).isFalse();
   }
 }

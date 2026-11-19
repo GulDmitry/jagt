@@ -58,26 +58,26 @@ public class CaseDoor {
    * outright, and a lift or tier-up past the Master's bound too.
    */
   public boolean presses(String taskId, TaskAction action) {
-    if (!byTheMaster()) {
+    if (!byTheArbiter()) {
       return true;
     }
-    if (stops.masterKeeps(taskId, action)) {
+    if (stops.arbiterKeeps(taskId, action)) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           action.label() + " is kept for the human: mine names it.");
     }
     if ((action == TaskAction.LIFT || action == TaskAction.ESCALATE)
-        && stops.masterLiftsSpent(taskId)) {
+        && stops.arbiterLiftsSpent(taskId)) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
-          action.label() + " is the human's: the Master's lift since their last is spent.");
+          action.label() + " is the human's: the arbiter's lift since their last is spent.");
     }
     return held(taskId, action.id());
   }
 
   /** Only the Master's move is held to a case: any other passes. */
   public boolean presses(String taskId, String move) {
-    return !byTheMaster() || held(taskId, move);
+    return !byTheArbiter() || held(taskId, move);
   }
 
   private boolean held(String taskId, String move) {
@@ -87,7 +87,7 @@ public class CaseDoor {
   }
 
   /** Whether what runs now runs as the Master: the one answer to who that is. */
-  public static boolean byTheMaster() {
+  public static boolean byTheArbiter() {
     return CaseBook.By.MASTER.equals(by());
   }
 
@@ -126,11 +126,11 @@ public class CaseDoor {
         .addKeyValue("step", move)
         .addKeyValue("status", status)
         .addKeyValue("by", CaseBook.By.MASTER.id())
-        .addKeyValue("cause", "no master case allows it at this status")
+        .addKeyValue("cause", "no arbiter case allows it at this status")
         .addKeyValue("effect", "the move not made, the task stopped")
         .addKeyValue("fix", MasterCases.FILE)
         .log();
-    stops.stop(id, TaskStop.Trigger.MISS, "no master case allows " + move + " at " + status);
+    stops.stop(id, TaskStop.Trigger.MISS, "no arbiter case allows " + move + " at " + status);
     return false;
   }
 

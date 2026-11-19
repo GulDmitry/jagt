@@ -17,7 +17,8 @@ public record TestConflictStallBuilder(String masterMode) {
 
   public ConfigService.ConfigFile config() {
     return ConfigService.ConfigFile.defaults()
-        .withMaster(new ConfigService.ConfigFile.MasterConfig(masterMode, null, null, null, null));
+        .withArbiter(
+            new ConfigService.ConfigFile.ArbiterConfig(masterMode, null, null, null, null));
   }
 
   public ConflictStall build(StateService state, ConfigService config, Clock clock) {

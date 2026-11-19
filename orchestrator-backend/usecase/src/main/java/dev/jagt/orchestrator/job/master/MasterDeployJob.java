@@ -30,7 +30,7 @@ public class MasterDeployJob implements TaskJob {
 
   @Override
   public Serves serves() {
-    return Serves.MASTER;
+    return Serves.ARBITER;
   }
 
   @Override
@@ -45,18 +45,18 @@ public class MasterDeployJob implements TaskJob {
 
   @Override
   public Watch watch() {
-    return Watch.defaults().withStatuses(FlowRules::deployedByTheMaster);
+    return Watch.defaults().withStatuses(FlowRules::deployedByTheArbiter);
   }
 
   @Override
   public void run(String taskId, TaskState task) {
-    Arbiter.Profile profile = configService.load().master().profile();
+    Arbiter.Profile profile = configService.load().arbiter().profile();
     String arrival = String.valueOf(task.statusSince());
     // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a
     // restart.
     if (!profile.may(MasterRight.DEPLOY)
         || !turns.next(task, profile).equals(Turn.Holder.ARBITER)
-        || task.masterOrNone().pressedDeploy().equals(arrival)) {
+        || task.arbiterOrNone().pressedDeploy().equals(arrival)) {
       return;
     }
     turns.pressedDeploy(taskId, arrival);

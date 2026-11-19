@@ -141,8 +141,8 @@ public class OrchestratorPaths {
   /**
    * The Master's token, drawn at each start: beside the state, so a read-only root still starts.
    */
-  public Path masterToken() {
-    return layout.masterToken();
+  public Path token() {
+    return layout.token();
   }
 
   /** The last moment this process was seen alive, rewritten every minute. */

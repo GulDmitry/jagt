@@ -1,6 +1,6 @@
-package dev.jagt.orchestrator.job.stop;
+package dev.jagt.orchestrator.job.triage;
 
-import static dev.jagt.orchestrator.job.stop.TestStopTriageJobBuilder.stopTriageJob;
+import static dev.jagt.orchestrator.job.triage.TestStopTriageJobBuilder.stopTriageJob;
 import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;

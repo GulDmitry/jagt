@@ -41,7 +41,7 @@ public record NewTaskMessage(
   public static final Schema SCHEMA =
       Schema.of(
               "Create an isolated Git worktree for a task, register it in state.json and start a"
-                  + " sub-agent in its own session. Master-only.")
+                  + " sub-agent in its own session. Root-session-only.")
           .required(
               "taskId",
               "string",

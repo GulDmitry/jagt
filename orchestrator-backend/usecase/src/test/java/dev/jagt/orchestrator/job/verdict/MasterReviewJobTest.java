@@ -56,8 +56,8 @@ class MasterReviewJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     job.run();
 
@@ -71,9 +71,9 @@ class MasterReviewJobTest {
             .lastActiveTimestamp(2_000L)
             .build();
     state.putTask("ABC-1", back);
-    ConfigService.ConfigFile.MasterConfig master =
-        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
+    ConfigService.ConfigFile.ArbiterConfig master =
+        new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
 
     job.run();
 
@@ -84,9 +84,9 @@ class MasterReviewJobTest {
   void handsPlanToThePlanReadingPanelNotTheRoundReadingOne() {
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
-    ConfigService.ConfigFile.MasterConfig master =
-        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
+    ConfigService.ConfigFile.ArbiterConfig master =
+        new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
 
     job.run();
 
@@ -101,8 +101,8 @@ class MasterReviewJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     job.run();
 
@@ -128,9 +128,9 @@ class MasterReviewJobTest {
     void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain() {
       reviews.write(
           "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
-      ConfigService.ConfigFile.MasterConfig master =
-          new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
+      ConfigService.ConfigFile.ArbiterConfig master =
+          new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
       TaskState written = state.task("ABC-1").orElseThrow();
 
       job.run();
@@ -144,8 +144,8 @@ class MasterReviewJobTest {
       when(config.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(
-                      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                  .withArbiter(
+                      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
       when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
       reviews.write(
           "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
@@ -160,9 +160,9 @@ class MasterReviewJobTest {
     void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack() {
       reviews.write(
           "ABC-1", back, new MasterReview.Review(3, "", "", "", List.of(acceptanceReady)), "");
-      ConfigService.ConfigFile.MasterConfig master =
-          new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
+      ConfigService.ConfigFile.ArbiterConfig master =
+          new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
 
       job.run();
 
@@ -220,8 +220,8 @@ class MasterReviewJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     job.run();
 

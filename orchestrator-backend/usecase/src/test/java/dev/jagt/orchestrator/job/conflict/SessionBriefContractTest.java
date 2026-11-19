@@ -26,6 +26,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.launch.ResumeInstructions;
+import dev.jagt.orchestrator.service.master.ReplyRight;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -164,7 +165,7 @@ class SessionBriefContractTest {
             config,
             stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC()),
             changes,
-            door);
+            new ReplyRight(door));
 
     OriginContext.as(ActionOrigin.BOARD, () -> ships.ship("ABC-42"));
 

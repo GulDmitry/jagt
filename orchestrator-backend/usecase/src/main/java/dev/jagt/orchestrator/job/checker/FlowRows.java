@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job.checker;
 
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.FlowResult;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Row;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Status;

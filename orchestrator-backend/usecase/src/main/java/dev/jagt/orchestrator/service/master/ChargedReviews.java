@@ -1,7 +1,8 @@
-package dev.jagt.orchestrator.service.assistant;
+package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.reach.SessionReach;
 import dev.jagt.orchestrator.service.usage.UsageTracker;

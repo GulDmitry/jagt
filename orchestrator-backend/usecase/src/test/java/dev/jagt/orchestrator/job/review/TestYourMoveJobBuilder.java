@@ -24,7 +24,7 @@ public record TestYourMoveJobBuilder(String mode, @Nullable List<String> mine) {
 
   public ConfigService.ConfigFile config() {
     return ConfigService.ConfigFile.defaults()
-        .withMaster(new ConfigService.ConfigFile.MasterConfig(mode, null, null, mine, null));
+        .withArbiter(new ConfigService.ConfigFile.ArbiterConfig(mode, null, null, mine, null));
   }
 
   public YourMoveJob build(

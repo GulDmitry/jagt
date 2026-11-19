@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.gate.ToolGate;
-import dev.jagt.orchestrator.service.scenario.AcceptanceProbing;
+import dev.jagt.orchestrator.service.plan.PlanProbing;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -33,7 +33,7 @@ class VerificationTest {
       new Verification(
           config,
           processes,
-          new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
+          new PlanProbing(processes, new ToolGate(List.of()), 8290),
           mock(WorktreeChanges.class));
   private final ConfigService.ConfigFile gradleProject =
       ConfigService.ConfigFile.defaults()

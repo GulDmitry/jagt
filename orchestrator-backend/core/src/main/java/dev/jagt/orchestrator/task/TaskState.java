@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.Nulls;
-import dev.jagt.orchestrator.task.acceptance.RoleRecord;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
@@ -24,6 +23,7 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.HumanWait;
+import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import dev.jagt.orchestrator.task.turn.Turn;
@@ -1023,7 +1023,7 @@ public record TaskState(
   }
 
   @JsonIgnore
-  public Master masterOrNone() {
+  public Master arbiterOrNone() {
     return master() == null ? Master.defaults() : master();
   }
 

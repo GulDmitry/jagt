@@ -31,7 +31,7 @@ public class MasterCaseCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    if (!Files.exists(paths.configFile()) || !config.load().master().running()) {
+    if (!Files.exists(paths.configFile()) || !config.load().arbiter().running()) {
       return List.of();
     }
     return Stream.concat(

@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -43,7 +42,7 @@ class FinishedTasksTest {
                 .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     state = new StateService(mapper, paths, reducer, event -> {});
-    finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
+    finished = new FinishedTasks(mapper, state, paths, mock(Verdicts.class), Clock.systemUTC());
   }
 
   @Test

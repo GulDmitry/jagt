@@ -10,13 +10,13 @@ import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.notify.PointCatalogue.Standing;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.acceptance.RoleRecord;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +170,7 @@ class PointCatalogueTest {
             .stop(new TaskStop(TaskStop.Trigger.STALLED, 7L, "same round"))
             .build();
 
-    assertThat(PointCatalogue.of(task, List.of(), StopHold.MASTER)).isEmpty();
+    assertThat(PointCatalogue.of(task, List.of(), StopHold.ARBITER)).isEmpty();
   }
 
   @Test

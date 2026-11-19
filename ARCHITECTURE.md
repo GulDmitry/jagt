@@ -40,11 +40,10 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `CognitiveComplexityTest`, `DuplicationTest`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
 | `startup/` | why the assembly must not start | built — `port/host/StartupCheck`, `StartupValidation` and every check | fail-fast configuration validation · `StartupValidationTest` |
 | deployment example | a file a user copies and edits to run jagt somewhere, in `examples/`; `.dist` stays for a file whose copy is ignored | built — `Dockerfile` and `docker-compose.yml` (jagt's own image), `examples/agent-image.Dockerfile`, `examples/kubernetes.yml`, `examples/server.env`; one walk-through, [`docs/server.md`](docs/server.md), [0171](docs/decisions/0171-the-image-is-a-base-without-agent-clis.md) | twelve-factor app, Kubernetes restricted Pod Security Standard · `KubernetesManifestsTest` |
-| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` | use cases as WHEN/THEN before code · `RoleNamesTest` |
+| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` | use cases as WHEN/THEN before code · `RoleNamesTest` |
 
 **A new kind names its sphere's standard and the check pinning it before its first code.** The gates of testing, QA,
-operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`;
-[`docs/practices.md`](docs/practices.md) is the page to copy them from.
+operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`; [`docs/practices.md`](docs/practices.md) copies them.
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
@@ -121,9 +120,8 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
   [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
   [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
-  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the
-  reducer alone ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other
-  marks are bookkeeping, written by `withMark` from anywhere.
+  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the reducer alone
+  ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other marks are bookkeeping, written by `withMark`.
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW (`service/TaskProvisioning`).
 - **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
@@ -174,7 +172,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
-| `AcceptanceRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
+| `FlowRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/reach/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `ChannelDriver` | `adapter/channel/{DesktopNotifier,CommandChannel,TeamsWorkflowChannel}` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
@@ -224,7 +222,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout, the release feed |
 | `port/reach` | core | what jagt's reach loss is told in |
 | `port/terminal` | core | terminal, editor and session-host ports |
-| `port/worktree` | core | worktree-facing ports: acceptance runner, build tools, line diff, specs, containers, processes |
+| `port/worktree` | core | worktree-facing ports: flow runner, build tools, line diff, specs, containers, processes |
 | `protocol` | core | what crosses into jagt: tool messages, reads, hooks, schema |
 | `protocol/debug` | core | the read-only debug reads' messages |
 | `protocol/message` | core | the tool messages a session sends and their arguments |
@@ -270,7 +268,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/release` | usecase | the job keeping a newer release verified beside the running one |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
-| `job/stop` | usecase | stop reads and the stop triage |
+| `job/stop` | usecase | stop reads |
+| `job/triage` | usecase | the triage role's job, panel and failure |
 | `job/usage` | usecase | usage-limit alerts and the job reading them |
 | `job/tracker` | usecase | tracker intake and ticket close jobs |
 | `job/verdict` | usecase | the Master's verdict and answer jobs |
@@ -283,7 +282,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/launch` | usecase | starting a task: routing, placement, resume |
 | `service/log` | usecase | jagt's own logs: rolling files, press, stop and miss logs |
 | `service/master` | usecase | what the Master reads: panels, briefs, decisions, brake |
-| `service/plan` | usecase | plan approval, baseline and placement |
+| `service/plan` | usecase | plan approval, baseline, placement and probes |
 | `service/presence` | usecase | session presence: ledger, probe, wakes, keep-alive |
 | `service/project` | usecase | projects: cards, folders, setup, removal; the basic settings and the line-wise writer of `jagt.yml` |
 | `service/reach` | usecase | the reach ledger and what writes it |
@@ -291,7 +290,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/report` | usecase | status reports and their effects |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |
 | `service/role` | usecase | installed roles, their beans, settings and config origins |
-| `service/scenario` | usecase | scenario sessions, windows and acceptance probing |
+| `service/scenario` | usecase | scenario sessions and windows |
 | `service/session` | usecase | session hosting, lines, prompts and offered models |
 | `service/stop` | usecase | stops: announcements, policy, per-task stops |
 | `service/task` | usecase | task views, facts, artifacts and finished tasks |

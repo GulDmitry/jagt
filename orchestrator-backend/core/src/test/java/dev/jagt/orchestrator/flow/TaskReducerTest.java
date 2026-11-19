@@ -124,7 +124,7 @@ class TaskReducerTest {
     assertThat(referred.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(referred.report()).isEqualTo(AgentReport.QUESTION);
     assertThat(referred.message()).isEqualTo("stalled for 20 min");
-    assertThat(referred.currentConflict().orElseThrow().askedTheMaster()).isTrue();
+    assertThat(referred.currentConflict().orElseThrow().askedTheArbiter()).isTrue();
     assertThat(referred.currentConflict().orElseThrow().movedAt()).isEqualTo(2_000);
     assertThat(Move.asking(referred.status(), referred.report())).isTrue();
   }

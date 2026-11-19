@@ -49,7 +49,7 @@ class ConflictFinish {
     try {
       String result = OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
       log.atInfo()
-          .setMessage("master conflict finish pressed")
+          .setMessage("arbiter conflict finish pressed")
           .addKeyValue("task", taskId)
           .addKeyValue("action", action.id())
           .addKeyValue("worktree", worktree)
@@ -57,7 +57,7 @@ class ConflictFinish {
           .log();
     } catch (Refusal refusal) {
       log.atWarn()
-          .setMessage("master conflict finish refused")
+          .setMessage("arbiter conflict finish refused")
           .addKeyValue("task", taskId)
           .addKeyValue("action", action.id())
           .addKeyValue("cause", Causes.of(refusal))

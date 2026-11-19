@@ -45,7 +45,7 @@ class CaseDoorTest {
                 taskStops()
                     .withRoot(root)
                     .withProfile(
-                        new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)
+                        new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)
                             .profile())
                     .build(state, Clock.systemUTC()),
                 Clock.systemUTC());
@@ -60,7 +60,7 @@ class CaseDoorTest {
 
     assertThat(door.presses("ABC-42", TaskAction.DONE)).isTrue();
     assertThat(door.presses("ABC-42", "ship")).isTrue();
-    assertThat(CaseDoor.byTheMaster()).isFalse();
+    assertThat(CaseDoor.byTheArbiter()).isFalse();
   }
 
   @ParameterizedTest
@@ -104,7 +104,7 @@ class CaseDoorTest {
                 taskStops()
                     .withRoot(root)
                     .withProfile(
-                        new ConfigService.ConfigFile.MasterConfig(
+                        new ConfigService.ConfigFile.ArbiterConfig(
                                 "act", null, null, List.of(mine), null)
                             .profile())
                     .build(state, Clock.systemUTC()),
@@ -144,7 +144,7 @@ class CaseDoorTest {
     assertThat(byVerb).isFalse();
     assertThat(state.task("ABC-42").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
-        .containsExactly(TaskStop.Trigger.MISS, "no master case allows ship at IN_PROGRESS");
+        .containsExactly(TaskStop.Trigger.MISS, "no arbiter case allows ship at IN_PROGRESS");
   }
 
   @Test
@@ -180,8 +180,8 @@ class CaseDoorTest {
 
   @Test
   void knowsTheMasterByTheOriginTheCallRunsUnder() {
-    assertThat(OriginContext.as(ActionOrigin.MASTER, CaseDoor::byTheMaster)).isTrue();
-    assertThat(OriginContext.as(ActionOrigin.BOARD, CaseDoor::byTheMaster)).isFalse();
+    assertThat(OriginContext.as(ActionOrigin.MASTER, CaseDoor::byTheArbiter)).isTrue();
+    assertThat(OriginContext.as(ActionOrigin.BOARD, CaseDoor::byTheArbiter)).isFalse();
   }
 
   @ParameterizedTest

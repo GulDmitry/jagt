@@ -136,7 +136,7 @@ public class Layout {
     return beside("act-strikes");
   }
 
-  public Path masterToken() {
+  public Path token() {
     return beside("master-token");
   }
 

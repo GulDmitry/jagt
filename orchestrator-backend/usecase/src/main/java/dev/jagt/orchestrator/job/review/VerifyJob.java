@@ -108,7 +108,7 @@ public class VerifyJob implements TaskJob {
         key,
         Step.PROBES,
         failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
-        "acceptance probe failed; relayed");
+        "plan probe failed; relayed");
   }
 
   private boolean stillThisRound(String taskId, TaskState taken, Step step) {

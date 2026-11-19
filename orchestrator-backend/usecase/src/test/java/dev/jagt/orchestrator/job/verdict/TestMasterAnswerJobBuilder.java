@@ -23,7 +23,7 @@ public record TestMasterAnswerJobBuilder(@Nullable List<String> mine) {
 
   public ConfigService.ConfigFile config() {
     return ConfigService.ConfigFile.defaults()
-        .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, mine, null));
+        .withArbiter(new ConfigService.ConfigFile.ArbiterConfig("act", null, null, mine, null));
   }
 
   public MasterAnswerJob build(

@@ -1,11 +1,11 @@
-package dev.jagt.orchestrator.job.stop;
+package dev.jagt.orchestrator.job.triage;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.assistant.ChargedReviews;
+import dev.jagt.orchestrator.service.master.ChargedReviews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.stop.StopTriage;

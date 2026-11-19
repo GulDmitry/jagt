@@ -18,8 +18,8 @@ class MasterTurnEndNoteTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
 
     assertThat(
             new MasterTurnEndNote(config)
@@ -35,8 +35,8 @@ class MasterTurnEndNoteTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
 
     assertThat(
             new MasterTurnEndNote(config)
@@ -50,8 +50,8 @@ class MasterTurnEndNoteTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     assertThat(
             new MasterTurnEndNote(config)

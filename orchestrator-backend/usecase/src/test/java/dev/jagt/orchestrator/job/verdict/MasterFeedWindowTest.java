@@ -22,8 +22,8 @@ class MasterFeedWindowTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
     when(sessions.sessionName(any())).thenReturn("jagt");
 
     new MasterFeedWindow(config, sessions, "jagt-master.log").run();

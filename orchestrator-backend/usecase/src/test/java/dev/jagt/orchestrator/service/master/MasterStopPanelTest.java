@@ -9,8 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
-import dev.jagt.orchestrator.service.assistant.ChargedReviews;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -23,7 +22,7 @@ class MasterStopPanelTest {
   private final ChargedReviews reviews = mock(ChargedReviews.class);
   private final MasterBriefs briefs = mock(MasterBriefs.class);
   private final MasterStopPanel panel = new MasterStopPanel(reviews, briefs);
-  private final MasterConfig config = MasterConfig.defaults();
+  private final ArbiterConfig config = ArbiterConfig.defaults();
   private final TaskState stopped =
       TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
           .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds"))

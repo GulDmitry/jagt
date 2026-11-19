@@ -16,9 +16,9 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
@@ -177,7 +177,7 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
     assertThat(master.mineOrDefault()).containsExactly("ship");
@@ -198,7 +198,7 @@ class ConfigServiceTest {
               mine: [reply]
         """);
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
@@ -218,7 +218,7 @@ class ConfigServiceTest {
               mode: act
         """);
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.mineOrDefault()).containsExactly("plan", "deploy", "revert");
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
@@ -231,7 +231,7 @@ class ConfigServiceTest {
         configFile,
         "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
@@ -248,7 +248,7 @@ class ConfigServiceTest {
             mode: off
         """);
 
-    String mode = service.load().master().mode();
+    String mode = service.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("off");
   }
@@ -266,7 +266,7 @@ class ConfigServiceTest {
                 stops,
                 checkers)
             .load()
-            .master()
+            .arbiter()
             .mode();
 
     assertThat(mode).isEqualTo("judge");
@@ -284,7 +284,7 @@ class ConfigServiceTest {
             stops,
             checkers);
 
-    String mode = stoppedBoard.load().master().mode();
+    String mode = stoppedBoard.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("judge");
     assertThat(Files.readString(configFile)).contains("mode: act");
@@ -298,7 +298,7 @@ class ConfigServiceTest {
     configService.load();
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
 
-    String mode = configService.load().master().mode();
+    String mode = configService.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("act");
   }
@@ -319,7 +319,7 @@ class ConfigServiceTest {
                 mock(ActStops.class),
                 checkers)
             .load()
-            .master()
+            .arbiter()
             .mode();
 
     assertThat(mode).isEqualTo(expected);
@@ -330,7 +330,7 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n  master:\n    mode: \"\"\n");
 
-    String mode = service.load().master().mode();
+    String mode = service.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("off");
   }
@@ -370,12 +370,12 @@ class ConfigServiceTest {
   @ParameterizedTest
   @EnumSource(MasterRight.class)
   void grantsTheMasterNoRightWhileItOnlyJudges(MasterRight right) {
-    assertThat(MasterConfig.defaults().withMode("judge").may(right)).isFalse();
+    assertThat(ArbiterConfig.defaults().withMode("judge").may(right)).isFalse();
   }
 
   @Test
   void keepsApprovingPlanTheHumansWhileNoStepIsNamedAsTheirs() {
-    assertThat(MasterConfig.defaults().withMode("act").may(MasterRight.PLAN)).isFalse();
+    assertThat(ArbiterConfig.defaults().withMode("act").may(MasterRight.PLAN)).isFalse();
   }
 
   @Test
@@ -390,7 +390,7 @@ class ConfigServiceTest {
             .load();
 
     assertThat(config.projects()).isEmpty();
-    assertThat(config.master().mode()).isEqualTo("judge");
+    assertThat(config.arbiter().mode()).isEqualTo("judge");
   }
 
   @Test
@@ -617,9 +617,9 @@ class ConfigServiceTest {
 
   @Test
   void judgesByTheBriefTheHumanNamedAndOtherwiseByTheShippedOne() {
-    assertThat(MasterConfig.defaults().withBrief("my-brief.md").briefOrDefault())
+    assertThat(ArbiterConfig.defaults().withBrief("my-brief.md").briefOrDefault())
         .isEqualTo("my-brief.md");
-    assertThat(MasterConfig.defaults().withBrief(" ").briefOrDefault())
+    assertThat(ArbiterConfig.defaults().withBrief(" ").briefOrDefault())
         .isEqualTo("roles/master/brief.md");
   }
 

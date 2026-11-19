@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.scenario;
+package dev.jagt.orchestrator.service.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,11 +21,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class AcceptanceProbingTest {
+class PlanProbingTest {
 
   private final Processes processes = mock(Processes.class);
-  private final AcceptanceProbing probing =
-      new AcceptanceProbing(processes, new ToolGate(List.of()), 8290);
+  private final PlanProbing probing = new PlanProbing(processes, new ToolGate(List.of()), 8290);
   private final List<Probe> gradleTest =
       List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0));
 
@@ -35,7 +34,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(1, "", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -68,7 +67,7 @@ class AcceptanceProbingTest {
   @Test
   void neverRunsCommandTheSessionsOwnGuardRefuses(@TempDir Path worktree) {
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -91,7 +90,7 @@ class AcceptanceProbingTest {
     Files.createDirectories(worktree.resolve(".jagt/hooks"));
     when(processes.run(any(), any(), anyMap(), any())).thenReturn(new Processes.Result(0, "", ""));
 
-    new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+    new PlanProbing(processes, new ToolGate(List.of()), 8290)
         .probed(
             "ABC-42",
             worktree,
@@ -138,7 +137,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(0, "", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -154,7 +153,7 @@ class AcceptanceProbingTest {
     Files.writeString(worktree.resolve("docs/guide.md"), "x");
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -191,7 +190,7 @@ class AcceptanceProbingTest {
   @Test
   void failsFileTheWorktreeDoesNotHold(@TempDir Path worktree) {
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -208,7 +207,7 @@ class AcceptanceProbingTest {
     Files.createSymbolicLink(worktree.resolve("inside.md"), root.resolve("outside.md"));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -228,7 +227,7 @@ class AcceptanceProbingTest {
     Files.createSymbolicLink(worktree.resolve("loop.md"), worktree.resolve("loop.md"));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,

@@ -67,7 +67,7 @@ A hand-back of a task carrying probes SHALL wait at VERIFYING. Once the project'
 run every probe, five minutes each.
 A probe runs in the worktree of the repository it names, the primary one where it names none.
 Each result SHALL be recorded with its output's last 20 lines.
-A command SHALL run under `ToolGate` and the worktree's own git hooks (`AcceptanceProbing`).
+A command SHALL run under `ToolGate` and the worktree's own git hooks (`PlanProbing`).
 
 #### Scenario: A probe fails
 - **WHEN** a probe fails
@@ -122,7 +122,7 @@ any key passes, configured or not, and `[unaffected]` keys are ignored.
 - **THEN** the plan passes
 
 ### Requirement: Scripted flows are run by jagt and judged by their report
-`port/worktree/AcceptanceRunner` SHALL run the named flows of the project's flows repository against one environment.
+`port/worktree/FlowRunner` SHALL run the named flows of the project's flows repository against one environment.
 It runs them as argv with no shell and a timeout (`adapter/flows`; the folder's `flows.driver` is `none` or `playwright`).
 It answers per flow `passed`, `failed` or `unprovable` from the driver's JSON report, never its HTML.
 Evidence SHALL lie under `acceptance/` in the worktree; jagt holds no credential, the flows repository does.

@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.job.checker.CheckerReads;
 import dev.jagt.orchestrator.job.checker.workspace.CheckerWorkspace;
 import dev.jagt.orchestrator.job.checker.workspace.WorkspaceRequests;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner;
+import dev.jagt.orchestrator.port.worktree.FlowRunner;
 import dev.jagt.orchestrator.service.role.RoleKit;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CheckerReaders {
 
-  private final AcceptanceRunner runner;
+  private final FlowRunner runner;
   private final CheckerReader reader;
   private final TaskTurns turns;
   private final WorkspaceRequests requests;

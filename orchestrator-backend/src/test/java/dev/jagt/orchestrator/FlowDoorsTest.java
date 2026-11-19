@@ -145,7 +145,7 @@ class FlowDoorsTest {
             dev.jagt.orchestrator.task.TaskState.class,
             "withRole",
             String.class,
-            dev.jagt.orchestrator.task.acceptance.RoleRecord.class)
+            dev.jagt.orchestrator.task.turn.RoleRecord.class)
         .check(MainClasses.CODE);
   }
 

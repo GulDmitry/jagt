@@ -28,6 +28,6 @@ class UnstopCommandTest {
 
   @Test
   void isTheHumansAloneSinceTheStopHaltsTheMasterToo() {
-    assertThat(new UnstopCommand(board).whyNotTheMaster()).isPresent();
+    assertThat(new UnstopCommand(board).whyNotTheArbiter()).isPresent();
   }
 }

@@ -15,7 +15,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +28,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class ConfigCheckTest {
 
@@ -124,37 +123,7 @@ class ConfigCheckTest {
         Arguments.of("openWarpWindow: false", "orchestrator.openWarpWindow"),
         Arguments.of("openTerminalWindow: false", "orchestrator.openTerminalWindow"),
         Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal"),
-        Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"),
-        Arguments.of("qa: { enabled: true }", "orchestrator.qa"),
-        Arguments.of("roles: { qa: { enabled: true } }", "orchestrator.roles.qa"),
-        Arguments.of(
-            "roles: { acceptance: { enabled: true, model: opus } }",
-            "orchestrator.roles.acceptance.model"),
-        Arguments.of(
-            "roles: { acceptance: { environments: [] } }",
-            "orchestrator.roles.acceptance.environments"),
-        Arguments.of(
-            "roles: { acceptance: { flows: { driver: none } } }",
-            "orchestrator.roles.acceptance.flows"));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"qa: { enabled: true }", "roles: { qa: { enabled: true } }"})
-  void refusesTheStartNamingRolesAcceptanceWhereTheRoleIsStillWrittenAsQa(String key)
-      throws Exception {
-    Files.createDirectories(root.resolve("repo").resolve(".git"));
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        """
-        orchestrator:
-          %s
-          projects:
-            demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
-        """
-            .formatted(key, root.resolve("repo")));
-    assertThatThrownBy(new StartupValidation(List.of(check), true)::refuseToRunWithoutWhatItNeeds)
-        .isInstanceOf(Misconfigured.class)
-        .hasMessageContaining("roles.acceptance");
+        Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"));
   }
 
   @ParameterizedTest

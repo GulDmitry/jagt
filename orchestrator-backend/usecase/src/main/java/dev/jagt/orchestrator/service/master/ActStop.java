@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.stop;
+package dev.jagt.orchestrator.service.master;
 
 import org.jspecify.annotations.Nullable;
 

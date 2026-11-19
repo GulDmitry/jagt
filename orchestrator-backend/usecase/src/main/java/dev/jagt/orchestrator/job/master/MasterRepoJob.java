@@ -29,7 +29,7 @@ public class MasterRepoJob implements Job {
 
   @Override
   public Serves serves() {
-    return Serves.MASTER;
+    return Serves.ARBITER;
   }
 
   @Override
@@ -44,7 +44,7 @@ public class MasterRepoJob implements Job {
 
   @Override
   public void run() {
-    if (!configService.load().master().may(MasterRight.REPO)) {
+    if (!configService.load().arbiter().may(MasterRight.REPO)) {
       return;
     }
     stateService

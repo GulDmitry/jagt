@@ -15,8 +15,8 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
@@ -49,7 +49,7 @@ class MasterCheckTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
     when(configService.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults()));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults()));
     assertThat(check.problems()).isEmpty();
   }
 
@@ -66,7 +66,7 @@ class MasterCheckTest {
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
-            mock(dev.jagt.orchestrator.service.stop.ActStops.class),
+            mock(dev.jagt.orchestrator.service.master.ActStops.class),
             new Checkers(new TaskChart(Composition.builtIn())));
 
     MasterCheck realCheck =
@@ -84,7 +84,7 @@ class MasterCheckTest {
   void refusesModeThisMachineDoesNotHave() {
     when(configService.load())
         .thenReturn(
-            ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("supervise")));
+            ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("supervise")));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.mode");
@@ -97,7 +97,7 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("act"))
+                .withArbiter(ArbiterConfig.defaults().withMode("act"))
                 .withCodeReview(new CodeReviewConfig(null, false, null)));
 
     assertThat(check.problems())
@@ -112,8 +112,8 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    MasterConfig.defaults().withMode("act").withWithhold(List.of("reply"))));
+                .withArbiter(
+                    ArbiterConfig.defaults().withMode("act").withWithhold(List.of("reply"))));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.withhold");
@@ -126,8 +126,8 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    MasterConfig.defaults().withMode("act").withMine(List.of("reply", "deploy"))));
+                .withArbiter(
+                    ArbiterConfig.defaults().withMode("act").withMine(List.of("reply", "deploy"))));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.mine");
@@ -140,8 +140,8 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    MasterConfig.defaults().withMode("act").withMine(List.of("reply", "revert"))));
+                .withArbiter(
+                    ArbiterConfig.defaults().withMode("act").withMine(List.of("reply", "revert"))));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.mine");
@@ -155,8 +155,8 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    MasterConfig.defaults()
+                .withArbiter(
+                    ArbiterConfig.defaults()
                         .withMode("act")
                         .withMine(List.of("reply", "deploy", "revert"))));
     assertThat(check.problems()).isEmpty();
@@ -169,8 +169,8 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    MasterConfig.defaults()
+                .withArbiter(
+                    ArbiterConfig.defaults()
                         .withMode("act")
                         .withMine(
                             List.of(
@@ -184,7 +184,7 @@ class MasterCheckTest {
   @Test
   void refusesToRunReviewerWhoseBriefWasNeverCopiedFromTheShippedOne() {
     when(configService.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("judge")));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.brief");
@@ -195,7 +195,7 @@ class MasterCheckTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
     when(configService.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("judge")));
     assertThat(check.problems()).isEmpty();
   }
 
@@ -204,7 +204,7 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("judge").withBrief("mine.md")));
+                .withArbiter(ArbiterConfig.defaults().withMode("judge").withBrief("mine.md")));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.brief");
@@ -218,7 +218,7 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("judge").withModel("fable")));
+                .withArbiter(ArbiterConfig.defaults().withMode("judge").withModel("fable")));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.model");
@@ -232,7 +232,7 @@ class MasterCheckTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withAgent(ConfigFile.AgentConfig.defaults().withModels(List.of("gpt-5")))
-                .withMaster(MasterConfig.defaults().withMode("judge").withModel("gpt-5")));
+                .withArbiter(ArbiterConfig.defaults().withMode("judge").withModel("gpt-5")));
     assertThat(check.problems()).isEmpty();
   }
 
@@ -241,7 +241,7 @@ class MasterCheckTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
     when(configService.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
     assertThat(check.problems()).isEmpty();
   }
 
@@ -252,8 +252,8 @@ class MasterCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    MasterConfig.defaults().withMode("act").withMine(List.of("plan", "repo"))));
+                .withArbiter(
+                    ArbiterConfig.defaults().withMode("act").withMine(List.of("plan", "repo"))));
     assertThat(check.problems()).isEmpty();
   }
 }

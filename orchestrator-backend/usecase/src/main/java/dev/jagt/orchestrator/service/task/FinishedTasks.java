@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service.task;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
@@ -45,7 +44,7 @@ public class FinishedTasks {
 
   private final ObjectMapper mapper;
   private final StateService stateService;
-  private final MasterReview reviews;
+  private final Verdicts verdicts;
   private final Clock clock;
   private final Path file;
 
@@ -53,11 +52,11 @@ public class FinishedTasks {
       ObjectMapper mapper,
       StateService stateService,
       OrchestratorPaths paths,
-      MasterReview reviews,
+      Verdicts verdicts,
       Clock clock) {
     this.mapper = mapper;
     this.stateService = stateService;
-    this.reviews = reviews;
+    this.verdicts = verdicts;
     this.clock = clock;
     this.file = paths.finished();
   }
@@ -73,11 +72,7 @@ public class FinishedTasks {
         .task(taskId)
         .map(task -> {
           FinishedTask finished =
-              FinishedTask.of(
-                  taskId,
-                  task,
-                  clock.millis(),
-                  reviews.of(task).map(MasterReview.Verdict::said).orElse(null));
+              FinishedTask.of(taskId, task, clock.millis(), verdicts.said(task).orElse(null));
           append(finished);
           return finished;
         });

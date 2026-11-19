@@ -2,12 +2,10 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.master.ActStop.Cause;
 import dev.jagt.orchestrator.service.role.HeaderChips;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import dev.jagt.orchestrator.service.stop.ActStop.Cause;
-import dev.jagt.orchestrator.service.stop.ActStops;
-import dev.jagt.orchestrator.task.master.MasterMode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +33,7 @@ public class MasterChips implements HeaderChips {
 
   private boolean acting() {
     try {
-      return config.load().master().modeOrDefault() == MasterMode.ACT;
+      return config.load().arbiter().acts();
     } catch (RuntimeException unread) {
       log.atWarn()
           .setMessage("config read failed")

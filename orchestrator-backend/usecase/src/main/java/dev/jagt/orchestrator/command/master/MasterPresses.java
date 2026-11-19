@@ -49,13 +49,13 @@ public class MasterPresses implements RootPresses {
             .byId(verb)
             .orElseThrow(() -> new Refusal(Refusal.Code.STATE, "No command " + verb + "."));
     command
-        .whyNotTheMaster()
+        .whyNotTheArbiter()
         .ifPresent(reason -> {
           throw new Refusal(
               Refusal.Code.ACTION_NOT_AVAILABLE,
               command.id() + " is never the Master's: " + reason + ".");
         });
-    if (configService.load().master().profile().keeps(verb)) {
+    if (configService.load().arbiter().profile().keeps(verb)) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           command.id() + " is kept for the human: mine names it.");

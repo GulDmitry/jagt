@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;

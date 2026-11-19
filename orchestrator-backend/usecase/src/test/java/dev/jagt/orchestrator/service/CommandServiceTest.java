@@ -67,7 +67,7 @@ class CommandServiceTest {
     when(door.presses("ABC-1", TaskAction.RUN)).thenReturn(false);
 
     assertThat(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la"))
-        .contains("no master case allows it");
+        .contains("no arbiter case allows it");
     verify(flow, never()).runLine("ABC-1", TaskAction.RUN, "ls -la");
   }
 
@@ -144,7 +144,7 @@ class CommandServiceTest {
                 + ":\"master\"}\n");
     assertThat(state.task("ABC-1").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
-        .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
+        .containsExactly(TaskStop.Trigger.MISS, "no arbiter case allows deploy at REVIEWED");
   }
 
   @Test
@@ -154,7 +154,7 @@ class CommandServiceTest {
     String said = commands.execute("ABC-1", TaskAction.SHIP);
 
     assertThat(said)
-        .isEqualTo("ship ABC-1: no master case allows it at this status; see misses.jsonl");
+        .isEqualTo("ship ABC-1: no arbiter case allows it at this status; see misses.jsonl");
     verify(flow, never()).run("ABC-1", TaskAction.SHIP);
   }
 }

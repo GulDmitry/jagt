@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +58,7 @@ class MasterCaseCheckTest {
       when(config.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(MasterConfig.defaults().withMode("act")));
+                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems()).isEmpty();
     }
@@ -72,7 +72,7 @@ class MasterCaseCheckTest {
       when(config.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(MasterConfig.defaults().withMode("act")));
+                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems())
           .containsExactly(
@@ -101,7 +101,7 @@ class MasterCaseCheckTest {
       when(config.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(MasterConfig.defaults().withMode("judge")));
+                  .withArbiter(ArbiterConfig.defaults().withMode("judge")));
 
       assertThat(check.problems())
           .containsExactly(
@@ -119,7 +119,7 @@ class MasterCaseCheckTest {
       when(config.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(MasterConfig.defaults().withMode("act")));
+                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems())
           .containsExactly(
@@ -134,7 +134,7 @@ class MasterCaseCheckTest {
       when(config.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(MasterConfig.defaults().withMode("act")));
+                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems())
           .extracting(Problem::text)
@@ -156,7 +156,7 @@ class MasterCaseCheckTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("judge")));
+                .withArbiter(ArbiterConfig.defaults().withMode("judge")));
 
     assertThat(check.problems())
         .containsExactly(
@@ -171,7 +171,7 @@ class MasterCaseCheckTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("off")));
+                .withArbiter(ArbiterConfig.defaults().withMode("off")));
 
     assertThat(check.problems()).isEmpty();
   }

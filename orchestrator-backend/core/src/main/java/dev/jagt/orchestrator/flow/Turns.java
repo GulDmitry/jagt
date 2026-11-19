@@ -44,19 +44,19 @@ public final class Turns {
       return Holder.NOBODY;
     }
     if (stop != StopHold.NONE) {
-      return stop == StopHold.MASTER ? Holder.ARBITER : Holder.HUMAN;
+      return stop == StopHold.ARBITER ? Holder.ARBITER : Holder.HUMAN;
     }
     Optional<String> reading = Checkers.reading(checkers);
     if (reading.isPresent()) {
       return new Holder.Role(reading.get());
     }
-    if (FlowRules.readByTheMaster(status) && profile.running()) {
+    if (FlowRules.readByTheArbiter(status) && profile.running()) {
       return Holder.ARBITER;
     }
     if (report.asks()) {
       return asked(report, profile);
     }
-    if (FlowRules.deployedByTheMaster(status) && profile.may(MasterRight.DEPLOY)) {
+    if (FlowRules.deployedByTheArbiter(status) && profile.may(MasterRight.DEPLOY)) {
       return Holder.ARBITER;
     }
     if (status == TaskStatus.REVIEW_PENDING && report == AgentReport.NO_CHANGES) {

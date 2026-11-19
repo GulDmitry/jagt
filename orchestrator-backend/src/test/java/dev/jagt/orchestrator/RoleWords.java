@@ -17,12 +17,30 @@ final class RoleWords {
   private RoleWords() {}
 
   static List<String> inSurface(List<String> ids) {
+    return inJava(Path.of("surface", "src", "main", "java"), ids, List.of());
+  }
+
+  static List<String> inCoreAndUsecase(List<String> ids) {
+    return Stream.of("core", "usecase")
+        .flatMap(
+            module -> inJava(Path.of(module, "src", "main", "java"), ids, vocabulary()).stream())
+        .toList();
+  }
+
+  private static List<String> vocabulary() {
+    return Stream.of(RoleModules.STOP_KIND, RoleModules.CHECKER_KIND, RoleModules.STAND_IN_KIND)
+        .flatMap(List::stream)
+        .toList();
+  }
+
+  private static List<String> inJava(Path root, List<String> ids, List<String> vocabulary) {
     List<String> modules =
-        Stream.concat(
+        Stream.of(
                 RoleModules.ARBITER.stream(),
-                RoleModules.CHECKERS.values().stream().flatMap(List::stream))
+                RoleModules.CHECKERS.values().stream().flatMap(List::stream),
+                vocabulary.stream())
+            .flatMap(names -> names)
             .toList();
-    Path root = Path.of("surface", "src", "main", "java");
     return files(root, ".java")
         .filter(file -> modules.stream().noneMatch(classOf(root, file)::startsWith))
         .flatMap(file -> found(file, ids, true))

@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
-import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
@@ -33,10 +32,7 @@ public class ConfigCheck implements StartupCheck {
           "webTerminal", "`focus` raises the terminal window",
           "dashboard", "nothing renders a console table",
           "openWarpWindow", "write `terminal: none` for no terminal window",
-          "openTerminalWindow", "write `terminal: none` for no terminal window",
-          "qa", "the role is called `acceptance`; write it under `roles.acceptance`");
-  private static final String RETIRED_ROLE = "qa";
-  private static final List<String> FOLDER_OPTIONS = List.of("environments", "flows", "model");
+          "openTerminalWindow", "write `terminal: none` for no terminal window");
   private final ConfigService configService;
   private final OrchestratorPaths paths;
   private final SessionHost sessions;
@@ -59,8 +55,6 @@ public class ConfigCheck implements StartupCheck {
       return List.of(new Problem(CONFIG_FILE, String.valueOf(unreadable.getMessage())));
     }
     List<Problem> problems = new ArrayList<>(retiredKeys());
-    problems.addAll(retiredRole(config));
-    problems.addAll(folderOptions());
     problems.addAll(viewerProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
     if (projects.isEmpty()) {
@@ -117,44 +111,6 @@ public class ConfigCheck implements StartupCheck {
                     + " is no longer read: "
                     + RETIRED_KEYS.get(key)
                     + ". Remove it from "
-                    + paths.configFile()
-                    + "."))
-        .toList();
-  }
-
-  private List<Problem> retiredRole(ConfigService.ConfigFile config) {
-    Map<String, ?> roles = config.sessions().roles();
-    if (roles == null || !roles.containsKey(RETIRED_ROLE)) {
-      return List.of();
-    }
-    return List.of(
-        new Problem(
-            "orchestrator.roles." + RETIRED_ROLE,
-            "orchestrator.roles."
-                + RETIRED_ROLE
-                + " is no longer read: the role is called `acceptance`. Rename it to"
-                + " `roles.acceptance` in "
-                + paths.configFile()
-                + "."));
-  }
-
-  private List<Problem> folderOptions() {
-    String role = "roles." + Checkers.ACCEPTANCE;
-    return configService.declaredKeys("roles", Checkers.ACCEPTANCE).stream()
-        .filter(FOLDER_OPTIONS::contains)
-        .sorted()
-        .map(key ->
-            new Problem(
-                "orchestrator." + role + "." + key,
-                "orchestrator."
-                    + role
-                    + "."
-                    + key
-                    + " is no longer read: write `"
-                    + key
-                    + "` in roles/"
-                    + Checkers.ACCEPTANCE
-                    + "/role.yml, and keep only `enabled` in "
                     + paths.configFile()
                     + "."))
         .toList();

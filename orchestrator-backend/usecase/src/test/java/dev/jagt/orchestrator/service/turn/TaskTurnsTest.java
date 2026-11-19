@@ -198,12 +198,12 @@ class TaskTurnsTest {
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
     turns.left("ABC-42", "deploy src/Login.java");
     turns.unanswered("ABC-42");
-    String left = state.task("ABC-42").orElseThrow().masterOrNone().left();
+    String left = state.task("ABC-42").orElseThrow().arbiterOrNone().left();
     turns.took("ABC-42");
 
     assertThat(left).isEqualTo("deploy src/Login.java");
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().left()).isEmpty();
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().unanswered())
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().left()).isEmpty();
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().unanswered())
         .isEqualTo("28e31f5a9bb2534351673c735fe222a1");
   }
 }

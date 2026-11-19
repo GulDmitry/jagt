@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.command.master;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.master.ActStops;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ public class ActCommand implements GlobalCommand {
   }
 
   @Override
-  public Optional<String> whyNotTheMaster() {
+  public Optional<String> whyNotTheArbiter() {
     return Optional.of("a brake on the Master is not the Master's to lift");
   }
 

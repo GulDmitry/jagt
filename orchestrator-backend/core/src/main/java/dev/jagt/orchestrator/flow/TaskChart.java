@@ -122,7 +122,7 @@ public final class TaskChart {
 
   private static final Set<TaskStatus> WATCHED = EnumSet.of(NEW, IN_PROGRESS, SHIPPING);
 
-  private static final Set<TaskStatus> READ_BY_THE_MASTER =
+  private static final Set<TaskStatus> READ_BY_THE_ARBITER =
       EnumSet.of(PLAN_PENDING, REVIEW_PENDING);
 
   private static final Set<TaskStatus> OUT_FOR_REVIEW = EnumSet.of(CI_POLLING, REVIEWED);
@@ -279,8 +279,8 @@ public final class TaskChart {
     return WATCHED.contains(status);
   }
 
-  static boolean readByTheMaster(TaskStatus status) {
-    return READ_BY_THE_MASTER.contains(status);
+  static boolean readByTheArbiter(TaskStatus status) {
+    return READ_BY_THE_ARBITER.contains(status);
   }
 
   static boolean outForReview(TaskStatus status) {

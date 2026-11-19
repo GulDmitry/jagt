@@ -8,7 +8,7 @@ import lombok.With;
  * Runs scripted flows against one environment and answers per flow what the run proved. A flow that
  * could not be run is {@link Verdict#UNPROVABLE}, never {@link Verdict#FAILED}.
  */
-public interface AcceptanceRunner {
+public interface FlowRunner {
 
   enum Verdict {
     PASSED,

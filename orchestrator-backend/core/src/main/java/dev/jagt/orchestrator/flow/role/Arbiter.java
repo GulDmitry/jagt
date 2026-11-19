@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow.role;
 
 import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import java.util.Locale;
@@ -53,6 +54,15 @@ public final class Arbiter {
      */
     public Profile at(MasterPhase phase) {
       return phase == MasterPhase.STANDS_IN ? this : new Profile(MasterMode.OFF, mine);
+    }
+
+    public Profile at(TaskState task) {
+      return at(MasterPhase.of(task));
+    }
+
+    /** The Master runs and has read the plan or round in front. */
+    public boolean reading(TaskState task) {
+      return running() && MasterPhase.readTheRoundInFront(task);
     }
   }
 

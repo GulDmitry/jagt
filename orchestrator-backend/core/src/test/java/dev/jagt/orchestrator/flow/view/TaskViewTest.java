@@ -13,7 +13,6 @@ import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.acceptance.RoleRecord;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
 import dev.jagt.orchestrator.task.master.Master;
@@ -24,6 +23,7 @@ import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.session.Wake;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.usage.ModelTier;
 import java.util.List;
@@ -685,7 +685,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).build(),
-            RoundState.NONE.withMasterReading(true),
+            RoundState.NONE.withArbiterReading(true),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -705,7 +705,7 @@ class TaskViewTest {
             rules,
             "ABC-42",
             stopped,
-            RoundState.NONE.withMaster(act),
+            RoundState.NONE.withArbiter(act),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -730,7 +730,7 @@ class TaskViewTest {
             rules,
             "ABC-42",
             asked,
-            RoundState.NONE.withMaster(act),
+            RoundState.NONE.withArbiter(act),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 

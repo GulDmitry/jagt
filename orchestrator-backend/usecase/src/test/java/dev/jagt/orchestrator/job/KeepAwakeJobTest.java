@@ -10,8 +10,8 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.host.KeepAwake;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ class KeepAwakeJobTest {
 
   static Stream<ConfigFile> unattendedWork() {
     return Stream.of(
-        ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")),
+        ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")),
         ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)),
         ConfigFile.defaults().withTracker(TrackerConfig.defaults().withMode("take")));
   }
@@ -54,7 +54,7 @@ class KeepAwakeJobTest {
   @Test
   void holdsNothingWhenKeepAwakeIsOff() {
     when(config.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
     new ApplicationContextRunner()
         .withBean(ConfigService.class, () -> config)

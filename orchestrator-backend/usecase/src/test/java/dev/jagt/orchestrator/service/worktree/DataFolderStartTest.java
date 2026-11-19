@@ -197,7 +197,7 @@ class DataFolderStartTest {
 
       assertThat(log.events())
           .extracting(ILoggingEvent::getMessage)
-          .contains("older master token deleted");
+          .contains("older token deleted");
     }
     assertThat(root.resolve("master-token")).doesNotExist();
     assertThat(root.resolve("data/jagt/master-token")).doesNotExist();

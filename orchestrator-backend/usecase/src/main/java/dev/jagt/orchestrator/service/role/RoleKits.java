@@ -8,6 +8,9 @@ import java.util.Optional;
 /** The definition, files and settings of every checker role installed, looked up by role id. */
 public final class RoleKits {
 
+  /** A role jagt's distribution holds a folder for: its kit exists even where none is installed. */
+  public record Expected(String id) {}
+
   private final Map<String, RoleKit> byId = new LinkedHashMap<>();
 
   public RoleKits(List<RoleKit> kits) {

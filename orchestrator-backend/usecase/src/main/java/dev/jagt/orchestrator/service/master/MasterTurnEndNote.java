@@ -16,7 +16,8 @@ public class MasterTurnEndNote implements RoleTurnEndNote {
 
   @Override
   public Optional<String> noteFor(TaskState task) {
-    if (!FlowRules.headedForTheMaster(task.status()) || !configService.load().master().running()) {
+    if (!FlowRules.headedForTheArbiter(task.status())
+        || !configService.load().arbiter().running()) {
       return Optional.empty();
     }
     return Optional.of(

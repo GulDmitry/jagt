@@ -16,7 +16,7 @@ dev.jagt.orchestrator.job.review.TestAutoReviewSchedulerBuilder
 dev.jagt.orchestrator.job.review.TestVerifyJobBuilder
 dev.jagt.orchestrator.job.review.TestYourMoveJobBuilder
 dev.jagt.orchestrator.job.session.TestRestartAskJobBuilder
-dev.jagt.orchestrator.job.stop.TestStopTriageJobBuilder
+dev.jagt.orchestrator.job.triage.TestStopTriageJobBuilder
 dev.jagt.orchestrator.job.verdict.TestMasterAnswerJobBuilder
 dev.jagt.orchestrator.notify.TestPointWatchBuilder
 dev.jagt.orchestrator.service.TestCaseDoorBuilder

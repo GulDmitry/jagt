@@ -72,7 +72,7 @@ public enum TaskAction {
       Group.FLOW,
       "lift",
       "Lift stop",
-      "lift the stop on this task: auto-review and the Master may move it again"),
+      "lift the stop on this task: auto-review and the arbiter may move it again"),
   ESCALATE(
       128,
       Group.FLOW,

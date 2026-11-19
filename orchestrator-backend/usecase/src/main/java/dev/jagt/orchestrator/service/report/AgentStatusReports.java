@@ -278,15 +278,15 @@ public class AgentStatusReports {
     }
     String next =
         FlowRules.awaitingVerification(landed)
-            ? "; verification runs first, and the Master reads this round once it passes; end your"
+            ? "; verification runs first, and the arbiter reads this round once it passes; end your"
                 + " turn"
-            : "; the Master reads this round next; end your turn";
+            : "; the arbiter reads this round next; end your turn";
     return "Task "
         + taskId
         + " -> "
         + landed
         + said
-        + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
+        + (FlowRules.headedForTheArbiter(landed) && handBack.arbiterReads() ? next : "");
   }
 
   private TaskState signed(TaskState next) {

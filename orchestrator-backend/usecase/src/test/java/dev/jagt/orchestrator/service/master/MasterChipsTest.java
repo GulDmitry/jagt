@@ -7,12 +7,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.master.ActStop.Cause;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import dev.jagt.orchestrator.service.stop.ActStop;
-import dev.jagt.orchestrator.service.stop.ActStop.Cause;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -50,7 +48,7 @@ class MasterChipsTest {
   @Test
   void saysTheMasterActsWhenItsModeIsAct() {
     when(config.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
     assertThat(chips.chips()).containsExactly(new HeaderChip("header.acting", null, false, null));
   }
@@ -58,7 +56,7 @@ class MasterChipsTest {
   @Test
   void saysNothingWhenTheMasterOnlyJudges() {
     when(config.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("judge")));
 
     assertThat(chips.chips()).isEmpty();
   }
@@ -73,7 +71,7 @@ class MasterChipsTest {
   @Test
   void leavesTheBoardStopToTheBoardWhenOnlyTheBoardIsStopped() {
     when(config.load())
-        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("judge")));
     when(stops.standing()).thenReturn(Optional.of(new ActStop(Cause.BOARD, 5L)));
 
     assertThat(chips.chips()).isEmpty();

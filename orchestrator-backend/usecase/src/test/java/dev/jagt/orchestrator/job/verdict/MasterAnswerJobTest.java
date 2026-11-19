@@ -83,7 +83,7 @@ class MasterAnswerJobTest {
 
     job.run();
 
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered()).isEmpty();
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered()).isEmpty();
   }
 
   @Test
@@ -109,7 +109,7 @@ class MasterAnswerJobTest {
     job.run();
 
     TaskState left = state.task("ABC-1").orElseThrow();
-    assertThat(left.masterOrNone().unanswered()).isEqualTo(left.askedDigest());
+    assertThat(left.arbiterOrNone().unanswered()).isEqualTo(left.askedDigest());
   }
 
   @ParameterizedTest
@@ -170,7 +170,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel)
-        .answer("ABC-1", asking, "override the gate?", masterAnswerJob().config().master(), true);
+        .answer("ABC-1", asking, "override the gate?", masterAnswerJob().config().arbiter(), true);
   }
 
   @Test
@@ -186,7 +186,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered())
         .isEqualTo(TaskTurns.asked(asking));
   }
 
@@ -255,7 +255,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered())
         .isEqualTo(TaskTurns.asked(state.task("ABC-1").orElseThrow()));
   }
 

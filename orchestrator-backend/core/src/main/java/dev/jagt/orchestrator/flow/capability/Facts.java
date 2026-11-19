@@ -41,7 +41,7 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
    */
   @With
   public record Hold(
-      boolean stopped, boolean stopIsTheMasters, boolean tierAbove, BooleanSupplier agentLive) {
+      boolean stopped, boolean stopIsTheArbiters, boolean tierAbove, BooleanSupplier agentLive) {
 
     public static Hold defaults() {
       return new Hold(false, false, false, () -> false);
@@ -103,7 +103,7 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
         Hold.defaults()
             .withStopped(task.stopped())
             .withTierAbove(tierAbove(task))
-            .withStopIsTheMasters(StopHold.mayBeLifted(task) && !StopHold.asked(task)),
+            .withStopIsTheArbiters(StopHold.mayBeLifted(task) && !StopHold.asked(task)),
         Workspace.defaults()
             .withGitStateChanged(task.gitStateChanged())
             .withRepoRequested(task.asksForRepository())

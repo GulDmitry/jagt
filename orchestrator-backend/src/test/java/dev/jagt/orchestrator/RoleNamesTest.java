@@ -19,11 +19,7 @@ class RoleNamesTest {
 
   private static final Map<String, String> ALLOWED =
       Map.of(
-          "dev.jagt.orchestrator.port.worktree.AcceptanceRunner",
-              "runs the flows a plan's acceptance criteria name, whichever role asks",
-          "dev.jagt.orchestrator.service.scenario.AcceptanceProbing",
-              "probes a plan's acceptance criteria, before any role checks the deploy",
-          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$MasterConfig",
+          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$ArbiterConfig",
               "the old orchestrator.master key, named as jagt.yml wrote it",
           "dev.jagt.orchestrator.flow.TaskMove$MasterNoted",
               "a move of the arbiter's region, in the chart's one closed set of moves");

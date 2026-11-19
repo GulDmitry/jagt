@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.stop;
+package dev.jagt.orchestrator.job.triage;
 
 public final class StopTriageFailed extends RuntimeException {
 

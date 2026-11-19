@@ -106,7 +106,7 @@ class MasterStopJobTest {
     assertThatThrownBy(() -> job.runOn(state.tasks())).isInstanceOf(IllegalStateException.class);
     job.runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().askedStop()).isNotEmpty();
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().askedStop()).isNotEmpty();
     verify(panel, times(1)).ask(anyString(), any(), any());
   }
 

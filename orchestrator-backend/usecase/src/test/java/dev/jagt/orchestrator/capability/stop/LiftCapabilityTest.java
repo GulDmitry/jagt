@@ -33,6 +33,6 @@ class LiftCapabilityTest {
     assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
     assertThat(outcome.message())
         .isEqualTo(
-            "lift ABC-1: auto-review and the Master may move it again; its rounds count anew");
+            "lift ABC-1: auto-review and the arbiter may move it again; its rounds count anew");
   }
 }

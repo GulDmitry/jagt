@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.scenario;
+package dev.jagt.orchestrator.service.plan;
 
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.Causes;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AcceptanceProbing {
+public class PlanProbing {
 
   private static final Duration LIMIT = Duration.ofMinutes(5);
   private static final int LINES = 20;

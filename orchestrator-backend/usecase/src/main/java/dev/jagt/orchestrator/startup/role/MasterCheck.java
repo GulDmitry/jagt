@@ -32,7 +32,7 @@ public class MasterCheck implements StartupCheck {
   @Override
   public List<Problem> problems() {
     ConfigService.ConfigFile config = configService.load();
-    ConfigService.ConfigFile.MasterConfig master = config.master();
+    ConfigService.ConfigFile.ArbiterConfig master = config.arbiter();
     List<Problem> problems = new ArrayList<>();
     if (MasterMode.of(master.mode()).isEmpty()) {
       problems.add(
@@ -85,7 +85,7 @@ public class MasterCheck implements StartupCheck {
    */
   private static void refuseHalfAutomatedLoop(
       ConfigService.ConfigFile config,
-      ConfigService.ConfigFile.MasterConfig master,
+      ConfigService.ConfigFile.ArbiterConfig master,
       List<Problem> problems) {
     if (master.may(MasterRight.REPLY) && !config.codeReview().postReviewRepliesOrDefault()) {
       problems.add(

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job.checker;
 
 import dev.jagt.orchestrator.config.role.RoleDefinition;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.FlowRunner;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.FlowResult;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.io.IOException;
@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class CheckerFlows {
 
-  private final AcceptanceRunner runner;
+  private final FlowRunner runner;
   private final RoleDefinition role;
   private final RoleSettings settings;
 

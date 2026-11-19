@@ -32,7 +32,7 @@ public class OwnStatusReports {
     Optional<TaskState> handedBack =
         accepted
             .map(Reported::status)
-            .filter(status -> FlowRules.readByTheMaster(status) && !FlowRules.holdsPlan(status))
+            .filter(status -> FlowRules.readByTheArbiter(status) && !FlowRules.holdsPlan(status))
             .flatMap(status -> stateService.task(taskId));
     handedBack
         .flatMap(due::invalid)

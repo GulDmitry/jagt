@@ -88,7 +88,7 @@ class TurnsTest {
             rules,
             status,
             withReviewRequest,
-            RoundState.of(report, false).withMaster(Objects.requireNonNull(PROFILES.get(profile))),
+            RoundState.of(report, false).withArbiter(Objects.requireNonNull(PROFILES.get(profile))),
             false,
             neverExpiringWatch);
 
@@ -109,7 +109,7 @@ class TurnsTest {
             rules,
             status,
             withReviewRequest,
-            RoundState.of(report, false).withMaster(Objects.requireNonNull(PROFILES.get(profile))),
+            RoundState.of(report, false).withArbiter(Objects.requireNonNull(PROFILES.get(profile))),
             false,
             neverExpiringWatch);
 
@@ -148,7 +148,7 @@ class TurnsTest {
             rules,
             status,
             withReviewRequest,
-            RoundState.of(report, false).withMasterReading(true),
+            RoundState.of(report, false).withArbiterReading(true),
             false);
 
     assertThat(holder).isEqualTo(Holder.ARBITER);
@@ -208,7 +208,7 @@ class TurnsTest {
             withReviewRequest,
             RoundState.of(AgentReport.PLAIN, false)
                 .withCheckers(Map.of("acceptance", CheckerPhase.READING))
-                .withMaster(Objects.requireNonNull(PROFILES.get(profile))),
+                .withArbiter(Objects.requireNonNull(PROFILES.get(profile))),
             false);
 
     assertThat(holder).isEqualTo(new Holder.Role("acceptance"));
@@ -244,7 +244,7 @@ class TurnsTest {
   @Test
   void theMasterHoldsRoundWhoseSealWasClearedForItsVerdictFileWasGone() {
     TaskState sealed =
-        reducer.masterVerdictGone(
+        reducer.arbiterVerdictGone(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0))
                 .build());

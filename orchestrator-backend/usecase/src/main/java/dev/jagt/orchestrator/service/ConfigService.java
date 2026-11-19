@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -9,7 +10,7 @@ import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.SwitchJudgements;
 import dev.jagt.orchestrator.service.reach.SessionReach;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.stop.ActHalt;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.launch.TrackerMode;
 import dev.jagt.orchestrator.task.master.MasterMode;
@@ -75,7 +76,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     public record Reviewing(
         @Nullable CodeReviewConfig codeReview,
         @Nullable AutoReviewConfig autoReview,
-        @Nullable MasterConfig master,
+        @JsonProperty("master") @Nullable ArbiterConfig arbiter,
         @With(AccessLevel.NONE) @Nullable DeployConfig deploy) {}
 
     @With
@@ -475,7 +476,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
-    public record MasterConfig(
+    public record ArbiterConfig(
         @Nullable String mode,
         @Nullable String brief,
         @Nullable String model,
@@ -485,8 +486,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       /** Copied from `roles/master/brief.md.dist`, and not versioned. */
       private static final String BRIEF = "roles/master/brief.md";
 
-      public static MasterConfig defaults() {
-        return new MasterConfig(null, null, null, null, null);
+      public static ArbiterConfig defaults() {
+        return new ArbiterConfig(null, null, null, null, null);
       }
 
       /**
@@ -532,6 +533,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
       public boolean running() {
         return modeOrDefault() != MasterMode.OFF;
+      }
+
+      public boolean acts() {
+        return modeOrDefault() == MasterMode.ACT;
       }
 
       public Arbiter.Profile profile() {
@@ -748,8 +753,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       return withReviewing(reviewing.withAutoReview(autoReview));
     }
 
-    public ConfigFile withMaster(@Nullable MasterConfig master) {
-      return withReviewing(reviewing.withMaster(master));
+    public ConfigFile withArbiter(@Nullable ArbiterConfig arbiter) {
+      return withReviewing(reviewing.withArbiter(arbiter));
     }
 
     public ConfigFile withTracker(@Nullable TrackerConfig tracker) {
@@ -800,8 +805,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           Duration.ofHours(autoReview().windowHoursOrDefault()));
     }
 
-    public MasterConfig master() {
-      return reviewing.master() == null ? MasterConfig.defaults() : reviewing.master();
+    public ArbiterConfig arbiter() {
+      return reviewing.arbiter() == null ? ArbiterConfig.defaults() : reviewing.arbiter();
     }
 
     @Override
@@ -864,7 +869,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   private final JsonMapper mapper = new JsonMapper();
   private final ConfigSource source;
   private final AgentRuntime agentRuntime;
-  private final ActStops actStops;
+  private final ActHalt actStops;
   private final Checkers checkers;
 
   public boolean anyCheckerEnabled() {
@@ -942,13 +947,13 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
    * judges.
    */
   private ConfigFile masterByDefault(ConfigFile config) {
-    ConfigFile.MasterConfig master = config.master();
-    if (master.modeOrDefault() == MasterMode.ACT && actStops.standing().isPresent()) {
-      return config.withMaster(master.withMode(MasterMode.JUDGE.id()));
+    ConfigFile.ArbiterConfig master = config.arbiter();
+    if (master.acts() && actStops.halted()) {
+      return config.withArbiter(master.withMode(MasterMode.JUDGE.id()));
     }
     return master.mode() != null && !master.mode().isBlank()
         ? config
-        : config.withMaster(
+        : config.withArbiter(
             master.withMode(
                 (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
   }

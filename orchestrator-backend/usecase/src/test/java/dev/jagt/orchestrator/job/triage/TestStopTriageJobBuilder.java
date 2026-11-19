@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.stop;
+package dev.jagt.orchestrator.job.triage;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Composition;

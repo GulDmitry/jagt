@@ -109,7 +109,7 @@ class OrchestratorPathsTest {
                 .withData(root.resolve("vault").toString()));
 
     assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
-    assertThat(paths.masterToken()).isEqualTo(root.resolve("vault/jagt/master-token"));
+    assertThat(paths.token()).isEqualTo(root.resolve("vault/jagt/master-token"));
     assertThat(paths.worktree("web", "ABC-1"))
         .isEqualTo(root.resolve("vault/tasks/ABC-1/worktrees/web"));
   }

@@ -53,7 +53,7 @@ public interface GlobalCommand {
   }
 
   /** Why the Master never runs this command; empty where it may. */
-  default Optional<String> whyNotTheMaster() {
+  default Optional<String> whyNotTheArbiter() {
     return Optional.empty();
   }
 

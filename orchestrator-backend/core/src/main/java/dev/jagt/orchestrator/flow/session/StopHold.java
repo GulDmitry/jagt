@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 public enum StopHold {
   NONE,
   HUMAN,
-  MASTER;
+  ARBITER;
 
   /** Stops the Master lifts between two lifts of the human's. */
   public static final int LIFTS_PER_HUMAN_LIFT = 1;
@@ -23,20 +23,20 @@ public enum StopHold {
     if (stop == null) {
       return NONE;
     }
-    return mayBeLifted(task) && profile.may(MasterRight.LIFT) && !asked(task) ? MASTER : HUMAN;
+    return mayBeLifted(task) && profile.may(MasterRight.LIFT) && !asked(task) ? ARBITER : HUMAN;
   }
 
   /** A stop of a trigger the Master decides, while its bound is unspent. */
   public static boolean mayBeLifted(TaskState task) {
     TaskStop stop = task.stop();
     return stop != null
-        && FlowRules.liftedByTheMaster(stop.trigger())
-        && task.masterOrNone().liftedStops() < LIFTS_PER_HUMAN_LIFT;
+        && FlowRules.liftedByTheArbiter(stop.trigger())
+        && task.arbiterOrNone().liftedStops() < LIFTS_PER_HUMAN_LIFT;
   }
 
   /** The Master was asked about the stop standing, so it is not asked again. */
   public static boolean asked(TaskState task) {
     TaskStop stop = task.stop();
-    return stop != null && task.masterOrNone().askedStop().equals(stop.key());
+    return stop != null && task.arbiterOrNone().askedStop().equals(stop.key());
   }
 }

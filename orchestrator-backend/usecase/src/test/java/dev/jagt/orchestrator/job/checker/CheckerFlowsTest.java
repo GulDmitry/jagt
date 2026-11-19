@@ -11,9 +11,9 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleDefinitions;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.Verdict;
+import dev.jagt.orchestrator.port.worktree.FlowRunner;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.Verdict;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.role.RoleSettings;
@@ -34,7 +34,7 @@ class CheckerFlowsTest {
 
   @TempDir Path root;
 
-  private final AcceptanceRunner runner = mock(AcceptanceRunner.class);
+  private final FlowRunner runner = mock(FlowRunner.class);
   private final ConfigService config = mock(ConfigService.class);
   private final AcceptanceVerdict behindLogin =
       new AcceptanceVerdict(

@@ -20,7 +20,7 @@ public class MasterRuling {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.MasterConfig config) {
+      ConfigService.ConfigFile.ArbiterConfig config) {
     boolean ready = verdict.kind() == MasterReview.Kind.READY;
     if (ready && FlowRules.holdsPlan(task.status())) {
       return plans.holds(taskId, task, verdict, config);

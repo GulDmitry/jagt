@@ -1,10 +1,10 @@
-package dev.jagt.orchestrator.service.stop;
+package dev.jagt.orchestrator.service.master;
 
 import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.service.master.MasterBrake;
-import dev.jagt.orchestrator.service.stop.ActStop.Cause;
+import dev.jagt.orchestrator.service.master.ActStop.Cause;
+import dev.jagt.orchestrator.service.stop.BoardStop;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,5 +65,17 @@ class ActStopsTest {
     Files.writeString(root.resolve("board-stopped"), "1000");
 
     assertThat(stops.standing()).contains(new ActStop(Cause.BOARD, 1000L));
+  }
+
+  @Test
+  void haltsWhereTheBoardIsStopped() throws IOException {
+    Files.writeString(root.resolve("board-stopped"), "1000");
+
+    assertThat(stops.halted()).isTrue();
+  }
+
+  @Test
+  void haltsNothingWhereNothingIsStopped() {
+    assertThat(stops.halted()).isFalse();
   }
 }

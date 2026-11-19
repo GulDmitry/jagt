@@ -78,8 +78,8 @@ class TaskViewsTest {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     assertThat(views.all()).singleElement().extracting("statusLabel").isEqualTo("master review");
   }

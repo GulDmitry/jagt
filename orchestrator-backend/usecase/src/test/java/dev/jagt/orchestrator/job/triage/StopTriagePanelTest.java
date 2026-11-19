@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.stop;
+package dev.jagt.orchestrator.job.triage;
 
 import static dev.jagt.orchestrator.service.triage.TestTriageJudgementBuilder.triageJudgement;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.assistant.ChargedReviews;
+import dev.jagt.orchestrator.service.master.ChargedReviews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.review.RoundTrail;

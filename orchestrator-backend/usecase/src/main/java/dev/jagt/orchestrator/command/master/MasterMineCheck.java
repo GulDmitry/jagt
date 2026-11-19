@@ -29,7 +29,7 @@ public class MasterMineCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    ConfigService.ConfigFile.MasterConfig master = configService.load().master();
+    ConfigService.ConfigFile.ArbiterConfig master = configService.load().arbiter();
     if (!master.running()) {
       return List.of();
     }

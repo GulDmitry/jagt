@@ -26,15 +26,15 @@ class MasterCommandTest {
   private final OrchestratorPaths paths =
       new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/root"));
   private final MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
-  private ConfigService.ConfigFile.MasterConfig master =
-      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+  private ConfigService.ConfigFile.ArbiterConfig master =
+      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
   private MasterRecord.Seen seen = new MasterRecord.Seen(0, 0, 0, 0, 0, 0);
   private MasterCommand command;
 
   @BeforeEach
   void masterJudgesAndHasSeenNothing() {
     when(configService.load())
-        .thenAnswer(call -> ConfigService.ConfigFile.defaults().withMaster(master));
+        .thenAnswer(call -> ConfigService.ConfigFile.defaults().withArbiter(master));
     when(record.seen()).thenAnswer(call -> seen);
     command = new MasterCommand(configService, usage, record, briefs);
   }
@@ -63,7 +63,7 @@ class MasterCommandTest {
 
   @Test
   void saysHowToTurnItOnWhileTheMasterIsOff() {
-    master = new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null);
+    master = new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null);
 
     String report = command.run("");
 
@@ -82,7 +82,7 @@ class MasterCommandTest {
 
   @Test
   void saysAnActingMasterPressesTheButtonYouWould() {
-    master = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    master = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
 
     String report = command.run("");
 
@@ -91,7 +91,7 @@ class MasterCommandTest {
 
   @Test
   void namesTheModelTheMasterWasGiven() {
-    master = new ConfigService.ConfigFile.MasterConfig("judge", null, "opus", null, null);
+    master = new ConfigService.ConfigFile.ArbiterConfig("judge", null, "opus", null, null);
 
     String report = command.run("");
 
@@ -109,7 +109,7 @@ class MasterCommandTest {
   @Test
   void listsTheStepsYouKeptForYourself() {
     master =
-        new ConfigService.ConfigFile.MasterConfig(
+        new ConfigService.ConfigFile.ArbiterConfig(
             "act", null, null, List.of("ship", "deploy"), null);
 
     String report = command.run("");
@@ -119,7 +119,7 @@ class MasterCommandTest {
 
   @Test
   void saysYouKeptNothingBeyondTheStepsNoMasterHolds() {
-    master = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    master = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of(), null);
 
     String report = command.run("");
 

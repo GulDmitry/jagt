@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.acceptance.RoleRecord;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
@@ -19,6 +18,7 @@ import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.stop.StopTriage;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.task.usage.ModelTier;
@@ -185,34 +185,34 @@ public final class TaskReducer {
   }
 
   /** {@code task} whose Master offered the human {@code step} instead of pressing it. */
-  public TaskState masterLeft(TaskState task, String step) {
+  public TaskState arbiterLeft(TaskState task, String step) {
     return noted(task, new MasterNote.Left(step));
   }
 
   /** {@code task} whose Master no longer leaves a step to the human. */
-  public TaskState masterTook(TaskState task) {
+  public TaskState arbiterTook(TaskState task) {
     return noted(task, new MasterNote.Took());
   }
 
   /** {@code task} whose Master gave the question {@code digest} no usable answer. */
-  public TaskState masterUnanswered(TaskState task, String digest) {
+  public TaskState arbiterUnanswered(TaskState task, String digest) {
     return noted(task, new MasterNote.Unanswered(digest));
   }
 
   /** {@code task} whose Master pressed deploy on the arrival {@code arrival}. */
-  public TaskState masterPressedDeploy(TaskState task, String arrival) {
+  public TaskState arbiterPressedDeploy(TaskState task, String arrival) {
     return noted(task, new MasterNote.PressedDeploy(arrival));
   }
 
   /** {@code task} whose Master was asked about the stop {@code key}. */
-  public TaskState masterAskedStop(TaskState task, String key) {
+  public TaskState arbiterAskedStop(TaskState task, String key) {
     return noted(task, new MasterNote.AskedStop(key));
   }
 
   /**
    * {@code task} whose Master has lifted {@code count} stops since the human's last lift or deploy.
    */
-  public TaskState masterLiftedStops(TaskState task, int count) {
+  public TaskState arbiterLiftedStops(TaskState task, int count) {
     return noted(task, new MasterNote.LiftedStops(count));
   }
 
@@ -220,13 +220,13 @@ public final class TaskReducer {
    * {@code task} with the fingerprint of the verdict jagt wrote for its Master, answering {@code
    * round}.
    */
-  public TaskState masterSealed(TaskState task, String seal, long round) {
+  public TaskState arbiterSealed(TaskState task, String seal, long round) {
     return noted(task, new MasterNote.Sealed(seal, round));
   }
 
   /** {@code task} whose Master found the verdict file it sealed gone or not the one jagt wrote. */
-  public TaskState masterVerdictGone(TaskState task) {
-    return masterSealed(task, "", 0);
+  public TaskState arbiterVerdictGone(TaskState task) {
+    return arbiterSealed(task, "", 0);
   }
 
   private TaskState noted(TaskState task, MasterNote note) {
@@ -283,9 +283,9 @@ public final class TaskReducer {
    */
   public TaskState conflictReferred(TaskState task, String reason, long now) {
     boolean unasked =
-        task.currentConflict().filter(conflict -> !conflict.askedTheMaster()).isPresent();
+        task.currentConflict().filter(conflict -> !conflict.askedTheArbiter()).isPresent();
     TaskState referred = deployStepped(task, new DeployStep.Referred(), now);
-    boolean nowAsked = referred.currentConflict().filter(Conflict::askedTheMaster).isPresent();
+    boolean nowAsked = referred.currentConflict().filter(Conflict::askedTheArbiter).isPresent();
     return unasked && nowAsked ? asked(referred, AgentReport.QUESTION, reason, now) : referred;
   }
 
@@ -473,7 +473,7 @@ public final class TaskReducer {
       case TaskMove.MasterNoted noted ->
           new TaskMove.MasterNoted(
               noted.note(),
-              MasterPhase.of(task.withMaster(noted.note().applyTo(task.masterOrNone()))));
+              MasterPhase.of(task.withMaster(noted.note().applyTo(task.arbiterOrNone()))));
       case TaskMove.Checked.Passed passed ->
           new TaskMove.Checked.Passed(
               passed.role(),
@@ -506,7 +506,7 @@ public final class TaskReducer {
    * whatever its words.
    */
   private static TaskState reported(TaskState task, AgentReport report) {
-    return task.withReport(report).withMaster(task.masterOrNone().withUnanswered(""));
+    return task.withReport(report).withMaster(task.arbiterOrNone().withUnanswered(""));
   }
 
   private static TaskMove.ConflictDrop dropOf(TaskState task, String project) {
@@ -619,7 +619,7 @@ public final class TaskReducer {
       case TaskEffect.ResetsApproval _ -> task.withApproved(null);
       case TaskEffect.ResetsInfra _ -> task.withInfraRetries(List.of());
       case TaskEffect.NotesMaster notes ->
-          task.withMaster(notes.note().applyTo(task.masterOrNone()));
+          task.withMaster(notes.note().applyTo(task.arbiterOrNone()));
       case TaskEffect.OpensCheckerRead opens ->
           task.withRole(opens.role(), task.roleOrNone(opens.role()).withReading(opens.step()));
       case TaskEffect.ClosesCheckerRead closes ->

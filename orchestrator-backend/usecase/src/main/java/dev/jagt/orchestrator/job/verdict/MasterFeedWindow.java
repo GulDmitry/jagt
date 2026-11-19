@@ -35,7 +35,7 @@ public class MasterFeedWindow implements Job {
 
   @Override
   public Serves serves() {
-    return Serves.MASTER;
+    return Serves.ARBITER;
   }
 
   @Override
@@ -51,7 +51,7 @@ public class MasterFeedWindow implements Job {
   @Override
   public void run() {
     ConfigService.ConfigFile config = configService.load();
-    if (!config.master().running()) {
+    if (!config.arbiter().running()) {
       return;
     }
     sessions.keepFeedWindow(

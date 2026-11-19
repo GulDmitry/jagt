@@ -320,8 +320,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
         """
             .formatted(TASK);
 
-    flow.post(
-        "/mcp", call, Map.of(MasterToken.HEADER, Files.readString(paths.masterToken()).strip()));
+    flow.post("/mcp", call, Map.of(MasterToken.HEADER, Files.readString(paths.token()).strip()));
 
     assertThat(flow.task().history())
         .extracting(StatusChange::status, StatusChange::origin)

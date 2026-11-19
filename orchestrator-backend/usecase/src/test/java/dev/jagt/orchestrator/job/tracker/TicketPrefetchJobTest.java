@@ -60,8 +60,8 @@ class TicketPrefetchJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
     when(assistants.tracker().readTicketText("https://tracker.example/ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
 
@@ -82,8 +82,8 @@ class TicketPrefetchJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
     when(assistants.tracker().readTicketText("https://tracker.example/ABC-43"))
         .thenReturn(Answer.unavailable());
 
@@ -105,8 +105,8 @@ class TicketPrefetchJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     job.runOn(tasks);
 
@@ -124,8 +124,8 @@ class TicketPrefetchJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
     when(assistants.tracker().readTicketText("https://tracker.example/ABC-45"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
     job.runOn(tasks);

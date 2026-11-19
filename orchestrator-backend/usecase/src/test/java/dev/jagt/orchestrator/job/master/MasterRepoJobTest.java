@@ -36,8 +36,8 @@ class MasterRepoJobTest {
   private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
   private final MasterRepoJob job =
       new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), checkers));
-  private final ConfigService.ConfigFile.MasterConfig acting =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig acting =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final TaskState asking =
       TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
           .message("needs the registry")
@@ -47,7 +47,7 @@ class MasterRepoJobTest {
 
   @Test
   void attachesTheRepositorySessionAskedForWhereTheMasterHoldsTheRight() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(acting));
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(acting));
     when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
 
     job.run();
@@ -60,8 +60,8 @@ class MasterRepoJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig(
                         "act", null, null, List.of("repo"), null)));
     when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
 
@@ -75,8 +75,8 @@ class MasterRepoJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
     when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
 
     job.run();
@@ -86,7 +86,7 @@ class MasterRepoJobTest {
 
   @Test
   void attachesNothingForTaskThatAskedForNoRepository() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(acting));
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(acting));
     when(state.tasks())
         .thenReturn(
             Map.of(
@@ -109,7 +109,7 @@ class MasterRepoJobTest {
     @BeforeEach
     void theRequestIsOnTheDiskAndTheMasterActs() {
       stateService().withRoot(root).build().putTask("ABC-1", asking);
-      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(acting));
+      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(acting));
     }
 
     @Test

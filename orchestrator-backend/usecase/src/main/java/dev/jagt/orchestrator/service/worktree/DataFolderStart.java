@@ -91,20 +91,20 @@ public class DataFolderStart {
   }
 
   private void dropStaleToken(Path older) {
-    Path token = older.resolve(paths.masterToken().getFileName());
-    if (token.equals(paths.masterToken()) || !Files.isRegularFile(token)) {
+    Path token = older.resolve(paths.token().getFileName());
+    if (token.equals(paths.token()) || !Files.isRegularFile(token)) {
       return;
     }
     try {
       Files.delete(token);
       log.atInfo()
-          .setMessage("older master token deleted")
+          .setMessage("older token deleted")
           .addKeyValue("path", token)
           .addKeyValue("effect", "each start draws a new one")
           .log();
     } catch (IOException e) {
       log.atWarn()
-          .setMessage("older master token not deleted")
+          .setMessage("older token not deleted")
           .addKeyValue("path", token)
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "a stale credential stays in the older folder")

@@ -61,10 +61,10 @@ class MasterVerdictsTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final MasterShip ship = mock(MasterShip.class);
   private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
-  private final ConfigService.ConfigFile.MasterConfig acting =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-  private final ConfigService.ConfigFile.MasterConfig judging =
-      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig acting =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig judging =
+      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
   private final MasterReview.Verdict guardInvertedBeforeAnyRound =
       new MasterReview.Verdict(
           MasterReview.Kind.NOT_READY,
@@ -597,7 +597,7 @@ class MasterVerdictsTest {
   @Test
   void shipsNothingWhereTheHumanKeptThatStep() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
+    var kept = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of("ship"), null);
 
     boolean moved = verdicts.act("ABC-1", reviewPending, ready, kept);
 

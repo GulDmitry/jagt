@@ -106,7 +106,7 @@ class WholeApplicationWiringTest {
   void everyCommandIsRunnableByTheMasterOrSaysWhyItIsNot() {
     assertThat(globals.all())
         .allSatisfy(command ->
-            assertThat(command.whyNotTheMaster().map(String::isBlank).orElse(false))
+            assertThat(command.whyNotTheArbiter().map(String::isBlank).orElse(false))
                 .as(command.id())
                 .isFalse());
   }

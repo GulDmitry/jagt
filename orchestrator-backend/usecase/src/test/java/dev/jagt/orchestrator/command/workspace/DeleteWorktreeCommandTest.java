@@ -31,6 +31,6 @@ class DeleteWorktreeCommandTest {
 
   @Test
   void isInTheMastersReach() {
-    assertThat(new DeleteWorktreeCommand(orphans).whyNotTheMaster()).isEmpty();
+    assertThat(new DeleteWorktreeCommand(orphans).whyNotTheArbiter()).isEmpty();
   }
 }

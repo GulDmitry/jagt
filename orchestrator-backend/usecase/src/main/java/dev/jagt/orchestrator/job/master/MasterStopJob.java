@@ -42,7 +42,7 @@ public class MasterStopJob implements TaskJob {
 
   @Override
   public Serves serves() {
-    return Serves.MASTER;
+    return Serves.ARBITER;
   }
 
   @Override
@@ -63,8 +63,8 @@ public class MasterStopJob implements TaskJob {
   @Override
   public void run(String taskId, TaskState task) {
     ConfigService.ConfigFile file = configService.load();
-    ConfigService.ConfigFile.MasterConfig config = file.master();
-    if (StopHold.of(task, rounds.of(task, file).master()) != StopHold.MASTER) {
+    ConfigService.ConfigFile.ArbiterConfig config = file.arbiter();
+    if (StopHold.of(task, rounds.of(task, file).arbiter()) != StopHold.ARBITER) {
       return;
     }
     TaskStop stop = Objects.requireNonNull(task.stop());
@@ -95,7 +95,7 @@ public class MasterStopJob implements TaskJob {
    * is the Master's only where {@code mine} does not keep it.
    */
   private static boolean decides(
-      TaskState task, MasterStopAnswer answer, ConfigService.ConfigFile.MasterConfig config) {
+      TaskState task, MasterStopAnswer answer, ConfigService.ConfigFile.ArbiterConfig config) {
     return switch (answer.kind()) {
       case LIFT -> true;
       case ESCALATE -> !config.profile().keeps(TaskAction.ESCALATE);

@@ -189,7 +189,7 @@ public class TaskStops {
   }
 
   /** Whether the human keeps this verb from the Master, whatever phase the task stands in. */
-  public boolean masterKeeps(String taskId, TaskAction action) {
+  public boolean arbiterKeeps(String taskId, TaskAction action) {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
         .filter(task -> policy.profiles().at(task).keeps(action))
@@ -197,10 +197,10 @@ public class TaskStops {
   }
 
   /** Whether the Master spent the lifts it holds between two of the human's. */
-  public boolean masterLiftsSpent(String taskId) {
+  public boolean arbiterLiftsSpent(String taskId) {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
-        .filter(task -> task.masterOrNone().liftedStops() >= StopHold.LIFTS_PER_HUMAN_LIFT)
+        .filter(task -> task.arbiterOrNone().liftedStops() >= StopHold.LIFTS_PER_HUMAN_LIFT)
         .isPresent();
   }
 
@@ -208,29 +208,29 @@ public class TaskStops {
    * A human's lift, or a deploy's, restores the Master's lifts; the Master's own lift spends one.
    */
   public void lift(String taskId) {
-    boolean byTheMaster = CaseDoor.byTheMaster();
+    boolean byTheArbiter = CaseDoor.byTheArbiter();
     stateService.reduce(
         taskId,
         (reducer, task) ->
-            reducer.masterLiftedStops(
+            reducer.arbiterLiftedStops(
                 reducer.lift(task, clock.millis()),
-                byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
+                byTheArbiter ? task.arbiterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A human's lift that leaves the task's session due on the next model tier. */
   public void escalate(String taskId) {
-    boolean byTheMaster = CaseDoor.byTheMaster();
+    boolean byTheArbiter = CaseDoor.byTheArbiter();
     stateService.reduce(
         taskId,
         (reducer, task) ->
-            reducer.masterLiftedStops(
+            reducer.arbiterLiftedStops(
                 reducer.escalated(task, clock.millis()),
-                byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
+                byTheArbiter ? task.arbiterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A deploy by a human restores the Master's lifts, whether or not a stop stands. */
-  public void restoreMasterLifts(String taskId) {
-    stateService.reduce(taskId, (reducer, task) -> reducer.masterLiftedStops(task, 0));
+  public void restoreArbiterLifts(String taskId) {
+    stateService.reduce(taskId, (reducer, task) -> reducer.arbiterLiftedStops(task, 0));
   }
 
   /**

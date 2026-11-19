@@ -15,4 +15,9 @@ class RoleNamesOutsideTest {
                 RoleWords.inBoard(RoleFolders.ids()).stream()))
         .isEmpty();
   }
+
+  @Test
+  void noRoleIsNamedInCoreOrUsecaseOutsideItsModulesAndThePinnedKinds() {
+    assertThat(RoleWords.inCoreAndUsecase(RoleFolders.ids())).isEmpty();
+  }
 }

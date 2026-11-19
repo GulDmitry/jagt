@@ -57,7 +57,7 @@ class ConflictStall {
             return seen;
           }
           String reason = due.get().reason(conflict.worktree().toString());
-          if (!due.get().askedTheMaster() && masterAnswers(seen)) {
+          if (!due.get().askedTheArbiter() && arbiterAnswers(seen)) {
             return reducer.conflictReferred(
                 seen, "The " + kindOf(seen) + " conflict stalled: " + reason, now);
           }
@@ -72,14 +72,14 @@ class ConflictStall {
    * The question a session would put here, were it the one asking, goes to the Master: the same
    * fact {@code MasterAnswerJob} answers by.
    */
-  private boolean masterAnswers(TaskState task) {
+  private boolean arbiterAnswers(TaskState task) {
     return !task.report().asks()
         && Turns.next(
                 task.status(),
                 AgentReport.QUESTION,
                 task.stopped(),
                 checkers.of(task),
-                config.load().master().profile())
+                config.load().arbiter().profile())
             .equals(Turn.Holder.ARBITER);
   }
 

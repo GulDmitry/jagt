@@ -28,8 +28,8 @@ public class UnstopCommand implements GlobalCommand {
   }
 
   @Override
-  public Optional<String> whyNotTheMaster() {
-    return Optional.of("a stop on everything, the Master included, ends only by the human's lift");
+  public Optional<String> whyNotTheArbiter() {
+    return Optional.of("a stop on everything, the arbiter included, ends only by the human's lift");
   }
 
   @Override

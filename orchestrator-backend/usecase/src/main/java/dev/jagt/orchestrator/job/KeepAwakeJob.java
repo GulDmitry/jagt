@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.port.host.KeepAwake;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.task.master.MasterMode;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,7 +23,7 @@ public class KeepAwakeJob implements Job {
 
   @Override
   public String describe() {
-    return "keep the machine awake while the Master acts, auto-review polls or the tracker hands"
+    return "keep the machine awake while the arbiter acts, auto-review polls or the tracker hands"
         + " out work";
   }
 
@@ -36,7 +35,7 @@ public class KeepAwakeJob implements Job {
   @Override
   public void run() {
     ConfigFile file = config.load();
-    if (file.master().modeOrDefault() == MasterMode.ACT
+    if (file.arbiter().acts()
         || file.autoReview().enabledOrDefault()
         || file.tracker().modeOrOff().takes()) {
       keepAwake.hold();
