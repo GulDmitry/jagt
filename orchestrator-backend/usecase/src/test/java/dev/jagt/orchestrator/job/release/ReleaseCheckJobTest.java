@@ -46,6 +46,18 @@ class ReleaseCheckJobTest {
   }
 
   @Test
+  void keepsTheVerifiedChecksumBesideTheKeptJar(@TempDir Path root) throws Exception {
+    Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
+    when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
+    FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
+
+    new ReleaseCheckJob(host, feed, reach).run();
+
+    assertThat(root.resolve("versions/0.25.0/jagt.jar.sha256"))
+        .hasContent("fba6a4ac61e440c7309ae013e5c5c7ac0a9000c8a3bab7def760b499d587b1d0  jagt.jar\n");
+  }
+
+  @Test
   void discardsTheDownloadWhenItsChecksumDoesNotMatch(@TempDir Path root) throws Exception {
     Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));

@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,9 +27,8 @@ import org.springframework.util.FileSystemUtils;
 @Slf4j
 public class ReleaseCheckJob implements Job {
 
-  private static final String VERSIONS = "versions";
-  private static final String JAR = "jagt.jar";
-  private static final Pattern VERSION = Pattern.compile("\\d{1,9}(\\.\\d{1,9})*");
+  private static final String VERSIONS = Versions.DIR;
+  private static final String JAR = Versions.JAR;
 
   private final Host host;
   private final ReleaseFeed feed;
@@ -112,7 +110,7 @@ public class ReleaseCheckJob implements Job {
   }
 
   private static boolean newer(String candidate, String running) {
-    if (!VERSION.matcher(candidate).matches() || !VERSION.matcher(running).matches()) {
+    if (!Versions.valid(candidate) || !Versions.valid(running)) {
       return false;
     }
     long[] wanted = parts(candidate);
@@ -168,6 +166,7 @@ public class ReleaseCheckJob implements Job {
     }
     Path folder = Files.createDirectory(staging.resolve(version));
     Files.move(jar, folder.resolve(JAR));
+    Files.writeString(folder.resolve(Versions.SUM), want + "  " + JAR + "\n");
     return folder;
   }
 
