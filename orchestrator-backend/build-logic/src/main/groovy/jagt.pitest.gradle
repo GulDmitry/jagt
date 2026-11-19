@@ -170,7 +170,11 @@ tasks.register('pitestDiff') {
 }
 
 def gateTests = allprojects.collect { it == rootProject ? ':test' : "${it.path}:test" }
+// A `--tests` run executes part of the suite, so mutating after it proves nothing.
+def filteredRun = gradle.startParameter.taskNames.contains('--tests')
 allprojects {
-    tasks.matching { it.name == 'test' }.configureEach { finalizedBy ':pitestDiff' }
+    if (!filteredRun) {
+        tasks.matching { it.name == 'test' }.configureEach { finalizedBy ':pitestDiff' }
+    }
     tasks.matching { it.name == 'pitest' }.configureEach { mustRunAfter gateTests }
 }
