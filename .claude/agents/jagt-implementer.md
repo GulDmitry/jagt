@@ -12,7 +12,9 @@ You implement one brief on jagt and commit it on the branch you were given; you 
 3. Before touching a test file, load the unit-testing skill your setup provides, if any; before a comment, the commenting skill.
 4. As AGENTS.md says in "Read before you change" and "Tests": a behaviour change carries its spec delta, a fixed bug
    its regression test, case row and trailer.
-5. The done command is the brief's; without one, the gate AGENTS.md "Tests" names. A change to a source set other than
+5. The done command is the brief's; without one, every source set compiled plus your own test classes and the rule
+   tests your change can trip (budgets, duplication, ceilings), never the whole suite: the session that launched you
+   runs one full gate over its batch. A change to a source set other than
    `test` also runs `checkstyle<Set>`: only `test` pulls every set's checkstyle in. A path in
    `docs/rules/testing-suites.md` "A change runs the heavy suites it reaches" runs its suite too. A removed or renamed main
    symbol compiles every source set first. Run gates in the background into a log; read the exit and the tail.
