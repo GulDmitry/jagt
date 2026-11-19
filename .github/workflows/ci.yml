@@ -176,6 +176,7 @@ jobs:
           cp build/libs/jagt.jar "build/release/jagt-$version.jar"
           cp build/reports/sbom/jagt.cdx.json "build/release/jagt-$version.cdx.json"
           (cd build/release && sha256sum "jagt-$version.jar" "jagt-$version.cdx.json" > "jagt-$version.sha256")
+          cp ../install.sh build/release/install.sh
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: orchestrator-backend/build/release/*.jar

@@ -132,6 +132,13 @@ class CiWorkflowTest {
   }
 
   @Test
+  void attachesTheInstallScriptUnderAnUnversionedNameSoTheLatestReleaseServesIt() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release).contains("cp ../install.sh build/release/install.sh");
+  }
+
+  @Test
   void publishesTheImageWithItsSbom() {
     assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh"))).contains("--sbom=true");
   }
