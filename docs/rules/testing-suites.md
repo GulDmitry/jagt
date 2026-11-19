@@ -5,11 +5,11 @@
 | group | suites | where | when |
 |---|---|---|---|
 | **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties (50 tries, 200 at the release gate by `-PjqwikTries`), mutants on the changed lines, 0.80 line coverage per module | locally and CI | every commit; CI on a push or pull request |
-| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | the `nightly` workflow (03:17 UTC schedule, calls `ci.yml`) and on a release tag |
+| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | the `nightly` workflow (03:17 UTC schedule, calls `ci.yml`), a pull or merge request and a release tag |
 | **Stand** | `standTest -Pmodelfree -Pengine=host\|compose\|kind`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally: docker, an agent login, tokens; CI runs `standTest -Pmodelfree` in its `stand` job | before a minor release; CI per push (compose), nightly (kind) |
 
 CI's `stand` job runs `standTest -Pmodelfree -Pbudgets=false` (absolute time budgets hold on the reference machine)
-per `strategy.matrix.engine`: compose per push and pull request, kind nightly;
+per `strategy.matrix.engine`: compose per push and pull request, kind nightly and per pull request;
 GitLab runs compose alone, since kind needs a privileged runner.
 CI sees only what is pushed, and jagt pushes at a release: a heavy break in new code shows on the release push,
 which waits for it. A `schedule` run starts late under GitHub load, worst at the top of the hour,

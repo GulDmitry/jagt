@@ -78,9 +78,28 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheHeavyJobOnlyOnScheduleOrTag() {
+  void runsTheHeavyJobOnScheduleTagAndPullRequest() {
     assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
-        .isEqualTo("inputs.nightly || startsWith(github.ref, 'refs/tags/v')");
+        .isEqualTo(
+            "inputs.nightly || github.event_name == 'pull_request'"
+                + " || startsWith(github.ref, 'refs/tags/v')");
+  }
+
+  @Test
+  void runsTheStandOnEveryEngineForPullRequests() {
+    assertThat(
+            String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("strategy")))
+        .contains(
+            "(inputs.nightly || github.event_name == 'pull_request')"
+                + " && fromJSON('[\"compose\",\"kind\"]')");
+  }
+
+  @Test
+  void runsTheHeavyJobOnGitlabForMergeRequests() {
+    assertThat(CiWorkflow.gitlabText())
+        .contains(
+            "$CI_PIPELINE_SOURCE == \"schedule\" || $CI_PIPELINE_SOURCE == \"merge_request_event\""
+                + " || $CI_COMMIT_TAG =~ /^v/");
   }
 
   @Test

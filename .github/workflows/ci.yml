@@ -1,6 +1,6 @@
-# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a tag,
+# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly, on a pull request and on a tag,
 # `stand` per engine (compose on every
-# run, kind nightly: the runner ships kind and kubectl), `release` on a tag after all. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
+# run, kind nightly and on a pull request: the runner ships kind and kubectl), `release` on a tag after all. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
 name: ci
 
 on:
@@ -57,7 +57,7 @@ jobs:
 
   heavy:
     name: heavy suites
-    if: inputs.nightly || startsWith(github.ref, 'refs/tags/v')
+    if: inputs.nightly || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -106,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: ${{ inputs.nightly && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
+        engine: ${{ (inputs.nightly || github.event_name == 'pull_request') && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
