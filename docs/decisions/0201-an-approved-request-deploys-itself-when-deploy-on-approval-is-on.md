@@ -22,6 +22,8 @@ Accepted 2026-11-19, owner's choice (JAGT-133).
 - The history names `ActionOrigin.CODE_HOST` as who acted; no role, not even the Master, is needed.
 - One press per arrival at `APPROVED`: a task a human or the Master already deployed is no longer `APPROVED` and is left alone.
 - A refused press logs one WARN and is not pressed again for that arrival.
+- **Ceilings raised by one** ([0176](0176-every-kind-has-a-ceiling.md)): `startTriggers` 56 (the job),
+  `specCapabilities` 50 (`deploy-on-approval`; `unattended-work` and `deploy-check` stand at their 200-line budget).
 - The Master's own deploy in `act` is unchanged.
 - `autoReview.waitingMaxIntervalMinutes` defaults to 60: a request waiting for an approval is read hourly.
 
