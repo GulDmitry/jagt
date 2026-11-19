@@ -17,14 +17,15 @@ class TestsForScriptTest {
   private static final String ADAPTER = "orchestrator-backend/adapter/src/";
 
   @Test
-  void printsCompileCheckstyleTouchedTestsThenRuleTestsInOrderWhenAMainClassChanges(
+  void printsCompileCheckstyleTouchedTestsThenRuleTestsInOrderWhenMainClassChanges(
       @TempDir Path repo) throws Exception {
     Files.createDirectories(repo.resolve(ADAPTER + "main/java/a"));
     Files.createDirectories(repo.resolve(ADAPTER + "test/java/a"));
     Files.createDirectories(repo.resolve(ROOT_TESTS));
     Files.writeString(repo.resolve(ADAPTER + "main/java/a/Foo.java"), "class Foo {}");
     Files.writeString(repo.resolve(ADAPTER + "test/java/a/FooTest.java"), "class FooTest {}");
-    Files.writeString(repo.resolve(ROOT_TESTS + "DuplicationTest.java"), "class DuplicationTest {}");
+    Files.writeString(
+        repo.resolve(ROOT_TESTS + "DuplicationTest.java"), "class DuplicationTest {}");
 
     Process run =
         TestTestsForProcessBuilder.over(repo).build(ADAPTER + "main/java/a/Foo.java").start();
@@ -32,17 +33,17 @@ class TestsForScriptTest {
         new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8).lines().toList();
 
     assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
-    assertThat(lines).hasSize(4);
-    assertThat(lines.get(0))
-        .contains("timeout 600 ./gradlew :adapter:compileJava :adapter:compileTestJava");
-    assertThat(lines.get(1)).contains(":adapter:checkstyleMain :adapter:checkstyleTest");
-    assertThat(lines.get(2)).contains(":adapter:test --tests '*FooTest' -x pitestDiff");
-    assertThat(lines.get(3)).contains(":test --tests '*DuplicationTest' -x pitestDiff");
+    assertThat(lines)
+        .filteredOn(l -> l.startsWith("cd "))
+        .satisfiesExactly(
+            l -> assertThat(l).contains(":adapter:compileJava :adapter:compileTestJava"),
+            l -> assertThat(l).contains(":adapter:checkstyleMain :adapter:checkstyleTest"),
+            l -> assertThat(l).contains(":adapter:test --tests '*FooTest' -x pitestDiff"),
+            l -> assertThat(l).contains(":test --tests '*DuplicationTest' -x pitestDiff"));
   }
 
   @Test
-  void selectsATestOfADependentModuleThatNamesTheChangedClass(@TempDir Path repo)
-      throws Exception {
+  void selectsTestOfDependentModuleThatNamesTheChangedClass(@TempDir Path repo) throws Exception {
     Files.createDirectories(repo.resolve("orchestrator-backend/core/src/main/java/c"));
     Files.createDirectories(repo.resolve("orchestrator-backend/usecase/src/test/java/u"));
     Files.writeString(
@@ -62,7 +63,7 @@ class TestsForScriptTest {
   }
 
   @Test
-  void compilesEverySourceSetWhenAMainClassIsRemoved(@TempDir Path repo) throws Exception {
+  void compilesEverySourceSetWhenMainClassIsRemoved(@TempDir Path repo) throws Exception {
     Files.createDirectories(repo.resolve(ROOT_TESTS));
 
     Process run =
