@@ -92,7 +92,7 @@ for p in $paths; do
     *.java)
       add_rules Duplication CognitiveComplexity CollaboratorCeiling CollaboratorOwners ProductionConstructor MockCeiling \
         NoHelperMethod TestBuilderLogic Withers EveryTestAsserts TestNaming StaticState LifecycleHooks Rings Packages \
-        VendorNames NullMarked EnglishAndUtc RoleNames RoleNamesOutside
+        VendorNames NullMarked EnglishAndUtc RoleNames RoleNamesOutside Kinds ComplexityCeilings
       loc=$(locate "$p")
       if [ -n "$loc" ]; then
         mod=${loc%% *}
