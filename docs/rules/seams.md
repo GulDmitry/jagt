@@ -10,6 +10,7 @@ Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-
 - Selected by config: `UserNotifier` by `orchestrator.notifier` (desktop default, its OS from `orchestrator.platform`, the
   machine's unless overridden). `TerminalDriver` by `orchestrator.terminal` (kitty default, ghostty on macOS only).
   `EditorDriver` by `orchestrator.editor` (cli default, run by `editor-command`). `KeepAwake` by `orchestrator.keep-awake`.
+  `ReleaseFeed` by `orchestrator.release-feed.kind` (github default, none).
   `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).
   `auth` by `orchestrator.auth.mode` (none default, password; [0167](../decisions/0167-the-board-is-guarded-by-an-auth-seam-on-spring-security.md)).
   `CodeHost` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.

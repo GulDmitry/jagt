@@ -221,7 +221,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/assistant` | core | the headless assistants and readers, their answers |
 | `port/channel` | core | the channel driver port and what it carries |
 | `port/codehost` | core | the code host port and its commands |
-| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout |
+| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout, the release feed |
 | `port/reach` | core | what jagt's reach loss is told in |
 | `port/terminal` | core | terminal, editor and session-host ports |
 | `port/worktree` | core | worktree-facing ports: acceptance runner, build tools, line diff, specs, containers, processes |
@@ -268,6 +268,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
+| `job/release` | usecase | the job keeping a newer release verified beside the running one |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
 | `job/stop` | usecase | stop reads and the stop triage |
 | `job/usage` | usecase | usage-limit alerts and the job reading them |
@@ -314,6 +315,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
 | `adapter/replay` | adapter | a stand recording played back: runtime, sessions, moves, reads |
+| `adapter/release` | adapter | the release feed drivers: GitHub releases, none |
 | `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
 | `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
 | `adapter/tmux` | adapter | the tmux session host and its reads |
@@ -484,8 +486,7 @@ the compiler's: an import that points outward does not compile. Two folders insi
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
   `lsof`, binaries), `:surface:test`, `:stand:test` (the stand harness's own, outside the assembly), and the root's own few.
-- The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests
-  and `WorktreeHooksTest` live in `:adapter:test`, where git is.
+- A `:usecase` class only a real binary tests honestly (the git components, `WorktreeHooksTest`) is tested in `:adapter:test`.
 - Six suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `standTest` (docker, kind),
   `boardTest` (a real browser), `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, tokens).
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
@@ -495,6 +496,5 @@ the compiler's: an import that points outward does not compile. Two folders insi
   build/libs/jagt-run.jar` starts the board.
 - **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
   a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
-- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job`
-  (`LifecycleHooksTest`).
+- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job` (`LifecycleHooksTest`).
 - `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names `adapter/Executables`.
