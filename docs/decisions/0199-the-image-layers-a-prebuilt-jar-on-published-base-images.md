@@ -24,6 +24,9 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
 - The OS layer is `base/Dockerfile`, built by `.github/workflows/base-images.yml` (push to `base/**`, weekly, manual).
 - They rebuild in their own workflow on a change to a base Dockerfile and weekly for OS security fixes.
 - Renovate bumps the temurin digest in a base Dockerfile and the base digest in an app Dockerfile, as a request passing full CI.
+- After each publish the workflow keeps the newest 10 untagged base images with their per-arch and attestation children
+  and deletes partial and orphaned ones (`dataaxiom/ghcr-cleanup-action`, multi-arch aware); a release's pinned base
+  stays pullable for about 10 weeks, and the release package is never pruned by it.
 - CI caches Gradle with `gradle/actions/setup-gradle`, `cache-provider: basic`, written only from `main`.
 
 ## Rejected

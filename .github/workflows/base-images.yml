@@ -39,3 +39,10 @@ jobs:
       - name: scan the image for known vulnerabilities
         working-directory: orchestrator-backend
         run: scripts/vulnerability-scan.sh scan image ${{ steps.image.outputs.name }}@${{ steps.image.outputs.digest }}
+      - name: prune superseded base images
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          packages: ${{ github.event.repository.name }}-base
+          keep-n-untagged: 10
+          delete-partial-images: true
+          delete-orphaned-images: true

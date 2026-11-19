@@ -183,6 +183,19 @@ class CiWorkflowTest {
   }
 
   @Test
+  void deletesTheImageAndThePagesDeploymentsOfEveryReleaseTheRetentionDeletes() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release)
+        .containsPattern("dataaxiom/ghcr-cleanup-action@[0-9a-f]{40}")
+        .contains("delete-tags=${{ steps.retention.outputs.image-tags }}")
+        .contains("state=inactive")
+        .contains("deployments/$id")
+        .contains("packages=write")
+        .contains("deployments=write");
+  }
+
+  @Test
   void scansTheBaseImageByDigestWithTheChecksumVerifiedScanBinary() {
     String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
     String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
@@ -193,6 +206,19 @@ class CiWorkflowTest {
                 + " steps.image.outputs.digest }}")
         .doesNotContain("osv-scanner-action");
     assertThat(scan).contains("sha256sum -c").contains("\"$tool\" \"$@\"");
+  }
+
+  @Test
+  void keepsTheNewestTenUntaggedBaseImagesWithTheirChildrenByOnePinnedAction() {
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/base-images.yml"));
+
+    assertThat(workflow)
+        .containsPattern("dataaxiom/ghcr-cleanup-action@[0-9a-f]{40}")
+        .contains("packages: ${{ github.event.repository.name }}-base")
+        .contains("keep-n-untagged: 10")
+        .contains("delete-partial-images: true")
+        .contains("delete-orphaned-images: true")
+        .doesNotContain("delete-package-versions");
   }
 
   @Test

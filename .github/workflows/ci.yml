@@ -140,6 +140,7 @@ jobs:
       contents: write
       packages: write
       pages: write
+      deployments: write
       id-token: write
       attestations: write
     environment:
@@ -193,15 +194,35 @@ jobs:
           echo "${DIGEST#sha256:}  ghcr.io image jagt:$version" > "build/release/jagt-$version.image.sha256"
           gh release upload "$GITHUB_REF_NAME" "build/release/jagt-$version.image.sha256" --clobber
       - name: keep every patch of the last two minors
+        id: retention
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release list --limit 1000 --json tagName,createdAt -q '
+          tags=$(gh release list --limit 1000 --json tagName,createdAt -q '
             map(. + {minor: (.tagName | try capture("^v(?<v>[0-9]+[.][0-9]+)").v catch .)})
             | (group_by(.minor) | map({minor: .[0].minor, at: (map(.createdAt) | max)})
                | sort_by(.at) | reverse | .[:2] | map(.minor)) as $kept
-            | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName' |
-            while read -r tag; do gh release delete "$tag" --yes; done
+            | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName')
+          for tag in $tags; do gh release delete "$tag" --yes; done
+          echo "refs=$(echo $tags)" >> "$GITHUB_OUTPUT"
+          echo "image-tags=$(printf '%s\n' $tags | sed 's/^v//' | paste -sd, -)" >> "$GITHUB_OUTPUT"
+      - name: delete the deleted releases' images
+        if: steps.retention.outputs.image-tags != ''
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          packages: ${{ github.event.repository.name }}
+          delete-tags: ${{ steps.retention.outputs.image-tags }}
+      - name: delete the deleted releases' Pages deployments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REFS: ${{ steps.retention.outputs.refs }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=100" |
+            jq -r --arg refs "$REFS" '.[1:][] | select(.ref as $r | ($refs | split(" ")) | index($r)) | .id' |
+            while read -r id; do
+              gh api -X POST "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" -f state=inactive
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/deployments/$id"
+            done
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
