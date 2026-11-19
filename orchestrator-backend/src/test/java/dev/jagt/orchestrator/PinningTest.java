@@ -90,6 +90,13 @@ class PinningTest {
   }
 
   @Test
+  void standLayerInstallsNoOsPackageWhileTheStandRuns() {
+    assertThat(SourceRoots.read(Path.of("stand/src/stand/compose/Dockerfile")))
+        .doesNotContain("apt-get")
+        .contains("COPY --from=node /usr/local/bin/node");
+  }
+
+  @Test
   void pinMovesByReviewedUpdateRequest() {
     assertThat(SourceRoots.read(Path.of("../renovate.json"))).contains("config:recommended");
   }
