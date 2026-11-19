@@ -102,6 +102,18 @@ class CiWorkflowTest {
   }
 
   @Test
+  void startsTheNightlyOffTheHourAndLogsItsStartDelayAsNotice() {
+    String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
+
+    assertThat(nightly)
+        .doesNotContainPattern("cron: '0 ")
+        .contains("actions/runs/$GITHUB_RUN_ID")
+        .contains("--jq .created_at")
+        .contains("::notice title=nightly start delay::event=nightly.delay")
+        .contains("delay_seconds=$delay");
+  }
+
+  @Test
   void startsCiOnNoScheduleSoThePushDoesNotRunTheNightly() {
     assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
         .doesNotContain("schedule")

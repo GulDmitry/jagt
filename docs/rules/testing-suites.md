@@ -12,7 +12,11 @@ CI's `stand` job runs `standTest -Pmodelfree -Pbudgets=false` (absolute time bud
 per `strategy.matrix.engine`: compose per push and pull request, kind nightly;
 GitLab runs compose alone, since kind needs a privileged runner.
 CI sees only what is pushed, and jagt pushes at a release: a heavy break in new code shows on the release push,
-which waits for it. Times are wall clock, dated in `measurements.md`.
+which waits for it. A `schedule` run starts late under GitHub load, worst at the top of the hour,
+and runs the default branch's latest commit
+([events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows),
+checked 2026-11-19): the old `0 4` cron started 08:20-08:40 late on 2026-11-16..18, so the cron sits off the hour
+and `nightly` logs its delay. Times are wall clock, dated in `measurements.md`.
 
 ## What each suite proves
 

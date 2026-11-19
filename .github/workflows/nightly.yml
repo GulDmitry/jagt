@@ -17,3 +17,18 @@ jobs:
     secrets: inherit
     with:
       nightly: true
+  delay:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Log the start delay against the cron
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CRON: ${{ github.event.schedule }}
+        run: |
+          created=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)
+          read -r minute hour _ <<< "$CRON"
+          scheduled=$(date -u -d "$(date -u -d "$created" +%F) $hour:$minute" +%s)
+          delay=$(( $(date -u -d "$created" +%s) - scheduled ))
+          echo "::notice title=nightly start delay::event=nightly.delay cron='$CRON' created_at=$created delay_seconds=$delay"
