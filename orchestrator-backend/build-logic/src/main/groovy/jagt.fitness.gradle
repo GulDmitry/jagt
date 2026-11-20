@@ -1,4 +1,4 @@
-// The tool rows of fitness.yml: the plugin reads each number from there and binds it to the tool that enforces it.
+// The tool-bound fitness functions of fitness.yml: the plugin reads each threshold from there and binds it to the tool that enforces it.
 pluginManager.apply('fitness')
 
 fitness {

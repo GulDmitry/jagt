@@ -1,4 +1,4 @@
-# fitness — functions
+# fitness — fitness functions
 
 Fitness functions declared in one `fitness.yml`, evaluated by engines, run as JUnit dynamic tests. An included build,
 meant to leave as its own library and plugin; its decisions live in [`decisions/`](decisions/README.md).
@@ -6,7 +6,7 @@ meant to leave as its own library and plugin; its decisions live in [`decisions/
 ## Boundary
 
 - **Nothing here names a project**: no package, ring, path, vendor or ticket of the project using it. Its selectors live in the
-  project's `fitness.yml`, its domain functions in the project's `Fitness` classes.
+  project's `fitness.yml`, its coded fitness functions in the project's `Fitness` classes.
 - **No new library** beyond snakeyaml, ArchUnit, PMD and JUnit.
 - **Groovy DSL only**, versions in `gradle.properties`, every configuration locked.
 
@@ -19,9 +19,9 @@ meant to leave as its own library and plugin; its decisions live in [`decisions/
 | `engine-scan` | selects files (or every tracked text file), directories, lines and matches under a root; measures lines, words, complexity, duplication, assertionless tests; `requires` lists directories lacking a file |
 | `junit` | `FitnessTests.from(path)`: one `dynamicContainer` per section, `-Pfitness.only=<id>` |
 
-## FitnessFunctions
+## Fitness functions
 
-- **Every function is a number with a direction**; a `governs: count` function above zero is a ratchet: below its number fails.
-- **A failure is a `FitnessConfigException` with a `Reason` and the key**, thrown before any function runs.
+- **Every fitness function holds a threshold**, a number with a direction; a `governs: count` one is a ratchet: below its threshold fails.
+- **A failure is a `FitnessConfigException` with a `Reason` and the key**, thrown before any fitness function runs.
 - **A `Fitness` class sits in the package of its section**, hyphens dropped.
 - **An engine declares its selector vocabulary**; a key or value outside it fails validation.
