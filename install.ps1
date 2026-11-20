@@ -72,8 +72,14 @@ try {
     $archive = Join-Path $staging 'jre.zip'
     $jreUrl = "$jreFeed/$jreOs/x64/jre/hotspot/normal/eclipse"
     try {
-      $response = Invoke-WebRequest -Uri $jreUrl -OutFile $archive -UseBasicParsing -TimeoutSec 600 -PassThru
-      $final = if ($response.BaseResponse.RequestMessage) { $response.BaseResponse.RequestMessage.RequestUri } else { $response.BaseResponse.ResponseUri }
+      $final = $jreUrl
+      try {
+        Invoke-WebRequest -Uri $jreUrl -Method Head -MaximumRedirection 0 -UseBasicParsing -TimeoutSec 60 | Out-Null
+      } catch {
+        $location = $_.Exception.Response.Headers.Location
+        if ($location) { $final = $location.ToString() }
+      }
+      Get-Download $final $archive
       Get-Download "$final.sha256.txt" (Join-Path $staging 'jre.sha256')
     } catch {
       Fail "cannot download the Java runtime from ${jreUrl}: $($_.Exception.Message)"

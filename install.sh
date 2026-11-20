@@ -91,8 +91,10 @@ java_of() {
 if [ ! -x "$(java_of "$ROOT/runtime")" ]; then
   archive="$staging/jre.tar.gz"
   jre_url="$JRE_FEED/$os/$arch/jre/hotspot/normal/eclipse"
-  final=$(fetch --output "$archive" --write-out '%{url_effective}' "$jre_url") ||
-    fail "cannot download the Java runtime from $jre_url"
+  final=$(curl --silent --show-error --head --connect-timeout 15 --max-time 60 --output /dev/null \
+    --write-out '%{redirect_url}' "$jre_url") || fail "cannot reach the Java runtime feed at $jre_url"
+  [ -n "$final" ] || final=$jre_url
+  fetch --output "$archive" "$final" || fail "cannot download the Java runtime from $final"
   fetch --output "$staging/jre.sha256" "$final.sha256.txt" || fail "cannot download the runtime's checksum"
   verify "$archive" "$(cat "$staging/jre.sha256")"
   mkdir "$staging/runtime"
@@ -116,7 +118,8 @@ launcher="$BIN/jagt"
   echo 'if [ -x "$root/runtime/Contents/Home/bin/java" ]; then java="$root/runtime/Contents/Home/bin/java"; else java="$root/runtime/bin/java"; fi'
   echo 'export JAGT_LAUNCHER=1'
   echo 'while :; do'
-  echo '  "$java" -jar "$root/current/jagt.jar" "$@"'
+  echo '  jar="$root/$(readlink "$root/current")/jagt.jar"'
+  echo '  "$java" -jar "$jar" "$@"'
   echo '  code=$?'
   echo '  [ "$code" -eq 75 ] || exit "$code"'
   echo 'done'

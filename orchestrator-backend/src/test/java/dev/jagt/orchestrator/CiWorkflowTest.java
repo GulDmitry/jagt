@@ -50,9 +50,9 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsExactlyTheFourGroupsOnGithub() {
+  void runsExactlyTheFourGroupsAndTheInstallCheckOnGithub() {
     assertThat(CiWorkflow.jobs().keySet())
-        .containsExactlyInAnyOrder("test", "heavy", "stand", "release");
+        .containsExactlyInAnyOrder("test", "heavy", "stand", "install", "release");
   }
 
   @Test
@@ -155,6 +155,33 @@ class CiWorkflowTest {
     String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
 
     assertThat(release).contains("cp ../install.sh build/release/install.sh");
+  }
+
+  @Test
+  void attachesThePowerShellInstallerBesideTheShellOne() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release).contains("cp ../install.ps1 build/release/install.ps1");
+  }
+
+  @Test
+  void runsTheInstallCheckOnLinuxMacAndWindows() {
+    String install = Objects.requireNonNull(CiWorkflow.jobs().get("install")).toString();
+
+    assertThat(install)
+        .contains("ubuntu-latest")
+        .contains("macos-latest")
+        .contains("windows-latest")
+        .contains("timeout-minutes=");
+  }
+
+  @Test
+  void runsTheInstallCheckScriptOnTheBuiltBootJar() {
+    String install = Objects.requireNonNull(CiWorkflow.jobs().get("install")).toString();
+
+    assertThat(install)
+        .contains("bootJar")
+        .contains("scripts/install-check.sh build/libs/jagt.jar");
   }
 
   @Test

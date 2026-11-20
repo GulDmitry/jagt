@@ -82,7 +82,10 @@ class InstallScriptTest {
     assertThat(looped.exitValue()).isEqualTo(3);
     assertThat(Files.readAllLines(runs))
         .hasSize(2)
-        .allMatch(run -> run.startsWith("1 -jar") && run.endsWith("--port 1"));
+        .allMatch(run ->
+            run.startsWith("1 -jar")
+                && run.contains(dir.resolve("home/versions/1.2.3/jagt.jar").toString())
+                && run.endsWith("--port 1"));
   }
 
   @Test
