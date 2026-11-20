@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Exit;
 import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.service.release.ReleaseSwitch;
 import dev.jagt.orchestrator.service.release.Releases;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -21,7 +22,8 @@ class UpgradeCommandTest {
   private final Releases releases = mock(Releases.class);
   private final Host host = mock(Host.class);
   private final Exit exit = mock(Exit.class);
-  private final UpgradeCommand command = new UpgradeCommand(releases, host, exit);
+  private final UpgradeCommand command =
+      new UpgradeCommand(releases, new ReleaseSwitch(releases, host, exit));
 
   @Test
   void isOfferedWhileNewerReleaseIsKept() {

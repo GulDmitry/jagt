@@ -174,10 +174,10 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   starter, [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default.
   The auto-review loop reads and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four.
   jagt re-runs a pipeline the host says died on infrastructure, bounded by `infraWait`, and a red deploy pipeline once
-  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)).
-  The acceptance role's workspace request is the sixth, off by default (`workspace.mergeRequest`): one open request per role on
-  `jagt/acceptance-<role>`, never the base branch, opened through the code-host seam
-  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked.
+  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance role's workspace request is the sixth, off
+  by default (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`, never the base branch, opened through the code-host
+  seam ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked. A kept
+  release switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
 - **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsTest`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A

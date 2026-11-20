@@ -29,6 +29,7 @@ class ReleaseCheckJobTest {
   private final Host host = mock(Host.class);
   private final Reach reach = mock(Reach.class);
   private final Releases releases = new Releases(mock(CurrentPointer.class));
+  private final AutoUpgrade autoUpgrade = mock(AutoUpgrade.class);
 
   @Test
   void keepsNewerReleaseVerifiedBesideTheRunningOne(@TempDir Path root) throws Exception {
@@ -37,7 +38,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(root.resolve("versions/0.25.0/jagt.jar")).hasContent("jar bytes");
     assertThat(running.resolve("jagt.jar")).hasContent("running");
@@ -54,7 +55,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(root.resolve("versions/0.25.0/jagt.jar.sha256"))
         .hasContent("fba6a4ac61e440c7309ae013e5c5c7ac0a9000c8a3bab7def760b499d587b1d0  jagt.jar\n");
@@ -66,7 +67,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "tampered", SUMS, false);
 
-    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach, releases);
+    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade);
 
     job.run();
 
@@ -81,9 +82,10 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(jar));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(feed.downloads).isZero();
+    verify(autoUpgrade, never()).attempt();
     try (Stream<Path> entries = Files.list(folder)) {
       assertThat(entries.count()).isEqualTo(1);
     }
@@ -98,7 +100,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(feed.downloads).isZero();
     assertThat(kept.resolve("jagt.jar")).hasContent("kept earlier");
@@ -111,7 +113,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.24.9"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(feed.downloads).isZero();
   }
@@ -124,7 +126,7 @@ class ReleaseCheckJobTest {
     FakeReleaseFeed feed =
         new FakeReleaseFeed(Optional.of("9.0.0/../../x"), "jar bytes", SUMS, false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(feed.downloads).isZero();
   }
@@ -136,7 +138,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.empty(), "", "", true);
 
-    assertThatCode(() -> new ReleaseCheckJob(host, feed, reach, releases).run())
+    assertThatCode(() -> new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run())
         .doesNotThrowAnyException();
     assertThat(feed.downloads).isZero();
   }
@@ -147,7 +149,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.empty(), "", "", true);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     verify(reach)
         .marked(
@@ -165,7 +167,7 @@ class ReleaseCheckJobTest {
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.24.1"), "", "", false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     verify(reach).reached("fake", "releases.example.invalid");
     verify(reach, never()).marked(any());
@@ -179,7 +181,7 @@ class ReleaseCheckJobTest {
     Files.writeString(leftover.resolve("jagt-0.25.0.jar"), "half");
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.empty(), "", "", false);
 
-    new ReleaseCheckJob(host, feed, reach, releases).run();
+    new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade).run();
 
     assertThat(root.toFile().list()).containsExactly("versions");
   }
@@ -189,7 +191,7 @@ class ReleaseCheckJobTest {
     Path running = Files.createDirectories(root.resolve("versions").resolve("0.24.1"));
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
-    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach, releases);
+    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade);
 
     job.run();
     Optional<Releases.Kept> waiting = releases.kept();
@@ -197,6 +199,7 @@ class ReleaseCheckJobTest {
 
     assertThat(waiting).contains(new Releases.Kept(root, "0.25.0"));
     assertThat(releases.kept()).isEmpty();
+    verify(autoUpgrade).attempt();
   }
 
   @Test
@@ -204,7 +207,7 @@ class ReleaseCheckJobTest {
     Path running = Files.createDirectories(root.resolve("versions").resolve("0.25.0"));
     when(host.jar()).thenReturn(Optional.of(running.resolve("jagt.jar")));
     FakeReleaseFeed feed = new FakeReleaseFeed(Optional.of("0.25.0"), "jar bytes", SUMS, false);
-    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach, releases);
+    ReleaseCheckJob job = new ReleaseCheckJob(host, feed, reach, releases, autoUpgrade);
 
     job.run();
 

@@ -24,6 +24,8 @@ orchestrator:
       enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
     master:
       mode: act                                # roles: the Master presses what a human would; `mine` keeps its default
+  # releaseFeed:
+  #   autoUpgrade: false                       # releaseFeed: true switches to a kept release once no agent session is up (exit 75)
   deploy:
     onApproval: true                           # deploy: an approved request deploys itself, then its deploy check runs
   autoReview:

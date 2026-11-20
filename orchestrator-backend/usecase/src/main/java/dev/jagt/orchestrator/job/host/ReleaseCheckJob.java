@@ -23,8 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 
 /**
- * Keeps the newest release beside the running one, verified, and changes nothing else: only a jar
- * running from {@code <root>/versions/<v>/} has anywhere to keep it.
+ * Keeps the newest release beside the running one, verified; switching is the upgrade command's or
+ * the opt-in auto upgrade's. Only a jar running from {@code <root>/versions/<v>/} has anywhere to
+ * keep it.
  */
 @Service
 @Slf4j
@@ -37,8 +38,11 @@ public class ReleaseCheckJob implements Job {
   private final ReleaseFeed feed;
   private final Reach reach;
   private final Releases releases;
+  private final AutoUpgrade autoUpgrade;
 
-  public ReleaseCheckJob(Host host, ReleaseFeed feed, Reach reach, Releases releases) {
+  public ReleaseCheckJob(
+      Host host, ReleaseFeed feed, Reach reach, Releases releases, AutoUpgrade autoUpgrade) {
+    this.autoUpgrade = autoUpgrade;
     this.host = host;
     this.feed = feed;
     this.reach = reach;
@@ -115,6 +119,7 @@ public class ReleaseCheckJob implements Job {
     newest
         .filter(version -> Files.exists(installed.versions().resolve(version).resolve(JAR)))
         .ifPresentOrElse(version -> releases.keep(installed.root(), version), releases::keepNone);
+    autoUpgrade.attempt();
   }
 
   private static boolean newer(String candidate, String running) {

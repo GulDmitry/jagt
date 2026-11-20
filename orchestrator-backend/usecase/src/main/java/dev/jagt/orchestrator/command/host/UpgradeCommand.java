@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.command.host;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
-import dev.jagt.orchestrator.port.host.Exit;
-import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.service.release.ReleaseSwitch;
 import dev.jagt.orchestrator.service.release.Releases;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,7 @@ import org.springframework.stereotype.Component;
 public class UpgradeCommand implements GlobalCommand {
 
   private final Releases releases;
-  private final Host host;
-  private final Exit exit;
+  private final ReleaseSwitch releaseSwitch;
 
   @Override
   public String id() {
@@ -45,18 +43,12 @@ public class UpgradeCommand implements GlobalCommand {
   public String run(String tail) {
     Releases.Kept kept =
         releases.kept().orElseThrow(() -> new IllegalArgumentException("no newer release is kept"));
-    return switch (releases.switchTo(kept.root(), kept.version())) {
-      case Releases.Switched switched -> {
-        releases.switched(switched.version());
-        if (host.env(Exit.LAUNCHER_ENV).isPresent()) {
-          exit.afterAnswer(Exit.RUN_AGAIN);
-          yield "restarting on " + switched.version();
-        }
-        yield "restart to run " + switched.version();
-      }
-      case Releases.Refused refused ->
+    return switch (releaseSwitch.toKept(kept)) {
+      case ReleaseSwitch.Restarting restarting -> "restarting on " + restarting.version();
+      case ReleaseSwitch.Staged staged -> "restart to run " + staged.version();
+      case ReleaseSwitch.Refused refused ->
           throw new IllegalArgumentException(
-              "upgrade to " + kept.version() + " refused: " + refused.reason());
+              "upgrade to " + refused.version() + " refused: " + refused.reason());
     };
   }
 }

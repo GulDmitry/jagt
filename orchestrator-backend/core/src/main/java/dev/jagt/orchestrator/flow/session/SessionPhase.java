@@ -17,6 +17,11 @@ public enum SessionPhase {
   FAILED,
   GONE;
 
+  /** Whether an agent session is up: working, idle or quiet, not never started, failed or gone. */
+  public boolean live() {
+    return this == WORKING || this == IDLE || this == QUIET;
+  }
+
   public static SessionPhase of(Session session) {
     Session.Halt halt = session.halt();
     if (halt != null && halt.kind() == Session.Halt.Kind.FAILED) {

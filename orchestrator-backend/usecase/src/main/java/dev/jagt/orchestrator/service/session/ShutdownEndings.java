@@ -56,10 +56,7 @@ public class ShutdownEndings implements SmartLifecycle {
   }
 
   private static boolean live(TaskState task) {
-    return switch (SessionPhase.of(task.session())) {
-      case WORKING, IDLE, QUIET -> true;
-      case NONE, FAILED, GONE -> false;
-    };
+    return SessionPhase.of(task.session()).live();
   }
 
   private void endSession(String taskId) {

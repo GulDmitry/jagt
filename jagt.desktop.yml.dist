@@ -71,6 +71,7 @@ orchestrator:
   # releaseFeed:           # an installed jagt (jar under `versions/<v>/`) keeps a newer release, checksum-verified, beside the running one; `current` never changes
   #   kind: github         # github | none. `none` looks for no release
   #   url: https://github.com/GulDmitry/jagt/releases   # the feed the installers read
+  #   autoUpgrade: false   # true: switch to a kept release once no agent session is up, then exit 75; launcher only
   logging: file            # file | console. `console`: every line, the Master's included, is one ECS JSON object on stdout and no log file is written (a container); `file`: the files under logs/
   interactionLog: true    # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
   # terminal: kitty       # kitty | ghostty | none: the viewer; ghostty is macOS only and needs Ghostty 1.3 or newer; `none` opens no window, needs no kitty and `focus` names this key
