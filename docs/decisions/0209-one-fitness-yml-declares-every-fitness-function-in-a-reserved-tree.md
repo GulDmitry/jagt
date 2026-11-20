@@ -30,7 +30,7 @@ Accepted 2026-11-20, owner's order of 2026-11-18.
   fitness function runs with a typed `FitnessConfigException` naming the key.
 - **The 0176 ratchet holds for every fitness function with a stored number**:
   above fails, below fails asking to lower it; raising needs a decision record.
-- **A project fitness function is a `Fitness` class found by id through `ServiceLoader`**, never a script in the config.
+- **A coded fitness function is a `Fitness` class found by id through `ServiceLoader`**, never a script in the config.
 - **YAML is read by snakeyaml**, already in the lockfile: no new dependency.
 - **Amends 0176**: its numbers move from `complexity-ceilings.json` into `fitness.yml`; its ratchet and kinds stay.
 - **Amends 0186**: the engineering spec names fitness function ids, `fitness.yml` holds selectors and numbers.

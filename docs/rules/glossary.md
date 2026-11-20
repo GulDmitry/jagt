@@ -50,6 +50,7 @@ Sources: Ford, Parsons, Kua, Sadalage, *Building Evolutionary Architectures*, 2n
 | automated / manual | a machine runs it / a person does |
 | intentional / emergent | defined at the start / found as the system evolves |
 | ratchet | *jagt's own*: a counted threshold that only falls ([0176](../decisions/0176-every-kind-has-a-ceiling.md)) |
+| reach | *jagt's own*: whether a fitness function is `generic`, shipped in the library's `defaults.yml`, or `project`, declared or coded by the project |
 | declared fitness function | *jagt's own*: one entry of `fitness.yml`, measured by an engine |
 | coded fitness function | *jagt's own*: a fitness function a project writes as a Java class implementing `Fitness`, found by id |
 | engine | *jagt's own*: the code that measures every declared fitness function of one kind, such as ArchUnit or file scanning |

@@ -14,7 +14,8 @@ Amended by [0162](0162-a-check-holds-for-all-code.md): it holds for every source
 
 ## Decision
 
-- The `cognitive-complexity` row of `fitness.yml` runs PMD's `CognitiveComplexity` over every ring's `main` inside `./gradlew test`.
+- The `cognitive-complexity` fitness function of `fitness.yml` runs PMD's `CognitiveComplexity`
+  over every ring's `main` inside `./gradlew test`.
 - A method above 12 fails the gate; every method is checked, not only a diff, in about a second.
 - The ceiling only falls: `refresh` lowers it in steps (15 → 12 → 10) once a handful stand above the next.
 

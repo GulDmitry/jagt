@@ -7,7 +7,7 @@
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo) and a class with a branch no
 test reaches** ([0181](../decisions/0181-every-module-keeps-80-percent-line-coverage.md),
-[0191](../decisions/0191-every-class-with-logic-is-reached-by-a-test.md)). **A suite ends within its `suite-minutes` row, a probe in `-PrunMinutes`**
+[0191](../decisions/0191-every-class-with-logic-is-reached-by-a-test.md)). **A suite ends within `suite-minutes`, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 **Root `:test` runs the rule tests whole; a filtered run names its project**, `:<module>:test --tests '<Name>'` (bare `--tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.

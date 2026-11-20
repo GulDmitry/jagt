@@ -64,7 +64,7 @@ asking to lower it ([0176](../../../docs/decisions/0176-every-kind-has-a-ceiling
 - **WHEN** a counted kind measures fewer items than its stored number
 - **THEN** it fails asking to lower the number to the measured one
 
-### Requirement: A project fitness function is a Fitness class found by id
+### Requirement: A coded fitness function is a Fitness class found by id
 A fitness function only jagt's domain can say SHALL be a Java class implementing `Fitness`, found by id through `ServiceLoader`.
 The config holds no script. A `Fitness` class sits in the package `<dimension>.<characteristic>.<subcharacteristic>` of its section.
 #### Scenario: A fitness function found by id
@@ -93,7 +93,7 @@ A provider that cannot load fails as `PROVIDER_FAILED`, a name served twice as `
 - **THEN** loading fails with `MISSING_TOOL` naming the fitness function and the tool
 
 ### Requirement: One task runs every fitness function and nothing else
-`./gradlew fitness` SHALL run every fitness function: rows, `Fitness` classes and tool rows.
+`./gradlew fitness` SHALL run every fitness function: declared and coded.
 It SHALL print each one's value and threshold, and run one block of the reserved tree when given one.
 A function a suite run measures SHALL print its threshold and the last value a check measured, or `no value yet`.
 #### Scenario: A block is given
@@ -114,10 +114,10 @@ A value the library needs from the project SHALL be a key of its Gradle extensio
 - **WHEN** a library source names `dev.jagt`, a ring, a user path, a framework or a build property of the project
 - **THEN** the library's own self-check fails naming the file
 
-### Requirement: A scan row may leave files out
+### Requirement: A declared scan fitness function may leave files out
 A scan function with `except` SHALL leave out every file whose path below the root matches one of its comma-separated globs.
 #### Scenario: A file matches the except glob
-- **WHEN** a tracked file lies under a path the row's `except` names
+- **WHEN** a tracked file lies under a path the function's `except` names
 - **THEN** the file is not scanned and no item names it
 
 ### Requirement: A module is reached only through its exposed packages

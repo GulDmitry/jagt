@@ -17,10 +17,10 @@ Accepted 2026-11-20, owner's order of the same day. Amends 0210 ("the Gradle mod
 - **The fitness modules count**: `gradle-modules` reads `fitness/settings.gradle` too, `build-logic-files` and
   `dependency-lines-in-build-gradle` the `fitness/` Gradle files; the three numbers rise by what they hold.
 - **The library takes every project value as configuration**: the minutes property, the contexts log properties and cache
-  pattern are `fitness { ... }` keys with a neutral default; the Spring-annotated rows live in jagt's `fitness.yml`.
+  pattern are `fitness { ... }` keys with a neutral default; the Spring-annotated declared fitness functions live in jagt's `fitness.yml`.
 - **`library-names-no-project` also scans for the framework and the property names**, so such a value cannot return.
 - **Its versions come from `junit-bom` and explicit versions**, not a framework BOM.
-- **A scan row may leave files out with `except`**: vendored code, ArchUnit's frozen store and recordings carry text no author writes.
+- **A scan fitness function may leave files out with `except`**: vendored code, ArchUnit's frozen store and recordings carry text no author writes.
 
 ## Reopen when
 
