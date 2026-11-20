@@ -1,5 +1,6 @@
 package fitness.scan;
 
+import fitness.core.Direction;
 import fitness.core.Engine;
 import fitness.core.FitnessConfigException;
 import fitness.core.Measurement;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import org.jspecify.annotations.Nullable;
 
 public final class ScanEngine implements Engine {
@@ -91,8 +93,62 @@ public final class ScanEngine implements Engine {
   }
 
   @Override
+  public void validate(FitnessFunction function, Project project) {
+    Map<String, Object> selectors = function.selectors();
+    String key = function.section() + "." + function.id();
+    if (!"tracked".equals(selectors.get("set"))) {
+      SourceRoots.validate(function, project);
+    }
+    if (selectors.get("set") == null && selectors.get("glob") == null) {
+      throw new FitnessConfigException(Reason.MISSING_KEY, key + ".glob");
+    }
+    if (selectors.get("regex") instanceof String text) {
+      compiles(key, text);
+    }
+    if (!(selectors.get("requires") instanceof String)) {
+      validateMeasure(function, key);
+    }
+  }
+
+  private static void compiles(String key, String text) {
+    try {
+      Pattern.compile(text);
+    } catch (PatternSyntaxException e) {
+      throw new FitnessConfigException(Reason.UNKNOWN_SELECTOR, key + ".regex", e);
+    }
+  }
+
+  private static void validateMeasure(FitnessFunction function, String key) {
+    Map<String, Object> selectors = function.selectors();
+    Object per = selectors.get("per");
+    boolean hasRegex = selectors.get("regex") instanceof String;
+    if (!(selectors.get("measure") instanceof String measure)) {
+      if (!hasRegex && ("line".equals(per) || "match".equals(per))) {
+        throw new FitnessConfigException(Reason.MISSING_KEY, key + ".regex");
+      }
+      return;
+    }
+    if (LISTINGS.containsKey(per + ":" + measure)) {
+      return;
+    }
+    if (per == null) {
+      throw new FitnessConfigException(Reason.MISSING_KEY, key + ".per");
+    }
+    if (!SIZINGS.containsKey(per + ":" + measure)) {
+      throw new FitnessConfigException(Reason.UNKNOWN_SELECTOR, key + ".measure");
+    }
+    if ("section".equals(per) && !hasRegex) {
+      throw new FitnessConfigException(Reason.MISSING_KEY, key + ".regex");
+    }
+  }
+
+  @Override
   public Measurement measure(FitnessFunction function, Project project) {
     List<Path> files = candidates(function, project);
+    if (files.isEmpty() && checksFiles(function)) {
+      return new Measurement(
+          function.threshold().limit() + 1, List.of("matches no file: " + scope(function)));
+    }
     if (function.selectors().get("requires") instanceof String required) {
       return Measurement.of(lacking(project, files, required, Sources.regex(function)));
     }
@@ -109,6 +165,21 @@ public final class ScanEngine implements Engine {
       items.addAll(itemsOf(function, project, path, per, regex));
     }
     return Measurement.of(items);
+  }
+
+  private static boolean checksFiles(FitnessFunction function) {
+    Map<String, Object> selectors = function.selectors();
+    boolean listsTheFiles =
+        !selectors.containsKey("measure")
+            && !selectors.containsKey("requires")
+            && !selectors.containsKey("regex")
+            && Set.of("file", "name").contains(String.valueOf(selectors.getOrDefault("per", "file")));
+    return function.threshold().direction() == Direction.MAX && !listsTheFiles;
+  }
+
+  private static String scope(FitnessFunction function) {
+    Object glob = function.selectors().get("glob");
+    return String.valueOf(glob != null ? glob : function.selectors().get("set"));
   }
 
   private static List<String> lacking(
@@ -209,7 +280,7 @@ public final class ScanEngine implements Engine {
       }
       return List.copyOf(found);
     }
-    for (Path root : SourceRoots.of(project.root(), (String) set)) {
+    for (Path root : SourceRoots.of(project, (String) set)) {
       for (String each : Glob.split(glob == null ? ALL_JAVA : glob)) {
         found.addAll(matching(root, each, directories));
       }

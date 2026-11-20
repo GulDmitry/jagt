@@ -18,12 +18,12 @@ final class ClassDirectories {
   JavaClasses of(Project project, String set) {
     return imported.computeIfAbsent(
         project.root() + ":" + set,
-        key -> new ClassFileImporter().importPaths(directories(project.root(), set)));
+        key -> new ClassFileImporter().importPaths(directories(project, set)));
   }
 
-  private static List<Path> directories(Path root, String set) {
-    return SourceRoots.of(root, set).stream()
-        .map(source -> SourceRoots.classes(root, source))
+  private static List<Path> directories(Project project, String set) {
+    return SourceRoots.of(project, set).stream()
+        .map(source -> SourceRoots.classes(project.root(), source))
         .distinct()
         .filter(Files::isDirectory)
         .toList();

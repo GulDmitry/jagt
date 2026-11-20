@@ -18,19 +18,35 @@ public final class SourceRoots {
 
   /**
    * A set is a comma-separated list of {@code main}, {@code test} (every set but main), {@code all}
-   * or a source set's own name; a name matching no root is an error.
+   * or a source set's own name; only the project's {@code sourceSets} are candidates, and a name
+   * matching no candidate root is an error.
    */
-  public static List<Path> of(Path projectRoot, String set) {
+  public static List<Path> of(Project project, String set) {
     List<String> names = Stream.of(set.split(",")).map(String::trim).toList();
-    List<Path> roots = roots(projectRoot);
+    List<Path> roots =
+        roots(project.root()).stream()
+            .filter(root -> project.sourceSets().stream().anyMatch(each -> selects(each, setOf(root))))
+            .toList();
     for (String name : names) {
       if (roots.stream().noneMatch(root -> selects(name, setOf(root)))) {
-        throw new IllegalArgumentException("no source root in set: " + name);
+        throw new FitnessConfigException(Reason.UNKNOWN_SELECTOR, "set: " + name);
       }
     }
     return roots.stream()
         .filter(root -> names.stream().anyMatch(name -> selects(name, setOf(root))))
         .toList();
+  }
+
+  /** Fails the load when an explicit {@code set} of the function names no source root of the project. */
+  public static void validate(FitnessFunction function, Project project) {
+    if (!(function.selectors().get("set") instanceof String set)) {
+      return;
+    }
+    try {
+      of(project, set);
+    } catch (FitnessConfigException e) {
+      throw new FitnessConfigException(e.reason(), function.section() + "." + function.id() + ".set", e);
+    }
   }
 
   public static Path classes(Path projectRoot, Path sourceRoot) {

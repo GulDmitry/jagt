@@ -8,6 +8,7 @@ import fitness.core.Engine;
 import fitness.core.Measurement;
 import fitness.core.Project;
 import fitness.core.FitnessFunction;
+import fitness.core.SourceRoots;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,11 @@ public final class ArchUnitEngine implements Engine {
   @Override
   public Set<String> needs(FitnessFunction function) {
     return Set.of("archunit");
+  }
+
+  @Override
+  public void validate(FitnessFunction function, Project project) {
+    SourceRoots.validate(function, project);
   }
 
   @Override
@@ -115,11 +121,11 @@ public final class ArchUnitEngine implements Engine {
       selected = selected.and(type -> wanted ? type.isInterface() : isConcrete(type));
     }
     if (selectors.get("assignableTo") instanceof String supertype) {
-      String name = base + "." + supertype;
+      String name = qualified(base, supertype);
       selected = selected.and(type -> type.isAssignableTo(name) && !type.getName().equals(name));
     }
     if (selectors.get("package") instanceof String pattern) {
-      PackageMatcher matcher = PackageMatcher.of(base + "." + pattern);
+      PackageMatcher matcher = PackageMatcher.of(qualified(base, pattern));
       selected = selected.and(type -> matcher.matches(type.getPackageName()));
     }
     if (selectors.get("except") instanceof String names) {
@@ -135,8 +141,12 @@ public final class ArchUnitEngine implements Engine {
             .anyMatch(
                 entry ->
                     entry.contains("..")
-                        ? PackageMatcher.of(base + "." + entry).matches(type.getPackageName())
+                        ? PackageMatcher.of(qualified(base, entry)).matches(type.getPackageName())
                         : entry.equals(type.getSimpleName()));
+  }
+
+  private static String qualified(String base, String name) {
+    return base.isEmpty() ? name : base + "." + name;
   }
 
   private static boolean isConcrete(JavaClass type) {

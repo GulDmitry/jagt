@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 final class FitnessFunctionReader {
 
@@ -56,6 +57,11 @@ final class FitnessFunctionReader {
   FitnessFunctionReader(Map<String, Engine> engines, Map<String, Fitness> fitnesses) {
     this.engines = engines;
     this.fitnesses = fitnesses;
+  }
+
+  @Nullable
+  Engine engine(String name) {
+    return engines.get(name);
   }
 
   FitnessFunction read(Section section, String id, Object raw) {

@@ -15,5 +15,8 @@ public interface Engine {
     return Set.of();
   }
 
+  /** Fails the load with a {@link FitnessConfigException} when the function cannot be measured, before any function runs. */
+  default void validate(FitnessFunction function, Project project) {}
+
   Measurement measure(FitnessFunction function, Project project);
 }

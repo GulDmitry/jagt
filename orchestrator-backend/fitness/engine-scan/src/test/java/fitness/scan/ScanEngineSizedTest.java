@@ -37,6 +37,46 @@ class ScanEngineSizedTest {
   }
 
   @Test
+  void aSizeRowMatchingNoFileFails(@TempDir Path root) {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("glob", "*.md")
+                .select("per", "file")
+                .select("measure", "lines")
+                .limit(2)
+                .build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.value()).isEqualTo(3);
+    assertThat(found.items()).containsExactly("matches no file: *.md");
+  }
+
+  @Test
+  void aZeroRowCheckingTheTextOfNoFileFails(@TempDir Path root) {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("glob", "*.md")
+                .select("per", "line")
+                .select("regex", "word")
+                .build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.items()).containsExactly("matches no file: *.md");
+  }
+
+  @Test
+  void aZeroRowListingFilesMatchingNoneStillPasses(@TempDir Path root) {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder().select("glob", "*.tmp").select("per", "name").build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.items()).isEmpty();
+  }
+
+  @Test
   void measuresEverySectionBetweenTheMarkerLines(@TempDir Path root) throws IOException {
     Files.writeString(root.resolve("a.md"), "intro\n## step-one\na\nb\n## step-two\nc\n");
 

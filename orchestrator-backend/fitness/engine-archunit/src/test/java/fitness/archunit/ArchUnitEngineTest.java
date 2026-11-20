@@ -36,6 +36,20 @@ class ArchUnitEngineTest {
   }
 
   @Test
+  void anEmptyBasePackageMeasuresEveryPackage() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder()
+            .select("package", "fitness.archunit..")
+            .select("interface", true)
+            .build();
+
+    Measurement found =
+        engine.measure(function, new Project(Path.of("."), "", List.of("all"), Map.of()));
+
+    assertThat(found.items()).contains("fitness.archunit.Marked");
+  }
+
+  @Test
   void listsTheWidestConstructorOfAnnotatedAndMetaAnnotatedClassesOverTheLimit() {
     FitnessFunction function =
         new FitnessFunction(

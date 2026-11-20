@@ -58,7 +58,17 @@ public final class FitnessLoader {
     if (!Integer.valueOf(1).equals(document.get("schema"))) {
       throw new FitnessConfigException(Reason.UNSUPPORTED_SCHEMA, "schema");
     }
-    return new FitnessConfig(project(document, directory), functions(document));
+    Project project = project(document, directory);
+    List<FitnessFunction> functions = functions(document);
+    functions.forEach(function -> validate(function, project));
+    return new FitnessConfig(project, functions);
+  }
+
+  private void validate(FitnessFunction function, Project project) {
+    Engine engine = reader.engine(function.engine());
+    if (engine != null) {
+      engine.validate(function, project);
+    }
   }
 
   private static Map<String, Object> withDefaults(Map<String, Object> document) {
