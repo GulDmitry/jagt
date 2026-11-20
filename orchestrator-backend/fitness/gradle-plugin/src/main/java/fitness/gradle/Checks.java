@@ -2,7 +2,7 @@ package fitness.gradle;
 
 import fitness.core.FitnessFunction;
 import java.io.File;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +10,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.quality.Checkstyle;
+import org.gradle.api.tasks.TaskCollection;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.testing.jacoco.tasks.JacocoReport;
@@ -114,19 +115,20 @@ final class Checks {
   static TaskProvider<CheckstyleCheck> checkstyle(Project root, FitnessFunction function) {
     TaskProvider<CheckstyleCheck> check =
         register(root, CheckstyleCheck.class, "fitnessCheckstyle", function);
-    List<Checkstyle> tasks = new ArrayList<>();
-    root.getAllprojects()
-        .forEach(project -> project.getTasks().withType(Checkstyle.class).forEach(tasks::add));
+    List<TaskCollection<Checkstyle>> tasks =
+        root.getAllprojects().stream().map(project -> project.getTasks().withType(Checkstyle.class)).toList();
     check.configure(
         measure -> {
           measure.dependsOn(tasks);
-          tasks.forEach(
-              task ->
-                  measure
-                      .getReports()
-                      .from(
-                          root.provider(
-                              () -> task.getReports().getXml().getOutputLocation().get().getAsFile())));
+          measure
+              .getReports()
+              .from(
+                  root.provider(
+                      () ->
+                          tasks.stream()
+                              .flatMap(Collection::stream)
+                              .map(task -> task.getReports().getXml().getOutputLocation().get().getAsFile())
+                              .toList()));
         });
     return check;
   }

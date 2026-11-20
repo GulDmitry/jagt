@@ -53,6 +53,8 @@ technical:
       left-for-later-markers: { engine: scan, set: tracked, per: file, regex: "\\b(TO[D]O|FIXM[E]|XX[X])\\b", governs: count, max: 7 }
       home-paths: { engine: scan, set: tracked, per: file, regex: "/User[s]/|/hom[e]/[a-z]", governs: count, max: 0 }
       cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", except: "**/board/vendor/**,src/test/resources/archunit/**,**/recordings/**", governs: count, max: 0 }
+      suite-stats-reads-no-other-project: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suite-stats.gradle", per: file, regex: "provider\\s*\\{\\s*allprojects", governs: count, max: 0 }
+      spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
     modifiability:
       constructors-called-from-main: { fitness: ConstructorsCalledFromMainFitness, governs: count, max: 0 }
       members-called-from-main: { fitness: MembersCalledFromMainFitness, governs: count, max: 0 }

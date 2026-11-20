@@ -91,6 +91,37 @@ class FitnessPluginTest {
   }
 
   @Test
+  void realisesNoCheckstyleTaskWhenABuildOnlyConfigures() throws IOException {
+    Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
+    Files.writeString(
+        project.resolve("fitness.yml"),
+        """
+        schema: 1
+        technical:
+          maintainability:
+            analysability:
+              checkstyle: { engine: tool, tool: checkstyle, measure: warnings, governs: linter, max: 3 }
+        """);
+    Files.writeString(
+        project.resolve("build.gradle"),
+        """
+        plugins { id 'java'; id 'checkstyle'; id 'fitness' }
+        fitness { file = layout.projectDirectory.file('fitness.yml') }
+        tasks.withType(Checkstyle).configureEach { throw new GradleException("realised " + name) }
+        """);
+
+    String output =
+        GradleRunner.create()
+            .withProjectDir(project.toFile())
+            .withPluginClasspath()
+            .withArguments("help")
+            .build()
+            .getOutput();
+
+    assertThat(output).contains("BUILD SUCCESSFUL");
+  }
+
+  @Test
   void refusesAToolRowItHasNoMeasureFor() throws IOException {
     Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
     Files.writeString(
