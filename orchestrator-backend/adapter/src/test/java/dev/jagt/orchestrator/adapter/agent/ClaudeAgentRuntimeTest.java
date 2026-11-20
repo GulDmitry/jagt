@@ -4,6 +4,7 @@ import static dev.jagt.orchestrator.adapter.agent.TestClaudeRuntimeBuilder.claud
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.jagt.orchestrator.adapter.agent.trust.ClaudeTrust;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;

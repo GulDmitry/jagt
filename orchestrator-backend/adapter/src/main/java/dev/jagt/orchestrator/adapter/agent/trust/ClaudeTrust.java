@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter.agent;
+package dev.jagt.orchestrator.adapter.agent.trust;
 
 import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
@@ -50,7 +50,7 @@ public final class ClaudeTrust {
         .resolve(".claude.json");
   }
 
-  static void accept(Path configFile, Path worktree) {
+  public static void accept(Path configFile, Path worktree) {
     rewrite(configFile, worktree, ClaudeTrust::accepted, UNTRUSTED);
   }
 
@@ -58,7 +58,7 @@ public final class ClaudeTrust {
    * Claude rewrites this file from its own copy, outside the lock, so a flag written may be gone by
    * the launch.
    */
-  static void reaccept(Path configFile, Path worktree) {
+  public static void reaccept(Path configFile, Path worktree) {
     for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
       accept(configFile, worktree);
       if (trusted(configFile, worktree)) {

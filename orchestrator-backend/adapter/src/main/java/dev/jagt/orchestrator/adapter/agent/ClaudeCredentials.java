@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.adapter.agent.trust.ClaudeConfigDir;
 import dev.jagt.orchestrator.port.host.Host;
 import java.io.IOException;
 import java.nio.file.Files;

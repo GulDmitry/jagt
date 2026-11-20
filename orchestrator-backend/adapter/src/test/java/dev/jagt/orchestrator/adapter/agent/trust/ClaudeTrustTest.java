@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter.agent;
+package dev.jagt.orchestrator.adapter.agent.trust;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.adapter.agent.trust.ClaudeTrust;
 import dev.jagt.orchestrator.adapter.assistant.ClaudeToolScope;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;

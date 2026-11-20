@@ -308,6 +308,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/agent/hook` | adapter | Claude's hook JSON and tool-gate envelope |
 | `adapter/agent/log` | adapter | session logs and prices per agent |
 | `adapter/agent/opencode` | adapter | the OpenCode driver |
+| `adapter/agent/trust` | adapter | Claude's config directory and trust file, exposed to `stand` |
 | `adapter/assistant` | adapter | the headless assistants, readers and replays |
 | `adapter/assistant/reach` | adapter | MCP and local-model reach probes |
 | `adapter/channel` | adapter | notification channel drivers |
@@ -353,7 +354,7 @@ A package-private partner that cannot move without widening keeps its package wh
 | `service` | package-private `RoundBrief`, `TaskNotes` and `WorktreeSandbox` tie `HandBack`, `RoundRelay`, `AgentSessions` and their readers |
 | `service/master` | package-private `RoundQuotes` and `RoundFacts` are partners of `MasterPanel` |
 | `service/git` | twelve classes of one feature, no sub-kind of three; `GitStates` is package-private to `GitWorktrees` |
-| `adapter/agent` | package-private `ClaudeConfigDir` and `ClaudeTranscripts` tie the Claude classes together |
+| `adapter/agent` | package-private `ClaudeTranscripts` ties the Claude classes together |
 | `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |
 | `stand/invariant` | seventeen checks of one feature, no sub-kind of three; `StateFiles` is package-private to them |
 | `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
@@ -472,8 +473,7 @@ key that fixes it. The composition half, and what of it exists:
 
 ## The build
 
-Eight Gradle modules under `orchestrator-backend/`, one per ring, the engine, the stand harness and the mutation filter: the compiler holds the
-dependency rule. `RingsFitness` covers two folders in one module, `module-isolation` another module's inside (decision 0211).
+Eight Gradle modules under `orchestrator-backend/`, the compiler holding the dependency rule; `module-isolation` pins a module's inside (0211).
 
 | module | holds | sees |
 |--------|-------|------|

@@ -8,7 +8,7 @@ project:
     statechart: { exposes: ["dev.jagt.statechart.."] }
     core: { exposes: [".."] }
     usecase: { exposes: [".."] }
-    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay"] }
+    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay", "dev.jagt.orchestrator.adapter.agent.trust"] }
     surface: { exposes: [] }
     stand: { exposes: [] }
 technical:
@@ -18,7 +18,7 @@ technical:
       ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 53, decision: "0176" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 23, decision: "0176" }
-      module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 1, decision: "0211" }
+      module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }
