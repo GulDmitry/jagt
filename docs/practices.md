@@ -9,7 +9,7 @@ The gates are requirements in [`engineering`](../openspec/specs/engineering/spec
 ```text
 Read docs/practices.md of the jagt repository. For each sphere, adopt the rows that fit my stack: copy the unit named in "copy",
 adapt its base package in `SourceRoots.BASE_PACKAGE`, and keep its check beside it.
-Class-name literals in `FlowDoorsTest`, `TaskOpeningDoorsTest`, `RoleNamesTest`, `CeilingKind` and `CodeCeilings` are adapted by hand.
+Class-name literals in the `Fitness` classes are adapted by hand.
 Link jagt's rule home, never copy its text.
 A check that fails is fixed in the code, never by raising its number. A row saying "gap" is not adopted: list it and ask me.
 Report a table: practice | adopted | unit copied | gap. Run my test suite after every sphere.
@@ -24,10 +24,10 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Dependencies point inward only; ports in the centre (25010 modularity: six Gradle modules) | [rings](../ARCHITECTURE.md#the-rings), [seams](rules/seams.md) | `RingsTest`, `PackagesTest` 0166, `KindsTest` | gap: JAGT-96 | `RingsTest`, `PackagesTest`, `PackageMap` |
+| Dependencies point inward only; ports in the centre (25010 modularity: six Gradle modules) | [rings](../ARCHITECTURE.md#the-rings), [seams](rules/seams.md) | `RingsFitness`, `PackagesTest` 0166, `KindsTest` | gap: JAGT-96 | `RingsFitness`, `PackagesTest`, `PackageMap` |
 | A name a discipline already has is its term, defined once in one glossary | [glossary](rules/glossary.md) | a reader, no gate | same | the glossary file |
-| A kind of thing names its standard and its check; its count has a ceiling | [kinds](../ARCHITECTURE.md#the-kinds), 0180 | `KindsTest`, `ComplexityCeilingsTest` 0176 | gap: JAGT-96 | `ComplexityCeilingsTest`, `complexity-ceilings.json` |
-| No static state, no lifecycle hook that does work | [components](rules/components.md), 0160, 0169 | `StaticStateTest`, `LifecycleHooksTest` | ESLint top-level let/var, run by no gate: JAGT-96 | the two tests |
+| A kind of thing names its standard and its check; its count has a ceiling | [kinds](../ARCHITECTURE.md#the-kinds), 0180 | `KindsTest`, `FitnessTest` 0176 | gap: JAGT-96 | `FitnessTest`, `fitness.yml` |
+| No static state, no lifecycle hook that does work | [components](rules/components.md), 0160, 0169 | `static-state`, `post-construct-hooks` | ESLint top-level let/var, run by no gate: JAGT-96 | `FitnessTest` |
 | A third party is a seam chosen in config; no vendor in code (25010 adaptability; 12F IV) | [seams](rules/seams.md), 0130 | `SeamSelectionTest`, `VendorNamesTest`, `PlatformCheck` | n.a. | `SeamSelectionTest`, `VendorNamesTest` |
 | Configuration is validated at start; secrets by env name (12F III, ASVS V2) | [components](rules/components.md) | `StartupValidationTest`, `ConfigReferenceTest`, `AuthCheckTest` | n.a. | `StartupValidationTest` |
 | 25010 reusability | n.a. | an application, no module is consumed elsewhere | n.a. | none |
@@ -36,12 +36,12 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Method at cognitive complexity 12 at most (25010 modifiability) | [style](rules/style.md), 0053 | `CognitiveComplexityTest` | gap: JAGT-96 | `CognitiveComplexityTest` |
-| Three collaborators a class, five the ceiling; five mocks a test | [style](rules/style.md) | `CollaboratorCeilingTest`, `MockCeilingTest` | n.a. | the two tests |
-| No block of 75 tokens twice | [style](rules/style.md) | `DuplicationTest` | gap | `DuplicationTest` |
-| Static analysis and format gate all code, tests included (25010 modifiability, ASVS V15) | [style](rules/style.md), 0143, 0146, 0162 | Checkstyle, Error Prone, NullAway, Spotless in `jagt.conventions.gradle`; `NullMarkedTest` | Prettier, ESLint configured, run by no gate: JAGT-96 | `jagt.conventions.gradle` |
-| Value records have withers or a builder, no null soup | [style](rules/style.md) | `WithersTest` | n.a. | `WithersTest` |
-| English and UTC only, set in main | [components](rules/components.md) | `EnglishAndUtcTest` | `BoardAssetsTest` | `EnglishAndUtcTest` |
+| Method at cognitive complexity 12 at most (25010 modifiability) | [style](rules/style.md), 0053 | `cognitive-complexity` | gap: JAGT-96 | `FitnessTest` |
+| Three collaborators a class, five the ceiling; five mocks a test | [style](rules/style.md) | `collaborators-per-class`, `mocks-per-test` | n.a. | `FitnessTest` |
+| No block of 75 tokens twice | [style](rules/style.md) | `duplication` | gap | `FitnessTest` |
+| Static analysis and format gate all code, tests included (25010 modifiability, ASVS V15) | [style](rules/style.md), 0143, 0146, 0162 | Checkstyle, Error Prone, NullAway, Spotless in `jagt.conventions.gradle`; `unmarked-packages` | Prettier, ESLint configured, run by no gate: JAGT-96 | `jagt.conventions.gradle` |
+| Value records have withers or a builder, no null soup | [style](rules/style.md) | `wither-defects`, `wither-count` | n.a. | `FitnessTest` |
+| English and UTC only, set in main | [components](rules/components.md) | `now-without-clock`, `no-zone-id-system-default`, `no-clock-system-utc` | `BoardAssetsTest` | `FitnessTest`, `BoardAssetsTest` |
 
 ## Tests and the pyramid
 
@@ -56,9 +56,9 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | End to end (pyramid, 12F X parity) | [testing-suites](rules/testing-suites.md) | `e2eTest`, `standTest`, nightly and on a tag; same scripts in CI | `boardTest` in Chromium | `ci.yml` heavy and stand jobs |
 | Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | ready 15 s, `/state` p95 100 ms | `ServerStandTest` | `ServerStandTest` |
 | Security tests (pyramid) | [testing](rules/testing.md) | `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap: JAGT-96 | the filter tests |
-| A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `EveryTestAssertsTest`, `ProductionConstructorTest`, `TestBuilderLogicTest`, `NoHelperMethodTest`, `TestNamingTest` | n.a. | the five tests |
+| A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `assertionless-tests`, `constructors-called-from-main`, `test-builder-calls`, `test-helper-methods`, `test-naming` | n.a. | `FitnessTest` |
 | A suite ends within a ceiling; a flaky test is registered or fixed (25010 maturity) | [testing](rules/testing.md), 0139 | `jagt.suites.gradle`, `jagt.suite-stats.gradle` | n.a. | `jagt.suites.gradle` |
-| A test never reaches the developer's terminal | [testing](rules/testing.md), 0058 | `TestTmuxCleanupTest`, `SuitesTapNobodyTest` | n.a. | `TestTmuxCleanupTest` |
+| A test never reaches the developer's terminal | [testing](rules/testing.md), 0058 | `TestTmuxCleanupTest`, `SuitesTapNobodyFitness` | n.a. | `TestTmuxCleanupTest` |
 
 ## Gates and CI
 
@@ -80,7 +80,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Text budgets: decision 50, rule 100, page 200 lines; no line past 150 characters outside a table | [style](rules/style.md) | `TextBudgetTest` | n.a. | `TextBudgetTest`, `BudgetedTexts` |
+| Text budgets: decision 50, rule 100, page 200 lines; no line past 150 characters outside a table | [style](rules/style.md) | `decision-lines`, `rule-lines`, `page-lines`, `line-characters` | n.a. | `FitnessTest` |
 | Every relative link and anchor reaches its target; a rule has its path-scoped pointer | [style](rules/style.md) | `DocLinksTest` | n.a. | `DocLinksTest`, `DocFiles` |
 | An architectural decision has its record, indexed (25010 analysability) | [decisions](decisions/README.md) | `DecisionIndexTest` | n.a. | `DecisionIndexTest` |
 | A behaviour change carries its spec delta; a capability its features line | [spec-changes](../openspec/specs/spec-changes/spec.md) | `SpecLimitsTest`, `FeaturesTest`, `OpenSpecTest` | n.a. | the three tests |
@@ -90,10 +90,10 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| A task opens only from a command or tracker intake, never a model's answer | [AGENTS.md](../AGENTS.md#the-human-in-the-loop) | `TaskOpeningDoorsTest` | n.a. | `TaskOpeningDoorsTest` |
-| A prompt is budgeted and evaluated; a vendor CLI's screen is pinned on a capture | [style](rules/style.md), [seams](rules/seams.md) | `TextBudgetTest`, `promptEval`, `roleEval` | n.a. | `TextBudgetTest` |
+| A task opens only from a command or tracker intake, never a model's answer | [AGENTS.md](../AGENTS.md#the-human-in-the-loop) | `TaskOpeningDoorsFitness` | n.a. | `TaskOpeningDoorsFitness` |
+| A prompt is budgeted and evaluated; a vendor CLI's screen is pinned on a capture | [style](rules/style.md), [seams](rules/seams.md) | `session-brief-step-lines`, `promptEval`, `roleEval` | n.a. | `FitnessTest` |
 | A guard names what it cannot stop; the base branch is read-only (ASVS V1 shell, 25010 integrity) | [guards](rules/guards.md), 0022, 0040 | `ToolGateTest`; arguments as lists, one fixed `sh -c` | n.a. | the guard tests |
-| A new role starts from its design file | [components](rules/components.md) | `RoleModulesTest` | n.a. | `RoleModulesTest` |
+| A new role starts from its design file | [components](rules/components.md) | `RoleNamesFitness` | n.a. | `RoleNamesFitness` |
 | What the board draws has one meaning per colour and mark | [design](rules/design.md) | `BoardAssetsTest` | `boardTest` | `BoardAssetsTest` |
 
 ## Security
@@ -120,7 +120,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Probes: startup, liveness, readiness; graceful shutdown (Boot health groups, 12F IX; 25010 availability) | [shutdown](../openspec/specs/shutdown/spec.md), 0161, 0169, 0172, 0179 | `KubernetesManifestsTest`, `ShutdownEndingsTest`, `ClonesHealthTest`; tini and a TERM trap | n.a. | `KubernetesManifestsTest` |
 | Failure is contained: breaker, wait-out, error shape (25010 fault tolerance) | [seams](rules/seams.md), 0086, 0105, 0108 | `AssistantBreakerTest`, `InfraRetryTest`, `RetryPolicyTest`, `AbortedConnectionFilterTest` | n.a. | `RetryPolicyTest` |
 | State is written atomically and read across a minor (25010 recoverability, 12F XII) | [components](rules/components.md) | `AtomicFilesTest`, `StateServiceCompatibilityTest`, `TaskStateFileCompatibilityTest` | n.a. | `AtomicFilesTest` |
-| Logs are structured to stdout with a cause (Boot logging, 12F XI) | [style](rules/style.md) | `LogbackTargetTest`, `FailureCausesTest` | n.a. | `FailureCausesTest` |
+| Logs are structured to stdout with a cause (Boot logging, 12F XI) | [style](rules/style.md) | `LogbackTargetTest`, `failure-cause-from-message` | n.a. | `LogbackTargetTest`, `FitnessTest` |
 | Every store, call, loop and task count is bounded (25010 resource use, capacity) | [components](rules/components.md), 0045, 0048, 0104, 0179 | `ImageJvmOptionsTest`, `StandSlotsTest`, `LoopBreakerTest` | n.a. | `ImageJvmOptionsTest` |
 | Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerStandTest`, `ServerRestartStandTest` | n.a. | `Dockerfile`, `examples/kubernetes.yml` |
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |

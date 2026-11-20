@@ -36,7 +36,7 @@ Accepted 2026-10-29.
 - `@Singular`, `@Jacksonized`, `@SuperBuilder`, `@WithBy`: a second way to build or bind what a record's builder does.
 - `val`, `var`: the type is stated.
 - `@Log`, `@CustomLog` and every logger but `@Slf4j`: one logging facade.
-- `@StandardException`: its generated constructors are never called from main, and `ProductionConstructorTest` rejects them.
+- `@StandardException`: its generated constructors are never called from main, and `constructors-called-from-main` rejects them.
 - `@Tolerate`: Lombok has no `flagUsage` key for it, so it is the one rejection no build enforces.
 
 ## Reopen when

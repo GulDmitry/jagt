@@ -8,15 +8,15 @@ Accepted 2026-10-12.
 
 ## Context
 
-- `RingsTest` and `KindsTest` matched package and class names in the source text.
+- `RingsFitness` and `KindsTest` matched package and class names in the source text.
 - Text misses a dependency reached through a return type, and cannot see a cycle between two folders.
 - `withStatus` callers and the five-collaborator ceiling were rules no test held.
 
 ## Decision
 
-- ArchUnit reads the compiled classes: ring dependencies and cycles (`RingsTest`), where a class lives
-  (`KindsTest`), the two status doors (`FlowDoorsTest`), five constructor parameters per component
-  (`CollaboratorCeilingTest`).
+- ArchUnit reads the compiled classes: ring dependencies and cycles (`RingsFitness`), where a class lives
+  (`KindsTest`), the two status doors (`FlowDoorsFitness`), five constructor parameters per component
+  (`collaborators-per-class`).
 - Text stays where bytecode is blind: Lombok (source retention), OS and vendor names, a type named in a comment.
 - The Gradle modules stay the first line: an outward import does not compile.
 

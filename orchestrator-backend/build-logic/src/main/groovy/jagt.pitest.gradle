@@ -75,7 +75,7 @@ def git = { List<String> args -> providers.exec { workingDir repoRoot; commandLi
 def forkPoint = base == 'HEAD' ? 'HEAD' : git(['merge-base', base, 'HEAD']).trim()
 def diff = providers.exec {
     workingDir rootDir
-    commandLine 'git', 'diff', '-U0', forkPoint, '--', '*/src/main/java/*.java', 'src/main/java/*.java'
+    commandLine 'git', 'diff', '-U0', forkPoint, '--', '*/src/main/java/*.java', 'src/main/java/*.java', ':(exclude)fitness'
 }.standardOutput.asText.get()
 def changedLines = [:].withDefault { [] as Set }
 def file = null

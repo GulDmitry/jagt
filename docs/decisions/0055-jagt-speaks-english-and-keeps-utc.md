@@ -16,8 +16,10 @@ Accepted 2026-10-21.
 
 - `OrchestratorApplication.main` sets `Locale.ENGLISH` and UTC first; the suite runs with `en`, `US` and `UTC` too.
 - `RuntimeWiring.clock()` is `Clock.systemUTC()`, the one read of the time: no main code asks the machine for its clock, zone or locale.
+- Two reads stay named in `fitness.yml`: `StandClock`, the stand harness waiting on real processes, and `EvalStats`, the
+  stamp of an eval's stats line; both real time, neither testable by a frozen clock.
 - One module, `board/core/time.js`, formats every board time in `en-GB` UTC; the full one ends in `UTC`.
-- `EnglishAndUtcTest` and `BoardAssetsTest` fail the gate on a call that reads the machine or the browser.
+- `now-without-clock` and `BoardAssetsTest` fail the gate on a call that reads the machine or the browser.
 
 ## Rejected
 

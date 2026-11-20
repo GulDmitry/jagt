@@ -5,9 +5,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class RingFiles {
+public final class RingFiles {
 
-  static final List<Path> ROOTS =
+  public static final List<Path> ROOTS =
       SourceRoots.ROOTS.stream()
           .map(root -> root.resolve(SourceRoots.BASE_PATH))
           .filter(Files::isDirectory)
@@ -15,11 +15,11 @@ final class RingFiles {
 
   private RingFiles() {}
 
-  static String packageOf(String ring) {
+  public static String packageOf(String ring) {
     return SourceRoots.BASE_PACKAGE + "." + ring + "..";
   }
 
-  static Stream<Path> outsideTheEdge(boolean withTests) {
+  public static Stream<Path> outsideTheEdge(boolean withTests) {
     return SourceRoots.ROOTS.stream()
         .filter(root -> withTests || !SourceRoots.isFixture(root))
         .filter(root -> !SourceRoots.moduleOf(root).equals(Path.of("adapter")))
@@ -29,7 +29,7 @@ final class RingFiles {
         .filter(path -> !path.toString().contains("/adapter/"));
   }
 
-  static Stream<String> sources(String ring) {
+  public static Stream<String> sources(String ring) {
     return ROOTS.stream()
         .map(root -> root.resolve(ring))
         .filter(Files::isDirectory)
@@ -37,7 +37,7 @@ final class RingFiles {
         .map(SourceRoots::read);
   }
 
-  static Stream<Path> inModule(String module, boolean mainOnly) {
+  public static Stream<Path> inModule(String module, boolean mainOnly) {
     return SourceRoots.ROOTS.stream()
         .filter(root -> SourceRoots.moduleOf(root).equals(Path.of(module)))
         .filter(root -> !mainOnly || !SourceRoots.isTest(root))

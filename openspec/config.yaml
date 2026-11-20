@@ -8,7 +8,7 @@ context: |
 
 rules:
   specs:
-    - A main spec stays within 1200 words and no line over 220 characters (TextBudgetTest)
+    - A main spec stays within 1200 words and no line over 220 characters (fitness.yml)
     - A behaviour added to an existing requirement is MODIFIED under that requirement's exact name, never ADDED
     - "A MODIFIED block replaces the whole requirement: copy every scenario it keeps"
   proposal:

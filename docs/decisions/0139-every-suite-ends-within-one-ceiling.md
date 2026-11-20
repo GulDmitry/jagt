@@ -16,7 +16,7 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
 
 ## Decision
 
-- `suiteCeilingMinutes` in `gradle.properties` is the one ceiling, 10: every `Test` task times out at it.
+- The `suite-minutes` row of `fitness.yml` is the one ceiling, 10: the fitness plugin gives every `Test` task its timeout.
 - A suite over it is a defect to speed up, never a raised number.
 - The full gate (`test`, `boardTest`, `e2eTest`, `standTest`, one `--rerun-tasks` run) ends within the same 10 minutes
   and as far under as it can (owner, 2026-11-07); evals and `pitest` aside. Each refresh measures it; over it opens a

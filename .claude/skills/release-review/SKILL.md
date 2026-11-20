@@ -28,7 +28,7 @@ Range: the last `Release` commit to `HEAD` unless one is named (`git log --grep=
 5. **Every survivor ends committed, as one of three**:
    - fixed, a RED-proven test wherever code changed;
    - rejected: its why goes where the next round meets it — one comment at the site, or a new record's Rejected row;
-   - a class an earlier round found too: a test asserting it (`RingsTest`, `KindsTest`, `MockCeilingTest`, or a new
+   - a class an earlier round found too: a test asserting it (`RingsFitness`, `KindsTest`, `mocks-per-test`, or a new
      one beside them), never a third finding.
 6. **A guard gap of a new class** joins `guards.md` with its Reopen condition, in the commit refusing what it can.
 7. Report per dimension: new, reopened, broken, dropped as known — then each open finding in one line.

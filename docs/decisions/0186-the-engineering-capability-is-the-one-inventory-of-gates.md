@@ -6,6 +6,8 @@ Rule: [`engineering`](../../openspec/specs/engineering/spec.md)
 ## Status
 
 Accepted 2026-11-16 by the owner's order: jagt is a template a new project copies, the gates in one place.
+Amended by [0209](0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md):
+rule ids in the engineering spec, selectors and numbers in `fitness.yml`.
 
 ## Context
 

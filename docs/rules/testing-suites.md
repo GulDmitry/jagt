@@ -45,8 +45,8 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 
 ## Context ceilings
 
-- `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contextsTest`,
-  `contextsBoardTest`, `contextsE2eTest` in `complexity-ceilings.json`): past the ceiling the build fails naming the suite and count.
+- `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contexts-test`,
+  `contexts-board-test`, `contexts-e2e-test` in `fitness.yml`): past the ceiling the build fails naming the suite and count.
 - Ceilings start at the measured count and only go down ([0186](../decisions/0187-a-suite-creates-no-more-spring-contexts-than-its-ceiling.md)).
 
 ## Planned

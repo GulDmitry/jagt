@@ -9,7 +9,7 @@ MCP server; a root session presents jagt's Master token, so every one is Master.
 ## First priority
 
 **One source of truth, no leaking abstraction, composition pinned by small tests**, above all. A unit knows
-what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsTest`).
+what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsFitness`).
 **jagt is agnostic to everything**: no tracked file names a user's employer, project, ticket, skill, machine
 or local setup; such names live only in git-ignored files. **A check holds for all code**: its kind is in
 [`ARCHITECTURE.md`](ARCHITECTURE.md#the-kinds) ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)).
@@ -82,30 +82,30 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
 - **The industry-standard library for a job before our own code**: own code only for what is jagt's own, its why in a decision.
-- **Three collaborators per class is the target, five the ceiling**, delegates included (`CollaboratorCeilingTest`):
+- **Three collaborators per class is the target, five the ceiling**, delegates included (`collaborators-per-class`):
   group them into a component, never add a field.
-- **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
+- **A method reads at cognitive complexity 12 at most** (`cognitive-complexity`): split it, never raise the number.
 - **No static state, no lifecycle hook that does work**: a static field is final and immutable.
-  A holder's inputs are its arguments; a collaborator arrives through the constructor (`CollaboratorOwnersTest`).
+  A holder's inputs are its arguments; a collaborator arrives through the constructor (`collaborator-owners`).
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`; stop work is a `SmartLifecycle` after the web server
-  (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
+  (`static-state`, `post-construct-hooks`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
   [0169](docs/decisions/0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).
-- **No duplicated block of 75 tokens or more** (`DuplicationTest`): one holder in main, a builder or parameterized case
+- **No duplicated block of 75 tokens or more** (`duplication`): one holder in main, a builder or parameterized case
   in tests. Never raise the number.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
 - **A compiler or Gradle warning fails the build**: fixed, never suppressed without its reason; only upstream's go in
   `build-logic/accepted-warnings.txt`, each row naming what ends it (`AcceptedWarningsTest`).
-- **A test wiring over 5 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
+- **A test wiring over 5 mocks means the class does too much** (`mocks-per-test`): fix the class, never the fixture.
 - **A test shares a `Test<Thing>Builder`, a fake or a file scanner, nothing else**: no helper method or class, no logic in a builder
   ([0163](docs/decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)).
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
-  seam in `main` that only tests call (`ProductionConstructorTest`).
-- **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).
+  seam in `main` that only tests call (`constructors-called-from-main`).
+- **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`now-without-clock`, `BoardAssetsTest`).
   Only the board's UI text may come from a language catalog, English the default
   ([0141](docs/decisions/0141-the-boards-words-are-catalog-files.md)).
 - **A new role starts from its `roles/<id>/design.md`**, agreed before its first code ([`ARCHITECTURE.md`](ARCHITECTURE.md)).
-- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
+- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsFitness`).
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring.
 - **Every third-party service or technology is a seam chosen in `jagt.yml`**: a port, a driver per vendor, a key with a
   default — never guessed from a name, a URL or a host ([0130](docs/decisions/0130-every-third-party-is-a-configured-seam.md)).
@@ -152,7 +152,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - **One fact per line**, in every text: a decision plus one clause of why, never the road to it nor what it used to be.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
 - **Never cite a line number or a line count** in a doc or a comment; name the file, the symbol or the rule.
-- **Budgets, asserted by `TextBudgetTest`**, in lines on Anthropic's scale
+- **Budgets, asserted by the `fitness.yml` size rows**, in lines on Anthropic's scale
   ([memory](https://code.claude.com/docs/en/memory), [skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)):
   a decision 50, a rule 100, a page read whole 200, `ARCHITECTURE.md` 500; no line past 150 characters outside a
   table; comments ≤ 15% of all sources. Past a limit, compress first: review the text,
@@ -174,11 +174,11 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   starter, [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default.
   The auto-review loop reads and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four.
   jagt re-runs a pipeline the host says died on infrastructure, bounded by `infraWait`, and a red deploy pipeline once
-  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance role's workspace request is the sixth, off
-  by default (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`, never the base branch, opened through the code-host
-  seam ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked. A kept
-  release switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
-- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsTest`).
+  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance workspace request is sixth, off by default
+  (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`, never the base branch, opened through the code-host seam
+  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked.
+  A kept release switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
+- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsFitness`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A
   task contradicting what the code guarantees is such a question, asked before the code picks a side. It is

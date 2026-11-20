@@ -19,6 +19,8 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    The full suite is never run: the session that launched you runs one over its batch.
    One Gradle run per tree at a time: a second one rewrites the class dirs the first is reading.
    Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
+   A defect class that can recur becomes a row of `fitness.yml` or a `Fitness` class, prose only where neither can say it;
+   `./gradlew fitness -Pfitness.block=<dimension>[.<characteristic>[.<subcharacteristic>]]` runs one block of the rules.
 6. Judge every `pitestDiff` survivor on your diff: kill it or say why.
 7. One commit for the whole brief, as AGENTS.md says in "Git and committing"; write it in the style of `git log --oneline -5`.
    A new `docs/decisions/` number is the next free one on `main` after `git rebase main`, taken just before that commit:

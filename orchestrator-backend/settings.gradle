@@ -1,6 +1,10 @@
 pluginManagement {
     includeBuild 'build-logic'
+    includeBuild 'fitness'
 }
+
+// The fitness library and its engines: its own build, no jagt names inside (0210).
+includeBuild 'fitness'
 
 rootProject.name = 'orchestrator-backend'
 

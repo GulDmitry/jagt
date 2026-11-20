@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class PackageMap {
+public final class PackageMap {
 
   private static final String ROOT = SourceRoots.BASE_PATH;
   private static final Pattern ROW = Pattern.compile("(?m)^\\| `([^`]+)` \\|");
@@ -18,7 +18,7 @@ final class PackageMap {
 
   private PackageMap() {}
 
-  static Map<String, Long> onDisk() {
+  public static Map<String, Long> onDisk() {
     return SourceRoots.mainJavaFiles()
         .filter(file -> !file.getFileName().toString().equals("package-info.java"))
         .filter(file -> file.toString().contains(ROOT))
@@ -29,7 +29,7 @@ final class PackageMap {
     return rows(section(0));
   }
 
-  static Set<String> overTen() {
+  public static Set<String> overTen() {
     return rows(section(1));
   }
 

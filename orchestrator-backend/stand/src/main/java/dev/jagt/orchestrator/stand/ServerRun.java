@@ -3,14 +3,13 @@ package dev.jagt.orchestrator.stand;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Instant;
 
 public final class ServerRun implements AutoCloseable {
 
   private final Path root;
   private final StandTeardown teardown;
-  private final Instant began = Instant.now(Clock.systemUTC());
+  private final Instant began = StandClock.now();
   private JagtEngine jagt;
   private StandMarker marker;
 

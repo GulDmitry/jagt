@@ -9,11 +9,11 @@ Accepted 2026-10-19.
 ## Context
 
 - Sixteen beans carried a second constructor only tests called, taking a clock, a path, a pool or a limit.
-- A test through it builds a class production never builds, and its mocks stay under `MockCeilingTest` however many collaborators it hides.
+- A test through it builds a class production never builds, and its mocks stay under `mocks-per-test` however many collaborators it hides.
 
 ## Decision
 
-- Every constructor in `main` is called from `main`; `ProductionConstructorTest` fails the build on one that is not.
+- Every constructor in `main` is called from `main`; `constructors-called-from-main` fails the build on one that is not.
 - Exempt: a record's canonical constructor, the only constructor of a Spring bean or a `spring.factories` type, a private constructor.
 - What varies is a collaborator: `Clock`, the executors, `HttpClient` and `RetryPolicy` come from `RuntimeWiring`.
 - OS name, home, environment, PATH and the running jar come from `port/host/Host`.

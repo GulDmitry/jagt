@@ -14,7 +14,7 @@ Accepted 2026-10-30. Extends [0110](0110-the-task-statechart-runs-on-an-engine-o
 ## Decision
 
 - One stored record, `task/session/Session`, and a region `SessionPhase` (NONE, WORKING, IDLE, QUIET, FAILED, GONE) derived from it.
-- Only `TaskReducer` writes it, from `SessionSign`s stamped with jagt's clock (`FlowDoorsTest`); a read is one more sign.
+- Only `TaskReducer` writes it, from `SessionSign`s stamped with jagt's clock (`FlowDoorsFitness`); a read is one more sign.
 - Precedence, first sign that answers wins, a tie kept by a halt and lost to the start of work: an end or a failure at once;
   a turn end then a stale read is QUIET; any later sign of life drops a halt; an unreadable sign is no verdict.
 - Asking is no phase: a hook's blocking text or the trust dialog stamps the report PERMISSION, which work clears.

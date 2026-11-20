@@ -14,7 +14,7 @@ Amended by [0162](0162-a-check-holds-for-all-code.md): it holds for every source
 
 ## Decision
 
-- Three linters, three jobs: Error Prone = bugs, PMD (`CognitiveComplexityTest`, `DuplicationTest`) = complexity and
+- Three linters, three jobs: Error Prone = bugs, PMD (`cognitive-complexity`, `duplication`) = complexity and
   duplication, Checkstyle = counts and imports ([0143](0143-checkstyle-gates-parameter-and-component-counts.md)).
 - `compileJava` runs Error Prone's default checks beside NullAway; `-Werror` makes its warnings fail the build.
   Test source sets stay off.

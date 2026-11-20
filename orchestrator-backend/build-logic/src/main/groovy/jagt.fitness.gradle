@@ -1,0 +1,15 @@
+// The tool rows of fitness.yml: the plugin reads each number from there and binds it to the tool that enforces it.
+pluginManager.apply('fitness')
+
+fitness {
+    file = layout.projectDirectory.file('../fitness.yml')
+    classpath.from(sourceSets.test.runtimeClasspath)
+}
+
+// 0188: the scan reads the release SBOM. The plugin registers its checks once every project is evaluated.
+gradle.projectsEvaluated {
+    tasks.named('fitnessVulnerabilities') {
+        dependsOn 'cyclonedxBom'
+        sbom = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
+    }
+}

@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.yaml.snakeyaml.Yaml;
 
-final class CiWorkflow {
+public final class CiWorkflow {
 
   private static final Path WORKFLOW = Path.of("../.github/workflows/ci.yml");
 
@@ -16,13 +16,13 @@ final class CiWorkflow {
 
   private CiWorkflow() {}
 
-  static Set<String> githubTriggers() {
+  public static Set<String> githubTriggers() {
     Map<?, ?> workflow = new Yaml().load(SourceRoots.read(WORKFLOW));
     Map<?, ?> on = (Map<?, ?>) Objects.requireNonNull(workflow.get(true));
     return on.keySet().stream().map(String::valueOf).collect(Collectors.toSet());
   }
 
-  static Set<String> gitlabJobs() {
+  public static Set<String> gitlabJobs() {
     Map<?, ?> pipeline = new Yaml().load(SourceRoots.read(GITLAB));
     return pipeline.entrySet().stream()
         .filter(
@@ -35,7 +35,7 @@ final class CiWorkflow {
     return SourceRoots.read(GITLAB);
   }
 
-  static Map<String, Map<String, Object>> jobs() {
+  public static Map<String, Map<String, Object>> jobs() {
     Map<?, ?> workflow = new Yaml().load(SourceRoots.read(WORKFLOW));
     Map<String, Map<String, Object>> jobs = new LinkedHashMap<>();
     Map<?, ?> declared = (Map<?, ?>) Objects.requireNonNull(workflow.get("jobs"));

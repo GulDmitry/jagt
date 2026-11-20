@@ -23,7 +23,7 @@ Accepted 2026-11-11. Amended by [0164](0164-a-unit-test-is-named-after-its-main-
 - A builder of outside state (a git repository on disk) may write in `build()`.
 - A record whose production `defaults()` and `@With` serve production needs no builder; a `defaults()` only
   tests call moves into one.
-- Main holds no constructor or member that only tests call; `ProductionConstructorTest` widens to members.
+- Main holds no constructor or member that only tests call; `constructors-called-from-main` widens to members.
 - A service too long to wire is not built by a builder: its collaborator count is fixed in main.
 
 ## Rejected
@@ -37,7 +37,7 @@ Accepted 2026-11-11. Amended by [0164](0164-a-unit-test-is-named-after-its-main-
 - Inlining `FlowHarness`'s waits, driver actions and world setup: they drive jagt for every e2e test; they stay.
 - Moving the model evals' helpers into new harness classes: it moves their freeze entries, removes none; they stay frozen (0162).
 - Nesting a test's Spring event and listener: a fake of `ApplicationEvent` or `ApplicationListener` fakes the seam Spring dispatches through.
-- Folding a repeated call under 75 tokens back into a helper: `DuplicationTest` is the judge.
+- Folding a repeated call under 75 tokens back into a helper: `duplication` is the judge.
 
 ## Reopen when
 

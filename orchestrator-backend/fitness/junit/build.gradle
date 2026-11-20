@@ -1,0 +1,6 @@
+dependencies {
+    api project(':core')
+    api 'org.junit.jupiter:junit-jupiter-api'
+    implementation project(':engine-archunit')
+    implementation project(':engine-scan')
+}

@@ -29,7 +29,7 @@ A sub-agent also reported a cached Gradle green while the real run was red.
 | cause | what now checks it |
 |-------|--------------------|
 | A: a relayed text contradicts the brief | `SessionBriefContractTest`: worktrees and git operations relayed vs. granted |
-| B: a prompt change reaches no model | rule in `testing.md`; `TextBudgetTest` names it on a prompt file |
+| B: a prompt change reaches no model | rule in `testing.md`; `session-brief-step-lines` names it on a prompt file |
 | C: a loop the Master closes has no e2e | `MasterModeFlowTest` conflict hand-off, answer under it, permission; the rest listed in `testing.md` |
 | D: a dedup key outlives or loses its writer | rule in `components.md`, the three left named; an answer goes under a pending instruction |
 | E: an unattended wait has no end | rule in `components.md`, the two without one named |

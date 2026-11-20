@@ -16,7 +16,7 @@ Accepted 2026-11-07.
 
 - `task/turn/ToldOnce` on the round holds one entry per `Kind`: the key the fact was told for. Absent reads as never told.
 - `said(kind, key)` is true only for the key told; another key (a new round, a new silence, a new tree) tells again.
-- `TaskReducer.told` and `TaskReducer.untold` are the only callers of `withTold` (`FlowDoorsTest`).
+- `TaskReducer.told` and `TaskReducer.untold` are the only callers of `withTold` (`FlowDoorsFitness`).
 - A reset names the kinds it clears: the auto-review reset never clears the silence or the failed verification.
 - `LegacyTold` moves the two old marks into the ledger on read; the stored `told` object reads, ignoring unknown ids.
 

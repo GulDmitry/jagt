@@ -11,7 +11,7 @@ Accepted 2026-10-25. Resilience4j 2.4.0, current on Maven Central 2026-10-25.
 
 - 0085 chose when the breaker opens, what a failure is and what a refusal says; its state machine was hand-written.
 - A state machine is not jagt's own: Resilience4j's `CircuitBreaker` is the industry standard for it.
-- Since 2.3.0 its config takes a `Clock`, so `EnglishAndUtcTest` holds.
+- Since 2.3.0 its config takes a `Clock`, so `now-without-clock` holds.
 
 ## Decision
 

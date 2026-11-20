@@ -16,7 +16,7 @@ Accepted 2026-11-14.
 - A module's unit test is `<MainClass>Test`, or `<MainClass><Aspect>Test`, in the main class's package.
 - Exempt by kind, never by a list: the root module's rule tests and the suite sets (boardTest, e2e, evals, stand,
   linuxTest).
-- `TestNamingTest` checks it; its ArchUnit freeze store holds today's breaches and only shrinks.
+- `test-naming` checks it; its ArchUnit freeze store holds today's breaches and only shrinks.
 
 ## Rejected
 

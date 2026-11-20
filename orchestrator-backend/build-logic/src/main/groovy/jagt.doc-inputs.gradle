@@ -1,10 +1,11 @@
 import org.gradle.api.tasks.PathSensitivity
 
-// TextBudgetTest, ConfigReferenceTest, CiWorkflowTest and TestTmuxCleanupTest read files that live outside every source set: without declaring it
+// FitnessTest, ConfigReferenceTest, CiWorkflowTest and TestTmuxCleanupTest read files that live outside every source set: without declaring it
 // the task stays UP-TO-DATE while a document grows past its budget, and the suite is green over a breach.
 tasks.named('test') {
     inputs.files(fileTree(projectDir.parentFile) {
         include '*.md'
+        include 'fitness.yml'
         include 'docs/**/*.md'
         include 'openspec/specs/**/*.md'
         include 'orchestrator-backend/*/src/main/resources/prompts/*.md'

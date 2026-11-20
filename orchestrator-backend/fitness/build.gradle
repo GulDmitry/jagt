@@ -1,0 +1,39 @@
+import java.time.Duration
+
+group = 'fitness'
+
+subprojects {
+    apply plugin: 'java-library'
+    group = 'fitness'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    dependencies {
+        api platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        implementation 'org.jspecify:jspecify'
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation 'org.assertj:assertj-core'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs.addAll(['-parameters', '-Xlint:all,-processing', '-Werror'])
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        timeout = Duration.ofMinutes(10)
+    }
+}

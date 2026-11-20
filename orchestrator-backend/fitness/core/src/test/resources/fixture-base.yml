@@ -1,0 +1,5 @@
+schema: 1
+technical:
+  maintainability:
+    modularity:
+      ports: { engine: fake, governs: count, max: 5 }

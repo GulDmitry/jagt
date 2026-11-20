@@ -17,7 +17,7 @@ Accepted 2026-11-16, owner's order.
 
 - `test`, `boardTest` and `e2eTest` each end in a Gradle check summing Spring's own cache miss count, logged at DEBUG
   into the suite's test report, over its JVMs.
-- The ceiling is the suite's `contexts*` entry in `complexity-ceilings.json`; past it the build fails naming the suite and count.
+- The ceiling is the suite's `contexts-*` rule in `fitness.yml`; past it the build fails naming the suite and count.
 - Ceilings start at the measured maximum and only go down.
 
 ## Rejected

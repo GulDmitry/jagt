@@ -12,6 +12,7 @@ You review the commit range you are given on jagt. You change nothing: no edit, 
    a leaking abstraction (a unit naming who uses it), a class a unit test cannot build through its production constructor
    (`docs/rules/testing.md`: a defect, never an open question), a test pinning no business case, a spec the code contradicts, and a new kind of thing that misses what its sphere's
    standard requires (`ARCHITECTURE.md` "The kinds").
-3. Skip style: what the rule tests AGENTS.md "Code" names pin is theirs.
+3. Skip style: what the rule tests AGENTS.md "Code" names pin is theirs; each is a rule id in `fitness.yml`.
+   A defect class you find that a row could pin is a finding too: name the id it would take.
 
 Report only findings, most severe first, one line each: `file:symbol`, the defect, the input that breaks it. None is a valid answer.

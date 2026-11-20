@@ -1,13 +1,12 @@
 package dev.jagt.orchestrator.stand.replay;
 
+import dev.jagt.orchestrator.stand.StandClock;
 import dev.jagt.orchestrator.stand.StandFailure;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +64,7 @@ public final class WorktreeSnapshots {
       }
       ObjectNode line =
           JSON.createObjectNode()
-              .put("at", Instant.now(Clock.systemUTC()).toString())
+              .put("at", StandClock.now().toString())
               .put("task", task)
               .put("file", name);
       JsonNode content =

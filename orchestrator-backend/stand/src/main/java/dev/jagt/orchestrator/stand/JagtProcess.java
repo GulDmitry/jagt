@@ -6,7 +6,6 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -172,9 +171,9 @@ public final class JagtProcess implements JagtEngine {
   }
 
   private JagtProcess awaitReady() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
+    Instant deadline = StandClock.now().plus(startup);
     while (!board.ready()) {
-      if (!running().isAlive() || Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+      if (!running().isAlive() || StandClock.now().isAfter(deadline)) {
         close();
         throw new StandFailure(
             "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));

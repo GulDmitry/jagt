@@ -21,7 +21,7 @@ Superseded in part by [0113](0113-the-deployment-record-is-the-only-deploy-store
 - A press is one stored `Deployment`: `pressedAt`, the ordered targets (project, deploy branch captured at the press, merge, fixes,
   `pushedAt`) and `at`, the first target not yet pushed. It lives on `TaskState.deployment`.
 - The chart gains a stored `deploy` region over `DeployPhase`; the phase is derived from the record, as the stop region's is from the stop.
-- Only `TaskReducer` writes the record, from a `DeployStep` carried by a `DeployStepped` move (`FlowDoorsTest`).
+- Only `TaskReducer` writes the record, from a `DeployStep` carried by a `DeployStepped` move (`FlowDoorsFitness`).
 - Migration is six commits, each green: this one writes the record beside `deployCommit` and `deployFixes`, and nothing reads it.
   Later commits move each reader onto it, fold in the conflict watch, replace the loops by one runner, then delete the old fields.
 - The first commit reaches `NONE`, `LANDING` and `HANDED`; `PIPELINE`, `SETTLED`, `CHECK_ASKED` and `REVERTING` come with their steps.

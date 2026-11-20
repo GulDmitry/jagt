@@ -41,7 +41,7 @@ AGENTS.md: every log line is structured. The file log is ECS JSON:
 - `ref` is what was being read, `url` an address fetched or served, `said` the sentence a surface showed a
   human. One key means one type everywhere, and a number stays a number (`secrets=102`).
 - `cause` is the failure itself, never null or blank (`Causes.of(e)`, stderr, exit line; a throwable also goes in
-  `setCause(e)`; `FailureCausesTest`),
+  `setCause(e)`; `failure-cause-from-message`),
   `effect` what jagt did instead, `fix` exactly one command or setting — never advice.
 - **Never** in a value: prose, sentences, em dashes, a trailing period, a capital first word (identifiers keep
   their case), two facts, or anything that explains, reassures or advises.
@@ -58,7 +58,7 @@ Each rule below is AGENTS.md "Code" / "First priority"; only its why and details
 
 - **The test is the litmus of the production code**: ~5+ objects of setup or high cognitive load is a smell in the
   **production code**.
-- `RingsTest` fails an inner module naming an outer type; review a caller named as a concept.
+- `RingsFitness` fails an inner module naming an outer type; review a caller named as a concept.
 - **Duplication** is found by PMD's copy-paste detector: identifiers and literals count, so a copy with other names is still found.
 - **Cognitive complexity** is PMD's count of Sonar's metric ([0053](../decisions/0053-a-method-reads-at-cognitive-complexity-twelve-at-most.md)):
   over it, extract a named step. The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
@@ -70,7 +70,7 @@ Each rule below is AGENTS.md "Code" / "First priority"; only its why and details
   the composition or a registry is an instance built by its `*Wiring`. `@PostConstruct` validates configuration only;
   no field `@Autowired`, no `static {}` initializer, no `ApplicationContext` lookup. Exempt by name: `TaskAliasLogFilter`,
   `AbortedConnectionFilter` (Logback predates the context). A global is a second constructor nobody sees; a hook only
-  tests call sidesteps `ProductionConstructorTest`. Existing offenders sit in the frozen store
+  tests call sidesteps `constructors-called-from-main`. Existing offenders sit in the frozen store
   `src/test/resources/archunit/`, which only shrinks.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).

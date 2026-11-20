@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class TestKinds {
+public final class TestKinds {
 
   private static final String TESTABLE = "org.junit.platform.commons.annotation.Testable";
   private static final String METHOD_SOURCE = "org.junit.jupiter.params.provider.MethodSource";
@@ -44,7 +44,7 @@ final class TestKinds {
 
   private TestKinds() {}
 
-  static DescribedPredicate<JavaClass> declaredInTestClass() {
+  public static DescribedPredicate<JavaClass> declaredInTestClass() {
     return DescribedPredicate.describe(
         "a test class", type -> outermost(type).getSimpleName().endsWith("Test"));
   }
@@ -53,7 +53,7 @@ final class TestKinds {
     return type.getEnclosingClass().map(TestKinds::outermost).orElse(type);
   }
 
-  static ArchCondition<JavaMethod> beTestSetupOrArguments() {
+  public static ArchCondition<JavaMethod> beTestSetupOrArguments() {
     return new ArchCondition<>("be a test, its setup or its arguments") {
       @Override
       public void check(JavaMethod method, ConditionEvents events) {
@@ -89,7 +89,7 @@ final class TestKinds {
         .orElseGet(Stream::empty);
   }
 
-  static DescribedPredicate<JavaClass> areTopLevelInTestSet() {
+  public static DescribedPredicate<JavaClass> areTopLevelInTestSet() {
     return DescribedPredicate.describe(
         "top-level in a test source set",
         type ->
@@ -102,7 +102,7 @@ final class TestKinds {
     return type.getSource().map(source -> source.getUri().toString()).orElse("");
   }
 
-  static ArchCondition<JavaClass> beTestBuilderFakeOrScanner() {
+  public static ArchCondition<JavaClass> beTestBuilderFakeOrScanner() {
     return new ArchCondition<>("be a test, a Test<Thing>Builder record, a fake or a scanner") {
       @Override
       public void check(JavaClass type, ConditionEvents events) {
@@ -129,14 +129,14 @@ final class TestKinds {
                 || !parent.getPackageName().startsWith("dev.jagt"));
   }
 
-  static DescribedPredicate<JavaClass> testBuilders() {
+  public static DescribedPredicate<JavaClass> testBuilders() {
     return DescribedPredicate.describe(
         "Test<Thing>Builders",
         type ->
             type.getSimpleName().startsWith("Test") && type.getSimpleName().endsWith("Builder"));
   }
 
-  static DescribedPredicate<JavaMethodCall> readClockRandomMockOrAssertion() {
+  public static DescribedPredicate<JavaMethodCall> readClockRandomMockOrAssertion() {
     return DescribedPredicate.describe(
         "a clock, random, mock or assertion call",
         call -> {
@@ -160,7 +160,7 @@ final class TestKinds {
     return BRANCH_OR_LOOP.matcher(SourceRoots.read(source)).find();
   }
 
-  static ArchCondition<JavaClass> wireOneComponentAtMost() {
+  public static ArchCondition<JavaClass> wireOneComponentAtMost() {
     return new ArchCondition<>("construct one Spring component at most") {
       @Override
       public void check(JavaClass builder, ConditionEvents events) {
@@ -177,7 +177,7 @@ final class TestKinds {
     };
   }
 
-  static DescribedPredicate<JavaClass> moduleUnitTests() {
+  public static DescribedPredicate<JavaClass> moduleUnitTests() {
     return DescribedPredicate.describe(
         "unit tests of a module",
         type ->
@@ -187,7 +187,7 @@ final class TestKinds {
                 && !location(type).contains(ROOT_TEST_SET));
   }
 
-  static ArchCondition<JavaClass> beNamedAfterMainClassOfItsPackage() {
+  public static ArchCondition<JavaClass> beNamedAfterMainClassOfItsPackage() {
     return new ArchCondition<>("be named after a main class of its package") {
       @Override
       public void check(JavaClass test, ConditionEvents events) {

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-final class MainMembers {
+public final class MainMembers {
 
   private static final Set<String> CALLED_BY_NAME = Set.of("main", "values", "valueOf");
   private static final List<String> FRAMEWORKS =
@@ -22,7 +22,7 @@ final class MainMembers {
 
   private MainMembers() {}
 
-  static DescribedPredicate<JavaMethod> calledOnlyFromOutsideMain() {
+  public static DescribedPredicate<JavaMethod> calledOnlyFromOutsideMain() {
     return DescribedPredicate.describe(
         "are never called from main nor by a framework",
         method ->

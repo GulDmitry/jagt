@@ -21,7 +21,7 @@ Accepted 2026-11-14.
 - A package holds ten classes directly at most and never a single one.
 - A package-private partner that cannot move without widening stays with its package; the map lists it as an
   exception with its why.
-- `PackagesTest` asserts the map and the counts: every package on disk is in the map and every listed package exists,
+- `PackagesTest` asserts the map, `classes-per-package` the counts: every package on disk is in the map and every listed package exists,
   no package is over ten classes or a single class outside the map's exception lists.
 - Three of a kind is a review rule: no class declares its kind, so a name-suffix test would flag the kind's own package.
 

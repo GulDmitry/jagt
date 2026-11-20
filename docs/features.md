@@ -58,8 +58,8 @@
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
-- **Architecture rule tests** — Kind, collaborator, complexity, duplication, mock and text ceilings, cycle-freedom and a count ratchet over
-  CI, source sets, triggers, statuses and the public surface fail the build, for every source set. [kinds](../ARCHITECTURE.md#the-kinds)
+- **Fitness functions in one file** — `fitness.yml` declares them in a reserved tree; `./gradlew fitness` prints each value against its threshold.
+  [spec](../openspec/specs/fitness/spec.md#requirement-a-fitness-function-reports-its-number-against-its-threshold)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.

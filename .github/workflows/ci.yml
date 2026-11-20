@@ -27,6 +27,7 @@ jobs:
     name: unit + functional
     if: '!inputs.nightly'
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
@@ -59,6 +60,7 @@ jobs:
     name: heavy suites
     if: inputs.nightly || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
@@ -103,6 +105,7 @@ jobs:
   stand:
     name: stand (${{ matrix.engine }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -173,6 +176,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [test, heavy, stand, install]
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
       packages: write

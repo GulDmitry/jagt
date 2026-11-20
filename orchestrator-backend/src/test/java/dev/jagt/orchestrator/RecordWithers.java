@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
-final class RecordWithers {
+public final class RecordWithers {
 
   private static final List<Class<?>> RECORDS =
       SourceRoots.ALL.stream()
@@ -40,9 +40,9 @@ final class RecordWithers {
     }
   }
 
-  record Wither(Class<?> type, RecordComponent component, Method method) {}
+  public record Wither(Class<?> type, RecordComponent component, Method method) {}
 
-  static Stream<Wither> all() {
+  public static Stream<Wither> all() {
     return RECORDS.stream()
         .flatMap(type ->
             Arrays.stream(type.getRecordComponents())
@@ -64,7 +64,7 @@ final class RecordWithers {
     }
   }
 
-  static String defect(Wither wither) {
+  public static String defect(Wither wither) {
     String at = wither.type().getName() + "." + wither.method().getName();
     try {
       Object before = build(wither.type(), 0);

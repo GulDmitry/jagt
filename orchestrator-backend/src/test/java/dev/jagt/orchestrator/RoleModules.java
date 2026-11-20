@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-final class RoleModules {
+public final class RoleModules {
 
   private static final String ROOT = SourceRoots.BASE_PACKAGE + ".";
 
-  static final List<String> ARBITER =
+  public static final List<String> ARBITER =
       Stream.of(
               "service.master.",
               "flow.Master",
@@ -26,7 +26,7 @@ final class RoleModules {
           .map(prefix -> ROOT + prefix)
           .toList();
 
-  static final Map<String, List<String>> CHECKERS =
+  public static final Map<String, List<String>> CHECKERS =
       Map.of(
           "acceptance",
           Stream.of(
@@ -47,7 +47,7 @@ final class RoleModules {
           "triage",
           List.of(ROOT + "job.triage."));
 
-  static final List<String> STOP_KIND =
+  public static final List<String> STOP_KIND =
       Stream.of(
               "task.stop.StopTriage",
               "task.stop.TaskStop",
@@ -57,7 +57,7 @@ final class RoleModules {
           .map(prefix -> ROOT + prefix)
           .toList();
 
-  static final List<String> CHECKER_KIND =
+  public static final List<String> CHECKER_KIND =
       Stream.of(
               "flow.Checkers",
               "flow.CheckerRegion",
@@ -77,7 +77,7 @@ final class RoleModules {
 
   // The master's stand-in keeps its persisted keys, yml keys and file names under the role's own
   // id.
-  static final List<String> STAND_IN_KIND =
+  public static final List<String> STAND_IN_KIND =
       Stream.of(
               "task.TaskState",
               "task.StoredTask",

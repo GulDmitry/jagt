@@ -8,7 +8,7 @@ Everything crossing into jagt is a message, validated once at the door.
 
 ### Requirement: The protocol lives in core
 `protocol/` in `core/` SHALL hold the wire record, its rules and the types the rest of jagt works in. It speaks the
-centre's vocabulary; the centre does not know it (`RingsTest`). What a message cannot carry is not the
+centre's vocabulary; the centre does not know it (`RingsFitness`). What a message cannot carry is not the
 protocol's: a worktree claim is measured where the worktree is (`service/HandBack`), and which status it may land on is
 `flow/FlowRules`'s ([task-flow](../task-flow/spec.md)).
 

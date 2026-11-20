@@ -1,0 +1,42 @@
+schema: 1
+technical:
+  maintainability:
+    modularity:
+      collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
+      classes-per-package: { engine: scan, set: main, per: package, measure: classes, governs: size, max: 10 }
+    analysability:
+      failure-cause-from-message: { engine: scan, set: all, per: file, regex: "addKeyValue\\(\\s*\"cause\",[^;]*?\\.getMessage\\(\\)", governs: count, max: 0 }
+      unmarked-packages: { engine: scan, set: all, requires: package-info.java, regex: "@NullMarked", governs: count, max: 0 }
+      cognitive-complexity: { engine: scan, set: all, per: method, measure: cognitive-complexity, governs: complexity, max: 12 }
+      checkstyle: { engine: tool, tool: checkstyle, measure: warnings, governs: linter, max: 0, decision: "0143" }
+      compiler-and-gradle-warnings: { engine: tool, tool: gradle, measure: warnings-not-failing, governs: linter, max: 0 }
+      comment-share: { engine: scan, set: all, per: project, measure: comment-percent, governs: size, max: 15 }
+    modifiability:
+      merge-markers: { engine: scan, set: tracked, per: file, regex: "(?m)^(<{7} .*|={7}|>{7} .*)\\r?$", governs: count, max: 0 }
+      duplication: { engine: scan, set: all, per: duplicate, measure: tokens, governs: size, max: 74 }
+    testability:
+      line-coverage: { engine: tool, tool: jacoco, per: module, measure: line-coverage-percent, governs: size, min: 80, decision: "0181" }
+      test-reach: { engine: tool, tool: jacoco, measure: unreached-classes-with-branch, governs: count, max: 0, decision: "0191" }
+      mocks-per-test: { engine: scan, set: test, glob: "**/*Test.java", per: test, measure: mocked-types, governs: coupling, max: 5 }
+      static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, governs: count, max: 0 }
+      post-construct-hooks: { engine: archunit, set: all, kind: method, annotated: jakarta.annotation.PostConstruct, governs: annotation, max: 0 }
+      autowired-fields: { engine: archunit, set: all, kind: field, annotated: org.springframework.beans.factory.annotation.Autowired, governs: annotation, max: 0 }
+      assertionless-tests: { engine: scan, set: test, per: test, measure: assertionless, governs: count, max: 0 }
+      endless-shell-loops: { engine: scan, set: test, per: file, regex: "while\\s+(:|true)\\s*;", governs: count, max: 0 }
+      no-zone-id-system-default: { engine: archunit, set: all, calls: java.time.ZoneId.systemDefault, governs: class-dependency, max: 0 }
+      no-clock-system-default-zone: { engine: archunit, set: all, calls: java.time.Clock.systemDefaultZone, governs: class-dependency, max: 0 }
+      no-timezone-default: { engine: archunit, set: all, calls: java.util.TimeZone.getDefault, governs: class-dependency, max: 0 }
+      no-locale-default: { engine: archunit, set: all, calls: java.util.Locale.getDefault, governs: class-dependency, max: 0 }
+      now-without-clock: { engine: archunit, set: all, calls: "java.time.*.now", without: java.time.Clock, governs: class-dependency, max: 0 }
+      no-system-current-time-millis: { engine: archunit, set: main, calls: java.lang.System.currentTimeMillis, governs: class-dependency, max: 0 }
+      no-clock-system-utc: { engine: archunit, set: main, calls: java.time.Clock.systemUTC, governs: class-dependency, max: 0 }
+      no-clock-system: { engine: archunit, set: main, calls: java.time.Clock.system, governs: class-dependency, max: 0 }
+security:
+  security:
+    integrity:
+      vulnerability-scan: { engine: tool, tool: osv-scanner, measure: known-vulnerabilities, governs: security-scan, max: 0, decision: "0188" }
+operational:
+  performance-efficiency:
+    time-behaviour:
+      suite-minutes: { engine: tool, tool: gradle, per: suite, measure: minutes, governs: size, max: 10, decision: "0139", axes: { scope: holistic } }
+      unlimited-runs: { engine: tool, tool: gradle, kind: test-or-gate, measure: runs-without-time-limit, governs: count, max: 0 }

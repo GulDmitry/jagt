@@ -24,8 +24,7 @@ class TestsForScriptTest {
     Files.createDirectories(repo.resolve(ROOT_TESTS));
     Files.writeString(repo.resolve(ADAPTER + "main/java/a/Foo.java"), "class Foo {}");
     Files.writeString(repo.resolve(ADAPTER + "test/java/a/FooTest.java"), "class FooTest {}");
-    Files.writeString(
-        repo.resolve(ROOT_TESTS + "DuplicationTest.java"), "class DuplicationTest {}");
+    Files.writeString(repo.resolve(ROOT_TESTS + "PackagesTest.java"), "class PackagesTest {}");
 
     Process run =
         TestTestsForProcessBuilder.over(repo).build(ADAPTER + "main/java/a/Foo.java").start();
@@ -39,7 +38,7 @@ class TestsForScriptTest {
             l -> assertThat(l).contains(":adapter:compileJava :adapter:compileTestJava"),
             l -> assertThat(l).contains(":adapter:checkstyleMain :adapter:checkstyleTest"),
             l -> assertThat(l).contains(":adapter:test --tests '*FooTest' -x pitestDiff"),
-            l -> assertThat(l).contains(":test --tests '*DuplicationTest' -x pitestDiff"));
+            l -> assertThat(l).contains(":test --tests '*PackagesTest' -x pitestDiff"));
   }
 
   @Test
@@ -84,7 +83,7 @@ class TestsForScriptTest {
       throws Exception {
     Files.createDirectories(repo.resolve(ROOT_TESTS));
     Files.createDirectories(repo.resolve("docs"));
-    Files.writeString(repo.resolve(ROOT_TESTS + "TextBudgetTest.java"), "class TextBudgetTest {}");
+    Files.writeString(repo.resolve(ROOT_TESTS + "FitnessTest.java"), "class FitnessTest {}");
     Files.writeString(repo.resolve("docs/a.md"), "# a");
 
     Process run = TestTestsForProcessBuilder.over(repo).build("docs/a.md").start();
@@ -94,7 +93,7 @@ class TestsForScriptTest {
     assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
     assertThat(lines)
         .anyMatch(l -> l.contains("no rule test DocLinksTest, dropped"))
-        .anyMatch(l -> l.endsWith(":test --tests '*TextBudgetTest' -x pitestDiff"))
+        .anyMatch(l -> l.endsWith(":test --tests '*FitnessTest' -x pitestDiff"))
         .noneMatch(l -> l.contains("compileJava"));
   }
 

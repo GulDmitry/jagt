@@ -6,17 +6,19 @@ Rule: [`ARCHITECTURE.md`](../../ARCHITECTURE.md#the-kinds)
 ## Status
 
 Accepted 2026-11-16 by the owner's order.
+Amended by [0209](0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md):
+its numbers move from `complexity-ceilings.json` into `fitness.yml`.
 
 ## Context
 
 - Each kind of thing (a CI job, a port, a role, a Gradle module, a dependency) grows by one at a time, each looking harmless.
 - A cap written as prose is never read at the moment of the addition; a count in a test is.
-- Cycle-freedom between packages is already a zero rule, `RingsTest`; a count is a different shape.
+- Cycle-freedom between packages is already a zero rule, `RingsFitness`; a count is a different shape.
 
 ## Decision
 
-- `ComplexityCeilingsTest` holds one ratchet per counted kind, all numbers in `complexity-ceilings.json`.
-- Each kind is a `CeilingKind` with a scanner listing its items by name, so a failure names the new item.
+- `FitnessTest` holds one ratchet per counted kind, all numbers in `fitness.yml`.
+- Each kind is a rule listing its items by name, so a failure names the new item.
 - Above the stored number fails; below it fails too, asking to lower the number: the ratchet only tightens.
 - Raising a number needs a decision record in the same commit.
 - Counted: CI jobs and triggers, source sets, Gradle modules, build-logic files, declared dependency lines,

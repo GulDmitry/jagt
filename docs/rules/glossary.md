@@ -50,6 +50,16 @@ Sources: Ford, Parsons, Kua, Sadalage, *Building Evolutionary Architectures*, 2n
 | automated / manual | a machine runs it / a person does |
 | intentional / emergent | defined at the start / found as the system evolves |
 | ratchet | *jagt's own*: a counted threshold that only falls ([0176](../decisions/0176-every-kind-has-a-ceiling.md)) |
+| declared fitness function | *jagt's own*: one entry of `fitness.yml`, measured by an engine |
+| coded fitness function | *jagt's own*: a fitness function a project writes as a Java class implementing `Fitness`, found by id |
+| engine | *jagt's own*: the code that measures every declared fitness function of one kind, such as ArchUnit or file scanning |
+| measurement | *jagt's own*: the value and the items a fitness function yields |
+| threshold | *jagt's own*: the number and the direction, `max` or `min`, a measurement is held to |
+| governs | *jagt's own*: what a fitness function guards, from the closed list of [0209](../decisions/0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md) |
+| dimension | *jagt's own*: one of the reserved tree's four top sections, technical, data, security and operational |
+| section | *jagt's own*: a place in the reserved tree, `dimension.characteristic.subcharacteristic`, where a fitness function sits |
+| block | *jagt's own*: a part of the reserved tree, from the whole of it down to one subcharacteristic |
+| report | *jagt's own*: a fitness function's id, value, threshold with its direction and every item, printed when it fails |
 
 ## Ports and adapters
 

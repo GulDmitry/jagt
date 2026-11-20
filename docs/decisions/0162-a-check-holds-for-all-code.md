@@ -21,11 +21,11 @@ Amended by [0163](0163-a-test-shares-a-builder-a-fake-or-a-scanner.md): a test s
   and it holds for every source set of every project.
 - The build applies Checkstyle to every source set and Error Prone with NullAway to every `JavaCompile`, by no name.
 - Quality rule tests read `SourceRoots`, which finds every `src/*/java` on disk, and its `ALL` import, tests included.
-  `DuplicationTest` still skips the roots its own list names, a list that only shrinks.
+  `duplication` still skips the roots its own list names, a list that only shrinks.
 - pitest mutates every project's main code, the root's included; test code is not mutated.
-- Main-only, by meaning: who in production may act (`FlowDoorsTest`, `TaskOpeningDoorsTest`, `ProductionConstructorTest`,
+- Main-only, by meaning: who in production may act (`FlowDoorsFitness`, `TaskOpeningDoorsFitness`, `constructors-called-from-main`,
   `KindsTest`, `UnattendedLoopTest`, `SeamSelectionTest`, `ConfigReferenceTest`, `LogbackLoggersTest`, `BoardAssetsTest`,
-  `RingsTest`'s ring rules), and what a test names as its fixture: vendor names, the clock bean, IDE folders.
+  `RingsFitness`'s ring rules), and what a test names as its fixture: vendor names, the clock bean, IDE folders.
 - The mock ceiling is the collaborator ceiling, 5: a class may hold five collaborators, so its test may mock five.
 - A suppression only for a proven false positive no code change avoids, on that one site, its reason on its line.
 

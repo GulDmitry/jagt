@@ -30,17 +30,18 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state | standard it follows · check pinning it |
 |------|-------------|-------|------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` | ISO/IEC 25010 recoverability: atomic writes, state read across a minor · `StateServiceCompatibilityTest` |
-| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsTest`, `FlowDoorsTest` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsFitness`, `FlowDoorsFitness` |
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
-| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `LifecycleHooksTest` |
+| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
 | `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/channel/Notification` + `port/channel/ChannelDriver` | twelve-factor IV, a channel a backing service chosen in `jagt.yml` · `RoutesTest` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `BoardWriteFilterTest`, `AgentDoorFilterTest`; the board's `ui/`: `boardTest`, `node --test` under c8 |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb | command pattern, one class per verb · `KindsTest` |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks | ASVS V2 input validation against a JSON Schema · `SchemaTest`; the board's `core/grammar`: `node --test` under c8 |
-| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `CognitiveComplexityTest`, `DuplicationTest`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
+| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `cognitive-complexity`, `duplication`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
+| fitness function | one automated fitness function with a measured number, a threshold and a direction, in one place in the reserved tree | built — `fitness.yml` read by the included build `fitness/`; a project fitness function a `Fitness` class found by id ([0209](docs/decisions/0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md)); its own boundary [0210](docs/decisions/0210-fitness-is-an-included-build-with-its-own-boundary.md) | Building Evolutionary Architectures, ch. 2; ISO/IEC 25010 and 25012 section names · `FitnessTest` |
 | `startup/` | why the assembly must not start | built — `port/host/StartupCheck`, `StartupValidation` and every check | fail-fast configuration validation · `StartupValidationTest` |
 | deployment example | a file a user copies and edits to run jagt somewhere, in `examples/`; `.dist` stays for a file whose copy is ignored | built — `Dockerfile` and `docker-compose.yml` (jagt's own image), `examples/agent-image.Dockerfile`, `examples/kubernetes.yml`, `examples/server.env`; one walk-through, [`docs/server.md`](docs/server.md), [0171](docs/decisions/0171-the-image-is-a-base-without-agent-clis.md) | twelve-factor app, Kubernetes restricted Pod Security Standard · `KubernetesManifestsTest` |
-| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` | use cases as WHEN/THEN before code · `RoleNamesTest` |
+| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesFitness` | use cases as WHEN/THEN before code · `RoleNamesFitness` |
 
 **A new kind names its sphere's standard and the check pinning it before its first code.** The gates of testing, QA,
 operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`; [`docs/practices.md`](docs/practices.md) copies them.
@@ -48,7 +49,7 @@ operations and supply chain have one inventory, `openspec/specs/engineering/spec
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
 surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it.
-`ComplexityCeilingsTest` ratchets each kind's count to `complexity-ceilings.json`
+`FitnessTest` ratchets each kind's count to `fitness.yml`
 ([0176](docs/decisions/0176-every-kind-has-a-ceiling.md)). The board renders
 `flow/view/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
@@ -59,7 +60,7 @@ implements the ports, and the use cases (`capability/` `command/` `job/` `notify
 centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the interfaces they declare. `port/` is
 *inside* that centre: the rules write those interfaces for their own needs, and `flow/` depends on them.
 
-`RingsTest` asserts exactly this, on the bytecode through ArchUnit, on the text where bytecode is blind:
+`RingsFitness` asserts exactly this, on the bytecode through ArchUnit, on the text where bytecode is blind:
 
 - `task/`, `flow/` and `port/` depend on no other ring; `protocol/` only on them; `task/` on neither `flow/` nor
   `port/`, and `port/` not on `flow/`.
@@ -69,7 +70,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge depends on `adapter/`.
-- no static mutable field in any ring (`StaticStateTest`).
+- no static mutable field in any ring (`static-state`).
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
 - it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, keys naming a vendor by design; renaming one a human already
@@ -122,7 +123,7 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
   [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the reducer alone
   ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other marks are bookkeeping, written by `withMark`.
-- `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW (`service/TaskProvisioning`).
+- `withStatus` has exactly two callers outside the record: the two doors (`FlowDoorsFitness`). A task is born at NEW (`service/TaskProvisioning`).
 - **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
@@ -472,7 +473,7 @@ key that fixes it. The composition half, and what of it exists:
 ## The build
 
 Eight Gradle modules under `orchestrator-backend/`, one per ring, the engine, the stand harness and the mutation filter, so the dependency rule is
-the compiler's: an import that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsTest`.
+the compiler's: an import that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsFitness`.
 
 | module | holds | sees |
 |--------|-------|------|
@@ -491,10 +492,9 @@ the compiler's: an import that points outward does not compile. Two folders insi
 - Six suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `standTest` (docker, kind),
   `boardTest` (a real browser), `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, tokens).
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
-- `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's
-  `build.gradle` only applies and declares. New build logic is a new plugin there, never code in a build file.
-- `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar build/libs/jagt-run.jar` starts the board.
+- `build-logic/` and `fitness/` are included builds: one plugin per concern, never build logic in a build file.
+- `./gradlew test e2eTest boardTest` runs everything runnable here; `./gradlew build stageJar && java -jar build/libs/jagt-run.jar` starts the board.
 - **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
-  a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
-- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job` (`LifecycleHooksTest`).
+  a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`constructors-called-from-main`).
+- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job` (`post-construct-hooks`).
 - `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names `adapter/Executables`.

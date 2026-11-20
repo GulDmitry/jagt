@@ -18,7 +18,7 @@ Amended by [0162](0162-a-check-holds-for-all-code.md): it holds for every source
 - JSpecify `@Nullable` marks every field, component, parameter and return that may hold null; unmarked means non-null.
 - NullAway in JSpecify mode, run through Error Prone on main sources, fails the build on a violation.
 - It covers `dev.jagt` by package prefix, so a package is checked even before it is marked.
-- Every package is `@NullMarked` in its `package-info` too, so the IDE flags null as typed; `NullMarkedTest` holds it.
+- Every package is `@NullMarked` in its `package-info` too, so the IDE flags null as typed; `unmarked-packages` holds it.
 - Error Prone's own checks stay off: NullAway is the one adopted.
 - Tests are not checked: they pass null on purpose.
 

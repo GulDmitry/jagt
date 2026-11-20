@@ -1,0 +1,16 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
+dependencies {
+    implementation project(':core')
+}
+
+gradlePlugin {
+    plugins {
+        fitness {
+            id = 'fitness'
+            implementationClass = 'fitness.gradle.FitnessPlugin'
+        }
+    }
+}

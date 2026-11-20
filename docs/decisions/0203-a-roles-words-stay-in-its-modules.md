@@ -12,7 +12,7 @@ Accepted 2026-11-19 (JAGT-133).
 
 ## Decision
 
-- Core and usecase main code names a role only inside that role's modules (`RoleModules`), pinned by `RoleNamesOutsideTest`.
+- Core and usecase main code names a role only inside that role's modules (`RoleModules`), pinned by `RoleNamesOutsideFitness`.
 - What the flow keeps of a role is a pinned kind: the stop kind, the checker kind and the stand-in kind (persisted keys,
   `jagt.yml` keys, file names); the master's neutral word in core is `arbiter`.
 - **Ceiling raised by two** ([0176](0176-every-kind-has-a-ceiling.md)): `startupChecks` 33, the acceptance role's

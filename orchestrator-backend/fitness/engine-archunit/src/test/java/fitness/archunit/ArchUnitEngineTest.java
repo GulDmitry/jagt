@@ -1,0 +1,79 @@
+package fitness.archunit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import fitness.core.Direction;
+import fitness.core.Measurement;
+import fitness.core.Project;
+import fitness.core.FitnessFunction;
+import fitness.core.Threshold;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class ArchUnitEngineTest {
+
+  private final ArchUnitEngine engine = new ArchUnitEngine();
+  private final Project project = new Project(Path.of("."), "fitness", List.of("all"));
+
+  @Test
+  void listsTheInterfacesOfAPackageAndItsSubpackages() {
+    FitnessFunction function =
+        new FitnessFunction(
+            "r",
+            "s",
+            "archunit",
+            "count",
+            new Threshold(Direction.MAX, 0),
+            Map.of("kind", "class", "set", "test", "interface", true, "package", "archunit.."),
+            null,
+            Map.of());
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.items()).contains("fitness.archunit.Marked");
+  }
+
+  @Test
+  void listsTheWidestConstructorOfAnnotatedAndMetaAnnotatedClassesOverTheLimit() {
+    FitnessFunction function =
+        new FitnessFunction(
+            "r",
+            "s",
+            "archunit",
+            "coupling",
+            new Threshold(Direction.MAX, 0),
+            Map.of(
+                "kind", "class",
+                "set", "test",
+                "annotated","fitness.archunit.Marked",
+                "measure", "constructor-parameters"),
+            null,
+            Map.of());
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.value()).isEqualTo(3);
+    assertThat(found.items())
+        .containsExactly("1 fitness.archunit.ViaStereotype", "3 fitness.archunit.WidelyBuilt");
+  }
+
+  @Test
+  void listsTheConcreteTypesAssignableToASupertypeButNotItself() {
+    FitnessFunction function =
+        new FitnessFunction(
+            "r",
+            "s",
+            "archunit",
+            "count",
+            new Threshold(Direction.MAX, 0),
+            Map.of("kind", "class", "interface", false, "assignableTo", "core.Engine"),
+            null,
+            Map.of());
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.items()).containsExactly("fitness.archunit.ArchUnitEngine");
+  }
+}

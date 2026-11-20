@@ -22,7 +22,7 @@ Accepted 2026-11-15.
 - `ShutdownEndings` is that bean (`DEFAULT_PHASE - 3072`, below the start-stop phase)
 - The usecase module sees no web-server constant, so the number is literal.; its `stop()` ends the live sessions.
 - Start work stays an event or a `Job` ([0160](0160-the-chart-is-an-instance-and-start-work-is-an-event.md)); `@PostConstruct` stays banned.
-- `LifecycleHooksTest` bans `@PostConstruct` only, so it stays unchanged.
+- `post-construct-hooks` bans `@PostConstruct` only, so it stays unchanged.
 
 ## Rejected
 

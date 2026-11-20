@@ -9,18 +9,18 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-final class RoleWords {
+public final class RoleWords {
 
   private static final Pattern COMMENTS = Pattern.compile("/\\*.*?\\*/|//[^\\n]*", Pattern.DOTALL);
   private static final Pattern CAMEL = Pattern.compile("([a-z0-9])([A-Z])");
 
   private RoleWords() {}
 
-  static List<String> inSurface(List<String> ids) {
+  public static List<String> inSurface(List<String> ids) {
     return inJava(Path.of("surface", "src", "main", "java"), ids, List.of());
   }
 
-  static List<String> inCoreAndUsecase(List<String> ids) {
+  public static List<String> inCoreAndUsecase(List<String> ids) {
     return Stream.of("core", "usecase")
         .flatMap(
             module -> inJava(Path.of(module, "src", "main", "java"), ids, vocabulary()).stream())
@@ -47,7 +47,7 @@ final class RoleWords {
         .toList();
   }
 
-  static List<String> inBoard(List<String> ids) {
+  public static List<String> inBoard(List<String> ids) {
     return files(Path.of("..", "board", "ui"), ".js", ".html")
         .flatMap(file -> found(file, ids, false))
         .toList();

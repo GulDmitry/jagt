@@ -7,7 +7,7 @@
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo) and a class with a branch no
 test reaches** ([0181](../decisions/0181-every-module-keeps-80-percent-line-coverage.md),
-[0191](../decisions/0191-every-class-with-logic-is-reached-by-a-test.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
+[0191](../decisions/0191-every-class-with-logic-is-reached-by-a-test.md)). **A suite ends within its `suite-minutes` row, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 **Root `:test` runs the rule tests whole; a filtered run names its project**, `:<module>:test --tests '<Name>'` (bare `--tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
@@ -16,7 +16,7 @@ F unbounded loop. G prose routing. H a guard. I vendor CLI behaviour. J git and 
 **A new test's run is predicted first**, outcome and message; a surprise is a stop to understand, never a blind retry.
 **Every new install requirement goes in `docs/installation.md`**. **Leave no trace** (AGENTS.md "Tests"): a suite uses a throwaway tmux session plus
 `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the
-task), so no test reaches the human's. Shared test code (AGENTS.md "Tests"): `TextBudgetTest.mainSources` is a scanner, `ScriptedProcesses` a fake.
+task), so no test reaches the human's. Shared test code (AGENTS.md "Tests"): `SourceRoots` is a scanner, `ScriptedProcesses` a fake.
 A test builder ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)) is a record with `@With`, `<thing>()` setting fixed valid
 defaults and `build()` calling production's constructor or builder; it holds no branch, loop, mock, assertion, clock or random value; one of outside
 state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example
@@ -31,15 +31,15 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
   string: `working` kept "esc to interrupt" after Claude 2.1.308 dropped it.
-- **A test reaches an assertion** (`EveryTestAssertsTest`): `assert*`, `verify*`, `await*`, `check*`, `andExpect*`, here or in a sibling it calls.
+- **A test reaches an assertion** (`assertionless-tests`): `assert*`, `verify*`, `await*`, `check*`, `andExpect*`, here or in a sibling it calls.
 - Why: an edited test is the cheapest wrong fix ([pattern](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
 
 ### One constructor, the one production calls
 
-- **`ProductionConstructorTest`** exempts a record's canonical constructor, a bean's or a `spring.factories` type's only one, a private one.
+- **`constructors-called-from-main`** exempts a record's canonical constructor, a bean's or a `spring.factories` type's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
   `RuntimeWiring`, `OrchestratorPaths` or `port/host/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
-- **A class no unit test builds through that constructor is a design defect**: refactor it, never exempt it; a second one sidesteps `MockCeilingTest`.
+- **A class no unit test builds through that constructor is a design defect**: refactor it, never exempt it; a second one sidesteps `mocks-per-test`.
 
 ### Bare binary names, and a concurrent unit suite
 

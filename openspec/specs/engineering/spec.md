@@ -8,7 +8,7 @@ Every gate of jagt's engineering practices, stack-agnostic, each naming its chec
 ### Requirement: Layers point one way
 A project SHALL keep every dependency pointing inward and every package on the map of its kind, each held by a rule test.
 #### Scenario: An inner ring imports an outer one
-- **WHEN** a class imports from a ring outside its own **THEN** `RingsTest` fails naming it; the board's JS: gap, JAGT-96
+- **WHEN** a class imports from a ring outside its own **THEN** `rings` fails naming it; the board's JS: gap, JAGT-96
 #### Scenario: A package is on no kind
 - **WHEN** a package sits on no kind of the map or holds three of a kind with no sub-package
 - **THEN** `PackagesTest` fails; `KindsTest` holds each kind's one job
@@ -17,16 +17,16 @@ A project SHALL keep every dependency pointing inward and every package on the m
 A method SHALL read at cognitive complexity 12 at most, a class five collaborators at most, and no block of 75 tokens SHALL repeat.
 #### Scenario: A method or a class grows
 - **WHEN** a method passes the ceiling, a class takes a sixth collaborator or a test wires over five mocks
-- **THEN** `CognitiveComplexityTest`, `CollaboratorCeilingTest` or `MockCeilingTest` fails; `ComplexityCeilingsTest` ratchets each kind
+- **THEN** `cognitive-complexity`, `collaborators-per-class` or `mocks-per-test` fails and ratchets each kind
 - **AND** the board's JS: gap, JAGT-96
 #### Scenario: A block is copied
-- **WHEN** a block of 75 tokens appears twice **THEN** `DuplicationTest` fails
+- **WHEN** a block of 75 tokens appears twice **THEN** `duplication` fails
 
 ### Requirement: No static state and no lifecycle hook that does work
 A static field SHALL be final and immutable. Start work SHALL be an event or a job; stop work a lifecycle after the web server.
 #### Scenario: A mutable static
 - **WHEN** a class holds mutable static state or a `@PostConstruct`
-- **THEN** `StaticStateTest` or `LifecycleHooksTest` fails; the board's JS: ESLint refuses a top-level let or var, run by no gate (JAGT-96)
+- **THEN** `static-state` or `post-construct-hooks` fails; the board's JS: ESLint refuses a top-level let or var, run by no gate (JAGT-96)
 
 ### Requirement: Tests run at every level of the pyramid
 A project SHALL pin its behaviour by unit, property, contract, integration, end-to-end, security and performance tests.
@@ -46,17 +46,20 @@ A project SHALL pin its behaviour by unit, property, contract, integration, end-
 A test SHALL reach an assertion, build a class through production's constructor and share only a builder, a fake or a scanner.
 #### Scenario: A test breaks the standard
 - **WHEN** a test asserts nothing, adds a helper method or a second constructor, or names no main class
-- **THEN** `EveryTestAssertsTest`, `NoHelperMethodTest`, `TestBuilderLogicTest`, `ProductionConstructorTest` or `TestNamingTest` fails
+- **THEN** `assertionless-tests`, `test-helper-methods`, `test-builder-calls`, `constructors-called-from-main` or `test-naming` fails
 
-### Requirement: Every suite ends within a ceiling
-A suite SHALL end within a ceiling set from its measured time, and a flaky test SHALL be registered or fixed from its cause.
-#### Scenario: A suite overruns
-- **WHEN** a suite passes its ceiling **THEN** the build fails for the hang (`jagt.suites.gradle`)
+### Requirement: Every run ends within a limit
+A suite, a gate and a CI job SHALL end within a limit set from its measured time. A flaky test SHALL be registered or fixed from its cause.
+#### Scenario: A suite or a gate overruns
+- **WHEN** a run passes its limit **THEN** the build names the rule, run and limit: `suite-minutes`, `gate-minutes-heavy`, `gate-minutes-stand`
+#### Scenario: A run declares no limit
+- **WHEN** a test task or a CI job declares none
+- **THEN** `unlimited-runs` or `ci-jobs-without-timeout` fails; `pitestDiff` and the release gate stay gaps
 
 ### Requirement: Documents stay inside their budgets and link true
 A rule, a page, a decision and a spec SHALL stay within their line budgets, and every relative link and anchor SHALL reach its target.
 #### Scenario: A document outgrows its budget
-- **WHEN** a decision passes 50 lines, a rule 100 or a page 200 **THEN** `TextBudgetTest` fails naming it
+- **WHEN** a decision passes 50 lines, a rule 100 or a page 200 **THEN** `decision-lines`, `rule-lines` or `page-lines` fails naming it
 #### Scenario: A link is broken
 - **WHEN** a relative link or an anchor reaches nothing **THEN** `DocLinksTest` fails
 
@@ -78,7 +81,7 @@ practices page.
 A task SHALL open only from a command or tracker intake. A third party SHALL be a seam chosen in configuration; no vendor is named in code.
 #### Scenario: A model opens a task
 - **WHEN** a model's answer would open a task
-- **THEN** `TaskOpeningDoorsTest` fails; `SeamSelectionTest` and `VendorNamesTest` hold the seams; the session brief stays in `TextBudgetTest`
+- **THEN** `task-opening-doors` fails; `SeamSelectionTest` and `VendorNamesTest` hold the seams; the brief stays in `session-brief-step-lines`
 
 ### Requirement: A write to the board carries its origin
 A write to the board SHALL carry the page's Origin, a peer other than loopback SHALL authenticate, and an agent door SHALL resolve its caller.
@@ -115,7 +118,7 @@ timeout and forwarded headers; the Ingress SHALL carry a tls block.
 Only the health probes SHALL be public, and a secret SHALL be named by its environment key, never held in a file or a log.
 #### Scenario: A secret reaches a log
 - **WHEN** a log line would carry a password, a secret or a token
-- **THEN** `LogbackTargetTest` and `FailureCausesTest` hold the log shape; no secret key is logged in main (grep, 2026-11-16)
+- **THEN** `LogbackTargetTest` and `failure-cause-from-message` hold the log shape; no secret key is logged in main (grep, 2026-11-16)
 
 ### Requirement: Liveness, readiness and shutdown are probed
 The process SHALL answer a startup, a liveness and a readiness probe, and SHALL stop gracefully on a signal.
@@ -174,7 +177,7 @@ Checkstyle SHALL gate every source set of every module, tests included, with no 
 ### Requirement: Error Prone compiles every source set
 Error Prone with NullAway SHALL compile every source set of every module, tests included, with warnings as errors.
 #### Scenario: Code breaks an analysis
-- **WHEN** any source set breaks Error Prone or NullAway **THEN** its compile fails; `NullMarkedTest` holds every package marked
+- **WHEN** any source set breaks Error Prone or NullAway **THEN** its compile fails; `unmarked-packages` holds every package marked
 
 ### Requirement: Every module keeps a coverage floor
 A module SHALL keep 80 percent line coverage, the root's floor its measured ratio.

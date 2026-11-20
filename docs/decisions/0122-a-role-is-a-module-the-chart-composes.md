@@ -6,7 +6,7 @@
 ## Status
 
 Accepted 2026-10-31: the chart is composed from `roles/<id>/role.yml`, the Master is an arbiter role, `roleEval -Prole=<id>`
-is the one harness, and `RoleNamesTest` pins each module's declared names.
+is the one harness, and `RoleNamesFitness` pins each module's declared names.
 Amended by [0126](0126-a-role-is-a-folder.md).
 
 ## Context

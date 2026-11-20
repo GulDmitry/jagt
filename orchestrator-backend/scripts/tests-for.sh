@@ -70,6 +70,7 @@ removed_main=0
 touched_tests=""
 rule_names=""
 board_touched=0
+fitness_touched=0
 
 add_rules() { for r in "$@"; do rule_names=$(add_unique "$rule_names" "$r"); done; }
 
@@ -90,9 +91,7 @@ find_tests() { # module class: "module:Class" of every test naming the class, in
 for p in $paths; do
   case "$p" in
     *.java)
-      add_rules Duplication CognitiveComplexity CollaboratorCeiling CollaboratorOwners ProductionConstructor MockCeiling \
-        NoHelperMethod TestBuilderLogic Withers EveryTestAsserts TestNaming StaticState LifecycleHooks Rings Packages \
-        VendorNames NullMarked EnglishAndUtc RoleNames RoleNamesOutside Kinds ComplexityCeilings
+      add_rules Packages VendorNames Kinds Fitness
       loc=$(locate "$p")
       if [ -n "$loc" ]; then
         mod=${loc%% *}
@@ -111,7 +110,7 @@ for p in $paths; do
       fi
       ;;
     *.md)
-      add_rules TextBudget DocLinks DecisionIndex Features SpecLimits PracticesPage EngineeringSpec MergeMarkers
+      add_rules Fitness DocLinks DecisionIndex Features SpecLimits PracticesPage EngineeringSpec
       ;;
   esac
   case "$p" in
@@ -133,6 +132,8 @@ for p in $paths; do
     */Dockerfile* | Dockerfile* | */entrypoint.sh | entrypoint.sh | */kubernetes.yml.dist | kubernetes.yml.dist)
       add_rules KubernetesManifests ImageJvmOptions
       ;;
+    fitness.yml | */fitness.yml) add_rules Fitness ;;
+    fitness/* | */fitness/*) fitness_touched=1; add_rules Fitness ;;
     board/*) board_touched=1 ;;
     site/*) add_rules Site ;;
     roles/*) add_rules RoleModules RoleNames RoleNamesOutside RoleVocabulary MasterBriefShipped ;;
@@ -196,7 +197,8 @@ for r in $rule_names; do
     echo "tests-for: no rule test ${r}Test, dropped" >&2
   fi
 done
-if [ "$board_touched" = 1 ]; then rule_entries="$rule_entries surface:BoardAssetsTest root:RoleNamesOutsideTest"; fi
+if [ "$board_touched" = 1 ]; then rule_entries="$rule_entries surface:BoardAssetsTest root:FitnessTest"; fi
 if [ -n "$rule_entries" ]; then gradle 900 "$(tests_line "$rule_entries") -x pitestDiff"; fi
+if [ "$fitness_touched" = 1 ]; then echo "cd $backend/fitness && timeout 600 ../gradlew test"; fi
 if [ "$board_touched" = 1 ]; then echo "cd board && timeout 600 sh -c 'npm run lint && npm test'"; fi
 exit 0

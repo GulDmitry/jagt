@@ -19,7 +19,8 @@ plugins {
     id 'jagt.uncached-suites' apply false
     id 'jagt.suite-stats' apply false
     id 'jagt.sbom' apply false
-    id 'jagt.reach' apply false
+    id 'jagt.fitness' apply false
+    id 'fitness' apply false
 }
 
 group = 'dev.jagt'
@@ -34,7 +35,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.tngtech.archunit:archunit:1.5.1'
-    testImplementation 'net.sourceforge.pmd:pmd-java:7.28.0'
+    testImplementation 'fitness:junit'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -52,7 +53,7 @@ apply plugin: 'jagt.evals'
 apply plugin: 'jagt.uncached-suites'
 apply plugin: 'jagt.suite-stats'
 apply plugin: 'jagt.sbom'
-apply plugin: 'jagt.reach'
+apply plugin: 'jagt.fitness'
 
 tasks.named('test') {
     systemProperty 'org.springframework.boot.logging.LoggingSystem', 'none'
