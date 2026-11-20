@@ -8,12 +8,44 @@
   <a href="https://github.com/GulDmitry/jagt/actions/workflows/ci.yml">
   <img alt="CI" src="https://github.com/GulDmitry/jagt/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Java 25+" src="https://img.shields.io/badge/Java-25%2B-orange">
-  <img alt="macOS · Linux" src="https://img.shields.io/badge/macOS-·%20Linux-lightgrey">
+  <img alt="macOS · Linux · Windows" src="https://img.shields.io/badge/macOS-·%20Linux%20·%20Windows-lightgrey">
   <a href="LICENSE"><img alt="Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 </p>
 
-jagt hands a ticket to an autonomous AI coding agent in its own isolated Git worktree, so two agents cannot see
-or break each other's work. You drive all of them from one board in your browser.
+jagt orchestrates AI coding-agent sessions on a desktop and on a server. Each ticket gets one session in its own
+isolated Git worktree, so two agents cannot see or break each other's work. You drive all of them from one board in your browser.
+
+## Install
+
+### On a desktop
+
+macOS, Linux and WSL:
+
+```sh
+curl -fsSL https://github.com/GulDmitry/jagt/releases/latest/download/install.sh | sh
+```
+
+Windows, in PowerShell:
+
+```powershell
+irm https://github.com/GulDmitry/jagt/releases/latest/download/install.ps1 | iex
+```
+
+Both install for your user only, without admin rights, and check the download against its published checksum.
+Run `jagt`, then open the board at http://localhost:8290.
+
+### On a server
+
+```sh
+cp jagt.server.yml.dist jagt.yml
+docker compose up -d --build
+```
+
+One container with the board behind a password login: [docs/server.md](docs/server.md).
+
+### For engineers
+
+Eight architecture principles, each with the file that holds it: [Architecture principles](docs/principles.md).
 
 **Nothing leaves your machine without you** — no push, no request, no deploy — unless you set the Master to `act`.
 
@@ -144,12 +176,13 @@ and say what to do. It starts an agent session in tmux at once, and a session co
 - **Four things cost a model call**: a ticket, a merge request, a review round, a `⌘K` sentence.
 - The board asks for no password and can deploy, so it stays on `127.0.0.1`.
 
-It does not run your CI or run on Windows.
+It does not run your CI.
 
 ## Documentation
 
 | | |
 |---|---|
+| [Architecture principles](docs/principles.md) | the eight rules that shape jagt, and where each is held |
 | [Installation](docs/installation.md) | every technology, per platform, and the first run |
 | [Usage](docs/usage.md) | the board, every command, the review loop |
 | [Configuration](docs/configuration.md) | where a setting goes, and what outranks what |

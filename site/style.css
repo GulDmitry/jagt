@@ -52,7 +52,7 @@ p { margin: 0 0 1rem; }
 
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 @media (min-width: 40rem) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 60rem) { .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.grid.two { margin-top: 0; }
 .card { padding: 1rem 1.1rem; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .card p { margin: 0; color: var(--muted); }
 
@@ -66,3 +66,12 @@ ol.steps { padding-left: 1.25rem; }
 ol.steps li { margin-bottom: 0.75rem; }
 
 footer { margin-top: 4rem; padding: 1.5rem 0 2.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+
+.card p + p, .card pre + p { margin-top: 0.5rem; }
+.slides { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-top: 1rem; }
+@media (min-width: 48rem) { .slides { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.slide { position: relative; padding: 1rem 1.1rem 1rem 3.2rem; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.slide .n { position: absolute; left: 1rem; top: 0.9rem; font: 700 1.4rem var(--mono); color: var(--accent); }
+.slide dl { margin: 0; }
+.slide dt { margin-top: 0.5rem; color: var(--muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+.slide dd { margin: 0; overflow-wrap: anywhere; }
