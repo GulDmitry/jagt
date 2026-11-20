@@ -31,7 +31,30 @@ tasks.register('stageJar') {
     }
 }
 
+// A jar run from an install has no checkout beside it: the roles' shipped files, the desktop dist and the
+// bridge go in under shipped/, with the index ShippedFiles reads.
+def shippedDir = layout.buildDirectory.dir('shipped')
+def repoRoot = projectDir.parentFile
+def stageShipped = tasks.register('stageShipped', Sync) {
+    into shippedDir.map { it.dir('shipped') }
+    from(repoRoot) {
+        include 'roles/**/*.dist', 'jagt.desktop.yml.dist', 'mcp_client.js'
+    }
+    includeEmptyDirs = false
+    doLast {
+        def target = destinationDir.toPath()
+        def names = java.nio.file.Files.walk(target).withCloseable { walk ->
+            walk.filter { java.nio.file.Files.isRegularFile(it) }
+                    .map { target.relativize(it).toString().replace('\\', '/') }
+                    .sorted().toList()
+        }
+        target.resolve('index.txt').toFile().text = names.join('\n') + '\n'
+    }
+}
+
 // Version-independent archive name, so the documented run command survives every release.
 tasks.named('bootJar') {
     archiveFileName = 'jagt.jar'
+    classpath(shippedDir)
+    dependsOn stageShipped
 }

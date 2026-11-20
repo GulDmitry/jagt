@@ -57,15 +57,6 @@ public class ConfigCheck implements StartupCheck {
     List<Problem> problems = new ArrayList<>(retiredKeys());
     problems.addAll(viewerProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
-    if (projects.isEmpty()) {
-      problems.add(
-          new Problem(
-              "orchestrator.projects",
-              paths.configFile()
-                  + " defines no projects. Add one"
-                  + " under `orchestrator.projects` (see jagt.desktop.yml.dist)."));
-      return problems;
-    }
     projects.forEach((key, project) -> problems.addAll(ProjectProblems.of(key, project)));
     return problems;
   }

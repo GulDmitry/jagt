@@ -216,6 +216,18 @@ class ProjectSetupTest {
   }
 
   @Test
+  void addsTheFirstProjectOfFreshInstallThatHasNoConfigFileYet() throws Exception {
+    Files.delete(configFile);
+
+    setup.add(billingEntry);
+
+    assertThat(Files.readString(configFile))
+        .isEqualTo(
+            "orchestrator:\n  projects:\n    billing:\n      path: \"%s\"\n".formatted(repo)
+                + "      baseBranch: \"origin/main\"\n");
+  }
+
+  @Test
   void refusesFolderInsideRepositoryAndNamesTheRepositoryToAddInstead() throws Exception {
     Path docs = Files.createDirectories(repo.resolve("docs"));
     doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), anyList());

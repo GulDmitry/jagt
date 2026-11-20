@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.config.home.InstalledJar;
 import dev.jagt.orchestrator.port.host.Layout;
 import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.repo.NewRepo;
@@ -7,13 +8,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * Resolves the orchestrator root by walking up from the launch directory to a committed marker. TWO
- * are accepted, so the root does not depend on whether the stdio bridge file is still there.
+ * Resolves the orchestrator root: the install home of a jar run from {@code versions/<v>/}, else by
+ * walking up from the launch directory to a committed marker. TWO are accepted, so the root does
+ * not depend on whether the stdio bridge file is still there.
  */
 @Component
 public class OrchestratorPaths {
@@ -269,6 +272,19 @@ public class OrchestratorPaths {
     return rootOutside(args).resolve("data");
   }
 
+  /** The install home, where the jar's own files are placed; empty when the root is named. */
+  public static Optional<Path> installedRootOutside(String[] args) {
+    return installedRoot(
+        args, System.getenv("ORCHESTRATOR_ROOT"), System.getProperty("java.class.path", ""));
+  }
+
+  public static Optional<Path> installedRoot(
+      String[] args, @Nullable String env, String classPath) {
+    String named = named(args, "--orchestrator.root=");
+    boolean chosen = (named != null && !named.isBlank()) || (env != null && !env.isBlank());
+    return chosen ? Optional.empty() : InstalledJar.onClassPath(classPath).map(InstalledJar::root);
+  }
+
   private static Path rootOutside(String[] args) {
     String named = named(args, "--orchestrator.root=");
     String env = System.getenv("ORCHESTRATOR_ROOT");
@@ -282,6 +298,10 @@ public class OrchestratorPaths {
     String env = System.getenv("ORCHESTRATOR_ROOT");
     if (env != null && !env.isBlank()) {
       return Path.of(env).toAbsolutePath().normalize();
+    }
+    Optional<InstalledJar> installed = InstalledJar.running();
+    if (installed.isPresent()) {
+      return installed.get().root();
     }
     Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
     for (Path dir = start; dir != null; dir = dir.getParent()) {

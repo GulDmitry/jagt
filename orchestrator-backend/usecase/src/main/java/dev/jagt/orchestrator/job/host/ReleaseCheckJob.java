@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.host;
 
+import dev.jagt.orchestrator.config.home.InstalledJar;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.ReleaseFeed;
@@ -31,7 +32,6 @@ import org.springframework.util.FileSystemUtils;
 @Slf4j
 public class ReleaseCheckJob implements Job {
 
-  private static final String VERSIONS = Versions.DIR;
   private static final String JAR = Versions.JAR;
 
   private final Host host;
@@ -48,9 +48,6 @@ public class ReleaseCheckJob implements Job {
     this.reach = reach;
     this.releases = releases;
   }
-
-  /** The running version, and the folder holding every installed one. */
-  private record Installed(String running, Path versions, Path root) {}
 
   @Override
   public String id() {
@@ -72,26 +69,11 @@ public class ReleaseCheckJob implements Job {
     installed().ifPresent(this::check);
   }
 
-  private Optional<Installed> installed() {
-    return host.jar()
-        .filter(jar -> JAR.equals(String.valueOf(jar.getFileName())))
-        .flatMap(ReleaseCheckJob::within);
+  private Optional<InstalledJar> installed() {
+    return host.jar().flatMap(InstalledJar::at);
   }
 
-  private static Optional<Installed> within(Path jar) {
-    Path folder = jar.getParent();
-    Path versions = folder == null ? null : folder.getParent();
-    Path root = versions == null ? null : versions.getParent();
-    if (folder == null
-        || versions == null
-        || root == null
-        || !VERSIONS.equals(String.valueOf(versions.getFileName()))) {
-      return Optional.empty();
-    }
-    return Optional.of(new Installed(String.valueOf(folder.getFileName()), versions, root));
-  }
-
-  private void check(Installed installed) {
+  private void check(InstalledJar installed) {
     sweepLeftovers(installed.root());
     Optional<String> latest;
     try {
@@ -112,7 +94,7 @@ public class ReleaseCheckJob implements Job {
           .log();
       return;
     }
-    Optional<String> newest = latest.filter(version -> newer(version, installed.running()));
+    Optional<String> newest = latest.filter(version -> newer(version, installed.version()));
     newest
         .filter(version -> !Files.exists(installed.versions().resolve(version).resolve(JAR)))
         .ifPresent(version -> keep(installed.versions(), version));

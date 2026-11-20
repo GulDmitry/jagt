@@ -257,6 +257,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `command/workspace` | usecase | projects and worktrees as commands |
 | `config` | usecase | the properties jagt reads from `jagt.yml` |
 | `config/source` | usecase | `jagt.yml` read and resolved: `${VAR}`, `${file:}`, `JAGT__` overrides, the environment and files it reads |
+| `config/home` | usecase | the install home of a jar run from `versions/<v>/`, and the files the jar carries into it |
 | `config/role` | usecase | a role's definition, files, options, cases and session brief |
 | `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, the worktree sweep |
 | `job/checker` | usecase | one checker role's jobs: check, decline, wait, records and prompts |
@@ -492,8 +493,7 @@ the compiler's: an import that points outward does not compile. Two folders insi
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
 - `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's
   `build.gradle` only applies and declares. New build logic is a new plugin there, never code in a build file.
-- `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar
-  build/libs/jagt-run.jar` starts the board.
+- `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar build/libs/jagt-run.jar` starts the board.
 - **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
   a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
 - **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job` (`LifecycleHooksTest`).

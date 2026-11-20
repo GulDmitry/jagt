@@ -23,7 +23,7 @@ import org.yaml.snakeyaml.resolver.Resolver;
 
 /**
  * {@code jagt.yml} read on every access, parsed again only when the file, a variable it names, a
- * {@code JAGT__} variable or a file it names changed.
+ * {@code JAGT__} variable or a file it names changed. No file is an empty document: the defaults.
  */
 @Component
 @Slf4j
@@ -50,10 +50,7 @@ public class ConfigSource {
   public @Nullable Object section() {
     Path file = paths.configFile();
     if (!Files.exists(file)) {
-      throw new IllegalStateException(
-          "Missing "
-              + file
-              + " — copy jagt.desktop.yml.dist to jagt.yml and fill in your projects.");
+      return rootOf(resolver.resolve(new java.util.LinkedHashMap<>()));
     }
     FileVersion version = FileVersion.of(file);
     Parsed last = parsed;
@@ -70,8 +67,7 @@ public class ConfigSource {
                   new WordsStayWords())
               .load(Files.readString(file));
       Resolution resolution = resolver.resolve(tree);
-      Object section =
-          resolution.document() instanceof Map<?, ?> document ? document.get(ROOT) : null;
+      Object section = rootOf(resolution);
       parsed = version == null ? null : new Parsed(version, resolution, section);
       report(resolution, section);
       return section;
@@ -83,6 +79,10 @@ public class ConfigSource {
       throw new IllegalStateException(
           "Cannot read " + file + ": " + malformed.getMessage(), malformed);
     }
+  }
+
+  private static @Nullable Object rootOf(Resolution resolution) {
+    return resolution.document() instanceof Map<?, ?> document ? document.get(ROOT) : null;
   }
 
   private static void report(Resolution resolution, @Nullable Object section) {

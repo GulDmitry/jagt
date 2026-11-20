@@ -158,7 +158,7 @@
 
 ## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
 - **Install checks** — A missing part of the installation is refused at start, with no network. [spec](../openspec/specs/startup/spec.md)
-- **One-line install** — `install.sh` (macOS, Linux) and `install.ps1` (Windows) install a checksum-verified jar and Java runtime per user.
+- **One-line install** — `install.sh` and `install.ps1` install a verified jar and Java runtime per user; it starts with no checkout or project.
   [spec](../openspec/specs/release-artifacts/spec.md#requirement-one-line-installs-jagt-per-user)
 - **Upgrade** — `upgrade` switches to a newer kept release and restarts on it under the launcher. [spec](../openspec/specs/board-verbs/spec.md)
 - **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.

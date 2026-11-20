@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.home.ShippedFiles;
 import dev.jagt.orchestrator.surface.ui.Console;
 import dev.jagt.orchestrator.surface.ui.FailurePage;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
@@ -25,6 +26,9 @@ public class OrchestratorApplication {
   public static void main(String[] args) {
     Locale.setDefault(Locale.ENGLISH);
     TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
+    OrchestratorPaths.installedRootOutside(args)
+        .ifPresent(
+            home -> ShippedFiles.placeInto(home, OrchestratorApplication.class.getClassLoader()));
     String[] launch = withConfigFile(args);
     while (true) {
       try {

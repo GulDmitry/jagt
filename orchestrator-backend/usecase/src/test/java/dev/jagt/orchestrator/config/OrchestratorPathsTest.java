@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -131,5 +132,43 @@ class OrchestratorPathsTest {
     assertThat(paths.scratchCeiling(paths.scratch("ABC-1"))).isEqualTo(root.resolve("data/tasks"));
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-1")).isTrue();
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-2")).isFalse();
+  }
+
+  @Test
+  void takesTheInstallHomeAsRootWhenNoRootIsNamed() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[0], null, "/home/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).contains(Path.of("/home/me/.jagt"));
+  }
+
+  @Test
+  void takesNoInstallHomeWhenTheLaunchNamesTheRoot() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[] {"--orchestrator.root=/srv/jagt"},
+            null,
+            "/home/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).isEmpty();
+  }
+
+  @Test
+  void takesNoInstallHomeWhenTheEnvironmentNamesTheRoot() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[0], "/srv/jagt", "/home/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).isEmpty();
+  }
+
+  @Test
+  void takesTheInstallHomeWhenTheNamedRootIsBlank() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[] {"--orchestrator.root= "}, " ", "/home/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).contains(Path.of("/home/me/.jagt"));
   }
 }

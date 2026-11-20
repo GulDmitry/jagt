@@ -39,6 +39,9 @@ The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
 Everything jagt writes lives in one data folder, `data/` in the jagt folder by default ([the tree](rules/components.md#the-data-folder)).
 Name another with `orchestrator.data` in `jagt.yml`, `ORCHESTRATOR_DATA` or `JAGT__orchestrator__data`.
 A repository stays where it is.
+An installed jagt rewrites its roles' `.dist` files and `jagt.desktop.yml.dist` in the install folder at every start.
+Your own `jagt.yml` and role files there stay as they are.
+With no `jagt.yml` and no project it starts on the defaults, and the board adds the first project.
 What an older version kept in the jagt folder's root, `~/.jagt` or flat in the data folder moves into the tree at the first start.
 
 ## MCP access comes first

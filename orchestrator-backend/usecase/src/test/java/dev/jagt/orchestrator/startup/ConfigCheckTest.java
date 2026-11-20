@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -84,20 +84,16 @@ class ConfigCheckTest {
   }
 
   @Test
-  void anIncompleteInstallationStopsTheStartInsteadOfServingBoardThatCannotWork() throws Exception {
+  void freshInstallStartsWithNoProject() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     StartupValidation validation = new StartupValidation(List.of(check), true);
 
-    assertThatThrownBy(validation::refuseToRunWithoutWhatItNeeds)
-        .isInstanceOf(Misconfigured.class)
-        .hasMessageContaining("defines no projects");
+    assertThatCode(validation::refuseToRunWithoutWhatItNeeds).doesNotThrowAnyException();
   }
 
   @Test
-  void saysWhereTheConfigFileShouldBeWhenThereIsNone() {
-    assertThat(check.problems())
-        .extracting(Problem::key)
-        .containsExactly("orchestrator.config-file");
+  void freshInstallWithNoConfigFileStartsOnTheDefaults() {
+    assertThat(check.problems()).isEmpty();
   }
 
   @ParameterizedTest
@@ -137,12 +133,6 @@ class ConfigCheckTest {
 
   static Stream<Arguments> namesWhatConfiguredProjectWouldFailOn() {
     return Stream.of(
-        Arguments.of(
-            """
-            orchestrator:
-              projects: {}
-            """,
-            "orchestrator.projects"),
         Arguments.of(
             """
             orchestrator:

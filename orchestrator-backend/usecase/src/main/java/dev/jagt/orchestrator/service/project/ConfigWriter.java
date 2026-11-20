@@ -39,6 +39,7 @@ public class ConfigWriter {
   synchronized String rewrite(
       @Nullable String readBack, UnaryOperator<String> change, String done) {
     Path file = real(paths.configFile());
+    createWhenAbsent(file);
     if (!Files.isWritable(file)) {
       throw failed(ConfigWriteFailed.Reason.NOT_WRITABLE, file, "", null);
     }
@@ -57,6 +58,17 @@ public class ConfigWriter {
       return done;
     } catch (IOException e) {
       throw failed(ConfigWriteFailed.Reason.WRITE_FAILED, file, Causes.of(e), e);
+    }
+  }
+
+  private static void createWhenAbsent(Path file) {
+    if (Files.exists(file)) {
+      return;
+    }
+    try {
+      Files.writeString(file, "orchestrator:\n  projects: {}\n", StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw failed(ConfigWriteFailed.Reason.NOT_WRITABLE, file, Causes.of(e), e);
     }
   }
 

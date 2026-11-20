@@ -102,26 +102,9 @@ unset JAGT_VERSION
 
 stage="start jagt under the launcher"
 port=$(free_port)
-mkdir -p "$work/config" "$work/data"
-cp -R "$repo/roles" "$repo/jagt.desktop.yml.dist" "$work/config/"
-git init --quiet --initial-branch=main "$work/project"
-git -C "$work/project" -c user.name=check -c user.email=check@example.com commit --quiet --allow-empty -m init
-cat >"$work/config/jagt.yml" <<YML
-orchestrator:
-  data: $(native "$work/data")
-  startupChecks: false
-  codeHost: none
-  projects:
-    check:
-      path: $(native "$work/project")
-      remote: none
-      baseBranch: main
-  releaseFeed:
-    kind: github
-    url: $feed_url
-YML
-export ORCHESTRATOR_ROOT="$(native "$work/config")"
-args=(--server.port="$port" --orchestrator.terminal=none "--orchestrator.config-file=$(native "$work/config/jagt.yml")")
+unset ORCHESTRATOR_ROOT ORCHESTRATOR_CONFIG_FILE
+export JAGT__orchestrator__releaseFeed__url="$feed_url"
+args=(--server.port="$port" --orchestrator.terminal=none --orchestrator.startup-checks=false)
 if [ "$windows" = true ]; then
   cmd.exe //c "$(cygpath -w "$launcher")" "${args[@]}" >"$work.log" 2>&1 &
 else
@@ -130,6 +113,10 @@ fi
 launcher_pid=$!
 api="http://127.0.0.1:$port"
 wait_for 180 "/state answers 200 on 0.0.1" curl --fail --silent --output /dev/null "$api/state"
+for placed in jagt.desktop.yml.dist roles/session/brief.md.dist; do
+  [ -f "$home/$placed" ] || { echo "install-check: the jar placed no $placed in the install home" >&2; exit 1; }
+done
+[ ! -e "$home/jagt.yml" ] || { echo "install-check: a jagt.yml appeared in the install home" >&2; exit 1; }
 
 stage="keep 0.0.2 beside 0.0.1"
 echo 0.0.2 >"$feed/latest-version"
