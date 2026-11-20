@@ -4,6 +4,22 @@
 
 Eight rules shape jagt. Each holds on a desktop and on a server. Each has a file or a decision that keeps it true.
 
+## What jagt is and is not
+
+jagt is:
+- an orchestrator of AI coding-agent CLI sessions: one ticket, one session, one Git worktree;
+- one board in the browser from which a human, or the Master session in `act`, drives every task;
+- a statechart that decides every status, on a desktop and on a server alike;
+- agnostic: every agent, terminal, OS, tracker and code host is a seam chosen in `jagt.yml`.
+
+jagt is not:
+- a coding agent: it launches one and reads what comes back;
+- a tracker or a CI system: tasks come from the tracker or the human, pipelines run on the code host;
+- a queue: tasks are capped at `maxTasks`;
+- a production monitor: an alert reaches jagt only as a tracker item;
+- free of bounds: the Master picks only legal moves (`FlowRules`) and never writes the base branch;
+- a second surface or GUI automation: the board is the one surface, and no keystroke is ever sent.
+
 ## 1. Roles are isolated folders
 
 - What it is: a role is one folder with its brief, its cases and a design file. jagt installs a role. It does not code one.
