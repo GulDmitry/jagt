@@ -25,6 +25,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
 | Dependencies point inward only; ports in the centre (25010 modularity: six Gradle modules) | [rings](../ARCHITECTURE.md#the-rings), [seams](rules/seams.md) | `RingsTest`, `PackagesTest` 0166, `KindsTest` | gap: JAGT-96 | `RingsTest`, `PackagesTest`, `PackageMap` |
+| A name a discipline already has is its term, defined once in one glossary | [glossary](rules/glossary.md) | a reader, no gate | same | the glossary file |
 | A kind of thing names its standard and its check; its count has a ceiling | [kinds](../ARCHITECTURE.md#the-kinds), 0180 | `KindsTest`, `ComplexityCeilingsTest` 0176 | gap: JAGT-96 | `ComplexityCeilingsTest`, `complexity-ceilings.json` |
 | No static state, no lifecycle hook that does work | [components](rules/components.md), 0160, 0169 | `StaticStateTest`, `LifecycleHooksTest` | ESLint top-level let/var, run by no gate: JAGT-96 | the two tests |
 | A third party is a seam chosen in config; no vendor in code (25010 adaptability; 12F IV) | [seams](rules/seams.md), 0130 | `SeamSelectionTest`, `VendorNamesTest`, `PlatformCheck` | n.a. | `SeamSelectionTest`, `VendorNamesTest` |

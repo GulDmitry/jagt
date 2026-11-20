@@ -53,7 +53,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
 | a Gradle file, `build-logic/` | [`ARCHITECTURE.md`](ARCHITECTURE.md#the-build) |
-| a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |
+| a comment, a doc, a prompt, the shape of a class; a name a discipline already has | [`docs/rules/style.md`](docs/rules/style.md), [`glossary`](docs/rules/glossary.md) |
 | a **kind** of thing no rule covers | [`ARCHITECTURE.md`](ARCHITECTURE.md) — if it fits no kind, add a kind |
 
 ## Git and committing
