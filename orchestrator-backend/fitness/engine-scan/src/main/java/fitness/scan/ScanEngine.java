@@ -108,18 +108,22 @@ public final class ScanEngine implements Engine {
       throw new FitnessConfigException(Reason.MISSING_KEY, key + ".glob");
     }
     if (selectors.get("regex") instanceof String text) {
-      compiles(key, text);
+      compiles(key, text, "match".equals(selectors.get("per")));
     }
     if (!(selectors.get("requires") instanceof String)) {
       validateMeasure(function, key);
     }
   }
 
-  private static void compiles(String key, String text) {
+  private static void compiles(String key, String text, boolean needsGroup) {
+    Pattern pattern;
     try {
-      Pattern.compile(text);
+      pattern = Pattern.compile(text);
     } catch (PatternSyntaxException e) {
       throw new FitnessConfigException(Reason.UNKNOWN_SELECTOR, key + ".regex", e);
+    }
+    if (needsGroup && pattern.matcher("").groupCount() == 0) {
+      throw new FitnessConfigException(Reason.UNKNOWN_SELECTOR, key + ".regex");
     }
   }
 

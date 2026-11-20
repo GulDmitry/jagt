@@ -32,6 +32,7 @@ class ScanEngineLoadTest {
         Arguments.of("a measure without a per", PREFIX + "glob: x, measure: lines" + SUFFIX, Reason.MISSING_KEY, FUNCTION + ".per"),
         Arguments.of("a measure the per does not size", PREFIX + "glob: x, per: method, measure: lines" + SUFFIX, Reason.UNKNOWN_SELECTOR, FUNCTION + ".measure"),
         Arguments.of("a set naming no source set", PREFIX + "set: mian" + SUFFIX, Reason.UNKNOWN_SELECTOR, FUNCTION + ".set"),
+        Arguments.of("a per match regex without a capturing group", PREFIX + "glob: x, per: match, regex: \"abc\"" + SUFFIX, Reason.UNKNOWN_SELECTOR, FUNCTION + ".regex"),
         Arguments.of("a regex that does not compile", PREFIX + "glob: x, regex: \"(\"" + SUFFIX, Reason.UNKNOWN_SELECTOR, FUNCTION + ".regex"));
   }
 
