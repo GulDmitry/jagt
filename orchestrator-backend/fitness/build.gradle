@@ -1,6 +1,15 @@
 import java.time.Duration
 
+apply plugin: 'base'
+
 group = 'fitness'
+
+tasks.register('test') {
+    dependsOn subprojects.collect { "${it.path}:test" }
+}
+tasks.named('check') {
+    dependsOn subprojects.collect { "${it.path}:check" }
+}
 
 subprojects {
     apply plugin: 'java-library'

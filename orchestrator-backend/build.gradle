@@ -58,3 +58,6 @@ apply plugin: 'jagt.fitness'
 tasks.named('test') {
     systemProperty 'org.springframework.boot.logging.LoggingSystem', 'none'
 }
+
+tasks.named('test') { dependsOn gradle.includedBuild('fitness').task(':test') }
+tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check') }

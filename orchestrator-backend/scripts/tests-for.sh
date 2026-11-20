@@ -136,7 +136,7 @@ for p in $paths; do
     fitness/* | */fitness/*) fitness_touched=1; add_rules Fitness ;;
     board/*) board_touched=1 ;;
     site/*) add_rules Site ;;
-    roles/*) add_rules RoleModules RoleNames RoleNamesOutside RoleVocabulary MasterBriefShipped ;;
+    roles/*) add_rules RoleNamesFitness RoleNamesOutsideFitness RoleVocabulary MasterBriefShipped ;;
   esac
   case "$p" in
     *.yml.dist) add_rules ConfigReference ;;
@@ -191,6 +191,8 @@ rule_entries=""
 for r in $rule_names; do
   if case " $touched_tests " in *" root:${r}Test "*) true ;; *) false ;; esac; then
     continue
+  elif [ -n "$(git ls-files -- "$backend/src/test/java/*/${r}.java")" ]; then
+    rule_entries=$(add_unique "$rule_entries" root:FitnessTest)
   elif git ls-files --error-unmatch -- "$backend/src/test/java/dev/jagt/orchestrator/${r}Test.java" > /dev/null 2>&1; then
     rule_entries="$rule_entries root:${r}Test"
   else

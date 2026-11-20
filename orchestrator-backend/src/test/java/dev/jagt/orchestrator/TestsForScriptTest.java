@@ -129,4 +129,36 @@ class TestsForScriptTest {
     assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
     assertThat(out).contains(":test --tests '*StarterTest' -x pitestDiff");
   }
+
+  @Test
+  void roleFileRunsTheFitnessTestHoldingTheRoleNameRules(@TempDir Path repo) throws Exception {
+    Files.createDirectories(repo.resolve(ROOT_TESTS));
+    Files.createDirectories(repo.resolve("orchestrator-backend/src/test/java/technical/m"));
+    Files.createDirectories(repo.resolve("roles/a"));
+    Files.writeString(repo.resolve(ROOT_TESTS + "FitnessTest.java"), "class FitnessTest {}");
+    Files.writeString(
+        repo.resolve("orchestrator-backend/src/test/java/technical/m/RoleNamesFitness.java"),
+        "class RoleNamesFitness {}");
+    Files.writeString(repo.resolve("roles/a/role.yml"), "id: a");
+
+    Process run = TestTestsForProcessBuilder.over(repo).build("roles/a/role.yml").start();
+    String out = new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
+    assertThat(out).containsOnlyOnce(":test --tests '*FitnessTest' -x pitestDiff");
+  }
+
+  @Test
+  void newRuleDocumentRunsTheFitnessTestCountingRuleDocuments(@TempDir Path repo) throws Exception {
+    Files.createDirectories(repo.resolve(ROOT_TESTS));
+    Files.createDirectories(repo.resolve("docs/rules"));
+    Files.writeString(repo.resolve(ROOT_TESTS + "FitnessTest.java"), "class FitnessTest {}");
+    Files.writeString(repo.resolve("docs/rules/new.md"), "# new");
+
+    Process run = TestTestsForProcessBuilder.over(repo).build("docs/rules/new.md").start();
+    String out = new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
+    assertThat(out).contains(":test --tests '*FitnessTest' -x pitestDiff");
+  }
 }
