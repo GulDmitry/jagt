@@ -60,4 +60,4 @@ tasks.named('test') {
 }
 
 tasks.named('test') { dependsOn gradle.includedBuild('fitness').task(':test') }
-tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check') }
+tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check'), 'fitness' }

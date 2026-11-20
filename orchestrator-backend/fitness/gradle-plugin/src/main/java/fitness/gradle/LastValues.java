@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 /** The value a function last measured, one file per function id. */
@@ -19,7 +20,9 @@ final class LastValues {
   void record(String id, long value) {
     try {
       Files.createDirectories(directory);
-      Files.writeString(directory.resolve(id), Long.toString(value), StandardCharsets.UTF_8);
+      Path temporary = Files.createTempFile(directory, id, ".tmp");
+      Files.writeString(temporary, Long.toString(value), StandardCharsets.UTF_8);
+      Files.move(temporary, directory.resolve(id), StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -32,6 +35,8 @@ final class LastValues {
     }
     try {
       return Optional.of(Long.parseLong(Files.readString(file, StandardCharsets.UTF_8).strip()));
+    } catch (NumberFormatException e) {
+      return Optional.empty();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
