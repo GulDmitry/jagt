@@ -8,8 +8,10 @@ import fitness.core.Threshold;
 import java.util.Map;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
@@ -34,6 +36,9 @@ public abstract class FitnessFunctionCheck extends DefaultTask {
   @Input
   public abstract Property<Boolean> getOptional();
 
+  @Internal
+  public abstract DirectoryProperty getLastValues();
+
   protected abstract Measurement measure();
 
   @TaskAction
@@ -45,6 +50,7 @@ public abstract class FitnessFunctionCheck extends DefaultTask {
       getLogger().lifecycle("fitness: {}: {}", getFitnessFunctionId().get(), noted.getMessage());
       return;
     }
+    lastValues().record(getFitnessFunctionId().get(), measurement.value());
     Map<String, Object> selectors =
         getHint().isPresent() ? Map.of("hint", getHint().get()) : Map.of();
     FitnessFunction function =
@@ -70,6 +76,10 @@ public abstract class FitnessFunctionCheck extends DefaultTask {
             message -> {
               throw new GradleException(message);
             });
+  }
+
+  protected final LastValues lastValues() {
+    return new LastValues(getLastValues().get().getAsFile().toPath());
   }
 
   /** What a check reports instead of a value: who measures the function, or that an optional tool is skipped. */

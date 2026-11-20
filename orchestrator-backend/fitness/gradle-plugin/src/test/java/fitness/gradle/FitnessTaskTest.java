@@ -72,6 +72,23 @@ class FitnessTaskTest {
   }
 
   @Test
+  void aRowMeasuredByASuiteRunSaysNoValueYetBeforeAnyMeasure() {
+    String output = gradle("fitness-suite-minutes").build().getOutput();
+
+    assertThat(output).contains("fitness: suite-minutes: measured by test, max 7, no value yet");
+  }
+
+  @Test
+  void aRowMeasuredByASuiteRunPrintsItsLastMeasuredValue() throws IOException {
+    Files.createDirectories(project.resolve("build/fitness/last-values"));
+    Files.writeString(project.resolve("build/fitness/last-values/suite-minutes"), "5");
+
+    String output = gradle("fitness-suite-minutes").build().getOutput();
+
+    assertThat(output).contains("fitness: suite-minutes: measured by test, max 7, last value 5");
+  }
+
+  @Test
   void aBlockOutsideTheReservedTreeFailsNamingIt() {
     String output = gradle("fitness", "--dry-run", "-Pfitness.block=technical.speed").buildAndFail().getOutput();
 

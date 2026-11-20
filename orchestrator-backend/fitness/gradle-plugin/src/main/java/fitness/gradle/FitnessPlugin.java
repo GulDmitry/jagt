@@ -18,6 +18,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.flow.FlowProviders;
@@ -66,6 +67,19 @@ public final class FitnessPlugin implements Plugin<Project> {
         measured.add(check);
       }
     }
+    root.getTasks()
+        .named("test")
+        .configure(
+            test ->
+                test.getInputs()
+                    .files(
+                        root.getProviders()
+                            .of(
+                                TrackedFiles.class,
+                                source ->
+                                    source.getParameters().getDirectory().set(root.getProjectDir())))
+                    .withPropertyName("trackedFiles")
+                    .withPathSensitivity(PathSensitivity.RELATIVE));
     MapProperty<String, String> overruns = overruns(root);
     Limits.minutes(root, extension.getMinutesProperty(), minutes, overruns);
     registerFitness(root, extension, block, measured, minutes, requirements);

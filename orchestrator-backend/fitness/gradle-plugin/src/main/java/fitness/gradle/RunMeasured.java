@@ -18,6 +18,10 @@ public abstract class RunMeasured extends FitnessFunctionCheck {
             + ", "
             + getDirection().get().toLowerCase(java.util.Locale.ROOT)
             + " "
-            + getLimit().get());
+            + getLimit().get()
+            + lastValues()
+                .read(getFitnessFunctionId().get())
+                .map(value -> ", last value " + value)
+                .orElse(", no value yet"));
   }
 }

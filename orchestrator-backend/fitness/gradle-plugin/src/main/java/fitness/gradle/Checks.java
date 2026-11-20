@@ -149,6 +149,7 @@ final class Checks {
               task.setGroup("verification");
               task.setDescription("Measures function " + function.id() + " against its threshold in fitness.yml.");
               task.getFitnessFunctionId().set(function.id());
+              task.getLastValues().set(root.getLayout().getBuildDirectory().dir("fitness/last-values"));
               task.getOptional().set(function.optional());
               task.getDirection().set(function.threshold().direction().name());
               task.getLimit().set(function.threshold().limit());
