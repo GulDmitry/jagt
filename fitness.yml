@@ -1,12 +1,23 @@
 schema: 1
 extends: defaults
-project: { root: orchestrator-backend, basePackage: dev.jagt.orchestrator, sourceSets: all }
+project:
+  root: orchestrator-backend
+  basePackage: dev.jagt.orchestrator
+  sourceSets: all
+  modules:
+    statechart: { exposes: ["dev.jagt.statechart.."] }
+    core: { exposes: [".."] }
+    usecase: { exposes: [".."] }
+    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay"] }
+    surface: { exposes: [] }
+    stand: { exposes: [] }
 technical:
   maintainability:
     modularity:
       ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 53, decision: "0176" }
       gradle-modules: { engine: scan, glob: settings.gradle, regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 7, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy}", governs: count, max: 16, decision: "0176" }
+      module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 1, decision: "0211" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }

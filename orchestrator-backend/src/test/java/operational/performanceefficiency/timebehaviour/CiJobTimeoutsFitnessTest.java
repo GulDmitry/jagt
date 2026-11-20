@@ -48,7 +48,8 @@ class CiJobTimeoutsFitnessTest {
 
     var measurement =
         new CiJobTimeoutsFitness()
-            .measure(FUNCTION, new Project(repository.resolve("backend"), "", List.of("all")));
+            .measure(
+                FUNCTION, new Project(repository.resolve("backend"), "", List.of("all"), Map.of()));
 
     assertThat(measurement.items()).containsExactly("github ci.yml bare");
   }
@@ -70,7 +71,8 @@ class CiJobTimeoutsFitnessTest {
 
     var measurement =
         new CiJobTimeoutsFitness()
-            .measure(FUNCTION, new Project(repository.resolve("backend"), "", List.of("all")));
+            .measure(
+                FUNCTION, new Project(repository.resolve("backend"), "", List.of("all"), Map.of()));
 
     assertThat(measurement.items()).containsExactly("gitlab test");
   }

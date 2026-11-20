@@ -112,13 +112,13 @@ public final class FitnessLoader {
             ? Types.map("project", document.get("project"))
             : Map.of();
     for (String key : project.keySet()) {
-      if (!Set.of("basePackage", "root", "sourceSets").contains(key)) {
+      if (!Set.of("basePackage", "root", "sourceSets", "modules").contains(key)) {
         throw new FitnessConfigException(Reason.UNKNOWN_KEY, "project." + key);
       }
     }
     String root = Types.string("project.root", project.getOrDefault("root", "."));
     String basePackage = Types.string("project.basePackage", project.getOrDefault("basePackage", ""));
-    return new Project(directory.resolve(root).normalize(), basePackage, sourceSets(project));
+    return new Project(directory.resolve(root).normalize(), basePackage, sourceSets(project), Modules.read(project.get("modules")));
   }
 
   private static List<String> sourceSets(Map<String, Object> project) {

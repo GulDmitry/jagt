@@ -1,6 +1,7 @@
 package fitness.archunit;
 
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.domain.PackageMatcher;
 import fitness.core.Engine;
@@ -39,7 +40,7 @@ public final class ArchUnitEngine implements Engine {
         Map.entry("calls", Set.of()),
         Map.entry("without", Set.of()),
         Map.entry("except", Set.of()),
-        Map.entry("measure", Set.of("constructor-parameters")),
+        Map.entry("measure", Set.of("constructor-parameters", "module-isolation")),
         Map.entry("package", Set.of()));
   }
 
@@ -52,8 +53,12 @@ public final class ArchUnitEngine implements Engine {
   public Measurement measure(FitnessFunction function, Project project) {
     Map<String, Object> selectors = function.selectors();
     String set = String.valueOf(selectors.getOrDefault("set", "main"));
+    JavaClasses imported = directories.of(project, set);
+    if ("module-isolation".equals(selectors.get("measure"))) {
+      return ModuleIsolation.measure(imported, project);
+    }
     List<JavaClass> owners =
-        directories.of(project, set).stream()
+        imported.stream()
             .filter(owner(selectors, project.basePackage()))
             .toList();
     if (selectors.get("calls") instanceof String call) {

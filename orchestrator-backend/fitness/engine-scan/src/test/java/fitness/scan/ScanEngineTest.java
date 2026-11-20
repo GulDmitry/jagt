@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,7 +26,7 @@ class ScanEngineTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("glob", "docs/*.md").select("per", "name").build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("a.md", "b.md");
   }
@@ -43,7 +44,7 @@ class ScanEngineTest {
                 .select("kind", "directory")
                 .select("per", "name")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("one", "two");
   }
@@ -59,7 +60,7 @@ class ScanEngineTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("glob", "logic/**/*.{gradle,groovy}").build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("logic/nested/deep.groovy", "logic/top.gradle");
   }
@@ -73,7 +74,7 @@ class ScanEngineTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("glob", "**/*.md").build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("real.md");
   }
@@ -87,7 +88,7 @@ class ScanEngineTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("glob", "../docs/*.md").select("per", "name").build(),
-            new Project(outer.resolve("inner"), "", List.of("all")));
+            new Project(outer.resolve("inner"), "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("x.md");
   }
@@ -108,7 +109,7 @@ class ScanEngineTest {
                 .select("set", "test")
                 .select("regex", "(?m)^import a\\.Boot;")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items())
         .containsExactly("mod/src/e2e/java/Flow.java", "src/test/java/Boots.java");
@@ -125,7 +126,7 @@ class ScanEngineTest {
                 .select("regex", "(?m)^include\\s+'([^']+)'")
                 .select("per", "match")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("a", "b");
   }
@@ -141,7 +142,7 @@ class ScanEngineTest {
                 .select("regex", "api")
                 .select("per", "line")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("build.gradle api 'x'");
   }

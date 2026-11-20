@@ -472,8 +472,8 @@ key that fixes it. The composition half, and what of it exists:
 
 ## The build
 
-Eight Gradle modules under `orchestrator-backend/`, one per ring, the engine, the stand harness and the mutation filter, so the dependency rule is
-the compiler's: an import that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsFitness`.
+Eight Gradle modules under `orchestrator-backend/`, one per ring, the engine, the stand harness and the mutation filter: the compiler holds the
+dependency rule. `RingsFitness` covers two folders in one module, `module-isolation` another module's inside (decision 0211).
 
 | module | holds | sees |
 |--------|-------|------|

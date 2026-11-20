@@ -59,6 +59,8 @@ Sources: Ford, Parsons, Kua, Sadalage, *Building Evolutionary Architectures*, 2n
 | dimension | *jagt's own*: one of the reserved tree's four top sections, technical, data, security and operational |
 | section | *jagt's own*: a place in the reserved tree, `dimension.characteristic.subcharacteristic`, where a fitness function sits |
 | block | *jagt's own*: a part of the reserved tree, from the whole of it down to one subcharacteristic |
+| module | *jagt's own*: a Gradle module declared under `project.modules` of `fitness.yml` |
+| exposed package | *jagt's own*: a package of a module that other modules may reference; the rest is the module's inside ([0211](../decisions/0211-a-module-is-reached-only-through-its-exposed-packages.md)) |
 | report | *jagt's own*: a fitness function's id, value, threshold with its direction and every item, printed when it fails |
 
 ## Ports and adapters

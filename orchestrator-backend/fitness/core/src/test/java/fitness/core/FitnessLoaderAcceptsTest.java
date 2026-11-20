@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import technical.maintainability.analysability.FakeFitness;
 
@@ -82,6 +83,6 @@ class FitnessLoaderAcceptsTest {
         loader.parse("schema: 1\nproject: { root: .., basePackage: a.b }", Path.of("/x/y"));
 
     assertThat(config.project())
-        .isEqualTo(new Project(Path.of("/x"), "a.b", List.of("all")));
+        .isEqualTo(new Project(Path.of("/x"), "a.b", List.of("all"), Map.of()));
   }
 }

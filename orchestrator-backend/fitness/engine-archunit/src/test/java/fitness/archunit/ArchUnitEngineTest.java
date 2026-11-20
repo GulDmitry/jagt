@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class ArchUnitEngineTest {
 
   private final ArchUnitEngine engine = new ArchUnitEngine();
-  private final Project project = new Project(Path.of("."), "fitness", List.of("all"));
+  private final Project project = new Project(Path.of("."), "fitness", List.of("all"), Map.of());
 
   @Test
   void listsTheInterfacesOfAPackageAndItsSubpackages() {

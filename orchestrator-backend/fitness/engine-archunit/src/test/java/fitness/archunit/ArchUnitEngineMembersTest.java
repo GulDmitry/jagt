@@ -11,12 +11,13 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ArchUnitEngineMembersTest {
 
   private final ArchUnitEngine engine = new ArchUnitEngine();
-  private final Project project = new Project(Path.of("."), "fitness", List.of("all"));
+  private final Project project = new Project(Path.of("."), "fitness", List.of("all"), Map.of());
 
   static final class Counting {
 

@@ -58,7 +58,7 @@
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
-- **Fitness functions in one file** — `fitness.yml` declares them in a reserved tree; `./gradlew fitness` prints each value against its threshold.
+- **Fitness functions in one file** — `fitness.yml` declares each in a reserved tree and each module's exposed packages; `./gradlew fitness` runs all.
   [spec](../openspec/specs/fitness/spec.md#requirement-a-fitness-function-reports-its-number-against-its-threshold)
 
 ## Git · [spec](../openspec/specs/git/spec.md)

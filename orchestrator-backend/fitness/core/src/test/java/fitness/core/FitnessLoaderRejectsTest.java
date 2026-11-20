@@ -87,6 +87,11 @@ class FitnessLoaderRejectsTest {
             "schema: 1\ntechnical: { maintainability: { modularity: { ports: { fitness: FakeFitness, governs: count, max: 3 } } } }",
             Reason.WRONG_PACKAGE,
             FakeFitness.class.getName()),
+        Arguments.of(
+            "a module declared without an exposes list",
+            "schema: 1\nproject: { modules: { core: { exposes: [..] }, adapter: {} } }",
+            Reason.MODULE_WITHOUT_EXPOSES,
+            "project.modules.adapter"),
         Arguments.of("a schema other than 1", "schema: 2", Reason.UNSUPPORTED_SCHEMA, "schema"),
         Arguments.of("text that is not YAML", "schema: [", Reason.UNREADABLE, "fitness.yml"));
   }

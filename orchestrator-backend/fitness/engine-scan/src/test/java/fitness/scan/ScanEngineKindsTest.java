@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,7 +35,7 @@ class ScanEngineKindsTest {
                 .select("requires", "package-info.java")
                 .select("regex", "@NullMarked")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("src/main/java/b", "src/main/java/c");
   }
@@ -65,7 +66,7 @@ class ScanEngineKindsTest {
                 .select("per", "test")
                 .select("measure", "assertionless")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("SampleTest.forgets");
   }
@@ -88,7 +89,7 @@ class ScanEngineKindsTest {
                 .select("per", "file")
                 .select("regex", "(?m)^<{7} ")
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("kept.txt");
   }

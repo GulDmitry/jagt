@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,7 +30,7 @@ class ScanEngineSizedTest {
                 .select("measure", "lines")
                 .limit(2)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isEqualTo(3);
     assertThat(found.items()).containsExactly("3 a.md");
@@ -48,7 +49,7 @@ class ScanEngineSizedTest {
                 .select("regex", "(?m)^## [a-z-]+$")
                 .limit(2)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("3 a.md ## step-one");
   }
@@ -66,7 +67,7 @@ class ScanEngineSizedTest {
                 .select("regex", "^[^|]")
                 .limit(4)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isEqualTo(6);
     assertThat(found.items()).containsExactly("6 a.md: abcdef");
@@ -84,7 +85,7 @@ class ScanEngineSizedTest {
                 .select("measure", "words")
                 .limit(5)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("6 a.md: One two three four five six.");
   }
@@ -101,7 +102,7 @@ class ScanEngineSizedTest {
                 .select("measure", "comment-percent")
                 .limit(15)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isEqualTo(50);
     assertThat(found.items()).containsExactly("50 2 comment lines in 4");
@@ -121,7 +122,7 @@ class ScanEngineSizedTest {
                 .select("measure", "cognitive-complexity")
                 .limit(2)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isEqualTo(3);
     assertThat(found.items()).singleElement().asString().startsWith("3 A.java:1 The method 'm(");
@@ -143,7 +144,7 @@ class ScanEngineSizedTest {
                 .select("measure", "tokens")
                 .limit(20)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isGreaterThan(20);
     assertThat(found.items()).singleElement().asString().contains("A.java:1", "B.java:1");
@@ -165,7 +166,7 @@ class ScanEngineSizedTest {
                 .select("measure", "mocked-types")
                 .limit(2)
                 .build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("3 T.java [A, B, C]");
   }
@@ -187,7 +188,7 @@ class ScanEngineSizedTest {
                 .select("measure", "classes")
                 .limit(1)
                 .build(),
-            new Project(root, "a", List.of("all")));
+            new Project(root, "a", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("2 b");
   }
@@ -202,7 +203,7 @@ class ScanEngineSizedTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("set", "main").build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("mod/src/main/java/A.java");
   }
@@ -216,7 +217,7 @@ class ScanEngineSizedTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("glob", "*.txt,c.md").select("per", "name").build(),
-            new Project(root, "", List.of("all")));
+            new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("b.txt", "c.md");
   }
@@ -230,7 +231,7 @@ class ScanEngineSizedTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder().select("glob", "../AGENTS.md").build(),
-            new Project(outer.resolve("inner"), "", List.of("all")));
+            new Project(outer.resolve("inner"), "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("../AGENTS.md");
   }
