@@ -117,14 +117,15 @@ for p in $paths; do
   case "$p" in
     .github/* | */.github/* | scripts/* | */scripts/*)
       add_rules CiWorkflow ImageJar QualityGates
-      case "$p" in
-        *.java | *.md) ;;
-        *)
-          for f in $(git grep --untracked -lF "$(basename "$p")" -- "$(test_dir root)" | grep -E 'Test\.java$' || true); do
-            add_test root "$(basename "$f" .java)"
-          done
-          ;;
-      esac
+      ;;
+  esac
+  case "$p" in
+    *.java | *.md) ;;
+    *)
+      # A root test that reads a file names it (2026-11-20: a .dist comment broke ServerStarterTest unselected).
+      for f in $(git grep --untracked -lF "$(basename "$p")" -- "$(test_dir root)" | grep -E 'Test\.java$' || true); do
+        add_test root "$(basename "$f" .java)"
+      done
       ;;
   esac
   case "$p" in

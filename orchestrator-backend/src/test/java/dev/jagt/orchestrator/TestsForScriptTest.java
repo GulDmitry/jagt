@@ -114,4 +114,20 @@ class TestsForScriptTest {
     assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
     assertThat(out).containsOnlyOnce("'*CiWorkflowTest'");
   }
+
+  @Test
+  void rootTestNamingChangedStarterFileRunsWhenThatFileChanges(@TempDir Path repo)
+      throws Exception {
+    Files.createDirectories(repo.resolve(ROOT_TESTS));
+    Files.writeString(
+        repo.resolve(ROOT_TESTS + "StarterTest.java"),
+        "class StarterTest { String f = \"app.server.yml.dist\"; }");
+    Files.writeString(repo.resolve("app.server.yml.dist"), "a: 1");
+
+    Process run = TestTestsForProcessBuilder.over(repo).build("app.server.yml.dist").start();
+    String out = new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
+    assertThat(out).contains(":test --tests '*StarterTest' -x pitestDiff");
+  }
 }

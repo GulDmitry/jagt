@@ -25,7 +25,7 @@ orchestrator:
     master:
       mode: act                                # roles: the Master presses what a human would; `mine` keeps its default
   # releaseFeed:
-  #   autoUpgrade: false                       # releaseFeed: true switches to a kept release once no agent session is up (exit 75)
+  #   autoUpgrade: false                       # true: switch to a kept release once no session is up
   deploy:
     onApproval: true                           # deploy: an approved request deploys itself, then its deploy check runs
   autoReview:
