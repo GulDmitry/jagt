@@ -45,7 +45,7 @@ class RequirementsTest {
   }
 
   @ParameterizedTest(name = "a row naming the {0} engine fails when no provider is found")
-  @ValueSource(strings = {"archunit", "scan"})
+  @ValueSource(strings = {"archunit", "scan", "nobody"})
   void aMissingEngineFailsNamingTheFitnessFunctionAndTheEngine(String engine) {
     String yaml =
         "schema: 1\ntechnical: { maintainability: { modularity: { ports: { engine: "
@@ -80,8 +80,22 @@ class RequirementsTest {
   }
 
   @Test
-  void theClasspathOfThisBuildHoldsJunit() {
-    assertThat(Requirements.onClasspath().has("junit")).isTrue();
+  void aLibraryAnEngineNamesIsPresentWhenItsClassLoads() {
+    Engine engine = new LibraryEngine("this", "fitness.core.Requirements");
+
+    assertThat(Requirements.onClasspath(List.of(engine)).has("this")).isTrue();
+  }
+
+  @Test
+  void aLibraryAnEngineNamesIsAbsentWhenItsClassDoesNotLoad() {
+    Engine engine = new LibraryEngine("gone", "absent.Missing");
+
+    assertThat(Requirements.onClasspath(List.of(engine)).has("gone")).isFalse();
+  }
+
+  @Test
+  void aNeedNoEngineKnowsAClassForCountsAsPresent() {
+    assertThat(Requirements.onClasspath(List.of()).has("junit")).isTrue();
   }
 
   @Test

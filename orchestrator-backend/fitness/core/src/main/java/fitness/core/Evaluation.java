@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** A loaded fitness.yml with the engines and project functions found on the classpath, able to measure each function it holds. */
@@ -29,19 +28,19 @@ public final class Evaluation {
   }
 
   public static Evaluation load(Path file) {
-    return load(file, Requirements.onClasspath(), Set.of());
+    return load(file, Set.of());
   }
 
   /** Fails before any function runs when what a function needs is missing, unless the function is optional. */
-  public static Evaluation load(Path file, Presence presence, Set<String> runner) {
+  public static Evaluation load(Path file, Set<String> runner) {
     ClassLoader loader = Thread.currentThread().getContextClassLoader();
     List<Engine> engines = providers(Engine.class, loader);
     List<Fitness> fitnesses = providers(Fitness.class, loader);
-    Map<String, Engine> byName =
-        engines.stream().collect(Collectors.toMap(Engine::name, Function.identity()));
-    FitnessConfig loaded = new FitnessLoader(engines, fitnesses).load(file);
+    FitnessLoader fitnessLoader = new FitnessLoader(engines, fitnesses);
+    Map<String, Engine> byName = FitnessLoader.index(engines, Engine::name, Reason.DUPLICATE_ENGINE);
+    FitnessConfig loaded = fitnessLoader.load(file);
     List<FitnessFunction> measured = loaded.functions().stream().filter(function -> !function.measuredByTool()).toList();
-    List<Missing> skipped = Requirements.check(measured, byName, presence, runner);
+    List<Missing> skipped = Requirements.check(measured, byName, Requirements.onClasspath(engines), runner);
     Set<FitnessFunction> left = skipped.stream().map(Missing::function).collect(Collectors.toSet());
     FitnessConfig config =
         new FitnessConfig(
@@ -49,7 +48,7 @@ public final class Evaluation {
     return new Evaluation(
         config,
         byName,
-        fitnesses.stream().collect(Collectors.toMap(Fitness::id, Function.identity())),
+        FitnessLoader.index(fitnesses, Fitness::id, Reason.DUPLICATE_ID),
         skipped);
   }
 
@@ -62,7 +61,7 @@ public final class Evaluation {
     try {
       return ServiceLoader.load(type, loader).stream().map(ServiceLoader.Provider::get).toList();
     } catch (ServiceConfigurationError e) {
-      throw new FitnessConfigException(Reason.MISSING_ENGINE, type.getName(), e);
+      throw new FitnessConfigException(Reason.PROVIDER_FAILED, type.getName(), e);
     }
   }
 

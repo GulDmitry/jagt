@@ -51,6 +51,11 @@ public final class ArchUnitEngine implements Engine {
   }
 
   @Override
+  public Map<String, String> libraries() {
+    return Map.of("archunit", "com.tngtech.archunit.core.importer.ClassFileImporter");
+  }
+
+  @Override
   public void validate(FitnessFunction function, Project project) {
     SourceRoots.validate(function, project);
   }

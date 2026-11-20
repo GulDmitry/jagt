@@ -121,10 +121,7 @@ final class FitnessFunctionReader {
     }
     String engine = Types.string(key + ".engine", map.get("engine"));
     if (!FitnessFunction.TOOL_ENGINE.equals(engine) && !engines.containsKey(engine)) {
-      if (Requirements.ENGINES.contains(engine)) {
-        throw new FitnessConfigException(Reason.MISSING_ENGINE, key + " needs " + engine);
-      }
-      throw new FitnessConfigException(Reason.UNKNOWN_SELECTOR, key + ".engine");
+      throw new FitnessConfigException(Reason.MISSING_ENGINE, key + " needs " + engine);
     }
     return engine;
   }

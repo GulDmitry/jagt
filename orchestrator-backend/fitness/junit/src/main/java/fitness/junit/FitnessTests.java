@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import fitness.core.Block;
 import fitness.core.Evaluation;
 import fitness.core.Report;
-import fitness.core.Requirements;
 import fitness.core.ReservedTree;
 import fitness.core.FitnessFunction;
 import fitness.core.Section;
@@ -31,7 +30,7 @@ public final class FitnessTests {
   }
 
   public static Stream<DynamicNode> from(Path file) {
-    Evaluation evaluation = Evaluation.load(file, Requirements.onClasspath(), Set.of("junit"));
+    Evaluation evaluation = Evaluation.load(file, Set.of("junit"));
     String only = System.getProperty(ONLY);
     if (only != null
         && evaluation.config().functions().stream().noneMatch(function -> function.id().equals(only))) {

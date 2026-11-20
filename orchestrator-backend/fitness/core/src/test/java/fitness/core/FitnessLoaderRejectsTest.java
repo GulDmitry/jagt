@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,10 +54,41 @@ class FitnessLoaderRejectsTest {
             Reason.UNKNOWN_SELECTOR,
             FUNCTION + ".glob"),
         Arguments.of(
-            "an unknown engine",
+            "an engine no provider serves",
             "schema: 1\ntechnical: { maintainability: { modularity: { ports: { engine: nobody, governs: count, max: 3 } } } }",
-            Reason.UNKNOWN_SELECTOR,
+            Reason.MISSING_ENGINE,
+            FUNCTION + " needs nobody"),
+        Arguments.of(
+            "a function without governs",
+            "schema: 1\ntechnical: { maintainability: { modularity: { ports: { engine: fake, max: 3 } } } }",
+            Reason.MISSING_KEY,
+            FUNCTION + ".governs"),
+        Arguments.of(
+            "a function naming neither an engine nor a fitness",
+            "schema: 1\ntechnical: { maintainability: { modularity: { ports: { governs: count, max: 3 } } } }",
+            Reason.MISSING_KEY,
             FUNCTION + ".engine"),
+        Arguments.of(
+            "a base file that does not exist",
+            "schema: 1\nextends: nope",
+            Reason.UNREADABLE,
+            "extends"),
+        Arguments.of("a project key outside the project keys", "schema: 1\nproject: { x: 1 }", Reason.UNKNOWN_KEY, "project.x"),
+        Arguments.of(
+            "source sets that are neither text nor a list",
+            "schema: 1\nproject: { sourceSets: 5 }",
+            Reason.WRONG_TYPE,
+            "project.sourceSets"),
+        Arguments.of(
+            "an axis outside the axes",
+            "schema: 1\ntechnical: { maintainability: { modularity: { ports: { engine: fake, governs: count, max: 3, axes: { bogus: x } } } } }",
+            Reason.UNKNOWN_KEY,
+            FUNCTION + ".axes.bogus"),
+        Arguments.of(
+            "an axis value outside its axis",
+            "schema: 1\ntechnical: { maintainability: { modularity: { ports: { engine: fake, governs: count, max: 3, axes: { scope: banana } } } } }",
+            Reason.UNKNOWN_SELECTOR,
+            FUNCTION + ".axes.scope"),
         Arguments.of(
             "a section outside the tree",
             "schema: 1\ntechnical: { maintainability: { bogus: {} } }",
@@ -108,6 +140,41 @@ class FitnessLoaderRejectsTest {
             thrown -> {
               assertThat(thrown.reason()).isEqualTo(reason);
               assertThat(thrown.key()).isEqualTo(key);
+            });
+  }
+
+  @Test
+  void rejectsAFileThatDoesNotExist() {
+    FitnessLoader loader = new FitnessLoader(List.of(new FakeEngine()), List.of());
+
+    assertThatThrownBy(() -> loader.load(Path.of("absent-fitness.yml")))
+        .isInstanceOfSatisfying(
+            FitnessConfigException.class,
+            thrown -> {
+              assertThat(thrown.reason()).isEqualTo(Reason.UNREADABLE);
+              assertThat(thrown.key()).isEqualTo("absent-fitness.yml");
+            });
+  }
+
+  @Test
+  void rejectsTwoFitnessClassesWithOneId() {
+    assertThatThrownBy(() -> new FitnessLoader(List.of(), List.of(new FakeFitness(), new FakeFitness())))
+        .isInstanceOfSatisfying(
+            FitnessConfigException.class,
+            thrown -> {
+              assertThat(thrown.reason()).isEqualTo(Reason.DUPLICATE_ID);
+              assertThat(thrown.key()).isEqualTo("FakeFitness");
+            });
+  }
+
+  @Test
+  void rejectsTwoEnginesWithOneName() {
+    assertThatThrownBy(() -> new FitnessLoader(List.of(new FakeEngine(), new FakeEngine()), List.of()))
+        .isInstanceOfSatisfying(
+            FitnessConfigException.class,
+            thrown -> {
+              assertThat(thrown.reason()).isEqualTo(Reason.DUPLICATE_ENGINE);
+              assertThat(thrown.key()).isEqualTo("fake");
             });
   }
 }

@@ -15,6 +15,11 @@ public interface Engine {
     return Set.of();
   }
 
+  /** A class each library the engine needs is recognised by, keyed by the name {@link #needs} gives it. */
+  default Map<String, String> libraries() {
+    return Map.of();
+  }
+
   /** Fails the load with a {@link FitnessConfigException} when the function cannot be measured, before any function runs. */
   default void validate(FitnessFunction function, Project project) {}
 

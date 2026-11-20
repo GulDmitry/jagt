@@ -2,6 +2,7 @@ package fitness.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,19 +11,15 @@ import java.util.Set;
 /** What a fitness.yml needs from its runner: an engine, the library behind it, a tool; a missing one fails before any function runs. */
 public final class Requirements {
 
-  static final Set<String> ENGINES = Set.of("archunit", "scan");
   private static final String GRADLE = "gradle";
-  private static final Map<String, String> LIBRARIES =
-      Map.of(
-          "archunit", "com.tngtech.archunit.core.importer.ClassFileImporter",
-          "pmd", "net.sourceforge.pmd.PMDConfiguration",
-          "junit", "org.junit.jupiter.api.DynamicTest");
 
   private Requirements() {}
 
-  /** The libraries this classpath holds; a name it knows no class for counts as present. */
-  public static Presence onClasspath() {
-    return need -> !LIBRARIES.containsKey(need) || loadable(LIBRARIES.get(need));
+  /** The libraries this classpath holds, as the engines name them; a name no engine knows a class for counts as present. */
+  public static Presence onClasspath(Collection<Engine> engines) {
+    Map<String, String> libraries = new HashMap<>();
+    engines.forEach(engine -> libraries.putAll(engine.libraries()));
+    return need -> !libraries.containsKey(need) || loadable(libraries.get(need));
   }
 
   private static boolean loadable(String type) {

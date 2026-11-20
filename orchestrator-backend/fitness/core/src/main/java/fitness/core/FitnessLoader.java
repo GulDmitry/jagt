@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -35,9 +34,18 @@ public final class FitnessLoader {
   private FitnessLoader(Collection<Engine> engines, Collection<Fitness> fitnesses, boolean toolsOnly) {
     reader =
         new FitnessFunctionReader(
-            engines.stream().collect(Collectors.toMap(Engine::name, Function.identity())),
-            fitnesses.stream().collect(Collectors.toMap(Fitness::id, Function.identity())));
+            index(engines, Engine::name, Reason.DUPLICATE_ENGINE), index(fitnesses, Fitness::id, Reason.DUPLICATE_ID));
     this.toolsOnly = toolsOnly;
+  }
+
+  static <T> Map<String, T> index(Collection<T> providers, Function<T, String> name, Reason duplicate) {
+    Map<String, T> byName = new LinkedHashMap<>();
+    for (T provider : providers) {
+      if (byName.putIfAbsent(name.apply(provider), provider) != null) {
+        throw new FitnessConfigException(duplicate, name.apply(provider));
+      }
+    }
+    return byName;
   }
 
   /** Reads only the functions a build tool measures, so a build holding no engine and no project class can load the file. */

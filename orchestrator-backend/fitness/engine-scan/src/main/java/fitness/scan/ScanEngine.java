@@ -93,6 +93,11 @@ public final class ScanEngine implements Engine {
   }
 
   @Override
+  public Map<String, String> libraries() {
+    return Map.of("pmd", "net.sourceforge.pmd.PMDConfiguration");
+  }
+
+  @Override
   public void validate(FitnessFunction function, Project project) {
     Map<String, Object> selectors = function.selectors();
     String key = function.section() + "." + function.id();
