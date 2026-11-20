@@ -3,4 +3,4 @@ project: { root: ., basePackage: fitness, sourceSets: all }
 technical:
   maintainability:
     modularity:
-      library-names-no-project: { engine: scan, glob: "**/*.{java,md,gradle,yml,properties}", per: file, regex: "dev[.]jagt|orchestrato[r]|usecas[e]|/User[s]/|/hom[e]/[a-z]", governs: count, max: 0 }
+      library-names-no-project: { engine: scan, glob: "**/*.{java,md,gradle,yml,properties}", per: file, regex: "dev[.]jagt|orchestrato[r]|usecas[e]|/User[s]/|/hom[e]/[a-z]|[Ss]prin[g]|jaka[r]ta|runMinute[s]|DefaultContextCach[e]", governs: count, max: 0 }

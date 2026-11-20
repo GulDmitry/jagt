@@ -2,7 +2,6 @@ schema: 1
 technical:
   maintainability:
     modularity:
-      collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
       classes-per-package: { engine: scan, set: main, per: package, measure: classes, governs: size, max: 10 }
     analysability:
       failure-cause-from-message: { engine: scan, set: all, per: file, regex: "addKeyValue\\(\\s*\"cause\",[^;]*?\\.getMessage\\(\\)", governs: count, max: 0 }
@@ -19,8 +18,6 @@ technical:
       test-reach: { engine: tool, tool: jacoco, measure: unreached-classes-with-branch, governs: count, max: 0, decision: "0191" }
       mocks-per-test: { engine: scan, set: test, glob: "**/*Test.java", per: test, measure: mocked-types, governs: coupling, max: 5 }
       static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, governs: count, max: 0 }
-      post-construct-hooks: { engine: archunit, set: all, kind: method, annotated: jakarta.annotation.PostConstruct, governs: annotation, max: 0 }
-      autowired-fields: { engine: archunit, set: all, kind: field, annotated: org.springframework.beans.factory.annotation.Autowired, governs: annotation, max: 0 }
       assertionless-tests: { engine: scan, set: test, per: test, measure: assertionless, governs: count, max: 0 }
       endless-shell-loops: { engine: scan, set: test, per: file, regex: "while\\s+(:|true)\\s*;", governs: count, max: 0 }
       no-zone-id-system-default: { engine: archunit, set: all, calls: java.time.ZoneId.systemDefault, governs: class-dependency, max: 0 }

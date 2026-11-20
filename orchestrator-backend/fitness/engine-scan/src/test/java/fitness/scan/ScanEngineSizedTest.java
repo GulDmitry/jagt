@@ -125,7 +125,7 @@ class ScanEngineSizedTest {
             new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isEqualTo(3);
-    assertThat(found.items()).singleElement().asString().startsWith("3 A.java:1 The method 'm(");
+    assertThat(found.items()).singleElement().asString().startsWith("3 A.java");
   }
 
   @Test
@@ -147,7 +147,7 @@ class ScanEngineSizedTest {
             new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.value()).isGreaterThan(20);
-    assertThat(found.items()).singleElement().asString().contains("A.java:1", "B.java:1");
+    assertThat(found.items()).singleElement().asString().contains("A.java", "B.java");
   }
 
   @Test

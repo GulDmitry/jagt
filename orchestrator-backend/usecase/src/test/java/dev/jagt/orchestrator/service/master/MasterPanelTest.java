@@ -479,11 +479,10 @@ class MasterPanelTest {
             "ABC-1",
             reviewPending,
             new MasterPanel.RoundRead(
-                "", "", "", List.of(), "disputed: drop v2 — Api.java:12 has no caller"));
+                "", "", "", List.of(), "disputed: drop v2 — Api.kt:12 has no caller"));
 
     assertThat(prompt)
-        .contains(
-            "<session_notes>\ndisputed: drop v2 — Api.java:12 has no caller\n</session_notes>");
+        .contains("<session_notes>\ndisputed: drop v2 — Api.kt:12 has no caller\n</session_notes>");
   }
 
   @Test
@@ -967,11 +966,11 @@ class MasterPanelTest {
             planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), "disputed: the ticket line 2"),
+            new MasterPanel.RoundRead("", "", "", List.of(), "disputed: the ticket row 2"),
             false,
             true);
 
-    assertThat(prompt).contains("<session_notes>\ndisputed: the ticket line 2\n</session_notes>");
+    assertThat(prompt).contains("<session_notes>\ndisputed: the ticket row 2\n</session_notes>");
   }
 
   @Test

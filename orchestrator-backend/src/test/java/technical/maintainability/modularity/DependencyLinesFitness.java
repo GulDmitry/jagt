@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public final class DependencyLinesFitness implements Fitness {
 
   private static final Path BACKEND = Path.of(".");
-  private static final List<String> SKIPPED = List.of("build", "bin", ".gradle", "fitness");
+  private static final List<String> SKIPPED = List.of("build", "bin", ".gradle");
   private static final Pattern DEPENDENCY =
       Pattern.compile(
           "^\\s+([a-z][A-Za-z]*)?" + "([Aa]pi|[Ii]mplementation|[Cc]ompileOnly|[Rr]untimeOnly)\\s");

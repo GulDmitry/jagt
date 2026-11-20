@@ -28,7 +28,7 @@ cleanup() {
     taskkill //F //T //PID "$(ps -p "$launcher_pid" -W 2>/dev/null | awk 'NR==2{print $4}')" >/dev/null 2>&1
     taskkill //F //IM java.exe >/dev/null 2>&1
   else
-    pkill -f "$work/home/runtime" 2>/dev/null
+    pkill -f "$work/install/runtime" 2>/dev/null
   fi
   [ -n "$server_pid" ] && kill "$server_pid" 2>/dev/null
   sleep 2
@@ -85,7 +85,7 @@ feed_url="http://127.0.0.1:$feed_port"
 wait_for 30 "the fake feed answers" curl --fail --silent --output /dev/null "$feed_url/download/v0.0.1/jagt-0.0.1.sha256"
 
 stage="install 0.0.1"
-home="$work/home"
+home="$work/install"
 bin="$work/bin"
 export JAGT_VERSION=0.0.1 JAGT_INSTALL_FEED="$feed_url"
 export JAGT_HOME="$(native "$home")" JAGT_BIN="$(native "$bin")"

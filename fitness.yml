@@ -14,9 +14,10 @@ project:
 technical:
   maintainability:
     modularity:
+      collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
       ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 53, decision: "0176" }
-      gradle-modules: { engine: scan, glob: settings.gradle, regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 7, decision: "0176" }
-      build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy}", governs: count, max: 16, decision: "0176" }
+      gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
+      build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 23, decision: "0176" }
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 1, decision: "0211" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
@@ -28,7 +29,7 @@ technical:
       collaborator-owners: { fitness: CollaboratorOwnersFitness, governs: count, max: 0 }
       classes-per-package: { fitness: PackageCeilingFitness, governs: size, max: 10, decision: "0166" }
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
-      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 75, decision: "0176" }
+      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 90, decision: "0176" }
     analysability:
       ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
@@ -50,14 +51,15 @@ technical:
       session-brief-sentence-words: { engine: scan, glob: "../roles/session/brief.md.dist", per: sentence, measure: words, governs: size, max: 25, hint: "a prompt: compress it, then run promptEval and roleEval -Prole=master (docs/rules/testing.md)" }
       rule-docs: { engine: scan, glob: "../docs/rules/*.md", per: name, governs: count, max: 8, decision: "0176" }
       left-for-later-markers: { engine: scan, set: tracked, per: file, regex: "\\b(TO[D]O|FIXM[E]|XX[X])\\b", governs: count, max: 7 }
-      home-paths: { engine: scan, set: tracked, per: file, regex: "/User[s]/|/hom[e]/[a-z]", governs: count, max: 10 }
-      cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", governs: count, max: 19 }
+      home-paths: { engine: scan, set: tracked, per: file, regex: "/User[s]/|/hom[e]/[a-z]", governs: count, max: 0 }
+      cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", except: "**/board/vendor/**,src/test/resources/archunit/**,**/recordings/**", governs: count, max: 0 }
     modifiability:
       constructors-called-from-main: { fitness: ConstructorsCalledFromMainFitness, governs: count, max: 0 }
       members-called-from-main: { fitness: MembersCalledFromMainFitness, governs: count, max: 0 }
       wither-defects: { fitness: WitherDefectsFitness, governs: count, max: 0 }
       wither-count: { fitness: WitherCountFitness, governs: count, min: 81 }
     testability:
+      autowired-fields: { engine: archunit, set: all, kind: field, annotated: org.springframework.beans.factory.annotation.Autowired, governs: annotation, max: 0 }
       static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, except: "TaskAliasLogFilter,AbortedConnectionFilter", governs: count, max: 0 }
       post-construct-hooks: { engine: archunit, set: all, kind: method, annotated: jakarta.annotation.PostConstruct, except: AbortedConnectionFilter, governs: annotation, max: 0 }
       no-system-current-time-millis: { engine: archunit, set: "main,evalSupport", calls: java.lang.System.currentTimeMillis, except: "RuntimeWiring,StandClock,EvalStats", governs: class-dependency, max: 0 }
@@ -85,6 +87,6 @@ operational:
       ci-jobs-without-timeout: { fitness: CiJobTimeoutsFitness, governs: count, max: 0, decision: "0139", axes: { scope: holistic } }
       unlimited-runs: { engine: tool, tool: gradle, task: pitest, kind: test-or-gate, measure: runs-without-time-limit, governs: count, max: 8 }
     resource-utilisation:
-      contexts-test: { engine: tool, tool: gradle, task: test, per: suite, measure: spring-contexts, governs: count, max: 2, decision: "0187" }
-      contexts-board-test: { engine: tool, tool: gradle, task: boardTest, per: suite, measure: spring-contexts, governs: count, max: 2, decision: "0187" }
-      contexts-e2e-test: { engine: tool, tool: gradle, task: e2eTest, per: suite, measure: spring-contexts, governs: count, max: 4, decision: "0187" }
+      contexts-test: { engine: tool, tool: gradle, task: test, per: suite, measure: contexts, governs: count, max: 2, decision: "0187" }
+      contexts-board-test: { engine: tool, tool: gradle, task: boardTest, per: suite, measure: contexts, governs: count, max: 2, decision: "0187" }
+      contexts-e2e-test: { engine: tool, tool: gradle, task: e2eTest, per: suite, measure: contexts, governs: count, max: 4, decision: "0187" }

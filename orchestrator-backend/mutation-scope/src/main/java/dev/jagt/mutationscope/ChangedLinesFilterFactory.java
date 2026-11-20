@@ -12,7 +12,7 @@ public final class ChangedLinesFilterFactory implements MutationInterceptorFacto
   static final String FEATURE = "CHANGEDLINES";
 
   private static final FeatureParameter LINES =
-      FeatureParameter.named("lines").withDescription("file of `source/path.java:12,13` rows");
+      FeatureParameter.named("lines").withDescription("file of `<path>:<line>,<line>` rows");
 
   @Override
   public MutationInterceptor createInterceptor(InterceptorParameters params) {

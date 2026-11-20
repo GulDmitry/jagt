@@ -23,8 +23,9 @@ USER root
 # Shims are on PATH, so a session's non-interactive shell resolves them; tools install on first use.
 # RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates build-essential && rm -rf /var/lib/apt/lists/*
 # RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
-# ENV MISE_DATA_DIR=/home/jagt/.local/share/mise MISE_YES=1 MISE_TRUSTED_CONFIG_PATHS=/data
-# ENV PATH=/home/jagt/.local/share/mise/shims:${PATH}
+# RUN mkdir /opt/mise && chown jagt /opt/mise
+# ENV MISE_DATA_DIR=/opt/mise MISE_YES=1 MISE_TRUSTED_CONFIG_PATHS=/data
+# ENV PATH=/opt/mise/shims:${PATH}
 
 # Playwright with Chromium only, for a session driving a browser and for the acceptance role's flows (driver playwright,
 # run as `npx playwright test`); needs the Node block above.

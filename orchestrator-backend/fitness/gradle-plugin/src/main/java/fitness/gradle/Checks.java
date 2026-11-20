@@ -35,7 +35,7 @@ final class Checks {
     return check;
   }
 
-  static void contexts(Project root, FitnessFunction function) {
+  static void contexts(Project root, FitnessExtension extension, FitnessFunction function) {
     Object suite = function.selectors().get("task");
     if (suite == null || root.getTasks().findByName(suite.toString()) == null) {
       throw new GradleException("fitness: " + function.id() + " names no suite task: " + suite);
@@ -43,15 +43,16 @@ final class Checks {
     TaskProvider<ContextsCheck> check =
         register(root, ContextsCheck.class, suite + "ContextCeiling", function);
     check.configure(
-        task ->
-            task.getReports()
-                .set(root.getLayout().getBuildDirectory().dir("test-results/" + suite)));
+        task -> {
+          task.getReports().set(root.getLayout().getBuildDirectory().dir("test-results/" + suite));
+          task.getPattern().set(extension.getContextsPattern());
+        });
     root.getTasks()
         .named(suite.toString(), Test.class)
         .configure(
             test -> {
               test.finalizedBy(check);
-              test.systemProperty("logging.level.org.springframework.test.context.cache", "DEBUG");
+              extension.getContextsSystemProperties().get().forEach(test::systemProperty);
             });
   }
 

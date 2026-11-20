@@ -30,10 +30,10 @@ subprojects {
     }
 
     dependencies {
-        api platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
-        implementation 'org.jspecify:jspecify'
+        api platform("org.junit:junit-bom:${junitVersion}")
+        implementation "org.jspecify:jspecify:${jspecifyVersion}"
         testImplementation 'org.junit.jupiter:junit-jupiter'
-        testImplementation 'org.assertj:assertj-core'
+        testImplementation "org.assertj:assertj-core:${assertjVersion}"
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 

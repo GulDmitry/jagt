@@ -20,7 +20,7 @@ class RoundBriefTest {
   private final ReviewFacts.Pipeline red = new ReviewFacts.Pipeline("failed", "", "");
   private final ReviewFacts.Discussion dropTheCache =
       new ReviewFacts.Discussion(
-          List.of("reviewer (a.java:3): drop the cache"), List.of(), List.of());
+          List.of("reviewer (a.kt:3): drop the cache"), List.of(), List.of());
   private final ReviewFacts.Discussion quotedPattern =
       new ReviewFacts.Discussion(
           List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"),
@@ -74,7 +74,7 @@ class RoundBriefTest {
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
     ReviewFacts.Discussion beyondTheTicket =
         new ReviewFacts.Discussion(
-            List.of("bot (a.java:3): also migrate the other listeners"), List.of(), List.of());
+            List.of("bot (a.kt:3): also migrate the other listeners"), List.of(), List.of());
 
     String brief =
         RoundBrief.of(
@@ -102,7 +102,7 @@ class RoundBriefTest {
             """
             Review round for http://mr/1.
             <outside source="threads">
-            reviewer (a.java:3): drop the cache
+            reviewer (a.kt:3): drop the cache
             </outside>
             Done.\
             """);

@@ -138,9 +138,9 @@ class OrchestratorPathsTest {
   void takesTheInstallHomeAsRootWhenNoRootIsNamed() {
     Optional<Path> home =
         OrchestratorPaths.installedRoot(
-            new String[0], null, "/home/me/.jagt/versions/0.24.1/jagt.jar");
+            new String[0], null, "/h/me/.jagt/versions/0.24.1/jagt.jar");
 
-    assertThat(home).contains(Path.of("/home/me/.jagt"));
+    assertThat(home).contains(Path.of("/h/me/.jagt"));
   }
 
   @Test
@@ -149,7 +149,7 @@ class OrchestratorPathsTest {
         OrchestratorPaths.installedRoot(
             new String[] {"--orchestrator.root=/srv/jagt"},
             null,
-            "/home/me/.jagt/versions/0.24.1/jagt.jar");
+            "/h/me/.jagt/versions/0.24.1/jagt.jar");
 
     assertThat(home).isEmpty();
   }
@@ -158,7 +158,7 @@ class OrchestratorPathsTest {
   void takesNoInstallHomeWhenTheEnvironmentNamesTheRoot() {
     Optional<Path> home =
         OrchestratorPaths.installedRoot(
-            new String[0], "/srv/jagt", "/home/me/.jagt/versions/0.24.1/jagt.jar");
+            new String[0], "/srv/jagt", "/h/me/.jagt/versions/0.24.1/jagt.jar");
 
     assertThat(home).isEmpty();
   }
@@ -167,8 +167,8 @@ class OrchestratorPathsTest {
   void takesTheInstallHomeWhenTheNamedRootIsBlank() {
     Optional<Path> home =
         OrchestratorPaths.installedRoot(
-            new String[] {"--orchestrator.root= "}, " ", "/home/me/.jagt/versions/0.24.1/jagt.jar");
+            new String[] {"--orchestrator.root= "}, " ", "/h/me/.jagt/versions/0.24.1/jagt.jar");
 
-    assertThat(home).contains(Path.of("/home/me/.jagt"));
+    assertThat(home).contains(Path.of("/h/me/.jagt"));
   }
 }

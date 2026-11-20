@@ -9,9 +9,11 @@ import fitness.core.FitnessFunction;
 import fitness.core.SourceRoots;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -77,7 +79,8 @@ public final class ScanEngine implements Engine {
         "set", Set.of(),
         "glob", Set.of(),
         "requires", Set.of(),
-        "regex", Set.of());
+        "regex", Set.of(),
+        "except", Set.of());
   }
 
   @Override
@@ -176,6 +179,20 @@ public final class ScanEngine implements Engine {
   }
 
   private static List<Path> candidates(FitnessFunction function, Project project) {
+    List<Path> selected = selected(function, project);
+    if (!(function.selectors().get("except") instanceof String except)) {
+      return selected;
+    }
+    List<PathMatcher> excluded =
+        Glob.split(except).stream()
+            .map(each -> FileSystems.getDefault().getPathMatcher("glob:" + each))
+            .toList();
+    return selected.stream()
+        .filter(path -> excluded.stream().noneMatch(m -> m.matches(project.root().relativize(path))))
+        .toList();
+  }
+
+  private static List<Path> selected(FitnessFunction function, Project project) {
     boolean directories = "directory".equals(function.selectors().get("kind"));
     String glob = (String) function.selectors().get("glob");
     Object set = function.selectors().get("set");

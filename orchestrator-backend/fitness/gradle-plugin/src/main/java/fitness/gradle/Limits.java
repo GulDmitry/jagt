@@ -11,6 +11,7 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.quality.CheckstyleExtension;
 import org.gradle.api.plugins.quality.CheckstylePlugin;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification;
@@ -69,9 +70,12 @@ final class Limits {
   }
 
   /** A gate row limits the tasks it names; the suite row limits every other test task. */
-  static void minutes(Project root, List<FitnessFunction> functions, MapProperty<String, String> overruns) {
+  static void minutes(
+      Project root,
+      Property<String> property,
+      List<FitnessFunction> functions, MapProperty<String, String> overruns) {
     Provider<Long> override =
-        root.getProviders().gradleProperty("runMinutes").map(Long::parseLong);
+        property.flatMap(name -> root.getProviders().gradleProperty(name)).map(Long::parseLong);
     FitnessFunction suite =
         functions.stream().filter(function -> tasks(function).isEmpty()).findFirst().orElse(null);
     root.getAllprojects()

@@ -69,9 +69,9 @@ class RoundTrailTest {
                     2,
                     "",
                     "a",
-                    "https://host/abc/-/merge_requests/7#note_101 101\nsrc/Main.java:12 202"));
+                    "https://host/abc/-/merge_requests/7#note_101 101\nsrc/Main.kt:12 202"));
 
-    assertThat(trail.noNewNote("Main.java:12 202\nsrc/Main.java:30 101", "")).isTrue();
+    assertThat(trail.noNewNote("Main.kt:12 202\nsrc/Main.kt:30 101", "")).isTrue();
   }
 
   @Test

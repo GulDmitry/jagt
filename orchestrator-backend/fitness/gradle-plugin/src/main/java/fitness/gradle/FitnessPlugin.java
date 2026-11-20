@@ -43,6 +43,7 @@ public final class FitnessPlugin implements Plugin<Project> {
   @Override
   public void apply(Project root) {
     FitnessExtension extension = root.getExtensions().create("fitness", FitnessExtension.class);
+    extension.getMinutesProperty().convention("fitness.minutes");
     root.getGradle().projectsEvaluated(gradle -> wire(root, extension));
   }
 
@@ -59,18 +60,18 @@ public final class FitnessPlugin implements Plugin<Project> {
       String tool = function.selectors().getOrDefault("tool", "").toString();
       String measure = function.selectors().getOrDefault("measure", "").toString();
       String key = tool + ":" + measure;
-      TaskProvider<?> check = bind(root, function, key, minutes);
+      TaskProvider<?> check = bind(root, extension, function, key, minutes);
       if (check != null && block.covers(function.section())) {
         check.configure(task -> task.mustRunAfter(requirements));
         measured.add(check);
       }
     }
     MapProperty<String, String> overruns = overruns(root);
-    Limits.minutes(root, minutes, overruns);
+    Limits.minutes(root, extension.getMinutesProperty(), minutes, overruns);
     registerFitness(root, extension, block, measured, minutes, requirements);
   }
 
-  private static TaskProvider<?> bind(Project root, FitnessFunction function, String key, List<FitnessFunction> minutes) {
+  private static TaskProvider<?> bind(Project root, FitnessExtension extension, FitnessFunction function, String key, List<FitnessFunction> minutes) {
     switch (key) {
       case "checkstyle:warnings" -> {
         Limits.checkstyle(root, function);
@@ -88,8 +89,8 @@ public final class FitnessPlugin implements Plugin<Project> {
         minutes.add(function);
         return Checks.runMeasured(root, function, Limits.suites(function));
       }
-      case "gradle:spring-contexts" -> {
-        Checks.contexts(root, function);
+      case "gradle:contexts" -> {
+        Checks.contexts(root, extension, function);
         return Checks.runMeasured(root, function, function.selectors().get("task").toString());
       }
       case "gradle:runs-without-time-limit" -> {

@@ -381,12 +381,12 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
               new Answer<>(
                   Optional.of(
                       reviewFacts()
-                          .withThreads(List.of("bot (Widget.java:12): tighten this"))
+                          .withThreads(List.of("bot (Widget.kt:12): tighten this"))
                           .build()),
                   TokenUsage.NONE));
       flow.act("sweep");
       assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
-          .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
+          .contains("bot (Widget.kt:12): tighten this", "Do NOT push or post anything yourself");
 
       Files.writeString(flow.worktree().resolve("widget.txt"), "tightened\n");
       Files.writeString(flow.worktree().resolve("review_replies.md"), "> tighten this\n\nDone.\n");

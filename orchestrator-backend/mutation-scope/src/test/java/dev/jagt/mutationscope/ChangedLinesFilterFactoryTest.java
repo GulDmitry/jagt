@@ -28,7 +28,7 @@ class ChangedLinesFilterFactoryTest {
   @Test
   void buildsFilterKeepingLinesOfTheFileTheFeatureNames() throws IOException {
     Path lines = dir.resolve("lines.txt");
-    Files.writeString(lines, "dev/jagt/Foo.java:12,13\ndev/jagt/Bar.java:7\n");
+    Files.writeString(lines, "dev/jagt/Foo.java" + ":12,13\ndev/jagt/Bar.java" + ":7\n");
     var setting =
         new FeatureSetting(
             "CHANGEDLINES", ToggleStatus.ACTIVATE, Map.of("lines", List.of(lines.toString())));

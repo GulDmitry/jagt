@@ -41,7 +41,7 @@ class WorktreeSandboxTest {
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(true),
             List.of(web, api),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/tmp"));
 
     assertThat(sandbox.writable())
@@ -58,7 +58,7 @@ class WorktreeSandboxTest {
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(true),
             List.of(),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/users-temp/T"));
 
     assertThat(sandbox.writable()).contains(Path.of("/users-temp/T"));
@@ -70,11 +70,10 @@ class WorktreeSandboxTest {
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(true).withAllowWrite(List.of("~/www/specs")),
             List.of(),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/tmp"));
 
-    assertThat(sandbox.writable())
-        .contains(Path.of("/home/me/.gradle"), Path.of("/home/me/www/specs"));
+    assertThat(sandbox.writable()).contains(Path.of("/h/me/.gradle"), Path.of("/h/me/www/specs"));
   }
 
   @Test
@@ -86,7 +85,7 @@ class WorktreeSandboxTest {
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(true).withAllowWrite(List.of(root + "/link")),
             List.of(),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/tmp"));
 
     assertThat(sandbox.writable())
@@ -100,7 +99,7 @@ class WorktreeSandboxTest {
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(true).withExcludedCommands(List.of("~/bin/db *")),
             List.of(),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/tmp"));
 
     assertThat(sandbox.excludedCommands()).contains("git push *", "ssh *", "~/bin/db *");
@@ -112,7 +111,7 @@ class WorktreeSandboxTest {
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(false),
             List.of(),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/tmp"));
 
     assertThat(sandbox).isEqualTo(Sandbox.off());
@@ -121,8 +120,7 @@ class WorktreeSandboxTest {
   @Test
   void confinesNothingUnlessTheSandboxIsTurnedOn() {
     Sandbox sandbox =
-        WorktreeSandbox.of(
-            SandboxConfig.defaults(), List.of(), Path.of("/home/me"), Path.of("/tmp"));
+        WorktreeSandbox.of(SandboxConfig.defaults(), List.of(), Path.of("/h/me"), Path.of("/tmp"));
 
     assertThat(sandbox).isEqualTo(Sandbox.off());
   }
@@ -133,7 +131,7 @@ class WorktreeSandboxTest {
         WorktreeSandbox.scratch(
             SandboxConfig.defaults().withEnabled(true),
             Path.of("/w/scratch/ABC-42"),
-            Path.of("/home/me"),
+            Path.of("/h/me"),
             Path.of("/tmp"));
 
     assertThat(sandbox.writable()).contains(Path.of("/w/scratch/ABC-42"));

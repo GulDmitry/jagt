@@ -48,8 +48,7 @@ class PlanProbingTest {
   @Test
   void failsCommandEndingWithAnotherExitCarryingTheTailOfItsOutput(@TempDir Path worktree) {
     when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
-        .thenReturn(
-            new Processes.Result(1, "line 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
+        .thenReturn(new Processes.Result(1, "row 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
 
     List<Probe> probed = probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
@@ -60,7 +59,7 @@ class PlanProbingTest {
           assertThat(probe.excerpt())
               .startsWith("exit 1")
               .endsWith("BUILD FAILED")
-              .doesNotContain("line 1");
+              .doesNotContain("row 1");
         });
   }
 

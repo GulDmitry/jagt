@@ -162,7 +162,7 @@ class RoundOutcomeTest {
             new ReviewFacts.Request(true, true, false, false, 0),
             new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
-                List.of("coderabbit (a.java:3): rename x"), List.of(), List.of()));
+                List.of("coderabbit (a.kt:3): rename x"), List.of(), List.of()));
     when(relay.relay("ABC-1", "http://mr/1", facts, "success", ""))
         .thenReturn(
             new ReviewSweepService.SweepResult(

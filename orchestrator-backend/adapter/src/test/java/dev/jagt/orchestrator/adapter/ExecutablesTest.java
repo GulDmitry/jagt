@@ -56,13 +56,12 @@ class ExecutablesTest {
             Executables.resolve(
                 "idea",
                 "/usr/bin",
-                "/Users/me",
+                "/h/me",
                 path ->
                     path.toString()
-                        .equals(
-                            "/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
+                        .equals("/h/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
                 List.of()))
-        .isEqualTo("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
+        .isEqualTo("/h/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
   }
 
   @Test
@@ -106,7 +105,7 @@ class ExecutablesTest {
 
     assertThat(
             Executables.resolve(
-                "idea", "/usr/bin", "/Users/me", launcher::equals, List.of(applications)))
+                "idea", "/usr/bin", "/h/me", launcher::equals, List.of(applications)))
         .isEqualTo(launcher.toString());
   }
 
@@ -119,7 +118,7 @@ class ExecutablesTest {
             Executables.resolve(
                 "idea",
                 "/usr/bin",
-                "/Users/me",
+                "/h/me",
                 path -> path.endsWith(Path.of("Contents", "MacOS", "idea")),
                 List.of(applications)))
         .isEqualTo("idea");
@@ -127,8 +126,8 @@ class ExecutablesTest {
 
   @Test
   void searchesTheUsersOwnApplicationsBesideTheSystemOnes() {
-    assertThat(Executables.applicationDirs("/Users/me"))
-        .containsExactly(Path.of("/Applications"), Path.of("/Users/me/Applications"));
+    assertThat(Executables.applicationDirs("/h/me"))
+        .containsExactly(Path.of("/Applications"), Path.of("/h/me/Applications"));
   }
 
   @ParameterizedTest

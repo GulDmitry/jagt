@@ -4,6 +4,9 @@ pluginManager.apply('fitness')
 fitness {
     file = layout.projectDirectory.file('../fitness.yml')
     classpath.from(sourceSets.test.runtimeClasspath)
+    minutesProperty = 'runMinutes'
+    contextsSystemProperties = ['logging.level.org.springframework.test.context.cache': 'DEBUG']
+    contextsPattern = 'DefaultContextCache@(\\w+) .*?missCount = (\\d+)'
 }
 
 // 0188: the scan reads the release SBOM. The plugin registers its checks once every project is evaluated.

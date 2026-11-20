@@ -93,4 +93,27 @@ class ScanEngineKindsTest {
 
     assertThat(found.items()).containsExactly("kept.txt");
   }
+
+  @Test
+  void leavesOutFilesMatchingAnExceptGlob(@TempDir Path root) throws IOException, InterruptedException {
+    Files.createDirectories(root.resolve("vendor"));
+    Files.writeString(root.resolve("own.txt"), "<<<<<<< ours\n");
+    Files.writeString(root.resolve("vendor/lib.txt"), "<<<<<<< ours\n");
+    new ProcessBuilder("git", "-C", root.toString(), "init", "-q").start().waitFor();
+    new ProcessBuilder("git", "-C", root.toString(), "add", "own.txt", "vendor/lib.txt")
+        .start()
+        .waitFor();
+
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("set", "tracked")
+                .select("per", "file")
+                .select("regex", "(?m)^<{7} ")
+                .select("except", "vendor/**")
+                .build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.items()).containsExactly("own.txt");
+  }
 }

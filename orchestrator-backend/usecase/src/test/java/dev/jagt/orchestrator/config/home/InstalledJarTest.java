@@ -10,12 +10,11 @@ class InstalledJarTest {
 
   @Test
   void jarUnderVersionsNamesTheInstallHomeAndItsVersion() {
-    InstalledJar installed =
-        InstalledJar.at(Path.of("/home/me/.jagt/versions/0.24.1/jagt.jar")).get();
+    InstalledJar installed = InstalledJar.at(Path.of("/h/me/.jagt/versions/0.24.1/jagt.jar")).get();
 
-    assertThat(installed.root()).isEqualTo(Path.of("/home/me/.jagt"));
+    assertThat(installed.root()).isEqualTo(Path.of("/h/me/.jagt"));
     assertThat(installed.version()).isEqualTo("0.24.1");
-    assertThat(installed.versions()).isEqualTo(Path.of("/home/me/.jagt/versions"));
+    assertThat(installed.versions()).isEqualTo(Path.of("/h/me/.jagt/versions"));
   }
 
   @Test
@@ -25,21 +24,20 @@ class InstalledJarTest {
 
   @Test
   void jarNamedOtherwiseUnderVersionsIsNotInstalled() {
-    assertThat(InstalledJar.at(Path.of("/home/me/.jagt/versions/0.24.1/jagt-run.jar"))).isEmpty();
+    assertThat(InstalledJar.at(Path.of("/h/me/.jagt/versions/0.24.1/jagt-run.jar"))).isEmpty();
   }
 
   @Test
   void singleInstalledJarOnTheClassPathIsTheRunningOne() {
-    InstalledJar installed =
-        InstalledJar.onClassPath("/home/me/.jagt/versions/0.24.1/jagt.jar").get();
+    InstalledJar installed = InstalledJar.onClassPath("/h/me/.jagt/versions/0.24.1/jagt.jar").get();
 
-    assertThat(installed.root()).isEqualTo(Path.of("/home/me/.jagt"));
+    assertThat(installed.root()).isEqualTo(Path.of("/h/me/.jagt"));
   }
 
   @Test
   void severalClassPathEntriesAreNoInstalledJar() {
     String classPath =
-        "/home/me/.jagt/versions/0.24.1/jagt.jar" + File.pathSeparator + "/other/lib.jar";
+        "/h/me/.jagt/versions/0.24.1/jagt.jar" + File.pathSeparator + "/other/lib.jar";
 
     assertThat(InstalledJar.onClassPath(classPath)).isEmpty();
   }

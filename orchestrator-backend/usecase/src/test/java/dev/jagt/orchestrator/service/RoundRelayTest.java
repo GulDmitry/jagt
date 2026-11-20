@@ -223,7 +223,7 @@ class RoundRelayTest {
             .withStatus("success")
             .withDiscussion(
                 new ReviewFacts.Discussion(
-                    List.of("reviewer (a.java:3): drop the cache"), List.of(), List.of()))
+                    List.of("reviewer (a.kt:3): drop the cache"), List.of(), List.of()))
             .build()
             .facts()
             .orElseThrow();

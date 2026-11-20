@@ -45,7 +45,7 @@ done
 # only the volumes it writes are handed to it first.
 DROP_ROOT='[[ $(stat -c %u /gradle-home) == 1000 ]] || chown -R 1000:1000 /gradle-home
 chown 1000:1000 /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
-exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME=/home/ubuntu "$@"' # the image's own user, uid 1000, lives here
+exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME="$(getent passwd 1000 | cut -d: -f6)" "$@"' # the home of the image's own user, uid 1000
 
 # A linked worktree's .git points at its main checkout's git dir by absolute path, so that dir is mounted there too.
 GIT_MOUNTS=()

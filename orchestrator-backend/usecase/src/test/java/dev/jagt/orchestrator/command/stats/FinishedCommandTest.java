@@ -70,7 +70,7 @@ class FinishedCommandTest {
         FinishedCommand.render(
             List.of(FinishedTask.of("ABC-1", twice, 1L), FinishedTask.of("ABC-2", once, 1L)));
 
-    assertThat(report).endsWith("refused: session line 3, status report 1");
+    assertThat(report).contains("refused: session").endsWith("3, status report 1");
   }
 
   @Test

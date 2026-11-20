@@ -6,6 +6,7 @@ on [0209](0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tre
 ## Status
 
 Accepted 2026-11-20, owner's order of 2026-11-18.
+Amended by [0212](0212-the-fitness-build-counts-under-the-same-ceilings-as-the-rest.md): its modules count under the ceilings.
 
 ## Context
 
@@ -14,7 +15,8 @@ Accepted 2026-11-20, owner's order of 2026-11-18.
 
 ## Decision
 
-- `orchestrator-backend/fitness/` is an included build, beside `build-logic/`; the Gradle module count stays as it is.
+- `orchestrator-backend/fitness/` is an included build, beside `build-logic/`;
+  its modules count under the ceilings of [0212](0212-the-fitness-build-counts-under-the-same-ceilings-as-the-rest.md).
 - No file under it names `dev.jagt`, a ring, a path or a vendor: jagt's selectors live in jagt's `fitness.yml`, its domain fitness functions in jagt.
 - It keeps its own `decisions/` and `AGENTS.md` from its first commit.
 - It checks its own names with its own `fitness.yml` (`LibraryChecksItselfTest`).
