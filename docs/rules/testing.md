@@ -3,7 +3,7 @@
 [← AGENTS.md](../../AGENTS.md)
 
 `./gradlew test` is the hermetic gate (AGENTS.md). Every other suite lives in `src/<name>/java`, none in `check`: [the suites](testing-suites.md).
-**Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD`, each survivor judged before the commit
+**Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD` (`fitness/` too), each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo) and a class with a branch no
 test reaches** ([0181](../decisions/0181-every-module-keeps-80-percent-line-coverage.md),

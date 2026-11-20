@@ -75,7 +75,7 @@ def git = { List<String> args -> providers.exec { workingDir repoRoot; commandLi
 def forkPoint = base == 'HEAD' ? 'HEAD' : git(['merge-base', base, 'HEAD']).trim()
 def diff = providers.exec {
     workingDir rootDir
-    commandLine 'git', 'diff', '-U0', forkPoint, '--', '*/src/main/java/*.java', 'src/main/java/*.java', ':(exclude)fitness'
+    commandLine 'git', 'diff', '-U0', forkPoint, '--', '*/src/main/java/*.java', 'src/main/java/*.java'
 }.standardOutput.asText.get()
 def changedLines = [:].withDefault { [] as Set }
 def file = null
@@ -114,7 +114,14 @@ def moduleOf = { String path ->
     owner
 }
 def targets = [:].withDefault { [] }
+// The included build `fitness/` mutates its own modules (0162); it reads the changed-lines file below for its classes.
+def fitnessModules = [] as Set
 changedLines.keySet().each { path ->
+    def fitnessModule = path =~ /^orchestrator-backend\/fitness\/([^\/]+)\/src\/main\/java\//
+    if (fitnessModule) {
+        fitnessModules << fitnessModule[0][1]
+        return
+    }
     def type = classOf(path)
     def owner = moduleOf(path)
     if (owner == ':usecase' && type in usecaseGitClasses) {
@@ -127,7 +134,7 @@ changedLines.keySet().each { path ->
 }
 // Pitest mutates every line of a target class; the filter drops what is off the diff before a mutant runs (0196).
 def changedLinesFile = rootProject.layout.buildDirectory.file('pitest-diff/changed-lines.txt').get().asFile
-if (targets) {
+if (targets || fitnessModules) {
     changedLinesFile.parentFile.mkdirs()
     changedLinesFile.text = changedLines.collect { path, numbers ->
         "${path.replaceFirst('^.*?src/main/java/', '')}:${numbers.sort().join(',')}"
@@ -141,7 +148,9 @@ targets.each { module, types ->
 }
 tasks.register('pitestDiff') {
     dependsOn targets.keySet().collect { project(it).tasks.named('pitest') }
-    def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile }
+    dependsOn fitnessModules.collect { gradle.includedBuild('fitness').task(":${it}:pitest") }
+    def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile } +
+            fitnessModules.collect { rootDir.toPath().resolve("fitness/${it}/build/reports/pitest/mutations.xml").toFile() }
     def lines = changedLines.collectEntries { path, numbers -> [(path.replaceFirst('^.*?src/main/java/', '')): numbers] }
     doLast {
         if (!lines) {

@@ -1,5 +1,9 @@
 import java.time.Duration
 
+plugins {
+    id 'info.solidsoft.pitest' version '1.19.0' apply false
+}
+
 apply plugin: 'base'
 
 group = 'fitness'
@@ -39,6 +43,33 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.addAll(['-parameters', '-Xlint:all,-processing', '-Werror'])
+    }
+
+    // Gradle reports setVisible's deprecation when the plugin applies; only a plugin release after 1.19.0 ends it.
+    org.gradle.internal.deprecation.DeprecationLogger.whileDisabled({ apply plugin: 'info.solidsoft.pitest' } as Runnable)
+
+    // Mutants of the classes named in the changed-lines file (`path.java:line,line` per row), the tree's diff scope;
+    // `-PpitestTargets=<classes>` overrides it.
+    def changedLines = rootProject.layout.projectDirectory.file(providers.gradleProperty('pitestChangedLines').get()).asFile
+    def ownSources = layout.projectDirectory.dir('src/main/java').asFile
+    pitest {
+        pitestVersion = pitestToolVersion
+        junit5PluginVersion = pitestJunit5PluginVersion
+        targetClasses = providers.gradleProperty('pitestTargets').map { it.split(',').toList() }.orElse(providers.provider {
+            def listed = changedLines.exists() ? changedLines.readLines().collect { it.split(':')[0] } as Set : [] as Set
+            def types = ownSources.exists() ? fileTree(ownSources).files.collect { ownSources.toPath().relativize(it.toPath()).toString() } : []
+            types.findAll { it in listed }.collectMany { path ->
+                def type = path.replace('.java', '').replace('/', '.')
+                [type, type + '$*']
+            }
+        })
+        targetTests = ['fitness.*']
+        excludedMethods = ['toString', 'hashCode']
+        failWhenNoMutations = false
+        threads = Runtime.runtime.availableProcessors().intdiv(2)
+        outputFormats = ['HTML', 'XML']
+        timestampedReports = false
+        jvmArgs = ['-Xshare:off', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC']
     }
 
     tasks.withType(Test).configureEach {
