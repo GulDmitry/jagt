@@ -15,6 +15,9 @@ tasks.named('check') {
     dependsOn subprojects.collect { "${it.path}:check" }
 }
 
+def testJvmProperties = new Properties()
+testJvmProperties.load(new StringReader(providers.fileContents(layout.settingsDirectory.file('../build-logic/test-jvm.properties')).asText.get()))
+
 subprojects {
     apply plugin: 'java-library'
     group = 'fitness'
@@ -69,11 +72,12 @@ subprojects {
         threads = Runtime.runtime.availableProcessors().intdiv(2)
         outputFormats = ['HTML', 'XML']
         timestampedReports = false
-        jvmArgs = ['-Xshare:off', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC']
+        jvmArgs = ['-Xshare:off'] + testJvmProperties.collect { key, value -> "-D${key}=${value}".toString() }
     }
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        testJvmProperties.each { key, value -> systemProperty key.toString(), value.toString() }
         timeout = Duration.ofMinutes(10)
     }
 }

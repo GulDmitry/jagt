@@ -36,12 +36,12 @@ allprojects {
         fullMutationMatrix = providers.gradleProperty('fullMatrix').isPresent()
         timestampedReports = false
         // A property run per mutant at jqwik's 1,000 tries is what made `:core` take 47 min (0139).
-        // The unit suite runs with Spring's logging system off (jagt.parallel-tests); a minion without it resets Logback under every log capture.
+        // A minion carries the test JVM properties too (jagt.parallel-tests): without them it resets Logback under every log capture.
         // Mockito as an agent: its self-attach starts a second JVM in each of the minions, one per mutated class.
         jvmArgs = project.provider {
             def mockito = configurations.findByName('testRuntimeClasspath')?.files?.find { it.name.startsWith('mockito-core-') }
             (mockito ? ["-javaagent:${mockito.absolutePath}"] : []) +
-                    ['-Xshare:off', '-Dorg.springframework.boot.logging.LoggingSystem=none', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC', '-Djqwik.tries.default=100']
+                    ['-Xshare:off', '-Djqwik.tries.default=100'] + project.testJvmProperties.collect { key, value -> "-D${key}=${value}".toString() }
         }
     }
 
