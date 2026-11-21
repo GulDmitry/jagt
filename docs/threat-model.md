@@ -127,6 +127,6 @@ nothing), `AbortedConnectionFilter` (drops an aborted peer's socket error), `Ref
 | a same-user process forges Origin and reads `master-token` | a known pass in [guards](rules/guards.md) | sessions as another user |
 | `auth: none` trusts the network | `server.address` stays loopback, a wider one refuses the start | none |
 | one owner, one password, no MFA | OIDC delegates MFA | a second login mode |
-| no DAST, no JS lint of the board | JAGT-96 | JAGT-96 |
+| no DAST | the filter and refusal tests | a DAST scan |
 | no HSTS from jagt | TLS ends at the ingress | none |
 | ASVS IDs are chapters, not individual requirements | practices names the same grain | a requirement-level audit |
