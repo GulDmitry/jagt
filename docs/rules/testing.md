@@ -45,7 +45,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 - A bare binary name (AGENTS.md): `adapter/Executables` resolves it against PATH, install directories (Homebrew included), per-user
   script dirs, then **inside application bundles**. An absolute default fails every task on Linux.
-- **Do not weaken the resolver**: an IDE needs the bundle step (`/Applications/<App>.app/Contents/MacOS/<name>`).
+- **Do not weaken the resolver**: a code viewer installed as an application needs the bundle step (`/Applications/<App>.app/Contents/MacOS/<name>`).
   The agent CLI is **not** resolved: it runs under the human's PATH in its tmux window.
 - `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, arguments stay the human's; a missing one names the **key**.
 - JUnit parallel, methods **and** classes, every test isolated by construction: no `@BeforeAll`, no mutable statics,
