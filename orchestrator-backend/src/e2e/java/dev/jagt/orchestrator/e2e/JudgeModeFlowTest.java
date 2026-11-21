@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -50,8 +51,10 @@ class JudgeModeFlowTest extends FlowHarness.World {
   }
 
   @BeforeEach
-  void oneProjectAndNoMasterModeWritten() throws Exception {
+  void oneProjectAndTheMasterInJudge() throws Exception {
     E2eWorkspace.writeConfig(flow.configFile(), flow.repo(), "shared", false);
+    Files.writeString(
+        flow.configFile(), "  master: { mode: \"judge\" }\n", StandardOpenOption.APPEND);
   }
 
   @AfterEach
