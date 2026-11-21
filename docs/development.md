@@ -54,7 +54,7 @@ pipeline and a green laptop mean the same thing.
 
 One thing is GitHub-only: attaching the jar to a `v*` tag's release. Neither pipeline needs Docker or a privileged runner.
 
-**Not covered, and not pretended to be:** IntelliJ, the macOS AppleScript window raise, the real `claude` CLI,
+**Not covered, and not pretended to be:** a code viewer, the macOS AppleScript window raise, the real `claude` CLI,
 and the MCP servers its reads need.
 
 ## Releasing

@@ -25,7 +25,8 @@ public interface Host {
   String resolve(String name);
 
   /**
-   * Where application bundles are installed, system-wide first; an IDE's launcher sits inside one.
+   * Where application bundles are installed, system-wide first; a code viewer's launcher sits
+   * inside one.
    */
   List<Path> applicationDirs();
 

@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 /**
  * Runs the project's own command, then the plan's acceptance probes, for every task waiting at
  * VERIFYING. Green hands the round on to the human; red goes back to the agent with the output, so
- * nobody opens an IDE on a tree that does not build.
+ * nobody opens a code viewer on a tree that does not build.
  */
 @Service
 @RequiredArgsConstructor

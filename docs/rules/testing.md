@@ -91,7 +91,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 - `scripts/linux-suite.sh` runs `test` + `e2eTest` + `boardTest` + `linuxDriverTest` in a container (`docker/linux-suite.Dockerfile`), the only place
   the Linux drivers meet real binaries: the notifier asserted off the session bus with `dbus-monitor`, kitty under Xvfb.
-- What a container cannot host — IntelliJ, the AppleScript raise, the real `claude` — stays **named as
+- What a container cannot host — a code viewer, the AppleScript raise, the real `claude` — stays **named as
   uncovered**, never faked; raising and closing the viewer stay `@Disabled` (`LinuxKittyTerminalDriverLinuxTest`).
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,
   `scripts/with-linux-desktop.sh` Xvfb + session bus + notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.**

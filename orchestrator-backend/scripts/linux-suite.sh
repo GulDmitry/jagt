@@ -11,7 +11,7 @@
 #   4. `linuxDriverTest` — the Linux DRIVERS against real binaries: notify-send over a session D-Bus with a
 #                          notification daemon, and kitty on an Xvfb display answering remote control
 #
-# What it CANNOT answer, and therefore does not pretend to: IntelliJ (`idea`), the macOS AppleScript raise,
+# What it CANNOT answer, and therefore does not pretend to: a code viewer, the macOS AppleScript raise,
 # the real agent CLI, a live code host or tracker.
 #
 # Usage: scripts/linux-suite.sh [gradle-task…]      (default: all four above)

@@ -100,12 +100,12 @@ class ExecutablesTest {
   void findsLauncherThatSitsOnlyInsideItsApplicationBundle(@TempDir Path applications)
       throws IOException {
     Files.createDirectories(applications.resolve("Notes.app"));
-    Path bundle = Files.createDirectories(applications.resolve("IntelliJ IDEA.app"));
-    Path launcher = bundle.resolve("Contents").resolve("MacOS").resolve("idea");
+    Path bundle = Files.createDirectories(applications.resolve("Viewer.app"));
+    Path launcher = bundle.resolve("Contents").resolve("MacOS").resolve("viewer");
 
     assertThat(
             Executables.resolve(
-                "idea", "/usr/bin", "/h/me", launcher::equals, List.of(applications)))
+                "viewer", "/usr/bin", "/h/me", launcher::equals, List.of(applications)))
         .isEqualTo(launcher.toString());
   }
 

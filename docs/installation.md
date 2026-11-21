@@ -19,7 +19,7 @@ absolute path in `jagt.yml` to pin one.
 | [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent | `brew install kitty` · `apt install kitty` |
 | [Ghostty](https://ghostty.org) 1.3+ | the alternative to kitty on macOS, `terminal: ghostty` | `brew install --cask ghostty` |
 | [bubblewrap](https://github.com/containers/bubblewrap) + socat | Claude's sandbox, only when `sandbox.enabled: true` keeps a session's writes in its task | built in · `apt install bubblewrap socat` |
-| [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `code` checkpoint | `idea` or `code` on PATH, or installed as an application |
+| A code viewer, for example [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `code` checkpoint | its launcher on PATH, or installed as an application |
 
 jagt refuses to start when one of those is missing — bar Claude Code, whose absence shows at the first read.
 The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
@@ -101,7 +101,7 @@ instead.
 
 ## Notes
 
-**IntelliJ run configs.** A fresh worktree opens without the base project's run configs. Mark a config *Store
+**Run configs of a code viewer** (IntelliJ, for example). A fresh worktree opens without the base project's run configs. Mark a config *Store
 as project file* (Run → Edit Configurations) so it lands under `.run/`, which jagt copies into every worktree.
 
 **MCP pre-approval.** Every agent worktree gets a generated `.claude/settings.local.json` pre-approving jagt's
