@@ -16,7 +16,7 @@ absolute path in `jagt.yml` to pin one.
 | [Claude Code](https://claude.com/claude-code) | reads every ticket, merge request and review round, headless — whichever CLI writes the code | its own installer |
 | [tmux](https://github.com/tmux/tmux) | the session an agent lives in, outliving the board and the window | `brew install tmux` · `apt install tmux` |
 | `pgrep` | reading whether an agent still runs in its window | in the OS · `apt install procps` |
-| [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent | `brew install kitty` · `apt install kitty` |
+| [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent; not needed with `terminal: none` | `brew install kitty` · `apt install kitty` |
 | [Ghostty](https://ghostty.org) 1.3+ | the alternative to kitty on macOS, `terminal: ghostty` | `brew install --cask ghostty` |
 | [bubblewrap](https://github.com/containers/bubblewrap) + socat | Claude's sandbox, only when `sandbox.enabled: true` keeps a session's writes in its task | built in · `apt install bubblewrap socat` |
 | A code viewer, for example [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `code` checkpoint | its launcher on PATH, or installed as an application |
@@ -43,6 +43,14 @@ An installed jagt rewrites its roles' `.dist` files and `jagt.desktop.yml.dist` 
 Your own `jagt.yml` and role files there stay as they are.
 With no `jagt.yml` and no project it starts on the defaults, and the board adds the first project.
 What an older version kept in the jagt folder's root, `~/.jagt` or flat in the data folder moves into the tree at the first start.
+
+## Upgrading
+
+An installed jagt, its jar under `versions/<v>/`, keeps a newer release beside the running one and checks its checksum.
+`releaseFeed.kind: none` turns that off.
+While a newer release is kept, the board offers `upgrade`.
+With `releaseFeed.autoUpgrade: true` and the launcher, jagt switches by itself once no agent session is up, then exits with 75
+so the launcher starts the new release.
 
 ## MCP access comes first
 
