@@ -55,7 +55,7 @@ Every stop SHALL append a line `{at, task, alias, trigger, status, evidence, ste
 - **THEN** one line of `at`, `task`, `alias`, `trigger`, `status`, `evidence` and `steps` is appended to `stops.jsonl`
 
 ### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopPrecondition`), but the triage read, which
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task, but the triage read, which
 writes only the stop's hover. A job's `Watch` admits one only where it names the stop kind it ends.
 
 #### Scenario: A nudge is left unsent while a task is stopped
@@ -65,7 +65,7 @@ writes only the stop's hover. A job's `Watch` admits one only where it names the
 #### Scenario: You press a verb on a stopped task
 - **WHEN** you press `ship` or `deploy` on a stopped task
 - **THEN** it runs, and the stop stands until you press `lift`, but a `deploy` lifts it once `DEPLOYED`
-- **AND** a deploy any other origin presses is refused and lifts nothing
+- **AND** a deploy any other origin presses is refused and lifts nothing, saying jagt stopped it and only a human presses it until `lift`
 
 ### Requirement: In act the Master decides a stop for a suspected loop
 In `roles.master.mode: act` without `lift` in `mine`, a STALLED, SHIPS, ROUNDS, PACE or UNCHANGED_FAILURE stop SHALL be asked of the Master once

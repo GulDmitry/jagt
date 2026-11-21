@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.deploy.RedCause;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -14,6 +15,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /** What a task's status allows and where an outcome leads it, answered by the task chart alone. */
 public final class FlowRules {
@@ -26,6 +28,20 @@ public final class FlowRules {
 
   public boolean allows(TaskStatus status, TaskAction action, Facts facts) {
     return chart.offers(status, action, facts);
+  }
+
+  /** As above, for a press by {@code origin} on facts that read git and the stops. */
+  public boolean allows(
+      TaskStatus status, TaskAction action, Facts facts, @Nullable ActionOrigin origin) {
+    return chart.offers(status, action, facts, origin);
+  }
+
+  /**
+   * Why a press the chart does not offer is declined by what the press itself reads; empty where
+   * none of those says no.
+   */
+  public Optional<Decline> declined(TaskAction action, Facts facts, @Nullable ActionOrigin origin) {
+    return chart.declined(action, facts, origin);
   }
 
   /**

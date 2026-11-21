@@ -24,10 +24,12 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -76,7 +78,12 @@ class RepoCapabilityTest {
           new FlowEngine(
               state,
               new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-              new FactSources(mock(AgentPresence.class), ignored -> false),
+              new FactSources(
+                  mock(AgentPresence.class),
+                  ignored -> false,
+                  id -> Optional.empty(),
+                  id -> false,
+                  () -> ActionOrigin.BOARD),
               new FakeClock(),
               rules);
     }

@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.flow.capability.TaskCapability;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -94,7 +95,9 @@ class FlowEngineInterceptorTest {
   private final List<String> log = new ArrayList<>();
   private final ReducingStore tasks = mock(ReducingStore.class);
   private final AgentPresence agents = mock(AgentPresence.class);
-  private final FactSources facts = new FactSources(agents, ignored -> false);
+  private final FactSources facts =
+      new FactSources(
+          agents, ignored -> false, id -> Optional.empty(), id -> false, () -> ActionOrigin.BOARD);
   private final TaskState inProgress =
       TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build();
 

@@ -5,8 +5,10 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import lombok.With;
 
 /** What a rule may ask about a task besides its status. */
@@ -27,10 +29,11 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
       boolean requestMerged,
       boolean liveDeploy,
       boolean revertConflict,
-      boolean shippedWithoutRequest) {
+      boolean shippedWithoutRequest,
+      BooleanSupplier mergedNow) {
 
     public static Delivery defaults() {
-      return new Delivery(false, false, false, false, false);
+      return new Delivery(false, false, false, false, false, () -> false);
     }
   }
 
@@ -49,10 +52,14 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
   }
 
   @With
-  public record Workspace(boolean gitStateChanged, boolean repoRequested, boolean severalRepos) {
+  public record Workspace(
+      boolean gitStateChanged,
+      boolean repoRequested,
+      boolean severalRepos,
+      Supplier<Optional<String>> distrust) {
 
     public static Workspace defaults() {
-      return new Workspace(false, false, false);
+      return new Workspace(false, false, false, Optional::empty);
     }
   }
 

@@ -89,6 +89,7 @@ record Phases(Progress progress, Delivery delivery, Gates gates, Watchers watche
   }
 
   ChartFacts facts() {
-    return new ChartFacts(watchers.stampedAsk(), watchers.beneath(), Facts.defaults());
+    return new ChartFacts(
+        watchers.stampedAsk(), watchers.beneath(), Facts.defaults(), ChartFacts.PROJECTED);
   }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.repo;
 
+import dev.jagt.orchestrator.port.MergedRefresh;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.WorktreeInspection;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MergedRequests {
+public class MergedRequests implements MergedRefresh {
 
   private final StateService stateService;
   private final ConfigService configService;
@@ -33,6 +34,7 @@ public class MergedRequests {
    * Reads every request the host has not said merged, records what git says, merged or not, and
    * answers whether none is left to ship. A read git could not answer leaves the record as it is.
    */
+  @Override
   public boolean refresh(String taskId) {
     TaskState task = stateService.task(taskId).orElse(null);
     if (task == null) {

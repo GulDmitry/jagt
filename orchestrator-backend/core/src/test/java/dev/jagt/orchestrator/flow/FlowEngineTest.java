@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -41,7 +42,13 @@ class FlowEngineTest {
 
   private final ReducingStore stateService = mock(ReducingStore.class);
   private final AgentPresence sessions = mock(AgentPresence.class);
-  private final FactSources facts = new FactSources(sessions, ignored -> false);
+  private final FactSources facts =
+      new FactSources(
+          sessions,
+          ignored -> false,
+          id -> Optional.empty(),
+          id -> false,
+          () -> ActionOrigin.BOARD);
   private final TaskState shipping = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build();
   private final Capabilities neverRunShip =
       new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of());

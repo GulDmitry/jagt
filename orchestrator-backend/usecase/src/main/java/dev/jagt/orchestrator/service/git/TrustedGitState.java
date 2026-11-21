@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.git;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.GitDistrust;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -11,6 +12,7 @@ import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TrustedGitState {
+public class TrustedGitState implements GitDistrust {
 
   private static final int NAMED = 3;
   private static final int MAX_CHARS = 20_000;
@@ -94,11 +96,24 @@ public class TrustedGitState {
   }
 
   /**
-   * Why git must not run for the task yet, empty where it obeys what was trusted. A task with
-   * nothing recorded trusts what it finds; a change found stays on the task until {@link #trust}
-   * adopts it.
+   * As {@link #distrusted}, the sentence an unreadable state gives answered as a reason: for a
+   * reader that must not throw.
    */
   public Optional<String> distrust(String taskId) {
+    try {
+      return distrusted(taskId);
+    } catch (Refusal unreadable) {
+      return Optional.of(Objects.requireNonNull(unreadable.getMessage()));
+    }
+  }
+
+  /**
+   * Why git must not run for the task yet, empty where it obeys what was trusted; a refusal is
+   * thrown where the state cannot be read. A task with nothing recorded trusts what it finds; a
+   * change found stays on the task until {@link #trust} adopts it.
+   */
+  @Override
+  public Optional<String> distrusted(String taskId) {
     TaskState task = stateService.task(taskId).orElse(null);
     if (task == null) {
       return Optional.empty();
@@ -112,7 +127,7 @@ public class TrustedGitState {
     try {
       now = read(task);
     } catch (RuntimeException unreadable) {
-      return Optional.of(
+      throw Refusal.byState(
           "git state of " + taskId + " could not be read: " + unreadable.getMessage());
     }
     if (trusted == null) {

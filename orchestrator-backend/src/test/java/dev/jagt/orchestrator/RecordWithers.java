@@ -1,6 +1,10 @@
 package dev.jagt.orchestrator;
 
 import com.tngtech.archunit.core.domain.JavaClass;
+import dev.jagt.orchestrator.port.CurrentOrigin;
+import dev.jagt.orchestrator.port.GitDistrust;
+import dev.jagt.orchestrator.port.MergedRefresh;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -20,6 +24,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public final class RecordWithers {
@@ -129,6 +134,12 @@ public final class RecordWithers {
           Map.entry(OptionalLong.class, variant -> OptionalLong.of(variant + 1L)),
           Map.entry(OptionalInt.class, variant -> OptionalInt.of(variant + 1)),
           Map.entry(BooleanSupplier.class, variant -> (BooleanSupplier) () -> variant == 0),
+          Map.entry(GitDistrust.class, variant -> (GitDistrust) id -> Optional.of("v" + variant)),
+          Map.entry(MergedRefresh.class, variant -> (MergedRefresh) id -> variant == 0),
+          Map.entry(
+              CurrentOrigin.class,
+              variant ->
+                  (CurrentOrigin) () -> variant == 0 ? ActionOrigin.BOARD : ActionOrigin.MASTER),
           Map.entry(List.class, variant -> List.of("v" + variant)),
           Map.entry(Set.class, variant -> Set.of("v" + variant)),
           Map.entry(Map.class, variant -> Map.of("v" + variant, "v" + variant)));
@@ -167,6 +178,10 @@ public final class RecordWithers {
     }
     if (raw == Optional.class) {
       return Optional.of(sample(arguments[0], variant));
+    }
+    if (raw == Supplier.class) {
+      Object value = sample(arguments[0], variant);
+      return (Supplier<Object>) () -> value;
     }
     return sample(raw, variant);
   }

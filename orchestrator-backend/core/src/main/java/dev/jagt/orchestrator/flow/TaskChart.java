@@ -36,6 +36,7 @@ import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.statechart.Configuration;
 import dev.jagt.statechart.DataId;
@@ -182,11 +183,21 @@ public final class TaskChart {
 
   /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
   boolean offers(TaskStatus status, TaskAction action, Facts facts) {
+    return offers(status, action, facts, ChartFacts.PROJECTED);
+  }
+
+  /** As above, for a press by {@code origin}. */
+  boolean offers(TaskStatus status, TaskAction action, Facts facts, @Nullable ActionOrigin origin) {
     return chart.takes(
         LIFECYCLE,
         Objects.requireNonNull(starts.get(status)),
-        new ChartFacts(false, Map.of(), facts),
+        new ChartFacts(false, Map.of(), facts, origin),
         new TaskMove.Offers(action));
+  }
+
+  /** Why a press by {@code origin} is declined once the chart has not offered it. */
+  Optional<Decline> declined(TaskAction action, Facts facts, @Nullable ActionOrigin origin) {
+    return TaskOffers.declined(action, new ChartFacts(false, Map.of(), facts, origin));
   }
 
   private static Configuration configurationOf(

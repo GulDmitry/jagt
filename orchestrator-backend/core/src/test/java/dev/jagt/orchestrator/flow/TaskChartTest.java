@@ -195,7 +195,7 @@ class TaskChartTest {
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 new TaskMove.DeployStepped(step));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("deploy", to);
@@ -290,7 +290,7 @@ class TaskChartTest {
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 move);
 
     assertThat(stepped.configuration().toPlain()).containsEntry("infra", to);
@@ -330,7 +330,7 @@ class TaskChartTest {
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 new TaskMove.Signed(sign));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("session", to);
@@ -559,7 +559,8 @@ class TaskChartTest {
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of("acceptance", beneath), Facts.defaults()),
+                new ChartFacts(
+                    false, Map.of("acceptance", beneath), Facts.defaults(), ChartFacts.PROJECTED),
                 move);
 
     assertThat(stepped.configuration().toPlain()).containsEntry("acceptance", to);
@@ -579,7 +580,10 @@ class TaskChartTest {
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(
-                    false, Map.of("acceptance", CheckerPhase.ROUND_OPEN), Facts.defaults()),
+                    false,
+                    Map.of("acceptance", CheckerPhase.ROUND_OPEN),
+                    Facts.defaults(),
+                    ChartFacts.PROJECTED),
                 new TaskMove.Checked.RoundDeclined(
                     "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS));
 
@@ -750,7 +754,7 @@ class TaskChartTest {
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 move);
 
     assertThat(stepped.configuration().toPlain()).containsEntry(region, to);

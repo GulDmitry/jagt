@@ -87,7 +87,7 @@ class TaskChartCompositionTest {
     lintRound.put("lifecycle", TaskStatus.IN_PROGRESS.name());
     lintRound.put("turn", TurnKind.OPEN.name());
     lintRound.put("lint", CheckerPhase.ROUND_OPEN.name());
-    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults());
+    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED);
 
     Map<String, String> declinedByLint =
         chart
@@ -124,7 +124,7 @@ class TaskChartCompositionTest {
             .chart();
     Map<String, String> deployed = new HashMap<>(chart.initial().toPlain());
     deployed.put("lifecycle", TaskStatus.DEPLOYED.name());
-    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults());
+    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED);
 
     Map<String, String> onItsStep =
         chart

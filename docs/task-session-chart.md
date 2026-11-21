@@ -107,4 +107,7 @@ stateDiagram-v2
     %% data revert conflict
     %% data scenarios ready
     %% data shell escape
+    %% data git distrusted
+    %% data merged now
+    %% data stop held
 ```

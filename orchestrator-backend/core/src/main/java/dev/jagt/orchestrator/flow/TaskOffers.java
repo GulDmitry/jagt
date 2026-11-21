@@ -21,9 +21,12 @@ import dev.jagt.statechart.DataId;
 import dev.jagt.statechart.Guard;
 import dev.jagt.statechart.RegionId;
 import dev.jagt.statechart.StatechartBuilder;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Which statuses offer which action, as self-loops of the lifecycle region guarded by the task's
@@ -76,7 +79,44 @@ final class TaskOffers {
 
   private static final DataId<Fact> SHELL_ESCAPE = new DataId<>("shell escape", Fact.class);
 
+  private static final DataId<Fact> DISTRUSTED = new DataId<>("git distrusted", Fact.class);
+
+  private static final DataId<Fact> MERGED_NOW = new DataId<>("merged now", Fact.class);
+
+  private static final DataId<Fact> STOP_HELD = new DataId<>("stop held", Fact.class);
+
   private record Need(DataId<Fact> region, Fact is) {}
+
+  /** What only a press reads: the sentence it is declined with, empty where it may go on. */
+  private record Press(
+      DataId<Fact> region,
+      Set<TaskAction> actions,
+      Function<ChartFacts, Optional<String>> why,
+      boolean quiet) {}
+
+  private static final List<Press> PRESSES =
+      List.of(
+          new Press(
+              DISTRUSTED,
+              EnumSet.of(TaskAction.SHIP, TaskAction.DEPLOY, TaskAction.REVERT),
+              facts -> facts.facts().workspace().distrust().get(),
+              false),
+          new Press(
+              MERGED_NOW,
+              EnumSet.of(TaskAction.SHIP),
+              facts ->
+                  facts.facts().delivery().mergedNow().getAsBoolean()
+                      ? Optional.of("every request is already merged — nothing to ship")
+                      : Optional.empty(),
+              true),
+          new Press(
+              STOP_HELD,
+              EnumSet.of(TaskAction.SHIP, TaskAction.DEPLOY),
+              facts ->
+                  !facts.human() && facts.facts().hold().stopped()
+                      ? Optional.of("jagt stopped it; only a human presses it until `lift`")
+                      : Optional.empty(),
+              false));
 
   private record Offer(TaskAction action, Set<TaskStatus> from, List<Need> needs) {}
 
@@ -178,6 +218,9 @@ final class TaskOffers {
     chart.datum(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
     chart.datum(SCENARIOS_READY, facts -> Fact.of(facts.facts().reach().scenarios()));
     chart.datum(SHELL_ESCAPE, facts -> Fact.of(facts.facts().reach().shellEscape()));
+    for (Press press : PRESSES) {
+      chart.datum(press.region(), facts -> Fact.of(press.why().apply(facts).isPresent()));
+    }
     for (Offer offer : OFFERS) {
       chart
           .onMatching(
@@ -196,7 +239,24 @@ final class TaskOffers {
   }
 
   private static Offer offer(TaskAction action, Set<TaskStatus> from, Need... needs) {
-    return new Offer(action, from, List.of(needs));
+    List<Need> all = new ArrayList<>(List.of(needs));
+    PRESSES.stream()
+        .filter(press -> press.actions().contains(action))
+        .forEach(press -> all.add(no(press.region())));
+    return new Offer(action, from, List.copyOf(all));
+  }
+
+  /** The first sentence a press declines {@code action} with, in the order the presses are read. */
+  static Optional<Decline> declined(TaskAction action, ChartFacts facts) {
+    for (Press press : PRESSES) {
+      if (press.actions().contains(action)) {
+        Optional<String> why = press.why().apply(facts);
+        if (why.isPresent()) {
+          return Optional.of(new Decline(why.get(), press.quiet()));
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   private static Need yes(DataId<Fact> region) {

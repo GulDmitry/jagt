@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.capability.GitStatePrecondition;
-import dev.jagt.orchestrator.capability.ship.MergedPrecondition;
 import dev.jagt.orchestrator.capability.stop.DeployLiftsStop;
-import dev.jagt.orchestrator.capability.stop.StopPrecondition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FactSources;
 import dev.jagt.orchestrator.flow.FlowEngine;
@@ -14,12 +11,12 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.capability.Capabilities;
 import dev.jagt.orchestrator.flow.capability.CapabilityInterceptor;
-import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.TaskCapability;
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.CurrentOrigin;
+import dev.jagt.orchestrator.port.GitDistrust;
+import dev.jagt.orchestrator.port.MergedRefresh;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
-import dev.jagt.orchestrator.service.git.TrustedGitState;
-import dev.jagt.orchestrator.service.repo.MergedRequests;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import java.time.Clock;
@@ -67,49 +64,28 @@ public class FlowWiring {
   }
 
   @Bean
-  public CapabilityInterceptor shipGitGuard(TrustedGitState trusted) {
-    return new GitStatePrecondition(TaskAction.SHIP, trusted);
-  }
-
-  @Bean
-  public CapabilityInterceptor shipMerged(MergedRequests merged) {
-    return new MergedPrecondition(merged);
-  }
-
-  @Bean
-  public CapabilityInterceptor deployGitGuard(TrustedGitState trusted) {
-    return new GitStatePrecondition(TaskAction.DEPLOY, trusted);
-  }
-
-  @Bean
-  public CapabilityInterceptor revertGitGuard(TrustedGitState trusted) {
-    return new GitStatePrecondition(TaskAction.REVERT, trusted);
-  }
-
-  @Bean
-  public CapabilityInterceptor shipStop(TaskStops stops) {
-    return new StopPrecondition(TaskAction.SHIP, stops);
-  }
-
-  @Bean
-  public CapabilityInterceptor deployStop(TaskStops stops) {
-    return new StopPrecondition(TaskAction.DEPLOY, stops);
-  }
-
-  @Bean
   public CapabilityInterceptor deployLiftsStop(TaskStops stops) {
     return new DeployLiftsStop(stops);
+  }
+
+  @Bean
+  public FactSources factSources(
+      AgentPresence agents,
+      RequestlessShip requestless,
+      GitDistrust trust,
+      MergedRefresh merged,
+      CurrentOrigin origin) {
+    return new FactSources(agents, requestless, trust, merged, origin);
   }
 
   @Bean
   public FlowEngine flowEngine(
       ReducingStore tasks,
       Capabilities capabilities,
-      AgentPresence agents,
+      FactSources sources,
       Clock clock,
-      RequestlessShip requestless,
       FlowRules rules) {
-    return new FlowEngine(tasks, capabilities, new FactSources(agents, requestless), clock, rules);
+    return new FlowEngine(tasks, capabilities, sources, clock, rules);
   }
 
   @Bean

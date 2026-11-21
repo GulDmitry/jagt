@@ -15,7 +15,7 @@ technical:
   maintainability:
     modularity:
       collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
-      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 53, decision: "0176" }
+      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 56, decision: "0176" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 23, decision: "0176" }
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
