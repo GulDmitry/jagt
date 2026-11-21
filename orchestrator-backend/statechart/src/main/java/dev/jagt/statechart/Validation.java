@@ -174,7 +174,8 @@ final class Validation {
     own.stream()
         .filter(t -> t.goal().via().isPresent())
         .filter(t -> tree.historyState(t.target(), t.goal().via().get()).isEmpty())
-        .forEach(t -> problems.add("transition " + t.describe() + " enters an undeclared history"));
+        .forEach(t ->
+            problems.add("transition " + t.fired().describe() + " enters an undeclared history"));
     return problems;
   }
 

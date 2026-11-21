@@ -363,6 +363,25 @@ class MacrostepTest {
   }
 
   @Test
+  void firedListsEveryTransitionTheMacrostepTookInOrderEventlessFollowUpIncluded() {
+    Statechart<Event, Readings, String> chart =
+        powerAndMode
+            .on(Lamp.POWER, Power.OFF, Press.class)
+            .to(Power.ON)
+            .always(Lamp.MODE, Mode.DIM)
+            .whenActive(active -> active.state(Lamp.POWER) == Power.ON)
+            .to(Mode.BRIGHT)
+            .build();
+
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+
+    assertThat(step.fired())
+        .containsExactly(
+            new Fired("power", "OFF", "ON", "Press", false),
+            new Fired("mode", "DIM", "BRIGHT", "always", true));
+  }
+
+  @Test
   void alwaysTransitionIsTakenOnceTheEventIsSpent() {
     Statechart<Event, Readings, String> chart =
         powerOnly.always(Lamp.POWER, Power.OFF).emit("auto").to(Power.ON).build();

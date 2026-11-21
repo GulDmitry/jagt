@@ -39,11 +39,12 @@ final class Interpreter<E, X, F> {
     while (next.isPresent()) {
       microstep(next.get());
       if (++run.followUps > chart.ceiling()) {
-        throw new RaiseCeilingExceeded(chart.ceiling(), run.moves);
+        throw new RaiseCeilingExceeded(chart.ceiling(), run.fired);
       }
       next = next();
     }
-    return new Macrostep<>(run.config, List.copyOf(run.effects), chart.complete(run.config));
+    return new Macrostep<>(
+        run.config, List.copyOf(run.effects), chart.complete(run.config), List.copyOf(run.fired));
   }
 
   private Optional<Selected<E, F>> next() {
@@ -58,8 +59,8 @@ final class Interpreter<E, X, F> {
 
   private List<Taken<E, F>> enabled(Optional<E> event) {
     List<Taken<E, F>> taken = new ArrayList<>();
+    Active active = chart.active(run.config, dataModel, computed);
     for (Region<E, F> region : chart.regions()) {
-      Active active = chart.active(run.config, dataModel, computed);
       run.config
           .find(region.name())
           .ifPresent(leaf ->
@@ -132,7 +133,7 @@ final class Interpreter<E, X, F> {
     }
     Active active = afterExits(exited);
     List<Taken<E, F>> resolved = selected.taken().stream().map(t -> resolved(t, active)).toList();
-    resolved.forEach(t -> run.moves.add(t.transition().describe()));
+    resolved.forEach(t -> run.fired.add(t.transition().fired()));
     Set<Completed> doneBefore = chart.doneParallels(run.config);
     boolean wasComplete = chart.complete(run.config);
     leave(exited, selected.taken());

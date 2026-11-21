@@ -62,7 +62,7 @@ record Transition<E, F>(
     return response.effects().stream().map(effect -> effect.apply(event)).toList();
   }
 
-  String describe() {
-    return region + " " + source.name() + "->" + target().name();
+  Fired fired() {
+    return new Fired(region, source.name(), target().name(), trigger.label(), trigger.eventless());
   }
 }

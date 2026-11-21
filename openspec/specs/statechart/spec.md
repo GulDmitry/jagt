@@ -8,7 +8,7 @@ The `:statechart` engine's contract: Harel and SCXML semantics as a pure macrost
 ### Requirement: A macrostep runs microsteps to stability
 The engine SHALL take one external event as a macrostep: microsteps of the enabled transitions, then eventless transitions
 and the internal queue, until none is enabled, every microstep counted against a ceiling; the step is pure and returns
-the configuration and the effects as data.
+the configuration, the effects and the transitions it took, in order, as data.
 
 #### Scenario: Order inside a microstep
 - **WHEN** transitions are taken
@@ -18,6 +18,10 @@ the configuration and the effects as data.
 #### Scenario: An eventless loop is bounded
 - **WHEN** eventless transitions keep enabling each other
 - **THEN** the macrostep fails with `RaiseCeilingExceeded` naming the moves it took (IRP 396 419 421 423)
+
+#### Scenario: The transitions taken are reported
+- **WHEN** a macrostep takes a transition on an event and an eventless one after it
+- **THEN** it reports both, in that order, each with its region, source, target and trigger
 
 ### Requirement: States nest
 A compound state SHALL hold child states and enter its initial child through its initial pseudostate; only a leaf is

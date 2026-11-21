@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Regions run in parallel and a macrostep is pure. Within a microstep every region picks the
@@ -29,6 +30,7 @@ public final class Statechart<E, X, F> {
   private final List<Region<E, F>> regions;
   private final List<Datum<X>> data;
   private final List<Transition<E, F>> transitions;
+  private final Map<String, Map<Enum<?>, List<Transition<E, F>>>> bySource;
   private final int ceiling;
   private final Optional<Function<Completed, E>> completion;
 
@@ -42,6 +44,11 @@ public final class Statechart<E, X, F> {
     this.regions = regions;
     this.data = data;
     this.transitions = transitions;
+    this.bySource =
+        transitions.stream()
+            .collect(
+                Collectors.groupingBy(
+                    Transition::region, Collectors.groupingBy(Transition::source)));
     this.ceiling = ceiling;
   }
 
@@ -154,8 +161,8 @@ public final class Statechart<E, X, F> {
       Region<E, F> region, Enum<?> leaf, Active active, Optional<E> event) {
     return region.tree().lineage(leaf).stream()
         .map(level ->
-            transitions.stream()
-                .filter(t -> t.region().equals(region.name()) && t.takes(level, event, active))
+            bySource.getOrDefault(region.name(), Map.of()).getOrDefault(level, List.of()).stream()
+                .filter(t -> t.takes(level, event, active))
                 .findFirst())
         .flatMap(Optional::stream)
         .findFirst();

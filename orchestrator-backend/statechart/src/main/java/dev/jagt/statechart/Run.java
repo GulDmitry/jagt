@@ -9,7 +9,7 @@ final class Run<E, F> {
 
   Configuration config;
   final List<F> effects = new ArrayList<>();
-  final List<String> moves = new ArrayList<>();
+  final List<Fired> fired = new ArrayList<>();
   final Deque<E> queue = new ArrayDeque<>();
   int followUps;
 
