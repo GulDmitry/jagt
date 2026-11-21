@@ -64,6 +64,26 @@ class TestsForScriptTest {
   }
 
   @Test
+  void runsTheDependentsTomcatTestNamingNoClassWhenMainClassChanges(@TempDir Path repo)
+      throws Exception {
+    Files.createDirectories(repo.resolve("orchestrator-backend/surface/src/main/java/s"));
+    Files.createDirectories(repo.resolve(ROOT_TESTS));
+    Files.writeString(
+        repo.resolve("orchestrator-backend/surface/src/main/java/s/Doors.java"), "class Doors {}");
+    Files.writeString(
+        repo.resolve(ROOT_TESTS).resolve("BoardOnTomcatTest.java"), "class BoardOnTomcatTest {}");
+
+    Process run =
+        TestTestsForProcessBuilder.over(repo)
+            .build("orchestrator-backend/surface/src/main/java/s/Doors.java")
+            .start();
+    String output = new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
+    assertThat(output).contains(":test --tests '*BoardOnTomcatTest'");
+  }
+
+  @Test
   void compilesEverySourceSetWhenMainClassIsRemoved(@TempDir Path repo) throws Exception {
     Files.createDirectories(repo.resolve(ROOT_TESTS));
 

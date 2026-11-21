@@ -97,6 +97,10 @@ for p in $paths; do
         mod=${loc%% *}
         set=${loc#* }
         touched_projects=$(add_unique "$touched_projects" "$mod")
+        # a whole-context HTTP test exercises the wiring without naming the class
+        if [ "$set" = main ]; then
+          for t in $(find_tests "$mod" "[A-Za-z0-9]*OnTomcat"); do add_test "${t%%:*}" "${t#*:}"; done
+        fi
         if [ "$set" != main ] && [ "$set" != test ]; then
           other_sets=$(add_unique "$other_sets" "$mod:$set")
         fi
