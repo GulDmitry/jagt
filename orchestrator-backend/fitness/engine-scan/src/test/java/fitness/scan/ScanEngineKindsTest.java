@@ -116,4 +116,26 @@ class ScanEngineKindsTest {
 
     assertThat(found.items()).containsExactly("own.txt");
   }
+
+  @Test
+  void flagsATrackedFileHoldingTheRunningMachinesHome(@TempDir Path root)
+      throws IOException, InterruptedException {
+    Files.writeString(root.resolve("leaky.txt"), "cd " + System.getProperty("user.home") + "/x\n");
+    Files.writeString(root.resolve("clean.txt"), "cd somewhere\n");
+    new ProcessBuilder("git", "-C", root.toString(), "init", "-q").start().waitFor();
+    new ProcessBuilder("git", "-C", root.toString(), "add", "leaky.txt", "clean.txt")
+        .start()
+        .waitFor();
+
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("set", "tracked")
+                .select("per", "file")
+                .select("machine", "paths")
+                .build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.items()).containsExactly("leaky.txt");
+  }
 }

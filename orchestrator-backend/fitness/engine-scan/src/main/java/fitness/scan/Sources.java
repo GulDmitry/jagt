@@ -29,6 +29,9 @@ public final class Sources {
 
   @Nullable
   public static Pattern regex(FitnessFunction function) {
+    if ("paths".equals(function.selectors().get("machine"))) {
+      return MachinePaths.running();
+    }
     return function.selectors().get("regex") instanceof String text ? Pattern.compile(text) : null;
   }
 

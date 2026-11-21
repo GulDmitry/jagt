@@ -36,6 +36,7 @@ public final class FitnessFunctionReader {
           "glob",
           "requires",
           "regex",
+          "machine",
           "per",
           "measure");
   private static final String HINT = "hint";

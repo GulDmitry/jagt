@@ -87,6 +87,7 @@ public final class ScanEngine implements Engine {
         "glob", Set.of(),
         "requires", Set.of(),
         "regex", Set.of(),
+        "machine", Set.of("paths"),
         "except", Set.of());
   }
 
