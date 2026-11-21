@@ -11,9 +11,11 @@ import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.deploy.InfraPhase;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -625,6 +627,46 @@ class TaskChartTest {
             new TaskMove.DeployRead(false),
             "QUESTION",
             List.of()),
+        arguments(
+            "report", "QUESTION", "IN_PROGRESS", new TaskMove.RepoUnasked(), "QUESTION", List.of()),
+        arguments("report", "WAIT", "IN_PROGRESS", new TaskMove.RepoUnasked(), "WAIT", List.of()),
+        arguments(
+            "report",
+            "QUESTION",
+            "IN_PROGRESS",
+            new TaskMove.Said(AgentReport.WAIT),
+            "WAIT",
+            List.of(new TaskEffect.Reports(AgentReport.WAIT))),
+        arguments(
+            "report", "QUESTION", "REVERTED", new TaskMove.RepoUnasked(), "QUESTION", List.of()),
+        arguments(
+            "git",
+            "UNREAD",
+            "IN_PROGRESS",
+            new TaskMove.GitTrusted(GitTrust.of(Map.of())),
+            "TRUSTED",
+            List.of(new TaskEffect.TrustsGit(GitTrust.of(Map.of())))),
+        arguments(
+            "git",
+            "TRUSTED",
+            "IN_PROGRESS",
+            new TaskMove.GitRepoJoined(GitTrust.of(Map.of())),
+            "TRUSTED",
+            List.of(new TaskEffect.JoinsGit(GitTrust.of(Map.of())))),
+        arguments(
+            "repo",
+            "NONE",
+            "IN_PROGRESS",
+            new TaskMove.RepoAsked("p"),
+            "ASKED",
+            List.of(new TaskEffect.AsksRepo("p"))),
+        arguments(
+            "checks",
+            "NONE",
+            "IN_PROGRESS",
+            new TaskMove.ChecksUnread(new ChecksUnread(1L, "c")),
+            "UNREAD",
+            List.of(new TaskEffect.FailsToReadChecks(new ChecksUnread(1L, "c")))),
         arguments(
             "repo",
             "ASKED",

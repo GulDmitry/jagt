@@ -173,7 +173,7 @@ public final class Statechart<E, X, F> {
       Optional<Enum<?>> leaf = config.find(region.name());
       List<String> owned = leaf.map(region.tree()::regionsOf).orElse(List.of());
       if (!owned.isEmpty() && owned.stream().allMatch(name -> inFinal(config, name))) {
-        done.add(new Completed(region.name(), leaf.orElseThrow().name()));
+        done.add(new Completed.OfState(region.name(), leaf.orElseThrow().name()));
       }
     }
     return done;

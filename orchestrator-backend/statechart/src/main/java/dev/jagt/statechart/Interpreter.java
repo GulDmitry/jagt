@@ -163,7 +163,7 @@ final class Interpreter<E, X, F> {
               .filter(done -> !doneBefore.contains(done))
               .forEach(done -> run.queue.add(factory.apply(done)));
           if (!wasComplete && chart.complete(run.config)) {
-            run.queue.add(factory.apply(Completed.ofChart()));
+            run.queue.add(factory.apply(new Completed.WholeChart()));
           }
         });
   }
@@ -195,6 +195,6 @@ final class Interpreter<E, X, F> {
             region
                 .tree()
                 .parent(entered)
-                .map(parent -> factory.apply(new Completed(region.name(), parent.name()))));
+                .map(parent -> factory.apply(new Completed.OfState(region.name(), parent.name()))));
   }
 }

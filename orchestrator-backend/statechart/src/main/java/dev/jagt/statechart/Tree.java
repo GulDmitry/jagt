@@ -112,6 +112,7 @@ record Tree<F>(
 
   List<Enum<?>> ancestors(Enum<?> state) {
     List<Enum<?>> up = new ArrayList<>();
+    // The bound only stops a cycle; one step either way changes nothing observable.
     Optional<Enum<?>> next = parent(state);
     while (next.isPresent() && up.size() <= parents.size()) {
       up.add(next.get());
@@ -129,6 +130,7 @@ record Tree<F>(
   List<Enum<?>> descent(Enum<?> state) {
     List<Enum<?>> down = new ArrayList<>(List.of(state));
     Enum<?> last = state;
+    // The bound only stops a cycle; one step either way changes nothing observable.
     while (isCompound(last) && down.size() <= initials.size() + 1) {
       last = initial(last);
       down.add(last);

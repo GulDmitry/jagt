@@ -41,7 +41,8 @@ class StatechartScxmlConformanceTest {
     Statechart<Ev, String, String> chart =
         TestIrpBuilder.skeleton()
             .region(NODE, Node.S0, Set.of(Node.PASS, Node.FAIL, Node.S12))
-            .completion(done -> new Ev(done.wholeChart() ? "chart" : "done." + done.state()))
+            .completion(
+                done -> new Ev(done instanceof Completed.OfState s ? "done." + s.state() : "chart"))
             .onEntry(NODE, Node.S12, "enter S12")
             .onMatching(NODE, Node.S1, "done.S1", e -> e.name().equals("done.S1"))
             .emit("done")
@@ -398,7 +399,8 @@ class StatechartScxmlConformanceTest {
     Statechart<Ev, String, String> chart =
         TestIrpBuilder.skeleton()
             .region(NODE, Node.S0, Set.of(Node.PASS, Node.FAIL, Node.S02))
-            .completion(done -> new Ev("done." + done.state()))
+            .completion(
+                done -> new Ev(done instanceof Completed.OfState s ? "done." + s.state() : "chart"))
             .onMatching(NODE, Node.S1, "go", e -> e.name().equals("go"))
             .to(Node.S0)
             .always(NODE, Node.S01)

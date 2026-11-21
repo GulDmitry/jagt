@@ -181,4 +181,23 @@ class TaskChartCompositionTest {
     assertThat(acceptanceOnly.chart().initial().toPlain()).doesNotContainKey("lint");
     assertThat(lintOnly.chart().initial().toPlain()).doesNotContainKey("acceptance");
   }
+
+  @Test
+  void chartKeepsTheCompositionItWasBuiltFrom() {
+    Composition composition = new Composition(List.of());
+
+    assertThat(new TaskChart(composition).composition()).isSameAs(composition);
+  }
+
+  @Test
+  void taskWaitsOnTheHostWhilePollingChecksOrAwaitingItsDeploy() {
+    assertThat(TaskChart.waitsOnTheHost(TaskStatus.CI_POLLING)).isTrue();
+    assertThat(TaskChart.waitsOnTheHost(TaskStatus.IN_PROGRESS)).isFalse();
+  }
+
+  @Test
+  void reportStandsThroughReadOnlyWhenItWaitsOnAnAnswer() {
+    assertThat(TaskChart.standsThroughRead(AgentReport.QUESTION)).isTrue();
+    assertThat(TaskChart.standsThroughRead(AgentReport.WAIT)).isFalse();
+  }
 }

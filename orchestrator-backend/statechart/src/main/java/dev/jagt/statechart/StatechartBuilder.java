@@ -155,6 +155,7 @@ public final class StatechartBuilder<E, X, F> {
    */
   public <S extends Enum<S>> TransitionBuilder<E, X, F, S> always(RegionId<S> id, S from) {
     return new TransitionBuilder<>(
+        // Never evaluated: an eventless trigger fires on no event whatever the predicate says.
         this, id.name(), from, new Transition.Trigger<>("always", event -> false, true));
   }
 

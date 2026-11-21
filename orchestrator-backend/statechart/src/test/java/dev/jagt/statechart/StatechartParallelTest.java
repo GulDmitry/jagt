@@ -132,7 +132,11 @@ class StatechartParallelTest {
   void irp417RaisesDoneForTheParallelStateWhenEveryRegionIsFinal() {
     Statechart<Ev, String, String> chart =
         TestParallelBuilder.skeleton()
-            .completion(done -> new Ev("done." + done.region() + "." + done.state()))
+            .completion(done ->
+                new Ev(
+                    done instanceof Completed.OfState s
+                        ? "done." + s.region() + "." + s.state()
+                        : "chart"))
             .always(LEFT, Branch.WORKING)
             .to(Branch.FINISHED)
             .always(RIGHT, Branch.WORKING)
@@ -152,7 +156,7 @@ class StatechartParallelTest {
   void parallelStateIsNotDoneWhileOneRegionIsNotFinal() {
     Statechart<Ev, String, String> chart =
         TestParallelBuilder.skeleton()
-            .completion(done -> new Ev(done.state()))
+            .completion(done -> new Ev(done instanceof Completed.OfState s ? s.state() : "chart"))
             .onMatching(OUTER, Outer.P, "done", e -> e.name().equals("P"))
             .emit("parallel done")
             .to(Outer.DONE)
@@ -168,7 +172,11 @@ class StatechartParallelTest {
   void irp570RaisesDoneForEachRegionBeforeTheParallelStatesOwn() {
     Statechart<Ev, String, String> chart =
         TestParallelBuilder.skeleton()
-            .completion(done -> new Ev("done." + done.region() + "." + done.state()))
+            .completion(done ->
+                new Ev(
+                    done instanceof Completed.OfState s
+                        ? "done." + s.region() + "." + s.state()
+                        : "chart"))
             .raiseOnEntry(OUTER, Outer.P, new Ev("finishLeft"))
             .raiseOnEntry(OUTER, Outer.P, new Ev("finishRight"))
             .onMatching(OUTER, Outer.P, "left", e -> e.name().equals("done.left.WHOLE"))

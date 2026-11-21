@@ -209,16 +209,18 @@ class MacrostepTest {
   void cycleRaisingExactlyTheCeilingIsAllowed() {
     Statechart<Event, Readings, String> chart =
         Statechart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
+            .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
+            .on(Lamp.STAGE, Stage.LOW, Press.class)
             .raise(new Tick())
-            .to(Power.ON)
+            .to(Stage.MID)
+            .on(Lamp.STAGE, Stage.MID, Tick.class)
+            .to(Stage.HIGH)
             .raiseCeiling(1)
             .build();
 
     Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
-    assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
+    assertThat(step.configuration().get(Lamp.STAGE)).isEqualTo(Stage.HIGH);
   }
 
   @Test
@@ -448,7 +450,7 @@ class MacrostepTest {
   void everyRegionFinalRaisesTheChartsCompletionAndHalts() {
     Statechart<Event, Readings, String> chart =
         powerAndMode
-            .completion(done -> done.wholeChart() ? new Tick() : new Hit())
+            .completion(done -> done instanceof Completed.WholeChart ? new Tick() : new Hit())
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .on(Lamp.MODE, Mode.DIM, Press.class)
@@ -478,5 +480,24 @@ class MacrostepTest {
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
     assertThat(step.halted()).isFalse();
+  }
+
+  @Test
+  void configurationKeepsItsRegionsInDeclarationOrderWhicheverRegionMoved() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
+            .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
+            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+            .on(Lamp.STAGE, Stage.LOW, Press.class)
+            .to(Stage.MID)
+            .on(Lamp.STAGE, Stage.MID, Press.class)
+            .to(Stage.HIGH)
+            .on(Lamp.POWER, Power.OFF, Tick.class)
+            .to(Power.ON)
+            .build();
+
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+
+    assertThat(step.configuration().toPlain().keySet()).containsExactly("stage", "power");
   }
 }

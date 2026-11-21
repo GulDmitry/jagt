@@ -570,6 +570,7 @@ public final class TaskChart {
             DEPLOY,
             DeployPhase.HANDED,
             "conflict left",
+            // A deploy step lands no status, so the guard alone already refuses it.
             move -> !(move instanceof TaskMove.DeployStepped))
         .when((active, move) ->
             active.state(LIFECYCLE) == DEPLOY_CONFLICT
@@ -1172,10 +1173,7 @@ public final class TaskChart {
         "deploy read moving the status",
         AgentReport.PLAIN,
         move -> move instanceof TaskMove.DeployRead,
-        (active, move) ->
-            land(active.state(LIFECYCLE), move)
-                .filter(to -> to != active.state(LIFECYCLE))
-                .isPresent());
+        (active, move) -> land(active.state(LIFECYCLE), move).isPresent());
     if (!STANDING_THROUGH_A_READ.contains(from)) {
       said(chart, from, "read", AgentReport.PLAIN, move -> move instanceof TaskMove.Read, ALWAYS);
     }
