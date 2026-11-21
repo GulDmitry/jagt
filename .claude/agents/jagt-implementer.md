@@ -11,12 +11,12 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    A new kind of thing is checked against its sphere's standard (`ARCHITECTURE.md` "The kinds") before you build it.
 3. Before touching a test file, load the unit-testing skill your setup provides, if any; before a comment, the commenting skill.
 4. As AGENTS.md says in "Read before you change" and "Tests": a behaviour change carries its spec delta, a fixed bug
-   its regression test, case row and trailer.
+   its regression test and trailer.
 5. The inner loop is `orchestrator-backend/scripts/tests-for.sh` on the files you changed (no arguments: the branch):
    run its lines in order, each in the background into a log, each under its `timeout`, stop at the first red.
    A review round or a one-line fix re-runs it only on the files it touched.
    `./gradlew pitestDiff -PpitestDiff=main` runs once, at the done step; the brief's done command runs once, after the last round.
-   The full suite is never run: the session that launched you runs one over its batch.
+   The full suite is never run: the session that launched you runs its batch's modules as AGENTS.md "Tests" says.
    One Gradle run per tree at a time: a second one rewrites the class dirs the first is reading.
    Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
    A defect class that can recur becomes a row of `fitness.yml` or a `Fitness` class, prose only where neither can say it;
