@@ -32,8 +32,6 @@ allprojects {
         }
         threads = (project.findProperty('pitestThreads') ?: Runtime.runtime.availableProcessors().intdiv(2)) as int
         outputFormats = ['HTML', 'XML']
-        // Every killing test per mutant, not the first: the refresh finds tests that kill nothing another test does not.
-        fullMutationMatrix = providers.gradleProperty('fullMatrix').isPresent()
         timestampedReports = false
         // A property run per mutant at jqwik's 1,000 tries is what made `:core` take 47 min (0139).
         // A minion carries the test JVM properties too (jagt.parallel-tests): without them it resets Logback under every log capture.
