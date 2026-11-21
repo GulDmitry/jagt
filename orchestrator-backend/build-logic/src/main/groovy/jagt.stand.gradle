@@ -54,7 +54,7 @@ tasks.register('standTest', Test) {
     // A run starts the staged jar, so a replay checks the frame as built now.
     dependsOn ':stageJar', 'standImage'
     doFirst { standReport.delete() }
-    testLogging { showStandardStreams = true }
+    testLogging { showStandardStreams = true; exceptionFormat = 'full' }
     outputs.upToDateWhen { false }
     finalizedBy 'standCleanup', 'standReport'
 }
