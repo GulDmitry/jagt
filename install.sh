@@ -117,10 +117,16 @@ launcher="$BIN/jagt"
   echo "root='$ROOT'"
   echo 'if [ -x "$root/runtime/Contents/Home/bin/java" ]; then java="$root/runtime/Contents/Home/bin/java"; else java="$root/runtime/bin/java"; fi'
   echo 'export JAGT_LAUNCHER=1'
+  echo 'child='
+  echo "trap 'stopping=1; [ -z \"\$child\" ] || kill -TERM \"\$child\" 2>/dev/null' INT TERM"
+  echo 'stopping=0'
   echo 'while :; do'
   echo '  jar="$root/$(readlink "$root/current")/jagt.jar"'
-  echo '  "$java" -jar "$jar" "$@"'
-  echo '  code=$?'
+  echo '  "$java" -jar "$jar" "$@" &'
+  echo '  child=$!'
+  echo '  wait "$child"; code=$?'
+  echo '  while kill -0 "$child" 2>/dev/null; do wait "$child"; code=$?; done'
+  echo '  [ "$stopping" -eq 0 ] || exit "$code"'
   echo '  [ "$code" -eq 75 ] || exit "$code"'
   echo 'done'
 } >"$launcher.new"

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Proves the installers end to end against a fake release feed: install 0.0.1, start the launcher, let the
-# release check keep 0.0.2, run the board's `upgrade` verb, see the launcher restart jagt on 0.0.2.
+# release check keep 0.0.2, run the board's `upgrade` verb, see the launcher restart jagt on 0.0.2, then stop
+# the launcher with TERM and see the JVM end and the port free.
 # Usage: scripts/install-check.sh <bootJar>      (Windows: Git Bash, installs through install.ps1)
 set -euo pipefail
 
@@ -139,5 +140,13 @@ else
   [ "$(readlink "$home/current")" = versions/0.0.2 ] || { echo "install-check: current is not versions/0.0.2" >&2; exit 1; }
 fi
 [ -f "$home/versions/0.0.1/jagt.jar" ] || { echo "install-check: 0.0.1 was not kept" >&2; exit 1; }
+if [ "$windows" = false ]; then
+  stage="TERM to the launcher stops the JVM"
+  kill -TERM "$launcher_pid"
+  wait "$launcher_pid" || true
+  launcher_pid=
+  ! pgrep -f "$home/runtime" >/dev/null || { echo "install-check: the launcher ended while its JVM still ran" >&2; exit 1; }
+  ! curl --silent --output /dev/null --max-time 2 "$api/state" || { echo "install-check: the port still answers after the launcher ended" >&2; exit 1; }
+fi
 stage=done
 echo "install-check: ok"

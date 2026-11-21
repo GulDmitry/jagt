@@ -49,6 +49,10 @@ Every network call has a timeout and fails on an HTTP error.
 #### Scenario: The jar ends otherwise
 - **WHEN** the launcher's jar exits with any code but 75
 - **THEN** the launcher ends with that code and starts nothing
+#### Scenario: The launcher is stopped
+- **WHEN** the `install.sh` launcher receives TERM or INT while its jar runs
+- **THEN** the jar receives TERM and the launcher ends once the jar has ended
+- **AND** the jar's port is free
 #### Scenario: A newer release
 - **WHEN** `install.sh` runs again for another version
 - **THEN** both versions stay under `versions/` and `current` names the new one

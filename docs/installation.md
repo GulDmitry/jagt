@@ -52,6 +52,12 @@ While a newer release is kept, the board offers `upgrade`.
 With `releaseFeed.autoUpgrade: true` and the launcher, jagt switches by itself once no agent session is up, then exits with 75
 so the launcher starts the new release.
 
+## Stopping
+
+Stop an installed jagt by sending TERM or INT to the launcher, or press Ctrl+C in its terminal.
+The launcher passes the signal to jagt, waits until it has ended and then ends itself, so the port is free.
+On Windows, end the launcher's whole process tree: `taskkill /T /PID <pid>`.
+
 ## MCP access comes first
 
 jagt talks to no external service: it reads a ticket, and a review round, by spawning a **headless** one-shot of
