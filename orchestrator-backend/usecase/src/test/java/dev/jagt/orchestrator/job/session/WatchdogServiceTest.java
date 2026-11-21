@@ -18,7 +18,10 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.presence.SessionProbe;
 import dev.jagt.orchestrator.task.TaskState;
@@ -34,6 +37,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
@@ -170,6 +174,22 @@ class WatchdogServiceTest {
     watchdog.run();
 
     assertThat(SessionPhase.silentSince(state.task("ABC-1").orElseThrow())).isEqualTo(1_000);
+  }
+
+  @Test
+  void endsTheSessionOfKilledAgentNamingWhatItPrintedLast() {
+    state.putTask("ABC-42", watchedTask().withLastActive(now).build());
+    AgentSessions sessions = mock(AgentSessions.class);
+    when(sessions.windowState("ABC-42")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
+    when(sessions.exitTail("ABC-42")).thenReturn(Optional.of("zsh: killed agent"));
+    SessionProbe real =
+        new SessionProbe(mock(ConfigService.class), sessions, mock(AgentRuntime.class));
+
+    watchdogService().withRoot(root).build(state, real, new FakeClock()).run();
+
+    TaskState task = state.task("ABC-42").orElseThrow();
+    assertThat(SessionPhase.of(task.session())).isEqualTo(SessionPhase.GONE);
+    assertThat(SessionPhase.silentBecause(task)).isEqualTo("the session ended: zsh: killed agent");
   }
 
   @Nested
