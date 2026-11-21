@@ -5,6 +5,7 @@
 Everything is in **one file**: `jagt.yml` at the repository root — `cp jagt.desktop.yml.dist jagt.yml`. **Every key is
 described in `jagt.desktop.yml.dist`, and nowhere else**: it carries each one with its shipped value and what that
 value means, so the file you edit is the reference. Your copy is gitignored, so comment it freely.
+Both `.dist` files validate against a JSON Schema generated from the configuration records in `ConfigReferenceTest`.
 
 One root, `orchestrator:`, holds all of it.
 

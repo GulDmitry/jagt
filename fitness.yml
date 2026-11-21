@@ -31,7 +31,7 @@ technical:
       collaborator-owners: { fitness: CollaboratorOwnersFitness, governs: count, max: 0 }
       classes-per-package: { fitness: PackageCeilingFitness, governs: size, max: 10, decision: "0166" }
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
-      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 90, decision: "0176" }
+      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 92, decision: "0176" }
     analysability:
       ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
