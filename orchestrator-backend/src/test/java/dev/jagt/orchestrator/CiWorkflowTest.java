@@ -342,6 +342,28 @@ class CiWorkflowTest {
   }
 
   @Test
+  void scansTheTestJobForSecretsInTheTreeAndFullHistoryOnBothCiEngines() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("steps"));
+
+    assertThat(steps)
+        .contains("fetch-depth=0")
+        .contains("orchestrator-backend/scripts/secret-scan.sh");
+    assertThat(CiWorkflow.gitlabText())
+        .contains("GIT_DEPTH: \"0\"")
+        .contains("orchestrator-backend/scripts/secret-scan.sh");
+  }
+
+  @Test
+  void verifiesTheSecretScannerBinaryByChecksumAndScansTreeAndHistory() {
+    assertThat(SourceRoots.read(Path.of("scripts/secret-scan.sh")))
+        .containsPattern("sha256=[0-9a-f]{64}")
+        .contains("sha256sum -c")
+        .contains("gitleaks\" dir")
+        .contains("gitleaks\" git");
+  }
+
+  @Test
   void handsTheImageDigestToTheWorkflowFromThePublishScript() {
     assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh")))
         .contains("--metadata-file")
