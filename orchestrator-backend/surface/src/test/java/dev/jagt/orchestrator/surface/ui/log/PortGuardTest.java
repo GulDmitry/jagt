@@ -6,7 +6,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.bootstrap.DefaultBootstrapContext;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -19,7 +24,7 @@ class PortGuardTest {
       int port = occupied.getLocalPort();
 
       var refusal =
-          new PortGuard()
+          new PortGuard(code -> {})
               .refusal(new MockEnvironment().withProperty("server.port", String.valueOf(port)));
 
       assertThat(refusal)
@@ -41,14 +46,36 @@ class PortGuardTest {
     }
 
     var refusal =
-        new PortGuard()
+        new PortGuard(code -> {})
             .refusal(new MockEnvironment().withProperty("server.port", String.valueOf(freePort)));
 
     assertThat(refusal).isEmpty();
   }
 
   @Test
+  void exitsWithCodeOneWhenAnotherProcessListensOnThePort() throws IOException {
+    List<Integer> exits = new ArrayList<>();
+    try (ServerSocket occupied = new ServerSocket()) {
+      occupied.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+      var environment =
+          new MockEnvironment()
+              .withProperty("server.port", String.valueOf(occupied.getLocalPort()));
+
+      new PortGuard(exits::add)
+          .onApplicationEvent(
+              new ApplicationEnvironmentPreparedEvent(
+                  new DefaultBootstrapContext(),
+                  new SpringApplication(),
+                  new String[0],
+                  environment));
+    }
+
+    assertThat(exits).containsExactly(1);
+  }
+
+  @Test
   void runsBeforeTheLoggingIsConfigured() {
-    assertThat(new PortGuard().getOrder()).isLessThan(LoggingApplicationListener.DEFAULT_ORDER);
+    assertThat(new PortGuard(code -> {}).getOrder())
+        .isLessThan(LoggingApplicationListener.DEFAULT_ORDER);
   }
 }

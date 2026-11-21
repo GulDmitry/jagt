@@ -95,7 +95,9 @@ public class OrchestratorApplication {
   static SpringApplication application() {
     SpringApplication application = new SpringApplication(OrchestratorApplication.class);
     application.addListeners(
-        new PortGuard(), new LogTarget(), new LogFileRoll(RuntimeWiring.utcClock(), System.err));
+        new PortGuard(System::exit),
+        new LogTarget(),
+        new LogFileRoll(RuntimeWiring.utcClock(), System.err));
     return application;
   }
 }
