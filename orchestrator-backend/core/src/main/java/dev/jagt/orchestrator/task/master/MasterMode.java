@@ -28,12 +28,12 @@ public enum MasterMode {
   }
 
   /**
-   * Empty where the word is not one of these; a caller refuses rather than guessing which was
-   * meant.
+   * Empty where the word is blank or not one of these; a caller refuses rather than guessing which
+   * was meant.
    */
   public static Optional<MasterMode> of(@Nullable String mode) {
-    return mode == null || mode.isBlank()
-        ? Optional.of(ACT)
+    return mode == null
+        ? Optional.empty()
         : Arrays.stream(values())
             .filter(value -> value.id().equals(mode.strip().toLowerCase(Locale.ROOT)))
             .findFirst();

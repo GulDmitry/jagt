@@ -22,7 +22,7 @@ Never a model's answer.
 
 ## Use cases
 
-- **WHEN** a session hands back a round in `judge` or unset mode
+- **WHEN** a session hands back a round in `judge` mode
   **THEN** each role reads it into the worktree's `master-review.md` and presses nothing
 - **WHEN** the diff touches none of a role's `applies` globs
   **THEN** a `# skipped` line replaces that role's read

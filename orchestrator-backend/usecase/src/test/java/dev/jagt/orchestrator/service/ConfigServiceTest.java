@@ -374,6 +374,11 @@ class ConfigServiceTest {
   }
 
   @Test
+  void readsAnUnsetMasterModeAsOffWhereNoRuntimeDecidedTheDefault() {
+    assertThat(ArbiterConfig.defaults().modeOrDefault()).isEqualTo(MasterMode.OFF);
+  }
+
+  @Test
   void keepsApprovingPlanTheHumansWhileNoStepIsNamedAsTheirs() {
     assertThat(ArbiterConfig.defaults().withMode("act").may(MasterRight.PLAN)).isFalse();
   }

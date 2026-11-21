@@ -949,15 +949,14 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
    * judges.
    */
   private ConfigFile masterByDefault(ConfigFile config) {
-    ConfigFile.ArbiterConfig master = config.arbiter();
-    if (master.acts() && actStops.halted()) {
-      return config.withArbiter(master.withMode(MasterMode.JUDGE.id()));
-    }
-    return master.mode() != null && !master.mode().isBlank()
-        ? config
-        : config.withArbiter(
-            master.withMode(
-                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.ACT : MasterMode.OFF).id()));
+    ConfigFile.ArbiterConfig written = config.arbiter();
+    ConfigFile.ArbiterConfig master =
+        written.mode() != null && !written.mode().isBlank()
+            ? written
+            : written.withMode(
+                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.ACT : MasterMode.OFF).id());
+    return config.withArbiter(
+        master.acts() && actStops.halted() ? master.withMode(MasterMode.JUDGE.id()) : master);
   }
 
   @Override

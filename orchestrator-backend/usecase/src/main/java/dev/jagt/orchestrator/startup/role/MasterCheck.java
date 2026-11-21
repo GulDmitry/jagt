@@ -34,7 +34,8 @@ public class MasterCheck implements StartupCheck {
     ConfigService.ConfigFile config = configService.load();
     ConfigService.ConfigFile.ArbiterConfig master = config.arbiter();
     List<Problem> problems = new ArrayList<>();
-    if (MasterMode.of(master.mode()).isEmpty()) {
+    boolean written = master.mode() != null && !master.mode().isBlank();
+    if (written && MasterMode.of(master.mode()).isEmpty()) {
       problems.add(
           new Problem(
               MODE,
