@@ -54,7 +54,7 @@ A suite, a gate and a CI job SHALL end within a limit set from its measured time
 - **WHEN** a run passes its limit **THEN** the build names the rule, run and limit: `suite-minutes`, `gate-minutes-heavy`, `gate-minutes-stand`
 #### Scenario: A run declares no limit
 - **WHEN** a test task or a CI job declares none
-- **THEN** `unlimited-runs` or `ci-jobs-without-timeout` fails; `pitestDiff` and the release gate stay gaps
+- **THEN** `unlimited-runs` or `ci-jobs-without-timeout` fails
 
 ### Requirement: Documents stay inside their budgets and link true
 A rule, a page, a decision and a spec SHALL stay within their line budgets, and every relative link and anchor SHALL reach its target.
@@ -120,6 +120,16 @@ Only the health probes SHALL be public, and a secret SHALL be named by its envir
 - **WHEN** a log line would carry a password, a secret or a token
 - **THEN** `LogbackTargetTest` and `failure-cause-from-message` hold the log shape; no secret key is logged in main (grep, 2026-11-16)
 
+### Requirement: Metrics and build info answer the owner
+The running process SHALL answer `/actuator/metrics` and `/actuator/info`.
+#### Scenario: The owner reads the running process
+- **WHEN** the owner reads the running process **THEN** `BoardOnTomcatTest` pins both
+
+### Requirement: The web surface has a threat model
+`docs/threat-model.md` SHALL name every filter and route of the web surface (V15).
+#### Scenario: The web surface changes
+- **WHEN** a filter or a route is added **THEN** `ThreatModelTest` fails on an omitted one
+
 ### Requirement: Liveness, readiness and shutdown are probed
 The process SHALL answer a startup, a liveness and a readiness probe, and SHALL stop gracefully on a signal.
 #### Scenario: A pod starts and stops
@@ -134,6 +144,12 @@ State SHALL be written atomically and read across a minor.
 - **THEN** `AssistantBreakerTest`, `InfraRetryTest` and `RetryPolicyTest` hold the wait; `AbortedConnectionFilterTest` holds an aborted request
 #### Scenario: State is read by a newer minor
 - **WHEN** a newer minor reads an older state file or a write is torn **THEN** `StateServiceCompatibilityTest` and `AtomicFilesTest` hold the recovery
+
+### Requirement: An upgrade keeps state and can roll back
+A newer minor SHALL replace an older one without losing state.
+#### Scenario: A newer minor replaces an older one
+- **WHEN** a newer minor replaces an older one
+- **THEN** `StateServiceCompatibilityTest` holds every shipped minor's fixture, `docs/server.md` the rollback
 
 ### Requirement: Every store and loop is bounded
 A store SHALL have a ceiling, a headless call a spend ceiling and a loop a bound per task. The JVM heap SHALL fit the pod; tasks have a cap.
@@ -155,7 +171,7 @@ A row of a standard SHALL be listed as not applicable with its why, and a reject
 ### Requirement: Every gate stays wired
 JaCoCo, PIT, Spotless, Checkstyle, Error Prone, the ArchUnit rule tests, the vulnerability scan and the pins SHALL stay wired into the build or CI.
 #### Scenario: A gate is unwired
-- **WHEN** a build file or the workflow stops wiring one of them **THEN** `QualityGatesTest` fails naming it; board CI step: gap
+- **WHEN** a build file or the workflow stops wiring one of them **THEN** `QualityGatesTest` fails naming it
 #### Scenario: A pin is dropped
 - **WHEN** a lockfile, the wrapper checksum, an action sha, an image digest or the update bot goes **THEN** `PinningTest` fails naming it
 
@@ -187,14 +203,13 @@ A module SHALL keep 80 percent line coverage, the root's floor its measured rati
 ### Requirement: Every test run ends in mutants on the diff
 Every test run SHALL end in mutants on the diff, each survivor judged.
 #### Scenario: A changed line is mutated
-- **WHEN** a main line changes **THEN** `pitestDiff` ends every `test` listing the survivors on it; the board's JS: Stryker on demand, gap per diff
+- **WHEN** a main line changes **THEN** `pitestDiff` ends every `test` listing the survivors on it; the board's JS: Stryker on demand
 
 ### Requirement: An open gap is listed by what is missing
-A gate no stack meets yet SHALL be listed here by what is missing, never silent. The work closing it SHALL write the gate above.
-#### Scenario: Metrics and build info
-- **WHEN** the owner reads the running process **THEN** `/actuator/metrics` and `/actuator/info` answer, `BoardOnTomcatTest` pins them
-#### Scenario: Upgrade
-- **WHEN** a newer minor replaces an older one
-- **THEN** no gap is left: `StateServiceCompatibilityTest` holds every shipped minor's fixture, `docs/server.md` the rollback
-#### Scenario: Threat model
-- **WHEN** the web surface changes **THEN** `docs/threat-model.md` names it (V15) and `ThreatModelTest` fails on an omitted filter or route
+A gate no stack meets yet SHALL be listed here by what is missing, never silent, each gap once. The work closing it SHALL write the gate above.
+#### Scenario: A run's limit is not asserted
+- **WHEN** `pitestDiff` or the release gate runs **THEN** no rule asserts its limit: gap
+#### Scenario: The board's CI step is not asserted
+- **WHEN** the board's CI step is unwired **THEN** no rule fails: gap
+#### Scenario: The board's mutants are not per diff
+- **WHEN** a board JS line changes **THEN** Stryker runs on demand, never per diff: gap

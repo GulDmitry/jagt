@@ -48,7 +48,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
 | Line coverage floor per module (25010 testability) | [testing](rules/testing.md), 0181 | JaCoCo in `jagt.conventions.gradle`, 0.80 per module | c8, 80 % lines per file `.c8rc.json` lists | `jagt.conventions.gradle` |
-| Mutants judged on the diff at every test run (pyramid mutation) | [testing](rules/testing.md), 0125, 0127, 0151 | `pitestDiff`, `jagt.pitest.gradle` | Stryker on demand; per diff: gap | `jagt.pitest.gradle` |
+| Mutants judged on the diff at every test run (pyramid mutation) | [testing](rules/testing.md), 0125, 0127, 0151 | `pitestDiff`, `jagt.pitest.gradle` | Stryker on demand; per diff: gap, [listed](../openspec/specs/engineering/spec.md) | `jagt.pitest.gradle` |
 | Unit and rule tests run whole in one gate | [testing-suites](rules/testing-suites.md) | `./gradlew test` | `npm test` in CI's `test` job | `jagt.suites.gradle` |
 | Property-based (pyramid) | [testing](rules/testing.md) | jqwik properties of the task reducer | gap | one properties class |
 | Contract (pyramid, 25010 interoperability) | [testing](rules/testing.md), 0170 | `WholeApplicationWiringTest` against `contracts/openapi.yaml`, `SchemaTest` | `board-events.schema.json` | `WholeApplicationWiringTest` |
@@ -66,7 +66,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 |---|---|---|---|---|
 | Three groups: unit+functional every commit, heavy nightly and on a tag, stand before a release | [testing-suites](rules/testing-suites.md) | `ci.yml`, `CiWorkflowTest` | `boardTest` in the heavy group | `ci.yml` |
 | A release builds on a hosted runner from the tag (12F V, SLSA L2 build) | [testing-suites](rules/testing-suites.md) | `ci.yml` release job, `CiWorkflowTest` | n.a. | `ci.yml` release job |
-| Every gate of the inventory stays wired into the commit suite or CI | [engineering](../openspec/specs/engineering/spec.md) | `QualityGatesTest` | gap: no test pins the board's CI step | `QualityGatesTest` |
+| Every gate of the inventory stays wired into the commit suite or CI | [engineering](../openspec/specs/engineering/spec.md) | `QualityGatesTest` | gap, [listed](../openspec/specs/engineering/spec.md): no test pins the board's CI step | `QualityGatesTest` |
 | One gate per stack; a check holds for all code; no hook in the repository | [AGENTS.md](../AGENTS.md#git-and-committing), 0162 | `./gradlew test --rerun-tasks` | `npm run lint && npm test` in CI's `test` job | `jagt.conventions.gradle` |
 
 ## Review
@@ -125,7 +125,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerStandTest`, `ServerRestartStandTest` | n.a. | `Dockerfile`, `examples/kubernetes.yml` |
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |
 | Metrics and build info answer to the owner (Boot metrics, info) | [board-security](../openspec/specs/board-security/spec.md#requirement-metrics-and-build-info-answer-the-owner) | `BoardOnTomcatTest` | `BoardHeaderAndFiltersTest` | `BoardOnTomcatTest` |
-| Start-to-ready and latency stay under a measured budget (25010 time behaviour) | none yet | gap | gap | gap |
+| Start-to-ready and latency stay under a measured budget (25010 time behaviour) | [engineering](../openspec/specs/engineering/spec.md) | `ServerStandTest`: start 15 s, `/state` p95 100 ms | n.a. | `ServerStandTest` |
 | Upgrade, backup and rollback of data are documented (25010 replaceability) | [server](server.md) | `StateServiceCompatibilityTest` | n.a. | `StateServiceCompatibilityTest` |
 | Scale out (12F VIII) and stateless processes (12F VI) | 0179 | rejected: one replica, state on `/data` | n.a. | none |
 
