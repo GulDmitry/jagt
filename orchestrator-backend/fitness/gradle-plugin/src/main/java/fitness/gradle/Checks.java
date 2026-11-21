@@ -19,6 +19,7 @@ import org.gradle.testing.jacoco.tasks.JacocoReport;
 final class Checks {
 
   private static final String WHOLE_BUILD_TEST = "test";
+  private static final String MERGED_REPORT = "testReachReport";
 
   private Checks() {}
 
@@ -69,14 +70,62 @@ final class Checks {
             classDirectories.put(
                 module.getPath(),
                 module.getLayout().getBuildDirectory().dir("classes/java/main").get().getAsFile().getPath()));
+    Merged merged = merged(root, modules, executions, classDirectories);
+    TaskProvider<ReachCheck> check = register(root, ReachCheck.class, "testReachCheck", function);
+    check.configure(
+        task -> {
+          task.dependsOn(merged.report());
+          task.onlyIf(merged.wholeBuild());
+          task.getReport().set(merged.xml());
+          task.getClassDirectories().set(classDirectories);
+          task.mustRunAfter(modules.stream().map(module -> module.getTasks().named("jacocoTestReport")).toList());
+        });
+    root.getTasks().named(WHOLE_BUILD_TEST).configure(test -> test.finalizedBy(check));
+  }
+
+  static void coverage(Project root, FitnessFunction function) {
+    List<Project> modules = List.copyOf(root.getAllprojects());
+    List<File> executions =
+        modules.stream()
+            .map(module -> module.getLayout().getBuildDirectory().file("jacoco/test.exec").get().getAsFile())
+            .toList();
+    Map<String, String> classDirectories = new LinkedHashMap<>();
+    modules.forEach(
+        module ->
+            classDirectories.put(
+                module.getPath(),
+                module.getLayout().getBuildDirectory().dir("classes/java/main").get().getAsFile().getPath()));
+    Merged merged = merged(root, modules, executions, classDirectories);
+    TaskProvider<CoverageCheck> check = register(root, CoverageCheck.class, "testCoverageCheck", function);
+    check.configure(
+        task -> {
+          task.dependsOn(merged.report());
+          task.onlyIf(merged.wholeBuild());
+          task.getReport().set(merged.xml());
+          task.mustRunAfter(modules.stream().map(module -> module.getTasks().named("jacocoTestReport")).toList());
+        });
+    root.getTasks().named(WHOLE_BUILD_TEST).configure(test -> test.finalizedBy(check));
+  }
+
+  private record Merged(
+      TaskProvider<JacocoReport> report,
+      org.gradle.api.file.RegularFile xml,
+      org.gradle.api.specs.Spec<Task> wholeBuild) {}
+
+  /** The one report merging every module's execution data, registered by the first row that needs it. */
+  private static Merged merged(
+      Project root, List<Project> modules, List<File> executions, Map<String, String> classDirectories) {
     boolean filtered = root.getGradle().getStartParameter().getTaskNames().contains("--tests");
     org.gradle.api.specs.Spec<Task> wholeBuild =
         task -> !filtered && executions.stream().allMatch(File::exists);
-    var xml = root.getLayout().getBuildDirectory().file("reports/test-reach/reach.xml");
+    var xml = root.getLayout().getBuildDirectory().file("reports/test-reach/reach.xml").get();
+    if (root.getTasks().getNames().contains(MERGED_REPORT)) {
+      return new Merged(root.getTasks().named(MERGED_REPORT, JacocoReport.class), xml, wholeBuild);
+    }
     TaskProvider<JacocoReport> report =
         root.getTasks()
             .register(
-                "testReachReport",
+                MERGED_REPORT,
                 JacocoReport.class,
                 task -> {
                   task.getExecutionData().from(executions);
@@ -92,16 +141,7 @@ final class Checks {
                   task.onlyIf(wholeBuild);
                   task.mustRunAfter(modules.stream().map(module -> module.getTasks().named(WHOLE_BUILD_TEST)).toList());
                 });
-    TaskProvider<ReachCheck> check = register(root, ReachCheck.class, "testReachCheck", function);
-    check.configure(
-        task -> {
-          task.dependsOn(report);
-          task.onlyIf(wholeBuild);
-          task.getReport().set(xml);
-          task.getClassDirectories().set(classDirectories);
-          task.mustRunAfter(modules.stream().map(module -> module.getTasks().named("jacocoTestReport")).toList());
-        });
-    root.getTasks().named(WHOLE_BUILD_TEST).configure(test -> test.finalizedBy(check));
+    return new Merged(report, xml, wholeBuild);
   }
 
   static TaskProvider<VulnerabilityCheck> vulnerabilities(Project root, FitnessFunction function) {

@@ -93,6 +93,7 @@ public final class FitnessPlugin implements Plugin<Project> {
       }
       case "jacoco:line-coverage-percent" -> {
         Limits.coverage(root, function);
+        Checks.coverage(root, function);
         return Checks.runMeasured(root, function, "test");
       }
       case "jacoco:unreached-classes-with-branch" -> {

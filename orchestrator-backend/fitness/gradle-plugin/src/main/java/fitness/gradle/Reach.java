@@ -41,6 +41,20 @@ final class Reach {
         .toList();
   }
 
+  static long linePercent(Path xml) {
+    NodeList counters = document(xml).getDocumentElement().getChildNodes();
+    for (int i = 0; i < counters.getLength(); i++) {
+      if (counters.item(i) instanceof Element counter
+          && "counter".equals(counter.getTagName())
+          && "LINE".equals(counter.getAttribute("type"))) {
+        long covered = Long.parseLong(counter.getAttribute("covered"));
+        long total = covered + Long.parseLong(counter.getAttribute("missed"));
+        return total == 0 ? 0 : covered * 100 / total;
+      }
+    }
+    return 0;
+  }
+
   private static void add(long[] counts, Element counter) {
     switch (counter.getAttribute("type")) {
       case "BRANCH" ->

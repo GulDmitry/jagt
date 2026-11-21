@@ -33,6 +33,22 @@ class ReachTest {
   }
 
   @Test
+  void readsTheLineCoveragePercentOfTheWholeReport() throws IOException {
+    Path xml = directory.resolve("reach.xml");
+    Files.writeString(
+        xml,
+        """
+        <report name="r"><package name="a">
+          <class name="a/A"><counter type="LINE" missed="1" covered="1"/></class>
+          <counter type="LINE" missed="1" covered="1"/></package>
+          <counter type="BRANCH" missed="9" covered="0"/>
+          <counter type="LINE" missed="25" covered="75"/></report>
+        """);
+
+    assertThat(Reach.linePercent(xml)).isEqualTo(75);
+  }
+
+  @Test
   void countsANestedClassAgainstItsOuterClass() throws IOException {
     Path xml = directory.resolve("reach.xml");
     Files.writeString(

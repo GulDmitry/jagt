@@ -122,6 +122,35 @@ class FitnessPluginTest {
   }
 
   @Test
+  void recordsTheMinutesAGateTaskTookForTheFitnessReport() throws IOException {
+    Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
+    Files.writeString(
+        project.resolve("fitness.yml"),
+        """
+        schema: 1
+        operational:
+          performance-efficiency:
+            time-behaviour:
+              gate-minutes: { engine: tool, tool: gradle, task: slow, per: gate, measure: minutes, governs: size, max: 5 }
+        """);
+    Files.writeString(
+        project.resolve("build.gradle"),
+        """
+        plugins { id 'java'; id 'fitness' }
+        fitness { file = layout.projectDirectory.file('fitness.yml') }
+        tasks.register('slow') { doLast { println 'slow' } }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(project.toFile())
+        .withPluginClasspath()
+        .withArguments("slow")
+        .build();
+
+    assertThat(project.resolve("build/fitness/last-values/gate-minutes")).hasContent("1");
+  }
+
+  @Test
   void refusesAToolRowItHasNoMeasureFor() throws IOException {
     Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
     Files.writeString(

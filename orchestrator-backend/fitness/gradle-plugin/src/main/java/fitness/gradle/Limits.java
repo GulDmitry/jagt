@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.quality.CheckstyleExtension;
@@ -112,5 +113,15 @@ final class Limits {
     Provider<Long> minutes = override.orElse(function.threshold().limit());
     task.getTimeout().set(minutes.map(Duration::ofMinutes));
     overruns.put(task.getPath(), minutes.map(value -> function.id() + "|" + value));
+    LastValues lastValues =
+        new LastValues(task.getProject().getLayout().getBuildDirectory().dir("fitness/last-values").get().getAsFile().toPath());
+    AtomicLong started = new AtomicLong();
+    task.doFirst(first -> started.set(System.nanoTime()));
+    task.doLast(
+        last ->
+            lastValues.record(
+                function.id(),
+                (System.nanoTime() - started.get() + Duration.ofMinutes(1).toNanos() - 1)
+                    / Duration.ofMinutes(1).toNanos()));
   }
 }
