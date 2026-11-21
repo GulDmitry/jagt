@@ -53,7 +53,7 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"ci", "nightly", "base-image", "base-images", "codeql"})
+  @ValueSource(strings = {"ci", "nightly", "base-image", "base-images", "codeql", "scorecard"})
   void setsOneTopLevelPermissionsBlockInEveryWorkflow(String workflow) {
     Map<?, ?> parsed =
         new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/" + workflow + ".yml")));

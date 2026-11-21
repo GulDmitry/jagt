@@ -20,6 +20,12 @@ allprojects {
         exclude '**/.*', '**/.*/**' // dot-directories hold local tool state, never shipped
     }
 
+    // The same inputs give the same archive bytes, whichever module builds it.
+    tasks.withType(AbstractArchiveTask).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
+
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(25)

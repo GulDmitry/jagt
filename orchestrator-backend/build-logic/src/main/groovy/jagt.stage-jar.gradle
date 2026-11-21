@@ -52,6 +52,13 @@ def stageShipped = tasks.register('stageShipped', Sync) {
     }
 }
 
+// A build time in the jar makes every build's bytes differ.
+tasks.named('bootBuildInfo') {
+    properties {
+        excludes = ['time']
+    }
+}
+
 // Version-independent archive name, so the documented run command survives every release.
 tasks.named('bootJar') {
     archiveFileName = 'jagt.jar'

@@ -7,4 +7,41 @@ tasks.named('cyclonedxBom') {
     schemaVersion = org.cyclonedx.Version.VERSION_16
     jsonOutput = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
     includeBomSerialNumber = false
+    doLast {
+        // The generator stamps the run's time, which would make the jar carrying the SBOM differ on every build.
+        def sbom = jsonOutput.get().asFile
+        sbom.text = sbom.text.replaceFirst(/\s*"timestamp"\s*:\s*"[^"]*",?/, '')
+    }
+}
+
+// What ships: build and test tooling carries licences the product never distributes.
+allprojects {
+    tasks.withType(org.cyclonedx.gradle.CyclonedxDirectTask).configureEach {
+        includeConfigs = ['runtimeClasspath']
+    }
+}
+
+// A dependency whose every licence is outside build-logic/allowed-licences.txt fails the build. jagt's own
+// modules carry no licence in the SBOM and are skipped; a third-party component without one fails.
+def sbomFile = tasks.named('cyclonedxBom').flatMap { it.jsonOutput }
+def allowedFile = layout.projectDirectory.file('build-logic/allowed-licences.txt')
+tasks.register('checkLicences') {
+    group = 'verification'
+    description = 'Fails on a dependency licence outside build-logic/allowed-licences.txt.'
+    dependsOn tasks.named('cyclonedxBom')
+    inputs.file(sbomFile)
+    inputs.file(allowedFile)
+    doLast {
+        def allowed = allowedFile.asFile.readLines().collect { it.trim() }.findAll { it && !it.startsWith('#') } as Set
+        def bom = new groovy.json.JsonSlurper().parse(sbomFile.get().asFile)
+        def offenders = bom.components.findAll { !it.purl.contains('project_path=') }.findResults { c ->
+            def ids = (c.licenses ?: []).collectMany { l ->
+                l.license ? [l.license.id ?: l.license.name] : l.expression.split(/\s+OR\s+/).collect { it.replaceAll(/[()]/, '').trim() }
+            }
+            ids.any { allowed.contains(it) } ? null : "${c.group}:${c.name}:${c.version} [${ids.join('; ')}]"
+        }
+        if (offenders) {
+            throw new GradleException("Licence outside build-logic/allowed-licences.txt:\n  " + offenders.join('\n  '))
+        }
+    }
 }
