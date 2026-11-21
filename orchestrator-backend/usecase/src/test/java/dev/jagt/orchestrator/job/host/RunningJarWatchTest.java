@@ -112,7 +112,9 @@ class RunningJarWatchTest {
 
   @Test
   void knowsItIsRunningTheJarTheBuildRewrites(@TempDir Path dir) throws IOException {
-    Path built = Files.writeString(dir.resolve("jagt.jar"), "x");
+    Path built =
+        Files.writeString(
+            Files.createDirectories(dir.resolve("build/libs")).resolve("jagt.jar"), "x");
 
     when(host.jar()).thenReturn(Optional.of(built));
 
@@ -125,6 +127,29 @@ class RunningJarWatchTest {
     Path staged = Files.writeString(dir.resolve("jagt-run-20260819-120000.jar"), "x");
 
     when(host.jar()).thenReturn(Optional.of(staged));
+
+    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar())
+        .isFalse();
+  }
+
+  @Test
+  void rewriteAdviceForInstalledJarNamesNoSourceBuild(@TempDir Path dir) throws IOException {
+    Path installed =
+        Files.writeString(
+            Files.createDirectories(dir.resolve("versions/0.24.1")).resolve("jagt.jar"), "x");
+    when(host.jar()).thenReturn(Optional.of(installed));
+
+    assertThat(new RunningJarWatch(notifications, host, supervisor).rewriteFix())
+        .doesNotContain("gradlew");
+  }
+
+  @Test
+  void saysNothingAboutAnInstalledReleaseJar(@TempDir Path dir) throws IOException {
+    Path installed =
+        Files.writeString(
+            Files.createDirectories(dir.resolve("versions/0.24.1")).resolve("jagt.jar"), "x");
+
+    when(host.jar()).thenReturn(Optional.of(installed));
 
     assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar())
         .isFalse();

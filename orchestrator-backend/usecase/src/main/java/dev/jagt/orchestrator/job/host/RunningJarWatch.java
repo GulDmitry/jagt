@@ -81,11 +81,32 @@ public class RunningJarWatch implements Job {
   /** The name {@code bootJar} writes, and the one a build in this tree overwrites in place. */
   private static final String BUILD_OUTPUT = "jagt.jar";
 
+  /** Where {@code bootJar} writes it; an installed {@code jagt.jar} is not under a build folder. */
+  private static final String BUILD_DIR = "build";
+
+  private static final String BUILD_LIBS = "libs";
+
   /**
-   * Whether this process is running the jar the build rewrites, rather than a staged copy of it.
+   * Whether this process is running the jar the build rewrites, rather than a staged copy of it or
+   * an installed release.
    */
   boolean runningTheBuildsOwnJar() {
-    return jar != null && BUILD_OUTPUT.equals(jar.getFileName().toString());
+    if (jar == null || !BUILD_OUTPUT.equals(jar.getFileName().toString())) {
+      return false;
+    }
+    Path libs = jar.getParent();
+    Path build = libs == null ? null : libs.getParent();
+    return libs != null
+        && build != null
+        && BUILD_LIBS.equals(String.valueOf(libs.getFileName()))
+        && BUILD_DIR.equals(String.valueOf(build.getFileName()));
+  }
+
+  /** Source-build advice only for the build's own jar; any other jar is cured by a restart. */
+  String rewriteFix() {
+    return runningTheBuildsOwnJar()
+        ? "./gradlew stageJar && java -jar build/libs/jagt-run.jar"
+        : "restart jagt";
   }
 
   @Override
@@ -103,7 +124,7 @@ public class RunningJarWatch implements Job {
         .setMessage("running jar rewritten")
         .addKeyValue("jar", jar)
         .addKeyValue("effect", "class loading corrupt")
-        .addKeyValue("fix", "./gradlew stageJar && java -jar build/libs/jagt-run.jar")
+        .addKeyValue("fix", rewriteFix())
         .log();
     notifications.send(
         Notification.install(
