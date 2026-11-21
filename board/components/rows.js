@@ -34,15 +34,14 @@ export const rowClass = (task, selected) =>
     .filter(Boolean)
     .join(" ");
 
+// The row's name is its visible text; only what the row does not print goes in its description.
 /**
  * @param {CardTask} task
  * @param {boolean} changed
  * @param {string | null} stopped
  */
-export const pickLabel = (task, changed, stopped) =>
+export const pickFacts = (task, changed, stopped) =>
   [
-    `${task.alias || task.id} ${task.title || ""}`,
-    task.statusLabel,
     marked(task) &&
       `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`,
     stopped,

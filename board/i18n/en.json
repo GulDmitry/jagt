@@ -51,7 +51,7 @@
   "filter.hint": "a5 filters · {mod}K for a command",
   "filter.tip": "substring match on alias, ticket or title",
   "palette.open.label": "{mod}K",
-  "palette.open.aria": "a command or plain words ({mod}K)",
+  "palette.open.aria": "{mod}K: a command or plain words",
   "palette.open.tip": "{mod}K: a command, or plain words",
   "palette.ask.label": "a command or plain words",
   "palette.ask.hint": "a command (ship a1), or plain words",

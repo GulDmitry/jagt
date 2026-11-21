@@ -15,7 +15,7 @@
   "filter.hint": "a5 фильтрует · {mod}K для команды",
   "filter.tip": "поиск подстроки в алиасе, тикете или заголовке",
   "palette.open.label": "{mod}K",
-  "palette.open.aria": "команда или обычные слова ({mod}K)",
+  "palette.open.aria": "{mod}K: команда или обычные слова",
   "palette.open.tip": "{mod}K: команда или обычные слова",
   "palette.ask.label": "команда или обычные слова",
   "palette.ask.hint": "команда (ship a1) или обычные слова",

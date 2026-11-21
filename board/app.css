@@ -6,14 +6,14 @@
   --line: light-dark(#d9dde3, #2c3238);
   --text: light-dark(#1c2024, #e6e8ea);
   --muted: light-dark(#5f6672, #9aa3ad);
-  --you: light-dark(#b45309, #fbbf24);
+  --you: light-dark(#92400e, #fbbf24);
   --you-bg: light-dark(#fef3c7, #3a2c08);
   --agent: light-dark(#1d4ed8, #93b4ff);
   --ci: light-dark(#6d28d9, #c4b5fd);
   --accent: light-dark(#1d4ed8, #93b4ff);
   --on-accent: light-dark(#fff, #10131a);
   --danger: light-dark(#b42318, #fca5a5);
-  --ok: light-dark(#15803d, #86efac);
+  --ok: light-dark(#166534, #86efac);
   --chip-bg: light-dark(#eceef1, #24282c);
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -978,7 +978,7 @@ button.flag:hover:not(:disabled) {
 .status .age {
   font-family: var(--mono);
   font-weight: 400;
-  opacity: 0.7;
+  opacity: 0.92;
 }
 /* Where no verb is the deploy, the state says the work is live: same colour, one mark. */
 .status.live {

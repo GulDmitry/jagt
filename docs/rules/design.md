@@ -16,10 +16,10 @@ Fourteen tokens, each defined once at the top of `app.css` as `light-dark(light,
 theme only. `--on-accent` is `button.primary`'s label (`#fff`, `#10131a` dark): accent text on the accent fill is
 illegible. A hex outside `:root` is a bug, but the translucent blacks (four shadows, the dialog backdrop).
 
-- `--you` `#b45309` / `#fbbf24` — **your move**: nothing advances without you.
+- `--you` `#92400e` / `#fbbf24` — **your move**: nothing advances without you.
 - `--agent` `#1d4ed8` / `#93b4ff` — **an agent is working**.
 - `--ci` `#6d28d9` / `#c4b5fd` — **the reviewers own it**: out of your hands, not blocked.
-- `--ok` `#15803d` / `#86efac` — **nothing wrong here**: a step taken, or a thing working.
+- `--ok` `#166534` / `#86efac` — **nothing wrong here**: a step taken, or a thing working.
 - `--danger` `#b42318` / `#fca5a5` — **broken**: a failed run, a refused command, a problem line.
 - `--accent` `#1d4ed8` / `#93b4ff` — **pressable / pressed**: hover, a primary button, a pressed filter.
 - `--muted` `#5f6672` / `#9aa3ad` — **not news**: labels, ages, a verdict with nothing wrong.

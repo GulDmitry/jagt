@@ -15,7 +15,7 @@
   "filter.hint": "a5 filtruje · {mod}K dla polecenia",
   "filter.tip": "dopasowanie fragmentu aliasu, zgłoszenia lub tytułu",
   "palette.open.label": "{mod}K",
-  "palette.open.aria": "polecenie lub zwykłe słowa ({mod}K)",
+  "palette.open.aria": "{mod}K: polecenie lub zwykłe słowa",
   "palette.open.tip": "{mod}K: polecenie lub zwykłe słowa",
   "palette.ask.label": "polecenie lub zwykłe słowa",
   "palette.ask.hint": "polecenie (ship a1) lub zwykłe słowa",

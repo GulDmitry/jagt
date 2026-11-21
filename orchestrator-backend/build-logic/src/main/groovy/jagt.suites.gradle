@@ -76,6 +76,8 @@ dependencies {
     // a Mac and a runner execute the same thing. The shared libraries it links against come from
     // scripts/linux-test-deps.sh.
     boardTestImplementation 'com.microsoft.playwright:playwright:1.64.0'
+    // The accessibility checker runs in the page from the test's classpath: the board ships none of it.
+    boardTestImplementation 'com.deque.html.axe-core:playwright:4.14.0'
     boardTestCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     boardTestAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     e2eCompileOnly "org.projectlombok:lombok:${lombokVersion}"
