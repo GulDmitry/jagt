@@ -355,6 +355,14 @@ class CiWorkflowTest {
   }
 
   @Test
+  void scansTheReleaseSbomForKnownVulnerabilitiesInGitlabsTestJobThroughTheSharedScript() {
+    Map<?, ?> pipeline = new Yaml().load(CiWorkflow.gitlabText());
+    Map<?, ?> test = (Map<?, ?>) Objects.requireNonNull(pipeline.get("test"));
+
+    assertThat(String.valueOf(test.get("script"))).contains("scripts/vulnerability-scan.sh");
+  }
+
+  @Test
   void verifiesTheSecretScannerBinaryByChecksumAndScansTreeAndHistory() {
     assertThat(SourceRoots.read(Path.of("scripts/secret-scan.sh")))
         .containsPattern("sha256=[0-9a-f]{64}")
