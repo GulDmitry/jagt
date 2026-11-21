@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class TestsForScriptTest {
 
@@ -114,20 +116,25 @@ class TestsForScriptTest {
     assertThat(out).containsOnlyOnce("'*CiWorkflowTest'");
   }
 
-  @Test
-  void rootTestNamingChangedStarterFileRunsWhenThatFileChanges(@TempDir Path repo)
-      throws Exception {
+  @ParameterizedTest
+  @CsvSource({
+    "app.server.yml.dist, app.server.yml.dist",
+    "specs/master/spec.md, ../specs/master/spec.md"
+  })
+  void rootTestNamingChangedFileRunsWhenThatFileChanges(
+      String changed, String named, @TempDir Path repo) throws Exception {
     Files.createDirectories(repo.resolve(ROOT_TESTS));
     Files.writeString(
         repo.resolve(ROOT_TESTS + "StarterTest.java"),
-        "class StarterTest { String f = \"app.server.yml.dist\"; }");
-    Files.writeString(repo.resolve("app.server.yml.dist"), "a: 1");
+        "class StarterTest { String f = \"" + named + "\"; }");
+    Files.createDirectories(repo.resolve(changed).getParent());
+    Files.writeString(repo.resolve(changed), "a: 1");
 
-    Process run = TestTestsForProcessBuilder.over(repo).build("app.server.yml.dist").start();
+    Process run = TestTestsForProcessBuilder.over(repo).build(changed).start();
     String out = new String(run.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
     assertThat(run.waitFor(60, TimeUnit.SECONDS)).isTrue();
-    assertThat(out).contains(":test --tests '*StarterTest' -x pitestDiff");
+    assertThat(out).contains("--tests '*StarterTest'");
   }
 
   @Test

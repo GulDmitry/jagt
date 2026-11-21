@@ -119,7 +119,13 @@ for p in $paths; do
       ;;
   esac
   case "$p" in
-    *.java | *.md) ;;
+    *.java) ;;
+    *.md)
+      # A root test that reads a page names its path (2026-11-21: a master spec edit broke MasterRightsSpecTest unselected).
+      for f in $(git grep --untracked -lF "$p" -- "$(test_dir root)" | grep -E 'Test\.java$' || true); do
+        add_test root "$(basename "$f" .java)"
+      done
+      ;;
     *)
       # A root test that reads a file names it (2026-11-20: a .dist comment broke ServerStarterTest unselected).
       for f in $(git grep --untracked -lF "$(basename "$p")" -- "$(test_dir root)" | grep -E 'Test\.java$' || true); do

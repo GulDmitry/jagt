@@ -55,7 +55,7 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 
 #### Scenario: What it presses in act
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
-- **THEN** the Master deploys it, never reverts, unless `mine` names `deploy`, as it does unset; `mine: []` hands it the press
+- **THEN** the Master deploys it, never reverts, unless `mine: [deploy]`, as unset (`mine: [plan, deploy, revert]`); `mine: []` hands it the press
 - **WHEN** the press is refused, as a deploy of ABC-42 with no commit beyond dev
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
 - **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
@@ -91,7 +91,7 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours; the same words asked again are a new question
 
 #### Scenario: A plan in act
-- **WHEN** a plan holds and `mine` is unset, or names `plan`, or the task was opened in `plan` mode
+- **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
 
 #### Scenario: A plan handed back with a question
