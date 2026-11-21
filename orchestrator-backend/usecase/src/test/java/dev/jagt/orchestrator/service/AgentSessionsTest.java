@@ -38,12 +38,12 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.usage.ModelTier;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -93,7 +93,7 @@ class AgentSessionsTest {
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
-            new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC())),
+            new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock())),
             new Checkers(new TaskChart(Composition.builtIn())));
     sessions =
         new AgentSessions(

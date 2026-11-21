@@ -22,11 +22,11 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Probe;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -65,7 +65,7 @@ class HandBackTest {
           new ConfigService(
               new ConfigSource(paths, new FakeConfigInputs()),
               mock(AgentRuntime.class),
-              new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC())),
+              new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock())),
               new Checkers(new TaskChart(Composition.builtIn())));
       handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
     }

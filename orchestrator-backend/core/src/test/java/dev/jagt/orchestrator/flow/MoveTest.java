@@ -144,7 +144,7 @@ class MoveTest {
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.NO_CHANGES, false),
             false,
-            AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+            AutoReviewWatch.watching(60_000));
 
     assertThat(move.primary()).isNull();
     assertThat(move.owner()).isEqualTo(Owner.CI);
@@ -254,7 +254,7 @@ class MoveTest {
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
             false,
-            AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+            AutoReviewWatch.watching(60_000));
 
     assertThat(move.owner()).isEqualTo(Owner.CI);
   }
@@ -268,7 +268,7 @@ class MoveTest {
             Facts.defaults(),
             RoundState.NONE,
             false,
-            AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+            AutoReviewWatch.watching(60_000));
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.hint()).contains("no review request");
@@ -299,7 +299,7 @@ class MoveTest {
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
             false,
-            AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+            AutoReviewWatch.watching(60_000));
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
@@ -333,7 +333,7 @@ class MoveTest {
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
             false,
-            AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+            AutoReviewWatch.watching(60_000));
 
     assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
   }
@@ -743,7 +743,7 @@ class MoveTest {
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
             false,
-            AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+            AutoReviewWatch.watching(60_000));
 
     assertThat(move.owner()).isEqualTo(Owner.CI);
     assertThat(move.primary()).isNull();

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.ui.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.jagt.orchestrator.testing.FakeClock;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.boot.support.EnvironmentPostProcessorApplicationListener;
@@ -58,8 +59,7 @@ class LogTargetTest {
         new MockEnvironment().withProperty("logging.file.name", "/nowhere/jagt.log");
     environment.addActiveProfile(LogTarget.CONSOLE_PROFILE);
 
-    assertThat(new LogFileRoll(java.time.Clock.systemUTC(), System.err).apply(environment))
-        .isFalse();
+    assertThat(new LogFileRoll(new FakeClock(), System.err).apply(environment)).isFalse();
   }
 
   @Test

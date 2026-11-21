@@ -36,9 +36,9 @@ import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,12 +74,10 @@ class MasterPlanVerdictsTest {
         caseDoor()
             .withRoot(root)
             .build(
-                state,
-                taskStops().withRoot(root).build(state, Clock.systemUTC()),
-                Clock.systemUTC());
+                state, taskStops().withRoot(root).build(state, new FakeClock()), new FakeClock());
     rolesRoot().withRoot(root).build();
-    relay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
-    claims = masterClaims().build(state, Clock.systemUTC());
+    relay = stepRelay().withRoot(root).build(state, sessions, new FakeClock());
+    claims = masterClaims().build(state, new FakeClock());
     plainPlan = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     verdicts =
         new MasterPlanVerdicts(

@@ -9,8 +9,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,7 +25,7 @@ class LiftCapabilityTest {
             .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds"))
             .build());
     LiftCapability lift =
-        new LiftCapability(taskStops().withRoot(root).build(state, Clock.systemUTC()));
+        new LiftCapability(taskStops().withRoot(root).build(state, new FakeClock()));
 
     var outcome = lift.run("ABC-1");
 

@@ -28,7 +28,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.review.AutoReviewWatch;
 import dev.jagt.orchestrator.task.turn.AgentReport;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class BoardApiControllerTest {
               OrchestratorProperties.defaults()
                   .withRoot("/state")
                   .withStateFile("/state/state.json")),
-          Clock.systemUTC());
+          new FakeClock());
   private final BoardApiController api =
       new BoardApiController(
           taskViews,
@@ -67,11 +67,11 @@ class BoardApiControllerTest {
               new Jobs(
                   new Jobs.Catalog(List.of(), List.of()),
                   scheduler,
-                  Clock.systemUTC(),
+                  new FakeClock(),
                   mock(StateService.class),
                   idleStop),
               new ReachLedger(),
-              Clock.systemUTC(),
+              new FakeClock(),
               List.of()));
 
   @Test
@@ -176,11 +176,11 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC(),
+                new FakeClock(),
                 List.of(() -> List.of(acting), () -> List.of(stopped))));
 
     assertThat(board.tasks().header().chips()).containsExactly(acting, stopped);
@@ -206,11 +206,11 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 reach,
-                Clock.systemUTC(),
+                new FakeClock(),
                 List.of()));
 
     assertThat(board.tasks().header().reach()).containsExactly(lost);
@@ -229,11 +229,11 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(poll), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC(),
+                new FakeClock(),
                 List.of()));
 
     assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
@@ -253,11 +253,11 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(poll), List.<JobSource>of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC(),
+                new FakeClock(),
                 List.of()));
 
     assertThat(board.tasks().header().jobs().count()).isEqualTo(1);
@@ -277,11 +277,11 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC(),
+                new FakeClock(),
                 List.of()));
 
     assertThat(board.events()).isSameAs(browser);
@@ -340,11 +340,11 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC(),
+                new FakeClock(),
                 List.of()));
     TaskView drafted =
         TaskView.of(

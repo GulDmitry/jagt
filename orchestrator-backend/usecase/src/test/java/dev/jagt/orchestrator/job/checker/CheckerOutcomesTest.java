@@ -23,9 +23,9 @@ import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -51,7 +51,7 @@ class CheckerOutcomesTest {
         checkerOutcomes()
             .build(
                 mock(StepRelay.class),
-                flowReports().build(state, Clock.systemUTC()),
+                flowReports().build(state, new FakeClock()),
                 mock(TaskStops.class),
                 state);
   }
@@ -151,7 +151,7 @@ class CheckerOutcomesTest {
         checkerOutcomes()
             .withRoleFile(roleFile)
             .build(
-                relay, flowReports().build(state, Clock.systemUTC()), mock(TaskStops.class), state);
+                relay, flowReports().build(state, new FakeClock()), mock(TaskStops.class), state);
     TaskState task = askedDeploy().build();
     state.putTask("ABC-42", task);
     AcceptanceVerdict verdict =

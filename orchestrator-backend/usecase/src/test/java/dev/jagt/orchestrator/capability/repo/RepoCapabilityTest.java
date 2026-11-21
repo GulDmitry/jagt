@@ -25,8 +25,8 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -77,7 +77,7 @@ class RepoCapabilityTest {
               state,
               new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
               new FactSources(mock(AgentPresence.class), ignored -> false),
-              Clock.systemUTC(),
+              new FakeClock(),
               rules);
     }
 

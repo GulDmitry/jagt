@@ -32,8 +32,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,7 +66,7 @@ class RevertServiceTest {
         new RevertService(
             state,
             new DeployTargets(config),
-            new RevertRunner(state, git, Clock.systemUTC()),
+            new RevertRunner(state, git, new FakeClock()),
             git,
             facts);
     when(facts.picked(List.of(listed), "aaaaaaa")).thenReturn(Optional.of(listed));

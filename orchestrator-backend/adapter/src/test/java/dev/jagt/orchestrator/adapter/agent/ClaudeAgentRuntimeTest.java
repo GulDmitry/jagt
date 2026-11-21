@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -34,7 +35,7 @@ class ClaudeAgentRuntimeTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'Read AGENTS.md and work'");
@@ -45,7 +46,7 @@ class ClaudeAgentRuntimeTest {
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), true))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
@@ -64,7 +65,7 @@ class ClaudeAgentRuntimeTest {
                 ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
             .resolve("s.jsonl"),
         "{}\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.reviveCommand(worktree))
         .isEqualTo(
@@ -79,7 +80,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(
         root.resolve("roles/session/brief.md"),
         "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.reviveCommand(root.resolve("wt")))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
@@ -90,7 +91,7 @@ class ClaudeAgentRuntimeTest {
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nit's fine\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'it'\\''s fine'");
@@ -100,7 +101,7 @@ class ClaudeAgentRuntimeTest {
   void trustsProvisionedWorktreeSoNoDialogStopsTheSessionAndForgetsItOnceRetired(@TempDir Path root)
       throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-proj"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     String key = worktree.toRealPath().toString();
 
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
@@ -126,7 +127,7 @@ class ClaudeAgentRuntimeTest {
   void trustsTheWorktreeAgainAtLaunchWhenAnotherWriterDroppedTheFlagSinceProvisioning(
       @TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-8-proj"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
 
@@ -148,7 +149,7 @@ class ClaudeAgentRuntimeTest {
     worktree.toFile().mkdirs();
 
     claudeRuntime()
-        .build(Clock.systemUTC())
+        .build(new FakeClock())
         .provisionWorktree(
             AgentWorktree.of(worktree, root)
                 .withSandbox(
@@ -168,7 +169,7 @@ class ClaudeAgentRuntimeTest {
       throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
     AgentRuntime.Admission admission = runtime.admit(worktree, deploy);
@@ -190,7 +191,7 @@ class ClaudeAgentRuntimeTest {
   void letsSandboxedSessionWriteInDirectoryItWasAdmittedTo(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(
         AgentWorktree.of(worktree, root)
             .withSandbox(Sandbox.on(List.of(Path.of("/w/ABC-1")), List.of())));
@@ -210,7 +211,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void grantsDirectoryNotThereYetAsPathRuleAlone(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
     runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
@@ -228,7 +229,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void admitsNothingWhereItProvisionedNothing(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     AgentRuntime.Admission admission = runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
 
@@ -242,7 +243,7 @@ class ClaudeAgentRuntimeTest {
     worktree.toFile().mkdirs();
     Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
 
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     Path briefing = runtime.systemKnowledgeFile(worktree);
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -256,7 +257,7 @@ class ClaudeAgentRuntimeTest {
       @TempDir Path root) throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     Path briefing = runtime.systemKnowledgeFile(worktree);
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     Files.writeString(briefing, "the briefing");
@@ -274,7 +275,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
     Files.writeString(worktree.resolve("CLAUDE.local.md"), "personal rules");
 
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
         .isInstanceOf(IllegalStateException.class)
@@ -424,7 +425,7 @@ class ClaudeAgentRuntimeTest {
 
     claudeRuntime()
         .withProperties(new ClaudeProperties("claude", "", "team:Engineer", List.of("lsp@market")))
-        .build(Clock.systemUTC())
+        .build(new FakeClock())
         .provisionWorktree(AgentWorktree.of(worktree, root));
 
     var settings =
@@ -452,7 +453,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void refusesTurnEndInTheShapeClaudeReadsAsKeepGoing() {
-    String refusal = claudeRuntime().build(Clock.systemUTC()).refusedTurnEnd("report \"first\"");
+    String refusal = claudeRuntime().build(new FakeClock()).refusedTurnEnd("report \"first\"");
 
     var answer = new JsonMapper().readTree(refusal);
     assertThat(answer.path("decision").asString("")).isEqualTo("block");
@@ -461,7 +462,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void showsTheHumanLineInTheFieldClaudeKeepsFromTheModel() {
-    String line = claudeRuntime().build(Clock.systemUTC()).toldTheHuman("with the \"Master\"");
+    String line = claudeRuntime().build(new FakeClock()).toldTheHuman("with the \"Master\"");
 
     var answer = new JsonMapper().readTree(line);
     assertThat(answer.path("systemMessage").asString("")).isEqualTo("with the \"Master\"");
@@ -469,7 +470,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void typesShellLineBehindBang() {
-    assertThat(claudeRuntime().build(Clock.systemUTC()).shellEscape()).contains("!");
+    assertThat(claudeRuntime().build(new FakeClock()).shellEscape()).contains("!");
   }
 
   @ParameterizedTest
@@ -482,14 +483,14 @@ class ClaudeAgentRuntimeTest {
       })
   void tellsDraftTheHumanIsComposingFromTheSuggestionAndFromWhatTheyAlreadySent(
       String screen, boolean draft) {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.holdsDraft(screen.translateEscapes())).isEqualTo(draft);
   }
 
   @Test
   void readsThePromptSuggestionOfAnIdleSessionAsNoDraftAndTypedLineOverItAsOne() throws Exception {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     String screen =
         new String(
             getClass().getResourceAsStream("/screens/suggestion-2.1.308.txt").readAllBytes(),
@@ -511,7 +512,7 @@ class ClaudeAgentRuntimeTest {
   })
   void readsTheScreensOfTheInstalledCliAsWorkingAndAsHoldingDraft(
       String fixture, boolean working, boolean draft) throws Exception {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     String screen =
         new String(
             getClass().getResourceAsStream("/screens/" + fixture).readAllBytes(),
@@ -523,7 +524,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTheFirstRowOfWrappedInputAsTheDraft() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     var draft =
         runtime.draft(
@@ -535,7 +536,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void tellsSessionWaitingOnTheTrustDialogFromItsScreen() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     String screen =
         """
         \u001b[38;5;174m╭──────────────────────────────────────────────────────────────╮\u001b[39m
@@ -552,7 +553,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void tellsSessionWaitingOnPermissionDialogFromItsScreen() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     String screen =
         """
         Bash command
@@ -570,7 +571,7 @@ class ClaudeAgentRuntimeTest {
   void pinsTheModelAskedForAsOneShellArgument(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), true, " opus "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --model 'opus' 'go'");
@@ -580,7 +581,7 @@ class ClaudeAgentRuntimeTest {
   void leavesTheModelToTheCliWhenNoneIsAskedFor(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false, "  "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
@@ -591,7 +592,7 @@ class ClaudeAgentRuntimeTest {
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(Clock.systemUTC());
+    var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
     assertThat(
             runtime.workspaceCommand(
@@ -613,7 +614,7 @@ class ClaudeAgentRuntimeTest {
         claudeRuntime()
             .withBriefRoot(root.toString())
             .withProperties(new ClaudeProperties("claude", "/stand/servers.json", "", List.of()))
-            .build(Clock.systemUTC());
+            .build(new FakeClock());
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
         .isEqualTo(
@@ -635,7 +636,7 @@ class ClaudeAgentRuntimeTest {
         claudeRuntime()
             .withBriefRoot(root.toString())
             .withProperties(new ClaudeProperties("claude", "/stand/servers.json", "", List.of()))
-            .build(Clock.systemUTC());
+            .build(new FakeClock());
 
     assertThat(runtime.reviveCommand(worktree))
         .isEqualTo(
@@ -686,7 +687,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTheNudgeAndAnIdleSessionFromTheScreenOfSessionFinishedWithItsTurn() throws Exception {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     String screen =
         new String(
             getClass().getResourceAsStream("/screens/idle-nudge.txt").readAllBytes(),
@@ -699,7 +700,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTurnRunningFromItsInterruptHint() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(
             runtime.working(
@@ -710,7 +711,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTurnRunningFromItsSpinnerLine() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(
             runtime.working(
@@ -731,7 +732,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTurnIdleWhenOnlyItsFinishedLineOrDraftRemains() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.working("✻ Brewed for 12s\n❯ ")).isFalse();
     assertThat(runtime.working("⏺ Checking…\n❯ ")).isFalse();
@@ -760,7 +761,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void blocksPromptInTheShapeClaudeReadsAsBlocked() {
     String blocked =
-        claudeRuntime().build(Clock.systemUTC()).blockedPrompt("went to a fresh session");
+        claudeRuntime().build(new FakeClock()).blockedPrompt("went to a fresh session");
 
     assertThat(blocked)
         .isEqualTo("{\"decision\": \"block\", \"reason\": \"went to a fresh session\"}");
@@ -768,7 +769,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void namesItselfAndTheModelsItOffersAndReadsWhatTheHumanTyped() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.displayName()).isEqualTo("Claude");
     assertThat(runtime.models()).containsExactly("fable", "opus", "sonnet", "haiku");
@@ -778,7 +779,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void declaresTheFilesItGeneratesAndTheOnesTheStatusLeavesOut() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.generatedFiles())
         .containsExactly(".mcp.json", ".claude/settings.local.json");
@@ -789,7 +790,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void declaresWhatTheCliSaysAtCompactionUsageLimitAndAnEndThatIsFollowedByStart() {
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.compactedStart()).isEqualTo("compact");
     assertThat(runtime.rateLimitError()).isEqualTo("rate_limit");
@@ -808,7 +809,7 @@ class ClaudeAgentRuntimeTest {
   void grantsTheSameDirectoryOnlyOnceHoweverOftenItIsAdmitted(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
     runtime.admit(worktree, deploy);
@@ -837,7 +838,7 @@ class ClaudeAgentRuntimeTest {
             {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"fix the login"}}
             """);
     Files.setLastModifiedTime(log, java.nio.file.attribute.FileTime.fromMillis(1_700_000_000_000L));
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.conversationTail(worktree, 16_000, Set.of()))
         .contains("human: fix the login");
@@ -857,7 +858,7 @@ class ClaudeAgentRuntimeTest {
         """
         {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
         """);
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.humanExchangeOpen(worktree, Set.of("Re-read the file."))).isTrue();
   }
@@ -872,7 +873,7 @@ class ClaudeAgentRuntimeTest {
         """
         {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
         """);
-    var runtime = claudeRuntime().build(Clock.systemUTC());
+    var runtime = claudeRuntime().build(new FakeClock());
 
     assertThat(runtime.humanExchangeOpen(worktree, Set.of("Re-read the file."))).isFalse();
   }
@@ -889,7 +890,7 @@ class ClaudeAgentRuntimeTest {
     void provision() throws Exception {
       worktree = root.resolve("ABC-1-proj");
       worktree.toFile().mkdirs();
-      claudeRuntime().build(Clock.systemUTC()).provisionWorktree(AgentWorktree.of(worktree, root));
+      claudeRuntime().build(new FakeClock()).provisionWorktree(AgentWorktree.of(worktree, root));
       settings =
           new JsonMapper()
               .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")));
@@ -997,7 +998,7 @@ class ClaudeAgentRuntimeTest {
       worktree = root.resolve("ABC-1-proj");
       worktree.toFile().mkdirs();
       Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
-      runtime = claudeRuntime().build(Clock.systemUTC());
+      runtime = claudeRuntime().build(new FakeClock());
       briefing = runtime.systemKnowledgeFile(worktree);
       runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     }

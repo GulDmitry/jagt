@@ -48,6 +48,8 @@ class FitnessTest {
 
     assertThat(clockRows)
         .hasSize(3)
-        .allSatisfy(row -> assertThat(row).contains("boardTest,e2e,linuxTest"));
+        .allSatisfy(row -> assertThat(row).containsPattern("set: (&clockSet all|\\*clockSet),"))
+        .allSatisfy(
+            row -> assertThat(row).containsPattern("except: (&clockExcept \"|\\*clockExcept)"));
   }
 }

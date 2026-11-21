@@ -30,9 +30,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -318,7 +318,7 @@ class MasterAnswerJobTest {
     final FlowReports reports =
         new FlowReports(
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             new Checkers(new TaskChart(Composition.builtIn())),
             new FlowRules(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());

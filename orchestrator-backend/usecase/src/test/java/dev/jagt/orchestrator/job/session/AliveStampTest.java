@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -23,7 +24,7 @@ class AliveStampTest {
                 .withStateFile(root.resolve("state.json").toString()));
     new AliveStamp(paths, Clock.fixed(Instant.parse("2026-11-05T07:00:00Z"), ZoneOffset.UTC)).run();
 
-    long lastAlive = new AliveStamp(paths, Clock.systemUTC()).lastAliveBeforeStart();
+    long lastAlive = new AliveStamp(paths, new FakeClock()).lastAliveBeforeStart();
 
     assertThat(lastAlive).isEqualTo(1793862000000L);
   }
@@ -37,7 +38,7 @@ class AliveStampTest {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
 
-    long lastAlive = new AliveStamp(paths, Clock.systemUTC()).lastAliveBeforeStart();
+    long lastAlive = new AliveStamp(paths, new FakeClock()).lastAliveBeforeStart();
 
     assertThat(lastAlive).isZero();
   }

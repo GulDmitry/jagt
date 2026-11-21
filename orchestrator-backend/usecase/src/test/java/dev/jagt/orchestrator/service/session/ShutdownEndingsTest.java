@@ -14,8 +14,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.presence.SessionLedger;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,7 +33,7 @@ class ShutdownEndingsTest {
   @BeforeEach
   void putTasks() {
     state = stateService().withRoot(root).build();
-    ledger = new SessionLedger(state, Clock.systemUTC());
+    ledger = new SessionLedger(state, new FakeClock());
     sessions = mock(AgentSessions.class);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());

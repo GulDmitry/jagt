@@ -23,8 +23,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -95,7 +95,7 @@ class RemoveRepoCapabilityTest {
             state,
             new Capabilities(List.of(new RemoveRepoCapability(removal)), List.of()),
             new FactSources(mock(AgentPresence.class), ignored -> false),
-            Clock.systemUTC(),
+            new FakeClock(),
             rules);
 
     String said = engine.run("ABC-7", TaskAction.REMOVE_REPO, "web");
@@ -122,7 +122,7 @@ class RemoveRepoCapabilityTest {
             state,
             new Capabilities(List.of(new RemoveRepoCapability(removal)), List.of()),
             new FactSources(mock(AgentPresence.class), ignored -> false),
-            Clock.systemUTC(),
+            new FakeClock(),
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-7", TaskAction.REMOVE_REPO, "web"))

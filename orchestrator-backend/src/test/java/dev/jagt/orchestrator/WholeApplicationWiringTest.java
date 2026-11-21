@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -172,7 +174,7 @@ class WholeApplicationWiringTest {
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
             List.copyOf(context.getBeansOfType(McpTools.class).values()));
 
     String answer =

@@ -18,9 +18,9 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ class TaskTurnsTest {
             reducer,
             event -> {});
     turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+        new TaskTurns(state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn())));
   }
 
   @Nested

@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.surface.board.filter.LoginBackoffFilter;
 import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
 import dev.jagt.orchestrator.surface.board.terminal.SessionSocket;
 import dev.jagt.orchestrator.surface.board.terminal.SessionSocketRoute;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.CookieManager;
@@ -77,7 +78,7 @@ class PasswordLoginRefusalOnTomcatTest {
 
     @Bean
     Clock clock() {
-      return Clock.systemUTC();
+      return new FakeClock();
     }
   }
 

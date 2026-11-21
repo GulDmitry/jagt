@@ -17,8 +17,8 @@ import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -34,7 +34,7 @@ class NudgeResubmitJobTest {
   void stateAndTurnsOverIt() {
     state = stateService().withRoot(root).build();
     turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+        new TaskTurns(state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn())));
   }
 
   @Test

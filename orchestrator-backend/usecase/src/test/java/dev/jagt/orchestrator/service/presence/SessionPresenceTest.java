@@ -21,8 +21,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.session.Session;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -54,7 +54,7 @@ class SessionPresenceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 300_000, null));
 
-    assertThat(new SessionPresence(state, probe, properties, Clock.systemUTC()).agentLive("ABC-1"))
+    assertThat(new SessionPresence(state, probe, properties, new FakeClock()).agentLive("ABC-1"))
         .isTrue();
   }
 
@@ -65,7 +65,7 @@ class SessionPresenceTest {
             new SessionSign.Read(Session.Window.State.DEAD_SHELL, 0, 0, 0, 300_000, "exit 1"));
 
     boolean live =
-        new SessionPresence(state, probe, properties, Clock.systemUTC()).agentLive("ABC-1");
+        new SessionPresence(state, probe, properties, new FakeClock()).agentLive("ABC-1");
 
     assertThat(live).isFalse();
     assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
@@ -76,7 +76,7 @@ class SessionPresenceTest {
   void saysItCannotTellWhereTheWindowsCannotBeListed() {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenThrow(new SessionHost.WindowsUnreadable("tmux timed out"));
-    SessionPresence presence = new SessionPresence(state, probe, properties, Clock.systemUTC());
+    SessionPresence presence = new SessionPresence(state, probe, properties, new FakeClock());
 
     assertThatThrownBy(() -> presence.agentLive("ABC-1")).isInstanceOf(AgentPresence.Unread.class);
   }

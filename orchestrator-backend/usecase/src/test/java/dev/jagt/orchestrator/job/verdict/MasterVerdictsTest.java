@@ -39,9 +39,9 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -215,8 +215,8 @@ class MasterVerdictsTest {
   void setUp() throws Exception {
     state = stateService().withRoot(root).build();
     rolesRoot().withRoot(root).build();
-    relay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
-    claims = masterClaims().build(state, Clock.systemUTC());
+    relay = stepRelay().withRoot(root).build(state, sessions, new FakeClock());
+    claims = masterClaims().build(state, new FakeClock());
     reviewPending =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
     verdicts = new MasterVerdicts(relay, ship, claims, decisions);

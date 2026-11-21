@@ -30,9 +30,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,9 +59,9 @@ class CheckerOutcomesFlowTest {
   void deployedTaskWaitingOnAcceptance() throws IOException {
     rolesRoot().withRoot(root).build();
     state = stateService().withRoot(root).build();
-    flow = flowReports().build(state, Clock.systemUTC());
-    turns = taskTurns().build(state, Clock.systemUTC());
-    stops = taskStops().withRoot(root).build(state, Clock.systemUTC());
+    flow = flowReports().build(state, new FakeClock());
+    turns = taskTurns().build(state, new FakeClock());
+    stops = taskStops().withRoot(root).build(state, new FakeClock());
     notMet =
         acceptanceVerdict()
             .withRows(
@@ -70,7 +70,7 @@ class CheckerOutcomesFlowTest {
                         "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me answered 500")))
             .build();
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    relay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
+    relay = stepRelay().withRoot(root).build(state, sessions, new FakeClock());
     reports = agentStatusReports().build(state, flow, mock(WorktreeChanges.class), config);
     task = askedDeploy().withWorktree(root.toString()).withAlias("a1").build();
   }

@@ -21,9 +21,9 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ class ConflictFinishTest {
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
     when(stops.moveDue("ABC-42")).thenReturn(true);
 
-    new ConflictFinish(commands, stops, state, Clock.systemUTC())
+    new ConflictFinish(commands, stops, state, new FakeClock())
         .press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
     verify(commands).execute("ABC-42", TaskAction.DEPLOY);
@@ -63,7 +63,7 @@ class ConflictFinishTest {
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
     when(stops.moveDue("ABC-42")).thenReturn(false);
 
-    new ConflictFinish(commands, stops, state, Clock.systemUTC())
+    new ConflictFinish(commands, stops, state, new FakeClock())
         .press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
     verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
@@ -96,7 +96,7 @@ class ConflictFinishTest {
 
     @Test
     void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped() {
-      ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
+      ConflictFinish finish = new ConflictFinish(commands, stops, state, new FakeClock());
 
       finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
       finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -110,9 +110,9 @@ class ConflictFinishTest {
 
     @Test
     void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped() {
-      new ConflictFinish(commands, stops, state, Clock.systemUTC())
+      new ConflictFinish(commands, stops, state, new FakeClock())
           .press("ABC-42", Path.of("/src/ABC-42-deploy"));
-      new ConflictFinish(commands, stops, state, Clock.systemUTC())
+      new ConflictFinish(commands, stops, state, new FakeClock())
           .press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
       assertThat(log.events())
@@ -129,7 +129,7 @@ class ConflictFinishTest {
             .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure"))
             .build());
     when(stops.moveDue("ABC-42")).thenReturn(true);
-    ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
+    ConflictFinish finish = new ConflictFinish(commands, stops, state, new FakeClock());
     finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
     state.updateTask("ABC-42", task -> task.lifted(9));
@@ -151,7 +151,7 @@ class ConflictFinishTest {
             opened, new DeployStep.Conflicted("proj", Deployment.Cause.REVERT), 1));
     when(stops.moveDue("ABC-42")).thenReturn(true);
 
-    new ConflictFinish(commands, stops, state, Clock.systemUTC())
+    new ConflictFinish(commands, stops, state, new FakeClock())
         .press("ABC-42", Path.of("/src/ABC-42-revert"));
 
     verify(commands).execute("ABC-42", TaskAction.REVERT);

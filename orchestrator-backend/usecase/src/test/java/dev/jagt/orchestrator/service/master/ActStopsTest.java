@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.service.master.ActStop.Cause;
 import dev.jagt.orchestrator.service.stop.BoardStop;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -22,7 +22,7 @@ class ActStopsTest {
   @BeforeEach
   void stopsOverTheTempRoot() {
     var paths = orchestratorPaths().withRoot(root).build();
-    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC()));
+    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock()));
   }
 
   @Test

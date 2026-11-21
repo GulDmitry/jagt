@@ -19,8 +19,8 @@ import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ class MasterRepoJobTest {
   private final MasterPress press = mock(MasterPress.class);
   private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
   private final MasterRepoJob job =
-      new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), checkers));
+      new MasterRepoJob(state, config, press, new TaskTurns(state, new FakeClock(), checkers));
   private final ConfigService.ConfigFile.ArbiterConfig acting =
       new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final TaskState asking =
@@ -115,12 +115,12 @@ class MasterRepoJobTest {
     @Test
     void pressesOnceWhileTheSameRequestStandsThoughJagtRestarts() {
       StateService before = stateService().withRoot(root).build();
-      new MasterRepoJob(before, config, press, new TaskTurns(before, Clock.systemUTC(), checkers))
+      new MasterRepoJob(before, config, press, new TaskTurns(before, new FakeClock(), checkers))
           .run();
       StateService restarted = stateService().withRoot(root).build();
 
       new MasterRepoJob(
-              restarted, config, press, new TaskTurns(restarted, Clock.systemUTC(), checkers))
+              restarted, config, press, new TaskTurns(restarted, new FakeClock(), checkers))
           .run();
 
       verify(press, times(1)).execute("ABC-1", TaskAction.ADD_REPO);
@@ -130,8 +130,7 @@ class MasterRepoJobTest {
     void pressesAgainWhenTheSameProjectIsAskedForAfterTheFirstRequestEnded() {
       StateService tasks = stateService().withRoot(root).build();
       MasterRepoJob onDisk =
-          new MasterRepoJob(
-              tasks, config, press, new TaskTurns(tasks, Clock.systemUTC(), checkers));
+          new MasterRepoJob(tasks, config, press, new TaskTurns(tasks, new FakeClock(), checkers));
 
       onDisk.run();
       tasks.updateTask("ABC-1", task -> task.withRepoRequest(null));

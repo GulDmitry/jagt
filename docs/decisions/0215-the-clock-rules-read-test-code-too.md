@@ -13,11 +13,11 @@ Accepted 2026-11-21. Amends [0055](0055-jagt-speaks-english-and-keeps-utc.md).
 
 ## Decision
 
-- The clock rules in `fitness.yml` scan `main`, `evalSupport`, `boardTest`, `e2e` and `linuxTest`.
+- The clock rules in `fitness.yml` scan every source set, sharing one set and one except list through a YAML anchor.
 - Named there with this why: the `boardTest` classes, `E2eWorkspace`, `MasterModeFlowTest` and its nested `Stalled` seed
   timestamps for a real server and a real browser, which a frozen clock cannot answer.
-- The unit `test` sets are a departure: they read the real clock in about 320 places. It ends when each reads a fixed
-  clock and the rows name those sets too.
+- Every unit test reads a fixed clock. Left in the except list as pending: `ConfigServiceTest` and
+  `PasswordLoginOutcomeTest`, which end when their owners' work lands.
 
 ## Rejected
 

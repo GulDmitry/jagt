@@ -27,10 +27,10 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,7 +61,7 @@ class ProjectRoutingTest {
     memory =
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
+            new FakeClock());
     routing = new ProjectRouting(configService, assistants, finished, memory);
     quoteImportByApi =
         FinishedTask.of(

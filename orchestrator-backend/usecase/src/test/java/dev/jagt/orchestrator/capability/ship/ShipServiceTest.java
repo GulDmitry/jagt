@@ -31,9 +31,9 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,8 +61,8 @@ class ShipServiceTest {
             .withRoot(root)
             .build(
                 stateService,
-                taskStops().withRoot(root).build(stateService, Clock.systemUTC()),
-                Clock.systemUTC());
+                taskStops().withRoot(root).build(stateService, new FakeClock()),
+                new FakeClock());
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

@@ -18,8 +18,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -93,7 +93,7 @@ class MasterDeployJobTest {
     Map<String, TaskState> tasks = Map.of("ABC-1", task);
     when(state.tasks()).thenReturn(tasks);
 
-    builder.build(config, press, state, Clock.systemUTC()).runOn(tasks);
+    builder.build(config, press, state, new FakeClock()).runOn(tasks);
 
     ArgumentCaptor<TaskAction> actions = ArgumentCaptor.captor();
     verify(press, times(expected.size())).press(anyString(), any(), actions.capture());
@@ -108,10 +108,10 @@ class MasterDeployJobTest {
         .putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
     when(config.load()).thenReturn(masterDeployJob().config());
     StateService before = stateService().withRoot(root).build();
-    masterDeployJob().build(config, press, before, Clock.systemUTC()).runOn(before.tasks());
+    masterDeployJob().build(config, press, before, new FakeClock()).runOn(before.tasks());
     StateService restarted = stateService().withRoot(root).build();
 
-    masterDeployJob().build(config, press, restarted, Clock.systemUTC()).runOn(restarted.tasks());
+    masterDeployJob().build(config, press, restarted, new FakeClock()).runOn(restarted.tasks());
 
     verify(press, times(1)).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
   }

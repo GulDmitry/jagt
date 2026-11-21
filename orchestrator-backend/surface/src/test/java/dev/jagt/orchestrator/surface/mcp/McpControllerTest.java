@@ -18,8 +18,8 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +50,7 @@ class McpControllerTest {
     realProtocolMvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(
-                    new McpProtocolService(mapper, state, Clock.systemUTC(), List.of()),
+                    new McpProtocolService(mapper, state, new FakeClock(), List.of()),
                     state,
                     mapper,
                     new MasterToken(paths)))

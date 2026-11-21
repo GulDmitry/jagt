@@ -26,6 +26,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -49,7 +50,7 @@ class WatchdogServiceTest {
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final SessionProbe probe = mock(SessionProbe.class);
-  private final long now = Clock.systemUTC().millis();
+  private final long now = new FakeClock().millis();
 
   @TempDir Path root;
 
@@ -59,7 +60,7 @@ class WatchdogServiceTest {
   @BeforeEach
   void givenWatchdogOverAnEmptyState() {
     state = stateService().withRoot(root).build();
-    watchdog = watchdogService().withRoot(root).build(state, probe, Clock.systemUTC());
+    watchdog = watchdogService().withRoot(root).build(state, probe, new FakeClock());
   }
 
   @Test
@@ -125,7 +126,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 300_000, null));
     WatchdogService counting =
-        watchdogService().withRoot(root).build(counted, probe, Clock.systemUTC());
+        watchdogService().withRoot(root).build(counted, probe, new FakeClock());
 
     counting.run();
     counting.run();
@@ -350,7 +351,7 @@ class WatchdogServiceTest {
         StateService counted =
             stateService().withRoot(root).build(event -> writes.incrementAndGet());
         WatchdogService counting =
-            watchdogService().withRoot(root).build(counted, probe, Clock.systemUTC());
+            watchdogService().withRoot(root).build(counted, probe, new FakeClock());
 
         counting.run();
         counting.run();
@@ -472,7 +473,7 @@ class WatchdogServiceTest {
         void logsOnceForOneSilenceAcrossRestart() {
           watchdog.run();
           WatchdogService restarted =
-              watchdogService().withRoot(root).build(state, probe, Clock.systemUTC());
+              watchdogService().withRoot(root).build(state, probe, new FakeClock());
 
           restarted.run();
 

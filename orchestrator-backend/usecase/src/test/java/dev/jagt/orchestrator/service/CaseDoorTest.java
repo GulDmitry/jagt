@@ -17,9 +17,9 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,8 +47,8 @@ class CaseDoorTest {
                     .withProfile(
                         new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)
                             .profile())
-                    .build(state, Clock.systemUTC()),
-                Clock.systemUTC());
+                    .build(state, new FakeClock()),
+                new FakeClock());
   }
 
   private static final String SHIP_CASE =
@@ -107,8 +107,8 @@ class CaseDoorTest {
                         new ConfigService.ConfigFile.ArbiterConfig(
                                 "act", null, null, List.of(mine), null)
                             .profile())
-                    .build(state, Clock.systemUTC()),
-                Clock.systemUTC());
+                    .build(state, new FakeClock()),
+                new FakeClock());
 
     assertThatThrownBy(
             () -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action)))

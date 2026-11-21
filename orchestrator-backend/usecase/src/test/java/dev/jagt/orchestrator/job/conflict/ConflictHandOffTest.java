@@ -29,9 +29,9 @@ import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,16 +56,14 @@ class ConflictHandOffTest {
         caseDoor()
             .withRoot(root)
             .build(
-                state,
-                taskStops().withRoot(root).build(state, Clock.systemUTC()),
-                Clock.systemUTC());
+                state, taskStops().withRoot(root).build(state, new FakeClock()), new FakeClock());
     StepRelay relay =
         new StepRelay(
             new SessionBrief(paths),
             sessions,
             door,
             new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))));
     handOff = new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish);
   }
 

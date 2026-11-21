@@ -13,9 +13,9 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ class FinishedTasksTest {
                 .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     state = new StateService(mapper, paths, reducer, event -> {});
-    finished = new FinishedTasks(mapper, state, paths, mock(Verdicts.class), Clock.systemUTC());
+    finished = new FinishedTasks(mapper, state, paths, mock(Verdicts.class), new FakeClock());
   }
 
   @Test

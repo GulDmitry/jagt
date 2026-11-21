@@ -16,8 +16,8 @@ import dev.jagt.orchestrator.service.release.ReleaseSwitch;
 import dev.jagt.orchestrator.service.release.Releases;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class AutoUpgradeTest {
 
   @Test
   void waitsWhileAnAgentSessionRuns() {
-    new SessionLedger(state, Clock.systemUTC()).sign("ABC-1", new SessionSign.WorkStarted());
+    new SessionLedger(state, new FakeClock()).sign("ABC-1", new SessionSign.WorkStarted());
 
     new AutoUpgrade(releases, new ReleaseSwitch(releases, host, exit), state, true).attempt();
 

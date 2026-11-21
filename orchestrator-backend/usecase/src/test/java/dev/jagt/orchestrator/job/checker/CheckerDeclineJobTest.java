@@ -29,10 +29,10 @@ import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,7 +82,7 @@ class CheckerDeclineJobTest {
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "environments: [{url: \"https://stage.example.com\"}]\n");
-    records = new CheckerRecords(paths, Clock.systemUTC(), "acceptance");
+    records = new CheckerRecords(paths, new FakeClock(), "acceptance");
     job =
         new CheckerDeclineJob(
             new RoleSettings(
@@ -108,7 +108,7 @@ class CheckerDeclineJobTest {
         "ABC-42",
         DECLINED.withSession(
             Session.startedOver(Session.defaults())
-                .withReportedAt(System.currentTimeMillis() + 1000)));
+                .withReportedAt(new FakeClock().millis() + 1000)));
 
     verify(outcomes).declined(eq("ABC-42"), eq(accepted), eq(false));
   }
@@ -131,7 +131,7 @@ class CheckerDeclineJobTest {
         "ABC-42",
         DECLINED.withSession(
             Session.startedOver(Session.defaults())
-                .withReportedAt(System.currentTimeMillis() + 1000)));
+                .withReportedAt(new FakeClock().millis() + 1000)));
 
     verify(reader, never()).decline(any(), any(), any(), any());
   }
@@ -148,7 +148,7 @@ class CheckerDeclineJobTest {
         "ABC-42",
         DECLINED.withSession(
             Session.startedOver(Session.defaults())
-                .withReportedAt(System.currentTimeMillis() + 1000)));
+                .withReportedAt(new FakeClock().millis() + 1000)));
 
     verify(outcomes).declined(eq("ABC-42"), eq(disputed), eq(true));
   }
@@ -163,7 +163,7 @@ class CheckerDeclineJobTest {
         reducer.relayed(
             DECLINED.withSession(
                 Session.startedOver(Session.defaults())
-                    .withReportedAt(System.currentTimeMillis() + 1000)),
+                    .withReportedAt(new FakeClock().millis() + 1000)),
             "decline",
             "digest",
             "",
@@ -199,7 +199,7 @@ class CheckerDeclineJobTest {
                     "digest"))
             .withSession(
                 Session.startedOver(Session.defaults())
-                    .withReportedAt(System.currentTimeMillis() + 1000));
+                    .withReportedAt(new FakeClock().millis() + 1000));
 
     job.run("ABC-42", legacy);
 

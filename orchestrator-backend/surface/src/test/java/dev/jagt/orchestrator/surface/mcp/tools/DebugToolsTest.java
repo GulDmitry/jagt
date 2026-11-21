@@ -17,8 +17,8 @@ import dev.jagt.orchestrator.surface.mcp.TestStateServiceBuilder;
 import dev.jagt.orchestrator.surface.ui.log.LogReads;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,14 +68,14 @@ class DebugToolsTest {
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-            .lastActiveTimestamp(System.currentTimeMillis())
+            .lastActiveTimestamp(new FakeClock().millis())
             .alias("a1")
             .build());
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             List.of(new DebugTools(mock(LogReads.class), mock(DebugReads.class))));
 
     JsonNode result =

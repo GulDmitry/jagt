@@ -36,6 +36,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -81,11 +82,11 @@ class OwnStatusReportsTest {
   @BeforeEach
   void wireDoor() {
     state = stateService().withRoot(root).build();
-    turns = new TaskTurns(state, Clock.systemUTC(), checkers);
-    stops = taskStops().withRoot(root).build(state, Clock.systemUTC());
+    turns = new TaskTurns(state, new FakeClock(), checkers);
+    stops = taskStops().withRoot(root).build(state, new FakeClock());
     effects =
         new ReportEffects(
-            new SessionWakes(state, turns, Clock.systemUTC()),
+            new SessionWakes(state, turns, new FakeClock()),
             turns,
             stops,
             InfraWaitProperties.defaults(),
@@ -107,7 +108,7 @@ class OwnStatusReportsTest {
     doorReports = new OwnStatusReports(state, due, statusReports, realDoor, effects);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC(), checkers)
+    new TaskTurns(state, new FakeClock(), checkers)
         .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
   }
@@ -166,7 +167,7 @@ class OwnStatusReportsTest {
             statusReports,
             door,
             new ReportEffects(
-                new SessionWakes(state, turns, Clock.systemUTC()),
+                new SessionWakes(state, turns, new FakeClock()),
                 turns,
                 stops,
                 InfraWaitProperties.defaults(),

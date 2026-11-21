@@ -24,8 +24,8 @@ import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.stop.StopTriage;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -90,7 +90,7 @@ class StopTriageJobTest {
   void stopIsReadOnceAndItsHoverSaysWhatTheReadWas(
       String situation, Answer<StopTriage> read, String line) {
     when(panel.read(anyString(), any(), any(), anyString())).thenAnswer(read);
-    StopTriageJob job = stopTriageJob().build(config, panel, state, paths, Clock.systemUTC());
+    StopTriageJob job = stopTriageJob().build(config, panel, state, paths, new FakeClock());
 
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -107,7 +107,7 @@ class StopTriageJobTest {
   void nothingIsReadWhereTriageIsNotEnabled() {
     when(config.load()).thenReturn(stopTriageJob().withTriage(false).config());
 
-    stopTriageJob().build(config, panel, state, paths, Clock.systemUTC()).runOn(state.tasks());
+    stopTriageJob().build(config, panel, state, paths, new FakeClock()).runOn(state.tasks());
 
     verifyNoInteractions(panel);
     assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage()).isNull();
@@ -115,7 +115,7 @@ class StopTriageJobTest {
 
   @Test
   void liftEndsTheReadAndTheNextStopIsReadAfresh() {
-    StopTriageJob job = stopTriageJob().build(config, panel, state, paths, Clock.systemUTC());
+    StopTriageJob job = stopTriageJob().build(config, panel, state, paths, new FakeClock());
     job.runOn(state.tasks());
 
     state.updateTask("ABC-42", task -> task.lifted(6));
@@ -134,7 +134,7 @@ class StopTriageJobTest {
     state.updateTask(
         "ABC-42", task -> task.withStop(new TaskStop(TaskStop.Trigger.PAUSE, 5, "you paused it")));
 
-    stopTriageJob().build(config, panel, state, paths, Clock.systemUTC()).runOn(state.tasks());
+    stopTriageJob().build(config, panel, state, paths, new FakeClock()).runOn(state.tasks());
 
     verifyNoInteractions(panel);
   }
@@ -144,9 +144,7 @@ class StopTriageJobTest {
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "4 rounds");
     state.updateTask("ABC-42", task -> task.withStop(stop));
     StopTriageJob job =
-        stopTriageJob()
-            .withMasterProfile(ACT)
-            .build(config, panel, state, paths, Clock.systemUTC());
+        stopTriageJob().withMasterProfile(ACT).build(config, panel, state, paths, new FakeClock());
 
     job.runOn(state.tasks());
     verify(panel, never()).read(anyString(), any(), any(), anyString());
@@ -160,7 +158,7 @@ class StopTriageJobTest {
 
   @Test
   void liftThatLooksSafeStillLeavesTheStopStanding() {
-    stopTriageJob().build(config, panel, state, paths, Clock.systemUTC()).runOn(state.tasks());
+    stopTriageJob().build(config, panel, state, paths, new FakeClock()).runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
   }

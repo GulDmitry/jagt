@@ -16,10 +16,10 @@ import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,7 +46,7 @@ class ReviewRepliesReportTest {
                     () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(),
+                new FakeClock(),
                 new FlowRules(new TaskChart(Composition.builtIn()))),
             state,
             new ReviewDrafts(config));

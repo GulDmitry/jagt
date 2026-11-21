@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -102,8 +103,8 @@ class CommandServiceTest {
         taskStops()
             .withRoot(root)
             .withProfile(new Arbiter.Profile(MasterMode.ACT, Set.of("done")))
-            .build(state, Clock.systemUTC());
-    CaseDoor door = caseDoor().withRoot(root).build(state, stops, Clock.systemUTC());
+            .build(state, new FakeClock());
+    CaseDoor door = caseDoor().withRoot(root).build(state, stops, new FakeClock());
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CommandService guarded = new CommandService(flow, door);
 

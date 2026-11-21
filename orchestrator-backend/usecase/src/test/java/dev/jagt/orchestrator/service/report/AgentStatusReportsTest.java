@@ -38,11 +38,11 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -107,10 +107,7 @@ class AgentStatusReportsTest {
     state = TestStateServiceBuilder.stateService().withRoot(root).build();
     flowReports =
         new FlowReports(
-            state,
-            Clock.systemUTC(),
-            checkers,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+            state, new FakeClock(), checkers, new FlowRules(new TaskChart(Composition.builtIn())));
     handBack =
         new HandBack(
             worktreeChanges,
@@ -637,7 +634,7 @@ class AgentStatusReportsTest {
 
   @Test
   void startsFreshPollingWindowForEachRoundHandedBackOnTheSameRequest() {
-    long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+    long lastRound = new FakeClock().millis() - Duration.ofHours(25).toMillis();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
@@ -655,7 +652,7 @@ class AgentStatusReportsTest {
 
   @Test
   void startsFreshWindowWhenTheAgentNamesAnotherRequestWithoutLeavingCiPolling() {
-    long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+    long lastRound = new FakeClock().millis() - Duration.ofHours(25).toMillis();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)

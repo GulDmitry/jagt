@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.port.terminal.ReadScope;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -35,7 +35,7 @@ class TickSchedulerTest {
         scheduler.schedule(
             ran::countDown,
             context ->
-                context.lastActualExecution() == null ? Instant.now(Clock.systemUTC()) : null));
+                context.lastActualExecution() == null ? Instant.now(new FakeClock()) : null));
 
     assertThat(ran.await(5, TimeUnit.SECONDS)).isTrue();
     verify(reads).once(any());
