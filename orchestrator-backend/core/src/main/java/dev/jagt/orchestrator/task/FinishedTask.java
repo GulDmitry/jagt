@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import dev.jagt.orchestrator.task.stop.GuardKind;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.HumanWait;
 import dev.jagt.orchestrator.task.turn.StatusChange;
@@ -66,7 +66,7 @@ public record FinishedTask(
       int rounds,
       // The host's last word on the checks, or null if nothing ever read one.
       @Nullable String checks,
-      @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<GuardKind, Integer> refusals,
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<RefusalKind, Integer> refusals,
       // The stretches the human held the turn: when, until when, and why.
       @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
       // What the unattended reviewer concluded last, or null where nothing judged this task.

@@ -17,7 +17,7 @@ Accepted 2026-10-28. Adds to [0061](0061-jagt-stops-a-task-it-suspects-it-is-loo
 - A request is merged when, after `git fetch`, a merge commit of `origin/<target>` took the branch tip in as a parent.
 - A branch that never diverged is inside its target too, and is not merged: the tip must be a non-first parent.
 - `TaskRepo.merged` keeps it; `Facts.requestMerged` is true when every repository has a request and each is merged.
-- `ship` is not offered on such a task, and `MergedGuard` refuses a press whose fresh read finds it merged, recording no step.
+- `ship` is not offered on such a task, and `MergedPrecondition` refuses a press whose fresh read finds it merged, recording no step.
 - The review sweep and the ship press read it; a merged request is not read again, a new request link clears it.
 
 ## Rejected

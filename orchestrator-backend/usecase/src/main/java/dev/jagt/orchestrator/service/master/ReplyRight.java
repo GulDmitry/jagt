@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.service.turn.ShipGuard;
+import dev.jagt.orchestrator.service.turn.RepliesInstruction;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.Optional;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class ReplyRight implements ShipGuard {
+public class ReplyRight implements RepliesInstruction {
 
   private static final String MAY_NOT_REPLY =
       "Do NOT post any replies — this ship is the Master session's,"

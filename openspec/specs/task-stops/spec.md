@@ -55,7 +55,7 @@ Every stop SHALL append a line `{at, task, alias, trigger, status, evidence, ste
 - **THEN** one line of `at`, `task`, `alias`, `trigger`, `status`, `evidence` and `steps` is appended to `stops.jsonl`
 
 ### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`), but the triage read, which
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopPrecondition`), but the triage read, which
 writes only the stop's hover. A job's `Watch` admits one only where it names the stop kind it ends.
 
 #### Scenario: A nudge is left unsent while a task is stopped

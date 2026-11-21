@@ -2,13 +2,13 @@
 
 ## Purpose
 
-What a guard's refusal leaves on its task, so a gap in `docs/rules/guards.md` reopens on a number.
+What a refusal leaves on its task, so a gap in `docs/rules/guards.md` reopens on a number.
 
 ## Requirements
 
 ### Requirement: A refusal is counted on its task
 A session line `ToolGate` refuses and a report `FlowRules.refusedReport` refuses SHALL each add one to the task's
-`refusals`, per `task/stop/GuardKind`. `finished.jsonl` SHALL carry the count, and `finished` SHALL sum it per kind.
+`refusals`, per `task/stop/RefusalKind`. `finished.jsonl` SHALL carry the count, and `finished` SHALL sum it per kind.
 
 #### Scenario: A push to another branch
 - **WHEN** ABC-42's session runs `git push origin dev`

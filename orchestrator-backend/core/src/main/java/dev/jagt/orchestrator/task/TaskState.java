@@ -18,7 +18,7 @@ import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.review.RoundTrail;
 import dev.jagt.orchestrator.task.session.Session;
-import dev.jagt.orchestrator.task.stop.GuardKind;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
@@ -150,7 +150,7 @@ public record TaskState(
       @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches,
       // Null until first recorded.
       @Nullable GitTrust gitTrust,
-      @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<GuardKind, Integer> refusals,
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<RefusalKind, Integer> refusals,
       // Null until the first metered call.
       @Nullable TokenUsage usage,
       // What this task's own agent sessions have burned, and how far their log has been read.
@@ -335,7 +335,7 @@ public record TaskState(
   }
 
   @JsonIgnore
-  public Map<GuardKind, Integer> refusals() {
+  public Map<RefusalKind, Integer> refusals() {
     return gate.refusals();
   }
 
@@ -710,10 +710,10 @@ public record TaskState(
   }
 
   /** Does NOT touch lastActiveTimestamp: a refused call moved nothing. */
-  public TaskState refused(GuardKind guard) {
-    Map<GuardKind, Integer> counted = new EnumMap<>(GuardKind.class);
+  public TaskState refused(RefusalKind kind) {
+    Map<RefusalKind, Integer> counted = new EnumMap<>(RefusalKind.class);
     counted.putAll(refusals());
-    counted.merge(guard, 1, Integer::sum);
+    counted.merge(kind, 1, Integer::sum);
     return toBuilder().refusals(counted).build();
   }
 
@@ -1141,7 +1141,7 @@ public record TaskState(
     private List<Probe> probes = List.of();
     private Map<String, String> switches = Map.of();
     private @Nullable GitTrust gitTrust;
-    private Map<GuardKind, Integer> refusals = Map.of();
+    private Map<RefusalKind, Integer> refusals = Map.of();
     private @Nullable TokenUsage usage;
     private @Nullable AgentSpend agentSpend;
     private Session session = Session.defaults();
@@ -1293,7 +1293,7 @@ public record TaskState(
       return this;
     }
 
-    public TaskStateBuilder refusals(Map<GuardKind, Integer> refusals) {
+    public TaskStateBuilder refusals(Map<RefusalKind, Integer> refusals) {
       this.refusals = refusals;
       return this;
     }

@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.task.stop;
 
 import java.util.Locale;
 
-/** What a guard refused a task. */
-public enum GuardKind {
+/** What a refusal was of. */
+public enum RefusalKind {
 
   /** A shell line the session was about to run. */
   SESSION_LINE,

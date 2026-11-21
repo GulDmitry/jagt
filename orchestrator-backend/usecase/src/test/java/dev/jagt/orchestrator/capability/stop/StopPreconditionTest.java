@@ -13,14 +13,14 @@ import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import org.junit.jupiter.api.Test;
 
-class StopGuardTest {
+class StopPreconditionTest {
 
   private final TaskStops stops = mock(TaskStops.class);
 
   @Test
   void refusesTheMastersShipOnStoppedTask() {
     when(stops.stopped("ABC-42")).thenReturn(true);
-    StopGuard guard = new StopGuard(TaskAction.SHIP, stops);
+    StopPrecondition guard = new StopPrecondition(TaskAction.SHIP, stops);
 
     assertThatThrownBy(() ->
             OriginContext.as(
@@ -31,7 +31,7 @@ class StopGuardTest {
   @Test
   void runsTheHumansOwnPressOnStoppedTask() {
     when(stops.stopped("ABC-42")).thenReturn(true);
-    StopGuard guard = new StopGuard(TaskAction.DEPLOY, stops);
+    StopPrecondition guard = new StopPrecondition(TaskAction.DEPLOY, stops);
 
     Outcome outcome =
         OriginContext.as(

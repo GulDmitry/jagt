@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
-import dev.jagt.orchestrator.task.stop.GuardKind;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.nio.file.Path;
 import java.util.List;
@@ -131,7 +131,7 @@ public class TrustedGitState {
             + " — read them in the Diff tab, trust adopts them";
     stateService.reduce(
         taskId,
-        (reducer, current) -> reducer.gitChanged(current, changed).refused(GuardKind.GIT_STATE));
+        (reducer, current) -> reducer.gitChanged(current, changed).refused(RefusalKind.GIT_STATE));
     log.atWarn()
         .setMessage("git state changed")
         .addKeyValue("task", taskId)

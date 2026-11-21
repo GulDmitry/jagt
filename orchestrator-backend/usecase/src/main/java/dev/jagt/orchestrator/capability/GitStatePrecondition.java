@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.service.git.TrustedGitState;
 import java.util.function.Supplier;
 
 /** Refuses {@code action} while what the task's git obeys is not what a human trusted. */
-public record GitStateGuard(TaskAction action, TrustedGitState trusted)
+public record GitStatePrecondition(TaskAction action, TrustedGitState trusted)
     implements CapabilityInterceptor {
 
   @Override

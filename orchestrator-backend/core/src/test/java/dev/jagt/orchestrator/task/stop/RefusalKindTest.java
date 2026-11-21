@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class GuardKindTest {
+class RefusalKindTest {
 
   @Test
   void readsAsWordsWithoutUnderscoresWhereRefusalIsCounted() {
-    assertThat(GuardKind.GIT_STATE.label()).isEqualTo("git state");
-    assertThat(GuardKind.STATUS_REPORT.label()).isEqualTo("status report");
+    assertThat(RefusalKind.GIT_STATE.label()).isEqualTo("git state");
+    assertThat(RefusalKind.STATUS_REPORT.label()).isEqualTo("status report");
   }
 }

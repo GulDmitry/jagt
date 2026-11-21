@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.turn.ShipGuard;
+import dev.jagt.orchestrator.service.turn.RepliesInstruction;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -31,7 +31,7 @@ public class ShipService {
   private final ConfigService configService;
   private final StepRelay relay;
   private final WorktreeChanges changes;
-  private final ShipGuard guard;
+  private final RepliesInstruction repliesInstruction;
 
   /** One ship at a time per task: two clicks in a row would relay the same instruction twice. */
   private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
@@ -124,7 +124,7 @@ public class ShipService {
   }
 
   private String repliesStep(String taskId, ConfigService.ConfigFile config) {
-    return guard.repliesStep(taskId, config).orElseGet(() -> repliesStep(config));
+    return repliesInstruction.repliesStep(taskId, config).orElseGet(() -> repliesStep(config));
   }
 
   static String repliesStep(ConfigService.ConfigFile config) {

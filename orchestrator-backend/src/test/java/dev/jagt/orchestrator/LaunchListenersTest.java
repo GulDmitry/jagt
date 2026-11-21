@@ -3,7 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.surface.ui.log.LogFileRoll;
-import dev.jagt.orchestrator.surface.ui.log.PortGuard;
+import dev.jagt.orchestrator.surface.ui.log.PortCheck;
 import org.junit.jupiter.api.Test;
 
 class LaunchListenersTest {
@@ -15,8 +15,8 @@ class LaunchListenersTest {
   }
 
   @Test
-  void launchesWithThePortGuardListenerRegistered() {
+  void launchesWithThePortCheckListenerRegistered() {
     assertThat(OrchestratorApplication.application().getListeners())
-        .hasAtLeastOneElementOfType(PortGuard.class);
+        .hasAtLeastOneElementOfType(PortCheck.class);
   }
 }

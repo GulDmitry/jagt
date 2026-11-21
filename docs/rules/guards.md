@@ -2,7 +2,7 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-A review judges a guard against this file. The records it condenses keep the evidence:
+A review judges a check against this file. The records it condenses keep the evidence:
 [0022](../decisions/0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md),
 [0026](../decisions/0026-the-guards-gaps-after-round-three.md) to
 [0031](../decisions/0031-the-host-cli-is-judged-wherever-it-stands.md),
@@ -11,7 +11,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 
 ## A boundary is an allow-list, a guardrail is a block-list
 
-| guard | judges | reads by | behind it |
+| check | judges | reads by | behind it |
 |-------|--------|----------|-----------|
 | `ReadGate` | each call of a headless read and the Master's reviewer | allow-list, fails closed | nothing: it is the boundary |
 | `BoardWriteFilter` | every board write but `/mcp` and `/api/agent/` | allow-list | the Master's token, same-user trust |
@@ -21,7 +21,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 | `PlanFirst` | a session's file write while its plan waits | allow-list: `plan.md`, `task_visual.md`, `task_notes.md` | the human, who reads the diff |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
 | `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
-| `GitStateGuard` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
+| `GitStatePrecondition` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
 | CLI's OS sandbox, opt-in | a session's shell writing | path allow-list (`WorktreeSandbox`) | the human, asked by the CLI |
 
 `ToolGate` fails open, `ReadGate` closed: a stopped jagt refusing a session's every call would read as a rule.
@@ -32,7 +32,7 @@ The CLI's `onFailure: "block"` (2.1.309) would close it, and stays off for that 
 - **A new spelling of a class below is not a finding.** Refusing it is optional work and never blocks a release.
 - A finding is a class missing below, a Reopen condition that now holds, or an allow-list that widened.
 - A gap that joins the list carries its Reopen condition, in the commit refusing what it can.
-- `finished` sums what `ToolGate`, the report door and `GitStateGuard` refused, per kind; the `pre-push` hook's refusals stay uncounted.
+- `finished` sums what `ToolGate`, the report door and `GitStatePrecondition` refused, per kind; the `pre-push` hook's refusals stay uncounted.
 - Never proposed again, each rejected with its reason: a shell grammar in `ToolGate` (0028, 0031), state across
   lines (0026), `gh`/`glab` writes refused verb by verb (0029), `git -c` in the reviewer (0028).
 
@@ -51,7 +51,7 @@ The CLI's `onFailure: "block"` (2.1.309) would close it, and stays off for that 
 | The board reached with no port spelled: port 80, `nc 127.0.0.1 8290`, `/dev/tcp/…`, still forging Host and Origin | a write lands that way |
 | `HEAD` moved on an earlier call, then pushed | the `pre-push` hook is bypassed too |
 | A board behind an ingress: one bcrypt password, no throttle | a second login mode or a brute-force report |
-| Config `GitStateGuard` reads no further: global, system, an `include.path` file, `branch.*` tracking | a guarded git runs a program set there |
+| Config `GitStatePrecondition` reads no further: global, system, an `include.path` file, `branch.*` tracking | a guarded git runs a program set there |
 | A hook the merged branch carries under a relative `core.hooksPath` | a deploy runs a hook the record did not hold |
 | A headless answer in prose, its object in a fence and no schema call made | such an answer carries a tool's output |
 | An MCP read sends its arguments out; a local server's read verb reads outside the worktrees | a read tool writes, or one named takes a path |

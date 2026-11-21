@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.capability.GitStateGuard;
-import dev.jagt.orchestrator.capability.ship.MergedGuard;
+import dev.jagt.orchestrator.capability.GitStatePrecondition;
+import dev.jagt.orchestrator.capability.ship.MergedPrecondition;
 import dev.jagt.orchestrator.capability.stop.DeployLiftsStop;
-import dev.jagt.orchestrator.capability.stop.StopGuard;
+import dev.jagt.orchestrator.capability.stop.StopPrecondition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FactSources;
 import dev.jagt.orchestrator.flow.FlowEngine;
@@ -68,32 +68,32 @@ public class FlowWiring {
 
   @Bean
   public CapabilityInterceptor shipGitGuard(TrustedGitState trusted) {
-    return new GitStateGuard(TaskAction.SHIP, trusted);
+    return new GitStatePrecondition(TaskAction.SHIP, trusted);
   }
 
   @Bean
   public CapabilityInterceptor shipMerged(MergedRequests merged) {
-    return new MergedGuard(merged);
+    return new MergedPrecondition(merged);
   }
 
   @Bean
   public CapabilityInterceptor deployGitGuard(TrustedGitState trusted) {
-    return new GitStateGuard(TaskAction.DEPLOY, trusted);
+    return new GitStatePrecondition(TaskAction.DEPLOY, trusted);
   }
 
   @Bean
   public CapabilityInterceptor revertGitGuard(TrustedGitState trusted) {
-    return new GitStateGuard(TaskAction.REVERT, trusted);
+    return new GitStatePrecondition(TaskAction.REVERT, trusted);
   }
 
   @Bean
   public CapabilityInterceptor shipStop(TaskStops stops) {
-    return new StopGuard(TaskAction.SHIP, stops);
+    return new StopPrecondition(TaskAction.SHIP, stops);
   }
 
   @Bean
   public CapabilityInterceptor deployStop(TaskStops stops) {
-    return new StopGuard(TaskAction.DEPLOY, stops);
+    return new StopPrecondition(TaskAction.DEPLOY, stops);
   }
 
   @Bean

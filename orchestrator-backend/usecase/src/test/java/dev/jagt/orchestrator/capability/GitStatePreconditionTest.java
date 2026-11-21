@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class GitStateGuardTest {
+class GitStatePreconditionTest {
 
   private final TrustedGitState trusted = mock(TrustedGitState.class);
 
@@ -25,7 +25,7 @@ class GitStateGuardTest {
     List<String> ran = new ArrayList<>();
 
     assertThatThrownBy(() ->
-            new GitStateGuard(TaskAction.DEPLOY, trusted)
+            new GitStatePrecondition(TaskAction.DEPLOY, trusted)
                 .around(
                     "ABC-42",
                     () -> {
@@ -42,7 +42,8 @@ class GitStateGuardTest {
     when(trusted.distrust("ABC-42")).thenReturn(Optional.empty());
 
     Outcome outcome =
-        new GitStateGuard(TaskAction.SHIP, trusted).around("ABC-42", () -> Outcome.ok("shipped"));
+        new GitStatePrecondition(TaskAction.SHIP, trusted)
+            .around("ABC-42", () -> Outcome.ok("shipped"));
 
     assertThat(outcome.message()).isEqualTo("shipped");
   }

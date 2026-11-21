@@ -62,6 +62,7 @@ technical:
       members-called-from-main: { fitness: MembersCalledFromMainFitness, governs: count, max: 0 }
       wither-defects: { fitness: WitherDefectsFitness, governs: count, max: 0 }
       wither-count: { fitness: WitherCountFitness, governs: count, min: 81 }
+      guard-is-the-statecharts: { engine: scan, set: all, glob: "**/*Guard.java", except: "**/flow/**,**/dev/jagt/statechart/**", per: name, governs: count, max: 0, hint: "guard is the statechart's transition condition (flow/, dev.jagt.statechart): name a precondition, a check or a boundary (docs/rules/glossary.md)" }
     testability:
       autowired-fields: { engine: archunit, set: all, kind: field, annotated: org.springframework.beans.factory.annotation.Autowired, governs: annotation, max: 0 }
       static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, except: "TaskAliasLogFilter,AbortedConnectionFilter", governs: count, max: 0 }

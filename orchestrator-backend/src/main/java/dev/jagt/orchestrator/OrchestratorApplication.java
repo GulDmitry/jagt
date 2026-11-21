@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.surface.ui.FailurePage;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import dev.jagt.orchestrator.surface.ui.log.LogFileRoll;
 import dev.jagt.orchestrator.surface.ui.log.LogTarget;
-import dev.jagt.orchestrator.surface.ui.log.PortGuard;
+import dev.jagt.orchestrator.surface.ui.log.PortCheck;
 import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.Optional;
@@ -95,7 +95,7 @@ public class OrchestratorApplication {
   static SpringApplication application() {
     SpringApplication application = new SpringApplication(OrchestratorApplication.class);
     application.addListeners(
-        new PortGuard(System::exit),
+        new PortCheck(System::exit),
         new LogTarget(),
         new LogFileRoll(RuntimeWiring.utcClock(), System.err));
     return application;

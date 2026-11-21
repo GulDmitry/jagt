@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
-import dev.jagt.orchestrator.task.stop.GuardKind;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
 import java.time.Instant;
@@ -136,7 +136,7 @@ class FlowReportsTest {
         .isInstanceOf(IllegalArgumentException.class);
 
     assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    assertThat(written.get().refusals()).containsExactly(Map.entry(GuardKind.STATUS_REPORT, 1));
+    assertThat(written.get().refusals()).containsExactly(Map.entry(RefusalKind.STATUS_REPORT, 1));
   }
 
   @Test

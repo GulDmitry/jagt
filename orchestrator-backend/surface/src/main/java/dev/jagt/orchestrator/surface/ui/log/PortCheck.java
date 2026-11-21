@@ -8,14 +8,14 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 
-public class PortGuard
+public class PortCheck
     implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
   // Runs before any context exists, so the context-bound exit seam is not there yet; the log
   // roll must not move another jagt's open file.
   private final IntConsumer exit;
 
-  public PortGuard(IntConsumer exit) {
+  public PortCheck(IntConsumer exit) {
     this.exit = exit;
   }
 

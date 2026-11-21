@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 public class TrustCapability implements TaskCapability {
 
   static final String TRUSTED =
-      "The human trusted your git config and hooks as they are now: retry what the git-state guard"
-          + " refused.";
+      "The human trusted your git config and hooks as they are now:"
+          + " retry what the git-state precondition refused.";
 
   private final TrustedGitState trusted;
   private final StepRelay relay;

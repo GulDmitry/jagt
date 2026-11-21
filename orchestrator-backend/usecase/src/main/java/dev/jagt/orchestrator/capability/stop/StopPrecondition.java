@@ -12,7 +12,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /** Refuses {@code action} on a task jagt stopped, unless a human pressed it. */
-public record StopGuard(TaskAction action, TaskStops stops) implements CapabilityInterceptor {
+public record StopPrecondition(TaskAction action, TaskStops stops)
+    implements CapabilityInterceptor {
 
   private static final Set<ActionOrigin> HUMAN =
       EnumSet.of(ActionOrigin.BOARD, ActionOrigin.PALETTE);

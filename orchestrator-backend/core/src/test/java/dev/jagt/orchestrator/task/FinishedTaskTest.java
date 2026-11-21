@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.task;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.repo.TaskRepo;
-import dev.jagt.orchestrator.task.stop.GuardKind;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.HumanWait;
 import dev.jagt.orchestrator.task.turn.StatusChange;
@@ -384,7 +384,7 @@ class FinishedTaskTest {
 
     assertThat(task.identity().id()).isEqualTo("ABC-1");
     assertThat(task.spend().costUsd()).isEqualTo(0.5);
-    assertThat(task.course().refusals()).containsEntry(GuardKind.SESSION_LINE, 3);
+    assertThat(task.course().refusals()).containsEntry(RefusalKind.SESSION_LINE, 3);
     assertThat(task.course().waits())
         .containsExactly(new HumanWait(100, 700, HumanWait.Why.STATUS));
     assertThat(task.transcripts()).containsExactly("/logs/a.jsonl");

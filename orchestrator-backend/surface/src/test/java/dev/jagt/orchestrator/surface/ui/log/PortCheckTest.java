@@ -15,7 +15,7 @@ import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEven
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.mock.env.MockEnvironment;
 
-class PortGuardTest {
+class PortCheckTest {
 
   @Test
   void refusesTheStartWithOneLineNamingThePortWhenAnotherProcessListensOnIt() throws IOException {
@@ -24,7 +24,7 @@ class PortGuardTest {
       int port = occupied.getLocalPort();
 
       var refusal =
-          new PortGuard(code -> {})
+          new PortCheck(code -> {})
               .refusal(new MockEnvironment().withProperty("server.port", String.valueOf(port)));
 
       assertThat(refusal)
@@ -46,7 +46,7 @@ class PortGuardTest {
     }
 
     var refusal =
-        new PortGuard(code -> {})
+        new PortCheck(code -> {})
             .refusal(new MockEnvironment().withProperty("server.port", String.valueOf(freePort)));
 
     assertThat(refusal).isEmpty();
@@ -61,7 +61,7 @@ class PortGuardTest {
           new MockEnvironment()
               .withProperty("server.port", String.valueOf(occupied.getLocalPort()));
 
-      new PortGuard(exits::add)
+      new PortCheck(exits::add)
           .onApplicationEvent(
               new ApplicationEnvironmentPreparedEvent(
                   new DefaultBootstrapContext(),
@@ -75,7 +75,7 @@ class PortGuardTest {
 
   @Test
   void runsBeforeTheLoggingIsConfigured() {
-    assertThat(new PortGuard(code -> {}).getOrder())
+    assertThat(new PortCheck(code -> {}).getOrder())
         .isLessThan(LoggingApplicationListener.DEFAULT_ORDER);
   }
 }

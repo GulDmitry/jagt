@@ -84,3 +84,14 @@ Source: Garcia-Molina, Salem, *Sagas* (1987).
 | term | definition |
 |------|------------|
 | saga | a long-lived transaction as a sequence of steps, each with a compensating step that undoes it |
+
+## Reach checks
+
+Source: *jagt's own*, from [0022](../decisions/0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md);
+[`guards`](guards.md) lists each. "Guard" alone is the statechart's, never a name for these.
+
+| term | definition |
+|------|------------|
+| boundary | *jagt's own*: a check that allows only what it lists and refuses the rest |
+| guardrail | *jagt's own*: a check that refuses only what it lists and allows the rest |
+| precondition | a condition a capability's action must meet before it runs; refusing it is the interceptor's |

@@ -10,7 +10,7 @@ import java.util.function.Supplier;
  * Ships nothing once git finds every request of the task merged: the press records no step, so no
  * loop counts it.
  */
-public record MergedGuard(MergedRequests merged) implements CapabilityInterceptor {
+public record MergedPrecondition(MergedRequests merged) implements CapabilityInterceptor {
 
   @Override
   public TaskAction action() {

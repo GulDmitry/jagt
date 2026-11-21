@@ -22,7 +22,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class MergedGuardTest {
+class MergedPreconditionTest {
 
   @TempDir Path root;
 
@@ -44,7 +44,7 @@ class MergedGuardTest {
     TaskStops stops = taskStops().withRoot(root).build(state, clock);
     when(merged.refresh("ABC-42")).thenReturn(true);
 
-    new MergedGuard(merged)
+    new MergedPrecondition(merged)
         .around(
             "ABC-42",
             () -> {
@@ -62,7 +62,8 @@ class MergedGuardTest {
     when(merged.refresh("ABC-42")).thenReturn(false);
 
     Outcome outcome =
-        new MergedGuard(merged).around("ABC-42", () -> Outcome.relayed("relayed", "shipping"));
+        new MergedPrecondition(merged)
+            .around("ABC-42", () -> Outcome.relayed("relayed", "shipping"));
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
   }
@@ -72,7 +73,8 @@ class MergedGuardTest {
     when(merged.refresh("ABC-42")).thenReturn(true);
 
     Outcome outcome =
-        new MergedGuard(merged).around("ABC-42", () -> Outcome.relayed("relayed", "shipping"));
+        new MergedPrecondition(merged)
+            .around("ABC-42", () -> Outcome.relayed("relayed", "shipping"));
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
   }
