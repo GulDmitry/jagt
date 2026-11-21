@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.context.SmartLifecycle;
 
 class ProcessRunnerTest {
 
@@ -252,7 +254,7 @@ class ProcessRunnerTest {
   @Test
   void stopsWithoutWaitingTheCommandThatStartsAfterJagtHasStopped() {
     ProcessRunner runner = new ProcessRunner();
-    runner.destroyRunning();
+    runner.close();
 
     Throwable answered =
         catchThrowable(() -> runner.run(null, Duration.ofSeconds(5), List.of("sleep", "30")));
@@ -278,13 +280,68 @@ class ProcessRunnerTest {
     ProcessHandle command =
         ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
 
-    runner.destroyRunning();
+    runner.close();
 
     try {
       command.onExit().get(60, TimeUnit.SECONDS);
     } finally {
       command.destroyForcibly();
     }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "trap '' TERM; "})
+  void leavesNeitherTheCommandNorItsDescendantAliveWhenTheOwnerCloses(
+      String ignoring, @TempDir Path dir) throws Exception {
+    ProcessRunner runner = new ProcessRunner();
+    Path pids = dir.resolve("pids");
+    AtomicReference<Throwable> ended = new AtomicReference<>();
+    Thread.startVirtualThread(() ->
+        ended.set(
+            catchThrowable(() ->
+                runner.run(
+                    null,
+                    Duration.ofSeconds(60),
+                    List.of(
+                        "sh",
+                        "-c",
+                        ignoring + "sleep 30 & echo $$ $! > " + pids + "; wait; wait")))));
+    await()
+        .ignoreExceptions()
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> Files.readString(pids).endsWith("\n"));
+    String[] ids = Files.readString(pids).strip().split(" ", 2);
+    ProcessHandle command = ProcessHandle.of(Long.parseLong(ids[0])).orElseThrow();
+    ProcessHandle descendant = ProcessHandle.of(Long.parseLong(ids[1])).orElseThrow();
+
+    runner.stop();
+
+    try {
+      assertThat(command.isAlive()).isFalse();
+      assertThat(descendant.isAlive()).isFalse();
+    } finally {
+      command.destroyForcibly();
+      descendant.destroyForcibly();
+    }
+  }
+
+  @Test
+  void stopsAfterTheSessionEndingsWhichStillRunCommandsThroughIt() {
+    ProcessRunner runner = new ProcessRunner();
+
+    assertThat(runner.getPhase())
+        .isBetween(SmartLifecycle.DEFAULT_PHASE - 8192, SmartLifecycle.DEFAULT_PHASE - 3073);
+  }
+
+  @Test
+  void isRunningUntilItIsStopped() {
+    ProcessRunner runner = new ProcessRunner();
+    boolean before = runner.isRunning();
+
+    runner.stop();
+
+    assertThat(before).isTrue();
+    assertThat(runner.isRunning()).isFalse();
   }
 
   @Test
@@ -306,7 +363,7 @@ class ProcessRunnerTest {
         .atMost(Duration.ofSeconds(5))
         .until(() -> Files.readString(pid).endsWith("\n"));
 
-    runner.destroyRunning();
+    runner.close();
     caller.join(Duration.ofSeconds(60));
 
     assertThat(answered.get()).isInstanceOf(Processes.Stopped.class);

@@ -19,6 +19,9 @@ technical:
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 23, decision: "0176" }
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
+      # Step 2 of one-owner-per-child moves the stand's spawns behind the owner; until then they are excepted
+      spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ProcessRunner,JagtProcess,KindEngine,StandShell", governs: class-dependency, max: 0, hint: "a child process is spawned by ProcessRunner alone: it kills and reaps every live child at stop" }
+      spawn-owner-exec: { engine: archunit, set: main, calls: java.lang.Runtime.exec, except: "ProcessRunner", governs: class-dependency, max: 0, hint: "a child process is spawned by ProcessRunner alone" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }

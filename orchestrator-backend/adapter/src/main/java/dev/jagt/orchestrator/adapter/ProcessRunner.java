@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.OneLine;
-import jakarta.annotation.PreDestroy;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -17,13 +16,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class ProcessRunner implements Processes {
+public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
+
+  /** Stops after {@code ShutdownEndings}, whose window kills still run commands through here. */
+  static final int PHASE = DEFAULT_PHASE - 4096;
+
+  private static final Duration GRACE = Duration.ofSeconds(2);
 
   /**
    * POSIX tools that can put a launch in its own session; absolute because they ARE the mechanism.
@@ -76,6 +81,11 @@ public class ProcessRunner implements Processes {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
     }
+  }
+
+  @Override
+  public void start() {
+    // Nothing starts: a child is registered when it is spawned.
   }
 
   /**
@@ -316,12 +326,72 @@ public class ProcessRunner implements Processes {
     closing = true;
   }
 
-  /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
-  @PreDestroy
-  void destroyRunning() {
+  @Override
+  public boolean isRunning() {
+    return !destroyed;
+  }
+
+  @Override
+  public int getPhase() {
+    return PHASE;
+  }
+
+  @Override
+  public void stop() {
+    close();
+  }
+
+  /**
+   * A detached launch outlives jagt by design, so only a command something waits on is stopped:
+   * asked to end, then killed once {@link #GRACE} has passed, each tree to its last descendant.
+   */
+  @Override
+  public void close() {
     destroyed = true;
-    stopped.addAll(running);
-    running.forEach(process -> destroyTree(process, "shutdown"));
+    List<Process> live = List.copyOf(running);
+    stopped.addAll(live);
+    Map<Process, List<ProcessHandle>> trees = new java.util.LinkedHashMap<>();
+    live.forEach(process -> trees.put(process, process.descendants().toList()));
+    trees.forEach((process, descendants) -> {
+      descendants.forEach(ProcessHandle::destroy);
+      process.destroy();
+    });
+    trees.forEach((process, descendants) -> {
+      awaitExit(process, descendants);
+      killSurvivors(process, descendants);
+    });
+  }
+
+  private static void awaitExit(Process process, List<ProcessHandle> descendants) {
+    try {
+      process.waitFor(GRACE.toMillis(), TimeUnit.MILLISECONDS);
+      for (ProcessHandle each : descendants) {
+        each.onExit().get(GRACE.toMillis(), TimeUnit.MILLISECONDS);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
+      // what is still alive is killed next
+    }
+  }
+
+  private static void killSurvivors(Process process, List<ProcessHandle> descendants) {
+    List<ProcessHandle> alive = descendants.stream().filter(ProcessHandle::isAlive).toList();
+    if (process.isAlive() || !alive.isEmpty()) {
+      process.destroyForcibly();
+      alive.forEach(ProcessHandle::destroyForcibly);
+    }
+    try {
+      process.waitFor(GRACE.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    log.atWarn()
+        .setMessage("process killed")
+        .addKeyValue("pid", process.pid())
+        .addKeyValue("descendants", descendants.size())
+        .addKeyValue("reason", "shutdown")
+        .log();
   }
 
   /** Listed first: a descendant whose parent died is reparented and no longer reachable from it. */
