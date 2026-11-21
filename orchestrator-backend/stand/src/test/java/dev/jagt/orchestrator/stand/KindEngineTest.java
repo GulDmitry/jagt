@@ -182,6 +182,16 @@ class KindEngineTest {
   }
 
   @Test
+  void closeEndsTheOwnerOfItsPortForwards() throws IOException {
+    StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(0, "");
+    KindEngine.Forwarder forwarder = mock(KindEngine.Forwarder.class);
+
+    new KindEngine(root, 9000, board, shell, forwarder, manifest, Duration.ofMinutes(5)).close();
+
+    verify(forwarder).close();
+  }
+
+  @Test
   void closeFailsNamingTheClusterAndTheExitWhenTheClusterCannotBeDeleted() {
     StandShell.Runner shell =
         (cwd, command, env) -> new StandShell.Result(command.contains("delete") ? -1 : 0, "");

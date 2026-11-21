@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.process.ChildProcesses;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.OneLine;
 import java.io.BufferedReader;
@@ -10,9 +11,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -28,8 +27,6 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
   /** Stops after {@code ShutdownEndings}, whose window kills still run commands through here. */
   static final int PHASE = DEFAULT_PHASE - 4096;
 
-  private static final Duration GRACE = Duration.ofSeconds(2);
-
   /**
    * POSIX tools that can put a launch in its own session; absolute because they ARE the mechanism.
    */
@@ -40,10 +37,8 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
   /** Long enough for a wrapper that could not exec to have exited, short enough to be invisible. */
   private static final Duration LAUNCH_CHECK = Duration.ofMillis(200);
 
-  private final Set<Process> running = ConcurrentHashMap.newKeySet();
-  private final Set<Process> stopped = ConcurrentHashMap.newKeySet();
+  private final ChildProcesses children = new ChildProcesses();
   private volatile boolean closing;
-  private volatile boolean destroyed;
 
   @Override
   public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
@@ -74,10 +69,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
         builder.directory(workingDir.toFile());
       }
       builder.redirectError(ProcessBuilder.Redirect.DISCARD);
-      Process started = builder.start();
-      running.add(started);
-      CompletableFuture<Void> _ = started.onExit().thenAccept(running::remove);
-      return started;
+      return children.spawn(builder);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
     }
@@ -108,7 +100,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
       builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
       builder.redirectError(ProcessBuilder.Redirect.DISCARD);
       long startedAt = System.nanoTime();
-      Process launched = builder.start();
+      Process launched = children.spawnDetached(builder);
       // The wrapper always starts, so a missing binary is not an IOException but the wrapper
       // exiting 127.
       // A launcher handing off to a running instance also exits at once, and that one exits ZERO.
@@ -231,12 +223,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
       if (stdin == null) {
         builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
       }
-      process = builder.start();
-      running.add(process);
-      if (destroyed) {
-        stopped.add(process);
-        destroyTree(process, "shutdown");
-      }
+      process = children.spawn(builder);
       if (stdin != null) {
         feed(process, stdin);
       }
@@ -249,13 +236,13 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
       Thread errThread = Thread.startVirtualThread(new OutputDrain(stderrReader, stderr));
       boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
       if (!finished) {
-        destroyTree(process, "timeout");
+        children.kill(process, "timeout");
         throw new IllegalStateException(
             "Command timed out after " + timeout + ": " + String.join(" ", command));
       }
       outThread.join(2_000);
       errThread.join(2_000);
-      boolean killed = stopped.remove(process);
+      boolean killed = children.wasStopped(process);
       if (killed || closing) {
         throw new Processes.Stopped(command);
       }
@@ -266,7 +253,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
       throw interrupted(process, command, e);
     } finally {
       if (process != null) {
-        running.remove(process);
+        children.release(process);
       }
     }
   }
@@ -274,7 +261,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
   private RuntimeException interrupted(
       @Nullable Process process, List<String> command, InterruptedException e) {
     if (process != null) {
-      destroyTree(process, "interrupted");
+      children.kill(process, "interrupted");
     }
     Thread.currentThread().interrupt();
     if (closing) {
@@ -328,7 +315,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
 
   @Override
   public boolean isRunning() {
-    return !destroyed;
+    return !children.isClosed();
   }
 
   @Override
@@ -341,69 +328,9 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
     close();
   }
 
-  /**
-   * A detached launch outlives jagt by design, so only a command something waits on is stopped:
-   * asked to end, then killed once {@link #GRACE} has passed, each tree to its last descendant.
-   */
+  /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
   @Override
   public void close() {
-    destroyed = true;
-    List<Process> live = List.copyOf(running);
-    stopped.addAll(live);
-    Map<Process, List<ProcessHandle>> trees = new java.util.LinkedHashMap<>();
-    live.forEach(process -> trees.put(process, process.descendants().toList()));
-    trees.forEach((process, descendants) -> {
-      descendants.forEach(ProcessHandle::destroy);
-      process.destroy();
-    });
-    trees.forEach((process, descendants) -> {
-      awaitExit(process, descendants);
-      killSurvivors(process, descendants);
-    });
-  }
-
-  private static void awaitExit(Process process, List<ProcessHandle> descendants) {
-    try {
-      process.waitFor(GRACE.toMillis(), TimeUnit.MILLISECONDS);
-      for (ProcessHandle each : descendants) {
-        each.onExit().get(GRACE.toMillis(), TimeUnit.MILLISECONDS);
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
-      // what is still alive is killed next
-    }
-  }
-
-  private static void killSurvivors(Process process, List<ProcessHandle> descendants) {
-    List<ProcessHandle> alive = descendants.stream().filter(ProcessHandle::isAlive).toList();
-    if (process.isAlive() || !alive.isEmpty()) {
-      process.destroyForcibly();
-      alive.forEach(ProcessHandle::destroyForcibly);
-    }
-    try {
-      process.waitFor(GRACE.toMillis(), TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-    log.atWarn()
-        .setMessage("process killed")
-        .addKeyValue("pid", process.pid())
-        .addKeyValue("descendants", descendants.size())
-        .addKeyValue("reason", "shutdown")
-        .log();
-  }
-
-  /** Listed first: a descendant whose parent died is reparented and no longer reachable from it. */
-  private static void destroyTree(Process process, String reason) {
-    List<ProcessHandle> descendants = process.descendants().toList();
-    process.destroyForcibly();
-    descendants.forEach(ProcessHandle::destroyForcibly);
-    log.atWarn()
-        .setMessage("process killed")
-        .addKeyValue("pid", process.pid())
-        .addKeyValue("descendants", descendants.size())
-        .addKeyValue("reason", reason)
-        .log();
+    children.close();
   }
 }

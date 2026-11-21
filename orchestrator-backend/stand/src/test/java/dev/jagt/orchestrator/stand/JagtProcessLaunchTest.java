@@ -140,6 +140,31 @@ class JagtProcessLaunchTest {
   }
 
   @Test
+  void closeEndsTheOwnerOfItsLaunches(@TempDir Path root) throws IOException {
+    when(board.ready()).thenReturn(true);
+    JagtProcess.Launcher launcher = mock(JagtProcess.Launcher.class);
+    when(launcher.launch(root, 8123)).thenReturn(first);
+    JagtProcess jagt = new JagtProcess(root, 8123, board, launcher, Duration.ofMinutes(5)).begin();
+
+    jagt.close();
+
+    verify(launcher).close();
+  }
+
+  @Test
+  void restartKeepsTheOwnerOfItsLaunchesOpenForTheNextLaunch(@TempDir Path root)
+      throws IOException {
+    when(board.ready()).thenReturn(true);
+    JagtProcess.Launcher launcher = mock(JagtProcess.Launcher.class);
+    when(launcher.launch(root, 8123)).thenReturn(first, second);
+    JagtProcess jagt = new JagtProcess(root, 8123, board, launcher, Duration.ofMinutes(5)).begin();
+
+    jagt.restart(Restart.JVM);
+
+    verify(launcher, org.mockito.Mockito.never()).close();
+  }
+
+  @Test
   void upgradeIsSkippedBecauseJarHasNoImage(@TempDir Path root) {
     when(board.ready()).thenReturn(true);
     JagtProcess jagt =

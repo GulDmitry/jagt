@@ -318,6 +318,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
 | `adapter/replay` | adapter | a stand recording played back: runtime, sessions, moves, reads |
+| `adapter/process` | adapter | the one owner of child processes: spawn, end each tree, reap; exposed to `stand` |
 | `adapter/release` | adapter | the release feed drivers: GitHub releases, none |
 | `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
 | `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
@@ -376,8 +377,7 @@ None today; a package of one class folds into its parent.
 | notify somewhere else | one `ChannelDriver` in `adapter/` and a channel of its `kind` in `jagt.yml`; no caller changes |
 | support another host, tracker, agent or OS | one adapter behind its port, plus the `@ConditionalOnProperty` value |
 
-- A new verb reaches the board because the board is generated from `flow/capability/TaskAction`: it renders `Move.actions()` (the
-  legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
+- A new verb reaches the board generated from `flow/capability/TaskAction`: `Move.actions()` (legal only), an illegal one refused by `FlowEngine`.
 - **The surface holds no list** — the usual way to break that is building a button in `board/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - **The tree shows layers, then features, then kinds**: a new kind of thing is named in [the package map](#the-package-map)
