@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.yaml.snakeyaml.Yaml;
 
 class CiWorkflowTest {
 
@@ -47,6 +48,28 @@ class CiWorkflowTest {
             .collect(Collectors.toSet());
 
     assertThat(writing).containsExactly("release");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"ci", "nightly", "base-image", "base-images"})
+  void setsOneTopLevelPermissionsBlockInEveryWorkflow(String workflow) {
+    Map<?, ?> parsed =
+        new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/" + workflow + ".yml")));
+
+    assertThat(parsed.get("permissions")).isInstanceOf(Map.class);
+  }
+
+  @Test
+  void letsTheWorkflowReadTheRepositoryAndNothingElseUnlessItsJobWidensIt() {
+    Map<?, ?> parsed = new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/ci.yml")));
+    Set<String> widened =
+        CiWorkflow.jobs().entrySet().stream()
+            .filter(job -> job.getValue().containsKey("permissions"))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+
+    assertThat(parsed.get("permissions")).isEqualTo(Map.of("contents", "read"));
+    assertThat(widened).containsExactly("release");
   }
 
   @Test
