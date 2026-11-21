@@ -1,7 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-# To regenerate this file, run: ./gradlew :engine-archunit:dependencies --write-locks
+# To regenerate this file, run: ./gradlew :fitness:engine-archunit:dependencies --write-locks
 antlr:antlr:2.7.7=pitest
 com.tngtech.archunit:archunit:1.5.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 net.bytebuddy:byte-buddy:1.18.3=testCompileClasspath,testRuntimeClasspath

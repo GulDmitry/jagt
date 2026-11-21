@@ -1,7 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-# To regenerate this file, run: ./gradlew :gradle-plugin:dependencies --write-locks
+# To regenerate this file, run: ./gradlew :fitness:gradle-plugin:dependencies --write-locks
 antlr:antlr:2.7.7=pitest
 net.bytebuddy:byte-buddy:1.18.3=testCompileClasspath,testRuntimeClasspath
 net.sf.jopt-simple:jopt-simple:4.9=pitest

@@ -72,6 +72,21 @@ class PinningTest {
     assertThat(unverified).isEmpty();
   }
 
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"core", "engine-archunit", "engine-scan", "gradle-plugin", "junit"})
+  void lockRewriteFromTheRootLeavesIncludedBuildLockfileUnchanged(String module) {
+    assertThat(SourceRoots.read(Path.of("fitness", module, "gradle.lockfile")))
+        .contains("run: ./gradlew :fitness:" + module + ":dependencies --write-locks");
+  }
+
+  @Test
+  void lockRewriteCommandAlsoWritesChecksumsBecauseTheRunFetchesLosingVersions() {
+    String decision = "0189-every-dependency-action-image-and-wrapper-is-pinned.md";
+
+    assertThat(SourceRoots.read(Path.of("../docs/decisions", decision)))
+        .contains("--write-locks --write-verification-metadata sha256");
+  }
+
   @Test
   void wrapperChangeShowsInItsChecksum() {
     assertThat(SourceRoots.read(Path.of("gradle/wrapper/gradle-wrapper.properties")))

@@ -18,14 +18,15 @@ Accepted 2026-11-16: a moved version, tag or `latest` changed a build with no di
 
 - `jagt.conventions` locks every configuration of every project, `build-logic` too.
 - The root and `build-logic` lock their plugin classpath.
-- Lockfiles are written by `./gradlew dependencies --write-locks` on every project, never by CI.
+- Lockfiles and checksums are written together by `./gradlew dependencies --write-locks --write-verification-metadata sha256`
+  in `orchestrator-backend`, covering every project and included build, never by CI.
+- The lock run resolves unlocked and fetches the metadata of every losing version, so it needs those checksums too.
 - Default lock mode: a locked configuration fails on drift, an unlisted one resolves, so a new configuration never breaks a build.
 - `distributionSha256Sum` holds the official checksum of the wrapper's version.
 - Every action is a full commit sha with its tag as a trailing comment; every `FROM` and GitLab `image:` is `tag@sha256:digest`.
 - A `FROM ${BASE}` is the user's own image and stays unpinned.
 - Renovate (`config:recommended`, `helpers:pinGitHubActionDigests`) opens every move as a request a person reads.
 - `gradle/verification-metadata.xml` holds the sha256 of every locked module and plugin, no trusted artifacts: a changed one fails the build.
-- Written by `./gradlew --write-verification-metadata sha256` over every resolvable configuration, never by CI.
 - `PinningTest` fails on a missing lockfile, checksum, sha, digest or a locked module without an entry.
 
 ## Rejected

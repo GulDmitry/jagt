@@ -1,7 +1,7 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-# To regenerate this file, run: ./gradlew :engine-scan:dependencies --write-locks
+# To regenerate this file, run: ./gradlew :fitness:engine-scan:dependencies --write-locks
 antlr:antlr:2.7.7=pitest
 com.github.oowekyala.ooxml:nice-xml-messages:3.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.code.gson:gson:2.15.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
