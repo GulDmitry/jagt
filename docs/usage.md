@@ -3,6 +3,7 @@
 [← README](../README.md)
 
 jagt has one surface: the **board** at `http://localhost:8290`.
+Its HTTP API is described in [`contracts/openapi.yaml`](../contracts/openapi.yaml); a write carries the board's `Origin` header or is refused.
 
 ## The board
 

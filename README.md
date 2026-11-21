@@ -95,9 +95,11 @@ The Master: a model reading every round before you, by the roles in its brief.
 
 In `act` a task reaches you ready to deploy; `roles.master.mine` keeps any step or verb yours, `[plan, deploy, revert]` unset.
 
-## Start
+## First run
 
-Tools: **[Technologies](docs/installation.md)**.
+After the [install](#on-a-desktop), `jagt` starts the board on your machine.
+It needs no `jagt.yml` and no project to start: you add the first project from the board.
+Building from source instead: [Installation](docs/installation.md#build-from-source).
 
 ### 1 — check MCP access
 
@@ -108,37 +110,17 @@ an interactive login, or from a plugin, does not answer it, though `claude mcp l
 cd "$TMPDIR" && claude "Name your MCP tools for <your tracker> and <your code host>, or say NONE." -p
 ```
 
-`NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md) has the fix.
+`NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md#mcp-access-comes-first) has the fix.
 No tracker: skip this step. `tracker.workflow: none` is the default, and a task is then your own words.
 
-### 2 — clone, and name one repository
+### 2 — name one repository
 
-```sh
-git clone https://github.com/GulDmitry/jagt.git && cd jagt
-cp jagt.desktop.yml.dist jagt.yml
-```
-
-`projects` is the only section with no default — without one jagt refuses to start.
-Edit the `my-project` entry the copy already holds; the repository needs a fetched remote, `origin` unless
-`remote` names another (`remote: none` keeps it on this machine, with `codeHost: none` and a local `baseBranch`):
-
-```yaml
-orchestrator:
-  projects:
-    widgets:
-      path: /work/widget-service        # absolute path to the repository
-      baseBranch: origin/main                # tasks are cut from here, and it is never pushed to
-      deployBranch: dev                      # omit to disable `deploy` for this project
-  worktree:
-    copyGlobs: ["**/.env"]                   # untracked files a fresh worktree needs to build
-```
-
-**`copyGlobs` makes a worktree usable**: a clean checkout lacks whatever your build reads but git does not
-track. Widen it until your tests pass inside one; each pattern carries matching files from the base repository into every fresh worktree.
-Every other key has a default, described in `jagt.desktop.yml.dist`.
+Open **http://localhost:8290** and press **+ add a project** (or use the `project` verb).
+It writes the entry into `jagt.yml`, with no restart.
+The repository needs a fetched remote, `origin` unless `remote` names another.
+`remote: none` keeps it on this machine, with `codeHost: none` and a local `baseBranch`.
+You can write the entry by hand instead: [Configuration](docs/configuration.md#projects), where `worktree.copyGlobs` is also explained.
 On a server, copy `jagt.server.yml.dist` instead ([docs/server.md](docs/server.md)).
-
-**+ add a project** inside New task, or the `project` verb, writes the entry too, no restart.
 
 ### 3 — decide on the Master
 
@@ -147,25 +129,13 @@ It judges by `roles/master/brief.md.dist` until you copy it to `roles/master/bri
 Sessions are told each step by `roles/session/brief.md.dist` until you copy it to `roles/session/brief.md`,
 and sent each one where `roles/session/cases.md.dist` has a case for it until you copy that to `roles/session/cases.md`.
 The Master presses a verb only where `roles/master/cases.md.dist` has a case, until you copy that to `roles/master/cases.md`.
+An installed jagt keeps these files in its install folder: [Installation](docs/installation.md#where-an-installed-jagt-keeps-things).
 
-### 4 — build, and run
+### 4 — start a task
 
-```sh
-cd orchestrator-backend
-./gradlew build stageJar
-java -jar build/libs/jagt-run.jar
-```
-
-Anything missing, and jagt refuses to start with the **whole** list, each line naming the key that fixes it.
-
-> [!IMPORTANT]
-> Run the **staged** `jagt-run.jar`. `./gradlew build` rewrites `jagt.jar` in place, and a JVM still reading it
-> dies with a `NoClassDefFoundError` that hides the real error — [Troubleshooting](docs/troubleshooting.md).
-
-### 5 — open the board
-
-**http://localhost:8290** — **New task** (key `t`): a ticket key or URL in Ticket; or leave Ticket empty, pick a project
+**New task** (key `t`): a ticket key or URL in Ticket; or leave Ticket empty, pick a project
 and say what to do. It starts an agent session in tmux at once, and a session costs tokens.
+If a start fails, jagt refuses with the **whole** list, each line naming the key that fixes it.
 
 ## What you keep
 
@@ -183,8 +153,8 @@ It does not run your CI.
 | | |
 |---|---|
 | [Architecture principles](docs/principles.md) | the eight rules that shape jagt, and where each is held |
-| [Installation](docs/installation.md) | every technology, per platform, and the first run |
-| [Usage](docs/usage.md) | the board, every command, the review loop |
+| [Installation](docs/installation.md) | the installed layout, every technology, per platform, building from source |
+| [Usage](docs/usage.md) | the board, every command, the review loop, the HTTP API |
 | [Configuration](docs/configuration.md) | where a setting goes, and what outranks what |
 | [Add a language](docs/languages.md) | translate the board: one catalog file, no rebuild |
 | [Local models](docs/local-models.md) | a local model for the reads that need no tool: quick start, what it serves |
