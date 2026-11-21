@@ -80,10 +80,13 @@ orchestrator:
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own
   # Any CLI launcher, resolved on PATH and in the usual install dirs; the worktree path is appended.
   # `open -a` will NOT do: it activates the app without opening the passed directory.
-  editor-command: ["idea"]
-  # editor-command: ["code"]   # another editor's launcher, by bare name
+  # Unset, the code verb opens the board's Code tab alone and launches nothing.
+  editor-command: []
+  # editor-command: ["idea"]   # an editor's launcher, by bare name
+  # editor-command: ["code"]
   # Two paths are appended: <left> <right>. Any difftool takes them — ["difft"], ["code", "--diff"].
-  editor-diff-command: ["idea", "diff"]
+  editor-diff-command: []
+  # editor-diff-command: ["idea", "diff"]
   # `agent.cli` selects the runtime; the rest of `agent` is read live. One key cannot be a word to Spring and a
   # section to jagt in the same file, which is why the choice sits INSIDE the section it is about.
   # agent:
