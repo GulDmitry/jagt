@@ -19,7 +19,7 @@ import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn;
-import dev.jagt.statechart.ChartStep;
+import dev.jagt.statechart.Macrostep;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -188,7 +188,7 @@ class TaskChartTest {
     Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("deploy", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
@@ -283,7 +283,7 @@ class TaskChartTest {
     Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("infra", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
@@ -323,7 +323,7 @@ class TaskChartTest {
     Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("session", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
@@ -552,7 +552,7 @@ class TaskChartTest {
     plain.put("lifecycle", lifecycle);
     plain.put("acceptance", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
@@ -571,7 +571,7 @@ class TaskChartTest {
     plain.put("turn", "OPEN");
     plain.put("acceptance", "ROUND_OPEN");
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
@@ -703,7 +703,7 @@ class TaskChartTest {
     plain.put("lifecycle", lifecycle);
     plain.put(region, from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(

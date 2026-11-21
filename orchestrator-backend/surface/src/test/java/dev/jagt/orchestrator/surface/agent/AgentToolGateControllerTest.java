@@ -22,7 +22,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.GuardKind;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -104,7 +104,7 @@ class AgentToolGateControllerTest {
                 .getValue()
                 .apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
                 .refusals())
-        .containsExactly(Map.entry(Guard.SESSION_LINE, 1));
+        .containsExactly(Map.entry(GuardKind.SESSION_LINE, 1));
   }
 
   @Test
@@ -181,7 +181,7 @@ class AgentToolGateControllerTest {
                 .getValue()
                 .apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
                 .refusals())
-        .containsExactly(Map.entry(Guard.PLAN_FIRST, 1));
+        .containsExactly(Map.entry(GuardKind.PLAN_FIRST, 1));
   }
 
   @ParameterizedTest

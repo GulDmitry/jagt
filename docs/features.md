@@ -177,6 +177,7 @@
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)
 - **The life of a task** — statuses, verify, deploy check, acceptance workspace, start and plan first: [their own page](features/task-flow.md).
+- **A real statechart** — Harel/SCXML: nested and parallel states, history, completion, choices. [spec](../openspec/specs/statechart/spec.md)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 - **Auto-review** — jagt polls an open request for comments, only reading and drafting. Key: `orchestrator.autoReview.enabled`, off by default.

@@ -2,14 +2,14 @@ package dev.jagt.statechart;
 
 import java.util.List;
 
-public final class ChartInvalid extends RuntimeException {
+public final class StatechartInvalid extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
   private final transient List<String> problems;
 
-  ChartInvalid(List<String> problems) {
-    super("chart is invalid: " + String.join("; ", problems));
+  StatechartInvalid(List<String> problems) {
+    super("statechart is invalid: " + String.join("; ", problems));
     this.problems = List.copyOf(problems);
   }
 

@@ -14,6 +14,7 @@ Sources: Harel, *Statecharts: A Visual Formalism for Complex Systems* (1987); W3
 
 | term | definition |
 |------|------------|
+| statechart | the states, transitions and data model of one machine, stepped by events |
 | state | a situation in which the machine waits for an event |
 | atomic state | a state with no child states |
 | compound state | a state with child states, exactly one of which is active while it is |
@@ -28,6 +29,7 @@ Sources: Harel, *Statecharts: A Visual Formalism for Complex Systems* (1987); W3
 | guard | a condition that must hold for a transition to be taken |
 | action | an effect run on entry, on exit or by a transition |
 | do-activity | work that runs for as long as a state is active |
+| external transition | a transition that exits its source and enters its target, even when they are one state |
 | internal transition | a transition that runs its actions and neither exits nor enters its source |
 | configuration | the set of states active at one moment |
 | microstep | the execution of one set of enabled transitions |
@@ -35,6 +37,7 @@ Sources: Harel, *Statecharts: A Visual Formalism for Complex Systems* (1987); W3
 | internal event | an event raised by an action, processed before the next external event |
 | In() predicate | a guard reading whether another state is active |
 | data model | the data beside the configuration that guards and actions read |
+| datum | one named value of the data model, computed once per macrostep |
 
 ## Fitness functions
 

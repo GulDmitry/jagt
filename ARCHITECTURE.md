@@ -477,7 +477,7 @@ Eight Gradle modules under `orchestrator-backend/`, the compiler holding the dep
 
 | module | holds | sees |
 |--------|-------|------|
-| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step over stored and derived regions | the JDK and JSpecify only, no jagt type |
+| `:statechart` | `dev.jagt.statechart`: a Harel/SCXML statechart engine, a pure macrostep over regions and a data model | the JDK and JSpecify only, no jagt type |
 | `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |

@@ -17,9 +17,10 @@ import static dev.jagt.orchestrator.task.TaskStatus.VERIFYING;
 
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.statechart.ChartBuilder;
-import dev.jagt.statechart.Condition;
+import dev.jagt.statechart.DataId;
+import dev.jagt.statechart.Guard;
 import dev.jagt.statechart.RegionId;
+import dev.jagt.statechart.StatechartBuilder;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -48,36 +49,34 @@ final class TaskOffers {
 
   static final Set<TaskStatus> APPROVE_PLAN_FROM = EnumSet.of(PLAN_PENDING);
 
-  private static final RegionId<Fact> REVIEW_REQUEST = new RegionId<>("review request", Fact.class);
+  private static final DataId<Fact> REVIEW_REQUEST = new DataId<>("review request", Fact.class);
 
-  private static final RegionId<Fact> LIVE_DEPLOY = new RegionId<>("live deploy", Fact.class);
+  private static final DataId<Fact> LIVE_DEPLOY = new DataId<>("live deploy", Fact.class);
 
-  private static final RegionId<Fact> AGENT_LIVE = new RegionId<>("agent live", Fact.class);
+  private static final DataId<Fact> AGENT_LIVE = new DataId<>("agent live", Fact.class);
 
-  private static final RegionId<Fact> GIT_CHANGED = new RegionId<>("git changed", Fact.class);
+  private static final DataId<Fact> GIT_CHANGED = new DataId<>("git changed", Fact.class);
 
-  private static final RegionId<Fact> STOPPED = new RegionId<>("stopped", Fact.class);
+  private static final DataId<Fact> STOPPED = new DataId<>("stopped", Fact.class);
 
-  private static final RegionId<Fact> TIER_ABOVE = new RegionId<>("tier above", Fact.class);
+  private static final DataId<Fact> TIER_ABOVE = new DataId<>("tier above", Fact.class);
 
-  private static final RegionId<Fact> REPO_REQUESTED = new RegionId<>("repo requested", Fact.class);
+  private static final DataId<Fact> REPO_REQUESTED = new DataId<>("repo requested", Fact.class);
 
-  private static final RegionId<Fact> SEVERAL_REPOS = new RegionId<>("several repos", Fact.class);
+  private static final DataId<Fact> SEVERAL_REPOS = new DataId<>("several repos", Fact.class);
 
-  private static final RegionId<Fact> REQUEST_MERGED = new RegionId<>("request merged", Fact.class);
+  private static final DataId<Fact> REQUEST_MERGED = new DataId<>("request merged", Fact.class);
 
-  private static final RegionId<Fact> SHIPPED_WITHOUT_REQUEST =
-      new RegionId<>("shipped without request", Fact.class);
+  private static final DataId<Fact> SHIPPED_WITHOUT_REQUEST =
+      new DataId<>("shipped without request", Fact.class);
 
-  private static final RegionId<Fact> REVERT_CONFLICT =
-      new RegionId<>("revert conflict", Fact.class);
+  private static final DataId<Fact> REVERT_CONFLICT = new DataId<>("revert conflict", Fact.class);
 
-  private static final RegionId<Fact> SCENARIOS_READY =
-      new RegionId<>("scenarios ready", Fact.class);
+  private static final DataId<Fact> SCENARIOS_READY = new DataId<>("scenarios ready", Fact.class);
 
-  private static final RegionId<Fact> SHELL_ESCAPE = new RegionId<>("shell escape", Fact.class);
+  private static final DataId<Fact> SHELL_ESCAPE = new DataId<>("shell escape", Fact.class);
 
-  private record Need(RegionId<Fact> region, Fact is) {}
+  private record Need(DataId<Fact> region, Fact is) {}
 
   private record Offer(TaskAction action, Set<TaskStatus> from, List<Need> needs) {}
 
@@ -163,22 +162,22 @@ final class TaskOffers {
   }
 
   static void declare(
-      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, RegionId<TaskStatus> lifecycle) {
-    chart.derived(REVIEW_REQUEST, facts -> Fact.of(facts.facts().delivery().hasReviewRequest()));
-    chart.derived(LIVE_DEPLOY, facts -> Fact.of(facts.facts().delivery().liveDeploy()));
-    chart.derived(AGENT_LIVE, facts -> Fact.of(facts.facts().hold().agentLive().getAsBoolean()));
-    chart.derived(GIT_CHANGED, facts -> Fact.of(facts.facts().workspace().gitStateChanged()));
-    chart.derived(STOPPED, facts -> Fact.of(facts.facts().hold().stopped()));
-    chart.derived(TIER_ABOVE, facts -> Fact.of(facts.facts().hold().tierAbove()));
-    chart.derived(REPO_REQUESTED, facts -> Fact.of(facts.facts().workspace().repoRequested()));
-    chart.derived(SEVERAL_REPOS, facts -> Fact.of(facts.facts().workspace().severalRepos()));
-    chart.derived(REQUEST_MERGED, facts -> Fact.of(facts.facts().delivery().requestMerged()));
-    chart.derived(
+      StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, RegionId<TaskStatus> lifecycle) {
+    chart.datum(REVIEW_REQUEST, facts -> Fact.of(facts.facts().delivery().hasReviewRequest()));
+    chart.datum(LIVE_DEPLOY, facts -> Fact.of(facts.facts().delivery().liveDeploy()));
+    chart.datum(AGENT_LIVE, facts -> Fact.of(facts.facts().hold().agentLive().getAsBoolean()));
+    chart.datum(GIT_CHANGED, facts -> Fact.of(facts.facts().workspace().gitStateChanged()));
+    chart.datum(STOPPED, facts -> Fact.of(facts.facts().hold().stopped()));
+    chart.datum(TIER_ABOVE, facts -> Fact.of(facts.facts().hold().tierAbove()));
+    chart.datum(REPO_REQUESTED, facts -> Fact.of(facts.facts().workspace().repoRequested()));
+    chart.datum(SEVERAL_REPOS, facts -> Fact.of(facts.facts().workspace().severalRepos()));
+    chart.datum(REQUEST_MERGED, facts -> Fact.of(facts.facts().delivery().requestMerged()));
+    chart.datum(
         SHIPPED_WITHOUT_REQUEST,
         facts -> Fact.of(facts.facts().delivery().shippedWithoutRequest()));
-    chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
-    chart.derived(SCENARIOS_READY, facts -> Fact.of(facts.facts().reach().scenarios()));
-    chart.derived(SHELL_ESCAPE, facts -> Fact.of(facts.facts().reach().shellEscape()));
+    chart.datum(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
+    chart.datum(SCENARIOS_READY, facts -> Fact.of(facts.facts().reach().scenarios()));
+    chart.datum(SHELL_ESCAPE, facts -> Fact.of(facts.facts().reach().shellEscape()));
     for (Offer offer : OFFERS) {
       chart
           .onMatching(
@@ -187,24 +186,24 @@ final class TaskOffers {
               "offers " + offer.action().id(),
               move -> move instanceof TaskMove.Offers offers && offers.action() == offer.action())
           .when(holds(offer.needs()))
-          .stay();
+          .internal();
     }
   }
 
-  private static Condition<TaskMove> holds(List<Need> needs) {
-    return (others, move) ->
-        needs.stream().allMatch(need -> others.get(need.region()) == need.is());
+  private static Guard<TaskMove> holds(List<Need> needs) {
+    return (active, move) ->
+        needs.stream().allMatch(need -> active.datum(need.region()) == need.is());
   }
 
   private static Offer offer(TaskAction action, Set<TaskStatus> from, Need... needs) {
     return new Offer(action, from, List.of(needs));
   }
 
-  private static Need yes(RegionId<Fact> region) {
+  private static Need yes(DataId<Fact> region) {
     return new Need(region, Fact.YES);
   }
 
-  private static Need no(RegionId<Fact> region) {
+  private static Need no(DataId<Fact> region) {
     return new Need(region, Fact.NO);
   }
 

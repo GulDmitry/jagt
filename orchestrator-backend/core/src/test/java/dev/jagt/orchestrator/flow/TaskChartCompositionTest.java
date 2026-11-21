@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.flow.role.CheckerRole;
 import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
-import dev.jagt.statechart.Chart;
+import dev.jagt.statechart.Statechart;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ class TaskChartCompositionTest {
 
   @Test
   void chartWithNoRoleComposedIsValidAndNamesNoRoleRegion() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(new Composition(List.of())).chart();
 
     assertThat(chart.initial().toPlain().keySet()).containsExactlyInAnyOrderElementsOf(CORE);
@@ -43,7 +43,7 @@ class TaskChartCompositionTest {
 
   @Test
   void eachRoleComposedAloneLeavesEveryCoreRegionAsDrawn() {
-    Chart<TaskMove, ChartFacts, TaskEffect> alone =
+    Statechart<TaskMove, ChartFacts, TaskEffect> alone =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -59,7 +59,7 @@ class TaskChartCompositionTest {
 
   @Test
   void everyRoleOnComposesOneRegionPerRole() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -75,7 +75,7 @@ class TaskChartCompositionTest {
 
   @Test
   void chartWithTwoCheckersTellsWhoseRoundTheSessionDeclined() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -114,7 +114,7 @@ class TaskChartCompositionTest {
 
   @Test
   void composedCheckerOpensItsReadOnItsOwnStepAndNotOnAcceptances() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
                 new Composition(
                     List.of(

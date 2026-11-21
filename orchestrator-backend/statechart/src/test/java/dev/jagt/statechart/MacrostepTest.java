@@ -18,26 +18,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class ChartStepTest {
+class MacrostepTest {
 
-  private final ChartBuilder<Event, Readings, String> powerOnly =
-      Chart.<Event, Readings, String>builder().region(Lamp.POWER, Power.OFF, Set.of(Power.ON));
+  private final StatechartBuilder<Event, Readings, String> powerOnly =
+      Statechart.<Event, Readings, String>builder().region(Lamp.POWER, Power.OFF, Set.of(Power.ON));
 
-  private final ChartBuilder<Event, Readings, String> powerAndMode =
-      Chart.<Event, Readings, String>builder()
+  private final StatechartBuilder<Event, Readings, String> powerAndMode =
+      Statechart.<Event, Readings, String>builder()
           .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
           .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT));
 
-  private final Chart<Event, Readings, String> litByPress =
-      Chart.<Event, Readings, String>builder()
+  private final Statechart<Event, Readings, String> litByPress =
+      Statechart.<Event, Readings, String>builder()
           .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
           .on(Lamp.POWER, Power.OFF, Press.class)
           .emit("lit")
           .to(Power.ON)
           .build();
 
-  private final Chart<Event, Readings, String> pressMovesPower =
-      Chart.<Event, Readings, String>builder()
+  private final Statechart<Event, Readings, String> pressMovesPower =
+      Statechart.<Event, Readings, String>builder()
           .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
           .on(Lamp.POWER, Power.OFF, Press.class)
           .to(Power.ON)
@@ -46,7 +46,7 @@ class ChartStepTest {
   @Test
   void regionMovesOnItsEventAndEmitsTheEffect() {
 
-    ChartStep<String> step =
+    Macrostep<String> step =
         litByPress.step(litByPress.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
@@ -55,40 +55,26 @@ class ChartStepTest {
 
   @ParameterizedTest
   @CsvSource({"BRIGHT, ON", "DIM, OFF"})
-  void guardOnAnotherRegionDecidesWhetherTheEdgeIsTaken(String mode, String power) {
-    Chart<Event, Readings, String> chart =
+  void guardOnAnotherRegionDecidesWhetherTheTransitionIsTaken(String mode, String power) {
+    Statechart<Event, Readings, String> chart =
         powerAndMode
             .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.MODE) == Mode.BRIGHT)
+            .when((active, event) -> active.state(Lamp.MODE) == Mode.BRIGHT)
             .to(Power.ON)
             .on(Lamp.MODE, Mode.DIM, Tick.class)
             .to(Mode.BRIGHT)
             .build();
     Configuration start = chart.configuration(Map.of("power", "OFF", "mode", mode));
 
-    ChartStep<String> step = chart.step(start, new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(start, new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.valueOf(power));
   }
 
   @Test
-  void guardCannotReadTheRegionItsEdgeLeaves() {
-    Chart<Event, Readings, String> chart =
-        powerOnly
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.POWER) == Power.OFF)
-            .to(Power.ON)
-            .build();
-    Configuration start = chart.initial();
-
-    assertThatThrownBy(() -> chart.step(start, new Readings(Mode.DIM), new Press()))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void exitEffectsComeBeforeEdgeEffectsEachInDocumentOrder() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+  void exitEffectsComeBeforeTransitionEffectsEachInDocumentOrder() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .onExit(Lamp.POWER, Power.OFF, "left off")
@@ -101,47 +87,47 @@ class ChartStepTest {
             .to(Mode.BRIGHT)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.effects()).containsExactly("left off", "left dim", "on", "bright");
   }
 
   @Test
-  void anEdgeEmitsAnEffectBuiltFromTheEventThatTookIt() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+  void transitionEmitsAnEffectBuiltFromTheEventThatTookIt() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emitFor(event -> "took " + event)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.effects()).containsExactly("took Press[]");
   }
 
   @Test
-  void stayEdgeEmitsItsEffectAndNoExitEffect() {
-    Chart<Event, Readings, String> chart =
+  void internalTransitionEmitsItsEffectAndNoExitEffect() {
+    Statechart<Event, Readings, String> chart =
         powerOnly
             .onExit(Lamp.POWER, Power.OFF, "left off")
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emit("pressed")
-            .stay()
+            .internal()
             .on(Lamp.POWER, Power.OFF, Tick.class)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
     assertThat(step.effects()).containsExactly("pressed");
   }
 
   @Test
-  void anExternalSelfEdgeStillExitsItsState() {
-    Chart<Event, Readings, String> chart =
+  void anExternalSelfTransitionStillExitsItsState() {
+    Statechart<Event, Readings, String> chart =
         powerOnly
             .onExit(Lamp.POWER, Power.OFF, "left off")
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -151,19 +137,19 @@ class ChartStepTest {
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.effects()).containsExactly("left off", "pressed");
   }
 
   @Test
   void parallelRegionsTakeTheSameEventAgainstTheConfigurationFromBeforeTheStep() {
-    Chart<Event, Readings, String> chart =
+    Statechart<Event, Readings, String> chart =
         powerAndMode
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .on(Lamp.MODE, Mode.DIM, Press.class)
-            .when((others, event) -> others.get(Lamp.POWER) == Power.OFF)
+            .when((active, event) -> active.state(Lamp.POWER) == Power.OFF)
             .to(Mode.BRIGHT)
             .build();
 
@@ -175,8 +161,8 @@ class ChartStepTest {
 
   @Test
   void raisedEventsRunToCompletionInTheOrderTheyWereRaised() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -192,7 +178,7 @@ class ChartStepTest {
             .to(Stage.HIGH)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.STAGE)).isEqualTo(Stage.HIGH);
     assertThat(step.effects()).containsExactly("on", "tick", "hit");
@@ -200,8 +186,8 @@ class ChartStepTest {
 
   @Test
   void cycleOfRaisedEventsStopsAtTheCeilingNamingTheCycle() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .raise(new Press())
@@ -221,8 +207,8 @@ class ChartStepTest {
 
   @Test
   void cycleRaisingExactlyTheCeilingIsAllowed() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .raise(new Tick())
@@ -230,34 +216,34 @@ class ChartStepTest {
             .raiseCeiling(1)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
   }
 
   @Test
-  void anEventNoEdgeTakesChangesNothing() {
+  void anEventNoTransitionTakesChangesNothing() {
     Configuration start = litByPress.initial();
 
-    ChartStep<String> step = litByPress.step(start, new Readings(Mode.DIM), new Hit());
+    Macrostep<String> step = litByPress.step(start, new Readings(Mode.DIM), new Hit());
 
     assertThat(step.configuration()).isEqualTo(start);
     assertThat(step.effects()).isEmpty();
   }
 
   @Test
-  void derivedRegionIsReadFromTheFactsWhateverTheEventAndNeverStored() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+  void datumIsReadFromTheDataModelWhateverTheEventAndNeverInTheConfiguration() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Readings::level)
+            .datum(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Event.class)
-            .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+            .when((active, event) -> active.datum(Lamp.LEVEL) == Mode.BRIGHT)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> bright = chart.step(chart.initial(), new Readings(Mode.BRIGHT), new Hit());
-    ChartStep<String> dim = chart.step(chart.initial(), new Readings(Mode.DIM), new Hit());
+    Macrostep<String> bright = chart.step(chart.initial(), new Readings(Mode.BRIGHT), new Hit());
+    Macrostep<String> dim = chart.step(chart.initial(), new Readings(Mode.DIM), new Hit());
 
     assertThat(chart.initial().toPlain()).containsOnlyKeys("power");
     assertThat(bright.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
@@ -265,28 +251,28 @@ class ChartStepTest {
   }
 
   @Test
-  void guardReadsTheDerivedRegionItNamesAmongSeveral() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+  void guardReadsTheDatumItNamesAmongSeveral() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Readings::level)
-            .derived(Lamp.GLOW, facts -> Mode.BRIGHT)
+            .datum(Lamp.LEVEL, Readings::level)
+            .datum(Lamp.GLOW, facts -> Mode.BRIGHT)
             .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.GLOW) == Mode.BRIGHT)
+            .when((active, event) -> active.datum(Lamp.GLOW) == Mode.BRIGHT)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
   }
 
   @Test
   void guardCannotReadRegionTheChartDoesNotHave() {
-    Chart<Event, Readings, String> chart =
+    Statechart<Event, Readings, String> chart =
         powerOnly
             .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.MODE) == Mode.BRIGHT)
+            .when((active, event) -> active.state(Lamp.MODE) == Mode.BRIGHT)
             .to(Power.ON)
             .build();
     Configuration start = chart.initial();
@@ -296,19 +282,19 @@ class ChartStepTest {
   }
 
   @Test
-  void derivedRegionNoGuardReadsIsNeverComputed() {
+  void datumNoGuardReadsIsNeverComputed() {
     AtomicInteger computed = new AtomicInteger();
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(
+            .datum(
                 Lamp.LEVEL,
                 facts -> {
                   computed.incrementAndGet();
                   return facts.level();
                 })
             .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+            .when((active, event) -> active.datum(Lamp.LEVEL) == Mode.BRIGHT)
             .to(Power.ON)
             .build();
 
@@ -318,23 +304,23 @@ class ChartStepTest {
   }
 
   @Test
-  void derivedRegionTwoGuardsReadIsComputedOnceForTheStep() {
+  void datumTwoGuardsReadIsComputedOnceForTheMacrostep() {
     AtomicInteger computed = new AtomicInteger();
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
-            .derived(
+            .datum(
                 Lamp.LEVEL,
                 facts -> {
                   computed.incrementAndGet();
                   return facts.level();
                 })
             .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+            .when((active, event) -> active.datum(Lamp.LEVEL) == Mode.BRIGHT)
             .to(Power.ON)
             .on(Lamp.MODE, Mode.DIM, Press.class)
-            .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+            .when((active, event) -> active.datum(Lamp.LEVEL) == Mode.BRIGHT)
             .to(Mode.BRIGHT)
             .build();
 
@@ -345,16 +331,16 @@ class ChartStepTest {
 
   @Test
   void groupThatStaysIsTakenWhereItsGuardHoldsAndMovesNothing() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Readings::level)
+            .datum(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .onMatching(
                 Lamp.POWER, Set.of(Power.OFF, Power.ON), "probe", event -> event instanceof Hit)
-            .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
-            .stay()
+            .when((active, event) -> active.datum(Lamp.LEVEL) == Mode.BRIGHT)
+            .internal()
             .build();
     Configuration start = chart.initial();
 
@@ -372,5 +358,125 @@ class ChartStepTest {
     assertThatThrownBy(
             () -> pressMovesPower.takes(Lamp.MODE, start, new Readings(Mode.DIM), new Press()))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void alwaysTransitionIsTakenOnceTheEventIsSpent() {
+    Statechart<Event, Readings, String> chart =
+        powerOnly.always(Lamp.POWER, Power.OFF).emit("auto").to(Power.ON).build();
+
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Tick());
+
+    assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
+    assertThat(step.effects()).containsExactly("auto");
+  }
+
+  @Test
+  void alwaysTransitionWaitsWhileItsGuardRefuses() {
+    Statechart<Event, Readings, String> chart =
+        powerAndMode
+            .always(Lamp.POWER, Power.OFF)
+            .whenActive(active -> active.state(Lamp.MODE) == Mode.BRIGHT)
+            .to(Power.ON)
+            .on(Lamp.MODE, Mode.DIM, Press.class)
+            .to(Mode.BRIGHT)
+            .build();
+
+    Macrostep<String> idle = chart.step(chart.initial(), new Readings(Mode.DIM), new Tick());
+    Macrostep<String> pressed = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+
+    assertThat(idle.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
+    assertThat(pressed.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
+  }
+
+  @Test
+  void alwaysCycleStopsAtTheCeilingNamingTheCycle() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
+            .region(Lamp.POWER, Power.OFF)
+            .always(Lamp.POWER, Power.OFF)
+            .to(Power.ON)
+            .always(Lamp.POWER, Power.ON)
+            .to(Power.OFF)
+            .raiseCeiling(5)
+            .build();
+    Configuration start = chart.initial();
+
+    assertThatThrownBy(() -> chart.step(start, new Readings(Mode.DIM), new Tick()))
+        .isInstanceOf(RaiseCeilingExceeded.class)
+        .hasMessageContaining("power OFF->ON")
+        .hasMessageContaining("power ON->OFF");
+  }
+
+  @Test
+  void alwaysTransitionRefusesGuardThatReadsEvent() {
+    TransitionBuilder<Event, Readings, String, Power> always =
+        powerOnly.always(Lamp.POWER, Power.OFF);
+
+    assertThatThrownBy(() -> always.when((active, event) -> true))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void alwaysTransitionRefusesEffectThatReadsEvent() {
+    TransitionBuilder<Event, Readings, String, Power> always =
+        powerOnly.always(Lamp.POWER, Power.OFF);
+
+    assertThatThrownBy(() -> always.emitFor(event -> "x"))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void entryRaiseRunsAfterTheEntryEffects() {
+    Statechart<Event, Readings, String> chart =
+        powerOnly
+            .onEntry(Lamp.POWER, Power.ON, "entered")
+            .raiseOnEntry(Lamp.POWER, Power.ON, new Tick())
+            .on(Lamp.POWER, Power.OFF, Press.class)
+            .to(Power.ON)
+            .on(Lamp.POWER, Power.ON, Tick.class)
+            .emit("ticked")
+            .internal()
+            .build();
+
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+
+    assertThat(step.effects()).containsExactly("entered", "ticked");
+  }
+
+  @Test
+  void everyRegionFinalRaisesTheChartsCompletionAndHalts() {
+    Statechart<Event, Readings, String> chart =
+        powerAndMode
+            .completion(done -> done.wholeChart() ? new Tick() : new Hit())
+            .on(Lamp.POWER, Power.OFF, Press.class)
+            .to(Power.ON)
+            .on(Lamp.MODE, Mode.DIM, Press.class)
+            .to(Mode.BRIGHT)
+            .on(Lamp.POWER, Power.ON, Tick.class)
+            .emit("chart done")
+            .internal()
+            .build();
+
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+
+    assertThat(step.effects()).containsExactly("chart done");
+    assertThat(step.halted()).isTrue();
+  }
+
+  @Test
+  void chartKeepsRunningWhileRegionIsOpen() {
+    Statechart<Event, Readings, String> chart =
+        powerAndMode
+            .on(Lamp.POWER, Power.OFF, Press.class)
+            .to(Power.ON)
+            .on(Lamp.MODE, Mode.DIM, Hit.class)
+            .to(Mode.BRIGHT)
+            .build();
+
+    Macrostep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+
+    assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
+    assertThat(step.halted()).isFalse();
   }
 }

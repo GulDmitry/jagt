@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.task.stop;
 import java.util.Locale;
 
 /** What a guard refused a task. */
-public enum Guard {
+public enum GuardKind {
 
   /** A shell line the session was about to run. */
   SESSION_LINE,

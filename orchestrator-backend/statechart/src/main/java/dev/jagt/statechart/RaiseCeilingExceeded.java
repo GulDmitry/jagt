@@ -10,7 +10,7 @@ public final class RaiseCeilingExceeded extends RuntimeException {
     super(
         "more than "
             + ceiling
-            + " internal events in one step, the cycle runs through: "
+            + " microsteps after the first in one step, the cycle runs through: "
             + String.join(", ", moves.subList(Math.max(0, moves.size() - 6), moves.size())));
   }
 }

@@ -16,16 +16,16 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class ChartTest {
+class StatechartTest {
 
-  private final ChartBuilder<Event, Readings, String> stageFromLow =
-      Chart.<Event, Readings, String>builder()
+  private final StatechartBuilder<Event, Readings, String> stageFromLow =
+      Statechart.<Event, Readings, String>builder()
           .region(Lamp.STAGE, Stage.LOW)
           .on(Lamp.STAGE, Stage.LOW, Press.class)
           .to(Stage.MID);
 
-  private final Chart<Event, Readings, String> pressMovesPower =
-      Chart.<Event, Readings, String>builder()
+  private final Statechart<Event, Readings, String> pressMovesPower =
+      Statechart.<Event, Readings, String>builder()
           .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
           .on(Lamp.POWER, Power.OFF, Press.class)
           .to(Power.ON)
@@ -33,38 +33,38 @@ class ChartTest {
 
   @Test
   void stateNothingReachesIsReported() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.MID, Stage.HIGH))
             .on(Lamp.STAGE, Stage.LOW, Press.class)
             .to(Stage.MID);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems()).containsExactly("state stage.HIGH is unreachable"));
   }
 
   @Test
-  void nonFinalStateWithNoEdgeOutIsReported() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+  void nonFinalStateWithNoTransitionOutIsReported() {
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems()).containsExactly("state power.ON has no way out"));
   }
 
   @Test
   void regionDeclaredTwiceIsReported() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -72,57 +72,56 @@ class ChartTest {
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems()).contains("region power is declared more than once"));
   }
 
   @Test
-  void edgeOnDerivedRegionIsReported() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
-            .derived(Lamp.LEVEL, Readings::level)
-            .on(Lamp.LEVEL, Mode.DIM, Press.class)
+  void transitionOnDatumIsReported() {
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
+            .datum(Lamp.LEVEL, Readings::level)
+            .on(Lamp.LEVEL_REGION, Mode.DIM, Press.class)
             .to(Mode.BRIGHT);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
-                assertThat(invalid.problems())
-                    .containsExactly("derived region level has a transition"));
+                assertThat(invalid.problems()).containsExactly("datum level has a transition"));
   }
 
   @Test
-  void derivedRegionDeclaredTwiceIsReported() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+  void datumDeclaredTwiceIsReported() {
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Readings::level)
-            .derived(Lamp.LEVEL, Readings::level)
+            .datum(Lamp.LEVEL, Readings::level)
+            .datum(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems())
                     .containsExactly("region level is declared more than once"));
   }
 
   @Test
-  void regionIsJudgedByItsOwnEdgesAlone() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+  void regionIsJudgedByItsOwnTransitionsAlone() {
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
-            .region(Lamp.GLOW, Mode.DIM, Set.of(Mode.BRIGHT))
+            .region(Lamp.GLOW_REGION, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.MODE, Mode.DIM, Tick.class)
             .to(Mode.BRIGHT);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems())
                     .containsExactly(
@@ -131,15 +130,15 @@ class ChartTest {
 
   @Test
   void stateOnlyAnUnreachableStateLeadsToIsUnreachable() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.LOW, Stage.HIGH))
             .on(Lamp.STAGE, Stage.MID, Press.class)
             .to(Stage.HIGH);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems())
                     .containsExactly(
@@ -148,15 +147,15 @@ class ChartTest {
 
   @Test
   void everyProblemIsReportedAtOnce() {
-    ChartBuilder<Event, Readings, String> builder =
-        Chart.<Event, Readings, String>builder()
+    StatechartBuilder<Event, Readings, String> builder =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of())
             .on(Lamp.STAGE, Stage.LOW, Press.class)
             .to(Stage.MID);
 
     assertThatThrownBy(builder::build)
         .isInstanceOfSatisfying(
-            ChartInvalid.class,
+            StatechartInvalid.class,
             invalid ->
                 assertThat(invalid.problems())
                     .containsExactly(
@@ -167,8 +166,8 @@ class ChartTest {
 
   @Test
   void configurationRoundTripsThroughItsPlainData() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -204,7 +203,7 @@ class ChartTest {
     assertThatThrownBy(() -> pressMovesPower.configuration(plain))
         .isInstanceOfSatisfying(
             InvalidConfiguration.class,
-            invalid -> assertThat(invalid.problems()).containsExactly("no stored region mode"));
+            invalid -> assertThat(invalid.problems()).containsExactly("no region mode"));
   }
 
   @Test
@@ -216,11 +215,11 @@ class ChartTest {
 
   @Test
   void theRenderingIsStableMermaidDiagramOfEveryRegion() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
-            .derived(Lamp.LEVEL, Readings::level)
+            .datum(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .on(Lamp.POWER, Power.ON, Press.class)
@@ -249,13 +248,13 @@ class ChartTest {
                     mode_DIM --> mode_BRIGHT : Tick
                     mode_BRIGHT --> [*]
                 }
-                %% derived level
+                %% data level
             """);
   }
 
   @Test
-  void anEdgeDeclaredFromSetIsDrawnAsOneLabelledEdgeFromTheSet() {
-    Chart<Event, Readings, String> chart =
+  void transitionDeclaredFromSetIsDrawnAsOneLabelledTransitionFromTheSet() {
+    Statechart<Event, Readings, String> chart =
         stageFromLow
             .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID), "tick", Tick.class::isInstance)
             .to(Stage.HIGH)
@@ -281,9 +280,9 @@ class ChartTest {
   }
 
   @Test
-  void anEdgeDeclaredFromFewOfManyStatesNamesThoseStates() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+  void transitionDeclaredFromFewOfManyStatesNamesThoseStates() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.GEAR, Gear.P, Set.of(Gear.D))
             .on(Lamp.GEAR, Gear.P, Press.class)
             .to(Gear.R)
@@ -313,8 +312,8 @@ class ChartTest {
   }
 
   @Test
-  void anEdgeDeclaredFromEveryStateIsDrawnOnce() {
-    Chart<Event, Readings, String> chart =
+  void transitionDeclaredFromEveryStateIsDrawnOnce() {
+    Statechart<Event, Readings, String> chart =
         stageFromLow
             .onMatching(
                 Lamp.STAGE,
@@ -341,9 +340,9 @@ class ChartTest {
   }
 
   @Test
-  void anEdgeDeclaredFromSetStaysInTheSourceThatIsItsTarget() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
+  void transitionDeclaredFromSetStaysInTheSourceThatIsItsTarget() {
+    Statechart<Event, Readings, String> chart =
+        Statechart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
             .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID), "tick", Tick.class::isInstance)
             .emit("moved")
@@ -352,7 +351,7 @@ class ChartTest {
             .to(Stage.HIGH)
             .build();
 
-    ChartStep<String> step =
+    Macrostep<String> step =
         chart.step(chart.configuration(Map.of("stage", "MID")), new Readings(Mode.DIM), new Tick());
 
     assertThat(step.effects()).containsExactly("moved");

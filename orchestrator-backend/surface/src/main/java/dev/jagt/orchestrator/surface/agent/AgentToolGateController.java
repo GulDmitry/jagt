@@ -11,7 +11,7 @@ import dev.jagt.orchestrator.service.plan.PlanFirst;
 import dev.jagt.orchestrator.service.presence.KeepAlive;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.Remote;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.GuardKind;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.util.Map;
@@ -73,7 +73,7 @@ public class AgentToolGateController {
         .refusal(call.command(), taskBranch, request.getLocalPort(), remote)
         .map(reason -> {
           stateService.updateTask(
-              Objects.requireNonNull(taskBranch), task -> task.refused(Guard.SESSION_LINE));
+              Objects.requireNonNull(taskBranch), task -> task.refused(GuardKind.SESSION_LINE));
           log.atInfo().setMessage("session line refused").addKeyValue("task", taskBranch).log();
           return denied(reason);
         })
@@ -94,7 +94,8 @@ public class AgentToolGateController {
         .flatMap(owner ->
             PlanFirst.refusal(owner.getValue(), call.file())
                 .map(reason -> {
-                  stateService.updateTask(owner.getKey(), task -> task.refused(Guard.PLAN_FIRST));
+                  stateService.updateTask(
+                      owner.getKey(), task -> task.refused(GuardKind.PLAN_FIRST));
                   log.atInfo()
                       .setMessage("write refused")
                       .addKeyValue("task", owner.getKey())

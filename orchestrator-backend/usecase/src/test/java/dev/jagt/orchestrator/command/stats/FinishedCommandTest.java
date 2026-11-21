@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.service.task.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.GuardKind;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Path;
 import java.util.List;
@@ -58,13 +58,13 @@ class FinishedCommandTest {
     TaskState twice =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .build()
-            .refused(Guard.SESSION_LINE)
-            .refused(Guard.SESSION_LINE);
+            .refused(GuardKind.SESSION_LINE)
+            .refused(GuardKind.SESSION_LINE);
     TaskState once =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .build()
-            .refused(Guard.SESSION_LINE)
-            .refused(Guard.STATUS_REPORT);
+            .refused(GuardKind.SESSION_LINE)
+            .refused(GuardKind.STATUS_REPORT);
 
     String report =
         FinishedCommand.render(

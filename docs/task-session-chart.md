@@ -92,19 +92,19 @@ stateDiagram-v2
         session_GONE --> session_GONE : ended
         session_GONE --> session_IDLE : restarted
     }
-    %% derived ask
-    %% derived acceptance beneath a read
-    %% derived review request
-    %% derived live deploy
-    %% derived agent live
-    %% derived git changed
-    %% derived stopped
-    %% derived tier above
-    %% derived repo requested
-    %% derived several repos
-    %% derived request merged
-    %% derived shipped without request
-    %% derived revert conflict
-    %% derived scenarios ready
-    %% derived shell escape
+    %% data ask
+    %% data acceptance beneath a read
+    %% data review request
+    %% data live deploy
+    %% data agent live
+    %% data git changed
+    %% data stopped
+    %% data tier above
+    %% data repo requested
+    %% data several repos
+    %% data request merged
+    %% data shipped without request
+    %% data revert conflict
+    %% data scenarios ready
+    %% data shell escape
 ```
