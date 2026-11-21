@@ -11,6 +11,7 @@ import fitness.core.run.SourceRoots;
 import fitness.scan.measure.Assertionless;
 import fitness.scan.measure.Complexity;
 import fitness.scan.measure.Duplication;
+import fitness.scan.measure.Links;
 import fitness.scan.measure.MockedTypes;
 import fitness.scan.measure.Sentences;
 import java.io.IOException;
@@ -37,7 +38,10 @@ public final class ScanEngine implements Engine {
   private static final Set<String> BUILD_OUTPUT = Set.of("build", "bin", ".gradle");
   private static final String ALL_JAVA = "**/*.java";
   private static final Map<String, Listing> LISTINGS =
-      Map.of("test:assertionless", Assertionless::tests);
+      Map.of(
+          "test:assertionless", Assertionless::tests,
+          "link:unresolved", Links::unresolved,
+          "link:nested", Links::nested);
   private static final Map<String, Sizing> SIZINGS =
       Map.of(
           "file:lines", Texts::fileLines,
@@ -71,6 +75,7 @@ public final class ScanEngine implements Engine {
                 "duplicate",
                 "test",
                 "package",
+                "link",
                 "project"),
         "measure",
             Set.of(
@@ -82,7 +87,9 @@ public final class ScanEngine implements Engine {
                 "mocked-types",
                 "classes",
                 "comment-percent",
-                "assertionless"),
+                "assertionless",
+                "unresolved",
+                "nested"),
         "set", Set.of(),
         "glob", Set.of(),
         "requires", Set.of(),

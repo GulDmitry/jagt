@@ -57,6 +57,14 @@ technical:
       editor-launcher-not-a-default: { engine: scan, glob: "src/main/resources/application.yml", per: file, regex: "(?m)^ *editor(-diff)?-command:\\s*\\[\\s*[^\\s\\]]", governs: count, max: 0, hint: "no editor is a default: an uncommented editor-command in application.yml stays empty" }
       suite-stats-reads-no-other-project: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suite-stats.gradle", per: file, regex: "provider\\s*\\{\\s*allprojects", governs: count, max: 0 }
       spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
+      skill-lines: { engine: scan, glob: "../.claude/skills/*/SKILL.md", per: file, measure: lines, governs: size, max: 500, hint: "a skill file: split into files one level deep (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)" }
+      skill-name: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A(?!---\\n(?:(?!^---).)*?^name: [a-z0-9-]{1,64}$)", governs: count, max: 0, hint: "frontmatter name: lowercase letters, digits and hyphens, at most 64 characters" }
+      skill-description: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A(?!---\\n(?:(?!^---).)*?^description: *(?:[^\\s>|]|[>|][-+]?\\s*\\n\\s+\\S))", governs: count, max: 0, hint: "frontmatter description: present and not empty" }
+      skill-description-characters: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A---\\n(?:(?!^---).)*?^description: (?:[^\\n]|\\n(?=[ \\t])){1025,}", governs: count, max: 0, hint: "frontmatter description: at most 1024 characters" }
+      skill-links-resolve: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/skills/*/*.md,../.claude/rules/*.md", per: link, measure: unresolved, governs: count, max: 0 }
+      skill-references-one-level: { engine: scan, glob: "../.claude/skills/*/SKILL.md", per: link, measure: nested, governs: count, max: 0, hint: "a file a skill links links no further file of the skill" }
+      agent-lines: { engine: scan, glob: "../.claude/agents/*.md", per: file, measure: lines, governs: size, max: 200 }
+      rule-pointer-lines: { engine: scan, glob: "../.claude/rules/*.md", per: file, regex: "(?s)\\A---\\n.*?\\n---\\n(?:[^\\n]*\\n){6,}", governs: count, max: 0, hint: "a rule pointer: its body is a link of five lines at most, its rule lives in docs/rules" }
     modifiability:
       constructors-called-from-main: { fitness: ConstructorsCalledFromMainFitness, governs: count, max: 0 }
       members-called-from-main: { fitness: MembersCalledFromMainFitness, governs: count, max: 0 }
