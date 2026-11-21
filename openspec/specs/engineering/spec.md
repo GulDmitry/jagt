@@ -70,8 +70,7 @@ An architectural decision SHALL have its record, a spec capability its `docs/fea
 - **THEN** `DecisionIndexTest` or `FeaturesTest` fails; `SpecLimitsTest` holds each spec's purpose and requirement length
 
 ### Requirement: Practices name their checks
-A scenario of this capability SHALL name only test classes that exist, and every rule under `docs/rules` SHALL be reached from the
-practices page.
+A scenario of this capability SHALL name only test classes that exist, and every rule under `docs/rules` SHALL be reached from practices.
 #### Scenario: A scenario names a class that is not in the tree
 - **WHEN** a scenario of this capability names a test class that exists in no source set **THEN** `EngineeringSpecTest` fails naming it
 #### Scenario: A rule is not reached
@@ -93,8 +92,7 @@ A write to the board SHALL carry the page's Origin, a peer other than loopback S
 - **THEN** `AgentDoorFilterTest` and `McpProtocolServiceTest` hold it refused; `ToolGateTest` holds the tool gate
 
 ### Requirement: Identity is a password hash or an issuer
-A password SHALL be stored as a BCrypt hash read from an environment name.
-An issuer's subject SHALL be allow-listed; no default credential SHALL exist.
+A password SHALL be a BCrypt hash read from an environment name, an issuer's subject allow-listed; no default credential SHALL exist.
 #### Scenario: Auth is none off loopback
 - **WHEN** `auth` is `none` on a non-loopback bind
 - **THEN** `AuthCheckTest` fails the start; `OidcLoginOnTomcatTest` holds the issuer login, `MasterTokenTest` the token comparison
@@ -115,20 +113,14 @@ timeout and forwarded headers; the Ingress SHALL carry a tls block.
 - **THEN** `ServerStarterTest` and `KubernetesManifestsTest` hold the cookie, the timeout and the tls block; TLS ends at the ingress
 
 ### Requirement: Management is exposed as little as possible
-Only the health probes SHALL be public, and a secret SHALL be named by its environment key, never held in a file or a log.
+Only the health probes SHALL be public, metrics and build info SHALL answer the owner, a secret SHALL be named by its environment key.
 #### Scenario: A secret reaches a log
 - **WHEN** a log line would carry a password, a secret or a token
 - **THEN** `LogbackTargetTest` and `failure-cause-from-message` hold the log shape; no secret key is logged in main (grep, 2026-11-16)
-
-### Requirement: Metrics and build info answer the owner
-The running process SHALL answer `/actuator/metrics` and `/actuator/info`.
 #### Scenario: The owner reads the running process
-- **WHEN** the owner reads the running process **THEN** `BoardOnTomcatTest` pins both
-
-### Requirement: The web surface has a threat model
-`docs/threat-model.md` SHALL name every filter and route of the web surface (V15).
+- **WHEN** the owner reads `/actuator/metrics` or `/actuator/info` **THEN** `BoardOnTomcatTest` pins both
 #### Scenario: The web surface changes
-- **WHEN** a filter or a route is added **THEN** `ThreatModelTest` fails on an omitted one
+- **WHEN** a filter or a route is added **THEN** `ThreatModelTest` fails on one `docs/threat-model.md` omits (V15)
 
 ### Requirement: Liveness, readiness and shutdown are probed
 The process SHALL answer a startup, a liveness and a readiness probe, and SHALL stop gracefully on a signal.
@@ -143,13 +135,8 @@ State SHALL be written atomically and read across a minor.
 - **WHEN** an assistant or a host fails on infrastructure
 - **THEN** `AssistantBreakerTest`, `InfraRetryTest` and `RetryPolicyTest` hold the wait; `AbortedConnectionFilterTest` holds an aborted request
 #### Scenario: State is read by a newer minor
-- **WHEN** a newer minor reads an older state file or a write is torn **THEN** `StateServiceCompatibilityTest` and `AtomicFilesTest` hold the recovery
-
-### Requirement: An upgrade keeps state and can roll back
-A newer minor SHALL replace an older one without losing state.
-#### Scenario: A newer minor replaces an older one
-- **WHEN** a newer minor replaces an older one
-- **THEN** `StateServiceCompatibilityTest` holds every shipped minor's fixture, `docs/server.md` the rollback
+- **WHEN** a newer minor reads an older state file or a write is torn **THEN** `AtomicFilesTest` holds the recovery
+- **AND** `StateServiceCompatibilityTest` holds every shipped minor's fixture, `docs/server.md` the rollback
 
 ### Requirement: Every store and loop is bounded
 A store SHALL have a ceiling, a headless call a spend ceiling and a loop a bound per task. The JVM heap SHALL fit the pod; tasks have a cap.
@@ -207,9 +194,7 @@ Every test run SHALL end in mutants on the diff, each survivor judged.
 
 ### Requirement: An open gap is listed by what is missing
 A gate no stack meets yet SHALL be listed here by what is missing, never silent, each gap once. The work closing it SHALL write the gate above.
-#### Scenario: A run's limit is not asserted
+#### Scenario: The open gaps
 - **WHEN** `pitestDiff` or the release gate runs **THEN** no rule asserts its limit: gap
-#### Scenario: The board's CI step is not asserted
-- **WHEN** the board's CI step is unwired **THEN** no rule fails: gap
-#### Scenario: The board's mutants are not per diff
-- **WHEN** a board JS line changes **THEN** Stryker runs on demand, never per diff: gap
+- **AND** an unwired board CI step fails no rule: gap
+- **AND** a changed board JS line gets Stryker on demand, never per diff: gap
