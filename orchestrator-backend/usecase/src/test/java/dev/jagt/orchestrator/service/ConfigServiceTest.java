@@ -14,11 +14,13 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
@@ -65,7 +67,8 @@ class ConfigServiceTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             mock(ActStops.class),
-            checkers);
+            checkers,
+            new KeptNumbers(new ReachLedger()));
   }
 
   @Test
@@ -264,7 +267,8 @@ class ConfigServiceTest {
                 new ConfigSource(paths, new FakeConfigInputs()),
                 mock(AgentRuntime.class),
                 stops,
-                checkers)
+                checkers,
+                new KeptNumbers(new ReachLedger()))
             .load()
             .arbiter()
             .mode();
@@ -282,7 +286,8 @@ class ConfigServiceTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             stops,
-            checkers);
+            checkers,
+            new KeptNumbers(new ReachLedger()));
 
     String mode = stoppedBoard.load().arbiter().mode();
 
@@ -317,7 +322,8 @@ class ConfigServiceTest {
                 new ConfigSource(paths, new FakeConfigInputs()),
                 runtime,
                 mock(ActStops.class),
-                checkers)
+                checkers,
+                new KeptNumbers(new ReachLedger()))
             .load()
             .arbiter()
             .mode();
@@ -393,7 +399,12 @@ class ConfigServiceTest {
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
 
     ConfigFile config =
-        new ConfigService(new ConfigSource(paths, new FakeConfigInputs()), runtime, stops, checkers)
+        new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()),
+                runtime,
+                stops,
+                checkers,
+                new KeptNumbers(new ReachLedger()))
             .load();
 
     assertThat(config.projects()).isEmpty();
@@ -411,7 +422,8 @@ class ConfigServiceTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             stops,
-            checkers);
+            checkers,
+            new KeptNumbers(new ReachLedger()));
 
     assertThat(config.project("api").path()).isEqualTo("/srv/api");
     assertThatThrownBy(() -> config.project("web"))
@@ -482,14 +494,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {
-        "null,null,60",
-        "null,300,300",
-        "null,30,60",
-        "null,100,100",
-        "100,300,300",
-        "100,100,100"
-      },
+      value = {"null,null,60", "null,300,300", "null,100,100", "100,300,300", "100,100,100"},
       nullValues = "null")
   void resolvesTheLongestWaitOnRequestOnlyReviewerMovesNeverBelowTheLongestPoll(
       Integer max, Integer waiting, int expected) {
@@ -503,7 +508,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,null,60", "100,null,100", "10,30,30", "10,9,60", "10,10,10", "100,50,100"},
+      value = {"null,null,60", "100,null,100", "10,30,30", "10,10,10"},
       nullValues = "null")
   void resolvesTheLongestWaitBetweenTwoAutoReviewPollsNeverBelowTheShortest(
       Integer min, Integer max, int expected) {
@@ -513,6 +518,108 @@ class ConfigServiceTest {
             .withMaxIntervalMinutes(max);
 
     assertThat(review.maxIntervalMinutesOrDefault()).isEqualTo(expected);
+  }
+
+  @Test
+  void keepsTheLastValidRoundsAndMarksTheBoardWhenLiveEditWritesOneOutsideItsRange()
+      throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: 7 }\n");
+    live.load();
+
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: -1 }\n");
+
+    assertThat(live.load().loopBreaker().roundsOrDefault()).isEqualTo(7);
+    assertThat(reach.standing())
+        .containsExactly(
+            new ReachLost(
+                "config",
+                "orchestrator.loopBreaker.rounds",
+                List.of(),
+                "is -1: it must be 1 to 19; the read keeps 7"));
+  }
+
+  @Test
+  void readsTheDefaultAndMarksTheBoardWhenNoValidValueWasReadBeforeTheEdit() throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n");
+
+    assertThat(live.load().maxTasksOrDefault()).isEqualTo(50);
+    assertThat(reach.standing())
+        .extracting(ReachLost::said)
+        .containsExactly("is 0: it must be at least 1; the read keeps its default");
+  }
+
+  @Test
+  void remembersValidNumberReadWhileAnotherKeyStandsRefused() throws Exception {
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(new ReachLedger()));
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n  loopBreaker: { rounds: 7 }\n");
+    live.load();
+
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n  loopBreaker: { rounds: -1 }\n");
+
+    assertThat(live.load().loopBreaker().roundsOrDefault()).isEqualTo(7);
+  }
+
+  @Test
+  void clearsTheBoardMarkOnTheReadThatFindsTheEditCorrected() throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: 99 }\n");
+    live.load();
+
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: 5 }\n");
+
+    assertThat(live.load().loopBreaker().roundsOrDefault()).isEqualTo(5);
+    assertThat(reach.standing()).isEmpty();
+  }
+
+  @Test
+  void refusesLiveMaxIntervalBelowTheMinIntervalInsteadOfRaisingIt() throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  autoReview: { minIntervalMinutes: 10, maxIntervalMinutes: 9 }\n");
+
+    assertThat(live.load().autoReview().maxIntervalMinutesOrDefault()).isEqualTo(60);
+    assertThat(reach.standing())
+        .extracting(ReachLost::said)
+        .containsExactly("is 9: it must be at least 10; the read keeps its default");
   }
 
   @ParameterizedTest

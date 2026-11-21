@@ -21,7 +21,9 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,7 +71,8 @@ class ProjectSetupTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
     when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
     when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
         .thenReturn(new Processes.Result(0, repo + "\n", ""));

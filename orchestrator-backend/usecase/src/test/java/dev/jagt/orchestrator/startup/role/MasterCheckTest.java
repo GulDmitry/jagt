@@ -17,7 +17,9 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,7 +69,8 @@ class MasterCheckTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
             mock(dev.jagt.orchestrator.service.master.ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
 
     MasterCheck realCheck =
         new MasterCheck(real, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);

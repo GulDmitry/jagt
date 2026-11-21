@@ -14,7 +14,9 @@ import dev.jagt.orchestrator.flow.role.CheckerRole;
 import dev.jagt.orchestrator.flow.role.Roles;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
@@ -56,7 +58,11 @@ class RoleCheckStartupTest {
         new RoleCheck(
             roles,
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+                new ConfigSource(paths, new FakeConfigInputs()),
+                agents,
+                actStops,
+                checkers,
+                new KeptNumbers(new ReachLedger())),
             paths);
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -154,7 +160,11 @@ class RoleCheckStartupTest {
         new RoleCheck(
             new InstalledRoles(paths),
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+                new ConfigSource(paths, new FakeConfigInputs()),
+                agents,
+                actStops,
+                checkers,
+                new KeptNumbers(new ReachLedger())),
             paths);
 
     assertThat(check.notes()).isEmpty();
@@ -177,7 +187,11 @@ class RoleCheckStartupTest {
 
     ConfigService config =
         new ConfigService(
-            new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers);
+            new ConfigSource(paths, new FakeConfigInputs()),
+            agents,
+            actStops,
+            checkers,
+            new KeptNumbers(new ReachLedger()));
 
     RoleCheck check = new RoleCheck(new InstalledRoles(paths), config, paths);
 

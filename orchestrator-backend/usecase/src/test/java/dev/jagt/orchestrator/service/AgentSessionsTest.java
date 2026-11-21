@@ -30,6 +30,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -94,7 +95,8 @@ class AgentSessionsTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
             new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock())),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
     sessions =
         new AgentSessions(
             config,

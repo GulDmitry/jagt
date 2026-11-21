@@ -39,6 +39,7 @@ import dev.jagt.orchestrator.service.CarriedBlock;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.HandBack;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.service.assistant.KeptTicketTexts;
@@ -57,6 +58,7 @@ import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.review.ReviewSweepService;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.review.Rounds;
@@ -257,7 +259,8 @@ public final class FakeJobWorld implements AutoCloseable {
             new ConfigSource(paths, new FakeConfigInputs()),
             runtime,
             new ActStops(new MasterBrake(paths), new BoardStop(paths, clock)),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
     GitCommands git =
         new GitCommands(
             new FakeProcesses(root.resolve(".fake")),

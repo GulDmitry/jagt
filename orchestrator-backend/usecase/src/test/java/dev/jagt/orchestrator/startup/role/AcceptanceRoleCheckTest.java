@@ -11,7 +11,9 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
@@ -20,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class AcceptanceRoleCheckTest {
+
+  private final KeptNumbers kept = new KeptNumbers(new ReachLedger());
 
   private final AgentRuntime agents = mock(AgentRuntime.class);
   private final ActStops actStops = mock(ActStops.class);
@@ -36,7 +40,7 @@ class AcceptanceRoleCheckTest {
         new AcceptanceRoleCheck(
             roles,
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers, kept),
             paths);
 
     assertThat(check.problems()).isEmpty();
@@ -68,7 +72,8 @@ class AcceptanceRoleCheckTest {
                         new ConfigSource(paths, new FakeConfigInputs()),
                         agents,
                         actStops,
-                        checkers),
+                        checkers,
+                        kept),
                     paths)
                 .problems())
         .singleElement()

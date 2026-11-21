@@ -15,7 +15,9 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +52,8 @@ class ConfigCheckTest {
                 new ConfigSource(new OrchestratorPaths(properties), new FakeConfigInputs()),
                 mock(AgentRuntime.class),
                 mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new KeptNumbers(new ReachLedger())),
             new OrchestratorPaths(properties),
             sessions,
             new WorkingDirHost(root));
@@ -266,6 +269,20 @@ class ConfigCheckTest {
         "orchestrator:\n  loopBreaker: { rounds: %d }\n".formatted(rounds));
 
     assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void refusesWaitingMaxIntervalBelowTheMaxIntervalSayingAtLeastTheMax() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  autoReview: { maxIntervalMinutes: 90, waitingMaxIntervalMinutes: 80 }\n");
+
+    assertThat(check.problems())
+        .containsExactly(
+            new Problem(
+                "orchestrator.autoReview.waitingMaxIntervalMinutes",
+                "orchestrator.autoReview.waitingMaxIntervalMinutes is 80: it must be at least"
+                    + " 90."));
   }
 
   @Test

@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.protocol.plan.PlanProbes;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -66,7 +67,8 @@ class HandBackTest {
               new ConfigSource(paths, new FakeConfigInputs()),
               mock(AgentRuntime.class),
               new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock())),
-              new Checkers(new TaskChart(Composition.builtIn())));
+              new Checkers(new TaskChart(Composition.builtIn())),
+              new KeptNumbers(new ReachLedger()));
       handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
     }
 

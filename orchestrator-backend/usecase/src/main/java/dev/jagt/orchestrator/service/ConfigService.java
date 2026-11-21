@@ -584,17 +584,12 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
       public int maxIntervalMinutesOrDefault() {
         int min = minIntervalMinutesOrDefault();
-        if (maxIntervalMinutes == null || maxIntervalMinutes < min) {
-          return Math.max(60, min);
-        }
-        return maxIntervalMinutes;
+        return maxIntervalMinutes == null ? Math.max(60, min) : maxIntervalMinutes;
       }
 
       public int waitingMaxIntervalMinutesOrDefault() {
         int max = maxIntervalMinutesOrDefault();
-        return waitingMaxIntervalMinutes == null || waitingMaxIntervalMinutes < max
-            ? Math.max(60, max)
-            : waitingMaxIntervalMinutes;
+        return waitingMaxIntervalMinutes == null ? Math.max(60, max) : waitingMaxIntervalMinutes;
       }
     }
 
@@ -870,13 +865,27 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   private final AgentRuntime agentRuntime;
   private final ActHalt actStops;
   private final Checkers checkers;
+  private final KeptNumbers kept;
 
   public boolean anyCheckerEnabled() {
     return load().anyCheckerEnabled(checkers.withJobs());
   }
 
+  /** The file as written, a number outside its range included: what the start check judges. */
+  public ConfigFile loadAsWritten() {
+    return read(section());
+  }
+
   public ConfigFile load() {
     Object section = section();
+    if (section == null) {
+      return read(null);
+    }
+    ConfigFile written = read(section);
+    return kept.of(section, written).map(this::read).orElse(written);
+  }
+
+  private ConfigFile read(@Nullable Object section) {
     if (section == null) {
       return masterByDefault(ConfigFile.defaults());
     }

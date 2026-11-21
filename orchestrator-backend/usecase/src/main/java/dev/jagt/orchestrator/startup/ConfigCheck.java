@@ -6,20 +6,15 @@ import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigRanges;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
-import dev.jagt.orchestrator.task.review.RoundTrail;
-import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,33 +34,6 @@ public class ConfigCheck implements StartupCheck {
           "dashboard", "nothing renders a console table",
           "openWarpWindow", "write `terminal: none` for no terminal window",
           "openTerminalWindow", "write `terminal: none` for no terminal window");
-  private static final int NO_CEILING = Integer.MAX_VALUE;
-
-  private record Ranged(
-      String key, int ceiling, Function<ConfigService.ConfigFile, @Nullable Integer> written) {}
-
-  private static final List<Ranged> RANGED =
-      List.of(
-          new Ranged("archive.maxMegabytes", NO_CEILING, c -> c.archive().maxMegabytes()),
-          new Ranged(
-              "loopBreaker.perHour", TaskState.MAX_HISTORY - 1, c -> c.loopBreaker().perHour()),
-          new Ranged("loopBreaker.rounds", Turn.MAX_RUN - 1, c -> c.loopBreaker().rounds()),
-          new Ranged(
-              "loopBreaker.stalledRounds",
-              RoundTrail.MAX_ROUNDS - 1,
-              c -> c.loopBreaker().stalledRounds()),
-          new Ranged("loopBreaker.ships", NO_CEILING, c -> c.loopBreaker().ships()),
-          new Ranged("conflictStallMinutes", NO_CEILING, c -> c.sessions().conflictStallMinutes()),
-          new Ranged("maxTasks", NO_CEILING, c -> c.sessions().maxTasks()),
-          new Ranged("agent.probeSeconds", NO_CEILING, c -> c.agent().cadence().probeSeconds()),
-          new Ranged(
-              "agent.autoplan.files", NO_CEILING, c -> c.agent().autoplanOrDefault().files()),
-          new Ranged("autoReview.windowHours", NO_CEILING, c -> c.autoReview().windowHours()),
-          new Ranged(
-              "autoReview.minIntervalMinutes",
-              NO_CEILING,
-              c -> c.autoReview().minIntervalMinutes()),
-          new Ranged("tracker.everyMinutes", NO_CEILING, c -> c.tracker().everyMinutes()));
 
   private final ConfigService configService;
   private final OrchestratorPaths paths;
@@ -84,7 +52,7 @@ public class ConfigCheck implements StartupCheck {
     }
     ConfigService.ConfigFile config;
     try {
-      config = configService.load();
+      config = configService.loadAsWritten();
     } catch (RuntimeException unreadable) {
       return List.of(new Problem(CONFIG_FILE, String.valueOf(unreadable.getMessage())));
     }
@@ -163,19 +131,13 @@ public class ConfigCheck implements StartupCheck {
    * A number is read as written or not at all: one outside its range is refused, never replaced.
    */
   private static List<Problem> numberProblems(ConfigService.ConfigFile config) {
-    return RANGED.stream()
-        .map(number -> numberProblem(number, number.written().apply(config)))
-        .filter(Objects::nonNull)
+    return ConfigRanges.refusals(config).stream()
+        .map(refusal -> {
+          String key = "orchestrator." + refusal.key();
+          return new Problem(
+              key, key + " is " + refusal.value() + ": it must be " + refusal.range() + ".");
+        })
         .toList();
-  }
-
-  private static @Nullable Problem numberProblem(Ranged number, @Nullable Integer value) {
-    if (value == null || (value >= 1 && value <= number.ceiling())) {
-      return null;
-    }
-    String range = number.ceiling() == NO_CEILING ? "at least 1" : "1 to " + number.ceiling();
-    String key = "orchestrator." + number.key();
-    return new Problem(key, key + " is " + value + ": it must be " + range + ".");
   }
 
   private List<Problem> viewerProblems(ConfigService.ConfigFile config) {
