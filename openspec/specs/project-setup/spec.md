@@ -167,3 +167,13 @@ A change that is read only at start SHALL say so on the page and offer the exist
 #### Scenario: A restart is needed
 - **WHEN** the pipeline re-run waits are changed
 - **THEN** the page says it applies after a restart and offers the restart verb
+
+### Requirement: A number outside its range is refused
+A start SHALL refuse a numeric key that is zero, negative or past its ceiling, naming key, value and range.
+An unset key keeps its default (`ConfigCheck`).
+#### Scenario: A value outside the range
+- **WHEN** `loopBreaker.rounds` is `-1` or `999` and you start jagt
+- **THEN** it is refused naming `orchestrator.loopBreaker.rounds`, the value and `1 to 19`
+#### Scenario: An unset key
+- **WHEN** `loopBreaker.rounds` is not written
+- **THEN** its default applies and the start goes on

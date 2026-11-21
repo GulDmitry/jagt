@@ -28,6 +28,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConfigCheckTest {
 
@@ -231,5 +232,46 @@ class ConfigCheckTest {
                 shadowing
                     + " outranks jagt.yml for every key it"
                     + " names. Move what it holds into jagt.yml and delete it."));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, 0, 20, 999})
+  void refusesRoundsOutsideOneToNineteenNamingKeyValueAndRange(int rounds) throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  loopBreaker: { rounds: %d }\n".formatted(rounds));
+
+    assertThat(check.problems())
+        .containsExactly(
+            new Problem(
+                "orchestrator.loopBreaker.rounds",
+                "orchestrator.loopBreaker.rounds is " + rounds + ": it must be 1 to 19."));
+  }
+
+  @Test
+  void refusesKeyWithNoCeilingBelowOneSayingAtLeastOne() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n");
+
+    assertThat(check.problems())
+        .containsExactly(
+            new Problem(
+                "orchestrator.maxTasks", "orchestrator.maxTasks is 0: it must be at least 1."));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 19})
+  void acceptsRoundsAtEitherEndOfTheirRange(int rounds) throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  loopBreaker: { rounds: %d }\n".formatted(rounds));
+
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void startsOnTheDefaultsWhereNoNumberIsSet() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n");
+
+    assertThat(check.problems()).isEmpty();
   }
 }

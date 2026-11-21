@@ -11,14 +11,11 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.SwitchJudgements;
 import dev.jagt.orchestrator.service.reach.SessionReach;
 import dev.jagt.orchestrator.service.stop.ActHalt;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.launch.TrackerMode;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.review.LoopBreaker;
-import dev.jagt.orchestrator.task.review.RoundTrail;
-import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -124,11 +121,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public long maxBytesOrDefault() {
-        return (maxMegabytes == null || maxMegabytes <= 0 ? 20L : maxMegabytes) * 1024 * 1024;
+        return (maxMegabytes == null ? 20L : maxMegabytes) * 1024 * 1024;
       }
     }
 
-    /** Each ceiling read as at most one below what a task keeps of its rounds, turns or moves. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
     public record LoopBreakerConfig(
@@ -142,21 +138,19 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int perHourOrDefault() {
-        return perHour == null || perHour <= 0 ? 20 : Math.min(perHour, TaskState.MAX_HISTORY - 1);
+        return perHour == null ? 20 : perHour;
       }
 
       public int roundsOrDefault() {
-        return rounds == null || rounds <= 0 ? 3 : Math.min(rounds, Turn.MAX_RUN - 1);
+        return rounds == null ? 3 : rounds;
       }
 
       public int stalledRoundsOrDefault() {
-        return stalledRounds == null || stalledRounds <= 0
-            ? 3
-            : Math.min(stalledRounds, RoundTrail.MAX_ROUNDS - 1);
+        return stalledRounds == null ? 3 : stalledRounds;
       }
 
       public int shipsOrDefault() {
-        return ships == null || ships <= 0 ? 4 : ships;
+        return ships == null ? 4 : ships;
       }
     }
 
@@ -370,7 +364,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
        */
       public int probeSecondsOrDefault() {
         Integer written = cadence.probeSeconds();
-        return written == null || written <= 0 ? 600 : written;
+        return written == null ? 600 : written;
       }
     }
 
@@ -387,7 +381,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int filesOrDefault() {
-        return files == null || files <= 0 ? 30 : files;
+        return files == null ? 30 : files;
       }
     }
 
@@ -581,11 +575,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int windowHoursOrDefault() {
-        return windowHours == null || windowHours <= 0 ? 24 : windowHours;
+        return windowHours == null ? 24 : windowHours;
       }
 
       public int minIntervalMinutesOrDefault() {
-        return minIntervalMinutes == null || minIntervalMinutes <= 0 ? 10 : minIntervalMinutes;
+        return minIntervalMinutes == null ? 10 : minIntervalMinutes;
       }
 
       public int maxIntervalMinutesOrDefault() {
@@ -664,7 +658,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int everyMinutesOrDefault() {
-        return everyMinutes == null || everyMinutes <= 0 ? 10 : everyMinutes;
+        return everyMinutes == null ? 10 : everyMinutes;
       }
 
       /**
@@ -783,7 +777,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     public Duration conflictStallOrDefault() {
       Integer minutes = sessions.conflictStallMinutes();
-      return Duration.ofMinutes(minutes == null || minutes <= 0 ? 20 : minutes);
+      return Duration.ofMinutes(minutes == null ? 20 : minutes);
     }
 
     /**
@@ -792,19 +786,22 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
      */
     public int maxTasksOrDefault() {
       Integer max = sessions.maxTasks();
-      return max == null || max <= 0 ? 50 : max;
+      return max == null ? 50 : max;
     }
 
     /** The ship ceiling counts over the auto-review window. */
     public LoopBreaker loopBreakerOrDefault() {
-      LoopBreakerConfig config =
-          sessions.loopBreaker() == null ? LoopBreakerConfig.defaults() : sessions.loopBreaker();
+      LoopBreakerConfig config = loopBreaker();
       return new LoopBreaker(
           config.stalledRoundsOrDefault(),
           config.shipsOrDefault(),
           config.roundsOrDefault(),
           config.perHourOrDefault(),
           Duration.ofHours(autoReview().windowHoursOrDefault()));
+    }
+
+    public LoopBreakerConfig loopBreaker() {
+      return sessions.loopBreaker() == null ? LoopBreakerConfig.defaults() : sessions.loopBreaker();
     }
 
     public ArbiterConfig arbiter() {

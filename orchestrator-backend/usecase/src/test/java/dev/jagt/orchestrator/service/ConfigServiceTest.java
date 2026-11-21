@@ -352,11 +352,7 @@ class ConfigServiceTest {
   }
 
   static Stream<Arguments> probeIntervals() {
-    return Stream.of(
-        Arguments.of(null, 600),
-        Arguments.of(-5, 600),
-        Arguments.of(0, 600),
-        Arguments.of(300, 300));
+    return Stream.of(Arguments.of(null, 600), Arguments.of(300, 300));
   }
 
   @ParameterizedTest
@@ -462,7 +458,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,24", "0,24", "1,1", "48,48"},
+      value = {"null,24", "1,1", "48,48"},
       nullValues = "null")
   void resolvesHowManyHoursAnAutoReviewWindowStaysOpen(Integer configured, int expected) {
     assertThat(
@@ -474,7 +470,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,10", "0,10", "1,1", "30,30"},
+      value = {"null,10", "1,1", "30,30"},
       nullValues = "null")
   void resolvesTheShortestWaitBetweenTwoAutoReviewPolls(Integer configured, int expected) {
     assertThat(
@@ -521,7 +517,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,10", "0,10", "1,1", "5,5"},
+      value = {"null,10", "1,1", "5,5"},
       nullValues = "null")
   void resolvesHowOftenTheTrackerIsPolled(Integer configured, int expected) {
     assertThat(
@@ -547,7 +543,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,20", "0,20", "1,1", "7,7", "500,49"},
+      value = {"null,20", "1,1", "7,7"},
       nullValues = "null")
   void resolvesHowManyUnattendedMovesTaskMayMakeAnHour(Integer configured, int expected) {
     assertThat(ConfigFile.LoopBreakerConfig.defaults().withPerHour(configured).perHourOrDefault())
@@ -556,7 +552,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,20971520", "0,20971520", "1,1048576", "5,5242880"},
+      value = {"null,20971520", "1,1048576", "5,5242880"},
       nullValues = "null")
   void resolvesHowManyBytesTheArchiveMayHold(Integer configured, long expected) {
     assertThat(ConfigFile.ArchiveConfig.defaults().withMaxMegabytes(configured).maxBytesOrDefault())
@@ -565,7 +561,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,30", "0,30", "1,1", "12,12"},
+      value = {"null,30", "1,1", "12,12"},
       nullValues = "null")
   void resolvesHowManyFilesAnAutoplanReads(Integer configured, int expected) {
     assertThat(ConfigFile.AutoplanConfig.defaults().withFiles(configured).filesOrDefault())
@@ -642,7 +638,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,3", "0,3", "1,1", "19,19", "25,19"},
+      value = {"null,3", "1,1", "19,19"},
       nullValues = "null")
   void resolvesHowManyRoundsOfOneStepMayRunBeforeTheTaskStops(Integer configured, int expected) {
     assertThat(ConfigFile.LoopBreakerConfig.defaults().withRounds(configured).roundsOrDefault())
@@ -651,7 +647,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,3", "0,3", "1,1", "19,19", "25,19"},
+      value = {"null,3", "1,1", "19,19"},
       nullValues = "null")
   void resolvesHowManyRoundsRunningMayResolveNoThreadBeforeTheTaskStops(
       Integer configured, int expected) {
@@ -664,7 +660,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,4", "0,4", "1,1", "9,9"},
+      value = {"null,4", "1,1", "9,9"},
       nullValues = "null")
   void resolvesHowManyShipsMayGoRoundBeforeTheTaskStops(Integer configured, int expected) {
     assertThat(ConfigFile.LoopBreakerConfig.defaults().withShips(configured).shipsOrDefault())
@@ -673,7 +669,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,20", "0,20", "1,1", "45,45"},
+      value = {"null,20", "1,1", "45,45"},
       nullValues = "null")
   void resolvesHowManyMinutesConflictMayStandStill(Integer configured, long expectedMinutes) {
     assertThat(ConfigFile.defaults().withConflictStallMinutes(configured).conflictStallOrDefault())
@@ -682,7 +678,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,50", "0,50", "1,1", "10,10"},
+      value = {"null,50", "1,1", "10,10"},
       nullValues = "null")
   void resolvesHowManyTasksMayBeOpen(Integer configured, int expected) {
     assertThat(
