@@ -3,12 +3,12 @@ package fitness.junit;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import fitness.core.Block;
-import fitness.core.Evaluation;
-import fitness.core.Report;
-import fitness.core.ReservedTree;
 import fitness.core.FitnessFunction;
 import fitness.core.Section;
+import fitness.core.load.ReservedTree;
+import fitness.core.run.Block;
+import fitness.core.run.Evaluation;
+import fitness.core.run.Report;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Predicate;

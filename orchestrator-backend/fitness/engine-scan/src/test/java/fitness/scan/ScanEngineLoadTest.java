@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import fitness.core.FitnessConfigException;
-import fitness.core.FitnessLoader;
 import fitness.core.Reason;
+import fitness.core.load.FitnessLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

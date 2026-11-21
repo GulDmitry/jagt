@@ -1,9 +1,9 @@
 package technical.maintainability.analysability;
 
 import fitness.core.Fitness;
+import fitness.core.FitnessFunction;
 import fitness.core.Measurement;
 import fitness.core.Project;
-import fitness.core.FitnessFunction;
 import java.util.List;
 
 public final class FakeFitness implements Fitness {

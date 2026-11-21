@@ -1,6 +1,7 @@
 package fitness.gradle;
 
 import fitness.core.FitnessFunction;
+import fitness.gradle.tool.LastValues;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Arrays;

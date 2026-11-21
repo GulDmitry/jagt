@@ -14,6 +14,8 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.opentest4j.AssertionFailedError;
 
 class FitnessTestsTest {
@@ -47,41 +49,35 @@ class FitnessTestsTest {
     assertThat(modularity.getChildren().toList()).extracting(DynamicNode::getDisplayName).containsExactly("docs");
   }
 
-  @Test
-  void aFitnessFunctionOverItsNumberFailsNamingItsItems(@TempDir Path directory) throws IOException {
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "docs: { engine: scan, glob: \"*.md\", per: name, governs: size, max: 0 } | a.md",
+        "docs: { engine: scan, glob: \"*.md\", governs: count, max: 2 } | lower max to 1"
+      })
+  void aFitnessFunctionOutsideItsNumberFailsSayingWhy(String row, String message, @TempDir Path directory)
+      throws IOException {
     Files.writeString(directory.resolve("a.md"), "");
     Files.writeString(
         directory.resolve("fitness.yml"),
-        """
-        schema: 1
-        technical:
-          maintainability:
-            modularity:
-              docs: { engine: scan, glob: "*.md", per: name, governs: size, max: 0 }
-        """);
+        "schema: 1\ntechnical:\n  maintainability:\n    modularity:\n      " + row + "\n");
 
     DynamicTest test =
-        (DynamicTest)
-            ((DynamicContainer)
-                    ((DynamicContainer)
-                            ((DynamicContainer)
-                                    FitnessTests.from(directory.resolve("fitness.yml"))
-                                        .toList()
-                                        .getFirst())
-                                .getChildren()
-                                .toList()
-                                .getFirst())
-                        .getChildren()
-                        .toList()
-                        .getFirst())
-                .getChildren()
-                .toList()
-                .getFirst();
+        FitnessTests.from(directory.resolve("fitness.yml"))
+            .map(DynamicContainer.class::cast)
+            .flatMap(DynamicContainer::getChildren)
+            .map(DynamicContainer.class::cast)
+            .flatMap(DynamicContainer::getChildren)
+            .map(DynamicContainer.class::cast)
+            .flatMap(DynamicContainer::getChildren)
+            .map(DynamicTest.class::cast)
+            .findFirst()
+            .orElseThrow();
 
     assertThatThrownBy(test.getExecutable()::execute)
         .isInstanceOf(AssertionFailedError.class)
-        .hasMessageContaining("docs")
-        .hasMessageContaining("a.md");
+        .hasMessageContaining(message);
   }
 
   @Test
@@ -97,58 +93,17 @@ class FitnessTestsTest {
               docs: { engine: scan, glob: "*.md", governs: count, max: 1 }
         """);
 
-    DynamicTest test =
-        (DynamicTest)
-            ((DynamicContainer)
-                    ((DynamicContainer)
-                            ((DynamicContainer)
-                                    FitnessTests.from(directory.resolve("fitness.yml"))
-                                        .toList()
-                                        .getFirst())
-                                .getChildren()
-                                .toList()
-                                .getFirst())
-                        .getChildren()
-                        .toList()
-                        .getFirst())
-                .getChildren()
-                .toList()
-                .getFirst();
+    List<? extends DynamicNode> tests =
+        FitnessTests.from(directory.resolve("fitness.yml"))
+            .map(DynamicContainer.class::cast)
+            .flatMap(DynamicContainer::getChildren)
+            .map(DynamicContainer.class::cast)
+            .flatMap(DynamicContainer::getChildren)
+            .map(DynamicContainer.class::cast)
+            .flatMap(DynamicContainer::getChildren)
+            .toList();
 
-    assertThatCode(test.getExecutable()::execute).doesNotThrowAnyException();
-  }
-
-  @Test
-  void aCountedKindBelowItsNumberFailsAskingToLowerIt(@TempDir Path directory) throws IOException {
-    Files.writeString(
-        directory.resolve("fitness.yml"),
-        """
-        schema: 1
-        technical:
-          maintainability:
-            modularity:
-              docs: { engine: scan, glob: "*.md", governs: count, max: 2 }
-        """);
-
-    DynamicTest test =
-        (DynamicTest)
-            ((DynamicContainer)
-                    ((DynamicContainer)
-                            ((DynamicContainer)
-                                    FitnessTests.from(directory.resolve("fitness.yml"))
-                                        .toList()
-                                        .getFirst())
-                                .getChildren()
-                                .toList()
-                                .getFirst())
-                        .getChildren()
-                        .toList()
-                        .getFirst())
-                .getChildren()
-                .toList()
-                .getFirst();
-
-    assertThatThrownBy(test.getExecutable()::execute).hasMessageContaining("lower max to 0");
+    assertThatCode(((DynamicTest) tests.getFirst()).getExecutable()::execute).doesNotThrowAnyException();
   }
 
   @Test

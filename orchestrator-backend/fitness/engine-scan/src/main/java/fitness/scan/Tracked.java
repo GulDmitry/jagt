@@ -8,12 +8,12 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-final class Tracked {
+public final class Tracked {
 
   private Tracked() {}
 
   /** Every text file the repository holding the root tracks, as paths below the root's own spelling. */
-  static List<Path> files(Path root) {
+  public static List<Path> files(Path root) {
     try {
       Path top = Path.of(git(root, "rev-parse", "--show-toplevel").strip()).toRealPath();
       Path base = root.resolve(root.toRealPath().relativize(top)).normalize();

@@ -41,10 +41,10 @@ class ScanEngineSizedTest {
     Measurement found =
         engine.measure(
             new TestFitnessFunctionBuilder()
-                .select("glob", "*.md")
-                .select("per", "file")
-                .select("measure", "lines")
                 .limit(2)
+                .select("measure", "lines")
+                .select("per", "file")
+                .select("glob", "*.md")
                 .build(),
             new Project(root, "", List.of("all"), Map.of()));
 

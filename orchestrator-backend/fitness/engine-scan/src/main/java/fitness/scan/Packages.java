@@ -1,7 +1,7 @@
 package fitness.scan;
 
-import fitness.core.Project;
 import fitness.core.FitnessFunction;
+import fitness.core.Project;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -9,14 +9,14 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-final class Packages {
+public final class Packages {
 
   private static final String ROOT = "(root)";
   private static final Pattern SOURCE_ROOT = Pattern.compile("(?:^|/)src/[^/]+/java/?(.*)$");
 
   private Packages() {}
 
-  static List<Sized> classes(FitnessFunction function, Project project, List<Path> files) {
+  public static List<Sized> classes(FitnessFunction function, Project project, List<Path> files) {
     String base = project.basePackage().replace('.', '/');
     Map<String, Long> counts = new TreeMap<>();
     for (Path file : files) {

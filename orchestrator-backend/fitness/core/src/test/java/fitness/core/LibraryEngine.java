@@ -3,7 +3,7 @@ package fitness.core;
 import java.util.Map;
 import java.util.Set;
 
-record LibraryEngine(String library, String probe) implements Engine {
+public record LibraryEngine(String library, String probe) implements Engine {
 
   @Override
   public String name() {

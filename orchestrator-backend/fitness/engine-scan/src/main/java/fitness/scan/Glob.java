@@ -9,11 +9,11 @@ import java.util.regex.Pattern;
  * A glob over `/`-separated paths: `**` crosses directories, `**` + `/` may match nothing, `{a,b}` alternates; a comma
  * outside braces is a letter.
  */
-record Glob(Path base, Pattern pattern) {
+public record Glob(Path base, Pattern pattern) {
 
   private static final String META = "*?{";
 
-  static Glob of(Path root, String glob) {
+  public static Glob of(Path root, String glob) {
     List<String> segments = List.of(glob.split("/"));
     int literal = 0;
     while (literal < segments.size() - 1 && !hasMeta(segments.get(literal))) {
@@ -27,7 +27,7 @@ record Glob(Path base, Pattern pattern) {
     return new Glob(base.normalize(), Pattern.compile(translate(rest)));
   }
 
-  static List<String> split(String globs) {
+  public static List<String> split(String globs) {
     List<String> parts = new ArrayList<>();
     int depth = 0;
     int start = 0;
@@ -43,11 +43,11 @@ record Glob(Path base, Pattern pattern) {
     return parts;
   }
 
-  static boolean isLiteral(String glob) {
+  public static boolean isLiteral(String glob) {
     return !hasMeta(glob);
   }
 
-  boolean matches(String relative) {
+  public boolean matches(String relative) {
     return pattern.matcher(relative).matches();
   }
 

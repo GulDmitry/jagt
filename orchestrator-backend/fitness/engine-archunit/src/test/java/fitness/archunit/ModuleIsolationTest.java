@@ -43,7 +43,7 @@ class ModuleIsolationTest {
             Path.of(".."),
             "fitness",
             List.of("all"),
-            Map.of("core", List.of("fitness.core"), "engine-archunit", List.of()));
+            Map.of("core", List.of("fitness.core", "fitness.core.run"), "engine-archunit", List.of()));
 
     Measurement found = engine.measure(function, project);
 

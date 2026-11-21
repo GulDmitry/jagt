@@ -3,7 +3,7 @@ package fitness.archunit;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import fitness.core.Project;
-import fitness.core.SourceRoots;
+import fitness.core.run.SourceRoots;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

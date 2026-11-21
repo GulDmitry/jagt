@@ -3,8 +3,8 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import fitness.core.Fitness;
-import fitness.core.ReservedTree;
 import fitness.core.Section;
+import fitness.core.load.ReservedTree;
 import fitness.junit.FitnessTests;
 import java.nio.file.Path;
 import java.util.List;

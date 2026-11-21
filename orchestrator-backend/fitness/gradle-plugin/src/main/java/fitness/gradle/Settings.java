@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Set;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.logging.configuration.WarningMode;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
-import org.gradle.api.logging.configuration.WarningMode;
 
 /** What the build is set to, listed as the items of the rows that count it. */
 final class Settings {

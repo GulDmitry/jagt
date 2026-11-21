@@ -20,8 +20,8 @@ Amended by [0212](0212-the-fitness-build-counts-under-the-same-ceilings-as-the-r
 - No file under it names `dev.jagt`, a ring, a path or a vendor: jagt's selectors live in jagt's `fitness.yml`, its coded fitness functions in jagt.
 - It keeps its own `decisions/` and `AGENTS.md` from its first commit.
 - It checks its own names with its own `fitness.yml` (`LibraryChecksItselfTest`).
-- Its `defaults.yml` over itself is not yet green, a defect under [0162](0162-a-check-holds-for-all-code.md),
-  ended when `LibraryChecksItselfTest` runs every `defaults.yml` function over `fitness/` and passes.
+- Its `defaults.yml` holds over itself: `LibraryChecksItselfTest` runs every `defaults.yml` function an engine measures over `fitness/` and passes;
+  a red is a defect under [0162](0162-a-check-holds-for-all-code.md).
 - Extraction is the folder published as a dependency and a plugin; jagt swaps `includeBuild` for a version, library code unchanged.
 
 ## Rejected

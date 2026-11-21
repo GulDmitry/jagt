@@ -2,8 +2,8 @@ package fitness.junit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import fitness.core.Block;
-import fitness.core.FitnessRun;
+import fitness.core.run.Block;
+import fitness.core.run.FitnessRun;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;

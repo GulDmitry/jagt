@@ -1,3 +1,3 @@
 package fitness.scan;
 
-record Sized(String label, long size) {}
+public record Sized(String label, long size) {}

@@ -1,7 +1,7 @@
 package fitness.scan;
 
-import fitness.core.Project;
 import fitness.core.FitnessFunction;
+import fitness.core.Project;
 import java.nio.file.Path;
 import java.util.List;
 

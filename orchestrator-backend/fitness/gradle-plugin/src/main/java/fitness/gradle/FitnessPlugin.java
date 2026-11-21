@@ -1,10 +1,13 @@
 package fitness.gradle;
 
-import fitness.core.Block;
 import fitness.core.FitnessConfigException;
-import fitness.core.FitnessLoader;
-import fitness.core.Requirements;
 import fitness.core.FitnessFunction;
+import fitness.core.load.FitnessLoader;
+import fitness.core.run.Block;
+import fitness.core.run.Requirements;
+import fitness.gradle.check.Overruns;
+import fitness.gradle.check.RequirementsCheck;
+import fitness.gradle.tool.Installed;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,13 +19,13 @@ import javax.inject.Inject;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.flow.FlowProviders;
+import org.gradle.api.flow.FlowScope;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.api.flow.FlowProviders;
-import org.gradle.api.flow.FlowScope;
 
 /**
  * Binds each tool row of fitness.yml to the build: the tool enforces its number, or a check measures it. The
@@ -187,7 +190,7 @@ public final class FitnessPlugin implements Plugin<Project> {
                   task.setGroup("verification");
                   task.setDescription("Measures every engine and project function of fitness.yml in the block.");
                   task.setClasspath(extension.getClasspath());
-                  task.getMainClass().set("fitness.core.FitnessRun");
+                  task.getMainClass().set("fitness.core.run.FitnessRun");
                   task.setWorkingDir(root.getProjectDir());
                   task.setMaxHeapSize("2g");
                   task.args(extension.getFile().get().getAsFile().getAbsolutePath(), block.path());

@@ -3,9 +3,9 @@ package fitness.archunit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import fitness.core.Direction;
+import fitness.core.FitnessFunction;
 import fitness.core.Measurement;
 import fitness.core.Project;
-import fitness.core.FitnessFunction;
 import fitness.core.Threshold;
 import java.nio.file.Path;
 import java.util.List;
