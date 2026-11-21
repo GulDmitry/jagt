@@ -18,7 +18,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 - **AND** jagt refuses any other call, your allow rules included (`ReadGate`)
 
 #### Scenario: A round read before you look
-- **WHEN** `roles.master.mode` is `judge`, or unset where the human's words are readable
+- **WHEN** `roles.master.mode` is `judge`
 - **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
 - **AND** a verdict answers only the hand-back it was asked about, however late it is written; a file jagt did not write answers none
 - **WHEN** it is under review
@@ -51,11 +51,11 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 ### Requirement: In act the Master moves for you
 With `roles.master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and answer a question. It
 SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`) and deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`).
-It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)); `mine: [lift]` keeps it yours.
+It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)); `mine: [lift]` keeps it yours. Unset, the mode is `act`.
 
 #### Scenario: What it presses in act
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
-- **THEN** the Master deploys it, never reverts; `mine: [deploy, revert]` leaves the press yours
+- **THEN** the Master deploys it, never reverts, unless `mine` names `deploy`, as it does unset; `mine: []` hands it the press
 - **WHEN** the press is refused, as a deploy of ABC-42 with no commit beyond dev
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
 - **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
@@ -91,7 +91,7 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours; the same words asked again are a new question
 
 #### Scenario: A plan in act
-- **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
+- **WHEN** a plan holds and `mine` is unset, or names `plan`, or the task was opened in `plan` mode
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
 
 #### Scenario: A plan handed back with a question

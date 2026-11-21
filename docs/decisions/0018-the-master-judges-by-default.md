@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-07.
+Accepted 2026-10-07. Superseded by [0214](0214-the-master-acts-by-default.md).
 
 ## Context
 

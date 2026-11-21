@@ -23,7 +23,7 @@ orchestrator:
     acceptance:
       enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
     master:
-      mode: act                                # roles: the Master presses what a human would; `mine` keeps its default
+      mode: act                                # roles: the Master presses what a human would; `mine` keeps its default: plan and deploy stay yours
   # releaseFeed:
   #   autoUpgrade: false                       # true: switch to a kept release once no session is up
   deploy:

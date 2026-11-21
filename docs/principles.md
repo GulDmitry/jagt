@@ -10,6 +10,7 @@ jagt is:
 - an orchestrator of AI coding-agent CLI sessions: one ticket, one session, one Git worktree;
 - one board in the browser from which a human, or the Master session in `act`, drives every task;
 - a statechart that decides every status, on a desktop and on a server alike;
+- autonomous by default: the Master session in `act` drives every task, and the human takes over where they choose;
 - agnostic: every agent, terminal, OS, tracker and code host is a seam chosen in `jagt.yml`.
 
 jagt is not:

@@ -166,9 +166,9 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 
 ## The human in the loop
 
-- **One thing other than a human may act as one: the Master session in `act`** — it stands where the human
-  stands and holds the same rights. Opt-in — the default is `judge` — and bounded by
-  `FlowRules`: it picks a legal move, never invents one.
+- **One thing other than a human may act as one: the Master session in `act`**, the default
+  ([0214](docs/decisions/0214-the-master-acts-by-default.md)): it holds the human's rights but the plan approval and
+  the deploy (`roles.master.mine`); the human opts into `judge` or keeps more. Bounded by `FlowRules`, never inventing a move.
 - **Nothing else acts unasked but on a stage the tracker or the code host reports**: intake opens a task, the close ends one
   (`ActionOrigin.TRACKER`), an approved request deploys itself (`ActionOrigin.CODE_HOST`, `deploy.onApproval`, on in the server
   starter, [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default.

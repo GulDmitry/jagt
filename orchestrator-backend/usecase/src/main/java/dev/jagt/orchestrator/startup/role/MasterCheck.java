@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * The Master judges unless a human turned it off. What it judges lives in a file rather than in a
+ * The Master acts unless a human chose otherwise. What it judges lives in a file rather than in a
  * session, so a mode that names no readable one would run a reviewer with no standards.
  */
 @Component

@@ -33,7 +33,7 @@ public enum MasterMode {
    */
   public static Optional<MasterMode> of(@Nullable String mode) {
     return mode == null || mode.isBlank()
-        ? Optional.of(JUDGE)
+        ? Optional.of(ACT)
         : Arrays.stream(values())
             .filter(value -> value.id().equals(mode.strip().toLowerCase(Locale.ROOT)))
             .findFirst();

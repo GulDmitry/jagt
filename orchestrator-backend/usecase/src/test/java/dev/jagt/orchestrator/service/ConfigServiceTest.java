@@ -304,8 +304,8 @@ class ConfigServiceTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"true, judge", "false, off"})
-  void leavesTheMasterJudgingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(
+  @CsvSource({"true, act", "false, off"})
+  void leavesTheMasterActingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(
       boolean reads, String expected) throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
@@ -379,6 +379,12 @@ class ConfigServiceTest {
   }
 
   @Test
+  void keepsThePlanAndTheDeployTheHumansWhenNoStepIsNamedAsTheirs() {
+    assertThat(ArbiterConfig.defaults().mineOrDefault())
+        .containsExactly("plan", "deploy", "revert");
+  }
+
+  @Test
   void readsAnEmptySectionAsAnEmptyConfigurationWithItsMasterDefault() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "other: 1\n");
@@ -390,7 +396,7 @@ class ConfigServiceTest {
             .load();
 
     assertThat(config.projects()).isEmpty();
-    assertThat(config.arbiter().mode()).isEqualTo("judge");
+    assertThat(config.arbiter().mode()).isEqualTo("act");
   }
 
   @Test

@@ -63,7 +63,10 @@ class HumanWaitRecorderTest {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withArbiter(ConfigService.ConfigFile.ArbiterConfig.defaults().withMode("off")));
     context.registerBean(
         HumanWaitRecorder.class,
         () ->

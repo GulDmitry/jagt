@@ -495,7 +495,9 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
        * holds in `act`.
        */
       public List<String> mineOrDefault() {
-        return mine == null ? List.of(MasterRight.PLAN.id()) : mine;
+        return mine == null
+            ? List.of(MasterRight.PLAN.id(), MasterRight.DEPLOY.id(), MasterRight.REVERT.id())
+            : mine;
       }
 
       /**
@@ -943,7 +945,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   }
 
   /**
-   * Unset, the Master judges where the runtime reads the human's words, else is off; a stopped act
+   * Unset, the Master acts where the runtime reads the human's words, else is off; a stopped act
    * judges.
    */
   private ConfigFile masterByDefault(ConfigFile config) {
@@ -955,7 +957,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         ? config
         : config.withArbiter(
             master.withMode(
-                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
+                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.ACT : MasterMode.OFF).id()));
   }
 
   @Override

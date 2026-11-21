@@ -61,6 +61,11 @@ class MasterDeployJobTest {
             TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build(),
             List.of()),
         arguments(
+            "deploy no step was named as the human's, which the human keeps by default",
+            masterDeployJob().withMine(null),
+            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build(),
+            List.of()),
+        arguments(
             "request still open to review",
             masterDeployJob(),
             TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING).build(),

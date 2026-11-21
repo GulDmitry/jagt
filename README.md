@@ -85,7 +85,7 @@ Everything jagt does, one line each and linked to its spec: [Features](docs/feat
 
 The Master: a model reading every round before you, by the roles in its brief.
 
-| | `off` | `judge` — the default | `act` |
+| | `off` | `judge` | `act` — the default |
 |---|---|---|---|
 | a round handed back | you read it | read first; not ready goes back to the session | the same, and a ready one is shipped |
 | a session's question | waits for you | waits for you | answered as you would |
@@ -93,7 +93,7 @@ The Master: a model reading every round before you, by the roles in its brief.
 | `deploy` | yours | yours | once green |
 | costs | nothing | one heavy read per role, per round | the same |
 
-In `act` a task reaches you deployed; `roles.master.mine` keeps any step or verb yours.
+In `act` a task reaches you ready to deploy; `roles.master.mine` keeps any step or verb yours, `[plan, deploy, revert]` unset.
 
 ## Start
 

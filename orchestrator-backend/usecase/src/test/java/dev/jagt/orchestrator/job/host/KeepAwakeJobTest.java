@@ -43,7 +43,8 @@ class KeepAwakeJobTest {
 
   @Test
   void releasesTheMachineOnceNoUnattendedWorkIsOn() {
-    when(config.load()).thenReturn(ConfigFile.defaults());
+    when(config.load())
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("off")));
 
     new KeepAwakeJob(config, keepAwake).run();
 
