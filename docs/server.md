@@ -7,6 +7,34 @@ One container, one replica, the board behind a password login. The image holds j
 `tini` is PID 1 and jagt runs under a relaunch loop: a jagt killed by a signal starts again and its sessions' tmux
 keeps running; any other exit ends the container; stopping the container stops both.
 
+## From compose up to a running task
+
+Work in a full jagt checkout: the image builds from it with Gradle, a download of the release jar alone is not enough.
+
+1. **Hash a password.** The login name is always `owner`; only the password is yours.
+   `htpasswd -nBC 10 "" | cut -d: -f2` prints the bcrypt hash (`htpasswd` is on macOS already; Debian and Ubuntu: `apt install apache2-utils`).
+2. **Fill `.env`.** `cp examples/server.env .env`, then put the hash in single quotes after `JAGT_PASSWORD_HASH=` (compose reads a bare `$`).
+   `JAGT_PUBLIC_URL` stays `http://localhost:8290`; to publish another host port set `JAGT_PORT=9000` and the URL to `http://localhost:9000`,
+   or the board answers 403.
+3. **Name your project in `jagt.server.yml.dist`** before the first build: the image bakes it as `/data/jagt.yml`'s seed; a `jagt.yml` is not read.
+   Replace the placeholder `url: https://example.com/team/repo.git`, which cannot clone, with a repository the bot can read, and its `baseBranch`.
+   A server project has a `url` and no `path`: jagt clones it to `/data/projects/<name>`.
+   The clone needs the bot's credentials: an SSH key mounted by `volumes` in the override file below, or
+   [Git reaches the code host](#git-reaches-the-code-host); a failed clone shows in the board's head.
+   Later starts ignore the `.dist`: edit `/data/jagt.yml` instead (`docker compose cp jagt:/data/jagt.yml .`, edit, copy back, restart).
+4. **Give the image an agent.** The compose image holds no agent CLI, so a task cannot start on it.
+   Uncomment the Node block and your agent CLI's block in `examples/agent-image.Dockerfile`, then build `jagt-base` first and layer it:
+   ```sh
+   docker build -t jagt-base .
+   echo 'services: {jagt: {build: {context: ., dockerfile: examples/agent-image.Dockerfile, args: {BASE: jagt-base}}}}' > docker-compose.override.yml
+   ```
+   Compose merges `docker-compose.override.yml` on its own. Put the agent's API key in `.env` under the variable your CLI documents.
+5. **Start it.** `docker compose up -d --build`, then `curl -s localhost:8290/actuator/health/readiness` until it answers 200.
+6. **Log in.** Open `http://localhost:8290`; user `owner`, your password. A script posting to `/login` must send
+   `-H 'Origin: http://localhost:8290'`: a write without an `Origin` gets 403.
+   Only readiness is public; a `curl` from the host also needs `-H 'Host: 127.0.0.1:8290'`, or `LoopbackFilter` refuses it.
+7. **Start a task.** Press **New task** (or `t`), pick your project and watch its session start on the card.
+
 ## Bot accounts
 
 One account per service, never your own: a code-host account that clones and pushes task branches, and the agent CLI's
@@ -55,12 +83,7 @@ orchestrator:
 
 ## Secrets
 
-`.env` for compose, a `Secret` for Kubernetes, the same keys (`examples/server.env`), never in `jagt.yml` or an image:
-
-```sh
-cp examples/server.env .env    # JAGT_PASSWORD_HASH='<bcrypt hash>' (single quotes: compose reads a bare $), JAGT_PUBLIC_URL
-```
-
+`.env` for compose, a `Secret` for Kubernetes, the same keys (`examples/server.env`), never in `jagt.yml` or an image.
 Add the agent CLI's API key and the code host's token to the same file or Secret, under the names those tools read.
 
 ## The three identities
@@ -74,7 +97,7 @@ Each is set by your image's environment or a mounted file, never a value in `jag
 | notification | the channel's webhook | the starter's commented `chat` channel: `JAGT_NOTIFY_WEBHOOK` holds the URL, `webhookEnv` names it; unset while a route uses it, the start is refused |
 
 - The mounted MCP file carries the tracker's own `${VAR}` secrets; a `gh` or `glab` login under HOME is only their fallback.
-- Pass the variables at run time (`docker run -e`, a compose `.env`, a Kubernetes `Secret`); see `examples/agent-image.Dockerfile`.
+- Pass the variables at run time (`docker run -e`, `.env`, a `Secret`); see `examples/agent-image.Dockerfile`.
 
 ## The agent's settings, plugins and MCP servers
 
@@ -86,9 +109,8 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 | MCP config holding a token | mounted from a `Secret`, its path in `JAGT_MCP_CONFIG` | never in the image |
 
 - HOME is `/data/home`, on the volume: a revived session finds its conversation and login after a new pod. The volume hides whatever the
-  image bakes under it; so on every start `entrypoint.sh` copies the seed over
-  the agent's folder (`JAGT_AGENT_HOME`): settings, MCP config and plugins are replaced, conversations and logins kept.
-- With either variable unset, or no seed folder, nothing is copied.
+  image bakes under it; so on every start `entrypoint.sh` copies the seed over the agent's folder (`JAGT_AGENT_HOME`):
+  settings, MCP config and plugins are replaced, conversations and logins kept; with either variable unset nothing is copied.
 - `claude.mcpConfig` or `assistant.mcpConfig` naming a file the container lacks is one mark on the board's head; it ends
   once the file is there. A value holding the JSON itself is not a file and is not checked.
 
@@ -99,29 +121,18 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 - **Token**: a credential helper in your image reading the token from the environment, with `https://` project urls.
 - `codeHost: github` or `gitlab` also needs `gh` or `glab` in your image.
 
-## Your toolchain
-
-Sessions check their work in your image, built `FROM` jagt's: [spec](../openspec/specs/server-environment/spec.md),
-[0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md),
-[optional blocks](../examples/agent-image.Dockerfile).
-
 ## Build and deploy
 
-Your image sits on jagt's: `examples/agent-image.Dockerfile` adds the agent CLI, `gh` and `glab` as optional blocks.
+Sessions check their work in your image, built `FROM` jagt's: [spec](../openspec/specs/server-environment/spec.md),
+[0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md).
+`examples/agent-image.Dockerfile` adds the agent CLI, `gh` and `glab` as optional blocks; for Kubernetes build it with
+`docker build -f examples/agent-image.Dockerfile --build-arg BASE=jagt-base -t my-jagt .` after `docker build -t jagt-base .`.
 
-```sh
-docker build -t jagt-base .                                              # in a jagt checkout
-docker build -f examples/agent-image.Dockerfile --build-arg BASE=jagt-base -t my-jagt .
-```
-
-**Compose** builds jagt's own image and mounts one volume, `jagt-data`, at `/data`: state, artifacts, repositories,
-worktrees and the CLI login. **`/data` must be persistent** — a compose volume, or a PersistentVolumeClaim under
+**Compose** mounts one volume, `jagt-data`, at `/data`: state, artifacts, repositories, worktrees and the CLI login.
+**`/data` must be persistent** — a compose volume, or a PersistentVolumeClaim under
 Kubernetes: without it a restart, a deleted pod or a new image loses every task, worktree and login. jagt does not check.
 
-```sh
-docker compose up -d --build
-curl -s localhost:8290/actuator/health/readiness     # 200 once startup checks are green and clones are done
-```
+Readiness (`/actuator/health/readiness`) answers 200 once startup checks are green and clones are done.
 
 **Kubernetes**: `cp examples/kubernetes.yml kubernetes.yml`, set the image, host and Secret values, `kubectl apply -f kubernetes.yml`
 ([0179](decisions/0179-the-kubernetes-pod-is-restricted-and-its-jvm-sized.md)).
@@ -139,8 +150,7 @@ a service account without a token, one optional PVC, Secrets
 | probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min, liveness 3 misses |
 | egress | `NetworkPolicy` | DNS, then HTTPS and SSH to public addresses; add acceptance environments |
 
-- Probes: liveness is the application's own state alone; readiness waits for the start and the clones (below).
-- The first clone runs inside startup, before readiness, so a pod is never ready ahead of it. A clone retried after a
+- Liveness is the application's own state alone. The first clone runs before readiness; a clone retried after a
   failure does not hold the pod: the board's head shows it.
 
 ## Upgrade, back up, roll back
@@ -157,8 +167,8 @@ What `/data` (`ORCHESTRATOR_DATA`) holds that outlives an image:
 | `jagt/master-token`, `logs/` | the Master's token (drawn at each start), logs | each start |
 
 - **Read across minors**: a newer jar reads an older `state.json` as it stands: unknown keys are ignored, a missing number or flag
-  reads 0 or false. The file is rewritten in the newer shape on the next mutation, the old one kept as `.bak`.
-  `StateServiceCompatibilityTest` reads a fixture of every shipped minor (0.9 to 0.23) and a new minor without its fixture fails the build.
+  reads 0 or false; the next mutation rewrites it in the newer shape and keeps the old one as `.bak`
+  (`StateServiceCompatibilityTest` holds a fixture of every shipped minor, 0.9 to 0.23).
 - **Unreadable state**: `.bak` takes over and the log says so; with no usable `.bak` jagt refuses to start, never starts empty.
 - **Older jar reading a newer file**: untested, unknown. Roll back from a copy, never by pointing the old jar at the new file.
 
@@ -170,18 +180,8 @@ docker run --rm -v <volume>:/data -v "$PWD":/backup alpine tar czf /backup/jagt-
 cp "$ORCHESTRATOR_DATA"/jagt/state.json* ~/backup/    # a jar install: the same files in its data folder
 ```
 
-Roll back: stop, put the previous image tag (or jar) back, restore the copy over `/data` (extract the archive, or copy the two files
-back), start, and check `/actuator/health/readiness` and the board's task list.
-
-- Keep the image tag of the running minor before pulling the next one: the manifest or compose file names it.
-- Worktrees made after the copy are not in it; their branches are on the code host once pushed.
-
-## Open the board
-
-Open `JAGT_PUBLIC_URL` and log in; under compose `http://localhost:8290`.
-
-- `/state` needs a login too; only `/actuator/health/readiness` is public.
-- A `curl` from the host needs `-H 'Host: 127.0.0.1:8290'`: `LoopbackFilter` refuses any other `Host`.
+Roll back: stop, put the previous image tag (or jar) back, restore the copy over `/data`, start, and check readiness and the task list.
+Keep the running minor's image tag before pulling the next one; worktrees made after the copy are not in it.
 
 ## Debug from a local CLI
 
@@ -196,5 +196,5 @@ curl -s -H "X-Jagt-Master: $(cat <token file>)" -H 'Content-Type: application/js
 ```
 
 - `<token file>` is `master-token` beside `jagt/state.json`; point a CLI's MCP config at `http://localhost:8290/mcp` with that header.
-- Under `auth.mode: password`, `/api/debug/…` needs the login session; `/mcp` needs the token.
+  `/api/debug/…` needs the login session, `/mcp` the token.
 - Records: `backend-log`, `master-log`, `stops`, `stops-reviewed`; under `orchestrator.logging: console` the two logs are what stdout carried.

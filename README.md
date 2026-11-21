@@ -36,8 +36,9 @@ Run `jagt`, then open the board at http://localhost:8290.
 
 ### On a server
 
+Name your project in `jagt.server.yml.dist` first: the image bakes it in as the starting `jagt.yml`.
+
 ```sh
-cp jagt.server.yml.dist jagt.yml
 docker compose up -d --build
 ```
 
@@ -120,7 +121,7 @@ It writes the entry into `jagt.yml`, with no restart.
 The repository needs a fetched remote, `origin` unless `remote` names another.
 `remote: none` keeps it on this machine, with `codeHost: none` and a local `baseBranch`.
 You can write the entry by hand instead: [Configuration](docs/configuration.md#projects), where `worktree.copyGlobs` is also explained.
-On a server, copy `jagt.server.yml.dist` instead ([docs/server.md](docs/server.md)).
+On a server, name it in `jagt.server.yml.dist` before the first build ([docs/server.md](docs/server.md)).
 
 ### 3 — decide on the Master
 
