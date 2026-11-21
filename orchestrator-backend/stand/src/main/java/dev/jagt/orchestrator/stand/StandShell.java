@@ -99,7 +99,7 @@ public final class StandShell {
             System.getProperty("os.name", ""), ProcessHandle.current().pid(), StandShell::onPath);
     String run = "stand run " + root.getFileName();
     if (command.isEmpty()) {
-      System.out.println(
+      StandConsole.line(
           run
               + " holds no wake lock: no caffeinate or systemd-inhibit here, the host may sleep"
               + " mid-run");
@@ -111,10 +111,10 @@ public final class StandShell {
               .redirectErrorStream(true)
               .redirectOutput(ProcessBuilder.Redirect.DISCARD)
               .start();
-      System.out.println(run + " holds a wake lock: " + command.get().getFirst());
+      StandConsole.line(run + " holds a wake lock: " + command.get().getFirst());
       return Optional.of(lock);
     } catch (IOException e) {
-      System.out.println(run + " holds no wake lock: " + e.getMessage());
+      StandConsole.line(run + " holds no wake lock: " + e.getMessage());
       return Optional.empty();
     }
   }

@@ -57,8 +57,7 @@ allprojects {
         }
     }
     tasks.withType(JavaCompile).configureEach { dependsOn tasks.named('spotlessApply') }
-    // The plugin registers its pre-push hook installer unconditionally and has no switch; no hook, ever (AGENTS.md).
-    tasks.named('spotlessInstallGitPrePushHook') { enabled = false }
+    tasks.named('spotlessInstallGitPrePushHook') { enabled = false }  // no switch for the plugin's hook installer; no hook, ever (AGENTS.md)
 
     // 0143: the gate fails on a breach, so `test` waits for the check.
     apply plugin: 'checkstyle'
@@ -72,10 +71,9 @@ allprojects {
     apply plugin: 'jacoco'
     jacoco { toolVersion = '0.8.14' }
     tasks.named('jacocoTestReport') { reports { xml.required = true } }
-    // A `--tests` run executes part of the suite, so its ratio proves nothing.
     def filteredRun = gradle.startParameter.taskNames.contains('--tests')
     tasks.named('jacocoTestCoverageVerification') {
-        onlyIf { !filteredRun }
+        onlyIf { !filteredRun }  // a `--tests` run executes part of the suite: its ratio proves nothing
         mustRunAfter tasks.named('jacocoTestReport')
     }
     tasks.named('test') {

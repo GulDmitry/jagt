@@ -19,7 +19,7 @@ public final class StandReport {
   public static void main(String[] args) throws IOException {
     Path report = Path.of(args[0]);
     List<String> lines = Files.isRegularFile(report) ? Files.readAllLines(report) : List.of();
-    System.out.println(
+    StandConsole.line(
         lines.isEmpty() ? "stand report: no run recorded" : String.join("\n", rates(lines)));
   }
 
@@ -33,7 +33,7 @@ public final class StandReport {
       Files.writeString(
           report, run + " " + result + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     } catch (IOException e) {
-      System.out.println("stand report not written to " + file + ": " + e.getMessage());
+      StandConsole.line("stand report not written to " + file + ": " + e.getMessage());
     }
   }
 

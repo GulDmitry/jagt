@@ -18,7 +18,7 @@ class InstallPs1StandTest {
 
   @Test
   void installsLayoutAndLauncherWhenChecksumsMatch(@TempDir Path dir) throws Exception {
-    assumeTrue(new ProcessBuilder("docker", "info").start().waitFor() == 0);
+    assumeTrue(new ProcessBuilder("docker", "info").start().waitFor() == 0); // needs Docker
     Path work = dir.toRealPath();
     try (FakeInstallFeed feed = new FakeInstallFeed(work, JAR_SHA256)) {
       Process installed = feed.runInstaller();
@@ -35,7 +35,7 @@ class InstallPs1StandTest {
 
   @Test
   void installsNothingWhenJarChecksumMismatches(@TempDir Path dir) throws Exception {
-    assumeTrue(new ProcessBuilder("docker", "info").start().waitFor() == 0);
+    assumeTrue(new ProcessBuilder("docker", "info").start().waitFor() == 0); // needs Docker
     Path work = dir.toRealPath();
     try (FakeInstallFeed feed = new FakeInstallFeed(work, WRONG_SHA256)) {
       Process installed = feed.runInstaller();

@@ -53,7 +53,7 @@ class ServerStandTest {
         dynamicTest(
             "appStartsWithinTheBudgetWhenTheEngineStartsIt",
             () -> {
-              assumeTrue(Boolean.getBoolean("stand.budgets"), OFF_REFERENCE);
+              assumeTrue(Boolean.getBoolean("stand.budgets"), OFF_REFERENCE); // reference host only
               String log = server.engine().log();
 
               double seconds =
@@ -65,7 +65,7 @@ class ServerStandTest {
         dynamicTest(
             "stateAnswersWithinTheBudgetAtTheNinetyFifthPercentileOverFiftySequentialCalls",
             () -> {
-              assumeTrue(Boolean.getBoolean("stand.budgets"), OFF_REFERENCE);
+              assumeTrue(Boolean.getBoolean("stand.budgets"), OFF_REFERENCE); // reference host only
               long p95Nanos =
                   IntStream.range(0, 50)
                       .mapToLong(call -> {

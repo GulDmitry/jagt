@@ -81,7 +81,7 @@ public final class FitnessTests {
                 missing ->
                     dynamicTest(
                         missing.function().id(),
-                        () -> Assumptions.abort(missing.need() + " is not installed")));
+                        () -> Assumptions.abort(missing.need() + " is not installed"))); // skip, never fail
     return Stream.concat(measured, skipped);
   }
 

@@ -54,7 +54,7 @@ class FailurePageTest {
   }
 
   @Test
-  @SuppressWarnings("try")
+  @SuppressWarnings("try") // the closed page variable is never read
   void answersTheSaveBeforeTheWaitingStartClosesThePage(@TempDir Path dir) throws Exception {
     Path config = Files.writeString(dir.resolve("jagt.yml"), "old: 1\n");
 

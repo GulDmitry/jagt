@@ -284,7 +284,7 @@ public final class KindEngine implements UnitEngine {
     StandShell.Result peak =
         exec("sh", "-c", "cat /sys/fs/cgroup/memory.peak; grep usage_usec /sys/fs/cgroup/cpu.stat");
     if (peak.exit() == 0) {
-      System.out.println(
+      StandConsole.line(
           "stand pod " + cluster() + " memory.peak and cpu: " + peak.output().replace('\n', ' '));
     }
   }
@@ -323,7 +323,7 @@ public final class KindEngine implements UnitEngine {
   private void ok(String what, String... command) {
     long began = System.nanoTime();
     StandShell.Result result = run(command);
-    System.out.println(
+    StandConsole.line(
         "stand step "
             + cluster()
             + " "

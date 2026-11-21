@@ -73,7 +73,7 @@ tasks.register('standImage', Exec) {
         'docker build --build-context "jar=$2" -t jagt-stand-base "$0" && ' +
             'docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
         standRepo, standCompose, rootProject.layout.buildDirectory.dir('libs').get().asFile.absolutePath
-    onlyIf {
+    onlyIf { // no Docker means no stand image
         if (!standHost && !standDocker) {
             System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Pengine=host runs it on the host')
         }
@@ -84,7 +84,7 @@ tasks.register('standImage', Exec) {
 tasks.register('standImageRemove', Exec) {
     description = 'Removes the jagt-stand* image tags.'
     commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand-base jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true'
-    onlyIf { standDocker }
+    onlyIf { standDocker }  // nothing to remove without Docker
 }
 
 tasks.register('standReport', JavaExec) {

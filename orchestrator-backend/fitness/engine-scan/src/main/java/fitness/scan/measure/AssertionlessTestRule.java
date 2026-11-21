@@ -22,7 +22,7 @@ public final class AssertionlessTestRule extends AbstractJavaRule {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked")  // PMD's rule context is untyped
   public Object visit(ASTMethodDeclaration method, Object data) {
     if (isTest(method) && !asserts(method) && !callsAssertingSibling(method)) {
       asCtx(data)
