@@ -22,9 +22,9 @@ COPY --from=jar /jagt.jar jagt.jar
 COPY jagt.desktop.yml.dist mcp_client.js ./
 COPY entrypoint.sh ./
 COPY roles roles
-COPY jagt.server.yml.dist jagt.yml
+COPY jagt.server.yml.dist jagt.seed.yml
 RUN chgrp -R 0 /app /data && chmod -R g=u /app /data /etc/passwd
-ENV HOME=/data/home ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data
+ENV HOME=/data/home ORCHESTRATOR_ROOT=/app ORCHESTRATOR_DATA=/data ORCHESTRATOR_CONFIG_FILE=/data/jagt.yml
 ENV JAGT_JAVA_OPTIONS="-Xmx512m -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/dumps"
 USER 10001:0
 EXPOSE 8290

@@ -14,9 +14,8 @@ account or API key. A leaked key then costs one service, and revoking it stops n
 
 ## Configuration
 
-```sh
-cp jagt.server.yml.dist jagt.yml          # the image ships it as /app/jagt.yml; edit your copy to name your projects
-```
+The image keeps its `jagt.yml` at `/data/jagt.yml`, on the volume, so a project added from the board survives a recreate.
+A first start copies a mounted `/app/jagt.yml`, else `jagt.server.yml.dist`, there and later ones leave it; edit it in place or in the volume.
 
 - `jagt.server.yml.dist` already opens no terminal window, needs no kitty, notifier, editor or keep-awake, and logs to the console.
 - Each key is described in `jagt.desktop.yml.dist` under the same name, and nowhere else.
@@ -150,6 +149,7 @@ What `/data` (`ORCHESTRATOR_DATA`) holds that outlives an image:
 
 | path | what | when it changes |
 |------|------|-----------------|
+| `jagt.yml` | the configuration, seeded from the image on a first start | when you or the board edit it |
 | `jagt/state.json` | every task, written atomically | every mutation |
 | `jagt/state.json.bak` | the version before the last write | every mutation |
 | `jagt/state.json.corrupt` | an unreadable primary, set aside while `.bak` stood in | on that recovery |
