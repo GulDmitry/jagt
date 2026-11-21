@@ -10,6 +10,8 @@ import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.AfterEach;
@@ -28,7 +30,8 @@ class LinuxKittyTerminalDriverLinuxTest {
 
   private final ProcessRunner runner = new ProcessRunner();
   private final LinuxKittyTerminalDriver driver =
-      new LinuxKittyTerminalDriver(runner, new KittyOptions("kitty", ""), Clock.systemUTC());
+      new LinuxKittyTerminalDriver(
+          runner, new KittyOptions("kitty", ""), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
 
   @AfterEach
   void leaveNoWindowsOrSessionsBehind() {

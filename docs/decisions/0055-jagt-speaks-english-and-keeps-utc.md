@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-21.
+Accepted 2026-10-21. Amended by [0215](0215-the-clock-rules-read-test-code-too.md).
 
 ## Context
 

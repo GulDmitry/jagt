@@ -6,6 +6,8 @@ import fitness.core.Fitness;
 import fitness.core.Section;
 import fitness.core.load.ReservedTree;
 import fitness.junit.FitnessTests;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -33,5 +35,19 @@ class FitnessTest {
             ServiceLoader.load(Fitness.class).stream().map(found -> found.type().getPackageName()))
         .isNotEmpty()
         .allSatisfy(name -> assertThat(sections).describedAs(name).contains(name));
+  }
+
+  @Test
+  void theClockRulesScanEverySourceSet() throws IOException {
+    List<String> clockRows =
+        Files.readAllLines(Path.of("../fitness.yml")).stream()
+            .filter(line ->
+                line.contains("calls: java.time.Clock.system")
+                    || line.contains("calls: java.lang.System.currentTimeMillis"))
+            .toList();
+
+    assertThat(clockRows)
+        .hasSize(3)
+        .allSatisfy(row -> assertThat(row).contains("boardTest,e2e,linuxTest"));
   }
 }
