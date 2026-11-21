@@ -22,10 +22,10 @@ import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -59,7 +59,7 @@ class ConfigServiceTest {
                 .withData(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC()));
+    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock()));
     service =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
