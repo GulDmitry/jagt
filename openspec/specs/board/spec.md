@@ -182,13 +182,13 @@ stop on that cause and wears the broken colour. `login` SHALL open the driver's 
 - **THEN** the head mark names its driver and host, and the next good read clears it
 
 ### Requirement: A foreign request is refused
-`LoopbackFilter` SHALL refuse a foreign Host or Origin and `/mcp` anything but JSON, unless its host is the `publicUrl`'s or in `auth.allowedHosts`;
-`BoardWriteFilter` any write without Origin but the two above.
+The refused-request door SHALL refuse a foreign Host or Origin unless the host is the `publicUrl`'s or in `auth.allowedHosts`.
+It SHALL refuse a write without Origin but to `/mcp` and `/api/agent/`; the firewall SHALL reject a respelled path.
 #### Scenario: Behind an ingress, or a stranger posts
 - **WHEN** a request's Host is `server.publicUrl`'s or is in `auth.allowedHosts`
-- **THEN** `LoopbackFilter` lets it through
+- **THEN** the refused-request door lets it through
 - **WHEN** a foreign page, a rebound name, a session's `curl` or a respelled `/api;x/…` posts a verb
-- **THEN** refused 403; `ToolGate` stops the `curl` first
+- **THEN** refused: 403, or 400 where the firewall rejects the spelling; `ToolGate` stops the `curl` first
 
 ### Requirement: A login jagt opens shows its code whole
 A login jagt opens SHALL open no browser: the board shows the login's one-time code and device URL whole.

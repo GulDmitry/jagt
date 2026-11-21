@@ -14,9 +14,9 @@ A review judges a check against this file. The records it condenses keep the evi
 | check | judges | reads by | behind it |
 |-------|--------|----------|-----------|
 | `ReadGate` | each call of a headless read and the Master's reviewer | allow-list, fails closed | nothing: it is the boundary |
-| `BoardWriteFilter` | every board write but `/mcp` and `/api/agent/` | allow-list | the Master's token, same-user trust |
-| `auth: password` (Spring Security) | the board, `/api` and its streams, from anyone off loopback | login; `/mcp`, `/api/agent/` and the login page's files exempt | `LoopbackFilter` first, one bcrypt hash |
-| `AgentDoorFilter` | `/mcp` and `/api/agent/` under `auth: password`, from a peer off loopback or forwarded | allow-list: the Master token | `LoopbackFilter` first; loopback peers pass as ever |
+| `NotThePage` | a foreign Host or Origin, and every board write but `/mcp` and `/api/agent/` | allow-list | the Master's token, same-user trust |
+| `auth: password` (Spring Security) | the board, `/api` and its streams, from anyone off loopback | login; `/mcp`, `/api/agent/` and the login page's files exempt | `NotThePage` first, one bcrypt hash |
+| `LoopbackOrRootToken` | `/mcp` and `/api/agent/` under `auth: password`, from a peer off loopback or forwarded | allow-list: the Master token | `NotThePage` first; loopback peers pass as ever |
 | `ToolGate` | a session's shell line or a plan's command probe, `git worktree add` included | block-list over one line, fails open | the worktree's `pre-push` |
 | `PlanFirst` | a session's file write while its plan waits | allow-list: `plan.md`, `task_visual.md`, `task_notes.md` | the human, who reads the diff |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |

@@ -7,7 +7,7 @@ paths:
   - "**/service/plan/PlanProbing.java"
   - "**/service/gate/ReadScopes.java"
   - "**/service/git/WorktreeHooks.java"
-  - "**/BoardWriteFilter.java"
+  - "**/board/filter/*.java"
   - "**/adapter/assistant/ReadOnlyTools.java"
 ---
 

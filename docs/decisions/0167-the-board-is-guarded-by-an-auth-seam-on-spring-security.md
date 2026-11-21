@@ -6,6 +6,7 @@ stands under [0130](0130-every-third-party-is-a-configured-seam.md) · beside [0
 ## Status
 
 Accepted 2026-11-15 with the commit landing `orchestrator.auth`.
+Amended by [0219](0219-the-boards-doors-are-spring-security-filter-chains.md): the doors in front of the login are chains too.
 
 ## Context
 

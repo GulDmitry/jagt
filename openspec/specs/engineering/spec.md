@@ -38,7 +38,7 @@ A project SHALL pin its behaviour by unit, property, contract, integration, end-
 - **AND** the stand's server scenarios fail when app start exceeds 15 s or `/state` p95 of 50 calls exceeds 100 ms
 #### Scenario: Security tests
 - **WHEN** a security requirement of this capability is met
-- **THEN** a named test pins it, such as `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`
+- **THEN** a named test pins it, such as `LoopbackOrRootTokenTest`, `NotThePageTest`, `RefusedRequestsTest`, `MasterTokenTest`
 #### Scenario: The board's own tests
 - **WHEN** the board's JS changes **THEN** its node tests run in `npm test`, CI's `test` job
 
@@ -86,10 +86,10 @@ A task SHALL open only from a command or tracker intake. A third party SHALL be 
 A write to the board SHALL carry the page's Origin, a peer other than loopback SHALL authenticate, and an agent door SHALL resolve its caller.
 #### Scenario: A foreign page writes
 - **WHEN** a request without the board's Origin writes
-- **THEN** `BoardWriteFilterTest` and `OriginFilterTest` hold it refused; `LoopbackFilterTest` holds a remote peer without a login refused
+- **THEN** `NotThePageTest` and `OriginFilterTest` hold it refused; `NotThePageTest` holds a remote peer without a login refused
 #### Scenario: An agent calls a tool
 - **WHEN** a caller reaches the agent door without its token
-- **THEN** `AgentDoorFilterTest` and `McpProtocolServiceTest` hold it refused; `ToolGateTest` holds the tool gate
+- **THEN** `LoopbackOrRootTokenTest` and `McpProtocolServiceTest` hold it refused; `ToolGateTest` holds the tool gate
 
 ### Requirement: Identity is a password hash or an issuer
 A password SHALL be a BCrypt hash read from an environment name, an issuer's subject allow-listed; no default credential SHALL exist.
@@ -101,7 +101,7 @@ A password SHALL be a BCrypt hash read from an environment name, an issuer's sub
 Logout, a back-off on guessed passwords and one structured line per login SHALL stay the board-security capability's requirements.
 #### Scenario: Logout, back-off and audit
 - **WHEN** an owner logs out, a peer guesses, or a login succeeds or fails
-- **THEN** `PasswordLoginRefusalOnTomcatTest`, `LoginBackoffFilterTest` and `PasswordLoginOutcomeTest` hold the board-security scenarios
+- **THEN** `PasswordLoginRefusalOnTomcatTest`, `BackedOffPeersTest` and `PasswordLoginOutcomeTest` hold the board-security scenarios
 
 ### Requirement: Headers, cookies and transport are set for a hostile network
 The board SHALL answer with a Content-Security-Policy of its own origin; the server starter SHALL set a secure cookie, a session

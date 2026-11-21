@@ -34,7 +34,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
 | `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/channel/Notification` + `port/channel/ChannelDriver` | twelve-factor IV, a channel a backing service chosen in `jagt.yml` · `RoutesTest` |
-| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `BoardWriteFilterTest`, `AgentDoorFilterTest`; the board's `ui/`: `boardTest`, `node --test` under c8 |
+| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `NotThePageTest`, `LoopbackOrRootTokenTest`; the board's `ui/`: `boardTest`, `node --test` under c8 |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb | command pattern, one class per verb · `KindsTest` |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks | ASVS V2 input validation against a JSON Schema · `SchemaTest`; the board's `core/grammar`: `node --test` under c8 |
 | check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `cognitive-complexity`, `duplication`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
@@ -329,7 +329,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `surface/board/auth` | surface | the board's login: the `auth` seam's properties, start check, security chains and CSP |
 | `surface/board/auth/attempts` | surface | the board's login attempts: per-peer back-off, the login audit line, the password outcome events |
 | `surface/board/files` | surface | what the board is served from: the jar's copy or `board.dir`, the user's i18n overlay, the manifest MIME |
-| `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
+| `surface/board/filter` | surface | what stands in front of the board's requests: the chains for refused requests and the agent door, the strict firewall, origin, aborted connections |
 | `surface/board/terminal` | surface | the Session tab's live terminal: the WebSocket a window's output goes out on and a human's keys come in |
 | `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
 | `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, handlers |

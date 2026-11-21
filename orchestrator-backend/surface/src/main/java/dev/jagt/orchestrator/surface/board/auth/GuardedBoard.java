@@ -20,7 +20,7 @@ final class GuardedBoard {
         .headers(BoardCsp::apply)
         .authorizeHttpRequests(requests ->
             requests
-                .requestMatchers("/mcp", "/api/agent/**", "/error")
+                .requestMatchers("/error")
                 .permitAll()
                 .requestMatchers(contract.patterns().toArray(String[]::new))
                 .permitAll()

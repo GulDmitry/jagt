@@ -32,7 +32,7 @@ Work in a full jagt checkout: the image builds from it with Gradle, a download o
 5. **Start it.** `docker compose up -d --build`, then `curl -s localhost:8290/actuator/health/readiness` until it answers 200.
 6. **Log in.** Open `http://localhost:8290`; user `owner`, your password. A script posting to `/login` must send
    `-H 'Origin: http://localhost:8290'`: a write without an `Origin` gets 403.
-   Only readiness is public; a `curl` from the host also needs `-H 'Host: 127.0.0.1:8290'`, or `LoopbackFilter` refuses it.
+   Only readiness is public; a `curl` from the host also needs `-H 'Host: 127.0.0.1:8290'`, or `NotThePage` refuses it.
 7. **Start a task.** Press **New task** (or `t`), pick your project and watch its session start on the card.
 
 ## Bot accounts

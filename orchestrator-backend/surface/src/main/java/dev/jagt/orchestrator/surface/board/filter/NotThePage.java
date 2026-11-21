@@ -2,48 +2,43 @@ package dev.jagt.orchestrator.surface.board.filter;
 
 import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.surface.board.auth.AuthProperties;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * A page on another site can reach loopback: by its Origin, or by a name rebound to 127.0.0.1 in
- * its Host.
+ * its Host. A write, or a WebSocket upgrade whose frames type as the human, acts as the human, so
+ * it carries the page's Origin, which a browser always sends.
  */
-@Slf4j
-@Component
 @RequiredArgsConstructor
-@Order(Ordered.HIGHEST_PRECEDENCE)
-public class LoopbackFilter extends OncePerRequestFilter {
+final class NotThePage implements RequestMatcher {
 
   private final AuthProperties auth;
   private final BoardUrl boardUrl;
 
   @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-      throws ServletException, IOException {
-    Optional<String> foreign = foreign(request);
-    if (foreign.isPresent()) {
-      log.atWarn()
-          .setMessage("request refused")
-          .addKeyValue("url", request.getRequestURI())
-          .addKeyValue("cause", foreign.get())
-          .log();
-      response.sendError(HttpServletResponse.SC_FORBIDDEN);
-      return;
-    }
-    chain.doFilter(request, response);
+  public boolean matches(HttpServletRequest request) {
+    return cause(request).isPresent();
+  }
+
+  Optional<String> cause(HttpServletRequest request) {
+    return foreign(request).or(() -> writeWithoutPage(request));
+  }
+
+  private Optional<String> writeWithoutPage(HttpServletRequest request) {
+    return writes(request)
+            && request.getHeader("Origin") == null
+            && !AgentDoor.PATHS.matches(request)
+        ? Optional.of("no Origin")
+        : Optional.empty();
+  }
+
+  private static boolean writes(HttpServletRequest request) {
+    return !("GET".equals(request.getMethod()) || "HEAD".equals(request.getMethod()))
+        || "websocket".equalsIgnoreCase(request.getHeader("Upgrade"));
   }
 
   private Optional<String> foreign(HttpServletRequest request) {

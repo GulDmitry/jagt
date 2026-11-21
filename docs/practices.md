@@ -55,7 +55,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Integration and slice (pyramid) | [testing-suites](rules/testing-suites.md) | `OidcLoginOnTomcatTest`, `PasswordLoginRefusalOnTomcatTest`, the stand's `ServerStandTest` | `boardTest` | the two `OnTomcat` tests |
 | End to end (pyramid, 12F X parity) | [testing-suites](rules/testing-suites.md) | `e2eTest`, `standTest`, nightly and on a tag; same scripts in CI | `boardTest` in Chromium | `ci.yml` heavy and stand jobs |
 | Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | ready 15 s, `/state` p95 100 ms | `ServerStandTest` | `ServerStandTest` |
-| Security tests (pyramid) | [testing](rules/testing.md) | `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap | the filter tests |
+| Security tests (pyramid) | [testing](rules/testing.md) | `LoopbackOrRootTokenTest`, `NotThePageTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap | the filter tests |
 | A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `assertionless-tests`, `constructors-called-from-main`, `test-builder-calls`, `test-helper-methods`, `test-naming` | n.a. | `FitnessTest` |
 | A suite ends within a ceiling; a flaky test is registered or fixed (25010 maturity) | [testing](rules/testing.md), 0139 | `jagt.suites.gradle`, `jagt.suite-stats.gradle` | n.a. | `jagt.suites.gradle` |
 | A test never reaches the developer's terminal | [testing](rules/testing.md), 0058 | `TestTmuxCleanupTest`, `SuitesTapNobodyFitness` | n.a. | `TestTmuxCleanupTest` |
@@ -100,11 +100,11 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| A write carries its Origin; a remote peer authenticates (ASVS V4 CSRF, 25010 integrity) | [board-security](../openspec/specs/board-security/spec.md), 0167 | `BoardWriteFilterTest`, `OriginFilterTest`, `LoopbackFilterTest` | the board sends Origin | `BoardWriteFilterTest` |
-| One role, one door; the agent door resolves its caller (ASVS V8) | [guards](rules/guards.md) | `AgentDoorFilterTest`, `McpProtocolServiceTest` | n.a. | `AgentDoorFilterTest` |
+| A write carries its Origin; a remote peer authenticates (ASVS V4 CSRF, 25010 integrity) | [board-security](../openspec/specs/board-security/spec.md), 0167 | `NotThePageTest`, `OriginFilterTest` | the board sends Origin | `NotThePageTest` |
+| One role, one door; the agent door resolves its caller (ASVS V8) | [guards](rules/guards.md) | `LoopbackOrRootTokenTest`, `McpProtocolServiceTest` | n.a. | `LoopbackOrRootTokenTest` |
 | Password is a BCrypt hash by env name; no default credential; an issuer subject is allow-listed (V6.2, V9/10, V11; 25010 authenticity) | [board-security](../openspec/specs/board-security/spec.md) | `AuthCheckTest`, `OidcLoginOnTomcatTest`, `MasterTokenTest` | n.a. | `AuthCheckTest` |
 | Session fixation and rotation by the framework's defaults (V7) | 0167 | Spring Security, no own session code | n.a. | none |
-| Logout ends the session; a guessing peer is backed off; every login is one structured line (V6.3, V7, V16; 25010 non-repudiation) | [board-security](../openspec/specs/board-security/spec.md) | `PasswordLoginRefusalOnTomcatTest`, `LoginBackoffFilterTest`, `PasswordLoginOutcomeTest` | the gear's log-out | the three tests |
+| Logout ends the session; a guessing peer is backed off; every login is one structured line (V6.3, V7, V16; 25010 non-repudiation) | [board-security](../openspec/specs/board-security/spec.md) | `PasswordLoginRefusalOnTomcatTest`, `BackedOffPeersTest`, `PasswordLoginOutcomeTest` | the gear's log-out | the three tests |
 | Content-Security-Policy of the board's own origin (V3.4) | [design](rules/design.md), 0184 | `BoardAssetsTest`, `BoardVendorLoadTest` | no CDN, no inline script | `BoardCsp` |
 | Secure cookie, session timeout, forwarded headers, Ingress tls (V3.4, V7, V12) | [server-environment](../openspec/specs/server-environment/spec.md) | `ServerStarterTest`, `KubernetesManifestsTest` | n.a. | the two tests |
 | Management exposes health only; the cookie is same-site strict (V13) | [server-environment](../openspec/specs/server-environment/spec.md), 0172 | `KubernetesManifestsTest` | n.a. | the manifest |
