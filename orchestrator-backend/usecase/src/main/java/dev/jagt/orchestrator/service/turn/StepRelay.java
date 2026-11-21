@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service.turn;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.task.TaskState;
@@ -216,18 +217,27 @@ public class StepRelay {
   private void undone(
       String taskId, String step, Claim claim, Turn opened, RuntimeException failure) {
     boolean undone = claim.undo().test(opened);
-    log.atError()
-        .setMessage("claimed step failed")
-        .addKeyValue("task", taskId)
-        .addKeyValue("step", step)
-        .addKeyValue("cause", failure.toString())
-        .addKeyValue(
-            "effect",
-            undone
-                ? "the claim undone, the task stopped for the human"
-                : "the task had moved on, left as it is")
-        .setCause(failure)
-        .log();
+    String effect =
+        undone
+            ? "the claim undone, the task stopped for the human"
+            : "the task had moved on, left as it is";
+    if (failure instanceof Processes.Stopped) {
+      log.atInfo()
+          .setMessage("claimed step stopped with jagt")
+          .addKeyValue("task", taskId)
+          .addKeyValue("step", step)
+          .addKeyValue("effect", effect)
+          .log();
+    } else {
+      log.atError()
+          .setMessage("claimed step failed")
+          .addKeyValue("task", taskId)
+          .addKeyValue("step", step)
+          .addKeyValue("cause", failure.toString())
+          .addKeyValue("effect", effect)
+          .setCause(failure)
+          .log();
+    }
     if (undone) {
       door.undelivered(taskId, step, failure.toString());
     }

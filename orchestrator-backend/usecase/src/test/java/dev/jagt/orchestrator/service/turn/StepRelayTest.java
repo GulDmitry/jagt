@@ -6,6 +6,7 @@ import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService
 import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -15,6 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -22,6 +25,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -32,6 +36,7 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -317,6 +322,54 @@ class StepRelayTest {
         .isInstanceOf(IllegalStateException.class);
 
     verify(door).undelivered("ABC-42", "deploy", "java.lang.IllegalStateException: window closed");
+  }
+
+  @Test
+  void logsAtInfoWhenJagtsOwnStopCutTheClaimedStep() {
+    when(door.opens("ABC-42", Step.DEPLOY))
+        .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
+        .thenThrow(new Processes.Stopped(List.of("tmux", "set-option")));
+    StepRelay.Claim claim =
+        new StepRelay.Claim(
+            admittingRelay.standing("ABC-42"), opens -> FlowReports.Claimed.LANDED, opened -> true);
+
+    try (FakeLogCapture log = new FakeLogCapture(StepRelay.class)) {
+      assertThatThrownBy(
+              () -> admittingRelay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim))
+          .isInstanceOf(Processes.Stopped.class);
+
+      assertThat(log.events())
+          .extracting(ILoggingEvent::getLevel, ILoggingEvent::getMessage)
+          .containsExactly(tuple(Level.INFO, "claimed step stopped with jagt"));
+      assertThat(log.events().get(0).getKeyValuePairs())
+          .anyMatch(pair ->
+              "effect".equals(pair.key)
+                  && "the claim undone, the task stopped for the human".equals(pair.value));
+    }
+  }
+
+  @Test
+  void logsAtErrorWhenTheClaimedStepFailedForAnyOtherCause() {
+    when(door.opens("ABC-42", Step.DEPLOY))
+        .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
+        .thenThrow(new IllegalStateException("window closed"));
+    StepRelay.Claim claim =
+        new StepRelay.Claim(
+            admittingRelay.standing("ABC-42"), opens -> FlowReports.Claimed.LANDED, opened -> true);
+
+    try (FakeLogCapture log = new FakeLogCapture(StepRelay.class)) {
+      assertThatThrownBy(
+              () -> admittingRelay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim))
+          .isInstanceOf(IllegalStateException.class);
+
+      assertThat(log.events())
+          .extracting(ILoggingEvent::getLevel, ILoggingEvent::getMessage)
+          .containsExactly(tuple(Level.ERROR, "claimed step failed"));
+    }
   }
 
   @Test
