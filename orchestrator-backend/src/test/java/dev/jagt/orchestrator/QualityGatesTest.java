@@ -24,8 +24,8 @@ class QualityGatesTest {
         "Error Prone" + CONVENTIONS + "apply plugin: 'net.ltgt.errorprone'",
         "Error Prone as errors" + CONVENTIONS + "'-Werror'",
         "ArchUnit|build.gradle|testImplementation 'com.tngtech.archunit:archunit",
-        "dependency vulnerability scan|../.github/workflows/ci.yml"
-            + "|google/osv-scanner-action/osv-scanner-action@[0-9a-f]{40}",
+        "dependency vulnerability scan on GitHub|../.github/workflows/ci.yml"
+            + "|scripts/vulnerability-scan.sh",
         "dependency vulnerability scan on GitLab|../.gitlab-ci.yml|scripts/vulnerability-scan.sh",
         "dependency vulnerability scan binary|scripts/vulnerability-scan.sh|sha256=[0-9a-f]{64}"
       })

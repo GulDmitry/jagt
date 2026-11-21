@@ -15,6 +15,8 @@ import org.yaml.snakeyaml.Yaml;
 
 class CiWorkflowTest {
 
+  private static final Path CODEQL = Path.of("../.github/workflows/codeql.yml");
+
   @Test
   void publishesReleaseOnlyOnceEveryOtherJobIsGreen() {
     Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
@@ -51,7 +53,7 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"ci", "nightly", "base-image", "base-images"})
+  @ValueSource(strings = {"ci", "nightly", "base-image", "base-images", "codeql"})
   void setsOneTopLevelPermissionsBlockInEveryWorkflow(String workflow) {
     Map<?, ?> parsed =
         new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/" + workflow + ".yml")));
@@ -360,6 +362,51 @@ class CiWorkflowTest {
     Map<?, ?> test = (Map<?, ?>) Objects.requireNonNull(pipeline.get("test"));
 
     assertThat(String.valueOf(test.get("script"))).contains("scripts/vulnerability-scan.sh");
+  }
+
+  @Test
+  void scansTheReleaseSbomInGithubsTestJobThroughTheSharedScriptNotTheAction() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("steps"));
+
+    assertThat(steps)
+        .contains("run=scripts/vulnerability-scan.sh")
+        .doesNotContain("osv-scanner-action");
+  }
+
+  @Test
+  void analysesJavaAndJavaScriptWithCodeqlOnPushAndPullRequestToMain() {
+    Map<?, ?> workflow = new Yaml().load(SourceRoots.read(CODEQL));
+    Map<?, ?> on = (Map<?, ?>) Objects.requireNonNull(workflow.get(true));
+    Set<String> triggers = on.keySet().stream().map(String::valueOf).collect(Collectors.toSet());
+
+    assertThat(triggers).containsExactlyInAnyOrder("push", "pull_request");
+    assertThat(SourceRoots.read(CODEQL))
+        .contains("language: java-kotlin")
+        .contains("language: javascript-typescript");
+  }
+
+  @Test
+  void letsCodeqlReadTheRepositoryAndWriteSecurityEventsOnItsAnalyseJobOnly() {
+    Map<?, ?> workflow = new Yaml().load(SourceRoots.read(CODEQL));
+    Map<?, ?> analyse =
+        (Map<?, ?>)
+            Objects.requireNonNull(
+                ((Map<?, ?>) Objects.requireNonNull(workflow.get("jobs"))).get("analyse"));
+
+    assertThat(workflow.get("permissions")).isEqualTo(Map.of("contents", "read"));
+    assertThat(analyse.get("permissions"))
+        .isEqualTo(Map.of("contents", "read", "security-events", "write"));
+  }
+
+  @Test
+  void failsTheCodeqlRunOnFindingsOfSeverityErrorAndPinsEveryActionBySha() {
+    String workflow = SourceRoots.read(CODEQL);
+
+    assertThat(workflow)
+        .contains("select(. == \"error\")")
+        .contains("test \"$errors\" -eq 0")
+        .doesNotContainPattern("uses: [^.\\n]+@(?![0-9a-f]{40} )");
   }
 
   @Test
