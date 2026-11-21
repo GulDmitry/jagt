@@ -47,6 +47,7 @@ Work in a full jagt checkout: the image builds from it with Gradle, a download o
 One account per service, never your own: a code-host account that clones and pushes task branches, and the agent CLI's account or API key.
 A leaked key then costs one service.
 Their secrets live in `.env` for compose or a `Secret` for Kubernetes (`examples/server.env`), never in `jagt.yml` or an image.
+Verify a published image: `gh attestation verify oci://ghcr.io/guldmitry/jagt:<version> --repo GulDmitry/jagt`.
 
 ## Configuration
 

@@ -1,6 +1,7 @@
 # Installs jagt for the current user, no admin rights: a release jar, a Temurin 25 JRE, a launcher on the user's PATH.
 # JAGT_VERSION pins a release (default: the latest), JAGT_HOME the install root, JAGT_BIN the launcher's
-# folder, JAGT_INSTALL_FEED and JAGT_INSTALL_JRE_FEED the two download bases.
+# folder, JAGT_INSTALL_FEED and JAGT_INSTALL_JRE_FEED the two download bases. With gh on PATH the release's
+# provenance attestation of the jar and its checksums is verified against JAGT_INSTALL_REPO.
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 if ($PSVersionTable.PSEdition -eq 'Desktop') {
@@ -29,11 +30,23 @@ function Test-Checksum($file, $published) {
   }
 }
 
+function Test-Attestation($repo, $files) {
+  if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    [Console]::Error.WriteLine('install.ps1: gh not found, provenance not verified, only the sha256 was checked')
+    return
+  }
+  foreach ($file in $files) {
+    & gh attestation verify $file --repo $repo | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "provenance verification failed for $(Split-Path -Leaf $file), nothing installed" }
+  }
+}
+
 $isWindowsHost = ($null -eq $IsWindows) -or $IsWindows
 $jreOs = if ($isWindowsHost) { 'windows' } elseif ($IsMacOS) { 'mac' } else { 'linux' }
 $javaName = if ($isWindowsHost) { 'java.exe' } else { 'java' }
 
-$feed = Get-Setting 'JAGT_INSTALL_FEED' 'https://github.com/GulDmitry/jagt/releases'
+$repo = Get-Setting 'JAGT_INSTALL_REPO' 'GulDmitry/jagt'
+$feed = Get-Setting 'JAGT_INSTALL_FEED' "https://github.com/$repo/releases"
 $jreFeed = Get-Setting 'JAGT_INSTALL_JRE_FEED' 'https://api.adoptium.net/v3/binary/latest/25/ga'
 $localAppData = Get-Setting 'LOCALAPPDATA' (Join-Path $HOME '.local/share')
 $root = Get-Setting 'JAGT_HOME' (Join-Path $localAppData 'jagt')
@@ -66,6 +79,7 @@ try {
   }
   $line = Get-Content (Join-Path $staging 'jar.sha256') | Where-Object { $_ -match " \*?$([regex]::Escape($jar))$" } | Select-Object -First 1
   Test-Checksum (Join-Path $staging $jar) $line
+  Test-Attestation $repo @((Join-Path $staging $jar), (Join-Path $staging 'jar.sha256'))
 
   $runtime = Join-Path $root 'runtime'
   if (-not (Test-Path (Join-Path $runtime "bin/$javaName"))) {

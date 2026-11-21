@@ -238,7 +238,9 @@ class CiWorkflowTest {
 
     assertThat(release)
         .contains("actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8")
-        .contains("subject-path=orchestrator-backend/build/release/*.jar")
+        .contains("orchestrator-backend/build/release/*.jar")
+        .contains("orchestrator-backend/build/release/*.cdx.json")
+        .contains("orchestrator-backend/build/release/*.sha256")
         .contains("subject-digest=${{ steps.image.outputs.digest }}")
         .contains("push-to-registry=true");
   }

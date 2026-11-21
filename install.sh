@@ -1,10 +1,12 @@
 #!/bin/sh
 # Installs jagt for the current user, no sudo: a release jar, a Temurin 25 JRE, a launcher on PATH.
 # JAGT_VERSION pins a release (default: the latest), JAGT_HOME the install root, JAGT_BIN the launcher's
-# folder, JAGT_INSTALL_FEED and JAGT_INSTALL_JRE_FEED the two download bases.
+# folder, JAGT_INSTALL_FEED and JAGT_INSTALL_JRE_FEED the two download bases. With gh on PATH the release's
+# provenance attestation of the jar and its checksums is verified against JAGT_INSTALL_REPO.
 set -eu
 
-FEED=${JAGT_INSTALL_FEED:-https://github.com/GulDmitry/jagt/releases}
+REPO=${JAGT_INSTALL_REPO:-GulDmitry/jagt}
+FEED=${JAGT_INSTALL_FEED:-https://github.com/$REPO/releases}
 JRE_FEED=${JAGT_INSTALL_JRE_FEED:-https://api.adoptium.net/v3/binary/latest/25/ga}
 BIN=${JAGT_BIN:-$HOME/.local/bin}
 
@@ -29,6 +31,17 @@ verify() {
   want=$(printf '%s' "$2" | cut -d ' ' -f 1)
   [ -n "$want" ] || fail "no checksum published for $1"
   [ "$(sha256_of "$1")" = "$want" ] || fail "checksum mismatch for $(basename "$1"), nothing installed"
+}
+
+attest() {
+  if command -v gh >/dev/null 2>&1; then
+    for asset in "$@"; do
+      gh attestation verify "$asset" --repo "$REPO" >/dev/null ||
+        fail "provenance verification failed for $(basename "$asset"), nothing installed"
+    done
+  else
+    echo "install.sh: gh not found, provenance not verified, only the sha256 was checked" >&2
+  fi
 }
 
 case "$(uname -s)" in
@@ -79,6 +92,7 @@ fetch --output "$staging/$jar" "$release/$jar" || fail "cannot download $jar fro
 fetch --output "$staging/jagt-$version.sha256" "$release/jagt-$version.sha256" ||
   fail "cannot download the checksum of $jar"
 verify "$staging/$jar" "$(grep " $jar\$" "$staging/jagt-$version.sha256" || true)"
+attest "$staging/$jar" "$staging/jagt-$version.sha256"
 
 java_of() {
   if [ -x "$1/Contents/Home/bin/java" ]; then

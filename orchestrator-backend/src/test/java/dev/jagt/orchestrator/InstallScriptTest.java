@@ -47,6 +47,10 @@ class InstallScriptTest {
                     MessageDigest.getInstance("SHA-256")
                         .digest(Files.readAllBytes(jre.resolve("eclipse"))))
             + "  OpenJDK25U-jre.tar.gz\n");
+    Path ghbin = Files.createDirectories(dir.resolve("ghbin"));
+    Files.writeString(
+        ghbin.resolve("gh"), "#!/bin/sh\necho \"$*\" >> '" + dir.resolve("gh-calls") + "'\n");
+    ghbin.resolve("gh").toFile().setExecutable(true);
     Files.createSymbolicLink(dir.resolve("jre/linux/aarch64"), Path.of("x64"));
     Files.createSymbolicLink(dir.resolve("jre/mac"), Path.of("linux"));
     ProcessBuilder install = TestInstallProcessBuilder.installIn(dir).build();
@@ -66,6 +70,10 @@ class InstallScriptTest {
     assertThat(launchOutput).contains("fake-java-25").contains("-version");
     assertThat(dir.resolve("home/versions/1.2.3/jagt.jar")).hasBinaryContent(jar);
     assertThat(dir.resolve("home/current/jagt.jar")).exists();
+    assertThat(Files.readAllLines(dir.resolve("gh-calls")))
+        .hasSize(2)
+        .allMatch(call ->
+            call.startsWith("attestation verify ") && call.endsWith(" --repo GulDmitry/jagt"));
 
     Path runs = dir.resolve("runs");
     Path fakeJava = dir.resolve("home/runtime/bin/java");
@@ -104,5 +112,25 @@ class InstallScriptTest {
     assertThat(installLog).contains("checksum mismatch");
     assertThat(dir.resolve("home")).doesNotExist();
     assertThat(dir.resolve("bin/jagt")).doesNotExist();
+  }
+
+  @Test
+  void installsNothingWhenAttestationVerificationFails(@TempDir Path dir) throws Exception {
+    Path release = Files.createDirectories(dir.resolve("feed/download/v1.2.3"));
+    Files.writeString(release.resolve("jagt-1.2.3.jar"), "fake jar");
+    Files.writeString(
+        release.resolve("jagt-1.2.3.sha256"),
+        "fe9b0239e80bc2d809c9792f8b6c24882125e5b52b65627bbf6be97877f80632  jagt-1.2.3.jar\n");
+    Path gh = Files.createDirectories(dir.resolve("ghbin")).resolve("gh");
+    Files.writeString(gh, "#!/bin/sh\nexit 1\n");
+    gh.toFile().setExecutable(true);
+
+    Process installed = TestInstallProcessBuilder.installIn(dir).build().start();
+    String log = new String(installed.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+    assertThat(installed.waitFor(60, TimeUnit.SECONDS)).isTrue();
+    assertThat(installed.exitValue()).isNotZero();
+    assertThat(log).contains("provenance verification failed");
+    assertThat(dir.resolve("home")).doesNotExist();
   }
 }

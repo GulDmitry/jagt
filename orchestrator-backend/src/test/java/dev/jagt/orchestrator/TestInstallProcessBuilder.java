@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator;
 
+import java.io.File;
 import java.nio.file.Path;
 
 public record TestInstallProcessBuilder(Path dir) {
@@ -20,6 +21,9 @@ public record TestInstallProcessBuilder(Path dir) {
     install
         .environment()
         .put("JAGT_INSTALL_JRE_FEED", dir.resolve("jre").toUri().toString().replaceAll("/$", ""));
+    install
+        .environment()
+        .put("PATH", dir.resolve("ghbin") + File.pathSeparator + System.getenv("PATH"));
     install.redirectErrorStream(true);
     return install;
   }
