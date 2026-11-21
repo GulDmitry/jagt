@@ -41,6 +41,38 @@ class PinningTest {
   }
 
   @Test
+  void dependencyChecksumChangeFailsTheBuildBecauseEveryLockedModuleIsVerified()
+      throws IOException {
+    String metadata = SourceRoots.read(Path.of("gradle/verification-metadata.xml"));
+    List<String> unverified;
+    try (Stream<Path> files = Files.walk(Path.of("."), 4)) {
+      unverified =
+          files
+              .filter(p -> p.getFileName().toString().endsWith("gradle.lockfile"))
+              .filter(p -> !p.toString().matches(".*/(build|\\.gradle|node_modules)/.*"))
+              .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
+              .map(line -> Pattern.compile(": ([^#:=\\s]+):([^:=]+):([^=]+)=").matcher(line))
+              .filter(java.util.regex.Matcher::find)
+              .map(m ->
+                  "<component group=\""
+                      + m.group(1)
+                      + "\" name=\""
+                      + m.group(2)
+                      + "\" version=\""
+                      + m.group(3)
+                      + "\">")
+              .filter(component -> !metadata.contains(component))
+              .distinct()
+              .toList();
+    }
+
+    assertThat(metadata)
+        .contains("<verify-metadata>true</verify-metadata>")
+        .doesNotContain("<trusted-artifacts>");
+    assertThat(unverified).isEmpty();
+  }
+
+  @Test
   void wrapperChangeShowsInItsChecksum() {
     assertThat(SourceRoots.read(Path.of("gradle/wrapper/gradle-wrapper.properties")))
         .containsPattern("(?m)^distributionSha256Sum=[0-9a-f]{64}$");

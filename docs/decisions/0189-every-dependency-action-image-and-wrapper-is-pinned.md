@@ -12,6 +12,7 @@ Accepted 2026-11-16: a moved version, tag or `latest` changed a build with no di
 
 - Dependencies resolved to whatever Maven Central held that day; actions and images were floating tags.
 - The wrapper downloaded a distribution it never verified.
+- Lockfiles pin versions, not the bytes behind them.
 
 ## Decision
 
@@ -23,13 +24,15 @@ Accepted 2026-11-16: a moved version, tag or `latest` changed a build with no di
 - Every action is a full commit sha with its tag as a trailing comment; every `FROM` and GitLab `image:` is `tag@sha256:digest`.
 - A `FROM ${BASE}` is the user's own image and stays unpinned.
 - Renovate (`config:recommended`, `helpers:pinGitHubActionDigests`) opens every move as a request a person reads.
-- `PinningTest` fails on a missing lockfile, checksum, sha or digest.
+- `gradle/verification-metadata.xml` holds the sha256 of every locked module and plugin, no trusted artifacts: a changed one fails the build.
+- Written by `./gradlew --write-verification-metadata sha256` over every resolvable configuration, never by CI.
+- `PinningTest` fails on a missing lockfile, checksum, sha, digest or a locked module without an entry.
 
 ## Rejected
 
 - Strict lock mode: every new configuration needs its lock written first; the drift check holds without it.
 - Dependabot: no GitLab, no wrapper checksum, no Dockerfile digest in one config.
-- Verification metadata (`verification-metadata.xml`): signs artifacts, not versions; a later step.
+- Signature verification (`verify-signatures`): few publishers sign; checksums cover the integrity gap.
 
 ## Reopen when
 
