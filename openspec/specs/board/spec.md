@@ -104,7 +104,7 @@ The board SHALL render Preact components written with `htm`, served from `board/
 import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 224 KB
 (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
-- **WHEN** `vendor/preact.mjs` differs from the published 11.0.1 by one byte
+- **WHEN** `vendor/preact.mjs` differs from the published 11.2.0 by one byte
 - **THEN** `BoardAssetsTest` fails naming the file
 - **WHEN** a page under `board/` loads a script or a stylesheet from `https://`
 - **THEN** `BoardAssetsTest` fails

@@ -5,5 +5,5 @@ USER root
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
- && npm install -g @anthropic-ai/claude-code
+ && npm install -g @anthropic-ai/claude-code@2.1.319
 USER 10001:0

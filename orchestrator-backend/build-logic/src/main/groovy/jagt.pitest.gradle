@@ -16,7 +16,7 @@ allprojects {
     def ownTargets = project.path == ':adapter' ? ['dev.jagt.orchestrator.adapter.*'] + usecaseGitClasses : ['dev.jagt.*']
 
     pitest {
-        pitestVersion = '1.30.1'
+        pitestVersion = '1.30.2'
         junit5PluginVersion = '1.2.3'
         targetClasses = pitestTargets.orElse(ownTargets)
         targetTests = ['dev.jagt.*']

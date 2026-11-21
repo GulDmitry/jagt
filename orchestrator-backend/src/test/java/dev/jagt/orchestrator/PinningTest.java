@@ -71,18 +71,20 @@ class PinningTest {
   }
 
   @Test
-  void everyDockerfileBaseIsPinnedByTagAndDigestUnlessItIsAnArgument() throws IOException {
+  void everyDockerfileBaseAndNpmInstallIsPinnedUnlessBaseIsAnArgument() throws IOException {
     List<String> unpinned;
     try (Stream<Path> files = Files.walk(Path.of(".."), 6)) {
       unpinned =
           files
-              .filter(p -> p.getFileName().toString().startsWith("Dockerfile"))
+              .filter(p -> p.getFileName().toString().matches("(Dockerfile.*|.*\\.Dockerfile)"))
               .filter(p -> !p.toString().matches(".*/(\\.claude|build|node_modules|\\.git)/.*"))
               .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
-              .filter(line -> line.matches(".*: FROM .*"))
+              .filter(line -> !line.matches(".*: #.*"))
+              .filter(line -> line.matches(".*: FROM .*") || line.contains("npm install"))
               .filter(line -> !line.contains("${"))
               .filter(line -> !line.matches(".*: FROM build AS \\S+$"))
               .filter(line -> !line.matches(".*: FROM \\S+:\\S+@sha256:[0-9a-f]{64}( AS \\S+)?$"))
+              .filter(line -> !line.matches(".*npm install -g \\S+@\\d+\\.\\d+\\.\\d+( .*)?$"))
               .toList();
     }
 
