@@ -405,6 +405,13 @@ class CiWorkflowTest {
   }
 
   @Test
+  void passesAnImageScanWhenTheOnlyFixNeedsUbuntuPro() {
+    String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
+
+    assertThat(scan).contains("grep -Fvq '~esm'");
+  }
+
+  @Test
   void keepsTheNewestTenUntaggedBaseImagesWithTheirChildrenByOnePinnedAction() {
     String workflow = SourceRoots.read(Path.of("../.github/workflows/base-image.yml"));
 
