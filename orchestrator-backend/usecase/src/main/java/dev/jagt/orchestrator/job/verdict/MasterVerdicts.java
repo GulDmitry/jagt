@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.job.verdict;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.job.master.MasterShip;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -46,7 +46,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     return OriginContext.as(ActionOrigin.MASTER, () -> judged(taskId, task, verdict, config));
   }
 
@@ -54,7 +54,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     boolean plan = FlowRules.holdsPlan(task.standing().status());
     return switch (verdict.kind()) {
       case NOT_READY -> returned(taskId, task, verdict, plan);
@@ -73,7 +73,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     decisions.returned(task, verdict.round(), List.of());
     return config.may(MasterRight.SHIP) && ship.ship(taskId, task);
   }

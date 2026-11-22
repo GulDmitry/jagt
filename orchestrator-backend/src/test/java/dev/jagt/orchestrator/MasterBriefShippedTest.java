@@ -2,7 +2,7 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

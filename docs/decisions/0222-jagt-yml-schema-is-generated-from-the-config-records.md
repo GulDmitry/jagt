@@ -10,7 +10,7 @@ Accepted 2026-11-21. Reopens on the condition below.
 ## Context
 
 - `jagt.yml` had no schema: a mistyped value in a shipped `.dist` file surfaced at startup.
-- Its keys live in two places: `ConfigService.ConfigFile`, re-read on every access, and the `@ConfigurationProperties` records Spring binds once.
+- Its keys live in two places: `ConfigFile`, re-read on every access, and the `@ConfigurationProperties` records Spring binds once.
 - Spring's configuration metadata covers the second place alone, never projects, roles, tracker or agent.
 
 ## Decision

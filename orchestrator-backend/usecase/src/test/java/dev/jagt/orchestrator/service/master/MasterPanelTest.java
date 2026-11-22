@@ -22,7 +22,7 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -54,10 +54,10 @@ class MasterPanelTest {
   private final ChargedReviews reviews = mock(ChargedReviews.class);
   private final MasterBriefs briefs = mock(MasterBriefs.class);
   private final RoundQuotes quotes = mock(RoundQuotes.class);
-  private final ConfigService.ConfigFile.ArbiterConfig judge =
-      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
-  private final ConfigService.ConfigFile.ArbiterConfig act =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigFile.ArbiterConfig judge =
+      new ConfigFile.ArbiterConfig("judge", null, null, null, null);
+  private final ConfigFile.ArbiterConfig act =
+      new ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final MasterPanel.RoundRead emptyRead =
       new MasterPanel.RoundRead("", "", "", List.of(), "");
   private final MasterPanel.Briefs briefsPair =

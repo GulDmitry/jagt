@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.config.MasterMove;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -38,7 +38,7 @@ class MasterPlanVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     return OriginContext.as(
         ActionOrigin.MASTER,
         () ->

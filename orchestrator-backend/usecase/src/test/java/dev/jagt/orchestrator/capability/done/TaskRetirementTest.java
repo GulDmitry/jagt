@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.capability.session.TaskViewer;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.worktree.LineChange;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.KeptTicketTexts;
@@ -60,7 +61,7 @@ class TaskRetirementTest {
   @Test
   void killsTheSessionBeforeDeletingTheDirectoryItIsRunningIn() {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     String result = retirement.retire("a1");
 
     var order = inOrder(viewer, worktrees);
@@ -77,7 +78,7 @@ class TaskRetirementTest {
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
             .alias("a1")
             .build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     String result = retirement.retire("a1");
 
     assertThat(result).contains("scratch folder deleted").doesNotContain("Branch");
@@ -86,7 +87,7 @@ class TaskRetirementTest {
   @Test
   void saysTheWorktreeStayedOnDiskWhenItsProjectIsGoneFromConfig() {
     state.putTask("ABC-1", TaskState.builder("gone", "/wt", TaskStatus.DONE).alias("a1").build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(worktrees.remove(anyString(), any(), any())).thenReturn(true);
     String result = retirement.retire("a1");
 
@@ -97,7 +98,7 @@ class TaskRetirementTest {
   @Test
   void saysTheAgentsWindowWasClosedWithTheLastTask() {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(viewer.closeIfNoTasksLeft()).thenReturn(true);
     String result = retirement.retire("a1");
 
@@ -117,7 +118,7 @@ class TaskRetirementTest {
   @Test
   void leavesNeitherTicketTextNorPlanBaselineForLaterTaskOnTheSameId() throws java.io.IOException {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     java.nio.file.Files.createDirectories(paths.ticketText("ABC-1").getParent());
     java.nio.file.Files.writeString(paths.ticketText("ABC-1"), "Widget layout is off");
     java.nio.file.Files.writeString(paths.planBaseline("ABC-1"), "old plan");

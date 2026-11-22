@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.plan;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.protocol.plan.PlanRepositories;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
@@ -48,7 +49,7 @@ public class PlanPlacement {
           "plan.md names no `- [changed] <key>` under `## Repositories`, so no repository can be"
               + " cut.");
     }
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     NewTask request =
         NewTask.builder(taskId, keys.getFirst())
             .alsoIn(keys.subList(1, keys.size()))

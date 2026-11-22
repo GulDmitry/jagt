@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.Rounds;
@@ -65,8 +66,7 @@ class HumanWaitRecorderTest {
     state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(ConfigService.ConfigFile.ArbiterConfig.defaults().withMode("off")));
+            ConfigFile.defaults().withArbiter(ConfigFile.ArbiterConfig.defaults().withMode("off")));
     context.registerBean(
         HumanWaitRecorder.class,
         () ->

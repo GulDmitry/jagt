@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.StateService;
@@ -61,10 +62,10 @@ class AgentStatusReportsTest {
   private final ConfigService configService = mock(ConfigService.class);
   private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
 
-  private final ConfigService.ConfigFile.ArbiterConfig actMaster =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
-  private final ConfigService.ConfigFile verifying =
-      ConfigService.ConfigFile.defaults()
+  private final ConfigFile.ArbiterConfig actMaster =
+      new ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigFile verifying =
+      ConfigFile.defaults()
           .withProjects(
               Map.of(
                   "proj", projectConfig().withVerifyCommand(List.of("./gradlew", "test")).build()));
@@ -76,14 +77,14 @@ class AgentStatusReportsTest {
           .alias("a1")
           .mrUrl("http://mr/1")
           .build();
-  private final ConfigService.ConfigFile projOnly =
-      ConfigService.ConfigFile.defaults()
+  private final ConfigFile projOnly =
+      ConfigFile.defaults()
           .withProjects(
               Map.of(
                   "proj",
                   new dev.jagt.orchestrator.task.repo.ProjectConfig(
                       "/repo", "origin/main", "dev", List.of())));
-  private final ConfigService.ConfigFile withRegistry =
+  private final ConfigFile withRegistry =
       projOnly.withProjects(
           Map.of(
               "proj",
@@ -131,7 +132,7 @@ class AgentStatusReportsTest {
   @Test
   void recordsOnTheSessionThatTheTurnReportedWhenReportLands() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.IN_PROGRESS, "going on", "ABC-1");
 
@@ -154,7 +155,7 @@ class AgentStatusReportsTest {
   void reportsAnErrorWhenVerdictJagtMeasuredDoesNotLand() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
       reports.verified(true, "verified", "ABC-1");
@@ -168,7 +169,7 @@ class AgentStatusReportsTest {
 
   @Test
   void answersReportOnVanishedTaskAsFactNotFieldToFix() {
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() -> reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-9"))
         .isInstanceOfSatisfying(
@@ -186,7 +187,7 @@ class AgentStatusReportsTest {
                 TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()))
         .when(staleView)
         .task("ABC-1");
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     AgentStatusReports reports =
         new AgentStatusReports(staleView, refusals, flowReports, handBack, configService);
 
@@ -200,8 +201,7 @@ class AgentStatusReportsTest {
   @Test
   void tellsTheSessionTheMasterReadsItsHandBackNext() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withArbiter(actMaster));
+    when(configService.load()).thenReturn(ConfigFile.defaults().withArbiter(actMaster));
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
@@ -215,7 +215,7 @@ class AgentStatusReportsTest {
   void storesTheRequestLinkTheAgentPutInItsStatusMessage() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
 
@@ -231,7 +231,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .message("deployed")
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
@@ -244,7 +244,7 @@ class AgentStatusReportsTest {
   void takesTheRequestLinkFromTheArgumentRatherThanFromTheProse() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -266,7 +266,7 @@ class AgentStatusReportsTest {
                     new TaskRepo("proj", "/wt", "git@host:proj.git", null),
                     new TaskRepo("web", "/wt-web", "git@host:web.git", null)))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -295,7 +295,7 @@ class AgentStatusReportsTest {
   void refusesRequestReportedUnderProjectTheTaskDoesNotHold() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() ->
             reports.report(
@@ -324,7 +324,7 @@ class AgentStatusReportsTest {
             .mrCreatedAt(1_000L)
             .lastPolledAt(9_000L)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -349,7 +349,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null)))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -370,7 +370,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null)))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     ReachLedger reach = new ReachLedger();
     AgentStatusReports reports =
         new AgentStatusReports(
@@ -403,7 +403,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null)))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() ->
             reports.report(
@@ -429,7 +429,7 @@ class AgentStatusReportsTest {
                     new TaskRepo("proj", "/wt", "git@host:team/proj.git", null),
                     new TaskRepo("web", "/wt-web", "git@host:team/web.git", null)))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -455,7 +455,7 @@ class AgentStatusReportsTest {
   @Test
   void readsTheOutcomeFromTheArgumentWhenTheMessageCarriesNoMarker() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -475,7 +475,7 @@ class AgentStatusReportsTest {
             .mrUrl("https://host/mr/1")
             .build());
     when(worktreeChanges.anyUncommitted(any())).thenReturn(true);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage("REVIEW_PENDING", "already handled", "no_changes", null, Map.of()),
@@ -493,7 +493,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .mrUrl("https://host/mr/1")
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage("REVIEW_PENDING", "already handled", outcome, null, Map.of()),
@@ -508,7 +508,7 @@ class AgentStatusReportsTest {
   void marksQuestionStoppedOnDeniedCallAsPermissionOnlyTheHumanGrants() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -525,7 +525,7 @@ class AgentStatusReportsTest {
   void refusesToSayTaskIsWaitingOnChecksWithoutNamingTheRequest(String message) {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, message, "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
@@ -536,7 +536,7 @@ class AgentStatusReportsTest {
   void letsTaskSayItIsWaitingOnTheChecksOnceItNamesTheRequest() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         TaskStatus.CI_POLLING, "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1");
@@ -553,7 +553,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .mrUrl("https://gitlab.example/g/p/-/merge_requests/1")
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(
             () -> reports.report(TaskStatus.CI_POLLING, "waiting for the pipeline", "ABC-1"))
@@ -564,7 +564,7 @@ class AgentStatusReportsTest {
   @Test
   void truncatesStatusMessageToOneDashboardLineWhenAgentSendsAnEssay() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
 
@@ -577,7 +577,7 @@ class AgentStatusReportsTest {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     String link = "https://gitlab.example/group/subgroup/team/project/-/merge_requests/1234567";
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "pipeline queued after the push — MR: " + link, "ABC-1");
 
@@ -587,7 +587,7 @@ class AgentStatusReportsTest {
   @Test
   void advancesRoundTheReviewApprovedToApproved() {
     state.putTask("ABC-1", polling);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
 
@@ -598,7 +598,7 @@ class AgentStatusReportsTest {
   @Test
   void advancesCleanUnapprovedRoundToReviewed() {
     state.putTask("ABC-1", polling);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
@@ -618,7 +618,7 @@ class AgentStatusReportsTest {
             .lastActiveTimestamp(1_700_000_000_000L)
             .session(Session.defaults().withQuietSince(1_700_000_000_000L))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
@@ -631,7 +631,7 @@ class AgentStatusReportsTest {
   @Test
   void stampsThePollingWindowWhenRequestIsFirstLinked() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
@@ -649,7 +649,7 @@ class AgentStatusReportsTest {
             .mrCreatedAt(lastRound)
             .lastPolledAt(lastRound)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
@@ -666,7 +666,7 @@ class AgentStatusReportsTest {
             .mrUrl("http://mr/1")
             .mrCreatedAt(lastRound)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
 
@@ -682,7 +682,7 @@ class AgentStatusReportsTest {
             .mrUrl("http://mr/1")
             .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_000, "4 ships", "http://mr/1", null))
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
 
@@ -699,7 +699,7 @@ class AgentStatusReportsTest {
             .mrCreatedAt(12345L)
             .pipelineStatus("failed")
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
@@ -718,7 +718,7 @@ class AgentStatusReportsTest {
             .pipelineStatus("success")
             .approved(true)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     when(worktreeChanges.pushedTips(any())).thenReturn("proj=aaa");
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -739,7 +739,7 @@ class AgentStatusReportsTest {
             .pipelineStatus("failed")
             .approved(true)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     when(worktreeChanges.pushedTips(any())).thenReturn("proj=bbb");
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -752,7 +752,7 @@ class AgentStatusReportsTest {
   void refusesPlanWithoutAcceptanceCriteria() throws IOException {
     Files.writeString(root.resolve("plan.md"), "# Plan\n1. change the guide\n");
     state.putTask("ABC-1", planning);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(planReport)
         .isInstanceOf(IllegalArgumentException.class)
@@ -770,7 +770,7 @@ class AgentStatusReportsTest {
             .mrUrl("http://mr/1")
             .mrCreatedAt(12345L)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
@@ -785,7 +785,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .mrUrl("https://host/mr/1")
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() ->
             reports.report(TaskStatus.CI_POLLING, "review request: https://host/mr/1", "ABC-1"))
@@ -800,7 +800,7 @@ class AgentStatusReportsTest {
   @Test
   void putsRedRoundOnTheBoard() {
     state.putTask("ABC-1", polling);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
 
@@ -811,7 +811,7 @@ class AgentStatusReportsTest {
   @Test
   void saysRedRoundWasRelayedToTheSessionWhenItWas() {
     state.putTask("ABC-1", polling);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
 
@@ -822,7 +822,7 @@ class AgentStatusReportsTest {
   @Test
   void saysRedRoundStoppedTheTaskInsteadOfRelayingItWhenJagtStoppedIt() {
     state.putTask("ABC-1", polling);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     TaskStop stop =
         new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
 
@@ -860,7 +860,7 @@ class AgentStatusReportsTest {
         """);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1");
 
@@ -880,7 +880,7 @@ class AgentStatusReportsTest {
         ```
         """);
     state.putTask("ABC-1", planning);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(planReport)
         .isInstanceOf(IllegalArgumentException.class)
@@ -902,7 +902,7 @@ class AgentStatusReportsTest {
             .mrCreatedAt(1_000L)
             .lastPolledAt(9_000L)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -923,7 +923,7 @@ class AgentStatusReportsTest {
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.CLOSED).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(
@@ -938,7 +938,7 @@ class AgentStatusReportsTest {
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.REQUIRED).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() ->
             reports.report(
@@ -995,7 +995,7 @@ class AgentStatusReportsTest {
   @Test
   void answersSessionsReportWithTheStatusItLandedOnAndItsOwnWords() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     String answer =
         reports.report(
@@ -1008,7 +1008,7 @@ class AgentStatusReportsTest {
   void answersVerificationVerdictWithTheStatusItLanded() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     String answer = reports.verified(true, "checks green", "ABC-1");
 
@@ -1024,7 +1024,7 @@ class AgentStatusReportsTest {
             .build();
     state.putTask("ABC-1", working);
     state.putTask("ABC-2", working);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
     reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-2");
@@ -1036,7 +1036,7 @@ class AgentStatusReportsTest {
   @Test
   void logsTheMoveReportMadeWhereTheStatusChanged() {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
       reports.report(TaskStatus.IN_PROGRESS, "started", "ABC-1");
@@ -1053,7 +1053,7 @@ class AgentStatusReportsTest {
   @Test
   void logsQuestionOnceWhenTheStatusStaysAndNothingWhenItIsRepeatedOrPlain() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
       reports.report(
@@ -1079,7 +1079,7 @@ class AgentStatusReportsTest {
             .alias("a2")
             .report(AgentReport.QUESTION)
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
       reports.report(
@@ -1104,7 +1104,7 @@ class AgentStatusReportsTest {
             .alias("a1")
             .repoRequest("registry")
             .build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(TaskStatus.IN_PROGRESS, "back to work", "ABC-1");
 
@@ -1116,10 +1116,10 @@ class AgentStatusReportsTest {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withAgent(
-                    ConfigService.ConfigFile.AgentConfig.defaults()
-                        .withVisualize(new ConfigService.ConfigFile.VisualizeConfig(true))));
+                    ConfigFile.AgentConfig.defaults()
+                        .withVisualize(new ConfigFile.VisualizeConfig(true))));
 
     MessageContext context = reports.sessionContextFor("ABC-1");
     assertThat(context.switchesOn()).containsExactly("visualize");
@@ -1129,7 +1129,7 @@ class AgentStatusReportsTest {
   @Test
   void knowsNoSwitchIsOnWhenNoneIs() {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(reports.sessionContextFor("ABC-1").switchesOn()).isEmpty();
   }
@@ -1139,10 +1139,10 @@ class AgentStatusReportsTest {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withAgent(
-                    ConfigService.ConfigFile.AgentConfig.defaults()
-                        .withVisualize(new ConfigService.ConfigFile.VisualizeConfig(true))));
+                    ConfigFile.AgentConfig.defaults()
+                        .withVisualize(new ConfigFile.VisualizeConfig(true))));
 
     assertThat(reports.sessionContextFor("ABC-1").firstReport()).isFalse();
   }
@@ -1151,7 +1151,7 @@ class AgentStatusReportsTest {
   void missesThePictureWhileTheWorktreeHoldsNoTaskVisual() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isTrue();
   }
@@ -1161,7 +1161,7 @@ class AgentStatusReportsTest {
     Files.writeString(root.resolve("task_visual.md"), "picture");
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
   }
@@ -1169,7 +1169,7 @@ class AgentStatusReportsTest {
   @Test
   void missesNoPictureOfTaskWithoutWorktree() {
     state.putTask("ABC-1", TaskState.builder("proj", "", TaskStatus.IN_PROGRESS).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
   }
@@ -1177,7 +1177,7 @@ class AgentStatusReportsTest {
   @Test
   void recordsTheJudgementsReportCarriesOnTheTask() {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     reports.report(
         new AgentStatusMessage(

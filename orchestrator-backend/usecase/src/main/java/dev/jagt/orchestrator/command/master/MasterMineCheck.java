@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ public class MasterMineCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    ConfigService.ConfigFile.ArbiterConfig master = configService.load().arbiter();
+    ConfigFile.ArbiterConfig master = configService.load().arbiter();
     if (!master.running()) {
       return List.of();
     }

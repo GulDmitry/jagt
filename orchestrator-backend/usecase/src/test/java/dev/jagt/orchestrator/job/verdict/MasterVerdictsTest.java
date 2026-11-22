@@ -22,7 +22,7 @@ import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.job.master.MasterShip;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -61,10 +61,10 @@ class MasterVerdictsTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final MasterShip ship = mock(MasterShip.class);
   private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
-  private final ConfigService.ConfigFile.ArbiterConfig acting =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
-  private final ConfigService.ConfigFile.ArbiterConfig judging =
-      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
+  private final ConfigFile.ArbiterConfig acting =
+      new ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigFile.ArbiterConfig judging =
+      new ConfigFile.ArbiterConfig("judge", null, null, null, null);
   private final MasterReview.Verdict guardInvertedBeforeAnyRound =
       new MasterReview.Verdict(
           MasterReview.Kind.NOT_READY,
@@ -604,7 +604,7 @@ class MasterVerdictsTest {
   @Test
   void shipsNothingWhereTheHumanKeptThatStep() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    var kept = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of("ship"), null);
+    var kept = new ConfigFile.ArbiterConfig("act", null, null, List.of("ship"), null);
 
     boolean moved = verdicts.act("ABC-1", reviewPending, ready, kept);
 

@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.command.ResumeCommand;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -100,7 +101,7 @@ class MasterPressesTest {
 
   @Test
   void runsCommandAsTheMaster() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     MasterPresses presses =
         new MasterPresses(commands, new GlobalCommands(List.of(new Spend(seen))), config);
@@ -124,10 +125,9 @@ class MasterPressesTest {
   void refusesCommandItsHumanKeepsInMine() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig(
-                        "act", null, null, List.of("spend"), null)));
+                    new ConfigFile.ArbiterConfig("act", null, null, List.of("spend"), null)));
     MasterPresses presses =
         new MasterPresses(
             commands, new GlobalCommands(List.of(new Spend(new AtomicReference<>()))), config);

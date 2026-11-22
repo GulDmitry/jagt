@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.role.Arbiter;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.log.StopLog;
 import java.nio.file.Path;
@@ -25,7 +25,7 @@ public record TestTaskStopsBuilder(Path root, Arbiter.Profile profile) {
     return new TaskStops(
         new StopPolicy(
             ignored -> profile,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+            ConfigFile.defaults()::loopBreakerOrDefault,
             new StopAnnouncements(
                 new StopLog(
                     new JsonMapper(),

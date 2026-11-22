@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service.master;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterReview.Review;
 import dev.jagt.orchestrator.service.master.MasterReview.Verdict;
@@ -82,8 +82,7 @@ public class MasterPanel {
   /**
    * Writes the round's review file; false where the brief could not be read, and nothing was asked.
    */
-  public boolean review(
-      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
+  public boolean review(String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
     Optional<String> masters = briefs.master(taskId, config);
     if (masters.isEmpty()) {
       return false;
@@ -156,8 +155,7 @@ public class MasterPanel {
    * One read, not one per role: a plan answers a single question, whether it does what the ticket
    * asks.
    */
-  public boolean plan(
-      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
+  public boolean plan(String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
     Optional<String> brief = briefs.master(taskId, config);
     if (brief.isEmpty()) {
       return false;
@@ -209,7 +207,7 @@ public class MasterPanel {
       String taskId,
       TaskState task,
       String question,
-      ConfigService.ConfigFile.ArbiterConfig config,
+      ConfigFile.ArbiterConfig config,
       boolean stuck) {
     Optional<String> brief = briefs.master(taskId, config);
     if (brief.isEmpty()) {

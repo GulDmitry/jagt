@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.verdict;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -50,7 +51,7 @@ public class MasterFeedWindow implements Job {
 
   @Override
   public void run() {
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     if (!config.arbiter().running()) {
       return;
     }

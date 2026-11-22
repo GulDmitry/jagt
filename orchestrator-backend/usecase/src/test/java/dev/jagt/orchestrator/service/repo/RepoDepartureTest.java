@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.worktree.RetiredWorktrees;
@@ -56,7 +57,7 @@ class RepoDepartureTest {
         "ABC-42",
         TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.REVIEWED)
             .build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     boolean left = departure.leave("ABC-42", web, "its request was closed on the host");
 
@@ -103,7 +104,7 @@ class RepoDepartureTest {
             .deployment(
                 Deployment.defaults().withTargets(List.of(Deployment.Target.of("web", "dev"))))
             .build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     boolean left = departure.leave("ABC-42", web, "its request was closed on the host");
 
@@ -134,7 +135,7 @@ class RepoDepartureTest {
                         "core.bare in /web/.git/config",
                         "b2")))
             .build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(worktrees.trustedOnlyBy(eq("ABC-42"), any(), eq(web)))
         .thenReturn(Set.of("core.bare in /web/.git/config"));
 
@@ -153,7 +154,7 @@ class RepoDepartureTest {
             .build());
     Map<String, ProjectConfig> projects =
         Map.of("web", new ProjectConfig("/srv/web", "origin/main", "dev", List.of()));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(projects));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(projects));
 
     departure.leave("ABC-42", web, "its request was closed on the host");
 
@@ -166,7 +167,7 @@ class RepoDepartureTest {
         "ABC-42",
         TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.REVIEWED)
             .build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     departure.leave("ABC-42", web, "its request was closed on the host");
 
@@ -181,7 +182,7 @@ class RepoDepartureTest {
         "ABC-42",
         TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.REVIEWED)
             .build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     doThrow(new IllegalStateException("busy")).when(worktrees).remove(any(), any(), any());
 
     departure.leave("ABC-42", web, "its request was closed on the host");

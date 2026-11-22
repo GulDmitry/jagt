@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.master.ActStop.Cause;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
 import dev.jagt.orchestrator.service.role.InstalledRoles;

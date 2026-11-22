@@ -8,11 +8,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.KeepAwake;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.ConfigFile.AutoReviewConfig;
+import dev.jagt.orchestrator.service.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

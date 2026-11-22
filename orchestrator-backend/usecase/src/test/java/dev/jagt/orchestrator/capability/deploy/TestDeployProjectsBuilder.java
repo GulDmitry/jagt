@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +17,8 @@ public record TestDeployProjectsBuilder(
     return new TestDeployProjectsBuilder("dev", "dev", "dev");
   }
 
-  public ConfigService.ConfigFile build() {
-    return ConfigService.ConfigFile.defaults()
+  public ConfigFile build() {
+    return ConfigFile.defaults()
         .withProjects(
             Map.of(
                 "proj",

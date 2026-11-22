@@ -23,7 +23,7 @@ public final class RoleNamesFitness implements Fitness {
 
   private static final Map<String, String> ALLOWED =
       Map.of(
-          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$ArbiterConfig",
+          "dev.jagt.orchestrator.service.ConfigFile$ArbiterConfig",
               "the old orchestrator.master key, named as jagt.yml wrote it",
           "dev.jagt.orchestrator.flow.TaskMove$MasterNoted",
               "a move of the arbiter's region, in the chart's one closed set of moves");

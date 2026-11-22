@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigRanges;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -50,7 +51,7 @@ public class ConfigCheck implements StartupCheck {
     if (!shadowed.isEmpty()) {
       return shadowed;
     }
-    ConfigService.ConfigFile config;
+    ConfigFile config;
     try {
       config = configService.loadAsWritten();
     } catch (RuntimeException unreadable) {
@@ -130,7 +131,7 @@ public class ConfigCheck implements StartupCheck {
   /**
    * A number is read as written or not at all: one outside its range is refused, never replaced.
    */
-  private static List<Problem> numberProblems(ConfigService.ConfigFile config) {
+  private static List<Problem> numberProblems(ConfigFile config) {
     return ConfigRanges.refusals(config).stream()
         .map(refusal -> {
           String key = "orchestrator." + refusal.key();
@@ -140,7 +141,7 @@ public class ConfigCheck implements StartupCheck {
         .toList();
   }
 
-  private List<Problem> viewerProblems(ConfigService.ConfigFile config) {
+  private List<Problem> viewerProblems(ConfigFile config) {
     List<Problem> problems = new ArrayList<>();
     String session = config.viewer().session();
     if (session != null && !session.isBlank()) {

@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
@@ -145,7 +146,7 @@ class SessionBriefContractTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),

@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.capability.ship;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;

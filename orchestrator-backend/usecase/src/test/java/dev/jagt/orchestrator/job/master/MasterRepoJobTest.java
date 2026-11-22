@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
@@ -36,8 +37,8 @@ class MasterRepoJobTest {
   private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
   private final MasterRepoJob job =
       new MasterRepoJob(state, config, press, new TaskTurns(state, new FakeClock(), checkers));
-  private final ConfigService.ConfigFile.ArbiterConfig acting =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigFile.ArbiterConfig acting =
+      new ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final TaskState asking =
       TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
           .message("needs the registry")
@@ -47,7 +48,7 @@ class MasterRepoJobTest {
 
   @Test
   void attachesTheRepositorySessionAskedForWhereTheMasterHoldsTheRight() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(acting));
+    when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(acting));
     when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
 
     job.run();
@@ -59,10 +60,9 @@ class MasterRepoJobTest {
   void leavesTheRepositoryToTheHumanWhoKeptIt() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig(
-                        "act", null, null, List.of("repo"), null)));
+                    new ConfigFile.ArbiterConfig("act", null, null, List.of("repo"), null)));
     when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
 
     job.run();
@@ -74,9 +74,8 @@ class MasterRepoJobTest {
   void attachesNothingWhereTheMasterOnlyJudges() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
     when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
 
     job.run();
@@ -86,7 +85,7 @@ class MasterRepoJobTest {
 
   @Test
   void attachesNothingForTaskThatAskedForNoRepository() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(acting));
+    when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(acting));
     when(state.tasks())
         .thenReturn(
             Map.of(
@@ -109,7 +108,7 @@ class MasterRepoJobTest {
     @BeforeEach
     void theRequestIsOnTheDiskAndTheMasterActs() {
       stateService().withRoot(root).build().putTask("ABC-1", asking);
-      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(acting));
+      when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(acting));
     }
 
     @Test

@@ -74,7 +74,7 @@ public class AgentSessions implements SessionLines {
 
   /** Reserving the viewer is the default: one placed by hand should survive task cycles. */
   public Optional<String> viewerToClose() {
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     if (!stateService.tasks().isEmpty() || config.viewer().keepViewerOrDefault()) {
       return Optional.empty();
     }
@@ -192,7 +192,7 @@ public class AgentSessions implements SessionLines {
   public Focused focusTask(String taskId) {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     String session = agentSession(config, taskId);
     String dedicatedTitle = hosting.host().sessionName(config.viewer().session());
     boolean revived;
@@ -241,7 +241,7 @@ public class AgentSessions implements SessionLines {
   public String say(String taskId, String line) {
     String id = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(id);
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     String session = agentSession(config, id);
     if (cold(task, config) && !promptOpen(session, id)) {
       return relayUnderCold(id, line);
@@ -377,7 +377,7 @@ public class AgentSessions implements SessionLines {
         .addKeyValue("said", OneLine.clipped(instructions.lines().findFirst().orElse("(empty)")))
         .log();
     // A file on disk doesn't wake a running agent session — nudge it directly.
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     String session = agentSession(config, taskId);
     if (freshBecause != null || cold(task, config)) {
       return relayFreshStart(taskId, task, config, freshBecause);
@@ -423,10 +423,7 @@ public class AgentSessions implements SessionLines {
   }
 
   private String relayFreshStart(
-      String taskId,
-      TaskState task,
-      ConfigService.ConfigFile config,
-      @Nullable String freshBecause) {
+      String taskId, TaskState task, ConfigFile config, @Nullable String freshBecause) {
     boolean started =
         startFreshWhenFree(
             taskId,
@@ -507,7 +504,7 @@ public class AgentSessions implements SessionLines {
         .isPresent();
   }
 
-  private boolean cold(TaskState task, ConfigService.ConfigFile config) {
+  private boolean cold(TaskState task, ConfigFile config) {
     return SessionPhase.cold(
         task.work().session(), hosting.runtime(), config.agent().cacheLifetimeOrDefault());
   }
@@ -548,7 +545,7 @@ public class AgentSessions implements SessionLines {
         stateService
             .task(taskId)
             .ifPresent(task -> {
-              ConfigService.ConfigFile config = configService.load();
+              ConfigFile config = configService.load();
               if (cold(task, config)) {
                 startFreshWhenFree(
                     taskId, task, config, "conversation idle past its cache lifetime");
@@ -659,7 +656,7 @@ public class AgentSessions implements SessionLines {
   }
 
   private boolean startFreshWhenFree(
-      String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
+      String taskId, TaskState task, ConfigFile config, String cause) {
     String session = agentSession(config, taskId);
     if (!humanHolds(session, taskId)) {
       startFresh(taskId, task, config, cause);
@@ -726,7 +723,7 @@ public class AgentSessions implements SessionLines {
           .log();
       return;
     }
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     Optional<Boolean> holds = humanHoldsRead(agentSession(config, taskId), taskId);
     if (holds.isEmpty()) {
       return;
@@ -781,17 +778,12 @@ public class AgentSessions implements SessionLines {
         + (tier.current().isBlank() ? "the agent's default model" : tier.current());
   }
 
-  private void startFresh(
-      String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
+  private void startFresh(String taskId, TaskState task, ConfigFile config, String cause) {
     startFresh(taskId, task, config, cause, null);
   }
 
   private void startFresh(
-      String taskId,
-      TaskState task,
-      ConfigService.ConfigFile config,
-      String cause,
-      @Nullable ModelTier at) {
+      String taskId, TaskState task, ConfigFile config, String cause, @Nullable ModelTier at) {
     log.atInfo()
         .setMessage("agent session started fresh")
         .addKeyValue("task", taskId)
@@ -818,7 +810,7 @@ public class AgentSessions implements SessionLines {
       String taskId,
       @Nullable String alias,
       Path worktreePath,
-      ConfigService.ConfigFile config,
+      ConfigFile config,
       boolean planMode) {
     return openTab(taskId, alias, worktreePath, config, planMode, null);
   }
@@ -828,7 +820,7 @@ public class AgentSessions implements SessionLines {
       String taskId,
       @Nullable String alias,
       Path worktreePath,
-      ConfigService.ConfigFile config,
+      ConfigFile config,
       boolean planMode,
       @Nullable ModelTier at) {
     String own = modelFor(worktreePath, config);
@@ -850,7 +842,7 @@ public class AgentSessions implements SessionLines {
   }
 
   /** The notes' `next-model:` wins over `agent.model`; blank is the CLI's own default. */
-  private String modelFor(Path worktree, ConfigService.ConfigFile config) {
+  private String modelFor(Path worktree, ConfigFile config) {
     List<String> models = config.agent().modelsFor(hosting.runtime());
     return WorktreeFiles.read(worktree.resolve(Artifact.NOTES.fileName()))
         .flatMap(TaskNotes::nextModel)
@@ -859,7 +851,7 @@ public class AgentSessions implements SessionLines {
         .orElse("");
   }
 
-  private String agentSession(ConfigService.ConfigFile config, String taskId) {
+  private String agentSession(ConfigFile config, String taskId) {
     String base = hosting.host().sessionName(config.viewer().session());
     return config.viewer().sharedView() ? base : base + "-" + TaskName.slug(taskId);
   }

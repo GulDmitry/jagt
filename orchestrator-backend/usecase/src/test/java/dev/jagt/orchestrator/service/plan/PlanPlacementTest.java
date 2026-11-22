@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
@@ -62,7 +63,7 @@ class PlanPlacementTest {
             reducer,
             event -> {});
     placement = new PlanPlacement(state, new TaskArtifacts(state), config, worktrees, retired);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
   }
 
   @Test
@@ -96,8 +97,7 @@ class PlanPlacementTest {
     assertThat(state.task("ABC-9").orElseThrow().projects()).containsExactly("api", "web");
     assertThat(root.resolve("ABC-9-api/plan.md")).content().contains("- [changed] web");
     assertThat(root.resolve("ABC-9-api/task_request.md")).hasContent("split the mailer");
-    verify(retired)
-        .remove("ABC-9", List.of(scratchRepo), ConfigService.ConfigFile.defaults().projects());
+    verify(retired).remove("ABC-9", List.of(scratchRepo), ConfigFile.defaults().projects());
   }
 
   @Test

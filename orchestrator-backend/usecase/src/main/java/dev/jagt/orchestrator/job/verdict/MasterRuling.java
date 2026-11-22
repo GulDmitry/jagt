@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class MasterRuling {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     boolean ready = verdict.kind() == MasterReview.Kind.READY;
     if (ready && FlowRules.holdsPlan(task.standing().status())) {
       return plans.holds(taskId, task, verdict, config);

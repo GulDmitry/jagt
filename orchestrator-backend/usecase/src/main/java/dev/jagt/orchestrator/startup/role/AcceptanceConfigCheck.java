@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class AcceptanceConfigCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    ConfigService.ConfigFile config;
+    ConfigFile config;
     try {
       config = configService.load();
     } catch (RuntimeException unreadable) {
@@ -41,7 +42,7 @@ public class AcceptanceConfigCheck implements StartupCheck {
         : List.of();
   }
 
-  private List<Problem> retiredRole(ConfigService.ConfigFile config) {
+  private List<Problem> retiredRole(ConfigFile config) {
     Map<String, ?> roles = config.sessions().roles();
     return roles != null && roles.containsKey(RETIRED)
         ? List.of(retired("orchestrator.roles." + RETIRED))

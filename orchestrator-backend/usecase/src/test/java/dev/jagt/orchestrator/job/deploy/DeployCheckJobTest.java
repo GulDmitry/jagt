@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -58,7 +59,7 @@ class DeployCheckJobTest {
     state = stateService().withRoot(root).build();
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     job = deployCheckJob().withRoot(root).build(state, config, relay, pipelines);
@@ -260,7 +261,7 @@ class DeployCheckJobTest {
 
       @Test
       void namesTheDeployBranchOfNoProjectTheConfigDoesNotHold() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(config.load()).thenReturn(ConfigFile.defaults());
 
         job.runOn(state.tasks());
 

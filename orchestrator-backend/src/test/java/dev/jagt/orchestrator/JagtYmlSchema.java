@@ -12,7 +12,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;

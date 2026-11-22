@@ -29,8 +29,8 @@ class TaskLauncherTest {
   private final TaskLauncher launcher =
       new TaskLauncher(configService, launches, mock(TaskResume.class));
 
-  private final ConfigService.ConfigFile groupA =
-      ConfigService.ConfigFile.defaults()
+  private final ConfigFile groupA =
+      ConfigFile.defaults()
           .withProjects(
               Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of())));
   private final Answer<TicketFacts> read =
@@ -40,7 +40,7 @@ class TaskLauncherTest {
   void createsOneTaskAcrossEveryProjectNamedInTheSameTokenTheFirstHoldingTheSession() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
@@ -82,7 +82,7 @@ class TaskLauncherTest {
   void refusesTheLaunchWhenOneOfTheNamedProjectsIsNotConfigured() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
 
@@ -158,7 +158,7 @@ class TaskLauncherTest {
   void skipsEmptyEntriesInListOfProjects() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
@@ -171,7 +171,7 @@ class TaskLauncherTest {
   void placesWrittenWordsInTheOnlyConfiguredProjectWhenNoneIsNamed() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
     LaunchRequest request = LaunchRequest.defaults().withNotes("tidy the logs");
@@ -185,7 +185,7 @@ class TaskLauncherTest {
   void asksWhichProjectWhenWrittenWordsNameNoneAndSeveralAreConfigured() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),

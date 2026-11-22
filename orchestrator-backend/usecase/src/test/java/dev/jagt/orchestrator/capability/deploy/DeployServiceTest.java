@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
@@ -50,7 +51,7 @@ class DeployServiceTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final GitDeploy git = mock(GitDeploy.class);
-  private ConfigService.ConfigFile projects = deployProjects().build();
+  private ConfigFile projects = deployProjects().build();
   private StateService state;
   private DeployService deploys;
 

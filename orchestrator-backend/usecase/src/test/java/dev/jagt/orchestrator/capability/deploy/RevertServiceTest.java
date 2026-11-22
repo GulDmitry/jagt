@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
@@ -49,7 +50,7 @@ class RevertServiceTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final GitDeploy git = mock(GitDeploy.class);
-  private ConfigService.ConfigFile projects = deployProjects().build();
+  private ConfigFile projects = deployProjects().build();
   private final GitCaseFacts facts = mock(GitCaseFacts.class);
   private final GitCaseFacts.Candidate listed =
       new GitCaseFacts.Candidate("aaaaaaaa1111", "2026-11-01", "Merge ABC-1");

@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -36,7 +37,7 @@ class GitDeployTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "repo",

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.worktree.FileStamps;
@@ -42,11 +43,11 @@ public class SessionProbe {
    * the job rather than skipping a run, and the file is unreadable for exactly as long as a human
    * takes to save it.
    */
-  private ConfigService.ConfigFile config() {
+  private ConfigFile config() {
     try {
       return configService.load();
     } catch (RuntimeException e) {
-      return ConfigService.ConfigFile.defaults();
+      return ConfigFile.defaults();
     }
   }
 

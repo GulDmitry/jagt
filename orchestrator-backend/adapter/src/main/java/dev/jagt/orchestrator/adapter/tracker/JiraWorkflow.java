@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.tracker;
 
 import dev.jagt.orchestrator.port.TrackerWorkflow;
+import dev.jagt.orchestrator.service.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.List;
 import java.util.regex.Pattern;

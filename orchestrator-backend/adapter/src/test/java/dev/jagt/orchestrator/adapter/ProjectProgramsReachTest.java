@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.flows.TestAcceptanceRoleSettingsBuilder;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
@@ -29,7 +30,7 @@ class ProjectProgramsReachTest {
   void headNamesProjectAndProgramWhereVerifyCommandNamesOneTheImageLacks() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
@@ -52,7 +53,7 @@ class ProjectProgramsReachTest {
   void headNamesTheProgramWhereSetupCommandNamesOneTheImageLacks() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
@@ -69,14 +70,14 @@ class ProjectProgramsReachTest {
   void headClearsOnTheFirstReadThatFindsTheProgram() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
                         shopProject()
                             .withVerifyCommand(List.of("no-such-build-tool", "test"))
                             .build())),
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
@@ -94,7 +95,7 @@ class ProjectProgramsReachTest {
   void headSaysNothingWhereProgramIsInstalledPathedOrAbsent() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
@@ -119,7 +120,7 @@ class ProjectProgramsReachTest {
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "flows: {driver: playwright, path: /f, command: [no-such-npx, playwright, test]}\n");
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     new ProjectProgramsReach(configService, kits, reach).run();
 
@@ -141,7 +142,7 @@ class ProjectProgramsReachTest {
             .withRoot(root)
             .build(mock(AgentRuntime.class), mock(ActStops.class));
     Files.writeString(root.resolve("roles/acceptance/role.yml"), written + "\n");
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     new ProjectProgramsReach(configService, kits, reach).run();
 

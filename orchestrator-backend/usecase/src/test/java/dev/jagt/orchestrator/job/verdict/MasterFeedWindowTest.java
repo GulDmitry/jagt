@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -21,9 +22,8 @@ class MasterFeedWindowTest {
   void keepsTheMasterWindowFollowingItsFeedWhereTheMasterRuns() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
     when(sessions.sessionName(any())).thenReturn("jagt");
 
     new MasterFeedWindow(config, sessions, "jagt-master.log").run();
@@ -33,7 +33,7 @@ class MasterFeedWindowTest {
 
   @Test
   void opensNoMasterWindowWhereTheMasterIsOff() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     new MasterFeedWindow(config, sessions, "jagt-master.log").run();
 

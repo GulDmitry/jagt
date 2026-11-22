@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.log.StopLog;
 import dev.jagt.orchestrator.service.stop.StopAnnouncements;
@@ -50,7 +50,7 @@ class SessionAliveJobTest {
         new TaskStops(
             new StopPolicy(
                 ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
             state,
             Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC),

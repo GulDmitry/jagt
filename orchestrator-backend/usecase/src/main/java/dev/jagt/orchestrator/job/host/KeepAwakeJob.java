@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.job.host;
 
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.host.KeepAwake;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

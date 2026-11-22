@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -52,12 +52,12 @@ class MasterPlanVerdictsTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final ApprovedPlan plan = mock(ApprovedPlan.class);
   private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
-  private final ConfigService.ConfigFile.ArbiterConfig acting =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of(), null);
-  private final ConfigService.ConfigFile.ArbiterConfig actingWithoutKeepList =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
-  private final ConfigService.ConfigFile.ArbiterConfig keepingPlan =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of("plan"), null);
+  private final ConfigFile.ArbiterConfig acting =
+      new ConfigFile.ArbiterConfig("act", null, null, List.of(), null);
+  private final ConfigFile.ArbiterConfig actingWithoutKeepList =
+      new ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigFile.ArbiterConfig keepingPlan =
+      new ConfigFile.ArbiterConfig("act", null, null, List.of("plan"), null);
   private final MasterReview.Verdict planHolds =
       new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
   private StateService state;
@@ -100,7 +100,7 @@ class MasterPlanVerdictsTest {
                 read,
                 new MasterReview.Verdict(
                     MasterReview.Kind.READY, List.of(), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of(), null)))
+                new ConfigFile.ArbiterConfig("act", null, null, List.of(), null)))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());

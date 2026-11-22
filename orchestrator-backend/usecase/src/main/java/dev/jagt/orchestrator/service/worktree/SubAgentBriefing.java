@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.worktree;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.plan.Artifact;
@@ -30,9 +30,9 @@ public class SubAgentBriefing {
       NewTask request,
       NewRepo repo,
       List<NewRepo> repos,
-      ConfigService.ConfigFile.AutoplanConfig autoplan,
-      ConfigService.ConfigFile.VisualizeConfig visualize,
-      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+      ConfigFile.AutoplanConfig autoplan,
+      ConfigFile.VisualizeConfig visualize,
+      ConfigFile.DiagnoseConfig diagnose) {
     String taskId = request.taskId();
     String switches = switches(request, autoplan, visualize, diagnose);
     return task(
@@ -60,9 +60,9 @@ public class SubAgentBriefing {
    */
   public String ofScratch(
       NewTask request,
-      ConfigService.ConfigFile.AutoplanConfig autoplan,
-      ConfigService.ConfigFile.VisualizeConfig visualize,
-      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+      ConfigFile.AutoplanConfig autoplan,
+      ConfigFile.VisualizeConfig visualize,
+      ConfigFile.DiagnoseConfig diagnose) {
     String switches = switches(request, autoplan, visualize, diagnose);
     return scratch(request.taskId(), request.taskId())
         + brief
@@ -77,15 +77,15 @@ public class SubAgentBriefing {
 
   private static String switches(
       NewTask request,
-      ConfigService.ConfigFile.AutoplanConfig autoplan,
-      ConfigService.ConfigFile.VisualizeConfig visualize,
-      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+      ConfigFile.AutoplanConfig autoplan,
+      ConfigFile.VisualizeConfig visualize,
+      ConfigFile.DiagnoseConfig diagnose) {
     return planFirstSentence(request.mode())
         + autoplanSentence(autoplan)
         + visualizeSentence(visualize)
         + diagnoseSentence(diagnose)
         + judgementSentence(
-            ConfigService.ConfigFile.AgentConfig.defaults()
+            ConfigFile.AgentConfig.defaults()
                 .withAutoplan(autoplan)
                 .withVisualize(visualize)
                 .withDiagnose(diagnose)
@@ -171,7 +171,7 @@ public class SubAgentBriefing {
             + " task.";
   }
 
-  private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {
+  private static String autoplanSentence(ConfigFile.AutoplanConfig autoplan) {
     return autoplan.enabledOrDefault()
         ? (" AUTOPLAN is on: before your first edit, plan first if the task changes more than %d"
                 + " files, two of its requirements contradict, one contradicts what the code"
@@ -184,7 +184,7 @@ public class SubAgentBriefing {
         : "";
   }
 
-  private static String visualizeSentence(ConfigService.ConfigFile.VisualizeConfig visualize) {
+  private static String visualizeSentence(ConfigFile.VisualizeConfig visualize) {
     return visualize.enabledOrDefault()
         ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first,"
             + " judge whether it is worth a picture. A two-line bug fix is not. A new or changed"
@@ -202,7 +202,7 @@ public class SubAgentBriefing {
         : "";
   }
 
-  private static String diagnoseSentence(ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+  private static String diagnoseSentence(ConfigFile.DiagnoseConfig diagnose) {
     return diagnose.enabledOrDefault()
         ? " DIAGNOSE: a bug is diagnosed from facts before code. Gather the report's evidence"
             + " (error, logs, profile, versions) and a control: the same case working, or failing"

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
@@ -43,12 +43,9 @@ class SubAgentBriefingTest {
           "git@host:g/api.git",
           false);
   private final NewTask plainTask = NewTask.builder("ABC-42", "web").build();
-  private final ConfigService.ConfigFile.AutoplanConfig autoplan =
-      ConfigService.ConfigFile.AutoplanConfig.defaults();
-  private final ConfigService.ConfigFile.VisualizeConfig visualize =
-      ConfigService.ConfigFile.VisualizeConfig.defaults();
-  private final ConfigService.ConfigFile.DiagnoseConfig diagnose =
-      ConfigService.ConfigFile.DiagnoseConfig.defaults();
+  private final ConfigFile.AutoplanConfig autoplan = ConfigFile.AutoplanConfig.defaults();
+  private final ConfigFile.VisualizeConfig visualize = ConfigFile.VisualizeConfig.defaults();
+  private final ConfigFile.DiagnoseConfig diagnose = ConfigFile.DiagnoseConfig.defaults();
 
   @TempDir Path root;
 
@@ -83,12 +80,7 @@ class SubAgentBriefingTest {
 
     String briefing =
         agent.of(
-            plainTask,
-            web,
-            List.of(web),
-            autoplan,
-            new ConfigService.ConfigFile.VisualizeConfig(true),
-            diagnose);
+            plainTask, web, List.of(web), autoplan, new ConfigFile.VisualizeConfig(true), diagnose);
 
     assertThat(briefing)
         .contains(
@@ -134,9 +126,9 @@ class SubAgentBriefingTest {
                 NewTask.builder("ABC-42", "web").build(),
                 web,
                 List.of(web),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+                ConfigFile.AutoplanConfig.defaults(),
+                ConfigFile.VisualizeConfig.defaults(),
+                ConfigFile.DiagnoseConfig.defaults());
     String withNone =
         new SubAgentBriefing(
                 new SessionBrief(
@@ -148,9 +140,9 @@ class SubAgentBriefingTest {
                 NewTask.builder("ABC-42", "web").build(),
                 web,
                 List.of(web),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+                ConfigFile.AutoplanConfig.defaults(),
+                ConfigFile.VisualizeConfig.defaults(),
+                ConfigFile.DiagnoseConfig.defaults());
 
     assertThat(withBlank).isEqualTo(withNone);
   }
@@ -432,12 +424,7 @@ class SubAgentBriefingTest {
 
     String briefing =
         agent.of(
-            plainTask,
-            web,
-            List.of(web),
-            autoplan,
-            new ConfigService.ConfigFile.VisualizeConfig(true),
-            diagnose);
+            plainTask, web, List.of(web), autoplan, new ConfigFile.VisualizeConfig(true), diagnose);
 
     assertThat(briefing)
         .contains(
@@ -459,9 +446,9 @@ class SubAgentBriefingTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
             .ofScratch(
                 NewTask.unplacedBuilder("ABC-42").mode("plan").build(),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+                ConfigFile.AutoplanConfig.defaults(),
+                ConfigFile.VisualizeConfig.defaults(),
+                ConfigFile.DiagnoseConfig.defaults());
 
     assertThat(briefing)
         .contains("## Repositories", "- [changed] <key>", "registered in", "No git of any kind")
@@ -494,9 +481,9 @@ class SubAgentBriefingTest {
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
                 List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+                ConfigFile.AutoplanConfig.defaults(),
+                ConfigFile.VisualizeConfig.defaults(),
+                ConfigFile.DiagnoseConfig.defaults());
 
     assertThat(briefing).endsWith("<scenarios>rows</scenarios>");
   }
@@ -515,9 +502,9 @@ class SubAgentBriefingTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
             .ofScratch(
                 NewTask.builder("ABC-42", "web").build(),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+                ConfigFile.AutoplanConfig.defaults(),
+                ConfigFile.VisualizeConfig.defaults(),
+                ConfigFile.DiagnoseConfig.defaults());
 
     assertThat(briefing).endsWith("<scenarios>rows</scenarios>");
   }

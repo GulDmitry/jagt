@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -25,7 +25,7 @@ public class MasterStopPanel {
 
   /** Empty where nothing usable came back, which leaves the stop to the human. */
   public Optional<MasterStopAnswer> ask(
-      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
+      String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
     TaskStop stop = task.work().stop();
     Optional<String> brief = briefs.master(taskId, config);
     if (stop == null || brief.isEmpty()) {

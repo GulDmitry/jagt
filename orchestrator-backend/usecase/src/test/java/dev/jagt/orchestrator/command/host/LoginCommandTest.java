@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import java.util.List;
@@ -24,7 +25,7 @@ class LoginCommandTest {
 
   @Test
   void opensTheFixAsTheProcessOfWindowOfItsOwn() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(sessions.sessionName(any())).thenReturn("jagt");
     reach.lost(
         new ReachLost(

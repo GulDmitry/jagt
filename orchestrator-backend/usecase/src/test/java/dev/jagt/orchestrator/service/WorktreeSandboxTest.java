@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.agent.Sandbox;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.SandboxConfig;
+import dev.jagt.orchestrator.service.ConfigFile.SandboxConfig;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Files;

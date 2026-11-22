@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ public class CodeHostCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    ConfigService.ConfigFile config;
+    ConfigFile config;
     try {
       config = configService.load();
     } catch (RuntimeException unreadable) {

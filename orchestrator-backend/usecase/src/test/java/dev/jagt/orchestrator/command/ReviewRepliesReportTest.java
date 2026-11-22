@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.ReviewDrafts;
@@ -33,7 +34,7 @@ class ReviewRepliesReportTest {
 
   @BeforeEach
   void reportReadsTheDraftsOfTheTasksInTheState() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     state = stateService().withRoot(root).build();
     report =
         new ReviewRepliesReport(

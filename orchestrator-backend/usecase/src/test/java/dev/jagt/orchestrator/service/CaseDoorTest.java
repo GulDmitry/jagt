@@ -45,8 +45,7 @@ class CaseDoorTest {
                 taskStops()
                     .withRoot(root)
                     .withProfile(
-                        new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)
-                            .profile())
+                        new ConfigFile.ArbiterConfig("act", null, null, null, null).profile())
                     .build(state, new FakeClock()),
                 new FakeClock());
   }
@@ -104,8 +103,7 @@ class CaseDoorTest {
                 taskStops()
                     .withRoot(root)
                     .withProfile(
-                        new ConfigService.ConfigFile.ArbiterConfig(
-                                "act", null, null, List.of(mine), null)
+                        new ConfigFile.ArbiterConfig("act", null, null, List.of(mine), null)
                             .profile())
                     .build(state, new FakeClock()),
                 new FakeClock());

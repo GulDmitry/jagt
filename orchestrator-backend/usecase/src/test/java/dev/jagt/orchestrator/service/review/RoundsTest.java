@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -35,9 +36,8 @@ class RoundsTest {
     var round =
         rounds.of(
             task,
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     assertThat(round.arbiterReading()).isTrue();
   }
@@ -49,9 +49,8 @@ class RoundsTest {
     var round =
         rounds.of(
             task,
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     assertThat(round.arbiterReading()).isFalse();
   }
@@ -65,9 +64,8 @@ class RoundsTest {
     var round =
         rounds.of(
             task,
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     assertThat(round.arbiterReading()).isFalse();
   }
@@ -83,9 +81,8 @@ class RoundsTest {
     var round =
         rounds.of(
             task,
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     assertThat(round.arbiterReading()).isTrue();
   }
@@ -97,9 +94,8 @@ class RoundsTest {
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     assertThat(rounds.judged(task)).isFalse();
   }
@@ -115,7 +111,7 @@ class RoundsTest {
                 () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn())))
-            .of(task, ConfigService.ConfigFile.defaults());
+            .of(task, ConfigFile.defaults());
 
     assertThat(round.requestless()).isTrue();
   }
@@ -124,9 +120,8 @@ class RoundsTest {
   void theMasterActsOnTaskItStandsInForAndOnNoneItLeft() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, null, null)));
     TaskState standsIn = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState left =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -55,9 +56,8 @@ class MasterReviewJobTest {
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     job.run();
 
@@ -71,9 +71,8 @@ class MasterReviewJobTest {
             .lastActiveTimestamp(2_000L)
             .build();
     state.putTask("ABC-1", back);
-    ConfigService.ConfigFile.ArbiterConfig master =
-        new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
+    ConfigFile.ArbiterConfig master = new ConfigFile.ArbiterConfig("judge", null, null, null, null);
+    when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(master));
 
     job.run();
 
@@ -84,9 +83,8 @@ class MasterReviewJobTest {
   void handsPlanToThePlanReadingPanelNotTheRoundReadingOne() {
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
-    ConfigService.ConfigFile.ArbiterConfig master =
-        new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
+    ConfigFile.ArbiterConfig master = new ConfigFile.ArbiterConfig("judge", null, null, null, null);
+    when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(master));
 
     job.run();
 
@@ -100,9 +98,8 @@ class MasterReviewJobTest {
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     job.run();
 
@@ -128,9 +125,8 @@ class MasterReviewJobTest {
     void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain() {
       reviews.write(
           "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
-      ConfigService.ConfigFile.ArbiterConfig master =
-          new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
-      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
+      ConfigFile.ArbiterConfig master = new ConfigFile.ArbiterConfig("act", null, null, null, null);
+      when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(master));
       TaskState written = state.task("ABC-1").orElseThrow();
 
       job.run();
@@ -143,9 +139,8 @@ class MasterReviewJobTest {
     void keepsTheTickGoingWhenVerdictFindsTheTaskMovedOn() {
       when(config.load())
           .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(
-                      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+              ConfigFile.defaults()
+                  .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
       when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
       reviews.write(
           "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
@@ -160,9 +155,8 @@ class MasterReviewJobTest {
     void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack() {
       reviews.write(
           "ABC-1", back, new MasterReview.Review(3, "", "", "", List.of(acceptanceReady)), "");
-      ConfigService.ConfigFile.ArbiterConfig master =
-          new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
-      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withArbiter(master));
+      ConfigFile.ArbiterConfig master = new ConfigFile.ArbiterConfig("act", null, null, null, null);
+      when(config.load()).thenReturn(ConfigFile.defaults().withArbiter(master));
 
       job.run();
 
@@ -219,9 +213,8 @@ class MasterReviewJobTest {
     Files.delete(root.resolve(".jagt").resolve("master-review.json"));
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     job.run();
 

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -58,7 +59,7 @@ public class MasterAnswerJob implements Job {
 
   @Override
   public void run() {
-    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
+    ConfigFile.ArbiterConfig config = configService.load().arbiter();
     if (!config.may(MasterRight.ANSWER)) {
       return;
     }
@@ -99,8 +100,7 @@ public class MasterAnswerJob implements Job {
         : Optional.empty();
   }
 
-  private void answer(
-      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
+  private void answer(String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
     Optional<String> humans = humans(task);
     if (humans.isPresent()) {
       log.atInfo()

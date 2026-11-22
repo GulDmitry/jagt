@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -17,9 +18,8 @@ class MasterTurnEndNoteTest {
   void saysTheRoundIsWithTheMasterWhereItReadsTheHandedBackRound() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, null, null)));
 
     assertThat(
             new MasterTurnEndNote(config)
@@ -34,9 +34,8 @@ class MasterTurnEndNoteTest {
   void saysVerificationRunsFirstWhereTheRoundIsBeingVerified() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, null, null)));
 
     assertThat(
             new MasterTurnEndNote(config)
@@ -49,9 +48,8 @@ class MasterTurnEndNoteTest {
   void saysNothingWhereNoMasterReads() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     assertThat(
             new MasterTurnEndNote(config)

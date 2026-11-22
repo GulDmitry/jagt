@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.git.GitCommands;
 import dev.jagt.orchestrator.service.git.GitRepos;
@@ -53,7 +54,7 @@ class WorkspaceRequestsTest {
     Files.writeString(workspace.resolve("flows/login.md"), "login flow");
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "repo",
@@ -278,7 +279,7 @@ class WorkspaceRequestsTest {
   void projectKeptOnThisMachineGetsNothing() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "repo",
@@ -301,7 +302,7 @@ class WorkspaceRequestsTest {
   void branchNamedLikeTheBaseBranchIsRefused() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "repo",
@@ -317,7 +318,7 @@ class WorkspaceRequestsTest {
   void branchNamedLikeTheDeployBranchIsRefused() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "repo",
@@ -409,7 +410,7 @@ class WorkspaceRequestsTest {
   void projectWhosePathIsGoneDoesNotHideTheOneHoldingTheFolder() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     new TreeMap<>(
                         Map.of(

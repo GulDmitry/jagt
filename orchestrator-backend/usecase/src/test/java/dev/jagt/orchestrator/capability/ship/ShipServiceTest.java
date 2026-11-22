@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
@@ -65,7 +66,7 @@ class ShipServiceTest {
                 new FakeClock());
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     when(configService.project("demo"))
@@ -228,10 +229,9 @@ class ShipServiceTest {
 
   @Test
   void tellsTheAgentToResolveOnlyTheThreadsItActuallyFixed() {
-    var posting = ConfigService.ConfigFile.defaults();
+    var posting = ConfigFile.defaults();
     var notPosting =
-        ConfigService.ConfigFile.defaults()
-            .withCodeReview(posting.codeReview().withPostReviewReplies(false));
+        ConfigFile.defaults().withCodeReview(posting.codeReview().withPostReviewReplies(false));
 
     assertThat(ShipService.repliesStep(posting))
         .contains("Resolve threads exactly as your `<review_replies>` rules say");
@@ -385,12 +385,11 @@ class ShipServiceTest {
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
                 .withCodeReview(
-                    ConfigService.ConfigFile.CodeReviewConfig.defaults()
-                        .withPostReviewReplies(false)));
+                    ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false)));
 
     Outcome outcome = ships.ship("ABC-42");
 
@@ -416,8 +415,8 @@ class ShipServiceTest {
           "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
       when(configService.load())
           .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(ConfigService.ConfigFile.ArbiterConfig.defaults().withMode("act"))
+              ConfigFile.defaults()
+                  .withArbiter(ConfigFile.ArbiterConfig.defaults().withMode("act"))
                   .withProjects(
                       Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     }

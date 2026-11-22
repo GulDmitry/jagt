@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -91,7 +92,7 @@ class ReviewDraftsTest {
   void readsTheShipPostingEveryDraftFromTheConfigurationWhenAskedWithoutIt(@TempDir Path worktree)
       throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(1_000));
@@ -110,7 +111,7 @@ class ReviewDraftsTest {
   @Test
   void countsRepliesDraftedBeforeTheOpenRoundAsSpent(@TempDir Path worktree) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(1_000));
@@ -131,10 +132,9 @@ class ReviewDraftsTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withCodeReview(
-                    ConfigService.ConfigFile.CodeReviewConfig.defaults()
-                        .withPostReviewReplies(false)));
+                    ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false)));
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(1_000));
@@ -153,7 +153,7 @@ class ReviewDraftsTest {
   void announcesRepliesDraftedForTheOpenRoundWhenAskedWithoutTheConfiguration(
       @TempDir Path worktree) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(3_000));
@@ -173,7 +173,7 @@ class ReviewDraftsTest {
   void holdsDraftsWhereTheFileCarriesRepliesForTheOpenRound(@TempDir Path worktree)
       throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(3_000));
@@ -191,7 +191,7 @@ class ReviewDraftsTest {
   @Test
   void holdsNoDraftsWhereTheFileIsBlank(@TempDir Path worktree) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.writeString(worktree.resolve("review_replies.md"), "  \n\n");
 
     boolean drafted =
@@ -208,7 +208,7 @@ class ReviewDraftsTest {
   void holdsNoDraftsWhereTheRepliesWereShippedWithAnEarlierRound(@TempDir Path worktree)
       throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(1_000));
@@ -226,7 +226,7 @@ class ReviewDraftsTest {
   @Test
   void digestsDifferWhereTheUnspentRepliesDiffer(@TempDir Path worktree) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     TaskState task =
         TaskState.builder("api", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .mrCreatedAt(2_000)
@@ -245,7 +245,7 @@ class ReviewDraftsTest {
   @Test
   void digestsNothingWhereNoRepliesAreUnspent(@TempDir Path worktree) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(1_000));
@@ -262,7 +262,7 @@ class ReviewDraftsTest {
   @Test
   void digestsRepliesEvenWhereTheFileCannotBeRead(@TempDir Path worktree) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Path file = Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n");
     Files.setPosixFilePermissions(file, java.util.Set.of());
 

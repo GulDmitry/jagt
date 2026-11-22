@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinitions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import java.nio.file.Files;
@@ -18,14 +19,13 @@ import org.junit.jupiter.api.io.TempDir;
 
 class TicketScenariosTest {
 
-  private static final ConfigService.ConfigFile ON =
-      ConfigService.ConfigFile.defaults()
-          .withRoles(Map.of("acceptance", new ConfigService.ConfigFile.RoleConfig(true, null)));
+  private static final ConfigFile ON =
+      ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
   @TempDir Path root;
 
   private final ConfigService config = mock(ConfigService.class);
-  private ConfigService.ConfigFile loaded = ON;
+  private ConfigFile loaded = ON;
   private TicketScenarios scenarios;
 
   @BeforeEach
@@ -68,7 +68,7 @@ class TicketScenariosTest {
     Files.createDirectories(file.getParent());
     Files.writeString(file, "- WHEN a THEN b `from-ticket`\n");
     Files.writeString(root.resolve("roles/acceptance/role.yml"), "workspace: workspace\n");
-    loaded = ConfigService.ConfigFile.defaults();
+    loaded = ConfigFile.defaults();
 
     String line = scenarios.briefingLine("ABC-42");
 

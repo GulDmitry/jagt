@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.report.AgentStatusReports;
@@ -69,7 +70,7 @@ class CheckerOutcomesFlowTest {
                     new AcceptanceVerdict.Row(
                         "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me answered 500")))
             .build();
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     relay = stepRelay().withRoot(root).build(state, sessions, new FakeClock());
     reports = agentStatusReports().build(state, flow, mock(WorktreeChanges.class), config);
     task = askedDeploy().withWorktree(root.toString()).withAlias("a1").build();

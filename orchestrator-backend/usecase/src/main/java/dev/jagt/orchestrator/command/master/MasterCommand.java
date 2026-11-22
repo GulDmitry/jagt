@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command.master;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.stats.TokenFormat;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
@@ -42,7 +43,7 @@ public class MasterCommand implements GlobalCommand {
 
   @Override
   public String run(String tail) {
-    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
+    ConfigFile.ArbiterConfig config = configService.load().arbiter();
     MasterMode mode = config.modeOrDefault();
     if (mode == MasterMode.OFF) {
       return "master: off. To turn it on, set `orchestrator.roles.master.mode` to "

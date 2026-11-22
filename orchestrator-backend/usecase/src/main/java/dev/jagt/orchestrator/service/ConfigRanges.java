@@ -18,11 +18,11 @@ public final class ConfigRanges {
 
   private record Ranged(
       String key,
-      Function<ConfigService.ConfigFile, Integer> floor,
+      Function<ConfigFile, Integer> floor,
       int ceiling,
-      Function<ConfigService.ConfigFile, @Nullable Integer> written) {
+      Function<ConfigFile, @Nullable Integer> written) {
 
-    Ranged(String key, int ceiling, Function<ConfigService.ConfigFile, @Nullable Integer> written) {
+    Ranged(String key, int ceiling, Function<ConfigFile, @Nullable Integer> written) {
       this(key, config -> 1, ceiling, written);
     }
   }
@@ -66,7 +66,7 @@ public final class ConfigRanges {
     return RANGED.stream().map(Ranged::key).toList();
   }
 
-  public static @Nullable Integer written(String key, ConfigService.ConfigFile config) {
+  public static @Nullable Integer written(String key, ConfigFile config) {
     return RANGED.stream()
         .filter(number -> number.key().equals(key))
         .findFirst()
@@ -74,11 +74,11 @@ public final class ConfigRanges {
         .orElse(null);
   }
 
-  public static List<Refusal> refusals(ConfigService.ConfigFile config) {
+  public static List<Refusal> refusals(ConfigFile config) {
     return RANGED.stream().map(number -> refusal(number, config)).filter(Objects::nonNull).toList();
   }
 
-  private static @Nullable Refusal refusal(Ranged number, ConfigService.ConfigFile config) {
+  private static @Nullable Refusal refusal(Ranged number, ConfigFile config) {
     Integer value = number.written().apply(config);
     int floor = number.floor().apply(config);
     if (value == null || (value >= floor && value <= number.ceiling())) {

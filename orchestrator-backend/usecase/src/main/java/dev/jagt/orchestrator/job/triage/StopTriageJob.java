@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.stop.PhaseProfiles;
 import dev.jagt.orchestrator.service.stop.TaskStops;
@@ -65,7 +66,7 @@ public class StopTriageJob implements TaskJob {
     if (stop == null || stop.triage() != null) {
       return;
     }
-    ConfigService.ConfigFile.RoleConfig role = configService.load().role(ROLE);
+    ConfigFile.RoleConfig role = configService.load().role(ROLE);
     if (!role.enabledOrDefault() || StopHold.of(task, profiles.at(task)) == StopHold.ARBITER) {
       return;
     }

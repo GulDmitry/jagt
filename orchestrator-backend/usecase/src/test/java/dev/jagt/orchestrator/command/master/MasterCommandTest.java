@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
@@ -26,15 +27,14 @@ class MasterCommandTest {
   private final OrchestratorPaths paths =
       new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/root"));
   private final MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
-  private ConfigService.ConfigFile.ArbiterConfig master =
-      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
+  private ConfigFile.ArbiterConfig master =
+      new ConfigFile.ArbiterConfig("judge", null, null, null, null);
   private MasterRecord.Seen seen = new MasterRecord.Seen(0, 0, 0, 0, 0, 0);
   private MasterCommand command;
 
   @BeforeEach
   void masterJudgesAndHasSeenNothing() {
-    when(configService.load())
-        .thenAnswer(call -> ConfigService.ConfigFile.defaults().withArbiter(master));
+    when(configService.load()).thenAnswer(call -> ConfigFile.defaults().withArbiter(master));
     when(record.seen()).thenAnswer(call -> seen);
     command = new MasterCommand(configService, usage, record, briefs);
   }
@@ -63,7 +63,7 @@ class MasterCommandTest {
 
   @Test
   void saysHowToTurnItOnWhileTheMasterIsOff() {
-    master = new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null);
+    master = new ConfigFile.ArbiterConfig("off", null, null, null, null);
 
     String report = command.run("");
 
@@ -82,7 +82,7 @@ class MasterCommandTest {
 
   @Test
   void saysAnActingMasterPressesTheButtonYouWould() {
-    master = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
+    master = new ConfigFile.ArbiterConfig("act", null, null, null, null);
 
     String report = command.run("");
 
@@ -91,7 +91,7 @@ class MasterCommandTest {
 
   @Test
   void namesTheModelTheMasterWasGiven() {
-    master = new ConfigService.ConfigFile.ArbiterConfig("judge", null, "opus", null, null);
+    master = new ConfigFile.ArbiterConfig("judge", null, "opus", null, null);
 
     String report = command.run("");
 
@@ -108,9 +108,7 @@ class MasterCommandTest {
 
   @Test
   void listsTheStepsYouKeptForYourself() {
-    master =
-        new ConfigService.ConfigFile.ArbiterConfig(
-            "act", null, null, List.of("ship", "deploy"), null);
+    master = new ConfigFile.ArbiterConfig("act", null, null, List.of("ship", "deploy"), null);
 
     String report = command.run("");
 
@@ -119,7 +117,7 @@ class MasterCommandTest {
 
   @Test
   void saysYouKeptNothingBeyondTheStepsNoMasterHolds() {
-    master = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of(), null);
+    master = new ConfigFile.ArbiterConfig("act", null, null, List.of(), null);
 
     String report = command.run("");
 

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -54,7 +55,7 @@ public class MasterReviewJob implements Job {
 
   @Override
   public void run() {
-    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
+    ConfigFile.ArbiterConfig config = configService.load().arbiter();
     if (!config.running()) {
       return;
     }
@@ -91,7 +92,7 @@ public class MasterReviewJob implements Job {
       String taskId,
       TaskState task,
       MasterReview.Verdict written,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     try {
       verdicts.act(taskId, task, written, config);
     } catch (TaskMovedOn dropped) {
@@ -111,7 +112,7 @@ public class MasterReviewJob implements Job {
             || !(questionsAnswered && task.standing().report().asks()));
   }
 
-  private void ask(String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
+  private void ask(String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
     if (FlowRules.holdsPlan(task.standing().status())) {
       panel.plan(taskId, task, config);
     } else {

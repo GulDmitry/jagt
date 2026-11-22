@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.git.GitWorktrees;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -27,7 +28,7 @@ class RequestProjectTest {
   void namesTheProjectWhoseOriginTheRequestUrlBelongsTo() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     new LinkedHashMap<>(
                         Map.of(
@@ -44,7 +45,7 @@ class RequestProjectTest {
   void doesNotGiveRequestToTheProjectWhosePathIsOnlyPrefixOfItsRepository() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     new TreeMap<>(
                         Map.of(
@@ -62,7 +63,7 @@ class RequestProjectTest {
   void skipsProjectWithNoRemoteWhenNamingTheOwnerOfRequest() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     new TreeMap<>(
                         Map.of(
@@ -80,7 +81,7 @@ class RequestProjectTest {
   void refusesRequestUrlNoConfiguredProjectOwns() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
     when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
@@ -96,7 +97,7 @@ class RequestProjectTest {
   void namesTheProjectWhoseRemoteReachesTheHostByAnSshAlias() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
     when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@github-work:group/api.git");
@@ -111,7 +112,7 @@ class RequestProjectTest {
     void mirrorAndOriginShareOnePath() {
       when(config.load())
           .thenReturn(
-              ConfigService.ConfigFile.defaults()
+              ConfigFile.defaults()
                   .withProjects(
                       new TreeMap<>(
                           Map.of(

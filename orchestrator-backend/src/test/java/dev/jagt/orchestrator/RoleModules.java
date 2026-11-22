@@ -87,6 +87,7 @@ public final class RoleModules {
               "port.host.Layout",
               "protocol.debug.RecordTail",
               "service.ConfigService",
+              "service.ConfigFile",
               "config.source.ConfigSource",
               "flow.Move",
               "flow.Turns",

@@ -60,7 +60,7 @@ class TaskProvisioningTest {
     state =
         new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     provisioning = new TaskProvisioning(config, state, worktrees, sessions, new FakeClock());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(worktrees.cut(any(), any(), any())).thenReturn(List.of(TestNewRepoBuilder.proj().build()));
   }
 
@@ -313,11 +313,10 @@ class TaskProvisioningTest {
   void closesThePlanGateOfAnAutoModeTaskWhenAutoplanIsOn() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withAgent(
-                    ConfigService.ConfigFile.AgentConfig.defaults()
-                        .withAutoplan(
-                            ConfigService.ConfigFile.AutoplanConfig.defaults().withEnabled(true))));
+                    ConfigFile.AgentConfig.defaults()
+                        .withAutoplan(ConfigFile.AutoplanConfig.defaults().withEnabled(true))));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 

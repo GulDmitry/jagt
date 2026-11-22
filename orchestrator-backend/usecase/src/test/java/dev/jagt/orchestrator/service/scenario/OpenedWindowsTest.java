@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TestProjectConfigBuilder;
 import java.util.Map;
@@ -25,7 +26,7 @@ class OpenedWindowsTest {
   void listsTheLoginAndTheScenariosWindowOfEachProjectThatAreOpen() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "alpha", TestProjectConfigBuilder.projectConfig().build(),
@@ -42,7 +43,7 @@ class OpenedWindowsTest {
 
   @Test
   void readsTheLoginScreenWithoutColourCodes() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(host.sessionName(any())).thenReturn("jagt");
     when(host.screenOf("jagt", "login"))
         .thenReturn(Optional.of("\u001b[1mcode ABCD-1234\u001b[0m  \n"));
@@ -52,7 +53,7 @@ class OpenedWindowsTest {
 
   @Test
   void namesTheLoginWindowInTheSessionItIsIn() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(host.sessionName(any())).thenReturn("jagt");
 
     assertThat(windows.windowOf("login").session()).isEqualTo("jagt");
@@ -61,7 +62,7 @@ class OpenedWindowsTest {
 
   @Test
   void namesNoWindowJagtDoesNotOpen() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() -> windows.windowOf("ABC-42"))
         .isInstanceOf(IllegalArgumentException.class);
@@ -69,7 +70,7 @@ class OpenedWindowsTest {
 
   @Test
   void typesTheLineIntoTheLoginWindow() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(host.sessionName(any())).thenReturn("jagt");
     when(host.nudgeTaskWindow("jagt", "login", "y")).thenReturn(true);
 
@@ -78,7 +79,7 @@ class OpenedWindowsTest {
 
   @Test
   void refusesWindowJagtDoesNotOpenAndTypesNothing() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     assertThatThrownBy(() -> windows.say("ABC-42", "y"))
         .isInstanceOf(IllegalArgumentException.class);
@@ -87,7 +88,7 @@ class OpenedWindowsTest {
 
   @Test
   void refusesToSayToLoginWindowThatIsGone() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(host.sessionName(any())).thenReturn("jagt");
     when(host.nudgeTaskWindow("jagt", "login", "y")).thenReturn(false);
 

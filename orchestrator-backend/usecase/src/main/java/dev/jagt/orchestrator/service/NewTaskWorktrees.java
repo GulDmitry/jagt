@@ -54,7 +54,7 @@ public class NewTaskWorktrees {
    */
   public @Nullable String existingBranchProject(
       String taskId, @Nullable Collection<String> projectKeys) {
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     Collection<String> keys =
         projectKeys == null || projectKeys.isEmpty() ? config.projects().keySet() : projectKeys;
     return keys.stream()
@@ -124,8 +124,7 @@ public class NewTaskWorktrees {
   }
 
   /** Every repository of {@code request}, each worktree cut; a refusal comes before anything is. */
-  public List<NewRepo> cut(
-      NewTask request, ConfigService.ConfigFile config, BranchStrategy strategy) {
+  public List<NewRepo> cut(NewTask request, ConfigFile config, BranchStrategy strategy) {
     requireOpenable(request, config);
     List<NewRepo> repos = resolveRepos(request, config, strategy);
     cutWorktrees(request, repos, strategy);
@@ -138,7 +137,7 @@ public class NewTaskWorktrees {
    * lacks, or a typed base branch its origin lacks, cuts nothing and throws {@link Unplaceable}.
    */
   public List<NewRepo> place(
-      NewTask request, ConfigService.ConfigFile config, Consumer<List<NewRepo>> registration) {
+      NewTask request, ConfigFile config, Consumer<List<NewRepo>> registration) {
     Map<String, BranchStrategy> strategies = strategies(request, config);
     List<NewRepo> repos = new ArrayList<>();
     strategies.forEach((key, strategy) -> {
@@ -176,7 +175,7 @@ public class NewTaskWorktrees {
     return repos;
   }
 
-  private Map<String, BranchStrategy> strategies(NewTask request, ConfigService.ConfigFile config) {
+  private Map<String, BranchStrategy> strategies(NewTask request, ConfigFile config) {
     Map<String, BranchStrategy> strategies = new LinkedHashMap<>();
     List<String> unplaceable = new ArrayList<>();
     for (String key : request.projectKeys()) {
@@ -207,12 +206,12 @@ public class NewTaskWorktrees {
   }
 
   /** The folder a task with no repository plans in; the same refusals come before it exists. */
-  public Path scratch(NewTask request, ConfigService.ConfigFile config) {
+  public Path scratch(NewTask request, ConfigFile config) {
     requireOpenable(request, config);
     return worktreeSetup.scratch(request);
   }
 
-  private void requireOpenable(NewTask request, ConfigService.ConfigFile config) {
+  private void requireOpenable(NewTask request, ConfigFile config) {
     String taskId = request.taskId();
     TaskName.require(taskId, "taskId");
     requireOwnBranch(taskId, request.baseBranch(), config);
@@ -250,8 +249,7 @@ public class NewTaskWorktrees {
         });
   }
 
-  private List<NewRepo> resolveRepos(
-      NewTask request, ConfigService.ConfigFile config, BranchStrategy strategy) {
+  private List<NewRepo> resolveRepos(NewTask request, ConfigFile config, BranchStrategy strategy) {
     List<NewRepo> repos = new ArrayList<>();
     for (String projectKey : request.projectKeys()) {
       requireSafeProjectKey(projectKey);
@@ -278,7 +276,7 @@ public class NewTaskWorktrees {
     return List.copyOf(repos);
   }
 
-  private static ProjectConfig configured(String projectKey, ConfigService.ConfigFile config) {
+  private static ProjectConfig configured(String projectKey, ConfigFile config) {
     ProjectConfig project = config.projects().get(projectKey);
     if (project == null) {
       throw new IllegalArgumentException(
@@ -292,7 +290,7 @@ public class NewTaskWorktrees {
    * others. Every worktree's briefing and sandbox are written again for the new set; a failure
    * leaves nothing of it.
    */
-  public NewRepo attach(String taskId, String projectKey, ConfigService.ConfigFile config) {
+  public NewRepo attach(String taskId, String projectKey, ConfigFile config) {
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
     List<NewRepo> held = held(task, config);
     if (held.stream().anyMatch(repo -> repo.project().equals(projectKey))) {
@@ -342,7 +340,7 @@ public class NewTaskWorktrees {
     return added == null ? task : reducer.gitRepoJoined(task, added);
   }
 
-  private List<NewRepo> held(TaskState task, ConfigService.ConfigFile config) {
+  private List<NewRepo> held(TaskState task, ConfigFile config) {
     List<NewRepo> held = new ArrayList<>();
     for (TaskRepo repo : task.repos()) {
       ProjectConfig project = configured(Objects.requireNonNull(repo.project()), config);
@@ -422,7 +420,7 @@ public class NewTaskWorktrees {
 
   /** A task's branch is rebased and force-pushed, so it must not be one other work lands on. */
   private static void requireOwnBranch(
-      String taskId, @Nullable String baseOverride, ConfigService.ConfigFile config) {
+      String taskId, @Nullable String baseOverride, ConfigFile config) {
     String task = Remote.ORIGIN.branchOf(taskId);
     Stream.concat(
             config.projects().values().stream()
