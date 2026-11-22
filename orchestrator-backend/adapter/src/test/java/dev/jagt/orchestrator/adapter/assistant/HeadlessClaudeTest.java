@@ -157,6 +157,29 @@ class HeadlessClaudeTest {
   }
 
   @Test
+  void namesTheReadGateAndItsErrorWhenItRefusedEveryCallOfTheRun() {
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    "{\"result\":\"done\",\"permission_denials\":[{\"tool_name\":"
+                        + "\"StructuredOutput\",\"error\":\"curl: not found\"}]}",
+                    ""));
+    ReadOnlyTools reads = mock(ReadOnlyTools.class);
+    when(reads.refused(any())).thenReturn(true);
+    when(reads.lift(any())).thenReturn(Optional.of("no call reached the read gate"));
+
+    var answer =
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), reads)
+            .read(
+                "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(answer.failure()).contains("read gate", "curl: not found");
+  }
+
+  @Test
   void callsOnlyTheAllowedReadsAndRefusesWhateverElseWouldPrompt() {
     FakeProcesses runner =
         new FakeProcesses()

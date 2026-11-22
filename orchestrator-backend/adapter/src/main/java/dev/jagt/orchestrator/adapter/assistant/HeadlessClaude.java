@@ -274,7 +274,25 @@ class HeadlessClaude {
           .log();
       return HeadlessReply.failed(reply.usage(), "unfenced: " + unheard.get());
     }
-    return reply.refusedByGate(refused);
+    return gateFailure(replied, refused, unheard)
+        .map(cause -> new HeadlessReply(null, reply.usage(), cause, true))
+        .orElseGet(() -> reply.refusedByGate(refused));
+  }
+
+  private static Optional<String> gateFailure(
+      @Nullable JsonNode replied, boolean refused, Optional<String> unheard) {
+    if (replied == null
+        || replied.path("structured_output").isObject()
+        || !(refused || unheard.isPresent())) {
+      return Optional.empty();
+    }
+    JsonNode denials = replied.path("permission_denials");
+    String error = denials.isArray() && !denials.isEmpty() ? oneLine(denials.toString()) : "none";
+    return Optional.of(
+        "the read gate refused the run's calls: "
+            + unheard.orElse("a call was refused")
+            + "; denied: "
+            + error);
   }
 
   private HeadlessReply booked(
