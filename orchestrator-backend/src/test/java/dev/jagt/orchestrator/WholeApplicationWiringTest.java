@@ -51,6 +51,7 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest(
     properties = {
       "spring.config.import=",
+      "orchestrator.platform=macos",
       "orchestrator.terminal=none",
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
@@ -93,7 +94,7 @@ class WholeApplicationWiringTest {
   }
 
   @Test
-  void readsTheMacKeychainAndSkipsTheLinuxSandboxCheckOnTheDefaultPlatform() {
+  void readsTheMacKeychainAndSkipsTheLinuxSandboxCheckOnMacos() {
     assertThat(context.containsBean("claudeKeychain")).isTrue();
     assertThat(context.containsBean("claudeSandboxCheck")).isFalse();
   }

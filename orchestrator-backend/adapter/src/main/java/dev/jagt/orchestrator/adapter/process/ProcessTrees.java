@@ -62,11 +62,7 @@ final class ProcessTrees {
       process.destroyForcibly();
       alive.forEach(ProcessHandle::destroyForcibly);
     }
-    try {
-      process.waitFor(GRACE.toMillis(), TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
+    awaitExit(process, alive);
     log.atWarn()
         .setMessage("process killed")
         .addKeyValue("pid", process.pid())

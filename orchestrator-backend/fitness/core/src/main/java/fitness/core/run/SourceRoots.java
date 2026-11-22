@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /** The Java source roots of a project, found at module depth, and the class directory each compiles to. */
@@ -63,11 +64,10 @@ public final class SourceRoots {
   }
 
   private static List<Path> roots(Path projectRoot) {
-    try (Stream<Path> tree = Files.walk(projectRoot, DEPTH)) {
-      return tree.filter(Files::isDirectory)
-          .filter(SourceRoots::isRoot)
-          .sorted(Comparator.naturalOrder())
-          .toList();
+    SourceRootWalk walk = new SourceRootWalk(SourceRoots::isRoot);
+    try {
+      Files.walkFileTree(projectRoot, Set.of(), DEPTH, walk);
+      return walk.roots().stream().sorted(Comparator.naturalOrder()).toList();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

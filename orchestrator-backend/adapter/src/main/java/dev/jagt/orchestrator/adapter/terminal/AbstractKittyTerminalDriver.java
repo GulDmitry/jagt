@@ -67,7 +67,8 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
   @Override
   public void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd) {
     long now = clock.millis();
-    if (now - openedAt.getOrDefault(dedicatedTitle, 0L) < ATTACH_GRACE_MS) {
+    Long opened = openedAt.get(dedicatedTitle);
+    if (opened != null && now - opened < ATTACH_GRACE_MS) {
       return;
     }
     openedAt.put(dedicatedTitle, now);

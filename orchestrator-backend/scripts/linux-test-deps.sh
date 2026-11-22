@@ -8,7 +8,7 @@ set -euo pipefail
 
 if ! command -v apt-get >/dev/null; then
     echo "linux-test-deps: no apt-get here — install the equivalents by hand:"
-    echo "  git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof"
+    echo "  curl git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof"
     echo "  plus the shared libraries a headless Chromium links against (see the list below)"
     exit 0
 fi
@@ -16,6 +16,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
+    curl \
     git \
     tmux \
     nodejs \

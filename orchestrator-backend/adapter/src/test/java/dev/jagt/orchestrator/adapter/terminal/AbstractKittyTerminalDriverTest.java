@@ -132,7 +132,7 @@ class AbstractKittyTerminalDriverTest {
     when(runner.run(isNull(), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "", ""));
     Clock clock = mock(Clock.class);
-    when(clock.millis()).thenReturn(100_000L, 160_000L);
+    when(clock.millis()).thenReturn(0L, 60_000L);
     var driver =
         new AbstractKittyTerminalDriver(runner, new KittyOptions("kitty", ""), clock) {
           @Override
