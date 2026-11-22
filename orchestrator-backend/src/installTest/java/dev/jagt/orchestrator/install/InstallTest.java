@@ -183,9 +183,22 @@ class InstallTest {
   @AfterAll
   void endEverythingTheRunStarted() throws Exception {
     try {
-      ProcessHandle.allProcesses()
-          .filter(each -> each.info().commandLine().orElse("").contains(work.toString()))
-          .forEach(ProcessHandle::destroyForcibly);
+      List<ProcessHandle> started =
+          Stream.concat(
+                  Stream.ofNullable(launcher.get()).flatMap(Process::descendants),
+                  ProcessHandle.allProcesses()
+                      .filter(each ->
+                          each.info()
+                              .commandLine()
+                              .or(each.info()::command)
+                              .orElse("")
+                              .contains(work.toString())))
+              .toList();
+      started.forEach(ProcessHandle::destroyForcibly);
+      Stream.ofNullable(launcher.get()).forEach(Process::destroyForcibly);
+      await()
+          .atMost(Duration.ofMinutes(1))
+          .until(() -> started.stream().noneMatch(ProcessHandle::isAlive));
       if (log != null && Files.isRegularFile(log)) {
         List<String> lines = Files.readAllLines(log);
         System.out.println(
