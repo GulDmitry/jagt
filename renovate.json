@@ -1,4 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"]
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/jagt\\.stand\\.gradle$/", "/(^|/)Dockerfile$/"],
+      "matchStrings": ["(?<depName>ghcr\\.io/[^:@\\s]+):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[0-9a-f]{64})"],
+      "datasourceTemplate": "docker",
+      "autoReplaceStringTemplate": "{{depName}}:{{newValue}}@{{newDigest}}"
+    }
+  ]
 }

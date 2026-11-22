@@ -145,10 +145,28 @@ class PinningTest {
   }
 
   @Test
-  void standLayerInstallsNoOsPackageWhileTheStandRuns() {
-    assertThat(SourceRoots.read(Path.of("stand/src/stand/compose/Dockerfile")))
-        .doesNotContain("apt-get")
-        .contains("COPY --from=node /usr/local/bin/node");
+  void appDockerfileIsFromThePublishedBaseImageByDigest() {
+    String dockerfile = SourceRoots.read(Path.of("../Dockerfile"));
+    String runtimeStage = dockerfile.substring(dockerfile.indexOf("FROM ${BASE}"));
+
+    assertThat(dockerfile)
+        .containsPattern("(?m)^ARG BASE=ghcr\\.io/\\S+-base:\\S+@sha256:[0-9a-f]{64}$")
+        .contains("\nFROM ${BASE}\n");
+    assertThat(runtimeStage).doesNotContain("apt-get");
+  }
+
+  @Test
+  void standImageIsTheAppDockerfileOnThePublishedStandBaseByDigest() {
+    assertThat(SourceRoots.read(Path.of("build-logic/src/main/groovy/jagt.stand.gradle")))
+        .containsPattern("--build-arg BASE=ghcr\\.io/\\S+-stand-base:\\S+@sha256:[0-9a-f]{64}");
+  }
+
+  @Test
+  void standBaseCopiesNodeFromDigestPinnedNodeImageAndInstallsNoNodePackage() {
+    assertThat(SourceRoots.read(Path.of("../base/Dockerfile.stand")))
+        .containsPattern("(?m)^FROM node:\\S+@sha256:[0-9a-f]{64} AS node$")
+        .contains("COPY --from=node /usr/local/bin/node")
+        .doesNotContain("nodejs");
   }
 
   @Test

@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class ImageConfigFileTest {
 
@@ -34,17 +32,15 @@ class ImageConfigFileTest {
     assertThat(SourceRoots.read(ENTRYPOINT)).contains("[ -e /app/jagt.yml ] && seed=/app/jagt.yml");
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"../Dockerfile", "../base/Dockerfile"})
-  void imageInstallsEveryBinaryJagtSpawns(String dockerfile) {
-    assertThat(SourceRoots.read(Path.of(dockerfile)))
+  @Test
+  void baseImageInstallsEveryBinaryJagtSpawns() {
+    assertThat(SourceRoots.read(Path.of("../base/Dockerfile")))
         .contains("install -y --no-install-recommends git curl tmux ");
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"stand/src/stand/compose/Dockerfile", "../base/Dockerfile.stand"})
-  void standAgentStartsPastItsFirstRunOnboarding(String dockerfile) {
-    assertThat(SourceRoots.read(Path.of(dockerfile)))
+  @Test
+  void standAgentStartsPastItsFirstRunOnboarding() {
+    assertThat(SourceRoots.read(Path.of("../base/Dockerfile.stand")))
         .contains(
             "JAGT_AGENT_SEED=/opt/agent-seed JAGT_AGENT_HOME=/data/home",
             "\"hasCompletedOnboarding\":true",
