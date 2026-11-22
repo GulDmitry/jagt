@@ -151,14 +151,15 @@ jobs:
           restore-keys: stand-timings-${{ matrix.engine }}-
       - name: run the stand without a model on the engine
         run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Pbudgets=false -Prunner=ubuntu-24.04
-      - name: fail when a stand timing passes twice its history
+      - name: fail when a stand timing passes twice the median of its last ten runs
+        run: ./gradlew --no-daemon standTimingGate
+      - name: store the stand timing trend
         uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
         with:
           tool: customSmallerIsBetter
           output-file-path: orchestrator-backend/stand/build/stand/timings.json
           external-data-json-path: orchestrator-backend/stand/build/stand/timings-history.json
-          fail-on-alert: true
-          alert-threshold: '200%'
+          fail-on-alert: false
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:

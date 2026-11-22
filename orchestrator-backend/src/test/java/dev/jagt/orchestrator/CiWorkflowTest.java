@@ -385,7 +385,7 @@ class CiWorkflowTest {
   }
 
   @Test
-  void failsTheStandJobWhenOneTimingPassesTwiceItsHistoryKeptInTheActionsCache() {
+  void failsTheStandJobWhenOneTimingPassesTwiceItsMedianAndOnlyStoresTheTrendInTheActionsCache() {
     String stand =
         String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps"));
 
@@ -394,8 +394,9 @@ class CiWorkflowTest {
         .contains("tool=customSmallerIsBetter")
         .contains(
             "external-data-json-path=orchestrator-backend/stand/build/stand/timings-history.json")
-        .contains("fail-on-alert=true")
-        .contains("alert-threshold=200%")
+        .contains("fail-on-alert=false")
+        .contains("standTimingGate")
+        .doesNotContain("alert-threshold")
         .contains("-Prunner=ubuntu-24.04")
         .doesNotContain("auto-push")
         .doesNotContain("gh-pages");

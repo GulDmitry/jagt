@@ -87,6 +87,15 @@ tasks.register('standImageRemove', Exec) {
     onlyIf { standDocker }  // nothing to remove without Docker
 }
 
+tasks.register('standTimingGate', JavaExec) {
+    description = 'Fails when a stand timing passes twice the median of its last ten history entries.'
+    group = 'verification'
+    classpath = sourceSets.stand.runtimeClasspath
+    mainClass = 'dev.jagt.orchestrator.stand.StandTimingGate'
+    args(layout.buildDirectory.file('stand/timings-history.json').get().asFile.absolutePath,
+            layout.buildDirectory.file('stand/timings.json').get().asFile.absolutePath)
+}
+
 tasks.register('standReport', JavaExec) {
     description = 'Prints the pass rate of the last standTest per scenario and mode.'
     group = 'verification'
