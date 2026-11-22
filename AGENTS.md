@@ -64,10 +64,9 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
-- **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
-  hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping, with
-  `-c`, `$'…'` or forced unleased; a plumbing push; `gh`/`glab` but a read; `git worktree add`; a line reaching
-  the board or token. Else they report state; gaps: [`guards`](docs/rules/guards.md).
+- **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's hooks running underneath.
+  They refuse a push off the task's branch, deleting, branchless, hook-skipping, with `-c`, `$'…'` or forced unleased; a plumbing push;
+  `gh`/`glab` but a read; `git worktree add`; a line reaching the board or token. Else they report state; gaps: [`guards`](docs/rules/guards.md).
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
   Permission to commit is standing, to push is not.
@@ -80,6 +79,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 ## Code
 
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
+- **A script with logic is Java**; shell only on the `scripts-are-java` list ([0227](docs/decisions/0227-a-script-with-logic-is-java.md)).
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
 - **The industry-standard library for a job before our own code**: own code only for what is jagt's own, its why in a decision.
 - **Three collaborators per class is the target, five the ceiling**, delegates included (`collaborators-per-class`):
@@ -134,7 +134,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 ## Tests
 
 - **Three groups** ([every suite](docs/rules/testing-suites.md)), run as narrow as the change. A task runs its targeted
-  tests (`scripts/tests-for.sh`). A batch runs its changed modules, their dependents and the rule tests. A build change
+  tests (`./gradlew -q testsFor`). A batch runs its changed modules, their dependents and the rule tests. A build change
   and a release run everything; the heavy and stand groups run before a minor release's push. A red reruns only what
   failed. **A cached green is not a run.**
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
@@ -170,14 +170,14 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   ([0214](docs/decisions/0214-the-master-acts-by-default.md)): it holds the human's rights but the plan approval and
   the deploy (`roles.master.mine`); the human opts into `judge` or keeps more. Bounded by `FlowRules`, never inventing a move.
 - **Nothing else acts unasked but on a stage the tracker or the code host reports**: intake opens a task, the close ends one
-  (`ActionOrigin.TRACKER`), an approved request deploys itself (`ActionOrigin.CODE_HOST`, `deploy.onApproval`, on in the server
-  starter, [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default.
-  The auto-review loop reads and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four.
-  jagt re-runs a pipeline the host says died on infrastructure, bounded by `infraWait`, and a red deploy pipeline once
-  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance workspace request is sixth, off by default
+  (`ActionOrigin.TRACKER`), an approved request deploys itself (`ActionOrigin.CODE_HOST`, `deploy.onApproval`, on in the server starter,
+  [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default. The auto-review loop reads
+  and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four. jagt re-runs a pipeline the host says
+  died on infrastructure, bounded by `infraWait`, and a red deploy pipeline once per pushed commit
+  ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance workspace request is sixth, off by default
   (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`, never the base branch, opened through the code-host seam
-  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked.
-  A kept release switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
+  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked. A kept release
+  switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
 - **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsFitness`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A

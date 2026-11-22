@@ -221,10 +221,8 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - run: ./gradlew --no-daemon bootJar
-        shell: bash
-      - name: install, upgrade and restart against a fake release feed
-        run: scripts/install-check.sh build/libs/jagt.jar
+      - name: install, upgrade and stop against a fake release feed
+        run: ./gradlew --no-daemon installTest
         shell: bash
 
   release:

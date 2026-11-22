@@ -20,6 +20,7 @@ plugins {
     id 'jagt.suite-stats' apply false
     id 'jagt.sbom' apply false
     id 'jagt.fitness' apply false
+    id 'jagt.tests-for' apply false
     id 'fitness' apply false
 }
 
@@ -56,6 +57,9 @@ apply plugin: 'jagt.uncached-suites'
 apply plugin: 'jagt.suite-stats'
 apply plugin: 'jagt.sbom'
 apply plugin: 'jagt.fitness'
+apply plugin: 'jagt.tests-for'
 
-tasks.named('test') { dependsOn gradle.includedBuild('fitness').task(':test') }
+tasks.named('test') {
+    dependsOn gradle.includedBuild('fitness').task(':test'), gradle.includedBuild('build-logic').task(':test')
+}
 tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check'), 'fitness' }

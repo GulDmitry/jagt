@@ -195,7 +195,8 @@ public final class ScanEngine implements Engine {
         !selectors.containsKey("measure")
             && !selectors.containsKey("requires")
             && !selectors.containsKey("regex")
-            && Set.of("file", "name").contains(String.valueOf(selectors.getOrDefault("per", "file")));
+            && Set.of("file", "name")
+                .contains(String.valueOf(selectors.getOrDefault("per", "file")));
     return function.threshold().direction() == Direction.MAX && !listsTheFiles;
   }
 
@@ -219,7 +220,8 @@ public final class ScanEngine implements Engine {
         .toList();
   }
 
-  private static Measurement sized(FitnessFunction function, Project project, List<Path> files, String measure) {
+  private static Measurement sized(
+      FitnessFunction function, Project project, List<Path> files, String measure) {
     if (!(function.selectors().get("per") instanceof String per)) {
       throw new FitnessConfigException(Reason.MISSING_KEY, function.id() + ".per");
     }
@@ -281,7 +283,8 @@ public final class ScanEngine implements Engine {
             .map(each -> FileSystems.getDefault().getPathMatcher("glob:" + each))
             .toList();
     return selected.stream()
-        .filter(path -> excluded.stream().noneMatch(m -> m.matches(project.root().relativize(path))))
+        .filter(
+            path -> excluded.stream().noneMatch(m -> m.matches(project.root().relativize(path))))
         .toList();
   }
 
@@ -290,19 +293,30 @@ public final class ScanEngine implements Engine {
     String glob = (String) function.selectors().get("glob");
     Object set = function.selectors().get("set");
     if ("tracked".equals(set)) {
-      return Tracked.files(project.root());
+      List<Path> tracked = Tracked.files(project.root());
+      return glob == null ? tracked : globbed(tracked, project, glob);
+    }
+    return set == null
+        ? untied(function, project, glob, directories)
+        : inSourceSet(project, (String) set, glob, directories);
+  }
+
+  private static List<Path> untied(
+      FitnessFunction function, Project project, String glob, boolean directories) {
+    if (glob == null) {
+      throw new FitnessConfigException(Reason.MISSING_KEY, function.id() + ".glob");
     }
     Set<Path> found = new LinkedHashSet<>();
-    if (set == null) {
-      if (glob == null) {
-        throw new FitnessConfigException(Reason.MISSING_KEY, function.id() + ".glob");
-      }
-      for (String each : Glob.split(glob)) {
-        found.addAll(matching(project.root(), each, directories));
-      }
-      return List.copyOf(found);
+    for (String each : Glob.split(glob)) {
+      found.addAll(matching(project.root(), each, directories));
     }
-    for (Path root : SourceRoots.of(project, (String) set)) {
+    return List.copyOf(found);
+  }
+
+  private static List<Path> inSourceSet(
+      Project project, String set, String glob, boolean directories) {
+    Set<Path> found = new LinkedHashSet<>();
+    for (Path root : SourceRoots.of(project, set)) {
       for (String each : Glob.split(glob == null ? ALL_JAVA : glob)) {
         found.addAll(matching(root, each, directories));
       }
@@ -310,10 +324,27 @@ public final class ScanEngine implements Engine {
     return List.copyOf(found);
   }
 
+  private static List<Path> globbed(List<Path> tracked, Project project, String globs) {
+    List<Glob> compiled =
+        Glob.split(globs).stream().map(each -> Glob.of(project.root(), each)).toList();
+    return tracked.stream()
+        .filter(
+            path ->
+                compiled.stream()
+                    .anyMatch(
+                        glob ->
+                            path.startsWith(glob.base())
+                                && glob.matches(
+                                    glob.base().relativize(path).toString().replace('\\', '/'))))
+        .toList();
+  }
+
   private static List<Path> matching(Path root, String glob, boolean directories) {
     if (Glob.isLiteral(glob)) {
       Path path = root.resolve(glob).normalize();
-      return Files.exists(path) && Files.isDirectory(path) == directories ? List.of(path) : List.of();
+      return Files.exists(path) && Files.isDirectory(path) == directories
+          ? List.of(path)
+          : List.of();
     }
     Glob compiled = Glob.of(root, glob);
     return walk(compiled.base()).stream()

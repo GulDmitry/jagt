@@ -71,6 +71,16 @@ sourceSets {
     }
 }
 
+// Runs the real installers against a fake release feed, so it needs the network and the machine's own shell.
+// NOT in `check`.
+sourceSets {
+    installTest {
+        java.srcDirs = ['src/installTest/java']
+        compileClasspath += configurations.testCompileClasspath
+        runtimeClasspath += configurations.testRuntimeClasspath
+    }
+}
+
 dependencies {
     // Playwright brings its OWN Chromium, downloaded on first run: the suite asks the host for no browser, so
     // a Mac and a runner execute the same thing. The shared libraries it links against come from
@@ -150,5 +160,19 @@ tasks.register('e2eTest', Test) {
         scratch.deleteDir()
         scratch.mkdirs()
     }
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.register('installTest', Test) {
+    description = 'Installs, upgrades and stops jagt through the real installers against a fake release feed.'
+    group = 'verification'
+    testClassesDirs = sourceSets.installTest.output.classesDirs
+    classpath = sourceSets.installTest.runtimeClasspath
+    useJUnitPlatform()
+    dependsOn tasks.named('bootJar')
+    def jar = tasks.named('bootJar').flatMap { it.archiveFile }
+    systemProperty 'install.repo', layout.settingsDirectory.dir('..').asFile.absolutePath
+    doFirst { systemProperty 'install.jar', jar.get().asFile.absolutePath }
+    timeout = java.time.Duration.ofMinutes(20)
     shouldRunAfter tasks.named('test')
 }

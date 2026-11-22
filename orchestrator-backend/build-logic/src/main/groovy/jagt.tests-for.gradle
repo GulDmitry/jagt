@@ -1,0 +1,6 @@
+tasks.register('testsFor', dev.jagt.gradle.testsfor.TestsForTask) {
+    description = 'Prints the Gradle lines that check a change, in the order to run them; -q prints only them.'
+    group = 'verification'
+    backend = layout.projectDirectory
+    base = 'release'
+}

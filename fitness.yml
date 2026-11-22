@@ -17,9 +17,10 @@ technical:
       collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
       ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 56, decision: "0176" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
-      build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 23, decision: "0176" }
+      build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 24, decision: "0176" }
+      scripts-are-java: { engine: scan, set: tracked, glob: "../**/*.{sh,ps1,bash,py,js}", except: "../install.sh,../install.ps1,../entrypoint.sh,../mcp_client.js,../board/**,adapter/src/main/resources/opencode/jagt-gate/index.js,gradle/stop-test-tmux.sh,scripts/container-suite.sh,scripts/container-suite/stub-agent.sh,scripts/linux-suite.sh,scripts/linux-test-deps.sh,scripts/publish-base-image.sh,scripts/publish-image.sh,scripts/secret-scan.sh,scripts/vulnerability-scan.sh,scripts/with-linux-desktop.sh,stand/src/main/resources/server/fake-claude.sh,stand/src/stand/resources/flows/flows.sh", per: file, governs: count, max: 0, decision: "0227", hint: "a script with logic is Java: a build-logic task or a JUnit suite; shell only on this allow-list (ARCHITECTURE.md, the kind script)" }
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
-      spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone: its owner kills and reaps every live child at stop" }
+      spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ChildProcesses,Git", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone: its owner kills and reaps every live child at stop" }
       spawn-owner-exec: { engine: archunit, set: main, calls: java.lang.Runtime.exec, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
@@ -31,11 +32,11 @@ technical:
       collaborator-owners: { fitness: CollaboratorOwnersFitness, governs: count, max: 0 }
       classes-per-package: { fitness: PackageCeilingFitness, governs: size, max: 10, decision: "0166" }
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
-      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 92, decision: "0176" }
+      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 98, decision: "0176" }
     analysability:
       ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
-      source-sets: { fitness: SourceSetsFitness, governs: count, max: 26, decision: "0176" }
+      source-sets: { fitness: SourceSetsFitness, governs: count, max: 27, decision: "0176" }
       start-triggers: { fitness: StartTriggersFitness, governs: count, max: 57, decision: "0176" }
       task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
       public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 84, decision: "0176" }

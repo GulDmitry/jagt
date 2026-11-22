@@ -95,7 +95,8 @@ class ScanEngineKindsTest {
   }
 
   @Test
-  void leavesOutFilesMatchingAnExceptGlob(@TempDir Path root) throws IOException, InterruptedException {
+  void leavesOutFilesMatchingAnExceptGlob(@TempDir Path root)
+      throws IOException, InterruptedException {
     Files.createDirectories(root.resolve("vendor"));
     Files.writeString(root.resolve("own.txt"), "<<<<<<< ours\n");
     Files.writeString(root.resolve("vendor/lib.txt"), "<<<<<<< ours\n");
@@ -115,6 +116,32 @@ class ScanEngineKindsTest {
             new Project(root, "", List.of("all"), Map.of()));
 
     assertThat(found.items()).containsExactly("own.txt");
+  }
+
+  @Test
+  void readsOnlyTheTrackedFilesMatchingAGlobBelowTheRoot(@TempDir Path root)
+      throws IOException, InterruptedException {
+    Files.createDirectories(root.resolve("app/deep"));
+    Files.writeString(root.resolve("run.sh"), "x\n");
+    Files.writeString(root.resolve("app/deep/tool.sh"), "x\n");
+    Files.writeString(root.resolve("app/notes.md"), "x\n");
+    Files.writeString(root.resolve("app/untracked.sh"), "x\n");
+    new ProcessBuilder("git", "-C", root.toString(), "init", "-q").start().waitFor();
+    new ProcessBuilder(
+            "git", "-C", root.toString(), "add", "run.sh", "app/deep/tool.sh", "app/notes.md")
+        .start()
+        .waitFor();
+
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("set", "tracked")
+                .select("glob", "../**/*.sh")
+                .select("per", "file")
+                .build(),
+            new Project(root.resolve("app"), "", List.of("all"), Map.of()));
+
+    assertThat(found.items()).containsExactlyInAnyOrder("../run.sh", "deep/tool.sh");
   }
 
   @Test
