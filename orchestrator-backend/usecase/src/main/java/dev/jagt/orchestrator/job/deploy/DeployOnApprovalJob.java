@@ -61,12 +61,13 @@ public class DeployOnApprovalJob implements TaskJob {
     boolean stillApproved =
         stateService
             .task(taskId)
-            .map(TaskState::status)
+            .map(taskState -> taskState.standing().status())
             .filter(TaskStatus.APPROVED::equals)
             .isPresent();
     if (!configService.load().deploy().onApprovalOrDefault()
         || !stillApproved
-        || Long.valueOf(task.statusSince()).equals(pressed.put(taskId, task.statusSince()))) {
+        || Long.valueOf(task.standing().statusSince())
+            .equals(pressed.put(taskId, task.standing().statusSince()))) {
       return;
     }
     try {

@@ -101,7 +101,7 @@ class WatchdogServiceTest {
 
     watchdog.run();
 
-    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
         .isNotEqualTo(SessionPhase.GONE);
   }
 
@@ -116,7 +116,7 @@ class WatchdogServiceTest {
 
     watchdog.run();
 
-    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.GONE);
     assertThat(SessionPhase.silentBecause(state.task("ABC-1").orElseThrow()))
         .isEqualTo("the session ended: Error: bad config");
@@ -144,7 +144,9 @@ class WatchdogServiceTest {
 
     watchdog.ended("ABC-1", " ");
 
-    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().session().halt()).cause())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().session().halt())
+                .cause())
         .isNull();
   }
 
@@ -188,7 +190,7 @@ class WatchdogServiceTest {
     watchdogService().withRoot(root).build(state, real, new FakeClock()).run();
 
     TaskState task = state.task("ABC-42").orElseThrow();
-    assertThat(SessionPhase.of(task.session())).isEqualTo(SessionPhase.GONE);
+    assertThat(SessionPhase.of(task.work().session())).isEqualTo(SessionPhase.GONE);
     assertThat(SessionPhase.silentBecause(task)).isEqualTo("the session ended: zsh: killed agent");
   }
 
@@ -209,7 +211,7 @@ class WatchdogServiceTest {
     void leavesSessionRestartedWhileItsWindowWasReadAsNotGone() {
       watchdog.run();
 
-      assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+      assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
           .isNotEqualTo(SessionPhase.GONE);
     }
 
@@ -219,7 +221,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+      assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
           .isNotEqualTo(SessionPhase.GONE);
     }
   }
@@ -244,7 +246,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.SILENCE))
+      assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().has(ToldOnce.Kind.SILENCE))
           .isTrue();
     }
 
@@ -266,7 +268,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
+      assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().isEmpty()).isTrue();
     }
 
     @Test
@@ -277,7 +279,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
+      assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().isEmpty()).isTrue();
     }
 
     @Test
@@ -290,7 +292,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
+      assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().isEmpty()).isTrue();
     }
 
     @Test
@@ -299,7 +301,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
+      assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().isEmpty()).isTrue();
     }
 
     @Test
@@ -311,7 +313,7 @@ class WatchdogServiceTest {
 
       watchdog.run();
 
-      assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.SILENCE))
+      assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().has(ToldOnce.Kind.SILENCE))
           .isTrue();
     }
 
@@ -384,7 +386,8 @@ class WatchdogServiceTest {
       void recordsSilenceWhereNothingWasReportedAtAll() {
         watchdog.run();
 
-        assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.SILENCE))
+        assertThat(
+                state.task("ABC-1").orElseThrow().round().toldOrNone().has(ToldOnce.Kind.SILENCE))
             .isTrue();
       }
 
@@ -412,7 +415,7 @@ class WatchdogServiceTest {
 
         atFiveHundred.run();
 
-        assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
+        assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().isEmpty()).isTrue();
       }
 
       @Test

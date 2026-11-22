@@ -121,7 +121,7 @@ class PlanPlacementTest {
 
     placement.place("ABC-9");
 
-    assertThat(state.task("ABC-9").orElseThrow().gitTrust()).isEqualTo(trust);
+    assertThat(state.task("ABC-9").orElseThrow().gate().gitTrust()).isEqualTo(trust);
   }
 
   @Test
@@ -145,7 +145,7 @@ class PlanPlacementTest {
 
     placement.place("ABC-9");
 
-    assertThat(state.task("ABC-9").orElseThrow().baseBranch()).isEqualTo("feature/parent");
+    assertThat(state.task("ABC-9").orElseThrow().ticket().baseBranch()).isEqualTo("feature/parent");
   }
 
   @Test

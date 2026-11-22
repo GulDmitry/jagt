@@ -61,7 +61,7 @@ public class StopTriageJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     if (stop == null || stop.triage() != null) {
       return;
     }

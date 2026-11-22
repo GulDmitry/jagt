@@ -58,18 +58,18 @@ public class FlowEngine {
         project == null
             ? read
             : capabilities.of(action).map(named -> named.naming(read)).orElse(read);
-    if (!rules.allows(task.status(), action, facts)) {
+    if (!rules.allows(task.standing().status(), action, facts)) {
       throw notAvailable(taskId, task, action);
     }
     Facts pressed = pressed(facts, taskId);
     ActionOrigin by = sources.pressedBy();
-    if (!rules.allows(task.status(), action, pressed, by)) {
+    if (!rules.allows(task.standing().status(), action, pressed, by)) {
       Decline decline =
           rules.declined(action, pressed, by).orElseThrow(() -> notAvailable(taskId, task, action));
       if (decline.quiet()) {
         return apply(
             taskId,
-            task.status(),
+            task.standing().status(),
             action,
             Outcome.nothing(action.id() + " " + taskId + ": " + decline.why()));
       }
@@ -89,7 +89,11 @@ public class FlowEngine {
       }
       capability.vetLine(line);
     }
-    return apply(taskId, task.status(), action, wrapped(taskId, action, capability, project, line));
+    return apply(
+        taskId,
+        task.standing().status(),
+        action,
+        wrapped(taskId, action, capability, project, line));
   }
 
   private Refusal notAvailable(String taskId, TaskState task, TaskAction action) {
@@ -100,16 +104,16 @@ public class FlowEngine {
             + " is not available for "
             + taskId
             + " (it is "
-            + task.status()
+            + task.standing().status()
             + " — "
             + Move.forTask(
                     rules,
-                    task.status(),
+                    task.standing().status(),
                     projected.withDelivery(
                         projected
                             .delivery()
                             .withShippedWithoutRequest(sources.shippedWithoutRequest(task))),
-                    dev.jagt.orchestrator.flow.view.RoundState.of(task.report(), false),
+                    dev.jagt.orchestrator.flow.view.RoundState.of(task.standing().report(), false),
                     SessionPhase.silent(task))
                 .hint()
             + ")");
@@ -126,14 +130,14 @@ public class FlowEngine {
     if (!action.takesProject()) {
       throw Refusal.byState(action.id() + " takes no project");
     }
-    if (rules.next(task.status(), action, Outcome.Kind.RELAYED).isEmpty()) {
+    if (rules.next(task.standing().status(), action, Outcome.Kind.RELAYED).isEmpty()) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           action.label()
               + " cannot name a project for "
               + taskId
               + " (it is "
-              + task.status()
+              + task.standing().status()
               + ")");
     }
     capability.vet(taskId, task, project);
@@ -182,10 +186,10 @@ public class FlowEngine {
       TaskAction action,
       Outcome outcome) {
     // A report that landed while the work ran is newer than the work's outcome.
-    if (next.isPresent() && task.status() != was) {
+    if (next.isPresent() && task.standing().status() != was) {
       return task;
     }
-    String line = outcome.stamp() == null ? task.message() : outcome.stamp();
+    String line = outcome.stamp() == null ? task.standing().message() : outcome.stamp();
     long at = clock.millis();
     TaskState written =
         next.isPresent()
@@ -205,11 +209,11 @@ public class FlowEngine {
             .withShippedWithoutRequest(sources.shippedWithoutRequest(task)),
         Facts.Hold.defaults()
             .withAgentLive(() -> sources.agentLive(taskId))
-            .withStopped(task.stopped())
+            .withStopped(task.work().stopped())
             .withTierAbove(Facts.tierAbove(task)),
         Facts.Workspace.defaults()
-            .withGitStateChanged(task.gitStateChanged())
-            .withRepoRequested(task.asksForRepository())
+            .withGitStateChanged(task.gate().gitStateChanged())
+            .withRepoRequested(task.work().asksForRepository())
             .withSeveralRepos(task.repos().size() > 1),
         Facts.Reach.defaults()
             .withScenarios(

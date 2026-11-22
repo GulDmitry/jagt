@@ -92,7 +92,7 @@ class HumanWaitRecorderTest {
       state.updateTask("ABC-77", task -> task.withReport(AgentReport.QUESTION));
       state.updateTask("ABC-77", task -> task.withReport(AgentReport.PLAIN));
 
-      assertThat(state.task("ABC-77").orElseThrow().waits())
+      assertThat(state.task("ABC-77").orElseThrow().work().waits())
           .containsExactly(new HumanWait(5_000, 5_000, Why.QUESTION));
       assertThat(log.events())
           .filteredOn(event ->
@@ -116,7 +116,7 @@ class HumanWaitRecorderTest {
 
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
 
-    assertThat(state.task("ABC-42").orElseThrow().waits())
+    assertThat(state.task("ABC-42").orElseThrow().work().waits())
         .containsExactly(new HumanWait(1_000, 0, Why.QUESTION));
   }
 
@@ -128,7 +128,8 @@ class HumanWaitRecorderTest {
 
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
 
-    assertThat(state.task("ABC-42").orElseThrow().waits())
-        .containsExactly(new HumanWait(1_000, 9_000, Why.QUESTION));
+    var waits = state.task("ABC-42").orElseThrow().work().waits();
+
+    assertThat(waits).containsExactly(new HumanWait(1_000, 9_000, Why.QUESTION));
   }
 }

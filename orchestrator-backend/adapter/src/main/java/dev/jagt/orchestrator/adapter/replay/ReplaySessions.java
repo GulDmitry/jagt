@@ -97,7 +97,7 @@ public class ReplaySessions {
     }
     Path at = Path.of(worktree);
     script.launched().forEach(move -> moves.make(at, move));
-    Turn turn = state.turnOrNone();
+    Turn turn = state.work().turnOrNone();
     if (!turn.open()
         || answered.getOrDefault(task, 0L) >= turn.id()
         || checkers.of(state).containsValue(CheckerPhase.READING)) {

@@ -26,7 +26,7 @@ public class MasterStopPanel {
   /** Empty where nothing usable came back, which leaves the stop to the human. */
   public Optional<MasterStopAnswer> ask(
       String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     Optional<String> brief = briefs.master(taskId, config);
     if (stop == null || brief.isEmpty()) {
       return Optional.empty();
@@ -63,7 +63,7 @@ public class MasterStopPanel {
         + ", worktrees "
         + task.repos().stream().map(TaskRepo::worktreePath).toList()
         + ", base "
-        + task.baseBranchOr("the base branch")
+        + task.ticket().baseBranchOr("the base branch")
         + ". Run no build and no test.\n"
         + "<rules>\n"
         + "1. Read what the stop's evidence points at in the worktrees, with read-only git in plain"

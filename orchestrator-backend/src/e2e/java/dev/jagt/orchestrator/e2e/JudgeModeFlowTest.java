@@ -70,7 +70,7 @@ class JudgeModeFlowTest extends FlowHarness.World {
     flow.awaitRun("master-answer");
     flow.awaitRun("master-review");
 
-    assertThat(flow.task().message()).contains("keep v2?");
+    assertThat(flow.task().standing().message()).contains("keep v2?");
     verify(assistants.reviewer(), never()).review(any());
   }
 
@@ -92,8 +92,8 @@ class JudgeModeFlowTest extends FlowHarness.World {
 
       assertThat(flow.awaitReview()).contains("VERDICT: ready");
       flow.awaitRun("master-review");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-      assertThat(flow.task().history())
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+      assertThat(flow.task().standing().history())
           .extracting(StatusChange::status)
           .doesNotContain(TaskStatus.SHIPPING);
     }
@@ -117,7 +117,10 @@ class JudgeModeFlowTest extends FlowHarness.World {
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");
 
       flow.awaitTold("the guard is inverted");
-      assertThat(flow.awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).status())
+      assertThat(
+              flow.awaitTask(task -> task.standing().status() == TaskStatus.IN_PROGRESS)
+                  .standing()
+                  .status())
           .isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
@@ -129,7 +132,9 @@ class JudgeModeFlowTest extends FlowHarness.World {
 
       assertThat(
               flow.awaitTask(task ->
-                      task.message() != null && task.message().contains("keep v2 beside v3?"))
+                      task.standing().message() != null
+                          && task.standing().message().contains("keep v2 beside v3?"))
+                  .standing()
                   .report())
           .isEqualTo(AgentReport.QUESTION);
     }
@@ -156,9 +161,9 @@ class JudgeModeFlowTest extends FlowHarness.World {
       assertThat(flow.act("ship")).contains("relayed to the agent");
       flow.pushesTheRoundAndReportsItsRequest();
       flow.act("sweep");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.REVIEWED);
       flow.awaitRun("master-deploy");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.REVIEWED);
 
       assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
     }

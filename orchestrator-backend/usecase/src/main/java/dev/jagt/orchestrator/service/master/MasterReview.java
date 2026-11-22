@@ -48,12 +48,12 @@ public class MasterReview {
     }
     return JagtJson.bytes(file)
         .flatMap(bytes -> {
-          if (JagtJson.fingerprint(bytes).equals(task.arbiterOrNone().seal())) {
+          if (JagtJson.fingerprint(bytes).equals(task.work().arbiterOrNone().seal())) {
             return JagtJson.parse(file, bytes, Review.class);
           }
           log.atWarn()
               .setMessage("master review not written by jagt")
-              .addKeyValue("alias", task.alias())
+              .addKeyValue("alias", task.ticket().alias())
               .addKeyValue("file", file)
               .addKeyValue("cause", "fingerprint differs from the stored one")
               .log();
@@ -89,7 +89,7 @@ public class MasterReview {
    */
   public boolean restamp(String taskId, TaskState task) {
     return stored(task)
-        .map(review -> store(taskId, task, review.withRound(task.turnOrNone().id())))
+        .map(review -> store(taskId, task, review.withRound(task.work().turnOrNone().id())))
         .orElse(false);
   }
 
@@ -109,7 +109,7 @@ public class MasterReview {
 
   private void reconcile(String taskId, TaskState task, Path file, byte[] bytes) {
     String fingerprint = JagtJson.fingerprint(bytes);
-    Master sealed = task.arbiterOrNone();
+    Master sealed = task.work().arbiterOrNone();
     if (!fingerprint.equals(sealed.seal())) {
       clearSeal(taskId, task);
       return;
@@ -126,25 +126,25 @@ public class MasterReview {
                 taskId,
                 (reducer, current) ->
                     sealedAs(current, fingerprint)
-                            && current.arbiterOrNone().sealedRound() != read.round()
+                            && current.work().arbiterOrNone().sealedRound() != read.round()
                         ? reducer.arbiterSealed(current, fingerprint, read.round())
                         : current));
   }
 
   private void clearSeal(String taskId, TaskState task) {
-    String held = task.arbiterOrNone().seal();
+    String held = task.work().arbiterOrNone().seal();
     if (!held.isEmpty()) {
       state.reduce(
           taskId,
           (reducer, current) ->
-              current.arbiterOrNone().seal().equals(held)
+              current.work().arbiterOrNone().seal().equals(held)
                   ? reducer.arbiterVerdictGone(current)
                   : current);
     }
   }
 
   private static boolean sealedAs(TaskState task, String fingerprint) {
-    return fingerprint.equals(task.arbiterOrNone().seal());
+    return fingerprint.equals(task.work().arbiterOrNone().seal());
   }
 
   /**
@@ -197,7 +197,8 @@ public class MasterReview {
       List<Read> reads) {
 
     static Review of(TaskState task, String ownDiff, String inputs, List<Read> reads) {
-      return new Review(task.turnOrNone().id(), ownDiff, task.report().name(), inputs, reads);
+      return new Review(
+          task.work().turnOrNone().id(), ownDiff, task.standing().report().name(), inputs, reads);
     }
 
     /**
@@ -218,7 +219,7 @@ public class MasterReview {
       String ticketNow = now.length > 1 ? now[1] : "";
       String ticketRead = read.length > 1 ? read[1] : "";
       return ownDiff.equals(own)
-          && task.report().name().equals(report)
+          && task.standing().report().name().equals(report)
           && now[0].equals(read[0])
           && (ticketNow.isEmpty() || ticketNow.equals(ticketRead));
     }
@@ -321,7 +322,7 @@ public class MasterReview {
      * About the turn in front of it, the one jagt asked about, rather than by when it was written.
      */
     public boolean answers(TaskState task) {
-      return round == task.turnOrNone().id();
+      return round == task.work().turnOrNone().id();
     }
 
     public boolean ready() {

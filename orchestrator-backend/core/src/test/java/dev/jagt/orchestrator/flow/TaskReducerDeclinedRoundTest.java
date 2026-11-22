@@ -29,7 +29,7 @@ class TaskReducerDeclinedRoundTest {
         reducer.checkerDeclined(
             task, "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS, 10L);
 
-    assertThat(declined.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(declined.roleOrNone("acceptance").declined()).isEqualTo("d1");
+    assertThat(declined.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(declined.work().roleOrNone("acceptance").declined()).isEqualTo("d1");
   }
 }

@@ -51,12 +51,12 @@ public class MasterDeployJob implements TaskJob {
   @Override
   public void run(String taskId, TaskState task) {
     Arbiter.Profile profile = configService.load().arbiter().profile();
-    String arrival = String.valueOf(task.statusSince());
+    String arrival = String.valueOf(task.standing().statusSince());
     // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a
     // restart.
     if (!profile.may(MasterRight.DEPLOY)
         || !turns.next(task, profile).equals(Turn.Holder.ARBITER)
-        || task.arbiterOrNone().pressedDeploy().equals(arrival)) {
+        || task.work().arbiterOrNone().pressedDeploy().equals(arrival)) {
       return;
     }
     turns.pressedDeploy(taskId, arrival);

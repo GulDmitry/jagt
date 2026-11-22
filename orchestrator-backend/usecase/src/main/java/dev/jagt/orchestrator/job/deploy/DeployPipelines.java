@@ -83,7 +83,7 @@ public class DeployPipelines {
    * included, leaves the conflict standing; nothing is re-run or opened.
    */
   public boolean redConflictDisproved(TaskState task) {
-    Deployment deployment = task.deployment();
+    Deployment deployment = task.work().deployment();
     return deployment != null
         && deployment.heldByRedPipeline()
         && deployment.targets().stream()
@@ -173,9 +173,9 @@ public class DeployPipelines {
   }
 
   private static List<Deployment.Target> landedTargets(TaskState task) {
-    return task.deployment() == null
+    return task.work().deployment() == null
         ? List.of()
-        : task.deployment().targets().stream().filter(Deployment.Target::landed).toList();
+        : task.work().deployment().targets().stream().filter(Deployment.Target::landed).toList();
   }
 
   private Reading none(String taskId, Deployment.Target landed, String label, String at) {

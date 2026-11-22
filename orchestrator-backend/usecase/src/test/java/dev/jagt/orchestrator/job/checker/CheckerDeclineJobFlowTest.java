@@ -65,7 +65,7 @@ class CheckerDeclineJobFlowTest {
         outcomes.declined("ABC-42", new AcceptanceDecline("proj@0123456789abcdef", "", ""), false);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.DECLINED);
-    assertThat(state.task("ABC-42").orElseThrow().report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(state.task("ABC-42").orElseThrow().standing().report()).isEqualTo(AgentReport.PLAIN);
   }
 
   @Test
@@ -78,9 +78,9 @@ class CheckerDeclineJobFlowTest {
 
     TaskState asked = state.task("ABC-42").orElseThrow();
     assertThat(ending).isEqualTo(AcceptanceEnding.DISPUTED);
-    assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
-    assertThat(asked.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(asked.message()).contains("GET /list still unsorted");
+    assertThat(asked.standing().report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(asked.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(asked.standing().message()).contains("GET /list still unsorted");
   }
 
   @Test
@@ -92,7 +92,8 @@ class CheckerDeclineJobFlowTest {
             true);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.ESCALATED);
-    assertThat(state.task("ABC-42").orElseThrow().report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(state.task("ABC-42").orElseThrow().standing().report())
+        .isEqualTo(AgentReport.PERMISSION);
   }
 
   @Test
@@ -101,6 +102,6 @@ class CheckerDeclineJobFlowTest {
         outcomes.declined("ABC-42", new AcceptanceDecline("proj@fedcba9876543210", "", "x"), false);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.DROPPED);
-    assertThat(state.task("ABC-42").orElseThrow().report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(state.task("ABC-42").orElseThrow().standing().report()).isEqualTo(AgentReport.PLAIN);
   }
 }

@@ -98,8 +98,8 @@ class DeployConflictJobTest {
         .runOn(state.tasks());
 
     TaskState read = state.task("ABC-42").orElseThrow();
-    assertThat(read.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(Objects.requireNonNull(read.deployment()).conflictedTarget()).isEmpty();
+    assertThat(read.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(Objects.requireNonNull(read.work().deployment()).conflictedTarget()).isEmpty();
   }
 
   @Test

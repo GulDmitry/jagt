@@ -21,7 +21,7 @@ public class NextMove {
     Facts projected = Facts.projected(task);
     return Move.forTask(
         rules,
-        task.status(),
+        task.standing().status(),
         projected.withDelivery(projected.delivery().withShippedWithoutRequest(round.requestless())),
         round,
         false);

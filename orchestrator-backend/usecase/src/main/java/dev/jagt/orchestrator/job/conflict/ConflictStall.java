@@ -73,11 +73,11 @@ class ConflictStall {
    * fact {@code MasterAnswerJob} answers by.
    */
   private boolean arbiterAnswers(TaskState task) {
-    return !task.report().asks()
+    return !task.standing().report().asks()
         && Turns.next(
-                task.status(),
+                task.standing().status(),
                 AgentReport.QUESTION,
-                task.stopped(),
+                task.work().stopped(),
                 checkers.of(task),
                 config.load().arbiter().profile())
             .equals(Turn.Holder.ARBITER);
@@ -89,7 +89,7 @@ class ConflictStall {
 
   private void announce(String taskId, Conflict.Told stop, Duration after) {
     Optional<TaskState> task = stateService.task(taskId);
-    String alias = task.map(TaskState::alias).orElse(taskId);
+    String alias = task.map(taskState -> taskState.ticket().alias()).orElse(taskId);
     String kind = task.map(ConflictStall::kindOf).orElse("deploy");
     log.atWarn()
         .setMessage(kind + " conflict stalled")

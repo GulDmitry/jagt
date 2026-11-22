@@ -135,7 +135,7 @@ final class FlowHarness {
 
   void awaitVerificationSentBack() {
     awaitTold("jagt ran this project's verification command and it failed");
-    awaitTask(reached -> reached.status() == TaskStatus.IN_PROGRESS);
+    awaitTask(reached -> reached.standing().status() == TaskStatus.IN_PROGRESS);
   }
 
   void pushesTheRound() throws Exception {
@@ -194,7 +194,7 @@ final class FlowHarness {
   }
 
   TaskState settled(MasterModeCase master) {
-    awaitTask(reached -> reached.status() == master.expected());
+    awaitTask(reached -> reached.standing().status() == master.expected());
     awaitRun("master-review");
     awaitRun("master-answer");
     return task();

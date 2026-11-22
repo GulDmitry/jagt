@@ -135,7 +135,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.IN_PROGRESS, "going on", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().session().reportedAt()).isPositive();
+    assertThat(state.task("ABC-1").orElseThrow().work().session().reportedAt()).isPositive();
   }
 
   @Test
@@ -146,7 +146,8 @@ class AgentStatusReportsTest {
 
     reports.verified(true, "verified", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEW_PENDING);
   }
 
   @Test
@@ -234,8 +235,9 @@ class AgentStatusReportsTest {
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("deployed");
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(state.task("ABC-1").orElseThrow().standing().message()).isEqualTo("deployed");
   }
 
   @Test
@@ -284,7 +286,7 @@ class AgentStatusReportsTest {
         .extracting(TaskRepo::mrUrl)
         .containsExactly(
             "https://host/proj/-/merge_requests/9", "https://host/web/-/merge_requests/3");
-    assertThat(reported.history())
+    assertThat(reported.standing().history())
         .extracting(StatusChange::status)
         .containsOnlyOnce(TaskStatus.CI_POLLING);
   }
@@ -335,8 +337,8 @@ class AgentStatusReportsTest {
 
     TaskState reported = state.task("ABC-1").orElseThrow();
     assertThat(reported.reviewRequestOf("web")).contains("https://host/web/mr/3");
-    assertThat(reported.mrCreatedAt()).isGreaterThan(1_000L);
-    assertThat(reported.lastPolledAt()).isZero();
+    assertThat(reported.round().mrCreatedAt()).isGreaterThan(1_000L);
+    assertThat(reported.round().lastPolledAt()).isZero();
   }
 
   @Test
@@ -355,9 +357,9 @@ class AgentStatusReportsTest {
         "ABC-1");
 
     TaskState reported = state.task("ABC-1").orElseThrow();
-    assertThat(reported.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(reported.standing().status()).isEqualTo(TaskStatus.IN_PROGRESS);
     assertThat(reported.mrUrl()).isNull();
-    assertThat(reported.mrCreatedAt()).isZero();
+    assertThat(reported.round().mrCreatedAt()).isZero();
   }
 
   @Test
@@ -443,11 +445,11 @@ class AgentStatusReportsTest {
         "ABC-1");
 
     TaskState reported = state.task("ABC-1").orElseThrow();
-    assertThat(reported.status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(reported.standing().status()).isEqualTo(TaskStatus.CI_POLLING);
     assertThat(reported.reviewRequestOf("proj")).isEmpty();
     assertThat(reported.reviewRequestOf("web"))
         .contains("https://host/team/web/-/merge_requests/3");
-    assertThat(reported.mrCreatedAt()).isPositive();
+    assertThat(reported.round().mrCreatedAt()).isPositive();
   }
 
   @Test
@@ -460,7 +462,8 @@ class AgentStatusReportsTest {
             "IN_PROGRESS", "which cache should this use", "question", null, Map.of()),
         "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(state.task("ABC-1").orElseThrow().standing().report())
+        .isEqualTo(AgentReport.QUESTION);
   }
 
   @Test
@@ -478,7 +481,7 @@ class AgentStatusReportsTest {
         new AgentStatusMessage("REVIEW_PENDING", "already handled", "no_changes", null, Map.of()),
         "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(state.task("ABC-1").orElseThrow().standing().report()).isEqualTo(AgentReport.PLAIN);
   }
 
   @ParameterizedTest
@@ -497,8 +500,8 @@ class AgentStatusReportsTest {
         "ABC-1");
 
     TaskState after = state.task("ABC-1").orElseThrow();
-    assertThat(after.report()).isEqualTo(AgentReport.NO_CHANGES);
-    assertThat(after.message()).isEqualTo("already handled");
+    assertThat(after.standing().report()).isEqualTo(AgentReport.NO_CHANGES);
+    assertThat(after.standing().message()).isEqualTo("already handled");
   }
 
   @Test
@@ -513,8 +516,8 @@ class AgentStatusReportsTest {
         "ABC-1");
 
     TaskState after = state.task("ABC-1").orElseThrow();
-    assertThat(after.report()).isEqualTo(AgentReport.PERMISSION);
-    assertThat(after.message()).isEqualTo("edits in the deploy worktree denied");
+    assertThat(after.standing().report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(after.standing().message()).isEqualTo("edits in the deploy worktree denied");
   }
 
   @ParameterizedTest
@@ -538,7 +541,8 @@ class AgentStatusReportsTest {
     reports.report(
         TaskStatus.CI_POLLING, "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.CI_POLLING);
   }
 
   @Test
@@ -564,7 +568,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
 
-    String stored = state.task("ABC-1").orElseThrow().message();
+    String stored = state.task("ABC-1").orElseThrow().standing().message();
     assertThat(stored).hasSizeLessThanOrEqualTo(100).doesNotContain("\n").endsWith("…");
   }
 
@@ -587,7 +591,8 @@ class AgentStatusReportsTest {
 
     reports.markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
 
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.APPROVED);
   }
 
   @Test
@@ -597,7 +602,8 @@ class AgentStatusReportsTest {
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEWED);
   }
 
   @Test
@@ -617,9 +623,9 @@ class AgentStatusReportsTest {
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
     TaskState after = state.task("ABC-1").orElseThrow();
-    assertThat(after.message()).isEqualTo("squash or keep the commits?");
-    assertThat(after.lastActiveTimestamp()).isEqualTo(1_700_000_000_000L);
-    assertThat(after.session().quietSince()).isEqualTo(1_700_000_000_000L);
+    assertThat(after.standing().message()).isEqualTo("squash or keep the commits?");
+    assertThat(after.standing().lastActiveTimestamp()).isEqualTo(1_700_000_000_000L);
+    assertThat(after.work().session().quietSince()).isEqualTo(1_700_000_000_000L);
   }
 
   @Test
@@ -629,7 +635,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isPositive();
+    assertThat(state.task("ABC-1").orElseThrow().round().mrCreatedAt()).isPositive();
   }
 
   @Test
@@ -647,7 +653,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
+    assertThat(state.task("ABC-1").orElseThrow().round().mrCreatedAt()).isGreaterThan(lastRound);
   }
 
   @Test
@@ -664,7 +670,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
+    assertThat(state.task("ABC-1").orElseThrow().round().mrCreatedAt()).isGreaterThan(lastRound);
   }
 
   @Test
@@ -680,7 +686,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow().work().stopped()).isFalse();
   }
 
   @Test
@@ -697,7 +703,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().pipelineStatus()).isNull();
+    assertThat(state.task("ABC-1").orElseThrow().checks().pipelineStatus()).isNull();
   }
 
   @Test
@@ -718,7 +724,7 @@ class AgentStatusReportsTest {
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
     assertThat(state.task("ABC-1").orElseThrow().approvedRead()).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow().checksRead()).isEqualTo("success");
+    assertThat(state.task("ABC-1").orElseThrow().checks().read()).isEqualTo("success");
   }
 
   @Test
@@ -738,7 +744,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().checksRead()).isNull();
+    assertThat(state.task("ABC-1").orElseThrow().checks().read()).isNull();
     assertThat(state.task("ABC-1").orElseThrow().approvedRead()).isNull();
   }
 
@@ -751,7 +757,8 @@ class AgentStatusReportsTest {
     assertThatThrownBy(planReport)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("## Acceptance criteria");
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -767,7 +774,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isEqualTo(12345L);
+    assertThat(state.task("ABC-1").orElseThrow().round().mrCreatedAt()).isEqualTo(12345L);
   }
 
   @Test
@@ -786,7 +793,7 @@ class AgentStatusReportsTest {
         .hasMessageContaining("already APPROVED");
     assertThat(state.task("ABC-1"))
         .get()
-        .extracting(TaskState::status)
+        .extracting(taskState -> taskState.standing().status())
         .isEqualTo(TaskStatus.APPROVED);
   }
 
@@ -797,7 +804,8 @@ class AgentStatusReportsTest {
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
 
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.CI_FAILED);
   }
 
   @Test
@@ -807,7 +815,7 @@ class AgentStatusReportsTest {
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
 
-    assertThat(state.task("ABC-1").orElseThrow().message())
+    assertThat(state.task("ABC-1").orElseThrow().standing().message())
         .isEqualTo("checks failed — relayed to the session");
   }
 
@@ -820,7 +828,7 @@ class AgentStatusReportsTest {
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.of(stop));
 
-    assertThat(state.task("ABC-1").orElseThrow().message())
+    assertThat(state.task("ABC-1").orElseThrow().standing().message())
         .doesNotContain("relayed")
         .contains("unit-tests: runner_system_failure, 3 retries");
   }
@@ -856,7 +864,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().probes())
+    assertThat(state.task("ABC-1").orElseThrow().gate().probes())
         .containsExactly(Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0));
   }
 
@@ -877,7 +885,8 @@ class AgentStatusReportsTest {
     assertThatThrownBy(planReport)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("| tee out.log");
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -905,8 +914,8 @@ class AgentStatusReportsTest {
         "ABC-1");
 
     TaskState reported = state.task("ABC-1").orElseThrow();
-    assertThat(reported.mrCreatedAt()).isEqualTo(1_000L);
-    assertThat(reported.lastPolledAt()).isEqualTo(9_000L);
+    assertThat(reported.round().mrCreatedAt()).isEqualTo(1_000L);
+    assertThat(reported.round().lastPolledAt()).isEqualTo(9_000L);
   }
 
   @Test
@@ -921,7 +930,7 @@ class AgentStatusReportsTest {
             "IN_PROGRESS", "one file, no contradiction", "no_plan", null, Map.of()),
         "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
@@ -937,7 +946,7 @@ class AgentStatusReportsTest {
                 "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("outcome");
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
@@ -957,7 +966,7 @@ class AgentStatusReportsTest {
             Map.of()),
         "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isEqualTo("registry");
+    assertThat(state.task("ABC-1").orElseThrow().work().repoRequest()).isEqualTo("registry");
   }
 
   @Test
@@ -980,7 +989,7 @@ class AgentStatusReportsTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("needsProject")
         .hasMessageContaining("[proj]");
-    assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
+    assertThat(state.task("ABC-1").orElseThrow().work().repoRequest()).isNull();
   }
 
   @Test
@@ -1020,8 +1029,8 @@ class AgentStatusReportsTest {
     reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
     reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-2");
 
-    assertThat(state.task("ABC-1").orElseThrow().turnOrNone().open()).isFalse();
-    assertThat(state.task("ABC-2").orElseThrow().turnOrNone().open()).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow().work().turnOrNone().open()).isFalse();
+    assertThat(state.task("ABC-2").orElseThrow().work().turnOrNone().open()).isTrue();
   }
 
   @Test
@@ -1099,7 +1108,7 @@ class AgentStatusReportsTest {
 
     reports.report(TaskStatus.IN_PROGRESS, "back to work", "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
+    assertThat(state.task("ABC-1").orElseThrow().work().repoRequest()).isNull();
   }
 
   @Test
@@ -1182,7 +1191,7 @@ class AgentStatusReportsTest {
             Map.of("visualize", "no — config-only change")),
         "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().switches())
+    assertThat(state.task("ABC-1").orElseThrow().gate().switches())
         .containsExactly(Map.entry("visualize", "no — config-only change"));
   }
 }

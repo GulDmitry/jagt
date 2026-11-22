@@ -630,7 +630,7 @@ class NewTaskWorktreesTest {
 
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api", "registry");
-    assertThat(task.repoRequest()).isNull();
+    assertThat(task.work().repoRequest()).isNull();
   }
 
   @Test
@@ -666,7 +666,7 @@ class NewTaskWorktreesTest {
             "ABC-7");
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api");
-    assertThat(task.repoRequest()).isEqualTo("registry");
+    assertThat(task.work().repoRequest()).isEqualTo("registry");
   }
 
   @Test
@@ -742,7 +742,8 @@ class NewTaskWorktreesTest {
 
     worktrees.attach("ABC-7", "registry", registryMain);
 
-    assertThat(Objects.requireNonNull(state.task("ABC-7").orElseThrow().gitTrust()).recorded())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-7").orElseThrow().gate().gitTrust()).recorded())
         .isEqualTo(Map.of("core.bare in api", "d1", "core.bare in registry", "d2"));
   }
 

@@ -85,9 +85,9 @@ class CheckerReadsTest {
           TaskState task = state.task("ABC-42").orElseThrow();
           whileReading.add(
               Turns.next(
-                  task.status(),
-                  task.report(),
-                  task.stopped(),
+                  task.standing().status(),
+                  task.standing().report(),
+                  task.work().stopped(),
                   new Checkers(new TaskChart(Composition.builtIn())).of(task),
                   Arbiter.Profile.OFF));
           return new Answer<>(Optional.empty(), TokenUsage.NONE);
@@ -106,9 +106,9 @@ class CheckerReadsTest {
     assertThat(whileReading).containsExactly(new Turn.Holder.Role("acceptance"));
     assertThat(
             Turns.next(
-                after.status(),
-                after.report(),
-                after.stopped(),
+                after.standing().status(),
+                after.standing().report(),
+                after.work().stopped(),
                 new Checkers(new TaskChart(Composition.builtIn())).of(after),
                 Arbiter.Profile.OFF))
         .isEqualTo(Turn.Holder.NOBODY);

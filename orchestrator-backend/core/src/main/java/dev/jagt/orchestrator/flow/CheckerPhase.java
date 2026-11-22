@@ -13,14 +13,14 @@ public enum CheckerPhase {
   PASSED;
 
   public static CheckerPhase of(TaskState task, String role) {
-    return task.roleOrNone(role).reading().isEmpty() ? beneath(task, role) : READING;
+    return task.work().roleOrNone(role).reading().isEmpty() ? beneath(task, role) : READING;
   }
 
   /** What the deploy reads as were no read of the role running on it. */
   static CheckerPhase beneath(TaskState task, String role) {
-    if (task.roundOpen(role)) {
+    if (task.work().roundOpen(role)) {
       return ROUND_OPEN;
     }
-    return task.passedOnTips(role) ? PASSED : NONE;
+    return task.work().passedOnTips(role) ? PASSED : NONE;
   }
 }

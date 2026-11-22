@@ -59,28 +59,28 @@ record Phases(Progress progress, Delivery delivery, Gates gates, Watchers watche
   static Phases of(TaskState task) {
     return new Phases(
         new Progress(
-            task.status(),
-            StopKind.of(task.stop()),
-            task.planGate(),
-            task.report(),
-            TurnKind.of(task.turnOrNone()),
-            SessionPhase.of(task.session())),
+            task.standing().status(),
+            StopKind.of(task.work().stop()),
+            task.gate().planGate(),
+            task.standing().report(),
+            TurnKind.of(task.work().turnOrNone()),
+            SessionPhase.of(task.work().session())),
         new Delivery(
-            DeployPhase.of(task.deployment()),
-            GitPhase.of(task.gitTrust()),
-            RepoPhase.of(task.repoRequest()),
+            DeployPhase.of(task.work().deployment()),
+            GitPhase.of(task.gate().gitTrust()),
+            RepoPhase.of(task.work().repoRequest()),
             RequestPhase.of(task)),
         new Gates(ChecksPhase.of(task), ApprovalPhase.of(task), InfraPhase.of(task)),
         new Watchers(
             phasesOf(task, CheckerPhase::of),
             phasesOf(task, CheckerPhase::beneath),
             MasterPhase.of(task),
-            task.session().hasStampedAsk()));
+            task.work().session().hasStampedAsk()));
   }
 
   private static Map<String, CheckerPhase> phasesOf(
       TaskState task, BiFunction<TaskState, String, CheckerPhase> phase) {
-    return task.roles().keySet().stream()
+    return task.work().roles().keySet().stream()
         .collect(Collectors.toMap(Function.identity(), id -> phase.apply(task, id)));
   }
 

@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.protocol.RuleRead;
 import dev.jagt.orchestrator.task.launch.RoutingAnswer;
 import dev.jagt.orchestrator.task.launch.RoutingQuestion;
 import dev.jagt.orchestrator.task.launch.RulePair;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.util.List;
 import java.util.Map;

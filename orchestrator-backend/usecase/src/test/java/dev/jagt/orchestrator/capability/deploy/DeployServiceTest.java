@@ -114,7 +114,7 @@ class DeployServiceTest {
       Outcome outcome = deploys.deploy("a1");
 
       assertThat(
-              Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
                   .targets()
                   .getFirst()
                   .landing()
@@ -129,7 +129,7 @@ class DeployServiceTest {
 
       deploys.deploy("a1");
 
-      Deployment deployment = state.task("ABC-1").orElseThrow().deployment();
+      Deployment deployment = state.task("ABC-1").orElseThrow().work().deployment();
       assertThat(Objects.requireNonNull(deployment).at()).isEqualTo(1);
       assertThat(deployment.targets().getFirst().landing().merge()).isEqualTo("cafebabe1234");
       assertThat(deployment.targets().getFirst().deployBranch()).isEqualTo("dev");
@@ -210,7 +210,7 @@ class DeployServiceTest {
       deploys.deploy("a1");
 
       Deployment.Target landed =
-          Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+          Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
               .targets()
               .getFirst();
       assertThat(landed.landing().merge()).isEqualTo("cafebabe1234");
@@ -234,8 +234,9 @@ class DeployServiceTest {
           .isInstanceOf(Refusal.class)
           .hasMessageContaining("waits on the session's fix in /data/worktrees/proj/ABC-1-deploy");
 
-      assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-      assertThat(state.task("ABC-1").orElseThrow().message())
+      assertThat(state.task("ABC-1").orElseThrow().standing().status())
+          .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(state.task("ABC-1").orElseThrow().standing().message())
           .startsWith("red pipeline on the deploy commit");
       verify(git, never()).mergeIntoAndPush(any(), anyString(), anyString());
     }
@@ -258,7 +259,9 @@ class DeployServiceTest {
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
       assertThat(outcome.message())
           .contains("api into dev (cafebabe)", "web into dev (f00dfeed)", "DEPLOYED");
-      assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).targets())
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
+                  .targets())
           .extracting(target -> target.landing().merge())
           .containsExactly("cafebabe1234", "f00dfeed5678");
     }
@@ -282,7 +285,9 @@ class DeployServiceTest {
               "NOT deployed: web",
               deployWorktree.toString());
       assertThat(outcome.stamp()).contains("Live on the deploy branch: api", "NOT deployed: web");
-      assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).targets())
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
+                  .targets())
           .extracting(target -> target.landing().merge())
           .containsExactly("cafebabe1234", null);
     }
@@ -320,7 +325,8 @@ class DeployServiceTest {
       assertThatThrownBy(() -> deploys.deploy("a1"))
           .isInstanceOf(GitDeploy.NothingToDeployException.class)
           .hasMessageContaining("Nothing to deploy");
-      assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
+      assertThat(state.task("ABC-1").orElseThrow().standing().status())
+          .isEqualTo(TaskStatus.APPROVED);
     }
 
     @Test
@@ -433,7 +439,7 @@ class DeployServiceTest {
       assertThat(outcome.message())
           .contains("web into dev (f00dfeed)", "already on the deploy branch: api (cafebabe)");
       assertThat(
-              Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
                   .targets()
                   .getFirst()
                   .landing()

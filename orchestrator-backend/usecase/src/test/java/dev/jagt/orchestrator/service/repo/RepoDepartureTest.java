@@ -62,7 +62,8 @@ class RepoDepartureTest {
 
     assertThat(left).isTrue();
     assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
-    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(state.task("ABC-42").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEWED);
   }
 
   @Test
@@ -139,7 +140,8 @@ class RepoDepartureTest {
 
     departure.leave("ABC-42", web, "its request was closed on the host");
 
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().gitTrust()).recorded())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().gate().gitTrust()).recorded())
         .containsOnlyKeys("core.bare in /api/.git/config");
   }
 

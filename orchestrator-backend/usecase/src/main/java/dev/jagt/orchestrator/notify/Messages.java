@@ -109,9 +109,10 @@ public class Messages {
         value("alias", () -> orEmpty(sent.alias())),
         value("title", () -> titleOf(sent)),
         value("body", sent::body),
-        value("ticket", () -> ofTask(task, TaskState::ticketUrl)),
+        value("ticket", () -> ofTask(task, taskState -> taskState.ticket().ticketUrl())),
         value(
-            "status", () -> ofTask(task, state -> state.status().name().toLowerCase(Locale.ROOT))),
+            "status",
+            () -> ofTask(task, state -> state.standing().status().name().toLowerCase(Locale.ROOT))),
         value("said", () -> ofTask(task, Messages::lastLine)),
         value("next", () -> ofTask(task, this::nextOf)),
         value("project", () -> ofTask(task, TaskState::project)),
@@ -141,7 +142,7 @@ public class Messages {
   }
 
   private static String lastLine(TaskState task) {
-    String message = task.message();
+    String message = task.standing().message();
     if (message == null) {
       return "";
     }
@@ -157,26 +158,28 @@ public class Messages {
   }
 
   private static @Nullable String stopOf(TaskState task) {
-    return task.stop() == null ? null : task.stop().trigger().reason();
+    return task.work().stop() == null ? null : task.work().stop().trigger().reason();
   }
 
   private static @Nullable String pipelineOf(TaskState task) {
-    return task.pipelineUrl() == null ? task.pipelineStatus() : task.pipelineUrl();
+    return task.checks().pipelineUrl() == null
+        ? task.checks().pipelineStatus()
+        : task.checks().pipelineUrl();
   }
 
   private static @Nullable String tip(TaskState task) {
-    return task.checksTip() == null ? task.headTip() : task.checksTip();
+    return task.checks().checksTip() == null ? task.checks().headTip() : task.checks().checksTip();
   }
 
   private static String roleOf(TaskState task, String point) {
-    return task.roles().keySet().stream()
+    return task.work().roles().keySet().stream()
         .filter(role -> point.startsWith(role + "-"))
         .findFirst()
         .orElse("");
   }
 
   private static @Nullable String originOf(TaskState task) {
-    return task.history().stream()
+    return task.standing().history().stream()
         .reduce((a, b) -> b)
         .map(StatusChange::origin)
         .map(ActionOrigin::label)

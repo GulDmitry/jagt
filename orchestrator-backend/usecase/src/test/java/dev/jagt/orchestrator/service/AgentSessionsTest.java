@@ -440,7 +440,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "plan");
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @ParameterizedTest
@@ -452,7 +452,7 @@ class AgentSessionsTest {
         .isInstanceOfSatisfying(
             Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isNotEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isNotEqualTo(PlanGate.REQUIRED);
     verifyNoInteractions(tmux);
   }
 
@@ -546,7 +546,7 @@ class AgentSessionsTest {
 
     assertThat(said).isEqualTo("session of ABC-1 started again on opus");
     verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
-    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().tier()).current())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().tier()).current())
         .isEqualTo("opus");
   }
 
@@ -566,7 +566,8 @@ class AgentSessionsTest {
     sessions.openTaskTab("ABC-1", "auto");
 
     verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
-    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().tier()).raised()).isFalse();
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().tier()).raised())
+        .isFalse();
   }
 
   @Test
@@ -578,7 +579,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().tier()).models())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().tier()).models())
         .containsExactly("", "opus");
   }
 
@@ -1164,7 +1165,7 @@ class AgentSessionsTest {
 
     sessions.relayUnderCold("ABC-1", "and handle empty files");
 
-    assertThat(state.task("ABC-1").orElseThrow().session())
+    assertThat(state.task("ABC-1").orElseThrow().work().session())
         .isEqualTo(Session.startedOver(Session.defaults()));
   }
 

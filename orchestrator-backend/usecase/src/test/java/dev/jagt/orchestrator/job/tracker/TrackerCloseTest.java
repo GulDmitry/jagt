@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.service.assistant.TicketReader;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

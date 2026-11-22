@@ -15,7 +15,7 @@ public enum InfraPhase {
   SPENT;
 
   public static InfraPhase of(TaskState task) {
-    List<InfraRetry> retries = task.infraRetries();
+    List<InfraRetry> retries = task.checks().infraRetries();
     if (InfraRetry.pending(retries).isPresent()) {
       return ARMED;
     }

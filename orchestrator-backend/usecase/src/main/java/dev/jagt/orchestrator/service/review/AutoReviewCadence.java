@@ -54,37 +54,40 @@ public final class AutoReviewCadence {
     return enabled
         && task.hasReviewRequest()
         && !task.requestsMerged()
-        && !FlowRules.closed(task.status());
+        && !FlowRules.closed(task.standing().status());
   }
 
   /** What a human is owed about this task: is anything watching it, and when will it next look. */
   public AutoReviewWatch watch(TaskState task, long now) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     if (stop != null) {
       return AutoReviewWatch.stopped(stop);
     }
     if (!polls(task)) {
       return AutoReviewWatch.none();
     }
-    if (!task.autoReviewEnabled(true)) {
+    if (!task.round().autoReviewEnabled(true)) {
       return AutoReviewWatch.offForTask();
     }
     // The round's own stamp when there is one, every ship re-arming it, and otherwise when the
     // request was
     // opened. With neither, nothing can be timed and that is said out loud.
-    long roundStart = task.mrCreatedAt() > 0 ? task.mrCreatedAt() : task.requestOpenedAt();
+    long roundStart =
+        task.round().mrCreatedAt() > 0
+            ? task.round().mrCreatedAt()
+            : task.round().requestOpenedAt();
     if (roundStart == 0) {
       return AutoReviewWatch.noRound();
     }
     Duration elapsed = Duration.ofMillis(now - roundStart);
     Duration interval =
-        FlowRules.movedOnByReviewerAlone(task.status())
+        FlowRules.movedOnByReviewerAlone(task.standing().status())
             ? waitingInterval(elapsed)
             : pollInterval(elapsed);
     if (interval == null) {
       return AutoReviewWatch.windowElapsed(windowHours());
     }
-    return AutoReviewWatch.watching(task.lastPolledAt() + interval.toMillis());
+    return AutoReviewWatch.watching(task.round().lastPolledAt() + interval.toMillis());
   }
 
   /** How the cadence reads to a human, in the one place both surfaces take the words from. */

@@ -104,7 +104,7 @@ public class TicketCloseJob implements Job {
   private boolean due(String taskId, TaskState task, long now) {
     Deferred waiting = deferred.get(taskId);
     return waiting == null
-        || waiting.statusSince() != task.statusSince()
+        || waiting.statusSince() != task.standing().statusSince()
         || now >= waiting.nextAt();
   }
 
@@ -115,9 +115,11 @@ public class TicketCloseJob implements Job {
     }
     Deferred waiting = deferred.get(taskId);
     int misses =
-        waiting != null && waiting.statusSince() == task.statusSince() ? waiting.misses() + 1 : 0;
+        waiting != null && waiting.statusSince() == task.standing().statusSince()
+            ? waiting.misses() + 1
+            : 0;
     long wait = Math.min(MAX_WAIT.toMillis(), every.toMillis() * (1L << Math.min(misses, 20)));
-    deferred.put(taskId, new Deferred(task.statusSince(), misses, now + wait));
+    deferred.put(taskId, new Deferred(task.standing().statusSince(), misses, now + wait));
   }
 
   private Map<String, TaskState> handedOver() {
@@ -125,7 +127,7 @@ public class TicketCloseJob implements Job {
     stateService
         .tasks()
         .forEach((taskId, task) -> {
-          if (FlowRules.handedOver(task.status()) && close.watches(taskId)) {
+          if (FlowRules.handedOver(task.standing().status()) && close.watches(taskId)) {
             waiting.put(taskId, task);
           }
         });

@@ -58,6 +58,6 @@ public class PromptGate {
 
   private boolean cold(TaskState task) {
     return SessionPhase.cold(
-        task.session(), runtime, configService.load().agent().cacheLifetimeOrDefault());
+        task.work().session(), runtime, configService.load().agent().cacheLifetimeOrDefault());
   }
 }

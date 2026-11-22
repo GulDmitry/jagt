@@ -53,10 +53,11 @@ public enum SessionPhase {
    * status idles by design.
    */
   public static long silentSince(TaskState task) {
-    if (!FlowRules.watched(task.status()) || task.report() == AgentReport.WAIT) {
+    if (!FlowRules.watched(task.standing().status())
+        || task.standing().report() == AgentReport.WAIT) {
       return 0;
     }
-    Session session = task.session();
+    Session session = task.work().session();
     Session.Halt halt = session.halt();
     return switch (of(session)) {
       case FAILED, GONE -> halt == null ? 0 : halt.at();
@@ -68,9 +69,9 @@ public enum SessionPhase {
   /** {@link #silentSince}, but 0 where the wait follows a question the agent itself asked. */
   public static long silentSinceUnasked(TaskState task) {
     long since = silentSince(task);
-    Session.Halt halt = task.session().halt();
+    Session.Halt halt = task.work().session().halt();
     boolean asking =
-        task.report().asks() && (halt == null || halt.kind() == Session.Halt.Kind.IDLE);
+        task.standing().report().asks() && (halt == null || halt.kind() == Session.Halt.Kind.IDLE);
     return asking ? 0 : since;
   }
 
@@ -83,7 +84,7 @@ public enum SessionPhase {
    * surface speaks for itself.
    */
   public static @Nullable String silentBecause(TaskState task) {
-    Session session = task.session();
+    Session session = task.work().session();
     Session.Halt halt = session.halt();
     if (!silent(task)) {
       return null;

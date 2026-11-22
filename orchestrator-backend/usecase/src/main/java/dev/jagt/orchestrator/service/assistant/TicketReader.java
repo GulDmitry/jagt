@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.protocol.read.RetryPolicy;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;

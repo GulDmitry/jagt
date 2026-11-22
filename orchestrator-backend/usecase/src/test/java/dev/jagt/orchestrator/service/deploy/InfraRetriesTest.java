@@ -80,7 +80,8 @@ class InfraRetriesTest {
             "ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure");
 
     assertThat(armed.orElseThrow().at()).isEqualTo(NOW.plusSeconds(300).toEpochMilli());
-    assertThat(state.task("ABC-42").orElseThrow().infraRetries()).containsExactly(armed.get());
+    assertThat(state.task("ABC-42").orElseThrow().checks().infraRetries())
+        .containsExactly(armed.get());
   }
 
   @Test
@@ -190,9 +191,9 @@ class InfraRetriesTest {
     retries.sent("ABC-42", armed);
 
     TaskState after = state.task("ABC-42").orElseThrow();
-    assertThat(after.infraRetries()).containsExactly(armed.sentAt(NOW.toEpochMilli()));
-    assertThat(after.history()).hasSize(2);
-    assertThat(after.status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(after.checks().infraRetries()).containsExactly(armed.sentAt(NOW.toEpochMilli()));
+    assertThat(after.standing().history()).hasSize(2);
+    assertThat(after.standing().status()).isEqualTo(TaskStatus.CI_POLLING);
   }
 
   @Test
@@ -225,7 +226,7 @@ class InfraRetriesTest {
 
     retries.clear("ABC-42", false);
 
-    assertThat(state.task("ABC-42").orElseThrow().infraRetries()).containsExactly(sent);
+    assertThat(state.task("ABC-42").orElseThrow().checks().infraRetries()).containsExactly(sent);
   }
 
   @Test

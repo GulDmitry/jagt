@@ -211,7 +211,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             asked,
-            RoundState.of(asked.report(), false),
+            RoundState.of(asked.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -233,7 +233,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             several,
-            RoundState.of(several.report(), false),
+            RoundState.of(several.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -490,7 +490,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             passed,
-            RoundState.of(passed.report(), false)
+            RoundState.of(passed.standing().report(), false)
                 .withCheckers(new Checkers(new TaskChart(Composition.builtIn())).of(passed)),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
@@ -519,7 +519,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             reverted,
-            RoundState.of(reverted.report(), false),
+            RoundState.of(reverted.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -630,7 +630,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             open,
-            RoundState.of(open.report(), false),
+            RoundState.of(open.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
     TaskView withoutRequest =
@@ -638,7 +638,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             none,
-            RoundState.of(none.report(), false),
+            RoundState.of(none.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -754,7 +754,7 @@ class TaskViewTest {
             rules,
             "ABC-42",
             stopped,
-            RoundState.of(stopped.report(), false),
+            RoundState.of(stopped.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -840,6 +840,7 @@ class TaskViewTest {
     waiting =
         waiting.withTurn(
             waiting
+                .work()
                 .turnOrNone()
                 .withMark(Wake.MARK, new Wake(0, 36_000_000, Step.WAIT_OVER).mark()));
 
@@ -848,7 +849,7 @@ class TaskViewTest {
             rules,
             "ABC-1",
             waiting,
-            RoundState.of(waiting.report(), false),
+            RoundState.of(waiting.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 

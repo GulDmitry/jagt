@@ -67,7 +67,7 @@ public class MasterStopJob implements TaskJob {
     if (StopHold.of(task, rounds.of(task, file).arbiter()) != StopHold.ARBITER) {
       return;
     }
-    TaskStop stop = Objects.requireNonNull(task.stop());
+    TaskStop stop = Objects.requireNonNull(task.work().stop());
     turns.askedStop(taskId, stop.key());
     Optional<MasterStopAnswer> answer =
         panel.ask(taskId, task, config).filter(said -> decides(task, said, config));
@@ -99,7 +99,7 @@ public class MasterStopJob implements TaskJob {
     return switch (answer.kind()) {
       case LIFT -> true;
       case ESCALATE -> !config.profile().keeps(TaskAction.ESCALATE);
-      case RETURN -> !FlowRules.holdsPlan(task.status());
+      case RETURN -> !FlowRules.holdsPlan(task.standing().status());
       case HUMAN -> false;
     };
   }

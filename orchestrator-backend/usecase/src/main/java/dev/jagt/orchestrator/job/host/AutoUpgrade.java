@@ -62,6 +62,7 @@ public class AutoUpgrade {
   }
 
   private boolean sessionRuns() {
-    return state.tasks().values().stream().anyMatch(task -> SessionPhase.of(task.session()).live());
+    return state.tasks().values().stream()
+        .anyMatch(task -> SessionPhase.of(task.work().session()).live());
   }
 }

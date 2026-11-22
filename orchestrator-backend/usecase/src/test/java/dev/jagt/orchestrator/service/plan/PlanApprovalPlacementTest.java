@@ -98,7 +98,7 @@ class PlanApprovalPlacementTest {
             new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md"))
         .isInstanceOf(Unplaceable.class);
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
   }
 

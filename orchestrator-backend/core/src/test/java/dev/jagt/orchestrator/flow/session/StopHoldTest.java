@@ -31,7 +31,13 @@ class StopHoldTest {
             .stop(new TaskStop(trigger, 5, "evidence"))
             .build();
 
-    Holder holder = Turns.next(task.status(), task.report(), StopHold.of(task, ACT), Map.of(), ACT);
+    Holder holder =
+        Turns.next(
+            task.standing().status(),
+            task.standing().report(),
+            StopHold.of(task, ACT),
+            Map.of(),
+            ACT);
 
     assertThat(holder).isEqualTo(Holder.ARBITER);
   }
@@ -87,7 +93,8 @@ class StopHoldTest {
             .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "evidence"))
             .build();
     TaskState asked =
-        task.withMaster(Master.defaults().withAskedStop(Objects.requireNonNull(task.stop()).key()));
+        task.withMaster(
+            Master.defaults().withAskedStop(Objects.requireNonNull(task.work().stop()).key()));
 
     assertThat(StopHold.of(asked, ACT)).isEqualTo(StopHold.HUMAN);
   }

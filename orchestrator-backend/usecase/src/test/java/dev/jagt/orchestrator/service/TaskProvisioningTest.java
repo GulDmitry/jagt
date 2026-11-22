@@ -107,7 +107,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
-    assertThat(state.task("ABC-2").orElseThrow().gitTrust())
+    assertThat(state.task("ABC-2").orElseThrow().gate().gitTrust())
         .isEqualTo(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
   }
 
@@ -120,7 +120,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
-    assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
+    assertThat(state.task("ABC-2").orElseThrow().ticket().alias()).isEqualTo("a2");
   }
 
   @Test
@@ -131,7 +131,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
 
-    assertThat(state.task("INF-2").orElseThrow().alias()).isEqualTo("i1");
+    assertThat(state.task("INF-2").orElseThrow().ticket().alias()).isEqualTo("i1");
   }
 
   @Test
@@ -147,7 +147,7 @@ class TaskProvisioningTest {
     provisioning.initializeTask(
         NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build());
 
-    assertThat(state.task("ABC-3").orElseThrow().baseBranch()).isEqualTo("feature/parent");
+    assertThat(state.task("ABC-3").orElseThrow().ticket().baseBranch()).isEqualTo("feature/parent");
   }
 
   @Test
@@ -158,7 +158,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-4", "proj").build());
 
-    assertThat(state.task("ABC-4").orElseThrow().baseBranch()).isNull();
+    assertThat(state.task("ABC-4").orElseThrow().ticket().baseBranch()).isNull();
   }
 
   @Test
@@ -306,7 +306,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
@@ -321,7 +321,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.CLOSED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
   }
 
   @Test
@@ -329,7 +329,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
@@ -354,7 +354,7 @@ class TaskProvisioningTest {
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
 
-    assertThat(state.task("ABC-1").orElseThrow().ticketUrl()).isEqualTo(registered);
+    assertThat(state.task("ABC-1").orElseThrow().ticket().ticketUrl()).isEqualTo(registered);
   }
 
   @Test
@@ -380,7 +380,7 @@ class TaskProvisioningTest {
 
     TaskState task = state.task("ABC-8").orElseThrow();
     assertThat(answer).contains("agent planning in " + folder, "approve-plan a1");
-    assertThat(task.baseBranch()).isEqualTo("feature/parent");
+    assertThat(task.ticket().baseBranch()).isEqualTo("feature/parent");
     assertThat(task.unplaced()).isTrue();
     assertThat(task.worktreePath()).isEqualTo(folder.toString());
     verify(sessions).startAgent("ABC-8", "a1", folder, true);

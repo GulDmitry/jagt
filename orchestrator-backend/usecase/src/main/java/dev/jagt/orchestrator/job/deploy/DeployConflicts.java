@@ -23,7 +23,7 @@ public class DeployConflicts {
   public Optional<WaitingConflict> waiting(String taskId, TaskState task) {
     return deployTargets
         .stopped(task)
-        .filter(target -> !task.paused())
+        .filter(target -> !task.work().paused())
         .filter(target -> holds(task, taskId, target))
         .map(target -> conflict(taskId, task, target));
   }
@@ -49,7 +49,7 @@ public class DeployConflicts {
         worktree,
         gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),
         gitDeploy.deployProgress(target.path(), taskId),
-        DeployTargets.handedBackForItsPipeline(task) ? task.message() : null,
+        DeployTargets.handedBackForItsPipeline(task) ? task.standing().message() : null,
         false,
         Standing.of(task));
   }

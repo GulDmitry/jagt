@@ -48,8 +48,8 @@ class ReportMarkerMigrationTest {
                             message)),
                 TaskState.class);
 
-    assertThat(task.report()).isEqualTo(report);
-    assertThat(task.message()).isEqualTo(line);
+    assertThat(task.standing().report()).isEqualTo(report);
+    assertThat(task.standing().message()).isEqualTo(line);
   }
 
   @Test
@@ -63,8 +63,8 @@ class ReportMarkerMigrationTest {
                 """,
                 TaskState.class);
 
-    assertThat(task.report()).isEqualTo(AgentReport.PLAIN);
-    assertThat(task.message()).isEqualTo("awaiting: a word the session chose");
+    assertThat(task.standing().report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(task.standing().message()).isEqualTo("awaiting: a word the session chose");
   }
 
   @Test
@@ -78,7 +78,7 @@ class ReportMarkerMigrationTest {
 
     TaskState read = mapper.readValue(mapper.writeValueAsString(asked), TaskState.class);
 
-    assertThat(read.report()).isEqualTo(AgentReport.QUESTION);
-    assertThat(read.message()).isEqualTo("which database");
+    assertThat(read.standing().report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(read.standing().message()).isEqualTo("which database");
   }
 }

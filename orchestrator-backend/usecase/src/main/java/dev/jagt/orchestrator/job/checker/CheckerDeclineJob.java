@@ -71,11 +71,11 @@ public class CheckerDeclineJob implements TaskJob {
     if (asked.isEmpty()
         || !acceptance.enabled()
         || task.worktreePath() == null
-        || (task.turnOrNone().open() && reading != CheckerPhase.READING)) {
+        || (task.work().turnOrNone().open() && reading != CheckerPhase.READING)) {
       return;
     }
     String sha = asked.get().sha();
-    String rows = task.roleOrNone(role).roundRows();
+    String rows = task.work().roleOrNone(role).roundRows();
     RoleDefinition.Checking steps = settings.role().checking();
     String step = reading == CheckerPhase.READING ? steps.againStep() : steps.declineStep();
     Answer<AcceptanceDecline> answer =
@@ -89,7 +89,7 @@ public class CheckerDeclineJob implements TaskJob {
                 sha,
                 acceptance,
                 rows,
-                String.valueOf(task.message())));
+                String.valueOf(task.standing().message())));
     AcceptanceDecline decline =
         answer.facts().orElse(AcceptanceDecline.failed(sha, answer.failure()));
     AcceptanceEnding ending =
@@ -99,12 +99,12 @@ public class CheckerDeclineJob implements TaskJob {
 
   /** A round or a first dispute of this deploy stands, and the session replied after it was put. */
   private static boolean answered(TaskState task, String role, CheckerRecords.Entry record) {
-    Deployment deployment = task.deployment();
+    Deployment deployment = task.work().deployment();
     return deployment != null
         && record.digest().equals(deployment.askedDigest())
-        && task.roundOpen(role)
+        && task.work().roundOpen(role)
         && (record.ending() == AcceptanceEnding.NOT_MET
             || record.ending() == AcceptanceEnding.DISPUTED)
-        && task.session().reportedAt() > record.at();
+        && task.work().session().reportedAt() > record.at();
   }
 }

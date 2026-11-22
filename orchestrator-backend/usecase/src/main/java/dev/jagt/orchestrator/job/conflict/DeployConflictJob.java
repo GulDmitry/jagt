@@ -66,7 +66,7 @@ public class DeployConflictJob implements TaskJob {
         .keySet()
         .removeIf(taskId ->
             !Optional.ofNullable(tasks.get(taskId))
-                .map(task -> FlowRules.conflictedInTheDeployWorktree(task.status()))
+                .map(task -> FlowRules.conflictedInTheDeployWorktree(task.standing().status()))
                 .orElse(false));
     TaskJob.super.runOn(tasks);
   }
@@ -90,7 +90,7 @@ public class DeployConflictJob implements TaskJob {
   private Optional<TaskState> stillConflicted(String taskId) {
     return stateService
         .task(taskId)
-        .filter(task -> FlowRules.conflictedInTheDeployWorktree(task.status()));
+        .filter(task -> FlowRules.conflictedInTheDeployWorktree(task.standing().status()));
   }
 
   /** Half a pass early, so a pass late by a moment does not wait a whole pass more. */

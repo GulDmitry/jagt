@@ -57,8 +57,9 @@ class DeployLiftsStopTest {
                   return Outcome.ok("deployed");
                 }));
 
-    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
   }
 
   @ParameterizedTest
@@ -72,7 +73,7 @@ class DeployLiftsStopTest {
 
     OriginContext.as(other, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));
 
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isTrue();
   }
 
   @ParameterizedTest
@@ -89,6 +90,6 @@ class DeployLiftsStopTest {
 
     OriginContext.as(human, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));
 
-    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops()).isZero();
+    assertThat(state.task("ABC-42").orElseThrow().work().arbiterOrNone().liftedStops()).isZero();
   }
 }

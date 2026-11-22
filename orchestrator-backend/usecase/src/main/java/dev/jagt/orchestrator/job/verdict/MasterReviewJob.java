@@ -62,7 +62,7 @@ public class MasterReviewJob implements Job {
     stateService
         .tasks()
         .forEach((taskId, task) -> {
-          if (!FlowRules.readByTheArbiter(task.status()) || task.stopped()) {
+          if (!FlowRules.readByTheArbiter(task.standing().status()) || task.work().stopped()) {
             return;
           }
           reviews.settle(taskId, task);
@@ -104,14 +104,15 @@ public class MasterReviewJob implements Job {
    * the plan.
    */
   static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
-    return FlowRules.readByTheArbiter(task.status())
+    return FlowRules.readByTheArbiter(task.standing().status())
         && !judged
-        && !task.stopped()
-        && (FlowRules.holdsPlan(task.status()) || !(questionsAnswered && task.report().asks()));
+        && !task.work().stopped()
+        && (FlowRules.holdsPlan(task.standing().status())
+            || !(questionsAnswered && task.standing().report().asks()));
   }
 
   private void ask(String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
-    if (FlowRules.holdsPlan(task.status())) {
+    if (FlowRules.holdsPlan(task.standing().status())) {
       panel.plan(taskId, task, config);
     } else {
       panel.review(taskId, task, config);

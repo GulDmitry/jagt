@@ -22,7 +22,7 @@ public class HostlessShips implements RequestlessShip {
 
   @Override
   public boolean stands(TaskState task) {
-    if (task.status() != TaskStatus.REVIEW_PENDING || task.repos().isEmpty()) {
+    if (task.standing().status() != TaskStatus.REVIEW_PENDING || task.repos().isEmpty()) {
       return false;
     }
     ConfigService.ConfigFile config = configService.load();

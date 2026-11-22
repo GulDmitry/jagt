@@ -40,8 +40,8 @@ public class StopTriagePanel {
     /** Its last steps and rounds as the task recorded them; the reader reads the commits. */
     public static Trail of(TaskState task) {
       List<String> lines = new ArrayList<>();
-      task.history().stream()
-          .skip(Math.max(0, task.history().size() - STEPS))
+      task.standing().history().stream()
+          .skip(Math.max(0, task.standing().history().size() - STEPS))
           .forEach(step ->
               lines.add(
                   Instant.ofEpochMilli(step.at())
@@ -49,7 +49,8 @@ public class StopTriagePanel {
                       + step.status()
                       + (step.origin() == null ? "" : " by " + step.origin())
                       + (step.why() == null ? "" : ": " + step.why())));
-      task.trailOrNone()
+      task.round()
+          .trailOrNone()
           .rounds()
           .forEach(round ->
               lines.add(
@@ -60,7 +61,7 @@ public class StopTriagePanel {
       String worktrees =
           task.repos().stream().map(TaskRepo::worktreePath).filter(Objects::nonNull).toList()
               + ", base "
-              + task.baseBranchOr("the base branch");
+              + task.ticket().baseBranchOr("the base branch");
       return new Trail(
           String.join("\n", lines),
           "Read them with read-only git in plain words: the commits ahead of the base, in "
@@ -70,7 +71,7 @@ public class StopTriagePanel {
 
   /** Throws {@link StopTriageFailed} naming why nothing usable came back. */
   public StopTriage read(String taskId, TaskState task, Trail trail, String model) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     String brief = new RoleFiles(paths, "triage").text();
     if (stop == null) {
       throw new StopTriageFailed("the task is not stopped");

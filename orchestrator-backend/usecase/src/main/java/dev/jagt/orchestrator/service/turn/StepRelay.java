@@ -167,7 +167,7 @@ public class StepRelay {
             .write()
             .apply(task -> {
               TaskState written = opening.apply(task);
-              opened.set(written.turnOrNone());
+              opened.set(written.work().turnOrNone());
               return written;
             });
     if (claimed == FlowReports.Claimed.MOVED_ON) {

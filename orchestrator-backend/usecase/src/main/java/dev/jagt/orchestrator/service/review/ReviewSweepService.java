@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.RoundOutcome;
 import dev.jagt.orchestrator.service.RoundReading;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.TaskState;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +59,8 @@ public class ReviewSweepService {
             case RoundReading.Round round ->
                 outcome.settle(taskId, round.project(), round.mrUrl(), round.facts(), round.tip());
           };
-      String alias = stateService.task(taskId).map(TaskState::alias).orElse(null);
+      String alias =
+          stateService.task(taskId).map(taskState -> taskState.ticket().alias()).orElse(null);
       log.atInfo()
           .setMessage("sweep done")
           .addKeyValue("task", taskId)

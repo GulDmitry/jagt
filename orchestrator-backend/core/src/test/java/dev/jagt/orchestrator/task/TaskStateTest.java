@@ -33,7 +33,8 @@ class TaskStateTest {
     TaskState created =
         TaskState.builder("proj", "/wt", TaskStatus.NEW).lastActiveTimestamp(1_000).build();
 
-    assertThat(created.history()).containsExactly(new StatusChange(TaskStatus.NEW, 1_000, null));
+    assertThat(created.standing().history())
+        .containsExactly(new StatusChange(TaskStatus.NEW, 1_000, null));
   }
 
   @Test
@@ -46,7 +47,7 @@ class TaskStateTest {
             .withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000)
             .withStatus(TaskStatus.SHIPPING, "shipping", 2_000);
 
-    assertThat(shipped.history())
+    assertThat(shipped.standing().history())
         .extracting(StatusChange::status)
         .containsExactly(
             TaskStatus.NEW, TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING);
@@ -62,7 +63,7 @@ class TaskStateTest {
 
     TaskState stillWorking = working.touched(2_000).touched(3_000).touched(4_000);
 
-    assertThat(stillWorking.history())
+    assertThat(stillWorking.standing().history())
         .extracting(StatusChange::status)
         .containsExactly(TaskStatus.NEW, TaskStatus.IN_PROGRESS);
   }
@@ -78,10 +79,10 @@ class TaskStateTest {
 
     TaskState moved = full.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000);
 
-    assertThat(moved.history()).hasSize(50);
-    assertThat(moved.history().getFirst().at()).isZero();
-    assertThat(moved.history().get(1).at()).isEqualTo(2);
-    assertThat(moved.history().getLast().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(moved.standing().history()).hasSize(50);
+    assertThat(moved.standing().history().getFirst().at()).isZero();
+    assertThat(moved.standing().history().get(1).at()).isEqualTo(2);
+    assertThat(moved.standing().history().getLast().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
   }
 
   @Test
@@ -93,8 +94,8 @@ class TaskStateTest {
 
     TaskState keptAlive = working.touched(2_000);
 
-    assertThat(keptAlive.statusSince()).isEqualTo(1_000);
-    assertThat(keptAlive.lastActiveTimestamp()).isEqualTo(2_000);
+    assertThat(keptAlive.standing().statusSince()).isEqualTo(1_000);
+    assertThat(keptAlive.standing().lastActiveTimestamp()).isEqualTo(2_000);
   }
 
   @Test
@@ -106,8 +107,8 @@ class TaskStateTest {
             .history(List.of())
             .build();
 
-    assertThat(legacy.history()).isEmpty();
-    assertThat(legacy.statusSince()).isEqualTo(5_000);
+    assertThat(legacy.standing().history()).isEmpty();
+    assertThat(legacy.standing().statusSince()).isEqualTo(5_000);
   }
 
   @Test
@@ -121,8 +122,8 @@ class TaskStateTest {
 
     TaskState round = polling.withReviewRound("https://host/mr/9", 2_000L);
 
-    assertThat(round.mrCreatedAt()).isEqualTo(2_000L);
-    assertThat(round.lastPolledAt()).isZero();
+    assertThat(round.round().mrCreatedAt()).isEqualTo(2_000L);
+    assertThat(round.round().lastPolledAt()).isZero();
     assertThat(round.primary().mrUrl()).isEqualTo("https://host/mr/9");
   }
 
@@ -135,7 +136,7 @@ class TaskStateTest {
 
     TaskState stamped = shipping.withLastShipTree("t1");
 
-    assertThat(stamped.history().getLast().tree()).isEqualTo("t1");
+    assertThat(stamped.standing().history().getLast().tree()).isEqualTo("t1");
   }
 
   @Test
@@ -147,7 +148,7 @@ class TaskStateTest {
 
     TaskState stamped = working.withLastShipTree("t1");
 
-    assertThat(stamped.history().getLast().tree()).isNull();
+    assertThat(stamped.standing().history().getLast().tree()).isNull();
   }
 
   @Test
@@ -160,8 +161,8 @@ class TaskStateTest {
     TaskState again =
         polling.withStatus(TaskStatus.CI_POLLING, "review request: https://host/mr/9", true, 2_000);
 
-    assertThat(again.history()).hasSize(2);
-    assertThat(again.statusSince()).isEqualTo(again.history().getLast().at());
+    assertThat(again.standing().history()).hasSize(2);
+    assertThat(again.standing().statusSince()).isEqualTo(again.standing().history().getLast().at());
   }
 
   @Test
@@ -173,7 +174,7 @@ class TaskStateTest {
 
     TaskState again = polling.withStatus(TaskStatus.CI_POLLING, "still polling", 2_000);
 
-    assertThat(again.history()).hasSize(1);
+    assertThat(again.standing().history()).hasSize(1);
   }
 
   @Test
@@ -188,8 +189,8 @@ class TaskStateTest {
 
     TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
-    assertThat(afterKeepAlive.statusSince()).isEqualTo(1_700_000_000_000L);
-    assertThat(afterKeepAlive.lastActiveTimestamp()).isEqualTo(1_700_000_001_000L);
+    assertThat(afterKeepAlive.standing().statusSince()).isEqualTo(1_700_000_000_000L);
+    assertThat(afterKeepAlive.standing().lastActiveTimestamp()).isEqualTo(1_700_000_001_000L);
   }
 
   @Test
@@ -201,7 +202,7 @@ class TaskStateTest {
 
     TaskState reported = red.withStatus(TaskStatus.CI_FAILED, "build broken", 2_000);
 
-    assertThat(reported.pipelineStatus()).isEqualTo("failed");
+    assertThat(reported.checks().pipelineStatus()).isEqualTo("failed");
   }
 
   @Test
@@ -231,10 +232,11 @@ class TaskStateTest {
     assertThat(task.worktreePath()).isEqualTo("/wt/ABC-1-demo");
     assertThat(task.remoteUrl()).isEqualTo("git@host:g/p.git");
     assertThat(task.mrUrl()).isEqualTo("https://host/mr/9");
-    assertThat(Objects.requireNonNull(task.deployment()).targets().getFirst().landing().merge())
+    assertThat(
+            Objects.requireNonNull(task.work().deployment()).targets().getFirst().landing().merge())
         .isEqualTo("cafebabe1234");
-    assertThat(task.status()).isEqualTo(TaskStatus.CI_POLLING);
-    assertThat(task.alias()).isEqualTo("a1");
+    assertThat(task.standing().status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(task.ticket().alias()).isEqualTo("a1");
   }
 
   @Test
@@ -283,7 +285,8 @@ class TaskStateTest {
             .requestOpenedAt(1_700_000_000_000L)
             .build();
 
-    assertThat(stamped.withRequestOpenedAt(0).requestOpenedAt()).isEqualTo(1_700_000_000_000L);
+    assertThat(stamped.withRequestOpenedAt(0).round().requestOpenedAt())
+        .isEqualTo(1_700_000_000_000L);
   }
 
   @Test
@@ -294,10 +297,10 @@ class TaskStateTest {
             .requestOpenedAt(1_700_000_000_000L)
             .build();
 
-    long opened = stamped.withMrUrl("http://mr/2", 1_700_000_005_000L).requestOpenedAt();
+    long opened = stamped.withMrUrl("http://mr/2", 1_700_000_005_000L).round().requestOpenedAt();
 
     assertThat(opened).isEqualTo(1_700_000_005_000L);
-    assertThat(stamped.withMrUrl("http://mr/1", 1_700_000_005_000L).requestOpenedAt())
+    assertThat(stamped.withMrUrl("http://mr/1", 1_700_000_005_000L).round().requestOpenedAt())
         .isEqualTo(1_700_000_000_000L);
   }
 
@@ -310,7 +313,7 @@ class TaskStateTest {
             .pipelineStatus("success")
             .build();
 
-    assertThat(task.withMrUrl("https://host/mr/1", 2_000).approved()).isTrue();
+    assertThat(task.withMrUrl("https://host/mr/1", 2_000).round().approved()).isTrue();
   }
 
   @Test
@@ -328,12 +331,14 @@ class TaskStateTest {
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .history(fortyNine)
                 .build()
+                .standing()
                 .historyAtCap())
         .isFalse();
     assertThat(
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .history(fifty)
                 .build()
+                .standing()
                 .historyAtCap())
         .isTrue();
   }
@@ -349,8 +354,8 @@ class TaskStateTest {
 
     TaskState moved = almostFull.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000);
 
-    assertThat(moved.history()).hasSize(50);
-    assertThat(moved.history().getFirst().at()).isZero();
+    assertThat(moved.standing().history()).hasSize(50);
+    assertThat(moved.standing().history().getFirst().at()).isZero();
   }
 
   @Test
@@ -364,7 +369,7 @@ class TaskStateTest {
 
     TaskState moved = full.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000);
 
-    assertThat(moved.history().getFirst())
+    assertThat(moved.standing().history().getFirst())
         .isEqualTo(new StatusChange(TaskStatus.NEW, 0, ActionOrigin.BOARD));
   }
 
@@ -381,7 +386,7 @@ class TaskStateTest {
                     new StatusChange(TaskStatus.CI_POLLING, 5, null)))
             .build();
 
-    assertThat(task.rounds()).isEqualTo(2);
+    assertThat(task.standing().rounds()).isEqualTo(2);
   }
 
   @Test
@@ -396,7 +401,7 @@ class TaskStateTest {
 
     TaskState stamped = task.withLastChangeOrigin(ActionOrigin.TRACKER);
 
-    assertThat(stamped.history())
+    assertThat(stamped.standing().history())
         .extracting(StatusChange::origin)
         .containsExactly(ActionOrigin.BOARD, ActionOrigin.TRACKER);
   }
@@ -427,9 +432,9 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(task.stop())
+    assertThat(task.work().stop())
         .isEqualTo(new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running in 24h"));
-    assertThat(task.trailOrNone().rounds()).hasSize(1);
+    assertThat(task.round().trailOrNone().rounds()).hasSize(1);
   }
 
   @Test
@@ -441,7 +446,7 @@ class TaskStateTest {
             .refused(RefusalKind.STATUS_REPORT)
             .refused(RefusalKind.GIT_STATE);
 
-    assertThat(refused.refusals())
+    assertThat(refused.gate().refusals())
         .containsEntry(RefusalKind.STATUS_REPORT, 2)
         .containsEntry(RefusalKind.GIT_STATE, 1);
   }
@@ -452,9 +457,9 @@ class TaskStateTest {
     TaskState blank = TaskState.builder("proj", "/wt", TaskStatus.NEW).baseBranch(" ").build();
     TaskState none = TaskState.builder("proj", "/wt", TaskStatus.NEW).build();
 
-    assertThat(own.baseBranchOr("main")).isEqualTo("release");
-    assertThat(blank.baseBranchOr("main")).isEqualTo("main");
-    assertThat(none.baseBranchOr("main")).isEqualTo("main");
+    assertThat(own.ticket().baseBranchOr("main")).isEqualTo("release");
+    assertThat(blank.ticket().baseBranchOr("main")).isEqualTo("main");
+    assertThat(none.ticket().baseBranchOr("main")).isEqualTo("main");
   }
 
   @Test
@@ -463,10 +468,10 @@ class TaskStateTest {
     TaskState off = TaskState.builder("proj", "/wt", TaskStatus.NEW).autoReview(false).build();
     TaskState unset = TaskState.builder("proj", "/wt", TaskStatus.NEW).build();
 
-    assertThat(on.autoReviewEnabled(false)).isTrue();
-    assertThat(off.autoReviewEnabled(true)).isFalse();
-    assertThat(unset.autoReviewEnabled(true)).isTrue();
-    assertThat(unset.autoReviewEnabled(false)).isFalse();
+    assertThat(on.round().autoReviewEnabled(false)).isTrue();
+    assertThat(off.round().autoReviewEnabled(true)).isFalse();
+    assertThat(unset.round().autoReviewEnabled(true)).isTrue();
+    assertThat(unset.round().autoReviewEnabled(false)).isFalse();
   }
 
   @Test
@@ -515,7 +520,7 @@ class TaskStateTest {
     assertThat(shipped.repo("php").orElseThrow().mrUrl()).isNull();
     assertThat(shipped.repo("java").orElseThrow().mrUrl()).isEqualTo("https://host/java/mr/2");
     assertThat(shipped.mrUrl()).isEqualTo("https://host/java/mr/2");
-    assertThat(shipped.mrCreatedAt()).isEqualTo(2_000);
+    assertThat(shipped.round().mrCreatedAt()).isEqualTo(2_000);
   }
 
   @Test
@@ -533,8 +538,8 @@ class TaskStateTest {
             .withUsageAdded(TokenUsage.ofCall(10, 0, 5, 0))
             .withUsageAdded(TokenUsage.ofCall(20, 0, 5, 0));
 
-    assertThat(task.usageOrNone().calls()).isEqualTo(2);
-    assertThat(task.usageOrNone().inputTokens()).isEqualTo(30);
+    assertThat(task.gate().usageOrNone().calls()).isEqualTo(2);
+    assertThat(task.gate().usageOrNone().inputTokens()).isEqualTo(30);
   }
 
   @Test
@@ -547,7 +552,7 @@ class TaskStateTest {
 
     TaskState noted = task.withLastPolledAt(42).withRemoteUrl("java", "git@host:g/java.git");
 
-    assertThat(noted.lastPolledAt()).isEqualTo(42);
+    assertThat(noted.round().lastPolledAt()).isEqualTo(42);
     assertThat(noted.repo("java").orElseThrow().remoteUrl()).isEqualTo("git@host:g/java.git");
     assertThat(noted.repo("php").orElseThrow().remoteUrl()).isNull();
   }
@@ -579,7 +584,7 @@ class TaskStateTest {
 
     TaskState moved = legacy.withStatus(TaskStatus.IN_PROGRESS, "ping", true, 1_700_000_005_000L);
 
-    assertThat(moved.history().getFirst().at()).isEqualTo(1_700_000_005_000L);
+    assertThat(moved.standing().history().getFirst().at()).isEqualTo(1_700_000_005_000L);
   }
 
   @Test
@@ -594,11 +599,11 @@ class TaskStateTest {
 
     TaskState read = mapper.readValue(mapper.writeValueAsString(written), TaskState.class);
 
-    assertThat(read.checksUnread())
+    assertThat(read.checks().checksUnread())
         .containsExactly(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"));
-    assertThat(read.probes()).hasSize(1);
-    assertThat(read.refusals()).containsEntry(RefusalKind.GIT_STATE, 1);
-    assertThat(read.history()).hasSize(1);
+    assertThat(read.gate().probes()).hasSize(1);
+    assertThat(read.gate().refusals()).containsEntry(RefusalKind.GIT_STATE, 1);
+    assertThat(read.standing().history()).hasSize(1);
   }
 
   @Test
@@ -616,12 +621,12 @@ class TaskStateTest {
             .withApproved(true)
             .withChecksUnread(new ChecksUnread(1_000, ""));
 
-    assertThat(found.agentSpend()).isEqualTo(spend);
-    assertThat(found.gitTrust()).isEqualTo(trust);
-    assertThat(found.probes()).isEqualTo(probes);
-    assertThat(found.approved()).isTrue();
-    assertThat(found.pipelineUnread()).isTrue();
-    assertThat(found.lastActiveTimestamp()).isEqualTo(1_000);
+    assertThat(found.gate().agentSpend()).isEqualTo(spend);
+    assertThat(found.gate().gitTrust()).isEqualTo(trust);
+    assertThat(found.gate().probes()).isEqualTo(probes);
+    assertThat(found.round().approved()).isTrue();
+    assertThat(found.checks().unread()).isTrue();
+    assertThat(found.standing().lastActiveTimestamp()).isEqualTo(1_000);
   }
 
   @Test
@@ -635,7 +640,7 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(legacy.planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(legacy.gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
@@ -649,7 +654,7 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(legacy.pipelineUnread()).isTrue();
+    assertThat(legacy.checks().unread()).isTrue();
   }
 
   @Test
@@ -662,7 +667,7 @@ class TaskStateTest {
             .withChecksUnread(new ChecksUnread(3_000, "c"))
             .withChecksUnread(new ChecksUnread(4_000, "d"));
 
-    assertThat(task.checksUnread())
+    assertThat(task.checks().checksUnread())
         .containsExactly(
             new ChecksUnread(2_000, "b"),
             new ChecksUnread(3_000, "c"),
@@ -678,7 +683,7 @@ class TaskStateTest {
 
     TaskState read = task.withChecksRead("success", null);
 
-    assertThat(read.checksUnread()).isEmpty();
+    assertThat(read.checks().checksUnread()).isEmpty();
   }
 
   @Test
@@ -689,7 +694,7 @@ class TaskStateTest {
     TaskState added = asked.withRepo(TaskRepo.of("registry", "/wt-registry"));
 
     assertThat(added.projects()).containsExactly("api", "registry");
-    assertThat(added.repoRequest()).isNull();
+    assertThat(added.work().repoRequest()).isNull();
   }
 
   @Test
@@ -707,7 +712,7 @@ class TaskStateTest {
   void asksForNoRepositoryUntilTheSessionNamesOne() {
     TaskState working = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
 
-    assertThat(working.asksForRepository()).isFalse();
+    assertThat(working.work().asksForRepository()).isFalse();
   }
 
   @Test
@@ -718,8 +723,8 @@ class TaskStateTest {
             .checksUnread(List.of(new ChecksUnread(1, "403")))
             .build();
 
-    assertThat(clear.pipelineUnread()).isFalse();
-    assertThat(unread.pipelineUnread()).isTrue();
+    assertThat(clear.checks().unread()).isFalse();
+    assertThat(unread.checks().unread()).isTrue();
   }
 
   @Test
@@ -727,8 +732,8 @@ class TaskStateTest {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     Turn relayed = Turn.none().relayed("round", "d1", "", 100);
 
-    assertThat(task.turnOrNone()).isEqualTo(Turn.none());
-    assertThat(task.withTurn(relayed).turnOrNone()).isEqualTo(relayed);
+    assertThat(task.work().turnOrNone()).isEqualTo(Turn.none());
+    assertThat(task.withTurn(relayed).work().turnOrNone()).isEqualTo(relayed);
   }
 
   @Test
@@ -740,11 +745,11 @@ class TaskStateTest {
     TaskState stopped = task.withStop(stop).withTrail(trail);
     TaskState lifted = stopped.lifted(9);
 
-    assertThat(stopped.stopped()).isTrue();
-    assertThat(stopped.stop()).isEqualTo(stop);
-    assertThat(stopped.trailOrNone()).isEqualTo(trail);
-    assertThat(lifted.stopped()).isFalse();
-    assertThat(lifted.trailOrNone()).isEqualTo(RoundTrail.liftedAt(9));
+    assertThat(stopped.work().stopped()).isTrue();
+    assertThat(stopped.work().stop()).isEqualTo(stop);
+    assertThat(stopped.round().trailOrNone()).isEqualTo(trail);
+    assertThat(lifted.work().stopped()).isFalse();
+    assertThat(lifted.round().trailOrNone()).isEqualTo(RoundTrail.liftedAt(9));
   }
 
   @Test
@@ -753,8 +758,8 @@ class TaskStateTest {
 
     TaskState given = task.withBaseBranch("release").withPlanGate(PlanGate.REQUIRED);
 
-    assertThat(given.baseBranchOr("main")).isEqualTo("release");
-    assertThat(given.planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(given.ticket().baseBranchOr("main")).isEqualTo("release");
+    assertThat(given.gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
@@ -769,7 +774,9 @@ class TaskStateTest {
 
     TaskState stamped = task.withLastChangeWhy("work done");
 
-    assertThat(stamped.history()).extracting(StatusChange::why).containsExactly(null, "work done");
+    assertThat(stamped.standing().history())
+        .extracting(StatusChange::why)
+        .containsExactly(null, "work done");
   }
 
   @Test
@@ -779,8 +786,8 @@ class TaskStateTest {
 
     TaskState asked = working.withRepoRequest("registry");
 
-    assertThat(asked.asksForRepository()).isTrue();
-    assertThat(asked.lastActiveTimestamp()).isEqualTo(7_000);
+    assertThat(asked.work().asksForRepository()).isTrue();
+    assertThat(asked.standing().lastActiveTimestamp()).isEqualTo(7_000);
   }
 
   @Test
@@ -794,7 +801,7 @@ class TaskStateTest {
 
     TaskState reread = mapper.readValue(mapper.writeValueAsString(task), TaskState.class);
 
-    assertThat(reread.switches())
+    assertThat(reread.gate().switches())
         .containsOnly(
             Map.entry("visualize", "yes — a screen changed"),
             Map.entry("autoplan", "no — one file"));
@@ -809,7 +816,7 @@ class TaskStateTest {
 
     TaskState deployed = stopped.withStatus(TaskStatus.DEPLOYED, "deployed", true, 2_000);
 
-    assertThat(deployed.stopped()).isTrue();
+    assertThat(deployed.work().stopped()).isTrue();
   }
 
   @Test
@@ -823,7 +830,7 @@ class TaskStateTest {
 
     TaskState pushed = read.withHead("bbb");
 
-    assertThat(pushed.checksRead()).isNull();
+    assertThat(pushed.checks().read()).isNull();
     assertThat(pushed.approvedRead()).isNull();
   }
 
@@ -836,7 +843,7 @@ class TaskStateTest {
             .withChecksRead("failed", "aaa")
             .withApproved(true);
 
-    assertThat(read.withHead("aaa").checksRead()).isEqualTo("failed");
+    assertThat(read.withHead("aaa").checks().read()).isEqualTo("failed");
     assertThat(read.withHead("aaa").approvedRead()).isTrue();
   }
 
@@ -845,7 +852,7 @@ class TaskStateTest {
     TaskState legacy =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build();
 
-    assertThat(legacy.withHead("aaa").checksRead()).isNull();
+    assertThat(legacy.withHead("aaa").checks().read()).isNull();
   }
 
   @Test
@@ -895,14 +902,14 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(Objects.requireNonNull(old.deployment()).targets())
+    assertThat(Objects.requireNonNull(old.work().deployment()).targets())
         .extracting(
             Deployment.Target::project,
             target -> target.landing().merge(),
             target -> target.landing().fixes())
         .containsExactly(
             tuple("php", "cafe1", List.of("f1x1", "f1x2")), tuple("java", "beef2", List.of()));
-    assertThat(old.deployment().live()).isTrue();
+    assertThat(old.work().deployment().live()).isTrue();
   }
 
   @Test
@@ -919,7 +926,7 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(Objects.requireNonNull(old.deployment()).conflictedTarget())
+    assertThat(Objects.requireNonNull(old.work().deployment()).conflictedTarget())
         .hasValueSatisfying(target -> {
           assertThat(target.project()).isEqualTo("java");
           assertThat(Objects.requireNonNull(target.progress().conflict()).since()).isEqualTo(3);
@@ -939,7 +946,11 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(Objects.requireNonNull(old.deployment()).conflictedTarget().orElseThrow().project())
+    assertThat(
+            Objects.requireNonNull(old.work().deployment())
+                .conflictedTarget()
+                .orElseThrow()
+                .project())
         .isEqualTo("php");
   }
 
@@ -964,7 +975,7 @@ class TaskStateTest {
 
     TaskState reread = mapper.readValue(mapper.writeValueAsString(conflicted), TaskState.class);
 
-    assertThat(reread.deployment()).isEqualTo(conflicted.deployment());
+    assertThat(reread.work().deployment()).isEqualTo(conflicted.work().deployment());
   }
 
   @Test
@@ -987,7 +998,7 @@ class TaskStateTest {
 
     TaskState reread = mapper.readValue(mapper.writeValueAsString(signed), TaskState.class);
 
-    assertThat(reread.session()).isEqualTo(signed.session());
+    assertThat(reread.work().session()).isEqualTo(signed.work().session());
   }
 
   @Test
@@ -1001,7 +1012,7 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(old.session()).isEqualTo(Session.defaults());
+    assertThat(old.work().session()).isEqualTo(Session.defaults());
   }
 
   @Test
@@ -1015,7 +1026,7 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(old.session().quietSince()).isEqualTo(4_000);
+    assertThat(old.work().session().quietSince()).isEqualTo(4_000);
   }
 
   @Test
@@ -1030,8 +1041,8 @@ class TaskStateTest {
 
     TaskState moved = stopped.withStatus(TaskStatus.REVIEW_PENDING, "shipped", 5_000);
 
-    assertThat(moved.session().halt()).isNull();
-    assertThat(moved.session().quietSince()).isZero();
+    assertThat(moved.work().session().halt()).isNull();
+    assertThat(moved.work().session().quietSince()).isZero();
   }
 
   @Test
@@ -1046,8 +1057,8 @@ class TaskStateTest {
 
     TaskState moved = idle.withStatus(TaskStatus.REVIEW_PENDING, "shipped", 5_000);
 
-    assertThat(moved.session().halt()).isEqualTo(idle.session().halt());
-    assertThat(moved.session().quietSince()).isZero();
+    assertThat(moved.work().session().halt()).isEqualTo(idle.work().session().halt());
+    assertThat(moved.work().session().quietSince()).isZero();
   }
 
   @Test

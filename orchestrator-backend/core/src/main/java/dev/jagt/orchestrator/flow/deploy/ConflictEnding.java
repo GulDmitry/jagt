@@ -33,7 +33,7 @@ public enum ConflictEnding {
   }
 
   public boolean readsUnder(TaskState task) {
-    StopKind stop = StopKind.of(task.stop());
+    StopKind stop = StopKind.of(task.work().stop());
     return switch (this) {
       case LATER_GREEN -> stop == StopKind.NONE || stop == StopKind.DEPLOY_READ;
       case REQUEST_CLOSED, STAGED_FIX -> stop != StopKind.PAUSE;

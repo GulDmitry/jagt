@@ -187,7 +187,7 @@ public class TaskProvisioning {
     String letter = taskId.substring(0, 1).toLowerCase(Locale.ROOT);
     var used =
         stateService.tasks().values().stream()
-            .map(TaskState::alias)
+            .map(taskState -> taskState.ticket().alias())
             .filter(a -> a != null)
             .collect(Collectors.toSet());
     for (int i = 1; ; i++) {

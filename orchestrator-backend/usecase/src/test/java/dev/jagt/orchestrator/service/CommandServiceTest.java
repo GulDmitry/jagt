@@ -143,7 +143,7 @@ class CommandServiceTest {
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
                 + ":\"master\"}\n");
-    assertThat(state.task("ABC-1").orElseThrow().stop())
+    assertThat(state.task("ABC-1").orElseThrow().work().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.MISS, "no arbiter case allows deploy at REVIEWED");
   }

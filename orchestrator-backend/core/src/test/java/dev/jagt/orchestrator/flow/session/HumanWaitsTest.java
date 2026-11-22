@@ -26,8 +26,8 @@ class HumanWaitsTest {
     TaskState closed =
         HumanWaits.noted(opened.withReport(AgentReport.PLAIN), Holder.SESSION, false, 250);
 
-    assertThat(opened.waits()).containsExactly(new HumanWait(100, 0, Why.QUESTION));
-    assertThat(closed.waits()).containsExactly(new HumanWait(100, 250, Why.QUESTION));
+    assertThat(opened.work().waits()).containsExactly(new HumanWait(100, 0, Why.QUESTION));
+    assertThat(closed.work().waits()).containsExactly(new HumanWait(100, 250, Why.QUESTION));
   }
 
   @Test
@@ -53,7 +53,7 @@ class HumanWaitsTest {
 
     TaskState noted = HumanWaits.noted(stopped, Holder.HUMAN, false, 300);
 
-    assertThat(noted.waits())
+    assertThat(noted.work().waits())
         .containsExactly(new HumanWait(100, 300, Why.STATUS), new HumanWait(300, 0, Why.STOP));
   }
 
@@ -66,7 +66,7 @@ class HumanWaitsTest {
 
     TaskState noted = HumanWaits.noted(prompt, Holder.HUMAN, false, 5);
 
-    assertThat(noted.waits()).containsExactly(new HumanWait(5, 0, Why.PERMISSION));
+    assertThat(noted.work().waits()).containsExactly(new HumanWait(5, 0, Why.PERMISSION));
   }
 
   @Test
@@ -88,7 +88,7 @@ class HumanWaitsTest {
 
     TaskState noted = HumanWaits.noted(full, Holder.HUMAN, false, 999);
 
-    assertThat(noted.waits())
+    assertThat(noted.work().waits())
         .hasSize(HumanWaits.MAX)
         .doesNotContain(new HumanWait(1, 2, Why.STATUS))
         .contains(new HumanWait(999, 0, Why.STATUS));
@@ -112,6 +112,6 @@ class HumanWaitsTest {
 
     TaskState judged = HumanWaits.noted(round, Holder.HUMAN, true, 5);
 
-    assertThat(judged.waits()).containsExactly(new HumanWait(5, 0, Why.VERDICT));
+    assertThat(judged.work().waits()).containsExactly(new HumanWait(5, 0, Why.VERDICT));
   }
 }

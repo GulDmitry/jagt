@@ -95,7 +95,7 @@ public class MasterPanel {
     log.atInfo()
         .setMessage("master review asked")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("trigger", quotes.trigger(task, inputs))
         .addKeyValue("fingerprint", quotes.fingerprint(task, inputs))
         .log();
@@ -165,7 +165,7 @@ public class MasterPanel {
     log.atInfo()
         .setMessage("master review asked")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("trigger", "plan")
         .addKeyValue(
             "fingerprint", quotes.planFingerprint(task, quotes.inputs(taskId, task).orElse("")))
@@ -438,12 +438,14 @@ public class MasterPanel {
             ? "The ticket:\n" + Outside.fence("ticket", read.ticket()) + "\n"
             : ticket(tracker, "plan") + "\n")
         + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
-        + (task.probes().isEmpty()
+        + (task.gate().probes().isEmpty()
             ? ""
             : "The acceptance probes jagt read from it; once it holds, jagt runs them itself before"
                 + " any round reaches review, and a red one returns the round:\n"
                 + "<probes>\n"
-                + task.probes().stream().map(Probe::toString).collect(Collectors.joining("\n"))
+                + task.gate().probes().stream()
+                    .map(Probe::toString)
+                    .collect(Collectors.joining("\n"))
                 + "\n</probes>\n")
         + (read.notes().isBlank()
             ? ""
@@ -550,13 +552,15 @@ public class MasterPanel {
 
   private static String round(String taskId, TaskState task) {
     String ticket =
-        task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
+        task.ticket().ticketUrl() == null || task.ticket().ticketUrl().isBlank()
+            ? "none"
+            : task.ticket().ticketUrl();
     return "The task: "
         + taskId
         + ", worktrees "
         + task.repos().stream().map(TaskRepo::worktreePath).toList()
         + ", base "
-        + task.baseBranchOr("the base branch")
+        + task.ticket().baseBranchOr("the base branch")
         + ", ticket "
         + ticket
         + ". Run no build and no"
@@ -614,13 +618,15 @@ public class MasterPanel {
   /** What every role of one round reads alike, so the roles after the first find it cached. */
   static String quote(String taskId, TaskState task, RoundRead read) {
     String link =
-        task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
+        task.ticket().ticketUrl() == null || task.ticket().ticketUrl().isBlank()
+            ? "none"
+            : task.ticket().ticketUrl();
     return "The round: task "
         + taskId
         + ", worktrees "
         + task.repos().stream().map(TaskRepo::worktreePath).toList()
         + ", base "
-        + task.baseBranchOr("the base branch")
+        + task.ticket().baseBranchOr("the base branch")
         + ", ticket "
         + link
         + ".\n"
@@ -633,11 +639,11 @@ public class MasterPanel {
         + (read.notes().isBlank()
             ? ""
             : "The session's notes:\n<session_notes>\n" + read.notes() + "\n</session_notes>\n")
-        + (task.probes().isEmpty()
+        + (task.gate().probes().isEmpty()
             ? ""
             : "The acceptance probes of the ratified plan, as jagt itself ran"
                 + " them, facts the session cannot author:\n<probes>\n"
-                + task.probes().stream().map(Probe::result).collect(Collectors.joining("\n"))
+                + task.gate().probes().stream().map(Probe::result).collect(Collectors.joining("\n"))
                 + "\n</probes>\n")
         + settled(read.decided())
         + humanSaid(read.said());

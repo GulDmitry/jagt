@@ -57,7 +57,8 @@ class DeployCheckJobAcceptanceTest {
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     assertThat(
-            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
+                .askedDigest())
         .isNotNull();
   }
 }

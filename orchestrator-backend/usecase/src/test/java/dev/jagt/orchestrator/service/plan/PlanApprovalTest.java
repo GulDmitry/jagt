@@ -68,7 +68,7 @@ class PlanApprovalTest {
         new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
     verify(plan).settle("ABC-1");
     verify(relay)
         .relay(
@@ -97,7 +97,7 @@ class PlanApprovalTest {
         new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
     verify(plan, never()).settle(anyString());
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
   }

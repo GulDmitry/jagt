@@ -33,7 +33,7 @@ public class SessionPresence implements AgentPresence {
     }
     stateService.reduce(taskId, (reducer, current) -> reducer.signed(current, read, now));
     Boolean alive =
-        stateService.task(taskId).map(current -> current.session().alive()).orElse(null);
+        stateService.task(taskId).map(current -> current.work().session().alive()).orElse(null);
     if (alive == null) {
       throw new Unread("the window was not read");
     }

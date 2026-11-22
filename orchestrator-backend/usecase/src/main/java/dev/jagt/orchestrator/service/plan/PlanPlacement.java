@@ -52,9 +52,9 @@ public class PlanPlacement {
     NewTask request =
         NewTask.builder(taskId, keys.getFirst())
             .alsoIn(keys.subList(1, keys.size()))
-            .baseBranch(task.baseBranch())
-            .title(task.title())
-            .ticketUrl(task.ticketUrl())
+            .baseBranch(task.ticket().baseBranch())
+            .title(task.ticket().title())
+            .ticketUrl(task.ticket().ticketUrl())
             .build();
     Path scratch = Path.of(task.worktreePath());
     worktrees.place(request, config, repos -> register(taskId, task, scratch, repos));
@@ -70,7 +70,7 @@ public class PlanPlacement {
   private void register(String taskId, TaskState task, Path scratch, List<NewRepo> repos) {
     WorktreeFiles.copyFiles(scratch, repos.getFirst().worktreePath(), Artifact.fileNames());
     String override =
-        task.baseBranch() == null || task.baseBranch().isBlank()
+        task.ticket().baseBranch() == null || task.ticket().baseBranch().isBlank()
             ? null
             : repos.getFirst().baseBranch();
     List<TaskRepo> placed = repos.stream().map(NewRepo::registered).toList();

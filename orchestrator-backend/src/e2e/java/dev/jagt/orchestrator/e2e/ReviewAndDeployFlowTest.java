@@ -25,9 +25,9 @@ import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.NewTask;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
 import dev.jagt.orchestrator.task.review.MergeRequestFacts;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
@@ -186,7 +186,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
               "CONFLICT merging web into dev",
               "Live on the deploy branch: proj",
               "NOT deployed: web");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
       assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
           .contains("Merge branch '" + TASK + "' into dev");
       assertThat(E2eWorkspace.git(flow.webOrigin(), "log", "-1", "--format=%s", "dev"))
@@ -199,7 +199,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       assertThat(flow.act("deploy")).contains("DEPLOYED");
       assertThat(E2eWorkspace.git(flow.webOrigin(), "log", "-1", "--format=%s", "dev"))
           .contains("Merge branch '" + TASK + "' into dev");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOYED);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOYED);
     }
 
     @Test
@@ -231,7 +231,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       assertThat(flow.task().repos())
           .extracting(dev.jagt.orchestrator.task.repo.TaskRepo::mrUrl)
           .containsExactly(flow.request(), flow.webRequest());
-      assertThat(flow.task().history())
+      assertThat(flow.task().standing().history())
           .extracting(StatusChange::status)
           .containsExactly(
               TaskStatus.NEW,
@@ -240,7 +240,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
               TaskStatus.CI_POLLING);
 
       flow.act("sweep");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.APPROVED);
 
       assertThat(flow.act("deploy")).contains("proj into dev", "web into dev", "DEPLOYED");
       assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
@@ -283,10 +283,10 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
             Map.of());
 
     assertThat(resumed).contains("Resumed " + TASK + " on its existing branch", "CI_POLLING");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.CI_POLLING);
     assertThat(flow.task().mrUrl()).isEqualTo(flow.request());
-    assertThat(flow.task().baseBranch()).isEqualTo("main");
-    assertThat(flow.task().title()).isEqualTo(TITLE);
+    assertThat(flow.task().ticket().baseBranch()).isEqualTo("main");
+    assertThat(flow.task().ticket().title()).isEqualTo(TITLE);
     assertThat(flow.worktree().resolve("task_context.md")).exists();
   }
 
@@ -306,7 +306,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
 
     flow.post("/api/tasks", "{\"ref\": \"" + TASK + "\", \"project\": \"proj\"}", Map.of());
 
-    assertThat(flow.task().history())
+    assertThat(flow.task().standing().history())
         .extracting(StatusChange::status, StatusChange::origin)
         .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.BOARD));
   }
@@ -322,7 +322,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
 
     flow.post("/mcp", call, Map.of(MasterToken.HEADER, Files.readString(paths.token()).strip()));
 
-    assertThat(flow.task().history())
+    assertThat(flow.task().standing().history())
         .extracting(StatusChange::status, StatusChange::origin)
         .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.ROOT));
   }
@@ -356,7 +356,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
 
       assertThat(flow.act("sweep")).contains(round.sentence());
 
-      assertThat(flow.task().status()).isEqualTo(round.expected());
+      assertThat(flow.task().standing().status()).isEqualTo(round.expected());
       assertThat(
               Files.readString(flow.worktree().resolve("task_context.md"))
                   .contains("Review round for"))
@@ -411,11 +411,11 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
           .thenReturn(
               new Answer<>(Optional.of(reviewFacts().withApproved(true).build()), TokenUsage.NONE));
       assertThat(flow.act("sweep")).contains("approved, checks success");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.APPROVED);
 
       assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
       assertThat(
-              Objects.requireNonNull(flow.task().deployment())
+              Objects.requireNonNull(flow.task().work().deployment())
                   .targets()
                   .getFirst()
                   .landing()
@@ -428,7 +428,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
           .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
 
-      assertThat(flow.task().history())
+      assertThat(flow.task().standing().history())
           .extracting(StatusChange::status)
           .containsExactly(
               TaskStatus.NEW,
@@ -441,7 +441,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
               TaskStatus.APPROVED,
               TaskStatus.DEPLOYED,
               TaskStatus.REVERTED);
-      assertThat(flow.task().history())
+      assertThat(flow.task().standing().history())
           .extracting(StatusChange::status, StatusChange::origin)
           .contains(
               tuple(TaskStatus.REVIEW_PENDING, ActionOrigin.MCP),
@@ -465,8 +465,8 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
 
       deployOnApproval.runOn(stateService.tasks());
 
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOYED);
-      assertThat(flow.task().history())
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+      assertThat(flow.task().standing().history())
           .extracting(StatusChange::status, StatusChange::origin)
           .contains(tuple(TaskStatus.DEPLOYED, ActionOrigin.CODE_HOST));
     }
@@ -486,9 +486,9 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       Files.writeString(flow.worktree().resolve("task_notes.md"), "fifth round\n");
       flow.agentReports("REVIEW_PENDING", "fifth round", "");
       assertThat(stops.mayShip(TASK)).isFalse();
-      assertThat(Objects.requireNonNull(flow.task().stop()).trigger())
+      assertThat(Objects.requireNonNull(flow.task().work().stop()).trigger())
           .isEqualTo(TaskStop.Trigger.SHIPS);
-      assertThat(flow.task().stop().request()).isEqualTo(flow.request());
+      assertThat(flow.task().work().stop().request()).isEqualTo(flow.request());
       assertThat(
               views.all().stream()
                   .filter(view -> view.id().equals(TASK))
@@ -500,7 +500,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
                   .toList())
           .contains("ship");
       long ships =
-          flow.task().history().stream()
+          flow.task().standing().history().stream()
               .filter(step -> step.status() == TaskStatus.SHIPPING)
               .count();
       String main = E2eWorkspace.git(flow.origin(), "rev-parse", "main").strip();
@@ -514,7 +514,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
 
         assertThat(flow.act("ship")).contains("already merged");
         assertThat(
-                flow.task().history().stream()
+                flow.task().standing().history().stream()
                     .filter(step -> step.status() == TaskStatus.SHIPPING)
                     .count())
             .isEqualTo(ships);
@@ -540,7 +540,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
             "review request: " + followUp,
             ", \"reviewRequestUrl\": \"" + followUp + "\"");
 
-        assertThat(flow.task().stopped()).isFalse();
+        assertThat(flow.task().work().stopped()).isFalse();
         assertThat(stops.mayShip(TASK)).isTrue();
         assertThat(flow.act("sweep")).doesNotContain("stopped");
         verify(assistants.codeHost(), atLeastOnce()).readReview(followUp);

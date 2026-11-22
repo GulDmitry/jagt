@@ -53,7 +53,7 @@ public class ShipService {
     ConfigService.ConfigFile config = configService.load();
     String title =
         ReviewRequestTitle.expand(
-            config.codeReview().mrTitlePatternOrDefault(), taskId, task.title());
+            config.codeReview().mrTitlePatternOrDefault(), taskId, task.ticket().title());
 
     List<Target> targets = targets(task, config);
     List<Target> carrying = targets.stream().filter(this::carries).toList();
@@ -72,7 +72,7 @@ public class ShipService {
           "ship "
               + taskId
               + ": no case sends ship at "
-              + task.status()
+              + task.standing().status()
               + ", so the session was not told; see misses.jsonl");
     }
     boolean requests = carrying.stream().anyMatch(Target::hosted);

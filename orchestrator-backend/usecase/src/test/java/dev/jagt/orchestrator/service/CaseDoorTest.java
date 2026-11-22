@@ -129,7 +129,7 @@ class CaseDoorTest {
 
     assertThat(byVerb).isTrue();
     assertThat(byMove).isTrue();
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
   }
 
   @Test
@@ -142,7 +142,7 @@ class CaseDoorTest {
         OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.SHIP));
 
     assertThat(byVerb).isFalse();
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.MISS, "no arbiter case allows ship at IN_PROGRESS");
   }
@@ -175,7 +175,7 @@ class CaseDoorTest {
             () -> door.takes("ABC-42", TaskStatus.CI_POLLING, AgentReport.NO_CHANGES));
 
     assertThat(taken).isTrue();
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
   }
 
   @Test

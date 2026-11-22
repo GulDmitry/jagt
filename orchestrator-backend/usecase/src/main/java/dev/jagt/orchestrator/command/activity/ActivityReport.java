@@ -102,7 +102,9 @@ public class ActivityReport {
 
   private List<Change> changes() {
     List<Change> changes = new ArrayList<>();
-    state.tasks().forEach((id, task) -> changes.addAll(of(id, task.projects(), task.history())));
+    state
+        .tasks()
+        .forEach((id, task) -> changes.addAll(of(id, task.projects(), task.standing().history())));
     for (FinishedTask task : finished.all()) {
       String id = task.identity().id();
       List<StatusChange> history = task.course().history();

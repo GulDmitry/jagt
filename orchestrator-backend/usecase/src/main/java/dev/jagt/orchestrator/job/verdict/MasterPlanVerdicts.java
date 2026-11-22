@@ -43,7 +43,7 @@ class MasterPlanVerdicts {
         ActionOrigin.MASTER,
         () ->
             config.may(MasterRight.PLAN)
-                && !task.planGate().keptForTheHuman()
+                && !task.gate().planGate().keptForTheHuman()
                 && go(taskId, task, verdict));
   }
 
@@ -63,7 +63,7 @@ class MasterPlanVerdicts {
     log.atInfo()
         .setMessage("master approves the plan")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .log();
     return true;
   }
@@ -84,7 +84,7 @@ class MasterPlanVerdicts {
     log.atInfo()
         .setMessage("master returns an unplaceable plan")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .log();
     return true;
   }
@@ -94,7 +94,7 @@ class MasterPlanVerdicts {
    * moves no status.
    */
   private TaskState advised(String taskId, TaskState task, MasterReview.Verdict verdict) {
-    if (!task.report().asks() || verdict.advice().isEmpty()) {
+    if (!task.standing().report().asks() || verdict.advice().isEmpty()) {
       return task;
     }
     AtomicReference<TaskState> after = new AtomicReference<>(task);

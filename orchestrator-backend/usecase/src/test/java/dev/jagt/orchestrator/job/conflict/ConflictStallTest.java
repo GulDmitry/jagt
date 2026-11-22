@@ -66,8 +66,9 @@ class ConflictStallTest {
     stall.watch("ABC-42", conflict);
 
     TaskState asked = state.task("ABC-42").orElseThrow();
-    assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
-    assertThat(asked.message()).contains("7 paths unmerged, 0 staged in /src/ABC-42-deploy");
+    assertThat(asked.standing().report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(asked.standing().message())
+        .contains("7 paths unmerged, 0 staged in /src/ABC-42-deploy");
     assertThat(asked.currentConflict().orElseThrow().askedTheArbiter()).isTrue();
   }
 

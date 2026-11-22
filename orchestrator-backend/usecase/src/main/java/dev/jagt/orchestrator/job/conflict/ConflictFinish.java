@@ -34,7 +34,7 @@ class ConflictFinish {
   private final Clock clock;
 
   void press(String taskId, Path worktree) {
-    Optional<TaskStop> stop = stateService.task(taskId).map(TaskState::stop);
+    Optional<TaskStop> stop = stateService.task(taskId).map(taskState -> taskState.work().stop());
     if (stop.isPresent()) {
       hold(taskId, stop.get());
       return;

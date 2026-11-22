@@ -13,7 +13,7 @@ class TrackerAssistantTest {
     TrackerAssistant tracker =
         new TrackerAssistant() {
           @Override
-          public Answer<dev.jagt.orchestrator.task.launch.TicketFacts> readTicket(
+          public Answer<dev.jagt.orchestrator.task.ticket.TicketFacts> readTicket(
               String ticketRef, List<String> corrections) {
             asked.add(corrections);
             return Answer.unavailable();

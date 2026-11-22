@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.port.assistant.TrackerAssistant;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.protocol.read.TicketSearch;
 import dev.jagt.orchestrator.protocol.read.TicketText;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.util.ArrayList;
 import java.util.List;

@@ -333,6 +333,7 @@ class FlowEngineTest {
             write
                 .getValue()
                 .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.CI_POLLING);
   }
@@ -360,8 +361,8 @@ class FlowEngineTest {
     TaskState reported =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).message("request 1 open").build();
     TaskState written = write.getValue().apply(reducer, reported);
-    assertThat(written.status()).isEqualTo(TaskStatus.CI_POLLING);
-    assertThat(written.message()).isEqualTo("request 1 open");
+    assertThat(written.standing().status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(written.standing().message()).isEqualTo("request 1 open");
   }
 
   @Test
@@ -419,6 +420,7 @@ class FlowEngineTest {
             write
                 .getValue()
                 .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.DEPLOYED);
   }
@@ -457,6 +459,7 @@ class FlowEngineTest {
             write
                 .getValue()
                 .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.REVERTED);
   }
@@ -492,6 +495,7 @@ class FlowEngineTest {
             write
                 .getValue()
                 .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.CI_POLLING);
   }
@@ -550,7 +554,7 @@ class FlowEngineTest {
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState before =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).message("keep me").build();
-    assertThat(write.getValue().apply(reducer, before).message()).isEqualTo("keep me");
+    assertThat(write.getValue().apply(reducer, before).standing().message()).isEqualTo("keep me");
   }
 
   @Test
@@ -624,6 +628,7 @@ class FlowEngineTest {
                 .getValue()
                 .apply(
                     reducer, TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.IN_PROGRESS);
   }

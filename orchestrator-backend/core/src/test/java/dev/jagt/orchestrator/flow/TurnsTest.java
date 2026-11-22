@@ -251,9 +251,9 @@ class TurnsTest {
 
     Holder holder =
         Turns.next(
-            sealed.status(),
-            sealed.report(),
-            sealed.stopped(),
+            sealed.standing().status(),
+            sealed.standing().report(),
+            sealed.work().stopped(),
             new Checkers(new TaskChart(Composition.builtIn())).of(sealed),
             new Arbiter.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 

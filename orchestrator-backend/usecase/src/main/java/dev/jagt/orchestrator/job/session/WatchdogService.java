@@ -100,7 +100,7 @@ public class WatchdogService implements Job {
   }
 
   private void verdict(String taskId, TaskState task, long now) {
-    if (FlowRules.closed(task.status())) {
+    if (FlowRules.closed(task.standing().status())) {
       return;
     }
     long staleMs = properties.watchdog().staleAfter().toMillis();
@@ -118,17 +118,17 @@ public class WatchdogService implements Job {
   }
 
   private static boolean startedOverSince(TaskState looked, TaskState current) {
-    return current.session().generation() != looked.session().generation();
+    return current.work().session().generation() != looked.work().session().generation();
   }
 
   private void alert(String taskId, TaskState task, long now) {
-    if (!watches(task.status()) || !SessionPhase.silent(task)) {
+    if (!watches(task.standing().status()) || !SessionPhase.silent(task)) {
       forgetAlert(taskId, task);
       return;
     }
     long since = SessionPhase.silentSince(task);
     if (SessionPhase.silentSinceUnasked(task) == 0
-        || task.toldOrNone().said(ToldOnce.Kind.SILENCE, String.valueOf(since))) {
+        || task.round().toldOrNone().said(ToldOnce.Kind.SILENCE, String.valueOf(since))) {
       return;
     }
     String said = Objects.requireNonNullElse(SessionPhase.silentBecause(task), "no sign of life");
@@ -139,13 +139,13 @@ public class WatchdogService implements Job {
         .setMessage("task stopped")
         .addKeyValue("task", taskId)
         .addKeyValue("said", OneLine.clipped(said))
-        .addKeyValue("cause", cause(task.session()))
+        .addKeyValue("cause", cause(task.work().session()))
         .addKeyValue("silent", (now - since) / 60_000)
         .log();
   }
 
   private void forgetAlert(String taskId, TaskState task) {
-    if (task.toldOrNone().has(ToldOnce.Kind.SILENCE)) {
+    if (task.round().toldOrNone().has(ToldOnce.Kind.SILENCE)) {
       stateService.reduce(
           taskId, (reducer, current) -> reducer.untold(current, ToldOnce.Kind.SILENCE));
     }

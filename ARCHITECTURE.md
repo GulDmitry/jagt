@@ -228,13 +228,14 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `task` | core | the task record, its status and the migrations of old records |
 | `task/acceptance` | core | what the acceptance role leaves on a task: verdict, decline, question, ending |
 | `task/deploy` | core | the deployment record, its conflicts, failed jobs and infra retries |
-| `task/launch` | core | what a task is born from: request, name, routing question, tracker facts |
+| `task/launch` | core | what a task is born from: request, name, routing question |
 | `task/master` | core | what the Master leaves on a task: mode, rights, the record |
 | `task/plan` | core | the plan gate, its artifacts and probes |
 | `task/repo` | core | a task's repositories: remotes, branch strategy, trust, project config |
 | `task/review` | core | review rounds, loop breaker and the merge-request facts |
 | `task/session` | core | the session record, its wake and the ask stamp |
 | `task/stop` | core | a stop on a task, its guard and triage |
+| `task/ticket` | core | the tracker ticket a task carries and the facts read from the tracker |
 | `task/text` | core | text and file helpers of the record: ANSI, atomic files, UTC time |
 | `task/turn` | core | the turn on a task: steps, reports, human waits, what was told once |
 | `task/usage` | core | spend of a task: tokens, model tier, cost per accepted task |

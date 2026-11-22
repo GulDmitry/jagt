@@ -42,7 +42,8 @@ public class Verification {
    * not read the tree.
    */
   public Optional<String> key(TaskState task) {
-    String probes = task.probes().stream().map(Probe::toString).collect(Collectors.joining("\n"));
+    String probes =
+        task.gate().probes().stream().map(Probe::toString).collect(Collectors.joining("\n"));
     return changes.state(task).map(tree -> Turn.digestOf(tree + "\n" + probes));
   }
 
@@ -59,7 +60,7 @@ public class Verification {
    * task's id is its branch.
    */
   public List<Probe> probed(String taskId, TaskState task) {
-    return task.probes().stream().map(probe -> probedIn(taskId, task, probe)).toList();
+    return task.gate().probes().stream().map(probe -> probedIn(taskId, task, probe)).toList();
   }
 
   private Probe probedIn(String taskId, TaskState task, Probe probe) {

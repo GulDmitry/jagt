@@ -83,7 +83,7 @@ class MasterAnswerJobTest {
 
     job.run();
 
-    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered()).isEmpty();
+    assertThat(state.task("ABC-1").orElseThrow().work().arbiterOrNone().unanswered()).isEmpty();
   }
 
   @Test
@@ -109,7 +109,7 @@ class MasterAnswerJobTest {
     job.run();
 
     TaskState left = state.task("ABC-1").orElseThrow();
-    assertThat(left.arbiterOrNone().unanswered()).isEqualTo(left.askedDigest());
+    assertThat(left.work().arbiterOrNone().unanswered()).isEqualTo(left.standing().askedDigest());
   }
 
   @ParameterizedTest
@@ -186,7 +186,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered())
+    assertThat(state.task("ABC-1").orElseThrow().work().arbiterOrNone().unanswered())
         .isEqualTo(TaskTurns.asked(asking));
   }
 
@@ -255,7 +255,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered())
+    assertThat(state.task("ABC-1").orElseThrow().work().arbiterOrNone().unanswered())
         .isEqualTo(TaskTurns.asked(state.task("ABC-1").orElseThrow()));
   }
 
@@ -288,7 +288,8 @@ class MasterAnswerJobTest {
 
       job.run();
 
-      verify(panel).answer(eq("ABC-1"), any(), eq(asking.message()), any(), anyBoolean());
+      verify(panel)
+          .answer(eq("ABC-1"), any(), eq(asking.standing().message()), any(), anyBoolean());
     }
 
     @Test
@@ -299,7 +300,8 @@ class MasterAnswerJobTest {
 
       job.run();
 
-      verify(panel).answer(eq("ABC-1"), any(), eq(asking.message()), any(), anyBoolean());
+      verify(panel)
+          .answer(eq("ABC-1"), any(), eq(asking.standing().message()), any(), anyBoolean());
     }
 
     @Test
@@ -309,7 +311,8 @@ class MasterAnswerJobTest {
 
       job.run();
 
-      verify(panel).answer(eq("ABC-1"), any(), eq(asking.message()), any(), anyBoolean());
+      verify(panel)
+          .answer(eq("ABC-1"), any(), eq(asking.standing().message()), any(), anyBoolean());
     }
   }
 

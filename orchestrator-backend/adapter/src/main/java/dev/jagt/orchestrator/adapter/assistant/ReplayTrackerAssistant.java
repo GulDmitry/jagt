@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.replay.RecordedReads;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.TrackerAssistant;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;

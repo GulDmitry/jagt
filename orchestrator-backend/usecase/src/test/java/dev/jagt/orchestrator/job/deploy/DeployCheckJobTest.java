@@ -72,7 +72,8 @@ class DeployCheckJobTest {
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     verify(pipelines, never()).read(anyString(), any());
-    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(state.task("ABC-42").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -94,7 +95,7 @@ class DeployCheckJobTest {
         "ABC-42",
         TaskState.builder("proj", worktree.toString(), TaskStatus.DEPLOYED)
             .build()
-            .withDeployment(Objects.requireNonNull(deployCheckTask().build().deployment())));
+            .withDeployment(Objects.requireNonNull(deployCheckTask().build().work().deployment())));
     when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
     AgentSessions sessions = mock(AgentSessions.class);
     StepRelay firstRelay = stepRelay().withRoot(root).build(state, sessions, new FakeClock());
@@ -125,7 +126,7 @@ class DeployCheckJobTest {
     state.putTask(
         "ABC-42",
         deployed.withDeployment(
-            Objects.requireNonNull(deployed.deployment())
+            Objects.requireNonNull(deployed.work().deployment())
                 .withAskedDigest(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"))));
 
     job.runOn(state.tasks());
@@ -160,7 +161,8 @@ class DeployCheckJobTest {
 
       job.runOn(state.tasks());
 
-      assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(state.task("ABC-42").orElseThrow().standing().status())
+          .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     }
 
     @Test
@@ -178,7 +180,7 @@ class DeployCheckJobTest {
 
       job.runOn(state.tasks());
 
-      assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).trigger())
+      assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop()).trigger())
           .isEqualTo(TaskStop.Trigger.DEPLOY_UNREAD);
     }
 
@@ -196,7 +198,7 @@ class DeployCheckJobTest {
       job.runOn(state.tasks());
 
       verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
-      assertThat(state.task("ABC-42").orElseThrow().message())
+      assertThat(state.task("ABC-42").orElseThrow().standing().message())
           .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
     }
 
@@ -214,8 +216,8 @@ class DeployCheckJobTest {
       job.runOn(state.tasks());
 
       TaskState handed = state.task("ABC-42").orElseThrow();
-      assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-      assertThat(handed.message())
+      assertThat(handed.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(handed.standing().message())
           .isEqualTo(
               "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
       verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -278,7 +280,7 @@ class DeployCheckJobTest {
         job.runOn(state.tasks());
 
         assertThat(
-                Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                     .askedDigest())
             .isEqualTo(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"));
       }
@@ -288,7 +290,7 @@ class DeployCheckJobTest {
         job.runOn(state.tasks());
 
         assertThat(
-                Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                     .askedDigest())
             .isNull();
       }
@@ -309,7 +311,7 @@ class DeployCheckJobTest {
       state.putTask(
           "ABC-42",
           once.withDeployment(
-              Objects.requireNonNull(once.deployment())
+              Objects.requireNonNull(once.work().deployment())
                   .withTarget("proj", target -> target.withUnread(true))));
       when(pipelines.read(eq("ABC-42"), any()))
           .thenReturn(
@@ -325,8 +327,9 @@ class DeployCheckJobTest {
       job.runOn(state.tasks());
 
       TaskState task = state.task("ABC-42").orElseThrow();
-      assertThat(task.stopped()).isFalse();
-      assertThat(Objects.requireNonNull(task.deployment()).targets().getFirst().unreadReads())
+      assertThat(task.work().stopped()).isFalse();
+      assertThat(
+              Objects.requireNonNull(task.work().deployment()).targets().getFirst().unreadReads())
           .isEqualTo(2);
     }
 
@@ -344,7 +347,7 @@ class DeployCheckJobTest {
       job.runOn(state.tasks());
 
       assertThat(
-              Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+              Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                   .targets()
                   .getFirst()
                   .unreadReads())
@@ -377,7 +380,7 @@ class DeployCheckJobTest {
 
         job.runOn(state.tasks());
 
-        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+        assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
       }
 
       @ParameterizedTest
@@ -394,7 +397,7 @@ class DeployCheckJobTest {
 
         job.runOn(state.tasks());
 
-        assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
+        assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isTrue();
       }
     }
   }

@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.launch.RoutingAnswer;
 import dev.jagt.orchestrator.task.launch.RoutingQuestion;
 import dev.jagt.orchestrator.task.launch.RulePair;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

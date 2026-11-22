@@ -91,7 +91,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, polling).checksUnread())
+    assertThat(stamped.getValue().apply(reducer, polling).checks().checksUnread())
         .containsExactly(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden"));
   }
 
@@ -107,8 +107,8 @@ class RoundRecordTest {
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     TaskState after = stamped.getValue().apply(reducer, failing);
-    assertThat(after.pipelineStatus()).isEqualTo("failed");
-    assertThat(after.pipelineUnread()).isTrue();
+    assertThat(after.checks().pipelineStatus()).isEqualTo("failed");
+    assertThat(after.checks().unread()).isTrue();
   }
 
   @Test
@@ -122,7 +122,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, polling).approved()).isTrue();
+    assertThat(stamped.getValue().apply(reducer, polling).round().approved()).isTrue();
   }
 
   @Test
@@ -136,7 +136,8 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, polling).pipelineStatus()).isEqualTo("SUCCEEDED");
+    assertThat(stamped.getValue().apply(reducer, polling).checks().pipelineStatus())
+        .isEqualTo("SUCCEEDED");
   }
 
   @Test
@@ -153,7 +154,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, polling).requestOpenedAt())
+    assertThat(stamped.getValue().apply(reducer, polling).round().requestOpenedAt())
         .isEqualTo(1_700_000_000_000L);
   }
 
@@ -198,7 +199,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, polling).requestOpenedAt())
+    assertThat(stamped.getValue().apply(reducer, polling).round().requestOpenedAt())
         .isEqualTo(1_700_000_500_000L);
   }
 
@@ -248,8 +249,8 @@ class RoundRecordTest {
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     TaskState after = stamped.getValue().apply(reducer, failing);
-    assertThat(after.pipelineStatus()).isEqualTo("success");
-    assertThat(after.approved()).isTrue();
+    assertThat(after.checks().pipelineStatus()).isEqualTo("success");
+    assertThat(after.round().approved()).isTrue();
     verifyNoInteractions(stops, causes);
   }
 
@@ -271,7 +272,7 @@ class RoundRecordTest {
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, polling).pipelineUrl())
+    assertThat(stamped.getValue().apply(reducer, polling).checks().pipelineUrl())
         .isEqualTo("https://host.invalid/p/9");
   }
 

@@ -23,7 +23,7 @@ public class SessionTransitionLog {
   private record Seen(SessionPhase phase, Session.@Nullable Window window) {
 
     static Seen of(TaskState task) {
-      return new Seen(SessionPhase.of(task.session()), task.session().window());
+      return new Seen(SessionPhase.of(task.work().session()), task.work().session().window());
     }
 
     Session.Window.@Nullable State windowState() {
@@ -39,7 +39,7 @@ public class SessionTransitionLog {
       Seen now = Seen.of(task);
       Seen before = seen.put(id, now);
       if (before != null) {
-        report(id, before, now, task.session().halt());
+        report(id, before, now, task.work().session().halt());
       }
     });
     seen.keySet().retainAll(tasks.keySet());

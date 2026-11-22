@@ -68,7 +68,7 @@ public class RoundQuotes {
                         facts.request(task),
                         String.join("\n", said),
                         facts.notes(task),
-                        task.probes().stream()
+                        task.gate().probes().stream()
                             .map(Probe::result)
                             .collect(Collectors.joining("\n"))))
                 + ":"
@@ -78,7 +78,8 @@ public class RoundQuotes {
   /** What one round was asked about, to tell two asks of an unchanged round apart in the log. */
   String fingerprint(TaskState task, String inputs) {
     return Turn.digestOf(
-        String.join("\u0000", facts.ownDiff(task).orElse(""), task.report().name(), inputs));
+        String.join(
+            "\u0000", facts.ownDiff(task).orElse(""), task.standing().report().name(), inputs));
   }
 
   String planFingerprint(TaskState task, String inputs) {

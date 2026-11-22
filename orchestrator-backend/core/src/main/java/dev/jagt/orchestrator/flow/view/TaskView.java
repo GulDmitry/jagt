@@ -138,9 +138,9 @@ public record TaskView(
     if (passer.isPresent()) {
       return Checkers.passedLabel(passer.get());
     }
-    return task.requestsMerged() && FlowRules.awaitsApproval(task.status())
+    return task.requestsMerged() && FlowRules.awaitsApproval(task.standing().status())
         ? "merged"
-        : task.status().label();
+        : task.standing().status().label();
   }
 
   public Map<String, String> confirmations() {
@@ -172,14 +172,14 @@ public record TaskView(
   }
 
   private static @Nullable String waiting(TaskState task) {
-    if (task.report() != AgentReport.WAIT) {
+    if (task.standing().report() != AgentReport.WAIT) {
       return null;
     }
     String next =
-        Wake.parse(task.turnOrNone().mark(Wake.MARK))
+        Wake.parse(task.work().turnOrNone().mark(Wake.MARK))
             .map(wake -> "\nnext try " + UtcTime.clock(wake.at()))
             .orElse("");
-    return (task.message() == null ? "waiting" : task.message()) + next;
+    return (task.standing().message() == null ? "waiting" : task.standing().message()) + next;
   }
 
   public Owner owner() {
@@ -318,13 +318,13 @@ public record TaskView(
       @Nullable AutoReviewWatch autoReview,
       Map<String, String> deployBranches) {
     boolean draftedReplies = round.draftedReplies();
-    Stop stop = Stop.of(task.stop());
+    Stop stop = Stop.of(task.work().stop());
     Facts projected = Facts.projected(task).withReach(round.reach());
     AutoReviewWatch watch = autoReview == null ? AutoReviewWatch.none() : autoReview;
     Move move =
         Move.forTask(
             rules,
-            task.status(),
+            task.standing().status(),
             projected.withDelivery(
                 projected.delivery().withShippedWithoutRequest(round.requestless())),
             round,
@@ -350,19 +350,21 @@ public record TaskView(
     return new TaskView(
         new Identity(
             id,
-            task.alias(),
+            task.ticket().alias(),
             task.project(),
-            task.title(),
-            webLink(task.ticketUrl()),
-            task.tier() != null && task.tier().raised() ? task.tier().current() : null),
+            task.ticket().title(),
+            webLink(task.ticket().ticketUrl()),
+            task.work().tier() != null && task.work().tier().raised()
+                ? task.work().tier().current()
+                : null),
         new Standing(
-            task.status(),
+            task.standing().status(),
             statusLabel(task, round),
             move.phase(),
             move.owner(),
             move.attention(),
-            task.statusSince(),
-            task.history().stream()
+            task.standing().statusSince(),
+            task.standing().history().stream()
                 .map(change ->
                     new Step(
                         change.status(),
@@ -383,12 +385,12 @@ public record TaskView(
             waiting(task)),
         new Request(
             webLink(task.mrUrl()),
-            task.hasReviewRequest() ? task.requestOpenedAt() : 0,
+            task.hasReviewRequest() ? task.round().requestOpenedAt() : 0,
             task.hasReviewRequest() ? task.approvedRead() : null,
             checks(task),
             checksSaid(task),
-            task.pipelineUnread()),
-        new Replies(draftedReplies, round.repliesWrittenAt(), watch, task.switches()),
+            task.checks().unread()),
+        new Replies(draftedReplies, round.repliesWrittenAt(), watch, task.gate().switches()),
         new Delivery(
             task.repos().stream()
                 .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl())))
@@ -397,18 +399,18 @@ public record TaskView(
   }
 
   private static Optional<InfraRetry> awaitingRetry(TaskState task) {
-    return Pipeline.of(task.checksRead()) == Pipeline.RED
-        ? InfraRetry.pending(task.infraRetries())
+    return Pipeline.of(task.checks().read()) == Pipeline.RED
+        ? InfraRetry.pending(task.checks().infraRetries())
         : Optional.empty();
   }
 
   /** A red whose retry is armed reads as running: its verdict is not in. */
   private static Pipeline checks(TaskState task) {
-    return awaitingRetry(task).isPresent() ? Pipeline.RUNNING : Pipeline.of(task.checksRead());
+    return awaitingRetry(task).isPresent() ? Pipeline.RUNNING : Pipeline.of(task.checks().read());
   }
 
   private static @Nullable String checksSaid(TaskState task) {
-    return awaitingRetry(task).map(InfraRetry::reading).orElse(task.checksRead());
+    return awaitingRetry(task).map(InfraRetry::reading).orElse(task.checks().read());
   }
 
   private static @Nullable String asked(Move move, @Nullable Stop stop) {

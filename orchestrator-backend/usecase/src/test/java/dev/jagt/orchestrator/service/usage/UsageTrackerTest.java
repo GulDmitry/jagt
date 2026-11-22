@@ -80,7 +80,8 @@ class UsageTrackerTest {
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 170, 0.05));
 
-    assertThat(state.task("ABC-1").orElseThrow().usageOrNone().inputTokens()).isEqualTo(25_000);
+    assertThat(state.task("ABC-1").orElseThrow().gate().usageOrNone().inputTokens())
+        .isEqualTo(25_000);
     assertThat(tracker.session().calls()).isEqualTo(1);
   }
 
@@ -92,7 +93,7 @@ class UsageTrackerTest {
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(26_000, 500, 120, 0.06));
 
-    TokenUsage usage = state.task("ABC-1").orElseThrow().usageOrNone();
+    TokenUsage usage = state.task("ABC-1").orElseThrow().gate().usageOrNone();
     assertThat(usage.calls()).isEqualTo(2);
     assertThat(usage.inputTokens()).isEqualTo(51_000);
     assertThat(usage.cachedInputTokens()).isEqualTo(500);
@@ -107,7 +108,7 @@ class UsageTrackerTest {
 
     tracker.chargeTask("a1", TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
-    assertThat(state.task("ABC-1").orElseThrow().usageOrNone().calls()).isEqualTo(1);
+    assertThat(state.task("ABC-1").orElseThrow().gate().usageOrNone().calls()).isEqualTo(1);
   }
 
   @Test

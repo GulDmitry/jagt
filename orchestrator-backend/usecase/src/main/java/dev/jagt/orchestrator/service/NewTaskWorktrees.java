@@ -301,8 +301,8 @@ public class NewTaskWorktrees {
     ProjectConfig project = configured(projectKey, config);
     NewTask request =
         NewTask.builder(taskId, projectKey)
-            .mode(task.planGate() == PlanGate.REQUIRED ? "plan" : null)
-            .baseBranch(task.baseBranch())
+            .mode(task.gate().planGate() == PlanGate.REQUIRED ? "plan" : null)
+            .baseBranch(task.ticket().baseBranch())
             .build();
     Optional<Path> standing =
         gitWorktrees.worktreeOf(Path.of(project.path()).toAbsolutePath().normalize(), taskId);
@@ -356,7 +356,7 @@ public class NewTaskWorktrees {
               projectPath,
               Path.of(Objects.requireNonNull(repo.worktreePath())),
               gitWorktrees.gitCommonDir(projectPath),
-              task.baseBranchOr(project.baseBranch()),
+              task.ticket().baseBranchOr(project.baseBranch()),
               remote,
               held.isEmpty()));
     }

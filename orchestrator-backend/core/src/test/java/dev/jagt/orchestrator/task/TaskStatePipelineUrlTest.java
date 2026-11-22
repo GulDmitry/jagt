@@ -10,7 +10,7 @@ class TaskStatePipelineUrlTest {
   void listedPipelineUrlIsKept() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build();
 
-    assertThat(task.withPipelineUrl("https://host/pipelines/9").pipelineUrl())
+    assertThat(task.withPipelineUrl("https://host/pipelines/9").checks().pipelineUrl())
         .isEqualTo("https://host/pipelines/9");
   }
 
@@ -21,7 +21,8 @@ class TaskStatePipelineUrlTest {
             .pipelineUrl("https://host/pipelines/9")
             .build();
 
-    assertThat(task.withPipelineUrl(" ").pipelineUrl()).isEqualTo("https://host/pipelines/9");
+    assertThat(task.withPipelineUrl(" ").checks().pipelineUrl())
+        .isEqualTo("https://host/pipelines/9");
   }
 
   @Test
@@ -31,6 +32,6 @@ class TaskStatePipelineUrlTest {
             .pipelineUrl("https://host/pipelines/9")
             .build();
 
-    assertThat(task.withChecksReset().pipelineUrl()).isNull();
+    assertThat(task.withChecksReset().checks().pipelineUrl()).isNull();
   }
 }

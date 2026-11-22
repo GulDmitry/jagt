@@ -89,7 +89,7 @@ class TaskStopsTest {
 
     assertThat(fourth).isEqualTo(TaskStops.Relay.STOPPED);
     assertThat(fifth).isEqualTo(TaskStops.Relay.STOPPED);
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger)
         .isEqualTo(TaskStop.Trigger.STALLED);
   }
@@ -131,7 +131,7 @@ class TaskStopsTest {
     boolean may = stops.mayShip("ABC-42");
 
     assertThat(may).isFalse();
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger)
         .isEqualTo(TaskStop.Trigger.SHIPS);
   }
@@ -175,9 +175,9 @@ class TaskStopsTest {
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
     stops.stop("ABC-43", TaskStop.Trigger.ROUNDS, "3 rounds");
 
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).request())
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop()).request())
         .isEqualTo("https://host/mr/571");
-    assertThat(Objects.requireNonNull(state.task("ABC-43").orElseThrow().stop()).request())
+    assertThat(Objects.requireNonNull(state.task("ABC-43").orElseThrow().work().stop()).request())
         .isNull();
   }
 
@@ -186,7 +186,7 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
 
     assertThat(stops.mayShip("ABC-42")).isTrue();
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
   }
 
   @Test
@@ -213,7 +213,7 @@ class TaskStopsTest {
 
     assertThat(tripped).contains(first);
     assertThat(standing).contains(first);
-    assertThat(state.task("ABC-42").orElseThrow().stop()).isEqualTo(first);
+    assertThat(state.task("ABC-42").orElseThrow().work().stop()).isEqualTo(first);
   }
 
   @Test
@@ -228,7 +228,7 @@ class TaskStopsTest {
 
     assertThat(first).isEqualTo(TaskStops.Relay.RELAY);
     assertThat(again).isEqualTo(TaskStops.Relay.UNCHANGED);
-    assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds()).hasSize(1);
+    assertThat(state.task("ABC-42").orElseThrow().round().trailOrNone().rounds()).hasSize(1);
   }
 
   @Test
@@ -252,7 +252,7 @@ class TaskStopsTest {
         "running",
         "");
 
-    assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds())
+    assertThat(state.task("ABC-42").orElseThrow().round().trailOrNone().rounds())
         .extracting(RoundTrail.Round::failing)
         .containsExactly("unit-tests", "");
   }
@@ -281,7 +281,7 @@ class TaskStopsTest {
     TaskStops.Relay again = stops.round("ABC-42", second, "brief with another copy", "");
 
     assertThat(again).isEqualTo(TaskStops.Relay.UNCHANGED);
-    assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds()).hasSize(1);
+    assertThat(state.task("ABC-42").orElseThrow().round().trailOrNone().rounds()).hasSize(1);
   }
 
   @Test
@@ -488,7 +488,7 @@ class TaskStopsTest {
     boolean due = stops.roundDue("ABC-42", "review");
 
     assertThat(due).isFalse();
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger)
         .isEqualTo(TaskStop.Trigger.PACE);
   }
@@ -611,7 +611,7 @@ class TaskStopsTest {
 
     stops.pauseOnWord("ABC-42", "until the managers answer");
 
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.PAUSE, "until the managers answer");
   }
@@ -622,7 +622,7 @@ class TaskStopsTest {
 
     assertThatThrownBy(() -> stops.pauseOnWord("ABC-42", "until the managers answer"))
         .isInstanceOf(Refusal.class);
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
   }
 
   @Test
@@ -632,10 +632,10 @@ class TaskStopsTest {
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).build());
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.lift("ABC-42"));
-    int afterTheMasters = state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops();
+    int afterTheMasters = state.task("ABC-42").orElseThrow().work().arbiterOrNone().liftedStops();
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
     OriginContext.as(ActionOrigin.BOARD, () -> stops.lift("ABC-42"));
-    int afterTheHumans = state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops();
+    int afterTheHumans = state.task("ABC-42").orElseThrow().work().arbiterOrNone().liftedStops();
 
     assertThat(afterTheMasters).isEqualTo(1);
     assertThat(afterTheHumans).isZero();
@@ -656,9 +656,9 @@ class TaskStopsTest {
     stops.escalate("ABC-42");
 
     TaskState escalated = state.task("ABC-42").orElseThrow();
-    assertThat(escalated.stopped()).isFalse();
-    assertThat(Objects.requireNonNull(escalated.tier()).current()).isEqualTo("opus");
-    assertThat(escalated.arbiterOrNone().liftedStops()).isZero();
+    assertThat(escalated.work().stopped()).isFalse();
+    assertThat(Objects.requireNonNull(escalated.work().tier()).current()).isEqualTo("opus");
+    assertThat(escalated.work().arbiterOrNone().liftedStops()).isZero();
   }
 
   @Test
@@ -671,7 +671,8 @@ class TaskStopsTest {
 
     stops.triaged("ABC-42", "ROUNDS@5", StopTriage.failed("a stop that is gone"));
 
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage()).isNull();
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop()).triage())
+        .isNull();
   }
 
   @Test
@@ -685,7 +686,8 @@ class TaskStopsTest {
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.escalate("ABC-42"));
 
-    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops()).isEqualTo(1);
+    assertThat(state.task("ABC-42").orElseThrow().work().arbiterOrNone().liftedStops())
+        .isEqualTo(1);
   }
 
   @Test

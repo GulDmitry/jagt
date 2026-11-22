@@ -57,9 +57,9 @@ final class LegacyDeployment {
       Conflict.@Nullable Told told) {}
 
   static @Nullable Deployment of(TaskState task, List<Repo> stored, @Nullable Watch watch) {
-    boolean unrecorded = task.deployment() == null;
-    Deployment deployment = unrecorded ? fromRepos(task, stored) : task.deployment();
-    if (task.status() != TaskStatus.DEPLOY_CONFLICT) {
+    boolean unrecorded = task.work().deployment() == null;
+    Deployment deployment = unrecorded ? fromRepos(task, stored) : task.work().deployment();
+    if (task.standing().status() != TaskStatus.DEPLOY_CONFLICT) {
       return deployment;
     }
     Optional<Deployment.Target> recorded =
@@ -71,12 +71,12 @@ final class LegacyDeployment {
         recorded
             .map(target -> Objects.requireNonNull(target.progress().conflict()).cause())
             .orElse(
-                DeployRedLine.marks(task.message())
+                DeployRedLine.marks(task.standing().message())
                     ? Deployment.Cause.RED_PIPELINE
                     : Deployment.Cause.MERGE);
     Conflict carried =
         watch == null
-            ? Conflict.of(cause, task.lastActiveTimestamp())
+            ? Conflict.of(cause, task.standing().lastActiveTimestamp())
             : new Conflict(
                 cause,
                 watch.conflictSince(),
@@ -107,14 +107,14 @@ final class LegacyDeployment {
     if (stored.stream().noneMatch(Repo::landed)) {
       return null;
     }
-    long since = task.statusSince();
+    long since = task.standing().statusSince();
     List<Deployment.Target> targets = stored.stream().map(repo -> target(repo, since)).toList();
     long landed = targets.stream().takeWhile(Deployment.Target::landed).count();
     return new Deployment(
         since,
         targets,
-        task.status() == TaskStatus.DEPLOY_CONFLICT ? (int) landed : targets.size(),
-        task.turnOrNone().mark(Step.DEPLOY.id()));
+        task.standing().status() == TaskStatus.DEPLOY_CONFLICT ? (int) landed : targets.size(),
+        task.work().turnOrNone().mark(Step.DEPLOY.id()));
   }
 
   private static Deployment.Target target(Repo repo, long since) {

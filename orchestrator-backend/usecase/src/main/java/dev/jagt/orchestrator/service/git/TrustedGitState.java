@@ -39,9 +39,9 @@ public class TrustedGitState implements GitDistrust {
     Map<String, String> now = read(task);
     stateService.reduce(
         taskId, (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
-    return task.gitTrust() != null
-        && task.gitTrust().changed() != null
-        && task.report() == AgentReport.QUESTION;
+    return task.gate().gitTrust() != null
+        && task.gate().gitTrust().changed() != null
+        && task.standing().report() == AgentReport.QUESTION;
   }
 
   /**
@@ -50,7 +50,7 @@ public class TrustedGitState implements GitDistrust {
    */
   public Optional<TaskDiff.RepoDiff> changes(String taskId) {
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
-    GitTrust trusted = task.gitTrust();
+    GitTrust trusted = task.gate().gitTrust();
     if (trusted == null) {
       return Optional.empty();
     }
@@ -118,7 +118,7 @@ public class TrustedGitState implements GitDistrust {
     if (task == null) {
       return Optional.empty();
     }
-    GitTrust trusted = task.gitTrust();
+    GitTrust trusted = task.gate().gitTrust();
     String parked = trusted == null ? null : trusted.changed();
     if (parked != null) {
       return Optional.of(parked);

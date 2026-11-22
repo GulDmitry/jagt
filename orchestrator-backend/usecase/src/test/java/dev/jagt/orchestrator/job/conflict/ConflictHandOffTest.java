@@ -196,7 +196,7 @@ class ConflictHandOffTest {
               .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 
-      assertThat(state.task("ABC-42").orElseThrow().stop()).isNull();
+      assertThat(state.task("ABC-42").orElseThrow().work().stop()).isNull();
       verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
     }
   }

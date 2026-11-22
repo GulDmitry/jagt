@@ -16,12 +16,12 @@ public class MasterTurnEndNote implements RoleTurnEndNote {
 
   @Override
   public Optional<String> noteFor(TaskState task) {
-    if (!FlowRules.headedForTheArbiter(task.status())
+    if (!FlowRules.headedForTheArbiter(task.standing().status())
         || !configService.load().arbiter().running()) {
       return Optional.empty();
     }
     return Optional.of(
-        FlowRules.awaitingVerification(task.status())
+        FlowRules.awaitingVerification(task.standing().status())
             ? "→ verification runs first · the Master reads the round once it passes"
             : "→ with the Master for review · its verdict arrives here");
   }

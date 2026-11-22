@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.review.RoundTrail;
+import dev.jagt.orchestrator.task.turn.Standing;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +31,7 @@ public final class ConfigRanges {
       List.of(
           new Ranged("archive.maxMegabytes", NO_CEILING, c -> c.archive().maxMegabytes()),
           new Ranged(
-              "loopBreaker.perHour", TaskState.MAX_HISTORY - 1, c -> c.loopBreaker().perHour()),
+              "loopBreaker.perHour", Standing.MAX_HISTORY - 1, c -> c.loopBreaker().perHour()),
           new Ranged("loopBreaker.rounds", Turn.MAX_RUN - 1, c -> c.loopBreaker().rounds()),
           new Ranged(
               "loopBreaker.stalledRounds",

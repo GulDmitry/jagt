@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.launch.ProjectRouting;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

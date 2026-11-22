@@ -83,11 +83,13 @@ public class TaskViews {
     String tail =
         Optional.ofNullable(task)
             .map(t ->
-                (t.title() == null ? "" : " " + t.title())
-                    + (t.message() == null || t.message().isBlank() ? "" : " — " + t.message())
-                    + (t.report() == AgentReport.PLAIN
+                (t.ticket().title() == null ? "" : " " + t.ticket().title())
+                    + (t.standing().message() == null || t.standing().message().isBlank()
                         ? ""
-                        : " report=" + t.report().name().toLowerCase(Locale.ROOT))
+                        : " — " + t.standing().message())
+                    + (t.standing().report() == AgentReport.PLAIN
+                        ? ""
+                        : " report=" + t.standing().report().name().toLowerCase(Locale.ROOT))
                     + t.repos().stream()
                         .map(repo ->
                             " | "

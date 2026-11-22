@@ -41,12 +41,13 @@ class RequestClosedRead implements ConflictRead {
   }
 
   private static boolean toldGone(TaskState task, TaskRepo repo) {
-    return task.toldOrNone()
+    return task.round()
+        .toldOrNone()
         .said(ToldOnce.Kind.CONFLICT_REQUEST_GONE, Objects.requireNonNull(repo.mrUrl()));
   }
 
   private static Optional<TaskRepo> conflictedRepo(TaskState task) {
-    return Optional.ofNullable(task.deployment())
+    return Optional.ofNullable(task.work().deployment())
         .flatMap(Deployment::conflictedTarget)
         .map(Deployment.Target::project)
         .flatMap(project ->

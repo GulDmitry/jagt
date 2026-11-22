@@ -104,7 +104,8 @@ class MasterPlanVerdictsTest {
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -115,8 +116,8 @@ class MasterPlanVerdictsTest {
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-        .returns("master: the plan holds", TaskState::message);
+        .returns(TaskStatus.IN_PROGRESS, taskState -> taskState.standing().status())
+        .returns("master: the plan holds", taskState -> taskState.standing().message());
   }
 
   @Test
@@ -132,7 +133,7 @@ class MasterPlanVerdictsTest {
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(AgentReport.PLAIN, TaskState::report)
+        .returns(AgentReport.PLAIN, taskState -> taskState.standing().report())
         .returns(true, TaskState::unplaced);
     verify(sessions)
         .writeTaskContext(
@@ -149,7 +150,7 @@ class MasterPlanVerdictsTest {
 
     verdicts.holds("ABC-1", planned, planHolds, acting);
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
@@ -164,8 +165,8 @@ class MasterPlanVerdictsTest {
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.PLAN_PENDING, TaskState::status)
-        .returns(PlanGate.REQUIRED, TaskState::planGate);
+        .returns(TaskStatus.PLAN_PENDING, taskState -> taskState.standing().status())
+        .returns(PlanGate.REQUIRED, taskState -> taskState.gate().planGate());
   }
 
   @Test
@@ -222,7 +223,8 @@ class MasterPlanVerdictsTest {
     boolean moved = verdicts.holds("ABC-1", plainPlan, planHolds, actingWithoutKeepList);
 
     assertThat(moved).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.PLAN_PENDING);
   }
 
   @Test
@@ -233,7 +235,8 @@ class MasterPlanVerdictsTest {
     boolean moved = verdicts.holds("ABC-1", plainPlan, planHolds, acting);
 
     assertThat(moved).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.PLAN_PENDING);
   }
 
   @Test

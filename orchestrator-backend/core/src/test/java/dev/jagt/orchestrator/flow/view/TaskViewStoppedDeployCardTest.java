@@ -29,7 +29,7 @@ class TaskViewStoppedDeployCardTest {
             rules,
             "ABC-42",
             deployed,
-            RoundState.of(deployed.report(), false),
+            RoundState.of(deployed.standing().report(), false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 

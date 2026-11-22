@@ -83,7 +83,7 @@ class ReportEffectsTest {
 
     effects.after(waits, "ABC-42");
 
-    Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
+    Turn turn = state.task("ABC-42").orElseThrow().work().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)))
         .contains(new Wake(4, NOW.plusSeconds(300).toEpochMilli(), Step.WAIT_OVER));
   }
@@ -98,7 +98,7 @@ class ReportEffectsTest {
 
     effects.after(waits, "ABC-42");
 
-    Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
+    Turn turn = state.task("ABC-42").orElseThrow().work().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)).orElseThrow().at())
         .isEqualTo(NOW.plusSeconds(900).toEpochMilli());
     assertThat(turn.mark("waits")).isEqualTo("2");
@@ -127,7 +127,7 @@ class ReportEffectsTest {
 
     effects.after(AgentStatusMessage.of("IN_PROGRESS", "working"), "ABC-42");
 
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark(Wake.MARK)).isNull();
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().mark(Wake.MARK)).isNull();
     verify(stops, never()).stop("ABC-42", TaskStop.Trigger.WAIT, "working");
   }
 
@@ -155,7 +155,7 @@ class ReportEffectsTest {
             .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "3"), List.of())));
     realEffects.after(waits, "ABC-42");
 
-    Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
+    Turn turn = state.task("ABC-42").orElseThrow().work().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)))
         .contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), Step.WAIT_OVER));
   }
@@ -170,7 +170,7 @@ class ReportEffectsTest {
     realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
     realEffects.after(waits, "ABC-42");
 
-    Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
+    Turn turn = state.task("ABC-42").orElseThrow().work().turnOrNone();
     assertThat(realStops.stopped("ABC-42")).isTrue();
     assertThat(Wake.parse(turn.mark(Wake.MARK)))
         .contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), Step.WAIT_OVER));

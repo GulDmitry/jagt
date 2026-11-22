@@ -31,7 +31,7 @@ class RepoAttachment {
   String attach(String taskId) {
     String id = stateService.canonicalTaskId(taskId);
     TaskState task = stateService.task(id).orElseThrow(() -> Refusal.noSuchTask(taskId));
-    String project = task.repoRequest();
+    String project = task.work().repoRequest();
     if (project == null) {
       throw Refusal.byState("Task " + id + " asked for no repository");
     }

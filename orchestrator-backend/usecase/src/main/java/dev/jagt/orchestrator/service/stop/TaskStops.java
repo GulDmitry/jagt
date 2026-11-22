@@ -75,10 +75,10 @@ public class TaskStops {
   public String pauseOnWord(String taskIdOrAlias, String reason) {
     String taskId = stateService.canonicalTaskId(taskIdOrAlias);
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
-    if (!rules.allows(task.status(), TaskAction.PAUSE, Facts.projected(task))) {
+    if (!rules.allows(task.standing().status(), TaskAction.PAUSE, Facts.projected(task))) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
-          "pause is not available for " + taskId + " (it is " + task.status() + ")");
+          "pause is not available for " + taskId + " (it is " + task.standing().status() + ")");
     }
     stop(taskId, TaskStop.Trigger.PAUSE, reason);
     return "pause " + taskId + ": nothing of jagt moves it until the human lifts the stop";
@@ -95,9 +95,11 @@ public class TaskStops {
             task -> task,
             task ->
                 breaker
-                    .beforeRound(step, task.turnOrNone(), task.trailOrNone(), clock.millis())
+                    .beforeRound(
+                        step, task.work().turnOrNone(), task.round().trailOrNone(), clock.millis())
                     .or(() ->
-                        breaker.beforeMove(task.history(), task.trailOrNone(), clock.millis())))
+                        breaker.beforeMove(
+                            task.standing().history(), task.round().trailOrNone(), clock.millis())))
         .isEmpty();
   }
 
@@ -110,7 +112,9 @@ public class TaskStops {
     return trip(
             taskId,
             task -> task,
-            task -> breaker.beforeMove(task.history(), task.trailOrNone(), clock.millis()))
+            task ->
+                breaker.beforeMove(
+                    task.standing().history(), task.round().trailOrNone(), clock.millis()))
         .isEmpty();
   }
 
@@ -133,7 +137,8 @@ public class TaskStops {
               return verdict.get() != Relay.RELAY
                   ? task
                   : task.withTrail(
-                      task.trailOrNone()
+                      task.round()
+                          .trailOrNone()
                           .withRound(
                               new RoundTrail.Round(
                                   clock.millis(),
@@ -145,13 +150,14 @@ public class TaskStops {
             task ->
                 verdict.get() != Relay.RELAY
                     ? Optional.empty()
-                    : breaker.afterRound(task.trailOrNone(), task.history(), clock.millis()));
+                    : breaker.afterRound(
+                        task.round().trailOrNone(), task.standing().history(), clock.millis()));
     return stop.isPresent() ? Relay.STOPPED : verdict.get();
   }
 
   private static Relay verdictOn(TaskState task, String digest, String notes, String failing) {
-    RoundTrail trail = task.trailOrNone();
-    if (task.report().asks() && !trail.newNotes(notes)) {
+    RoundTrail trail = task.round().trailOrNone();
+    if (task.standing().report().asks() && !trail.newNotes(notes)) {
       return Relay.ASKING;
     }
     return trail.relayed(digest) || trail.noNewNote(notes, failing) ? Relay.UNCHANGED : Relay.RELAY;
@@ -162,12 +168,15 @@ public class TaskStops {
    * threads.
    */
   public boolean asking(String taskId) {
-    return stateService.task(taskId).filter(task -> task.report().asks()).isPresent();
+    return stateService.task(taskId).filter(task -> task.standing().report().asks()).isPresent();
   }
 
   /** The round's threads told against the last round relayed into the task. */
   public String sinceLast(String taskId, ReviewFacts facts) {
-    return stateService.task(taskId).map(task -> task.trailOrNone().sinceLast(facts)).orElse("");
+    return stateService
+        .task(taskId)
+        .map(task -> task.round().trailOrNone().sinceLast(facts))
+        .orElse("");
   }
 
   public boolean mayShip(String taskId) {
@@ -175,7 +184,9 @@ public class TaskStops {
     return trip(
             taskId,
             task -> task,
-            task -> breaker.beforeShip(task.trailOrNone(), task.history(), clock.millis()))
+            task ->
+                breaker.beforeShip(
+                    task.round().trailOrNone(), task.standing().history(), clock.millis()))
         .isEmpty();
   }
 
@@ -185,7 +196,7 @@ public class TaskStops {
   }
 
   public boolean stopped(String taskId) {
-    return stateService.task(taskId).filter(TaskState::stopped).isPresent();
+    return stateService.task(taskId).filter(taskState -> taskState.work().stopped()).isPresent();
   }
 
   /** Whether the human keeps this verb from the Master, whatever phase the task stands in. */
@@ -200,7 +211,7 @@ public class TaskStops {
   public boolean arbiterLiftsSpent(String taskId) {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
-        .filter(task -> task.arbiterOrNone().liftedStops() >= StopHold.LIFTS_PER_HUMAN_LIFT)
+        .filter(task -> task.work().arbiterOrNone().liftedStops() >= StopHold.LIFTS_PER_HUMAN_LIFT)
         .isPresent();
   }
 
@@ -214,7 +225,7 @@ public class TaskStops {
         (reducer, task) ->
             reducer.arbiterLiftedStops(
                 reducer.lift(task, clock.millis()),
-                byTheArbiter ? task.arbiterOrNone().liftedStops() + 1 : 0));
+                byTheArbiter ? task.work().arbiterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A human's lift that leaves the task's session due on the next model tier. */
@@ -225,7 +236,7 @@ public class TaskStops {
         (reducer, task) ->
             reducer.arbiterLiftedStops(
                 reducer.escalated(task, clock.millis()),
-                byTheArbiter ? task.arbiterOrNone().liftedStops() + 1 : 0));
+                byTheArbiter ? task.work().arbiterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A deploy by a human restores the Master's lifts, whether or not a stop stands. */
@@ -264,7 +275,7 @@ public class TaskStops {
   public boolean standing(String taskId, TaskStop.Trigger trigger) {
     return stateService
         .task(taskId)
-        .map(TaskState::stop)
+        .map(taskState -> taskState.work().stop())
         .filter(stop -> stop.trigger() == trigger)
         .isPresent();
   }
@@ -287,8 +298,8 @@ public class TaskStops {
         taskId,
         (reducer, task) -> {
           TaskState after = disproves ? reducer.ended(task, ends, request, clock.millis()) : task;
-          if (task.stopped() && !after.stopped()) {
-            ended.set(task.stop());
+          if (task.work().stopped() && !after.work().stopped()) {
+            ended.set(task.work().stop());
           }
           return after;
         });
@@ -311,8 +322,8 @@ public class TaskStops {
     stateService.reduce(
         taskId,
         (reducer, task) -> {
-          if (task.stopped()) {
-            standing.set(task.stop());
+          if (task.work().stopped()) {
+            standing.set(task.work().stop());
             return task;
           }
           TaskState recorded = record.apply(task);

@@ -12,9 +12,9 @@ public record Standing(@Nullable TaskStatus status, String stop, long turn, long
 
   public static Standing of(TaskState task) {
     return new Standing(
-        task.status(),
-        StopKind.of(task.stop()).name(),
-        task.turnOrNone().id(),
-        task.turnOrNone().since());
+        task.standing().status(),
+        StopKind.of(task.work().stop()).name(),
+        task.work().turnOrNone().id(),
+        task.work().turnOrNone().since());
   }
 }

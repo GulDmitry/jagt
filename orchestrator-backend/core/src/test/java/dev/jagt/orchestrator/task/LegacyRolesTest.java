@@ -46,8 +46,8 @@ class LegacyRolesTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
-    assertThat(task.roles()).doesNotContainKey("qa");
+    assertThat(task.work().roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
+    assertThat(task.work().roles()).doesNotContainKey("qa");
   }
 
   @Test
@@ -62,7 +62,7 @@ class LegacyRolesTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@new");
+    assertThat(task.work().roleOrNone("acceptance").passed()).isEqualTo("proj@new");
   }
 
   @Test
@@ -76,6 +76,6 @@ class LegacyRolesTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roles()).isEmpty();
+    assertThat(task.work().roles()).isEmpty();
   }
 }

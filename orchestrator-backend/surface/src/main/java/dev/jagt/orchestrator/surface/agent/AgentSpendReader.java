@@ -27,13 +27,16 @@ public class AgentSpendReader {
   public void charge(String taskId, Path log) {
     String name = log.toAbsolutePath().normalize().toString();
     long from =
-        stateService.task(taskId).map(task -> task.agentSpendOrNone().markFor(name)).orElse(0L);
+        stateService
+            .task(taskId)
+            .map(task -> task.gate().agentSpendOrNone().markFor(name))
+            .orElse(0L);
     LogSpend.since(sessionLog, log, from)
         .ifPresent(advance ->
             stateService.updateTask(
                 taskId,
                 task -> {
-                  AgentSpend counted = task.agentSpendOrNone();
+                  AgentSpend counted = task.gate().agentSpendOrNone();
                   // Checked again inside the write: two reports arriving together book the
                   // window once.
                   return counted.markFor(name) == from

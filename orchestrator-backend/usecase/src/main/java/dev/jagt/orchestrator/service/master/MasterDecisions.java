@@ -131,7 +131,7 @@ public class MasterDecisions {
   }
 
   private static String asked(String tree, TaskState task) {
-    return tree + QUESTION + task.askedDigest();
+    return tree + QUESTION + task.standing().askedDigest();
   }
 
   private static String treeOf(String answer) {

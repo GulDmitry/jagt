@@ -34,7 +34,7 @@ public class RepoDeparture {
   public boolean leave(String taskId, TaskRepo repo, String cause) {
     String project = Objects.requireNonNull(repo.project());
     TaskState task = stateService.task(taskId).orElse(null);
-    if (task == null || !task.canLose(project) || task.landedIn(project)) {
+    if (task == null || !task.canLose(project) || task.work().landedIn(project)) {
       return false;
     }
     Set<String> trustedOnlyByIt = worktrees.trustedOnlyBy(taskId, task, repo);

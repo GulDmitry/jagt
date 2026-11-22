@@ -50,7 +50,7 @@ public class DeployTargets {
   public List<Target> landed(TaskState task) {
     List<Target> landed = new ArrayList<>();
     for (Deployment.Target recorded :
-        Optional.ofNullable(task.deployment()).map(Deployment::targets).orElse(List.of())) {
+        Optional.ofNullable(task.work().deployment()).map(Deployment::targets).orElse(List.of())) {
       if (recorded.landed()) {
         landed.add(recorded(recorded, configService.project(recorded.project())));
       }
@@ -90,11 +90,11 @@ public class DeployTargets {
    * project gone from the configuration holds nothing to wait in.
    */
   public Optional<Target> stopped(TaskState task) {
-    if (!FlowRules.conflictedInTheDeployWorktree(task.status())) {
+    if (!FlowRules.conflictedInTheDeployWorktree(task.standing().status())) {
       return Optional.empty();
     }
     Map<String, ProjectConfig> projects = configService.load().projects();
-    return Optional.ofNullable(task.deployment())
+    return Optional.ofNullable(task.work().deployment())
         .flatMap(Deployment::conflictedTarget)
         .filter(recorded -> projects.containsKey(recorded.project()))
         .map(recorded ->
@@ -115,7 +115,7 @@ public class DeployTargets {
    * What the task's deployment waits on, as its record says; none while it stands in no conflict.
    */
   public static Optional<Deployment.Cause> conflictCause(TaskState task) {
-    return Optional.ofNullable(task.deployment())
+    return Optional.ofNullable(task.work().deployment())
         .flatMap(Deployment::conflictedTarget)
         .map(target -> Objects.requireNonNull(target.progress().conflict()).cause());
   }

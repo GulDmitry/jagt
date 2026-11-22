@@ -108,18 +108,23 @@ public class AgentSessions implements SessionLines {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
     boolean plan = planMode(mode);
-    if (plan && !rules.planMayComeFirst(task.status())) {
+    if (plan && !rules.planMayComeFirst(task.standing().status())) {
       throw Refusal.byState(
           "Task "
               + taskId
               + " is "
-              + task.status()
+              + task.standing().status()
               + ", so it cannot open in plan mode: a plan is what comes before the code, not after"
               + " it");
     }
     stateService.reduce(taskId, (reducer, was) -> reducer.planAsked(was, plan));
     String session =
-        openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), plan);
+        openTab(
+            taskId,
+            task.ticket().alias(),
+            Path.of(task.worktreePath()),
+            configService.load(),
+            plan);
     return "New "
         + hosting.runtime().displayName()
         + " session started for "
@@ -198,7 +203,11 @@ public class AgentSessions implements SessionLines {
         hosting
             .host()
             .reviveTaskWindow(
-                session, dedicatedTitle, taskId, task.alias(), Path.of(task.worktreePath()));
+                session,
+                dedicatedTitle,
+                taskId,
+                task.ticket().alias(),
+                Path.of(task.worktreePath()));
       }
       hosting.host().focusTaskWindow(session, dedicatedTitle, taskId);
     } catch (SessionHost.WindowsUnreadable unread) {
@@ -241,7 +250,7 @@ public class AgentSessions implements SessionLines {
     log.atInfo()
         .setMessage("line said to agent")
         .addKeyValue("task", id)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("said", OneLine.clipped(line))
         .log();
     return "Said to the agent.";
@@ -262,7 +271,7 @@ public class AgentSessions implements SessionLines {
     log.atInfo()
         .setMessage("line run in agent")
         .addKeyValue("task", id)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("chars", line.length())
         .log();
     return "Run in the agent's window.";
@@ -363,7 +372,7 @@ public class AgentSessions implements SessionLines {
     log.atInfo()
         .setMessage("instructions relayed")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("chars", instructions.length())
         .addKeyValue("said", OneLine.clipped(instructions.lines().findFirst().orElse("(empty)")))
         .log();
@@ -376,11 +385,11 @@ public class AgentSessions implements SessionLines {
     if (hosting.host().taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
       Optional<String> screen = shown(session, taskId);
       if (screen.filter(hosting.runtime()::holdsDraft).isPresent()) {
-        if (resubmittedOwnNudge(screen.get(), session, taskId, task.alias())) {
+        if (resubmittedOwnNudge(screen.get(), session, taskId, task.ticket().alias())) {
           return "Instructions written to task_context.md; the nudge already sat unsent in the"
               + " agent's window, so it was sent.";
         }
-        nudgeOnceSent(session, taskId, task.alias());
+        nudgeOnceSent(session, taskId, task.ticket().alias());
         return "Instructions written to task_context.md; the human is typing in the agent's window,"
             + " so the nudge waits until they send it.";
       }
@@ -396,7 +405,7 @@ public class AgentSessions implements SessionLines {
     log.atInfo()
         .setMessage("agent session re-entered")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("cause", "session was down when instructions were relayed")
         .log();
     // A re-entered session reads task_context.md again, so a relay cannot dead-end against a dead
@@ -407,7 +416,7 @@ public class AgentSessions implements SessionLines {
             session,
             hosting.host().sessionName(config.viewer().session()),
             taskId,
-            task.alias(),
+            task.ticket().alias(),
             Path.of(task.worktreePath()));
     return "Instructions written to task_context.md; the agent session was down, so it was"
         + " re-entered to read and follow them.";
@@ -500,7 +509,7 @@ public class AgentSessions implements SessionLines {
 
   private boolean cold(TaskState task, ConfigService.ConfigFile config) {
     return SessionPhase.cold(
-        task.session(), hosting.runtime(), config.agent().cacheLifetimeOrDefault());
+        task.work().session(), hosting.runtime(), config.agent().cacheLifetimeOrDefault());
   }
 
   /**
@@ -656,7 +665,7 @@ public class AgentSessions implements SessionLines {
       startFresh(taskId, task, config, cause);
       return true;
     }
-    freshStartWaits(taskId, task.alias(), cause);
+    freshStartWaits(taskId, task.ticket().alias(), cause);
     return false;
   }
 
@@ -761,7 +770,7 @@ public class AgentSessions implements SessionLines {
   public String restartOnTier(String taskId) {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
-    ModelTier tier = task.tier();
+    ModelTier tier = task.work().tier();
     if (tier == null) {
       throw Refusal.byState("Task " + taskId + " has no model tier to start on");
     }
@@ -786,7 +795,7 @@ public class AgentSessions implements SessionLines {
     log.atInfo()
         .setMessage("agent session started fresh")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("cause", cause)
         .log();
     Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
@@ -794,7 +803,7 @@ public class AgentSessions implements SessionLines {
       WorktreeFiles.read(contextFile)
           .ifPresent(held -> WorktreeFiles.write(contextFile, hosting.carried().after(held, task)));
     }
-    openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false, at);
+    openTab(taskId, task.ticket().alias(), Path.of(task.worktreePath()), config, false, at);
   }
 
   /**

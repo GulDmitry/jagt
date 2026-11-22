@@ -154,8 +154,8 @@ class AutoReviewSchedulerTest {
             .mrUrl("http://mr/1")
             .autoReview(true)
             .history(moves)
-            .mrCreatedAt(due.mrCreatedAt())
-            .lastPolledAt(due.lastPolledAt())
+            .mrCreatedAt(due.round().mrCreatedAt())
+            .lastPolledAt(due.round().lastPolledAt())
             .build());
 
     scheduler.run();
@@ -179,7 +179,7 @@ class AutoReviewSchedulerTest {
 
     scheduler.run();
 
-    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().entries())
+    assertThat(state.task("ABC-1").orElseThrow().round().toldOrNone().entries())
         .containsOnlyKeys(ToldOnce.Kind.SILENCE);
   }
 
@@ -192,7 +192,8 @@ class AutoReviewSchedulerTest {
 
     autoReviewScheduler().withRoot(root).build(state, config, sweep, Runnable::run, clock).run();
 
-    assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isEqualTo(1_000_000_000_000L);
+    assertThat(state.task("ABC-1").orElseThrow().round().lastPolledAt())
+        .isEqualTo(1_000_000_000_000L);
   }
 
   @Test
@@ -233,7 +234,12 @@ class AutoReviewSchedulerTest {
       scheduler.run();
 
       assertThat(
-              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .round()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
           .isTrue();
     }
 
@@ -248,7 +254,12 @@ class AutoReviewSchedulerTest {
       scheduler.run();
 
       assertThat(
-              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .round()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
           .isTrue();
     }
 
@@ -261,14 +272,19 @@ class AutoReviewSchedulerTest {
           "ABC-1",
           pollingTask()
               .withStatus(TaskStatus.DONE)
-              .withMrCreatedAt(windowElapsed.mrCreatedAt())
+              .withMrCreatedAt(windowElapsed.round().mrCreatedAt())
               .build());
       scheduler.run();
       state.putTask("ABC-1", windowElapsed);
       scheduler.run();
 
       assertThat(
-              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .round()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
           .isTrue();
     }
 
@@ -281,7 +297,12 @@ class AutoReviewSchedulerTest {
       scheduler.run();
 
       assertThat(
-              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .round()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
           .isTrue();
     }
   }
@@ -319,6 +340,7 @@ class AutoReviewSchedulerTest {
               state
                   .task("ABC-1")
                   .orElseThrow()
+                  .round()
                   .toldOrNone()
                   .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
           .isTrue();
@@ -337,6 +359,7 @@ class AutoReviewSchedulerTest {
               state
                   .task("ABC-1")
                   .orElseThrow()
+                  .round()
                   .toldOrNone()
                   .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
           .isTrue();
@@ -349,16 +372,21 @@ class AutoReviewSchedulerTest {
 
       state.putTask(
           "ABC-1",
-          pollingTask().withStatus(TaskStatus.DONE).withMrCreatedAt(due.mrCreatedAt()).build());
+          pollingTask()
+              .withStatus(TaskStatus.DONE)
+              .withMrCreatedAt(due.round().mrCreatedAt())
+              .build());
       scheduler.run();
       state.putTask(
-          "ABC-1", pollingTask().withMrCreatedAt(due.mrCreatedAt()).withLastPolledAt(1).build());
+          "ABC-1",
+          pollingTask().withMrCreatedAt(due.round().mrCreatedAt()).withLastPolledAt(1).build());
       scheduler.run();
 
       assertThat(
               state
                   .task("ABC-1")
                   .orElseThrow()
+                  .round()
                   .toldOrNone()
                   .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
           .isTrue();
@@ -378,6 +406,7 @@ class AutoReviewSchedulerTest {
               state
                   .task("ABC-1")
                   .orElseThrow()
+                  .round()
                   .toldOrNone()
                   .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
           .isTrue();

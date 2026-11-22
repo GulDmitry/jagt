@@ -19,7 +19,7 @@ public enum StopHold {
   public static final int LIFTS_PER_HUMAN_LIFT = 1;
 
   public static StopHold of(TaskState task, Arbiter.Profile profile) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     if (stop == null) {
       return NONE;
     }
@@ -28,15 +28,15 @@ public enum StopHold {
 
   /** A stop of a trigger the Master decides, while its bound is unspent. */
   public static boolean mayBeLifted(TaskState task) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     return stop != null
         && FlowRules.liftedByTheArbiter(stop.trigger())
-        && task.arbiterOrNone().liftedStops() < LIFTS_PER_HUMAN_LIFT;
+        && task.work().arbiterOrNone().liftedStops() < LIFTS_PER_HUMAN_LIFT;
   }
 
   /** The Master was asked about the stop standing, so it is not asked again. */
   public static boolean asked(TaskState task) {
-    TaskStop stop = task.stop();
-    return stop != null && task.arbiterOrNone().askedStop().equals(stop.key());
+    TaskStop stop = task.work().stop();
+    return stop != null && task.work().arbiterOrNone().askedStop().equals(stop.key());
   }
 }

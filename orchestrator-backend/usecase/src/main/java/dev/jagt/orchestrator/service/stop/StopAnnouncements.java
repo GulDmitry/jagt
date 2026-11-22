@@ -22,7 +22,7 @@ public class StopAnnouncements {
     if (stop.trigger().ends() == TaskStop.Trigger.Ends.PAUSE) {
       return;
     }
-    String alias = task.alias() == null ? taskId : task.alias();
+    String alias = task.ticket().alias() == null ? taskId : task.ticket().alias();
     String trigger = stop.trigger().name();
     log.atWarn()
         .setMessage("task stopped")
@@ -39,9 +39,10 @@ public class StopAnnouncements {
             taskId,
             alias,
             trigger,
-            task.status(),
+            task.standing().status(),
             stop.evidence(),
             new StopLog.Steps(
-                task.history(), task.trail() == null ? List.of() : task.trail().rounds())));
+                task.standing().history(),
+                task.round().trail() == null ? List.of() : task.round().trail().rounds())));
   }
 }

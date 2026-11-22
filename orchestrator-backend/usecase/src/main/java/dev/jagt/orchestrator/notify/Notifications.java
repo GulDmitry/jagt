@@ -27,7 +27,8 @@ public class Notifications implements NotificationSink {
   @Override
   public void send(Notification sent) {
     Optional<TaskState> task = sent.taskId() == null ? Optional.empty() : tasks.task(sent.taskId());
-    Notification notification = task.map(TaskState::alias).map(sent::withAlias).orElse(sent);
+    Notification notification =
+        task.map(taskState -> taskState.ticket().alias()).map(sent::withAlias).orElse(sent);
     for (Routed routed : routes.of(notification.point())) {
       posts.post(routed.channel(), messages.of(routed, notification, task));
     }

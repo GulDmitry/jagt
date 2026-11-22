@@ -83,7 +83,7 @@ class TaskReducerTest {
         reducer.untold(
             told, ToldOnce.Kind.AUTO_REVIEW_WINDOW, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE);
 
-    assertThat(forgot.toldOrNone().entries()).containsOnlyKeys(ToldOnce.Kind.SILENCE);
+    assertThat(forgot.round().toldOrNone().entries()).containsOnlyKeys(ToldOnce.Kind.SILENCE);
   }
 
   @Test
@@ -93,9 +93,9 @@ class TaskReducerTest {
     TaskState told =
         reducer.told(reducer.told(task, ToldOnce.Kind.SILENCE, "9"), Point.DEPLOYED, "abc");
 
-    assertThat(told.toldOrNone().saidPoint("deployed", "abc")).isTrue();
-    assertThat(told.toldOrNone().saidPoint("deployed", "def")).isFalse();
-    assertThat(told.toldOrNone().said(ToldOnce.Kind.SILENCE, "9")).isTrue();
+    assertThat(told.round().toldOrNone().saidPoint("deployed", "abc")).isTrue();
+    assertThat(told.round().toldOrNone().saidPoint("deployed", "def")).isFalse();
+    assertThat(told.round().toldOrNone().said(ToldOnce.Kind.SILENCE, "9")).isTrue();
   }
 
   @Test
@@ -109,7 +109,7 @@ class TaskReducerTest {
             2_000);
 
     assertThat(
-            Objects.requireNonNull(deployed.deployment())
+            Objects.requireNonNull(deployed.work().deployment())
                 .targets()
                 .getFirst()
                 .progress()
@@ -121,12 +121,12 @@ class TaskReducerTest {
   void turnsStalledConflictIntoTheSessionsQuestionAndRestartsItsClock() {
     TaskState referred = reducer.conflictReferred(conflicted, "stalled for 20 min", 2_000);
 
-    assertThat(referred.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(referred.report()).isEqualTo(AgentReport.QUESTION);
-    assertThat(referred.message()).isEqualTo("stalled for 20 min");
+    assertThat(referred.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(referred.standing().report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(referred.standing().message()).isEqualTo("stalled for 20 min");
     assertThat(referred.currentConflict().orElseThrow().askedTheArbiter()).isTrue();
     assertThat(referred.currentConflict().orElseThrow().movedAt()).isEqualTo(2_000);
-    assertThat(Move.asking(referred.status(), referred.report())).isTrue();
+    assertThat(Move.asking(referred.standing().status(), referred.standing().report())).isTrue();
   }
 
   @Test
@@ -135,7 +135,7 @@ class TaskReducerTest {
 
     TaskState again = reducer.conflictReferred(referred, "second", 3_000);
 
-    assertThat(again.message()).isEqualTo("first");
+    assertThat(again.standing().message()).isEqualTo("first");
     assertThat(again.currentConflict().orElseThrow().movedAt()).isEqualTo(2_000);
   }
 
@@ -145,7 +145,7 @@ class TaskReducerTest {
 
     TaskState referred = reducer.conflictReferred(task, "stalled", 2_000);
 
-    assertThat(referred.report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(referred.standing().report()).isEqualTo(AgentReport.PLAIN);
   }
 
   @Test
@@ -160,7 +160,8 @@ class TaskReducerTest {
 
     TaskState retried = reducer.deployStepped(landed, new DeployStep.Retried("a", "cafe"), 1_200);
 
-    assertThat(Objects.requireNonNull(retried.deployment()).targets().getFirst().retriedTip())
+    assertThat(
+            Objects.requireNonNull(retried.work().deployment()).targets().getFirst().retriedTip())
         .isTrue();
   }
 
@@ -180,9 +181,9 @@ class TaskReducerTest {
         reducer.deployStepped(
             pushed, new DeployStep.Conflicted("b", Deployment.Cause.MERGE), 1_300);
 
-    assertThat(Objects.requireNonNull(conflicted.deployment()).at()).isEqualTo(1);
-    assertThat(conflicted.deployment().targets().get(0).landing().merge()).isEqualTo("cafe");
-    assertThat(conflicted.deployment().targets().get(1).conflicted()).isTrue();
+    assertThat(Objects.requireNonNull(conflicted.work().deployment()).at()).isEqualTo(1);
+    assertThat(conflicted.work().deployment().targets().get(0).landing().merge()).isEqualTo("cafe");
+    assertThat(conflicted.work().deployment().targets().get(1).conflicted()).isTrue();
   }
 
   @Test
@@ -205,7 +206,7 @@ class TaskReducerTest {
                 List.of(Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))),
             2_000);
 
-    assertThat(Objects.requireNonNull(second.deployment()).targets())
+    assertThat(Objects.requireNonNull(second.work().deployment()).targets())
         .extracting(target -> target.landing().merge())
         .containsExactly("cafe", null);
   }
@@ -223,8 +224,8 @@ class TaskReducerTest {
     TaskState reverted =
         reducer.deployStepped(deployed, new DeployStep.Reverted("a", "beef"), 1_200);
 
-    assertThat(Objects.requireNonNull(reverted.deployment()).live()).isFalse();
-    assertThat(reverted.deployment().targets().getFirst().revertCommit()).isEqualTo("beef");
+    assertThat(Objects.requireNonNull(reverted.work().deployment()).live()).isFalse();
+    assertThat(reverted.work().deployment().targets().getFirst().revertCommit()).isEqualTo("beef");
   }
 
   @Test
@@ -239,7 +240,7 @@ class TaskReducerTest {
 
     TaskState blocked = reducer.deployStepped(opened, new DeployStep.Blocked("b"), 1_100);
 
-    assertThat(Objects.requireNonNull(blocked.deployment()).targets())
+    assertThat(Objects.requireNonNull(blocked.work().deployment()).targets())
         .extracting(Deployment.Target::isBlocked)
         .containsExactly(false, true);
   }
@@ -253,7 +254,7 @@ class TaskReducerTest {
 
     TaskState ended = reducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
-    assertThat(ended.stop()).isNull();
+    assertThat(ended.work().stop()).isNull();
   }
 
   @Test
@@ -267,9 +268,9 @@ class TaskReducerTest {
 
     TaskState escalated = reducer.escalated(stopped, 3_000);
 
-    assertThat(escalated.stop()).isNull();
-    assertThat(Objects.requireNonNull(escalated.tier()).current()).isEqualTo("opus");
-    assertThat(escalated.trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
+    assertThat(escalated.work().stop()).isNull();
+    assertThat(Objects.requireNonNull(escalated.work().tier()).current()).isEqualTo("opus");
+    assertThat(escalated.round().trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
   }
 
   @Test
@@ -283,7 +284,7 @@ class TaskReducerTest {
 
     TaskState lifted = reducer.lift(stopped, 3_000);
 
-    assertThat(Objects.requireNonNull(lifted.tier()).current()).isEqualTo("sonnet");
+    assertThat(Objects.requireNonNull(lifted.work().tier()).current()).isEqualTo("sonnet");
   }
 
   @Test
@@ -297,7 +298,7 @@ class TaskReducerTest {
 
     TaskState ended = reducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
-    assertThat(Objects.requireNonNull(ended.tier()).current()).isEqualTo("opus");
+    assertThat(Objects.requireNonNull(ended.work().tier()).current()).isEqualTo("opus");
   }
 
   @Test
@@ -308,8 +309,8 @@ class TaskReducerTest {
     TaskState kept = reducer.ended(paused, TaskStop.Trigger.Ends.PAUSE, "", 2_000);
     TaskState lifted = reducer.lift(kept, 3_000);
 
-    assertThat(kept.stop()).isEqualTo(pause);
-    assertThat(lifted.stop()).isNull();
+    assertThat(kept.work().stop()).isEqualTo(pause);
+    assertThat(lifted.work().stop()).isNull();
   }
 
   @Test
@@ -319,7 +320,7 @@ class TaskReducerTest {
 
     TaskState kept = reducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
-    assertThat(kept.stop()).isEqualTo(stop);
+    assertThat(kept.work().stop()).isEqualTo(stop);
   }
 
   @Test
@@ -330,7 +331,7 @@ class TaskReducerTest {
     TaskState kept =
         reducer.stop(stopped, new TaskStop(TaskStop.Trigger.PACE, 2_000, "too fast"), 2_000);
 
-    assertThat(kept.stop()).isEqualTo(standing);
+    assertThat(kept.work().stop()).isEqualTo(standing);
   }
 
   @Test
@@ -338,7 +339,7 @@ class TaskReducerTest {
     TaskState planned =
         reducer.planAsked(TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).build(), true);
 
-    assertThat(planned.planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(planned.gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
@@ -348,7 +349,7 @@ class TaskReducerTest {
             .planGate(PlanGate.REQUIRED)
             .build();
 
-    assertThat(reducer.planApproved(required).planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(reducer.planApproved(required).gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
@@ -356,7 +357,7 @@ class TaskReducerTest {
     TaskState past =
         TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).planGate(PlanGate.CLOSED).build();
 
-    assertThat(reducer.planAsked(past, true).planGate()).isEqualTo(PlanGate.CLOSED);
+    assertThat(reducer.planAsked(past, true).gate().planGate()).isEqualTo(PlanGate.CLOSED);
   }
 
   @Test
@@ -364,7 +365,7 @@ class TaskReducerTest {
     TaskState required =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).planGate(PlanGate.REQUIRED).build();
 
-    assertThat(reducer.noPlanDeclared(required).planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(reducer.noPlanDeclared(required).gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
@@ -377,9 +378,9 @@ class TaskReducerTest {
             false,
             2_000);
 
-    assertThat(held.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(Objects.requireNonNull(held.deployment()).conflictedTarget())
-        .isEqualTo(Objects.requireNonNull(conflicted.deployment()).conflictedTarget());
+    assertThat(held.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(Objects.requireNonNull(held.work().deployment()).conflictedTarget())
+        .isEqualTo(Objects.requireNonNull(conflicted.work().deployment()).conflictedTarget());
   }
 
   @Test
@@ -394,8 +395,8 @@ class TaskReducerTest {
 
     TaskState reopened = reducer.relinked(shipped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
-    assertThat(reopened.stopped()).isFalse();
-    assertThat(reopened.trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
+    assertThat(reopened.work().stopped()).isFalse();
+    assertThat(reopened.round().trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
   }
 
   @Test
@@ -409,7 +410,7 @@ class TaskReducerTest {
 
     TaskState again = reducer.relinked(stopped.withMrUrl("https://host/mr/571", 3_000), 3_000);
 
-    assertThat(again.stop()).isEqualTo(stopped.stop());
+    assertThat(again.work().stop()).isEqualTo(stopped.work().stop());
   }
 
   @Test
@@ -422,7 +423,7 @@ class TaskReducerTest {
 
     TaskState reopened = reducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
-    assertThat(reopened.stop()).isEqualTo(stopped.stop());
+    assertThat(reopened.work().stop()).isEqualTo(stopped.work().stop());
   }
 
   @ParameterizedTest
@@ -439,7 +440,7 @@ class TaskReducerTest {
 
     TaskState reopened = reducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
-    assertThat(reopened.stopped()).isFalse();
+    assertThat(reopened.work().stopped()).isFalse();
   }
 
   @Test
@@ -453,8 +454,8 @@ class TaskReducerTest {
 
     TaskState started = reducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
 
-    assertThat(asked.report()).isEqualTo(AgentReport.PERMISSION);
-    assertThat(started.report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(asked.standing().report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(started.standing().report()).isEqualTo(AgentReport.PLAIN);
   }
 
   @Test
@@ -471,7 +472,7 @@ class TaskReducerTest {
 
     TaskState started = reducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
 
-    assertThat(started.report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(started.standing().report()).isEqualTo(AgentReport.PERMISSION);
   }
 
   @Test
@@ -486,7 +487,7 @@ class TaskReducerTest {
 
     TaskState started = reducer.signed(reported, new SessionSign.WorkStarted(), 3_000);
 
-    assertThat(started.report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(started.standing().report()).isEqualTo(AgentReport.PERMISSION);
   }
 
   @Test
@@ -502,7 +503,7 @@ class TaskReducerTest {
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.SCREEN),
             1_000);
 
-    assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(asked.standing().report()).isEqualTo(AgentReport.QUESTION);
   }
 
   @Test
@@ -512,8 +513,9 @@ class TaskReducerTest {
 
     TaskState noticed = reducer.signed(failed, new SessionSign.TurnEnded(null), 2_000);
 
-    assertThat(SessionPhase.of(noticed.session())).isEqualTo(SessionPhase.FAILED);
-    assertThat(Objects.requireNonNull(noticed.session().halt()).cause()).isEqualTo("overloaded");
+    assertThat(SessionPhase.of(noticed.work().session())).isEqualTo(SessionPhase.FAILED);
+    assertThat(Objects.requireNonNull(noticed.work().session().halt()).cause())
+        .isEqualTo("overloaded");
   }
 
   @Test
@@ -523,7 +525,7 @@ class TaskReducerTest {
 
     TaskState restarted = reducer.signed(failed, new SessionSign.Restarted("compact"), 2_000);
 
-    assertThat(SessionPhase.of(restarted.session())).isEqualTo(SessionPhase.IDLE);
+    assertThat(SessionPhase.of(restarted.work().session())).isEqualTo(SessionPhase.IDLE);
   }
 
   @Test
@@ -533,8 +535,8 @@ class TaskReducerTest {
 
     TaskState started = reducer.signed(failed, new SessionSign.WorkStarted(), 2_000);
 
-    assertThat(SessionPhase.of(started.session())).isEqualTo(SessionPhase.WORKING);
-    assertThat(started.session().workStartedAt()).isEqualTo(2_000);
+    assertThat(SessionPhase.of(started.work().session())).isEqualTo(SessionPhase.WORKING);
+    assertThat(started.work().session().workStartedAt()).isEqualTo(2_000);
   }
 
   @Test
@@ -543,8 +545,8 @@ class TaskReducerTest {
 
     TaskState ended = reducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
 
-    assertThat(SessionPhase.of(ended.session())).isEqualTo(SessionPhase.GONE);
-    assertThat(Objects.requireNonNull(ended.session().halt()).cause())
+    assertThat(SessionPhase.of(ended.work().session())).isEqualTo(SessionPhase.GONE);
+    assertThat(Objects.requireNonNull(ended.work().session().halt()).cause())
         .isEqualTo("prompt_input_exit");
   }
 
@@ -555,9 +557,9 @@ class TaskReducerTest {
 
     TaskState named = reducer.signed(idle, new SessionSign.LogNamed("/logs/s.jsonl"), 2_000);
 
-    assertThat(named.session().log()).isEqualTo("/logs/s.jsonl");
-    assertThat(named.session().idleSince()).isEqualTo(1_000);
-    assertThat(SessionPhase.of(named.session())).isEqualTo(SessionPhase.IDLE);
+    assertThat(named.work().session().log()).isEqualTo("/logs/s.jsonl");
+    assertThat(named.work().session().idleSince()).isEqualTo(1_000);
+    assertThat(SessionPhase.of(named.work().session())).isEqualTo(SessionPhase.IDLE);
   }
 
   @Test
@@ -567,8 +569,8 @@ class TaskReducerTest {
 
     TaskState idle = reducer.signed(working, new SessionSign.TurnEnded("/logs/s.jsonl"), 2_000);
 
-    assertThat(SessionPhase.of(idle.session())).isEqualTo(SessionPhase.IDLE);
-    assertThat(idle.session().log()).isEqualTo("/logs/s.jsonl");
+    assertThat(SessionPhase.of(idle.work().session())).isEqualTo(SessionPhase.IDLE);
+    assertThat(idle.work().session().log()).isEqualTo("/logs/s.jsonl");
   }
 
   @ParameterizedTest
@@ -579,7 +581,7 @@ class TaskReducerTest {
 
     TaskState called = reducer.signed(failed, new SessionSign.Called(), calledAt);
 
-    assertThat(SessionPhase.of(called.session())).isEqualTo(SessionPhase.FAILED);
+    assertThat(SessionPhase.of(called.work().session())).isEqualTo(SessionPhase.FAILED);
   }
 
   @Test
@@ -589,7 +591,7 @@ class TaskReducerTest {
 
     TaskState called = reducer.signed(ended, new SessionSign.Called(), 2_000);
 
-    assertThat(SessionPhase.of(called.session())).isEqualTo(SessionPhase.WORKING);
+    assertThat(SessionPhase.of(called.work().session())).isEqualTo(SessionPhase.WORKING);
   }
 
   @Test
@@ -602,8 +604,8 @@ class TaskReducerTest {
         reducer.signed(
             tooled, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 9_000);
 
-    assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.WORKING);
-    assertThat(read.session().quietSince()).isZero();
+    assertThat(SessionPhase.of(read.work().session())).isEqualTo(SessionPhase.WORKING);
+    assertThat(read.work().session().quietSince()).isZero();
   }
 
   @ParameterizedTest
@@ -614,7 +616,7 @@ class TaskReducerTest {
 
     TaskState used = reducer.signed(failed, new SessionSign.ToolUsed(), usedAt);
 
-    assertThat(SessionPhase.of(used.session())).isEqualTo(SessionPhase.FAILED);
+    assertThat(SessionPhase.of(used.work().session())).isEqualTo(SessionPhase.FAILED);
   }
 
   @Test
@@ -624,7 +626,7 @@ class TaskReducerTest {
 
     TaskState used = reducer.signed(failed, new SessionSign.ToolUsed(), 2_000);
 
-    assertThat(SessionPhase.of(used.session())).isEqualTo(SessionPhase.WORKING);
+    assertThat(SessionPhase.of(used.work().session())).isEqualTo(SessionPhase.WORKING);
   }
 
   @Test
@@ -634,8 +636,8 @@ class TaskReducerTest {
 
     TaskState used = reducer.signed(working, new SessionSign.ToolUsed(), 2_000);
 
-    assertThat(used.session().reportedAt()).isZero();
-    assertThat(used.session().workStartedAt()).isEqualTo(1_000);
+    assertThat(used.work().session().reportedAt()).isZero();
+    assertThat(used.work().session().workStartedAt()).isEqualTo(1_000);
   }
 
   @Test
@@ -645,7 +647,7 @@ class TaskReducerTest {
 
     TaskState started = reducer.signed(failed, new SessionSign.WorkStarted(), 1_000);
 
-    assertThat(SessionPhase.of(started.session())).isEqualTo(SessionPhase.WORKING);
+    assertThat(SessionPhase.of(started.work().session())).isEqualTo(SessionPhase.WORKING);
   }
 
   @Test
@@ -657,8 +659,8 @@ class TaskReducerTest {
         reducer.signed(
             idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 9_000);
 
-    assertThat(SessionPhase.of(quiet.session())).isEqualTo(SessionPhase.QUIET);
-    assertThat(quiet.session().quietSince()).isEqualTo(1_000);
+    assertThat(SessionPhase.of(quiet.work().session())).isEqualTo(SessionPhase.QUIET);
+    assertThat(quiet.work().session().quietSince()).isEqualTo(1_000);
   }
 
   @Test
@@ -668,7 +670,7 @@ class TaskReducerTest {
 
     TaskState late = reducer.signed(fresh, new SessionSign.Ended("exited"), 9_000);
 
-    assertThat(SessionPhase.of(late.session())).isNotEqualTo(SessionPhase.GONE);
+    assertThat(SessionPhase.of(late.work().session())).isNotEqualTo(SessionPhase.GONE);
   }
 
   @Test
@@ -692,9 +694,9 @@ class TaskReducerTest {
             new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null),
             14_000);
 
-    assertThat(first.session().quietSince()).isZero();
-    assertThat(second.session().quietSince()).isZero();
-    assertThat(third.session().quietSince()).isEqualTo(9_000);
+    assertThat(first.work().session().quietSince()).isZero();
+    assertThat(second.work().session().quietSince()).isZero();
+    assertThat(third.work().session().quietSince()).isEqualTo(9_000);
   }
 
   @Test
@@ -706,7 +708,7 @@ class TaskReducerTest {
         reducer.signed(
             idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 4_000);
 
-    assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.IDLE);
+    assertThat(SessionPhase.of(read.work().session())).isEqualTo(SessionPhase.IDLE);
   }
 
   @Test
@@ -720,9 +722,9 @@ class TaskReducerTest {
             new SessionSign.Read(Session.Window.State.RUNNING, 2_000, 0, 0, 5_000, null),
             9_000);
 
-    assertThat(Objects.requireNonNull(quiet.session().halt()).kind())
+    assertThat(Objects.requireNonNull(quiet.work().session().halt()).kind())
         .isEqualTo(Session.Halt.Kind.IDLE);
-    assertThat(quiet.session().quietSince()).isEqualTo(1_000);
+    assertThat(quiet.work().session().quietSince()).isEqualTo(1_000);
   }
 
   @Test
@@ -736,7 +738,7 @@ class TaskReducerTest {
             new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000, null),
             9_000);
 
-    assertThat(SessionPhase.of(read.session())).isNotEqualTo(SessionPhase.GONE);
+    assertThat(SessionPhase.of(read.work().session())).isNotEqualTo(SessionPhase.GONE);
   }
 
   @Test
@@ -750,7 +752,7 @@ class TaskReducerTest {
         reducer.signed(
             gone, new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 5_000, null), 3_000);
 
-    assertThat(SessionPhase.of(read.session())).isNotEqualTo(SessionPhase.GONE);
+    assertThat(SessionPhase.of(read.work().session())).isNotEqualTo(SessionPhase.GONE);
   }
 
   @Test
@@ -764,7 +766,7 @@ class TaskReducerTest {
             new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 5_000, null),
             3_000);
 
-    assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.FAILED);
+    assertThat(SessionPhase.of(read.work().session())).isEqualTo(SessionPhase.FAILED);
   }
 
   @Test
@@ -778,7 +780,7 @@ class TaskReducerTest {
             new SessionSign.Read(Session.Window.State.UNREAD, 0, 2_000, 0, 5_000, null),
             3_000);
 
-    assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.WORKING);
+    assertThat(SessionPhase.of(read.work().session())).isEqualTo(SessionPhase.WORKING);
   }
 
   @Test
@@ -792,8 +794,8 @@ class TaskReducerTest {
                 Session.Window.State.DEAD_SHELL, 0, 0, 0, 5_000, "Error: bad config"),
             9_000);
 
-    assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.GONE);
-    assertThat(Objects.requireNonNull(read.session().halt()).cause())
+    assertThat(SessionPhase.of(read.work().session())).isEqualTo(SessionPhase.GONE);
+    assertThat(Objects.requireNonNull(read.work().session().halt()).cause())
         .isEqualTo("Error: bad config");
   }
 
@@ -806,7 +808,7 @@ class TaskReducerTest {
         reducer.signed(
             ended, new SessionSign.Read(Session.Window.State.MISSING, 0, 0, 0, 5_000, null), 9_000);
 
-    assertThat(read.session().halt()).isEqualTo(ended.session().halt());
+    assertThat(read.work().session().halt()).isEqualTo(ended.work().session().halt());
   }
 
   @Test
@@ -819,7 +821,8 @@ class TaskReducerTest {
 
     TaskState second = reducer.gitChanged(first, "a changed; b added");
 
-    assertThat(Objects.requireNonNull(second.gitTrust()).changed()).isEqualTo("a changed; b added");
+    assertThat(Objects.requireNonNull(second.gate().gitTrust()).changed())
+        .isEqualTo("a changed; b added");
   }
 
   @Test
@@ -829,7 +832,7 @@ class TaskReducerTest {
 
     TaskState attached = reducer.repoAttached(asked, TaskRepo.of("registry", "/wt-registry"));
 
-    assertThat(attached.asksForRepository()).isFalse();
+    assertThat(attached.work().asksForRepository()).isFalse();
     assertThat(attached.repos()).extracting(TaskRepo::project).contains("registry");
   }
 
@@ -847,8 +850,8 @@ class TaskReducerTest {
             "feature/parent");
 
     assertThat(placed.projects()).containsExactly("api", "web");
-    assertThat(placed.status()).isEqualTo(TaskStatus.PLAN_PENDING);
-    assertThat(placed.baseBranch()).isEqualTo("feature/parent");
+    assertThat(placed.standing().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+    assertThat(placed.ticket().baseBranch()).isEqualTo("feature/parent");
   }
 
   @Test
@@ -861,8 +864,8 @@ class TaskReducerTest {
 
     TaskState placed = reducer.placed(task, List.of(TaskRepo.of("api", "/wt-api")), null);
 
-    assertThat(placed.asksForRepository()).isFalse();
-    assertThat(placed.baseBranch()).isNull();
+    assertThat(placed.work().asksForRepository()).isFalse();
+    assertThat(placed.ticket().baseBranch()).isNull();
   }
 
   @Test
@@ -872,7 +875,7 @@ class TaskReducerTest {
 
     TaskState reported = reducer.repoAsked(task, null);
 
-    assertThat(reported.asksForRepository()).isFalse();
+    assertThat(reported.work().asksForRepository()).isFalse();
   }
 
   @Test
@@ -882,8 +885,8 @@ class TaskReducerTest {
 
     TaskState moved = reducer.headSeen(read, "t2");
 
-    assertThat(read.checksRead()).isEqualTo("failed");
-    assertThat(moved.checksRead()).isNull();
+    assertThat(read.checks().read()).isEqualTo("failed");
+    assertThat(moved.checks().read()).isNull();
   }
 
   @Test
@@ -892,7 +895,7 @@ class TaskReducerTest {
 
     TaskState approved = reducer.approvalRead(task, true);
 
-    assertThat(approved.approved()).isTrue();
+    assertThat(approved.round().approved()).isTrue();
   }
 
   @Test
@@ -908,8 +911,8 @@ class TaskReducerTest {
 
     TaskState moved = reducer.headSeen(read, "bbb");
 
-    assertThat(read.infraRetries()).containsExactly(armed);
-    assertThat(moved.infraRetries()).isEmpty();
+    assertThat(read.checks().infraRetries()).containsExactly(armed);
+    assertThat(moved.checks().infraRetries()).isEmpty();
   }
 
   @Test
@@ -925,7 +928,7 @@ class TaskReducerTest {
 
     TaskState again = reducer.headSeen(read, "aaa");
 
-    assertThat(again.infraRetries()).containsExactly(armed);
+    assertThat(again.checks().infraRetries()).containsExactly(armed);
   }
 
   @Test
@@ -941,9 +944,9 @@ class TaskReducerTest {
     TaskState relinked =
         reducer.requestLinked(task, Map.of(), "https://host/mr/2", false, 1_700_000_005_000L);
 
-    assertThat(relinked.approved()).isNull();
-    assertThat(relinked.pipelineStatus()).isNull();
-    assertThat(relinked.requestOpenedAt()).isEqualTo(1_700_000_005_000L);
+    assertThat(relinked.round().approved()).isNull();
+    assertThat(relinked.checks().pipelineStatus()).isNull();
+    assertThat(relinked.round().requestOpenedAt()).isEqualTo(1_700_000_005_000L);
   }
 
   @Test
@@ -965,7 +968,7 @@ class TaskReducerTest {
 
     TaskState round = reducer.requestLinked(polling, Map.of(), "https://host/mr/9", true, 2_000L);
 
-    assertThat(round.infraRetries()).isEmpty();
+    assertThat(round.checks().infraRetries()).isEmpty();
   }
 
   @Test
@@ -1014,13 +1017,13 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(red, "beta");
 
-    assertThat(left.status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(left.projects()).containsExactly("alpha", "gamma");
-    assertThat(Objects.requireNonNull(left.deployment()).targets())
+    assertThat(Objects.requireNonNull(left.work().deployment()).targets())
         .extracting(Deployment.Target::project)
         .containsExactly("alpha", "beta", "gamma");
-    assertThat(left.deployment().tips()).contains("beta@b1");
-    assertThat(left.deployment().targets()).noneMatch(Deployment.Target::conflicted);
+    assertThat(left.work().deployment().tips()).contains("beta@b1");
+    assertThat(left.work().deployment().targets()).noneMatch(Deployment.Target::conflicted);
   }
 
   @Test
@@ -1037,8 +1040,8 @@ class TaskReducerTest {
     TaskState left = reducer.repoLeft(red, "beta");
     TaskState asked = reducer.deployStepped(left, new DeployStep.Asked("dg"), 1_300);
 
-    assertThat(DeployPhase.of(left.deployment())).isEqualTo(DeployPhase.LANDING);
-    assertThat(DeployPhase.of(asked.deployment())).isEqualTo(DeployPhase.CHECK_ASKED);
+    assertThat(DeployPhase.of(left.work().deployment())).isEqualTo(DeployPhase.LANDING);
+    assertThat(DeployPhase.of(asked.work().deployment())).isEqualTo(DeployPhase.CHECK_ASKED);
   }
 
   @Test
@@ -1058,8 +1061,8 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(red, "alpha");
 
-    assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(Objects.requireNonNull(left.deployment()).conflictedTarget()).isPresent();
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(Objects.requireNonNull(left.work().deployment()).conflictedTarget()).isPresent();
   }
 
   @Test
@@ -1070,8 +1073,8 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(conflicted, "beta");
 
-    assertThat(left.status()).isEqualTo(TaskStatus.REVIEWED);
-    assertThat(Objects.requireNonNull(left.deployment()).conflictedTarget()).isEmpty();
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(Objects.requireNonNull(left.work().deployment()).conflictedTarget()).isEmpty();
   }
 
   @Test
@@ -1084,15 +1087,15 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(conflicted, "beta");
 
-    assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(left.projects()).containsExactly("alpha", "gamma");
-    assertThat(Objects.requireNonNull(left.deployment()).targets())
+    assertThat(Objects.requireNonNull(left.work().deployment()).targets())
         .extracting(Deployment.Target::project)
         .containsExactly("alpha", "gamma");
-    assertThat(left.deployment().at()).isEqualTo(1);
-    assertThat(left.deployment().conflictedTarget()).isEmpty();
-    assertThat(left.deployment().targets().getFirst().landing().merge()).isEqualTo("a1");
-    assertThat(DeployPhase.of(left.deployment())).isEqualTo(DeployPhase.LANDING);
+    assertThat(left.work().deployment().at()).isEqualTo(1);
+    assertThat(left.work().deployment().conflictedTarget()).isEmpty();
+    assertThat(left.work().deployment().targets().getFirst().landing().merge()).isEqualTo("a1");
+    assertThat(DeployPhase.of(left.work().deployment())).isEqualTo(DeployPhase.LANDING);
   }
 
   @Test
@@ -1105,11 +1108,11 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(conflicted, "beta");
 
-    assertThat(left.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(Objects.requireNonNull(left.deployment()).targets())
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(Objects.requireNonNull(left.work().deployment()).targets())
         .extracting(Deployment.Target::project)
         .containsExactly("alpha");
-    assertThat(left.deployment().conflictedTarget()).isEmpty();
+    assertThat(left.work().deployment().conflictedTarget()).isEmpty();
   }
 
   @Test
@@ -1120,7 +1123,7 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(red, "beta");
 
-    assertThat(Objects.requireNonNull(left.deployment()).at()).isEqualTo(2);
+    assertThat(Objects.requireNonNull(left.work().deployment()).at()).isEqualTo(2);
   }
 
   @Test
@@ -1131,8 +1134,12 @@ class TaskReducerTest {
 
     TaskState left = reducer.repoLeft(red, "gamma");
 
-    assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(Objects.requireNonNull(left.deployment()).conflictedTarget().orElseThrow().project())
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(
+            Objects.requireNonNull(left.work().deployment())
+                .conflictedTarget()
+                .orElseThrow()
+                .project())
         .isEqualTo("beta");
   }
 }

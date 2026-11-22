@@ -36,11 +36,13 @@ public class Rounds implements PhaseProfiles {
   public RoundState of(TaskState task, ConfigService.ConfigFile config) {
     Arbiter.Profile arbiter = config.arbiter().profile().at(task);
     boolean drafted =
-        ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft());
-    return RoundState.of(task.report(), drafted)
+        ReviewDrafts.pending(
+            task, task.standing().status(), config.codeReview().shipPostsEveryDraft());
+    return RoundState.of(task.standing().report(), drafted)
         .withRepliesWrittenAt(drafted ? ReviewDrafts.writtenAt(task) : 0)
         .withArbiter(arbiter)
-        .withArbiterReading(FlowRules.readByTheArbiter(task.status()) && arbiter.running())
+        .withArbiterReading(
+            FlowRules.readByTheArbiter(task.standing().status()) && arbiter.running())
         .withCheckers(checkers.of(task))
         .withRequestless(requestless.stands(task))
         .withReach(
