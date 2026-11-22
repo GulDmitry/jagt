@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.LongStream;
 import org.jspecify.annotations.Nullable;
 
 public final class ScanEngine implements Engine {
@@ -231,14 +232,16 @@ public final class ScanEngine implements Engine {
     }
     List<Sized> sizes = sizing.sizes(function, project, files);
     long limit = function.threshold().limit();
-    List<String> over =
+    boolean floor = function.threshold().direction() == Direction.MIN;
+    List<String> flagged =
         sizes.stream()
-            .filter(unit -> unit.size() > limit)
+            .filter(unit -> floor ? unit.size() < limit : unit.size() > limit)
             .map(unit -> unit.size() + " " + unit.label())
             .sorted()
             .toList();
-    long largest = sizes.stream().mapToLong(Sized::size).max().orElse(0);
-    return new Measurement(largest, over);
+    LongStream sizeValues = sizes.stream().mapToLong(Sized::size);
+    long value = floor ? sizeValues.min().orElse(limit) : sizeValues.max().orElse(0);
+    return new Measurement(value, flagged);
   }
 
   private static List<String> itemsOf(

@@ -46,6 +46,9 @@ technical:
       spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 52, decision: "0216" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
       rule-lines: { engine: scan, glob: "../docs/rules/*.md", per: file, measure: lines, governs: size, max: 100 }
+      # each exception ends when its class is cut to 1000 lines or less: TaskState at JAGT-198 step 2 (its region cut), the rest at a cut of their own
+      class-lines: { engine: scan, set: all, per: file, measure: lines, except: &classLinesExcepted "**/TaskState.java,**/TaskChart.java,**/ConfigService.java,**/AgentSessionsTest.java,**/MasterPanelTest.java,**/AgentStatusReportsTest.java,**/TaskReducerTest.java,**/TaskStateTest.java,**/MoveTest.java,**/ConfigServiceTest.java,**/ClaudeAgentRuntimeTest.java", governs: size, max: 1000, decision: "0228", hint: "a class past 1000 lines does more than one thing: cut it by responsibility" }
+      class-lines-stale-exceptions: { engine: scan, set: all, glob: *classLinesExcepted, per: file, measure: lines, governs: size, min: 1001, decision: "0228", hint: "an excepted class at or under 1000 lines: delete its name from class-lines" }
       page-lines: { engine: scan, glob: "../AGENTS.md,../README.md,../docs/decisions/README.md,../docs/*.md,../docs/features/*.md,../openspec/specs/*/spec.md", per: file, measure: lines, governs: size, max: 200 }
       session-brief-step-lines: { engine: scan, glob: "../roles/session/brief.md.dist", per: section, measure: lines, regex: "(?m)^## [a-z][a-z0-9-]*$", governs: size, max: 200, hint: "a prompt: compress it, then run promptEval and roleEval -Prole=master (docs/rules/testing.md)" }
       map-lines: { engine: scan, glob: "../ARCHITECTURE.md", per: file, measure: lines, governs: size, max: 500 }

@@ -37,6 +37,47 @@ class ScanEngineSizedTest {
   }
 
   @Test
+  void aFileOverTheLimitAndNotExceptedIsNamedWithItsCount(@TempDir Path root) throws IOException {
+    Files.writeString(root.resolve("Big.java"), "1\n2\n3\n");
+    Files.writeString(root.resolve("Excepted.java"), "1\n2\n3\n4\n");
+    Files.writeString(root.resolve("Small.java"), "1\n");
+
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("glob", "*.java")
+                .select("except", "Excepted.java")
+                .select("per", "file")
+                .select("measure", "lines")
+                .limit(2)
+                .build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.value()).isEqualTo(3);
+    assertThat(found.items()).containsExactly("3 Big.java");
+  }
+
+  @Test
+  void anExceptedFileUnderTheFloorIsNamedAsStale(@TempDir Path root)
+      throws IOException {
+    Files.writeString(root.resolve("Shrunk.java"), "1\n2\n");
+    Files.writeString(root.resolve("Still.java"), "1\n2\n3\n");
+
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("glob", "*.java")
+                .select("per", "file")
+                .select("measure", "lines")
+                .floor(3)
+                .build(),
+            new Project(root, "", List.of("all"), Map.of()));
+
+    assertThat(found.value()).isEqualTo(2);
+    assertThat(found.items()).containsExactly("2 Shrunk.java");
+  }
+
+  @Test
   void aSizeRowMatchingNoFileFails(@TempDir Path root) {
     Measurement found =
         engine.measure(

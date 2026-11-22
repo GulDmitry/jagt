@@ -10,6 +10,7 @@ final class TestFitnessFunctionBuilder {
 
   private final Map<String, Object> selectors = new LinkedHashMap<>();
   private long limit;
+  private Direction direction = Direction.MAX;
 
   TestFitnessFunctionBuilder select(String key, Object value) {
     selectors.put(key, value);
@@ -21,13 +22,19 @@ final class TestFitnessFunctionBuilder {
     return this;
   }
 
+  TestFitnessFunctionBuilder floor(long limit) {
+    this.limit = limit;
+    this.direction = Direction.MIN;
+    return this;
+  }
+
   FitnessFunction build() {
     return new FitnessFunction(
         "r",
         "technical.maintainability.modularity",
         "scan",
         "count",
-        new Threshold(Direction.MAX, limit),
+        new Threshold(direction, limit),
         selectors,
         null,
         Map.of());
