@@ -256,22 +256,46 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"test", "heavy", "stand", "release"})
+  @ValueSource(strings = {"test", "heavy", "stand", "install", "release"})
   void keepsGradleCachesBetweenRunsByThePinnedSetupGradleOnItsOpenSourceProvider(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 
     assertThat(steps)
         .contains("gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c")
-        .contains("cache-provider=basic")
-        .doesNotContain("cache=gradle");
+        .contains("cache-provider=external")
+        .doesNotContain("cache-provider=basic")
+        .doesNotContain("cache-read-only");
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"test", "heavy", "stand", "install", "release"})
-  void letsEveryRunWriteItsGradleCacheSoPullRequestRerunsStartWarm(String job) {
+  void restoresTheNewestGradleCacheOfTheJobWhenTheBuildFilesChangedSoTheRunStartsWarm(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 
-    assertThat(steps).contains("cache-read-only=false");
+    assertThat(steps)
+        .containsPattern(
+            "actions/cache@[0-9a-f]{40}, with=\\{path=~/.gradle/caches\\n~/.gradle/wrapper")
+        .contains("key=gradle-${{ runner.os }}-${{ github.job }}-")
+        .contains("restore-keys=gradle-${{ runner.os }}-${{ github.job }}-");
+  }
+
+  @Test
+  void keepsTheStandGradleCacheOfEachEngineApart() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps"));
+
+    assertThat(steps).contains("${{ github.job }}-${{ matrix.engine }}-${{ hashFiles(");
+  }
+
+  @Test
+  void restoresTheCodeqlGradleCacheAndSavesItOnlyFromMain() {
+    String workflow = SourceRoots.read(CODEQL);
+
+    assertThat(workflow)
+        .contains("cache-provider: external")
+        .containsPattern("actions/cache/restore@[0-9a-f]{40} # v6")
+        .containsPattern("actions/cache/save@[0-9a-f]{40} # v6")
+        .contains("&& github.ref == 'refs/heads/main'");
   }
 
   @ParameterizedTest

@@ -28,7 +28,9 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
 - After each publish the workflow keeps the newest 10 untagged base images with their per-arch and attestation children
   and deletes partial and orphaned ones (`dataaxiom/ghcr-cleanup-action`, multi-arch aware); a release's pinned base
   stays pullable for about 10 weeks, and the release package is never pruned by it.
-- CI caches Gradle with `gradle/actions/setup-gradle`, `cache-provider: basic`, written only from `main`.
+- CI caches Gradle with `gradle/actions/setup-gradle` on `cache-provider: external` plus one `actions/cache` step per job
+  keyed by the build files' hash with restore keys: `basic` has none, so a build-file change started cold,
+  and the Enhanced provider is proprietary.
 
 ## Rejected
 

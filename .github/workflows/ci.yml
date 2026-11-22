@@ -46,8 +46,16 @@ jobs:
           distribution: temurin
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          cache-provider: basic
-          cache-read-only: false
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
@@ -89,8 +97,16 @@ jobs:
           distribution: temurin
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          cache-provider: basic
-          cache-read-only: false
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - run: scripts/vulnerability-scan.sh
       - name: install what the suites shell out to
         run: sudo scripts/linux-test-deps.sh
@@ -136,8 +152,17 @@ jobs:
           distribution: temurin
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          cache-provider: basic
-          cache-read-only: false
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - name: install what the stand shells out to
         run: sudo scripts/linux-test-deps.sh
       - name: give the runner an identity
@@ -184,8 +209,16 @@ jobs:
           distribution: temurin
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          cache-provider: basic
-          cache-read-only: false
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - run: ./gradlew --no-daemon bootJar
         shell: bash
       - name: install, upgrade and restart against a fake release feed
@@ -216,8 +249,16 @@ jobs:
           distribution: temurin
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          cache-provider: basic
-          cache-read-only: false
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - run: ./gradlew --no-daemon bootJar cyclonedxBom
       - name: name the assets after the version they are
         run: |
