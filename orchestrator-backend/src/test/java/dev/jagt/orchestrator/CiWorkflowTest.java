@@ -180,6 +180,22 @@ class CiWorkflowTest {
   }
 
   @Test
+  void grantsTheNightlyEveryPermissionThatCiJobsItCallsAskFor() {
+    Map<?, ?> nightly =
+        new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")));
+    Set<Object> asked =
+        CiWorkflow.jobs().values().stream()
+            .map(job -> job.get("permissions"))
+            .filter(Map.class::isInstance)
+            .flatMap(permissions -> ((Map<?, ?>) permissions).entrySet().stream())
+            .collect(Collectors.<Object>toSet());
+
+    Map<?, ?> granted = (Map<?, ?>) Objects.requireNonNull(nightly.get("permissions"));
+
+    assertThat(Set.<Object>copyOf(granted.entrySet())).containsAll(asked);
+  }
+
+  @Test
   void startsTheNightlyOffTheHourAndLogsItsStartDelayAsNotice() {
     String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
 

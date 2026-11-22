@@ -9,6 +9,7 @@ permissions:
   contents: write
   packages: write
   pages: write
+  deployments: write
   id-token: write
   attestations: write
 
