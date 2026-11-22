@@ -46,6 +46,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
       - name: build what CodeQL traces
         if: matrix.language == 'java-kotlin'
         working-directory: orchestrator-backend

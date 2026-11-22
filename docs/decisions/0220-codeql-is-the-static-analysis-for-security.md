@@ -19,6 +19,7 @@ Accepted 2026-11-21: dependencies were scanned, jagt's own Java and JavaScript w
 - **A result of severity error fails the run**: the SARIF is read by `jq`, so the results gate the push.
 - **The token is read-only; only `analyse` gets `security-events: write`.** Actions are pinned by sha, a release over two weeks old (0189).
 - **Not counted by `ci-jobs` and `ci-triggers`**: they measure `ci.yml`, whose four groups the new workflow does not join.
+- **Vendored code is not analysed** (`.github/codeql/codeql-config.yml` ignores `board/vendor`): upstream owns it, 0188 scans it.
 - **The known-vulnerability scan is one script** (`scripts/vulnerability-scan.sh`) in both CI files; 0188 is amended.
 
 ## Rejected
