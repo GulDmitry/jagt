@@ -6,10 +6,16 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.EnumSet;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -47,11 +53,26 @@ public class MasterToken implements RootToken {
     try {
       Files.createDirectories(file.getParent());
       Files.deleteIfExists(file);
-      Files.createFile(
-          file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+      createOwnerOnly(file);
       Files.writeString(file, value);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private static void createOwnerOnly(Path file) throws IOException {
+    if (file.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+      Files.createFile(
+          file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+      return;
+    }
+    Files.createFile(file);
+    AclEntry ownerOnly =
+        AclEntry.newBuilder()
+            .setType(AclEntryType.ALLOW)
+            .setPrincipal(Files.getOwner(file))
+            .setPermissions(EnumSet.allOf(AclEntryPermission.class))
+            .build();
+    Files.getFileAttributeView(file, AclFileAttributeView.class).setAcl(List.of(ownerOnly));
   }
 }

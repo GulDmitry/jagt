@@ -49,6 +49,8 @@ wait_for() { # <seconds> <description> <command...>
   done
 }
 
+limited() { "$py" -c 'import subprocess, sys; sys.exit(subprocess.run(sys.argv[2:], timeout=int(sys.argv[1])).returncode)' "$@"; }
+
 free_port() { "$py" -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])'; }
 
 sum_of() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d ' ' -f 1; else shasum -a 256 "$1" | cut -d ' ' -f 1; fi; }
@@ -96,10 +98,10 @@ printf '@exit /b 0\r\n' >"$work/ghbin/gh.cmd"
 chmod 755 "$work/ghbin/gh"
 export PATH="$work/ghbin:$PATH"
 if [ "$windows" = true ]; then
-  timeout 600 pwsh -NoProfile -File "$(native "$repo/install.ps1")"
+  limited 600 pwsh -NoProfile -File "$(native "$repo/install.ps1")"
   launcher="$bin/jagt.cmd"
 else
-  timeout 600 sh "$repo/install.sh"
+  limited 600 sh "$repo/install.sh"
   launcher="$bin/jagt"
 fi
 unset JAGT_VERSION
