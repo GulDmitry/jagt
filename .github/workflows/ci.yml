@@ -185,6 +185,8 @@ jobs:
           output-file-path: orchestrator-backend/stand/build/stand/timings.json
           external-data-json-path: orchestrator-backend/stand/build/stand/timings-history.json
           fail-on-alert: false
+          github-token: ${{ github.token }}
+          ref: ${{ github.sha }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:

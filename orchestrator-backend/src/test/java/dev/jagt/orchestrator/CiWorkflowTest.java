@@ -196,6 +196,13 @@ class CiWorkflowTest {
   }
 
   @Test
+  void storesTheStandTimingTrendOnAnEventWithoutCommitByReadingTheCommitThroughTheApi() {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps")))
+        .contains("github-token=${{ github.token }}")
+        .contains("ref=${{ github.sha }}");
+  }
+
+  @Test
   void startsTheNightlyOffTheHourAndLogsItsStartDelayAsNotice() {
     String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
 
