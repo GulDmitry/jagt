@@ -135,6 +135,8 @@ abstract class BoardPageContext {
 
   BrowserContext session;
 
+  private BoardCoverage coverage;
+
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
     registry.add("orchestrator.root", () -> root.toString());
@@ -258,6 +260,7 @@ abstract class BoardPageContext {
     }
     nameTheProjectsTheBoardOffers(root);
     session = browser.newContext();
+    coverage = new BoardCoverage(session, port);
   }
 
   @AfterEach
@@ -265,6 +268,7 @@ abstract class BoardPageContext {
     if (breakable.repair()) {
       session.newPage().waitForCondition(() -> !breakable.failing());
     }
+    coverage.write();
     session.close();
   }
 }

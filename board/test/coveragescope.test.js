@@ -9,7 +9,10 @@ const rc = JSON.parse(readFileSync(new URL(".c8rc.json", root), "utf8"));
 
 const sources = readdirSync(root, { recursive: true, encoding: "utf8" })
   .filter((file) => /\.m?js$/.test(file))
-  .filter((file) => !/^(node_modules|vendor|test|coverage)\//.test(file))
+  .filter(
+    (file) =>
+      !/^(node_modules|vendor|test|coverage|coverage-floors)\//.test(file),
+  )
   .filter((file) => !/\.config\.m?js$/.test(file))
   .sort();
 

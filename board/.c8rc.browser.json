@@ -1,0 +1,9 @@
+{
+  "include": ["ui/**/*.js", "components/**/*.js"],
+  "temp-directory": "coverage/browser",
+  "report-dir": "coverage/browser-report",
+  "reporter": ["json-summary", "lcov", "text"],
+  "all": true,
+  "clean": false,
+  "check-coverage": false
+}

@@ -110,6 +110,13 @@ jobs:
       - run: scripts/vulnerability-scan.sh
       - name: install what the suites shell out to
         run: sudo scripts/linux-test-deps.sh
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: board/package-lock.json
+      - run: npm ci
+        working-directory: board
       - name: give git an identity
         run: |
           git config --global user.email "ci@example.com"

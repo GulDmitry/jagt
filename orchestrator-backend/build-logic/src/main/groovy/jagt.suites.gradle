@@ -112,7 +112,34 @@ tasks.register('boardTest', Test) {
     // Left to itself the client installs every browser it supports — a quarter of a gigabyte for a suite that
     // drives one.
     environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1' // playwrightChromium installs the one browser
+    def coverageDump = layout.settingsDirectory.dir('../board/coverage/browser').asFile
+    systemProperty 'board.coverage.dir', coverageDump.absolutePath
+    doFirst { coverageDump.deleteDir() }
+    finalizedBy 'boardCoverage'
     shouldRunAfter tasks.named('test')
+}
+
+tasks.register('boardCoverage', Exec) {
+    description = 'Merges the browser coverage boardTest wrote with the board unit tests; fails a file under its floor.'
+    group = 'verification'
+    def board = layout.settingsDirectory.dir('../board').asFile
+    workingDir = board
+    commandLine 'npm', 'run', '--silent', 'coverage:browser'
+    def filteredRun = gradle.startParameter.taskNames.contains('--tests')
+    onlyIf { task ->
+        List<String> missing = []
+        if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                .any { dir -> dir && new File(dir, 'npm').canExecute() }) {
+            missing << 'npm'
+        }
+        if (!new File(board, 'node_modules').directory) {
+            missing << 'board/node_modules (run npm ci in board/)'
+        }
+        if (missing) { // skip, naming what is missing, as the container run has no Node
+            task.logger.lifecycle("Skipping boardCoverage — missing: ${missing.join(', ')}.")
+        }
+        !filteredRun && missing.isEmpty() && new File(board, 'coverage/browser').directory // a `--tests` run proves no ratio
+    }
 }
 
 tasks.register('linuxDriverTest', Test) {
