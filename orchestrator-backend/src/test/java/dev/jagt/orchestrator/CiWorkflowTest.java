@@ -396,6 +396,15 @@ class CiWorkflowTest {
   }
 
   @Test
+  void failsAnImageScanOnlyWhenFindingHasPublishedFix() {
+    String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
+    String dockerfile = SourceRoots.read(Path.of("../base/Dockerfile"));
+
+    assertThat(scan).contains("--format vertical").contains("Minimal Fix Version: '[^N]");
+    assertThat(dockerfile).contains("apt-get upgrade -y");
+  }
+
+  @Test
   void keepsTheNewestTenUntaggedBaseImagesWithTheirChildrenByOnePinnedAction() {
     String workflow = SourceRoots.read(Path.of("../.github/workflows/base-image.yml"));
 
