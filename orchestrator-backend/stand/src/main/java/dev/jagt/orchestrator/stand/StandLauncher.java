@@ -177,7 +177,7 @@ final class StandLauncher {
   private Path newRoot() throws IOException {
     String prefix = StandRoots.PREFIX + ProcessHandle.current().pid() + "-";
     Files.createDirectories(place.base());
-    int run = 1;
+    long run = StandClock.now().toEpochMilli();
     while (!created(place.base().resolve(prefix + run))) {
       run++;
     }

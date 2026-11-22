@@ -131,6 +131,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   public RunRecord record() {
+    jagt.harvest();
     return RunRecord.read(root);
   }
 
@@ -139,6 +140,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   public List<Violation> violations() {
+    jagt.harvest();
     return StandBooks.at(root).violations();
   }
 
