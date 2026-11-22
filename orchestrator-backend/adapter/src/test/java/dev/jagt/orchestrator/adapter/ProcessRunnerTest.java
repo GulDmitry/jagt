@@ -252,6 +252,18 @@ class ProcessRunnerTest {
   }
 
   @Test
+  void runsCommandsAgainWhenPausedContextStartsItAfterStopping() {
+    ProcessRunner runner = new ProcessRunner();
+    runner.stop();
+    runner.start();
+
+    String printed =
+        runner.run(null, Duration.ofSeconds(5), List.of("sh", "-c", "printf ok")).stdout();
+
+    assertThat(printed).isEqualTo("ok");
+  }
+
+  @Test
   void stopsWithoutWaitingTheCommandThatStartsAfterJagtHasStopped() {
     ProcessRunner runner = new ProcessRunner();
     runner.close();

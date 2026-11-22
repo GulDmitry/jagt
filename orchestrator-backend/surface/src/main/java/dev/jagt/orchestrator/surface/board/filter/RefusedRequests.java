@@ -15,6 +15,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
@@ -64,5 +65,26 @@ public class RefusedRequests {
                 ? framework.getStatusCode()
                 : HttpStatus.BAD_REQUEST)
         .body(Map.of("error", said));
+  }
+
+  @ExceptionHandler(AsyncRequestNotUsableException.class)
+  public void clientGone() {
+    // the browser closed the stream; nobody is left to answer
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Map<String, String>> failed(Exception e, HttpServletRequest request) {
+    if (e instanceof ErrorResponse framework) {
+      return ResponseEntity.status(framework.getStatusCode())
+          .body(Map.of("error", String.valueOf(e.getMessage())));
+    }
+    log.atError()
+        .setMessage("request failed")
+        .addKeyValue("url", request.getRequestURI())
+        .addKeyValue("cause", Causes.of(e))
+        .setCause(e)
+        .log();
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(Map.of("error", "the board could not answer the request"));
   }
 }

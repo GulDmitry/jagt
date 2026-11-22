@@ -77,7 +77,7 @@ public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
 
   @Override
   public void start() {
-    // Nothing starts: a child is registered when it is spawned.
+    children.reopen();
   }
 
   /**

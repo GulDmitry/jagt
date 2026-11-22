@@ -46,6 +46,11 @@ public final class ChildProcesses implements AutoCloseable {
     return closed;
   }
 
+  /** A paused context resumes through its lifecycle's start, so a close that was a stop ends. */
+  public void reopen() {
+    closed = false;
+  }
+
   @Override
   public void close() {
     closed = true;
