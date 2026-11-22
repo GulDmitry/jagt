@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prints the Gradle lines that check a change, in the order to run them, each under a timeout; stop at the first red.
-# Usage: scripts/tests-for.sh [path...]   (paths relative to the repository root; none = this branch against main)
+# Usage: scripts/tests-for.sh [path...]   (paths relative to the repository root; none = this branch against release)
 # Every line runs from the repository root. Pitest is not among them: it runs once, at the done command.
 set -eu
 
@@ -14,7 +14,7 @@ if [ "$#" -gt 0 ]; then
   paths=$(printf '%s\n' "$@" | sed "s#^$root/##")
 else
   paths=$({
-    git diff --name-only --no-renames main...HEAD
+    git diff --name-only --no-renames release...HEAD
     git diff --name-only --no-renames HEAD
     git ls-files --others --exclude-standard
   } | sort -u)

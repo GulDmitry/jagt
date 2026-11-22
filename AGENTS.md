@@ -59,6 +59,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 ## Git and committing
 
 - **The base branch is read-only**; jagt's own merges a green request ([0223](docs/decisions/0223-main-moves-by-a-green-pull-request.md)).
+- **jagt's own work lands on `release`**; `main` moves by a release or a hotfix ([0225](docs/decisions/0225-work-lands-on-a-release-branch.md)).
 - **Only `deploy` and its undo `revert` write a shared branch**: `ship` only opens or updates a request; `revert` adds a commit — no force-push.
   A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
@@ -70,8 +71,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
   Permission to commit is standing, to push is not.
-- **One feature, one commit**: its steps, fixes and review findings fold into it (`git commit --amend`);
-  an agent branch is squashed on merge.
+- **One feature, one commit**: its steps, fixes and review findings fold into it (`git commit --amend`); an agent branch is squashed on merge.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)),
   and its mutants on the diff when `main` changed ([`testing`](docs/rules/testing.md)).
   **A rejected finding keeps its why where the next review meets it**: a site comment or a Rejected row.

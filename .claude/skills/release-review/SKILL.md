@@ -14,7 +14,7 @@ Range: the last `Release` commit to `HEAD` unless one is named (`git log --grep=
      `reopens` or `breaks` class like any other finding.
    - The range's diff, and the files it touches in full.
 2. **One reviewer per dimension**: architecture (kinds, rings, collaborators, a class no test can build), security (the guards), tests
-   (RED-proven, light, necessary; each main commit in the range judged its `pitestDiff`), specs and docs (each says what the code does), missing practice (the gate inventory and each kind's standard in
+   (RED-proven, light, necessary; each commit on `release` in the range judged its `pitestDiff`), specs and docs (each says what the code does), missing practice (the gate inventory and each kind's standard in
    `ARCHITECTURE.md` "The kinds", read against the standard itself: what it requires that jagt lacks), onboarding (a light model, from
    a fresh clone and `README.md` alone, starts jagt, adds a project and configures it; each stumble or guess is a finding).
 3. **A finding names its class**, or it is dropped:
