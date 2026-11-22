@@ -268,7 +268,7 @@ class CiWorkflowTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"test", "heavy", "stand", "install", "release"})
-  void letsEveryRunWriteItsGradleCacheSoPullRequestRerunsReadAWarmOne(String job) {
+  void letsEveryRunWriteItsGradleCacheSoPullRequestRerunsStartWarm(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 
     assertThat(steps).contains("cache-read-only=false");

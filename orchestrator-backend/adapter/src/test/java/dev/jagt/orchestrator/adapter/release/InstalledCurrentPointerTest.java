@@ -7,9 +7,9 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class SymlinkCurrentPointerTest {
+class InstalledCurrentPointerTest {
 
-  private final SymlinkCurrentPointer pointer = new SymlinkCurrentPointer();
+  private final InstalledCurrentPointer pointer = new InstalledCurrentPointer();
 
   @Test
   void replacesTheLinkWithOneNamingTheNewVersion(@TempDir Path root) throws Exception {
@@ -22,6 +22,17 @@ class SymlinkCurrentPointerTest {
     assertThat(Files.readSymbolicLink(root.resolve("current")))
         .isEqualTo(Path.of("versions/0.25.0"));
     assertThat(root.resolve("versions/0.24.1")).isDirectory();
+    assertThat(root.resolve("current.next")).doesNotExist();
+  }
+
+  @Test
+  void rewritesTheVersionFileTheWindowsInstallerWrote(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("versions/0.25.0"));
+    Files.writeString(root.resolve("current"), "0.24.1");
+
+    pointer.point(root, "0.25.0");
+
+    assertThat(root.resolve("current")).isRegularFile().hasContent("0.25.0");
     assertThat(root.resolve("current.next")).doesNotExist();
   }
 
