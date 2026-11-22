@@ -22,8 +22,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ServerStandTest {
 
-  private static final Duration READY_BUDGET = Duration.ofSeconds(15);
-  private static final Duration STATE_P95_BUDGET = Duration.ofMillis(100);
   private static final String OFF_REFERENCE =
       "budgets hold on the reference machine; -Pbudgets=false skips them";
   private static final String JSON = "application/json";
@@ -60,7 +58,7 @@ class ServerStandTest {
                   Double.parseDouble(log.replaceAll("(?s).*process running for ([0-9.]+).*", "$1"));
 
               assertThat(Duration.ofMillis(Math.round(seconds * 1000)))
-                  .isLessThanOrEqualTo(READY_BUDGET);
+                  .isLessThanOrEqualTo(StandTimings.READY_BUDGET);
             }),
         dynamicTest(
             "stateAnswersWithinTheBudgetAtTheNinetyFifthPercentileOverFiftySequentialCalls",
@@ -78,7 +76,8 @@ class ServerStandTest {
                       .findFirst()
                       .orElseThrow();
 
-              assertThat(Duration.ofNanos(p95Nanos)).isLessThanOrEqualTo(STATE_P95_BUDGET);
+              assertThat(Duration.ofNanos(p95Nanos))
+                  .isLessThanOrEqualTo(StandTimings.STATE_P95_BUDGET);
             }),
         dynamicTest(
             "startupAndStateP95AreRecordedWhateverTheBudgetsSay",
