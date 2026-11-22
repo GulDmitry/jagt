@@ -102,10 +102,10 @@ if (ignored.intersect(inRange)) {
     changedLines.keySet().removeAll { changedLines[it].isEmpty() }
 }
 def classOf = { String path -> path.replaceFirst('^.*?src/main/java/', '').replace('.java', '').replace('/', '.') }
-// A path under `src/` is the root project's own main; any other first segment is a module.
+// The included build `build-logic/` is no root project and is not mutated here: its lines leave the diff.
+changedLines.keySet().removeAll { !dev.jagt.gradle.pitest.DiffOwner.projectOf(it).present }
 def moduleOf = { String path ->
-    def relative = path.replaceFirst('^orchestrator-backend/', '')
-    def owner = relative.startsWith('src/') ? ':' : ':' + relative.tokenize('/')[0]
+    def owner = dev.jagt.gradle.pitest.DiffOwner.projectOf(path).get()
     if (!findProject(owner)) {
         throw new GradleException("pitestDiff: no project ${owner} owns ${path}")
     }
