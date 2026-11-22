@@ -127,6 +127,8 @@ done
 [ ! -e "$home/jagt.yml" ] || { echo "install-check: a jagt.yml appeared in the install home" >&2; exit 1; }
 
 stage="keep 0.0.2 beside 0.0.1"
+startup_check_done() { curl --fail --silent "$api/api/commands/jobs" | grep -E '^ +releasecheck ' | grep -q ' ran '; }
+wait_for 120 "the startup release check finished" startup_check_done
 echo 0.0.2 >"$feed/latest-version"
 curl --fail --silent --show-error --request POST --header "Origin: $api" "$api/api/commands/run?about=releasecheck" >/dev/null
 wait_for 120 "versions/0.0.2/jagt.jar is kept" test -f "$home/versions/0.0.2/jagt.jar"
