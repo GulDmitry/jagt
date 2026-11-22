@@ -94,6 +94,12 @@ class PinningTest {
   }
 
   @Test
+  void wrapperRetriesDistributionDownloadTheServerRefusedOnce() {
+    assertThat(SourceRoots.read(Path.of("gradle/wrapper/gradle-wrapper.properties")))
+        .containsPattern("(?m)^retries=[1-9]$");
+  }
+
+  @Test
   void everyWorkflowActionIsPinnedToCommitWithItsTag() {
     List<String> unpinned =
         SourceRoots.read(Path.of("../.github/workflows/ci.yml"))
