@@ -17,18 +17,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
-final class CollaboratorOwners {
+public final class CollaboratorOwners {
 
   private static final String MAIN = "/build/classes/java/main/";
 
   private CollaboratorOwners() {}
 
-  static DescribedPredicate<JavaClass> areMainClasses() {
+  public static DescribedPredicate<JavaClass> areMainClasses() {
     return DescribedPredicate.describe(
         "main classes", type -> TestKinds.location(type).contains(MAIN));
   }
 
-  static ArchCondition<JavaClass> buildNoCollaboratorOfTheirOwn() {
+  public static ArchCondition<JavaClass> buildNoCollaboratorOfTheirOwn() {
     return new ArchCondition<>("build no collaborator of their own") {
       @Override
       public void check(JavaClass owner, ConditionEvents events) {

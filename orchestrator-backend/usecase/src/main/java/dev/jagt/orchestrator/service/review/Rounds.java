@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
-import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
 import dev.jagt.orchestrator.port.reach.ScenarioReach;
@@ -35,13 +34,13 @@ public class Rounds implements PhaseProfiles {
    * any more.
    */
   public RoundState of(TaskState task, ConfigService.ConfigFile config) {
-    Arbiter.Profile master = config.master().profile().at(MasterPhase.of(task));
+    Arbiter.Profile arbiter = config.arbiter().profile().at(task);
     boolean drafted =
         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft());
     return RoundState.of(task.report(), drafted)
         .withRepliesWrittenAt(drafted ? ReviewDrafts.writtenAt(task) : 0)
-        .withMaster(master)
-        .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
+        .withArbiter(arbiter)
+        .withArbiterReading(FlowRules.readByTheArbiter(task.status()) && arbiter.running())
         .withCheckers(checkers.of(task))
         .withRequestless(requestless.stands(task))
         .withReach(
@@ -52,11 +51,11 @@ public class Rounds implements PhaseProfiles {
 
   @Override
   public Arbiter.Profile at(TaskState task) {
-    return of(task).master();
+    return of(task).arbiter();
   }
 
   /** The Master runs and has read the plan or round in front. */
   public boolean judged(TaskState task) {
-    return configService.load().master().running() && MasterPhase.readTheRoundInFront(task);
+    return configService.load().arbiter().profile().reading(task);
   }
 }

@@ -21,13 +21,14 @@ import dev.jagt.orchestrator.job.JobSource;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.review.AutoReviewWatch;
 import dev.jagt.orchestrator.task.turn.AgentReport;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class BoardApiControllerTest {
               OrchestratorProperties.defaults()
                   .withRoot("/state")
                   .withStateFile("/state/state.json")),
-          Clock.systemUTC());
+          new FakeClock());
   private final BoardApiController api =
       new BoardApiController(
           taskViews,
@@ -66,11 +67,12 @@ class BoardApiControllerTest {
               new Jobs(
                   new Jobs.Catalog(List.of(), List.of()),
                   scheduler,
-                  Clock.systemUTC(),
+                  new FakeClock(),
                   mock(StateService.class),
                   idleStop),
               new ReachLedger(),
-              Clock.systemUTC()));
+              new FakeClock(),
+              List.of()));
 
   @Test
   void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -151,14 +153,37 @@ class BoardApiControllerTest {
             "tasks",
             "projects",
             "offers",
-            "masterMode",
             "autoReview",
             "autoReviewEnabled",
             "jobs",
-            "actStop",
+            "chips",
             "reach",
             "branchStrategies",
             "phases");
+  }
+
+  @Test
+  void servesTheMarksEverySourceAddsToTheHead() {
+    when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
+    var acting = new HeaderChip("header.acting", null, false, null);
+    var stopped = new HeaderChip("board-stopped", "unstop", false, 7L);
+    BoardApiController board =
+        new BoardApiController(
+            taskViews,
+            mock(TaskEventStream.class),
+            new GlobalCommands(List.of()),
+            new HeaderState(
+                new Jobs(
+                    new Jobs.Catalog(List.of(), List.of()),
+                    scheduler,
+                    new FakeClock(),
+                    mock(StateService.class),
+                    idleStop),
+                new ReachLedger(),
+                new FakeClock(),
+                List.of(() -> List.of(acting), () -> List.of(stopped))));
+
+    assertThat(board.tasks().header().chips()).containsExactly(acting, stopped);
   }
 
   @Test
@@ -181,11 +206,12 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 reach,
-                Clock.systemUTC()));
+                new FakeClock(),
+                List.of()));
 
     assertThat(board.tasks().header().reach()).containsExactly(lost);
   }
@@ -203,11 +229,12 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(poll), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                new FakeClock(),
+                List.of()));
 
     assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
   }
@@ -226,11 +253,12 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(poll), List.<JobSource>of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                new FakeClock(),
+                List.of()));
 
     assertThat(board.tasks().header().jobs().count()).isEqualTo(1);
   }
@@ -249,11 +277,12 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                new FakeClock(),
+                List.of()));
 
     assertThat(board.events()).isSameAs(browser);
   }
@@ -311,11 +340,12 @@ class BoardApiControllerTest {
                 new Jobs(
                     new Jobs.Catalog(List.of(), List.of()),
                     scheduler,
-                    Clock.systemUTC(),
+                    new FakeClock(),
                     mock(StateService.class),
                     idleStop),
                 new ReachLedger(),
-                Clock.systemUTC()));
+                new FakeClock(),
+                List.of()));
     TaskView drafted =
         TaskView.of(
             new FlowRules(new TaskChart(Composition.builtIn())),

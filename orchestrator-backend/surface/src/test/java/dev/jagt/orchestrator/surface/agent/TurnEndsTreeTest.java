@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.session.Session;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class TurnEndsTreeTest {
@@ -37,7 +38,7 @@ class TurnEndsTreeTest {
         .thenReturn("{\"decision\": \"block\"}");
 
     String answered =
-        new TurnEnds(runtime, mock(ConfigService.class), notes, turnTree)
+        new TurnEnds(runtime, mock(ConfigService.class), notes, turnTree, List.of())
             .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
@@ -53,7 +54,7 @@ class TurnEndsTreeTest {
             .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L))
             .build();
 
-    new TurnEnds(mock(AgentRuntime.class), config, notes, turnTree)
+    new TurnEnds(mock(AgentRuntime.class), config, notes, turnTree, List.of())
         .answer("ABC-1", reported, false, false);
 
     verify(turnTree).changedSinceLastEnd("ABC-1", reported);
@@ -61,7 +62,7 @@ class TurnEndsTreeTest {
 
   @Test
   void turnEndTheRefusalSentOnRecordsTheTreeTheNextTurnIsMeasuredFrom() {
-    new TurnEnds(mock(AgentRuntime.class), mock(ConfigService.class), notes, turnTree)
+    new TurnEnds(mock(AgentRuntime.class), mock(ConfigService.class), notes, turnTree, List.of())
         .answer("ABC-1", task, true, false);
 
     verify(turnTree).changedSinceLastEnd("ABC-1", task);
@@ -75,7 +76,8 @@ class TurnEndsTreeTest {
     when(turnTree.changedSinceLastEnd("ABC-1", task)).thenReturn(false);
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, List.of())
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEmpty();
   }

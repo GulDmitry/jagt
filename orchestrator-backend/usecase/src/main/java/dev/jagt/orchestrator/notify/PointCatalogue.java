@@ -60,7 +60,7 @@ final class PointCatalogue {
     TaskStop stop = task.stop();
     if (stop != null
         && stop.trigger().ends() != TaskStop.Trigger.Ends.PAUSE
-        && hold != StopHold.MASTER) {
+        && hold != StopHold.ARBITER) {
       standing.add(new Standing(Point.STOPPED, stop.key()));
       return;
     }

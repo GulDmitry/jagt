@@ -43,7 +43,7 @@ public class MasterAnswerJob implements Job {
 
   @Override
   public Serves serves() {
-    return Serves.MASTER;
+    return Serves.ARBITER;
   }
 
   @Override
@@ -58,7 +58,7 @@ public class MasterAnswerJob implements Job {
 
   @Override
   public void run() {
-    ConfigService.ConfigFile.MasterConfig config = configService.load().master();
+    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
     if (!config.may(MasterRight.ANSWER)) {
       return;
     }
@@ -73,7 +73,7 @@ public class MasterAnswerJob implements Job {
   private boolean answers(TaskState task, Arbiter.Profile profile) {
     return Move.asking(task.status(), task.report())
         && turns.next(task, profile).equals(Turn.Holder.ARBITER)
-        && !task.masterOrNone().unanswered().equals(task.askedDigest());
+        && !task.arbiterOrNone().unanswered().equals(task.askedDigest());
   }
 
   private void unanswered(String taskId) {
@@ -99,7 +99,8 @@ public class MasterAnswerJob implements Job {
         : Optional.empty();
   }
 
-  private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+  private void answer(
+      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
     Optional<String> humans = humans(task);
     if (humans.isPresent()) {
       log.atInfo()

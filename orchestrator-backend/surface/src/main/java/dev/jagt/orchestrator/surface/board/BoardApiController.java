@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.flow.view.Phase;
 import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.reach.ReachLost;
-import dev.jagt.orchestrator.service.stop.ActStop;
+import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import java.util.LinkedHashMap;
@@ -34,14 +34,13 @@ public class BoardApiController {
       List<TaskView> tasks,
       List<String> projects,
       Map<String, List<String>> offers,
-      String masterMode,
       @JsonUnwrapped Cadence cadence,
       @JsonUnwrapped Header header,
       @JsonUnwrapped Choices choices) {
 
     public record Cadence(String autoReview, boolean autoReviewEnabled) {}
 
-    public record Header(Jobs.Summary jobs, @Nullable ActStop actStop, List<ReachLost> reach) {}
+    public record Header(Jobs.Summary jobs, List<HeaderChip> chips, List<ReachLost> reach) {}
 
     public record Choices(
         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {}
@@ -59,9 +58,8 @@ public class BoardApiController {
         snapshot.tasks(),
         snapshot.projects(),
         offers(snapshot.tasks()),
-        snapshot.masterMode(),
         new Board.Cadence(snapshot.cadence().summary(), snapshot.cadence().enabled()),
-        new Board.Header(header.summary(), snapshot.actStop(), header.reachLost()),
+        new Board.Header(header.summary(), header.chips(), header.reachLost()),
         new Board.Choices(BranchStrategy.choices(), Phase.choices()));
   }
 

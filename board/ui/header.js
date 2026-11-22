@@ -11,9 +11,6 @@ const waitingLabel = /** @type {HTMLElement} */ (
 const autoReviewChip = /** @type {HTMLElement} */ (
   document.getElementById("auto-review")
 );
-const masterChip = /** @type {HTMLElement} */ (
-  document.getElementById("master-mode")
-);
 
 /**
  * @param {import("../core/store.js").Task[]} tasks
@@ -26,10 +23,6 @@ export function render(tasks, showing) {
   // Polling as it should is not news; only the poll being off is said.
   autoReviewChip.hidden = store.autoReview().enabled;
   autoReviewChip.textContent = store.autoReview().summary || "";
-  // The Master pressing buttons for the human is said while it does; judging alone shows nothing.
-  masterChip.hidden = store.masterMode() !== "act";
-  masterChip.textContent = t("header.master");
-  masterChip.dataset.tip = t("header.master.tip");
   chips.render();
   phasebar.render(tasks, showing);
 }

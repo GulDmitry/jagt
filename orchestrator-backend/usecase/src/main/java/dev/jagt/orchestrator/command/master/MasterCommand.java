@@ -42,7 +42,7 @@ public class MasterCommand implements GlobalCommand {
 
   @Override
   public String run(String tail) {
-    ConfigService.ConfigFile.MasterConfig config = configService.load().master();
+    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
     MasterMode mode = config.modeOrDefault();
     if (mode == MasterMode.OFF) {
       return "master: off. To turn it on, set `orchestrator.roles.master.mode` to "

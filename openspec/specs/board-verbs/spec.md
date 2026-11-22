@@ -45,10 +45,9 @@ button, no tier 2 offer, and one line typing into that session (`POST /api/tasks
 - **THEN** the dialog closes
 
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
-Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `surface/board/task/NaturalLanguageDispatch`, sends ⌘K free
-text via `POST
-/api/interpret` to a model proposing one grammar command, validated (task and verb exist) and run through `CommandService`: never more than a
-button. The call is stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
+Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `surface/board/task/NaturalLanguageDispatch`, sends ⌘K free text
+via `POST /api/interpret` to a model proposing one grammar command, validated (task and verb exist) and run through `CommandService`: never more than
+a button. The call is stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
 #### Scenario: A proposal names no real verb
 - **WHEN** the model proposes a missing task or verb
 - **THEN** nothing runs
@@ -151,6 +150,28 @@ started task by hand and wears the colour of a stopped `act`; the legend shows i
 - **WHEN** the board is stopped and nothing else is broken
 - **THEN** the tab icon stays unmarked, for a stop the human chose is not a break
 
+### Requirement: The head's role marks come from the roles
+`/api/tasks` SHALL carry `chips`, each `{key, verb, broken, at}` from a `HeaderChips` bean, never a role's own field.
+The Master's `MasterChips` is empty where `roles/master` is absent; `BoardStopChips` is the board's own.
+The board draws each from the catalog, `key.tip` its hover; one with a `verb` is a `.stalled` button running it.
+The glance reads broken where any chip is `broken`.
+
+#### Scenario: The Master acts
+- **WHEN** the Master is installed and its mode is `act`
+- **THEN** `chips` holds one entry without a verb, and the head shows its plain chip
+
+#### Scenario: The Master is not installed
+- **WHEN** `roles/master` is absent
+- **THEN** `chips` holds no Master entry and the head shows none
+
+#### Scenario: Act stopped itself
+- **WHEN** three bad endings stopped act
+- **THEN** `chips` holds an entry with verb `act` and `broken`, and pressing its button runs `act`
+
+#### Scenario: The board is stopped
+- **WHEN** the human stopped the board
+- **THEN** `chips` holds an entry with verb `unstop` and the moment of the stop, installed Master or not
+
 ### Requirement: The editor verb is `code`
 The verb opening a task's worktrees in the configured editor SHALL be `code`, its MCP tool `open_code`, its capability `capability/code`.
 The retired spelling `ide` still answers, unadvertised (`TaskAction.RENAMED`). It launches the external editor (`editorCommand`), and with none
@@ -158,3 +179,22 @@ configured launches nothing and says the viewer holds the code. Pressed on the b
 #### Scenario: The old spelling is typed
 - **WHEN** the human types `ide ABC-42`
 - **THEN** it runs `code ABC-42`, and the card's button reads `Code`
+
+### Requirement: Upgrade is offered while a newer verified release is kept
+`upgrade`, a `GlobalCommand` declaring itself `available`, SHALL be listed only while the release check holds a kept, verified release
+newer than the running one. Pressed, it points `current` at it. Started by the launcher (`JAGT_LAUNCHER` set), jagt then stops gracefully with
+exit code 75 and replies `restarting on <v>`; otherwise nothing exits and the reply is `restart to run <v>`.
+A refused switch is shown named. It replaces nothing on a card: no task owns it. The Master never presses it.
+#### Scenario: A newer release is kept
+- **WHEN** the release check has kept and verified a newer release
+- **THEN** the palette and `help` list `upgrade`; with none kept they do not, and typed it is refused
+#### Scenario: Upgrade is pressed under the launcher
+- **WHEN** the human runs `upgrade` for a kept `0.25.0` in a jagt the launcher started
+- **THEN** `current` names `0.25.0`, the reply says `restarting on 0.25.0`, and jagt stops gracefully with exit code 75
+- **AND** the launcher starts `0.25.0`
+#### Scenario: Upgrade is pressed
+- **WHEN** the human runs `upgrade` for a kept `0.25.0` in a jagt the launcher did not start
+- **THEN** `current` names `0.25.0`, jagt keeps running, the reply says `restart to run 0.25.0` and `upgrade` is no longer listed
+#### Scenario: The switch is refused
+- **WHEN** the kept jar no longer matches its checksum
+- **THEN** `current` is unchanged, jagt keeps running and the reply names the refusal, `MISMATCH`

@@ -19,8 +19,8 @@ import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,7 @@ class CheckerDeclineJobFlowTest {
             mock(StepRelay.class),
             new FlowReports(
                 state,
-                Clock.systemUTC(),
+                new FakeClock(),
                 new Checkers(new TaskChart(Composition.builtIn())),
                 new FlowRules(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),

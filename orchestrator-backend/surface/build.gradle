@@ -12,8 +12,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.yaml:snakeyaml'
-    implementation 'org.commonmark:commonmark:0.31.0'
-    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.31.0'
+    implementation 'org.commonmark:commonmark:0.32.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.32.0'
     testImplementation testFixtures(project(':usecase'))
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -21,7 +21,7 @@ dependencies {
 
 processResources {
     from('../../board') {
-        exclude 'node_modules/**', 'test/**', 'package*.json', 'eslint.config.js', 'jsconfig.json', '.prettierignore',
+        exclude 'node_modules/**', 'test/**', 'package*.json', 'eslint.config.js', 'jsconfig.json', '.prettierignore', // board tooling, not served assets
                 '.c8rc.json', '.jscpd.json', 'stryker.config.mjs', 'coverage/**', '.stryker-tmp/**'
         into 'static'
     }

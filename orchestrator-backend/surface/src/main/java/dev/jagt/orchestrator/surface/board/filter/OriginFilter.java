@@ -23,7 +23,7 @@ public class OriginFilter extends OncePerRequestFilter {
       chain.doFilter(request, response);
       return;
     }
-    try (var ignored = OriginContext.open(origin)) {
+    try (var _ = OriginContext.open(origin)) {
       chain.doFilter(request, response);
     }
   }

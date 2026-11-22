@@ -24,22 +24,22 @@ class LsofWorktreeProcessesTest {
         p100
         cjava
         fcwd
-        n/Users/x/www/wt
+        n/h/x/www/wt
         p200
         cnode
         fcwd
-        n/Users/x/www/wt/app
+        n/h/x/www/wt/app
         p300
         ctmux
         fcwd
-        n/Users/x/www/wt
+        n/h/x/www/wt
         p400
         cjava
         fcwd
-        n/Users/x/www/other\
+        n/h/x/www/other\
         """;
 
-    assertThat(LsofWorktreeProcesses.reapable(lsof, "/Users/x/www/wt"))
+    assertThat(LsofWorktreeProcesses.reapable(lsof, "/h/x/www/wt"))
         .extracting(LsofWorktreeProcesses.Reapable::pid)
         .containsExactly("100", "200");
   }

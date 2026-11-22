@@ -25,8 +25,12 @@ public final class StandEvidence {
 
   private StandEvidence() {}
 
+  public static Path target(Path root, String scenario, Path failedDir) {
+    return failedDir.resolve(scenario.replace('/', '-') + "-" + root.getFileName());
+  }
+
   public static Path keep(Path root, String scenario, Path failedDir) {
-    Path target = failedDir.resolve(scenario.replace('/', '-') + "-" + root.getFileName());
+    Path target = target(root, scenario, failedDir);
     try {
       Files.createDirectories(target);
       for (String name : FILES) {

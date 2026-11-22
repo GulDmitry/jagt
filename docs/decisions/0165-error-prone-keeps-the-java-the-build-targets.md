@@ -10,7 +10,7 @@ Accepted 2026-11-14.
 
 - Owner 2026-11-11: the IDE marks code that could use `instanceof` patterns, switch expressions and single
   expressions; the tree should speak Java 25 and keep speaking it.
-- Error Prone 2.51.0 is already in every module's compile (`jagt.conventions`, `-Werror`, all source sets):
+- Error Prone 2.52.0 is already in every module's compile (`jagt.conventions`, `-Werror`, all source sets):
   its default `PatternMatchingInstanceof` and `StatementSwitchToExpressionSwitch` warnings fail the build
   on a hand cast after `instanceof` and on a statement switch an arrow form can replace.
 - OpenRewrite 7.39.0 with `rewrite-migrate-java` and `rewrite-static-analysis` (recipe BOM 3.37.0, checked

@@ -25,7 +25,7 @@ public class SessionTools implements McpTools {
   public void declare(McpToolRegistry tools) {
     tools.tool(
         "open_task_tab",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         SessionStart.SCHEMA,
         SessionStart.class,
@@ -34,7 +34,7 @@ public class SessionTools implements McpTools {
 
     tools.tool(
         "close_task_tab",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         TaskRef.schema(
             "Close a task's tab and kill its agent session (e.g. when the task is finished)."
@@ -45,7 +45,7 @@ public class SessionTools implements McpTools {
 
     tools.tool(
         "focus_task",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         TaskRef.schema(
             "Bring the task's agent window to the user's screen: select its tab and raise the"
@@ -57,7 +57,7 @@ public class SessionTools implements McpTools {
 
     tools.tool(
         "write_task_context",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         TaskInstructions.SCHEMA,
         TaskInstructions.class,

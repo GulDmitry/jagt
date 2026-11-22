@@ -1,13 +1,14 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
+import dev.jagt.orchestrator.service.role.RoleTurnEndNote;
 import dev.jagt.orchestrator.service.turn.TurnTree;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.session.Session;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -25,15 +26,16 @@ public class TurnEnds {
   private final ConfigService configService;
   private final NotesDue notes;
   private final TurnTree turnTree;
+  private final List<RoleTurnEndNote> roleNotes;
 
   public String answer(
       String taskId, @Nullable TaskState task, boolean sentOn, boolean pausedOnBackgroundWork) {
     if (pausedOnBackgroundWork || task == null) {
-      return withTheMaster(task);
+      return withTheRole(task);
     }
     boolean treeChanged = turnTree.changedSinceLastEnd(taskId, task);
     if (sentOn) {
-      return withTheMaster(task);
+      return withTheRole(task);
     }
     Session session = task.session();
     boolean unreported =
@@ -54,7 +56,7 @@ public class TurnEnds {
       return notes
           .reminder(task, configService.load().agent().notesEveryOrDefault())
           .map(runtime::refusedTurnEnd)
-          .orElseGet(() -> withTheMaster(task));
+          .orElseGet(() -> withTheRole(task));
     }
     return runtime.refusedTurnEnd(
         "Your turn is ending with "
@@ -66,15 +68,14 @@ public class TurnEnds {
             + " IN_PROGRESS if you go on.");
   }
 
-  private String withTheMaster(@Nullable TaskState task) {
-    if (task == null
-        || !FlowRules.headedForTheMaster(task.status())
-        || !configService.load().master().running()) {
+  private String withTheRole(@Nullable TaskState task) {
+    if (task == null) {
       return "";
     }
-    return runtime.toldTheHuman(
-        FlowRules.awaitingVerification(task.status())
-            ? "→ verification runs first · the Master reads the round once it passes"
-            : "→ with the Master for review · its verdict arrives here");
+    return roleNotes.stream()
+        .flatMap(note -> note.noteFor(task).stream())
+        .findFirst()
+        .map(runtime::toldTheHuman)
+        .orElse("");
   }
 }

@@ -41,6 +41,53 @@ class PinningTest {
   }
 
   @Test
+  void dependencyChecksumChangeFailsTheBuildBecauseEveryLockedModuleIsVerified()
+      throws IOException {
+    String metadata = SourceRoots.read(Path.of("gradle/verification-metadata.xml"));
+    List<String> unverified;
+    try (Stream<Path> files = Files.walk(Path.of("."), 4)) {
+      unverified =
+          files
+              .filter(p -> p.getFileName().toString().endsWith("gradle.lockfile"))
+              .filter(p -> !p.toString().matches(".*/(build|\\.gradle|node_modules)/.*"))
+              .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
+              .map(line -> Pattern.compile(": ([^#:=\\s]+):([^:=]+):([^=]+)=").matcher(line))
+              .filter(java.util.regex.Matcher::find)
+              .map(m ->
+                  "<component group=\""
+                      + m.group(1)
+                      + "\" name=\""
+                      + m.group(2)
+                      + "\" version=\""
+                      + m.group(3)
+                      + "\">")
+              .filter(component -> !metadata.contains(component))
+              .distinct()
+              .toList();
+    }
+
+    assertThat(metadata)
+        .contains("<verify-metadata>true</verify-metadata>")
+        .doesNotContain("<trusted-artifacts>");
+    assertThat(unverified).isEmpty();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"core", "engine-archunit", "engine-scan", "gradle-plugin", "junit"})
+  void lockRewriteFromTheRootLeavesIncludedBuildLockfileUnchanged(String module) {
+    assertThat(SourceRoots.read(Path.of("fitness", module, "gradle.lockfile")))
+        .contains("run: ./gradlew :fitness:" + module + ":dependencies --write-locks");
+  }
+
+  @Test
+  void lockRewriteCommandAlsoWritesChecksumsBecauseTheRunFetchesLosingVersions() {
+    String decision = "0189-every-dependency-action-image-and-wrapper-is-pinned.md";
+
+    assertThat(SourceRoots.read(Path.of("../docs/decisions", decision)))
+        .contains("--write-locks --write-verification-metadata sha256");
+  }
+
+  @Test
   void wrapperChangeShowsInItsChecksum() {
     assertThat(SourceRoots.read(Path.of("gradle/wrapper/gradle-wrapper.properties")))
         .containsPattern("(?m)^distributionSha256Sum=[0-9a-f]{64}$");
@@ -71,22 +118,31 @@ class PinningTest {
   }
 
   @Test
-  void everyDockerfileBaseIsPinnedByTagAndDigestUnlessItIsAnArgument() throws IOException {
+  void everyDockerfileBaseAndNpmInstallIsPinnedUnlessBaseIsAnArgument() throws IOException {
     List<String> unpinned;
     try (Stream<Path> files = Files.walk(Path.of(".."), 6)) {
       unpinned =
           files
-              .filter(p -> p.getFileName().toString().startsWith("Dockerfile"))
+              .filter(p -> p.getFileName().toString().matches("(Dockerfile.*|.*\\.Dockerfile)"))
               .filter(p -> !p.toString().matches(".*/(\\.claude|build|node_modules|\\.git)/.*"))
               .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
-              .filter(line -> line.matches(".*: FROM .*"))
+              .filter(line -> !line.matches(".*: #.*"))
+              .filter(line -> line.matches(".*: FROM .*") || line.contains("npm install"))
               .filter(line -> !line.contains("${"))
               .filter(line -> !line.matches(".*: FROM build AS \\S+$"))
               .filter(line -> !line.matches(".*: FROM \\S+:\\S+@sha256:[0-9a-f]{64}( AS \\S+)?$"))
+              .filter(line -> !line.matches(".*npm install -g \\S+@\\d+\\.\\d+\\.\\d+( .*)?$"))
               .toList();
     }
 
     assertThat(unpinned).isEmpty();
+  }
+
+  @Test
+  void standLayerInstallsNoOsPackageWhileTheStandRuns() {
+    assertThat(SourceRoots.read(Path.of("stand/src/stand/compose/Dockerfile")))
+        .doesNotContain("apt-get")
+        .contains("COPY --from=node /usr/local/bin/node");
   }
 
   @Test

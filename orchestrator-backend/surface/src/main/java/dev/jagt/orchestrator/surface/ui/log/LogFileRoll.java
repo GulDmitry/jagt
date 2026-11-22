@@ -7,11 +7,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Profiles;
 
 /**
@@ -22,6 +24,8 @@ import org.springframework.core.env.Profiles;
  */
 public class LogFileRoll
     implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
+
+  private static final Pattern LOG_FILE_KEY = Pattern.compile("^logging\\.(\\w+\\.)?name$");
 
   private final Clock clock;
   private final PrintStream problems;
@@ -42,7 +46,7 @@ public class LogFileRoll
       return false;
     }
     List<String> configured =
-        Stream.of("logging.file.name", "logging.master.name")
+        logFileKeys(environment).stream()
             .map(key -> environment.getProperty(key, ""))
             .filter(name -> !name.isBlank())
             .toList();
@@ -58,17 +62,29 @@ public class LogFileRoll
     return true;
   }
 
+  private static List<String> logFileKeys(ConfigurableEnvironment environment) {
+    return environment.getPropertySources().stream()
+        .filter(EnumerablePropertySource.class::isInstance)
+        .flatMap(source -> Stream.of(((EnumerablePropertySource<?>) source).getPropertyNames()))
+        .filter(LOG_FILE_KEY.asPredicate())
+        .distinct()
+        .toList();
+  }
+
   /** Best-effort: a log that cannot be rolled is not a reason to refuse to start. */
   void start(Path logFile) {
     Path absolute = logFile.toAbsolutePath().normalize();
     Path directory = absolute.getParent();
     Path fileName = absolute.getFileName();
-    if (directory == null || fileName == null || !Files.isDirectory(directory)) {
+    if (directory == null || fileName == null) {
       return;
     }
     String name = fileName.toString();
     Path previous = directory.resolve(name + ".1");
     try {
+      // On a host bind mount, a folder Logback creates and opens in one instant is intermittently
+      // missing.
+      Files.createDirectories(directory);
       if (Files.isRegularFile(previous)) {
         Files.move(
             previous, LogArchives.archiveName(previous, name), StandardCopyOption.REPLACE_EXISTING);

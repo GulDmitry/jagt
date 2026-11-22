@@ -146,7 +146,7 @@ public class SubAgentBriefing {
     <hard_safety>
     No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
     `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
-    when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
+    when the target moved on, or onto a new base the human or the arbiter named, then `push --force-with-lease`;
     after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
     to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
     it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.

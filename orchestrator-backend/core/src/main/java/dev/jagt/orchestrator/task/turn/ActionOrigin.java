@@ -24,7 +24,9 @@ public enum ActionOrigin {
    * jagt's own deterministic move on the code host: the re-run of a pipeline that died on
    * infrastructure.
    */
-  JAGT;
+  JAGT,
+  /** The approval of a review request, read from the code host. */
+  CODE_HOST;
 
   public String label() {
     return name().toLowerCase(Locale.ROOT).replace('_', '-');

@@ -30,9 +30,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -83,7 +83,7 @@ class MasterAnswerJobTest {
 
     job.run();
 
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered()).isEmpty();
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered()).isEmpty();
   }
 
   @Test
@@ -109,7 +109,7 @@ class MasterAnswerJobTest {
     job.run();
 
     TaskState left = state.task("ABC-1").orElseThrow();
-    assertThat(left.masterOrNone().unanswered()).isEqualTo(left.askedDigest());
+    assertThat(left.arbiterOrNone().unanswered()).isEqualTo(left.askedDigest());
   }
 
   @ParameterizedTest
@@ -170,7 +170,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel)
-        .answer("ABC-1", asking, "override the gate?", masterAnswerJob().config().master(), true);
+        .answer("ABC-1", asking, "override the gate?", masterAnswerJob().config().arbiter(), true);
   }
 
   @Test
@@ -186,7 +186,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered())
         .isEqualTo(TaskTurns.asked(asking));
   }
 
@@ -255,7 +255,7 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().unanswered())
         .isEqualTo(TaskTurns.asked(state.task("ABC-1").orElseThrow()));
   }
 
@@ -318,7 +318,7 @@ class MasterAnswerJobTest {
     final FlowReports reports =
         new FlowReports(
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             new Checkers(new TaskChart(Composition.builtIn())),
             new FlowRules(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());

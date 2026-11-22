@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -40,7 +41,7 @@ class SessionLedgerTest {
   @Test
   void recordsTheLogFileTheSessionAppendsToOnTheTask() {
 
-    new SessionLedger(state, Clock.systemUTC())
+    new SessionLedger(state, new FakeClock())
         .record("ABC-1", Path.of("/logs/session.jsonl"), new SessionSign.WorkStarted());
 
     assertThat(state.task("ABC-1").orElseThrow().session().log()).isEqualTo("/logs/session.jsonl");
@@ -49,7 +50,7 @@ class SessionLedgerTest {
   @Test
   void raisesPermissionOnTheTaskWhenPromptBlocksTheSession() {
 
-    new SessionLedger(state, Clock.systemUTC())
+    new SessionLedger(state, new FakeClock())
         .sign(
             "ABC-1",
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK));

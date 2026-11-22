@@ -282,7 +282,7 @@ class MasterModeFlowTest extends FlowHarness.World {
             flow.awaitRun("master-answer");
 
             flow.awaitTold("keep both lines");
-            assertThat(flow.task().currentConflict().filter(Conflict::askedTheMaster)).isPresent();
+            assertThat(flow.task().currentConflict().filter(Conflict::askedTheArbiter)).isPresent();
             assertThat(flow.task().currentConflict().map(Conflict::told).isPresent()).isFalse();
             verify(userNotifier, never()).notify(contains("deploy conflict stalled"), any(), any());
             assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
@@ -297,8 +297,8 @@ class MasterModeFlowTest extends FlowHarness.World {
 
             flow.awaitRun("master-answer");
 
-            flow.awaitTask(task -> !task.masterOrNone().unanswered().isEmpty());
-            assertThat(flow.task().masterOrNone().unanswered())
+            flow.awaitTask(task -> !task.arbiterOrNone().unanswered().isEmpty());
+            assertThat(flow.task().arbiterOrNone().unanswered())
                 .isEqualTo(flow.task().askedDigest());
             assertThat(flow.task().message()).startsWith("The deploy conflict stalled");
             assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
@@ -312,7 +312,7 @@ class MasterModeFlowTest extends FlowHarness.World {
             doReturn(later.toEpochMilli()).when(clock).millis();
             flow.awaitRun("deploy-conflict");
             flow.awaitTask(
-                task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
+                task -> task.currentConflict().filter(Conflict::askedTheArbiter).isPresent());
 
             Instant muchLater = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(4));
             doReturn(muchLater).when(clock).instant();

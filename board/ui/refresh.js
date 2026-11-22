@@ -31,9 +31,8 @@ export async function refresh() {
       phases: data.phases || [],
       autoReview: { summary: data.autoReview, enabled: data.autoReviewEnabled },
       jobs: data.jobs,
-      actStop: data.actStop,
+      chips: data.chips || [],
       reach: data.reach || [],
-      masterMode: data.masterMode,
       offers: data.offers || {},
     });
     render();

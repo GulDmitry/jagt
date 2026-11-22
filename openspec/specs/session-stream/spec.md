@@ -27,7 +27,7 @@ types in the tab reaches the window, every key included. The tab's library loads
 - **THEN** the first frame carries the styles and puts the cursor there
 
 ### Requirement: The stream is the human's door and is guarded
-The WebSocket SHALL pass `LoopbackFilter`, carry the page's Origin like any write, and be refused without a login where `orchestrator.auth`
+The WebSocket SHALL pass `NotThePage`, carry the page's Origin like any write, and be refused without a login where `orchestrator.auth`
 is `password` or `oidc`. No Master tool types through it: `Keys` and `run` stay verbs.
 #### Scenario: No login
 - **WHEN** auth is `password` and the WebSocket is opened without a login

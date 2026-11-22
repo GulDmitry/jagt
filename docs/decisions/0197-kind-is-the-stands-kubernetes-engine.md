@@ -12,7 +12,7 @@ Accepted 2026-11-17 by the owner's order: restarts tested in docker and Kubernet
 ## Context
 
 - `containerTest` drove the image under compose with Testcontainers beside `standTest`: two suites, two harnesses, no Kubernetes.
-- `kubernetes.yml.dist` was applied by nobody before a release.
+- `examples/kubernetes.yml` was applied by nobody before a release.
 
 ## Decision
 
@@ -21,7 +21,7 @@ Accepted 2026-11-17 by the owner's order: restarts tested in docker and Kubernet
 - **`containerTest` folds into `standTest`** as server scenarios over the shipped `jagt.server.yml.dist`; its source set and Testcontainers go.
 - **kind builds one cluster per server run**, named after the run's root, its kubeconfig in the root, deleted at the end even on failure
   (the marker names it, so `standCleanup` deletes a dead run's cluster).
-- **The image is built once** by `standImage` and loaded with `kind load docker-image`; `kubernetes.yml.dist` is applied as shipped:
+- **The image is built once** by `standImage` and loaded with `kind load docker-image`; `examples/kubernetes.yml` is applied as shipped:
   its image, replica count and Secret keys are the only edits, each failing loudly if the file drifts.
 - **Fixtures reach the volume through a seed pod** (`kubectl cp`) before the jagt pod starts: the first clone runs inside startup.
 - **The board is reached by `kubectl port-forward`**, opened again after every pod replacement.

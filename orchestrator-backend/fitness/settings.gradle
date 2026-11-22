@@ -1,0 +1,7 @@
+rootProject.name = 'fitness'
+
+include 'core'
+include 'engine-archunit'
+include 'engine-scan'
+include 'junit'
+include 'gradle-plugin'

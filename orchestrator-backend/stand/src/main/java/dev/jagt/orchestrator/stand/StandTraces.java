@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
-import dev.jagt.orchestrator.adapter.agent.ClaudeTrust;
+import dev.jagt.orchestrator.adapter.agent.trust.ClaudeTrust;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

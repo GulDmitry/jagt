@@ -820,6 +820,8 @@ public class GitDeploy {
    */
   public static class StaleDeployPathException extends IllegalStateException {
 
+    private static final long serialVersionUID = 1L;
+
     public StaleDeployPathException(Path deployWorktree, List<String> kept) {
       super(
           "The deploy worktree path "
@@ -832,6 +834,8 @@ public class GitDeploy {
   }
 
   public static class ForeignDeployWorktreeException extends IllegalStateException {
+
+    private static final long serialVersionUID = 1L;
 
     public ForeignDeployWorktreeException(Path deployWorktree, Path projectPath) {
       super(
@@ -849,6 +853,8 @@ public class GitDeploy {
    * failure.
    */
   public static class NothingToDeployException extends IllegalStateException {
+
+    private static final long serialVersionUID = 1L;
 
     public NothingToDeployException(String sourceBranch, String targetBranch) {
       super(
@@ -869,6 +875,8 @@ public class GitDeploy {
    * at {@link #revertWorktree} for the human to resolve and revert again.
    */
   public static class RevertConflictException extends IllegalStateException {
+
+    private static final long serialVersionUID = 1L;
     private final transient Path revertWorktree;
 
     public RevertConflictException(
@@ -897,6 +905,8 @@ public class GitDeploy {
    * resolve and deploy again.
    */
   public static class MergeConflictException extends IllegalStateException {
+
+    private static final long serialVersionUID = 1L;
     private final transient Path deployWorktree;
 
     public MergeConflictException(

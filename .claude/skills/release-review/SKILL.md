@@ -14,7 +14,7 @@ Range: the last `Release` commit to `HEAD` unless one is named (`git log --grep=
      `reopens` or `breaks` class like any other finding.
    - The range's diff, and the files it touches in full.
 2. **One reviewer per dimension**: architecture (kinds, rings, collaborators, a class no test can build), security (the guards), tests
-   (RED-proven, light, necessary; each main commit in the range judged its `pitestDiff`), specs and docs (each says what the code does), missing practice (the gate inventory and each kind's standard in
+   (RED-proven, light, necessary; each commit on `release` in the range judged its `pitestDiff`), specs and docs (each says what the code does), missing practice (the gate inventory and each kind's standard in
    `ARCHITECTURE.md` "The kinds", read against the standard itself: what it requires that jagt lacks), onboarding (a light model, from
    a fresh clone and `README.md` alone, starts jagt, adds a project and configures it; each stumble or guess is a finding).
 3. **A finding names its class**, or it is dropped:
@@ -28,7 +28,7 @@ Range: the last `Release` commit to `HEAD` unless one is named (`git log --grep=
 5. **Every survivor ends committed, as one of three**:
    - fixed, a RED-proven test wherever code changed;
    - rejected: its why goes where the next round meets it — one comment at the site, or a new record's Rejected row;
-   - a class an earlier round found too: a test asserting it (`RingsTest`, `KindsTest`, `MockCeilingTest`, or a new
+   - a class an earlier round found too: a test asserting it (`RingsFitness`, `KindsTest`, `mocks-per-test`, or a new
      one beside them), never a third finding.
 6. **A guard gap of a new class** joins `guards.md` with its Reopen condition, in the commit refusing what it can.
 7. Report per dimension: new, reopened, broken, dropped as known — then each open finding in one line.

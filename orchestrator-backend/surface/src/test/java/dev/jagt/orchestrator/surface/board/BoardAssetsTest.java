@@ -31,8 +31,8 @@ class BoardAssetsTest {
 
   @ParameterizedTest
   @CsvSource({
-    "preact.mjs, 3a3201e9ccef7d30ef1273427f1b17ef8323e464b2c8d73b4fd5636af730433e",
-    "hooks.mjs, 6cb79fe9959ad185b8b86134aff47c12fd20216b24837597b19be59a133d9947",
+    "preact.mjs, bdcbd9abdf2c77c5c45326eab42191e949222d479d0d5f69467387a77040cb55",
+    "hooks.mjs, e862ab2973aa6455eaa0f77c5d832d2157d6be59a17c8ba546550a575b58c6b4",
     "htm.mjs, ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4",
     "mermaid.min.js, 6484afc32872a3aa16cac9a76ba1816a1ed4cc870a6593cc2e17757750f518b2"
   })

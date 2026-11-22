@@ -26,9 +26,9 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -97,7 +97,7 @@ class DeployCheckJobTest {
             .withDeployment(Objects.requireNonNull(deployCheckTask().build().deployment())));
     when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
     AgentSessions sessions = mock(AgentSessions.class);
-    StepRelay firstRelay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
+    StepRelay firstRelay = stepRelay().withRoot(root).build(state, sessions, new FakeClock());
     deployCheckJob()
         .withRoot(root)
         .build(state, config, firstRelay, pipelines)
@@ -109,7 +109,7 @@ class DeployCheckJobTest {
         firstRelay.standing("ABC-42"));
     StateService restarted = stateService().withRoot(root).build();
     StepRelay restartedRelay =
-        stepRelay().withRoot(root).build(restarted, sessions, Clock.systemUTC());
+        stepRelay().withRoot(root).build(restarted, sessions, new FakeClock());
 
     deployCheckJob()
         .withRoot(root)

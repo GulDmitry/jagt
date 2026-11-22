@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.adapter.process.ChildProcesses;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,18 +52,19 @@ public final class StandShell {
 
   public static Result run(
       Path cwd, List<String> command, Map<String, String> env, Duration limit) {
-    try {
+    try (ChildProcesses children = new ChildProcesses()) {
       ProcessBuilder builder =
           new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true);
       builder.environment().keySet().removeIf(name -> name.startsWith("CLAUDE"));
       builder.environment().putAll(env);
-      Process process = builder.start();
+      Process process = children.spawn(builder);
       String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-      if (!process.waitFor(limit.toSeconds(), TimeUnit.SECONDS)) {
-        process.destroyForcibly();
-        return new Result(-1, output);
+      boolean finished = process.waitFor(limit.toSeconds(), TimeUnit.SECONDS);
+      if (finished) {
+        children.release(process);
+        return new Result(process.exitValue(), output);
       }
-      return new Result(process.exitValue(), output);
+      return new Result(-1, output);
     } catch (IOException e) {
       return new Result(-1, Objects.requireNonNullElse(e.getMessage(), ""));
     } catch (InterruptedException e) {
@@ -99,7 +101,7 @@ public final class StandShell {
             System.getProperty("os.name", ""), ProcessHandle.current().pid(), StandShell::onPath);
     String run = "stand run " + root.getFileName();
     if (command.isEmpty()) {
-      System.out.println(
+      StandConsole.line(
           run
               + " holds no wake lock: no caffeinate or systemd-inhibit here, the host may sleep"
               + " mid-run");
@@ -107,14 +109,15 @@ public final class StandShell {
     }
     try {
       Process lock =
-          new ProcessBuilder(command.get())
-              .redirectErrorStream(true)
-              .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-              .start();
-      System.out.println(run + " holds a wake lock: " + command.get().getFirst());
+          new ChildProcesses()
+              .spawn(
+                  new ProcessBuilder(command.get())
+                      .redirectErrorStream(true)
+                      .redirectOutput(ProcessBuilder.Redirect.DISCARD));
+      StandConsole.line(run + " holds a wake lock: " + command.get().getFirst());
       return Optional.of(lock);
     } catch (IOException e) {
-      System.out.println(run + " holds no wake lock: " + e.getMessage());
+      StandConsole.line(run + " holds no wake lock: " + e.getMessage());
       return Optional.empty();
     }
   }

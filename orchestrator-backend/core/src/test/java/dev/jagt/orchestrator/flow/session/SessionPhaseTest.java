@@ -13,11 +13,26 @@ import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class SessionPhaseTest {
 
   private static final Session GONE =
       Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.GONE, 4_000, "boom"));
+
+  @ParameterizedTest
+  @CsvSource({
+    "WORKING,true",
+    "IDLE,true",
+    "QUIET,true",
+    "NONE,false",
+    "FAILED,false",
+    "GONE,false"
+  })
+  void anAgentSessionIsUpWhileItWorksIdlesOrIsQuiet(SessionPhase phase, boolean up) {
+    assertThat(phase.live()).isEqualTo(up);
+  }
 
   @Test
   void isSilentSinceTheEndWhereTheAgentIsExpectedToWork() {

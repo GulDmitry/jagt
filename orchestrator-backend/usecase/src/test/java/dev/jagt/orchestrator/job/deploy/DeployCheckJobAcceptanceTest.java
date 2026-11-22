@@ -19,8 +19,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,8 +51,8 @@ class DeployCheckJobAcceptanceTest {
             config,
             relay,
             pipelines,
-            flowReports().build(state, Clock.systemUTC()),
-            taskStops().withRoot(root).build(state, Clock.systemUTC()))
+            flowReports().build(state, new FakeClock()),
+            taskStops().withRoot(root).build(state, new FakeClock()))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));

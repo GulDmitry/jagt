@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -66,7 +67,7 @@ class McpProtocolServiceTest {
                   return "moved";
                 });
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(moving));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(moving));
 
     protocol.handle(
         mapper.readTree(
@@ -85,7 +86,7 @@ class McpProtocolServiceTest {
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             List.of(
                 new StatusTools(
                     mock(AgentStatusReports.class),
@@ -123,7 +124,7 @@ class McpProtocolServiceTest {
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             List.of(new SessionTools(mock(AgentSessions.class), mock(CommandService.class))));
 
     JsonNode response =
@@ -147,8 +148,7 @@ class McpProtocolServiceTest {
   @Test
   void answersParseErrorWithJsonRpcCode32700(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     JsonNode error = protocol.parseError("unexpected character");
 
@@ -159,8 +159,7 @@ class McpProtocolServiceTest {
   void namesTheFailureKindWhenTheCauseCarriesNoMessage() {
     StateService state = mock(StateService.class);
     when(state.findByWorktree(any())).thenThrow(new IllegalStateException());
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     JsonNode error =
         protocol
@@ -180,7 +179,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools failing = new ThrowingMcpTools(new IllegalStateException());
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(failing));
 
     JsonNode response =
         protocol
@@ -206,7 +205,7 @@ class McpProtocolServiceTest {
             .withTurn(Turn.none().relayed("ship", "d1", "", 0)));
     McpTools noting = new AnsweringMcpTools("note", Effect.REPORTS, "notes", "noted");
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(noting));
 
     try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
       protocol.handle(
@@ -237,7 +236,7 @@ class McpProtocolServiceTest {
     McpTools refusing =
         new ThrowingMcpTools(new IllegalArgumentException("CI_POLLING cannot be reported"));
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(refusing));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(refusing));
 
     try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
       protocol.handle(
@@ -260,7 +259,7 @@ class McpProtocolServiceTest {
     McpTools failing =
         new ThrowingMcpTools(new IllegalStateException("branch ABC-1 is checked out elsewhere"));
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(failing));
 
     JsonNode result =
         protocol
@@ -286,7 +285,7 @@ class McpProtocolServiceTest {
     McpTools failing =
         new ThrowingMcpTools(new UncheckedIOException(new IOException("state.json locked")));
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(failing));
 
     JsonNode result =
         protocol
@@ -309,7 +308,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools echoing = new AnsweringMcpTools("echo", Effect.CHANGES, "answers", "all done");
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(echoing));
+        new McpProtocolService(mapper, state, new FakeClock(), List.of(echoing));
 
     JsonNode result =
         protocol
@@ -328,8 +327,7 @@ class McpProtocolServiceTest {
   @Test
   void answersAnInitializeWithTheProtocolVersionTheClientAsked(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     JsonNode result =
         protocol
@@ -349,8 +347,7 @@ class McpProtocolServiceTest {
   @Test
   void answersMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     JsonNode error =
         protocol
@@ -368,8 +365,7 @@ class McpProtocolServiceTest {
   @Test
   void refusesAnUnknownCallersNotificationWithAnErrorCarryingNoId(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     JsonNode response =
         protocol
@@ -394,7 +390,7 @@ class McpProtocolServiceTest {
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
+            mapper, state, new FakeClock(), List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -414,7 +410,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
+            mapper, state, new FakeClock(), List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -445,7 +441,7 @@ class McpProtocolServiceTest {
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             List.of(
                 new StatusTools(
                     mock(AgentStatusReports.class),
@@ -482,8 +478,7 @@ class McpProtocolServiceTest {
             .lastActiveTimestamp(1000)
             .alias("a1")
             .build());
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
@@ -519,15 +514,14 @@ class McpProtocolServiceTest {
   @Test
   void skipsKeepAliveRewriteWhenAgentWasActiveSecondsAgo(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    long freshTimestamp = System.currentTimeMillis();
+    long freshTimestamp = new FakeClock().millis();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
             .lastActiveTimestamp(freshTimestamp)
             .alias("a1")
             .build());
-    McpProtocolService protocol =
-        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
@@ -564,7 +558,7 @@ class McpProtocolServiceTest {
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-            .lastActiveTimestamp(System.currentTimeMillis())
+            .lastActiveTimestamp(new FakeClock().millis())
             .alias("a1")
             .build());
     CallerScope scope = new CallerScope(state);
@@ -572,7 +566,7 @@ class McpProtocolServiceTest {
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            new FakeClock(),
             List.of(
                 new DeployTools(mock(CommandService.class)),
                 new StatusTools(
@@ -607,7 +601,7 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
+            mapper, state, new FakeClock(), List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode response =
         protocol

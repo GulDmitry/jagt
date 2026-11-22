@@ -96,7 +96,7 @@ public class HandBack {
         .toList();
   }
 
-  public boolean masterReads() {
-    return configService.load().master().running();
+  public boolean arbiterReads() {
+    return configService.load().arbiter().running();
   }
 }

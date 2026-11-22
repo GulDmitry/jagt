@@ -17,10 +17,6 @@ public record TestTaskViewsSnapshotBuilder(
 
   public TaskViews.Snapshot build() {
     return new TaskViews.Snapshot(
-        tasks,
-        new AutoReviewCadence(autoReview, Duration.ofHours(24), 10, 60, 240),
-        projects,
-        null,
-        "off");
+        tasks, new AutoReviewCadence(autoReview, Duration.ofHours(24), 10, 60, 240), projects);
   }
 }

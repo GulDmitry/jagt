@@ -36,10 +36,10 @@ class RoundsTest {
         rounds.of(
             task,
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
-    assertThat(round.masterReading()).isTrue();
+    assertThat(round.arbiterReading()).isTrue();
   }
 
   @Test
@@ -50,32 +50,32 @@ class RoundsTest {
         rounds.of(
             task,
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
-    assertThat(round.masterReading()).isFalse();
+    assertThat(round.arbiterReading()).isFalse();
   }
 
   @Test
   void theMasterNoLongerReadsHandBackItHasAlreadyJudged() {
     TaskState task =
-        reducer.masterSealed(
+        reducer.arbiterSealed(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
 
     var round =
         rounds.of(
             task,
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
-    assertThat(round.masterReading()).isFalse();
+    assertThat(round.arbiterReading()).isFalse();
   }
 
   @Test
   void theMasterReadsTheHandBackAgainWhereTheVerdictFileIsGone() {
     TaskState task =
-        reducer.masterVerdictGone(
+        reducer.arbiterVerdictGone(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0))
                 .build());
@@ -84,22 +84,22 @@ class RoundsTest {
         rounds.of(
             task,
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
-    assertThat(round.masterReading()).isTrue();
+    assertThat(round.arbiterReading()).isTrue();
   }
 
   @Test
   void theMasterHasJudgedNothingWhileItIsOff() {
     TaskState task =
-        reducer.masterSealed(
+        reducer.arbiterSealed(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     assertThat(rounds.judged(task)).isFalse();
   }
@@ -125,8 +125,8 @@ class RoundsTest {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
     TaskState standsIn = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState left =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

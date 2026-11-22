@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -43,8 +43,8 @@ class MasterMineCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
+                .withArbiter(
+                    new ArbiterConfig("judge", null, null, List.of("ship", "teleport"), null)));
 
     assertThat(new MasterMineCheck(configService, new GlobalCommands(List.of())).problems())
         .singleElement()
@@ -59,8 +59,8 @@ class MasterMineCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(
-                    new MasterConfig(
+                .withArbiter(
+                    new ArbiterConfig(
                         "act", null, null, List.of("plan", "done", "remove-repo", "spend"), null)));
 
     assertThat(
@@ -73,7 +73,7 @@ class MasterMineCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withMaster(new MasterConfig("off", null, null, List.of("teleport"), null)));
+                .withArbiter(new ArbiterConfig("off", null, null, List.of("teleport"), null)));
 
     assertThat(new MasterMineCheck(configService, new GlobalCommands(List.of())).problems())
         .isEmpty();

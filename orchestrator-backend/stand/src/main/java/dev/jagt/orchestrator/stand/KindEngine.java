@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.adapter.process.ChildProcesses;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 public final class KindEngine implements UnitEngine {
 
   private static final Path MANIFEST =
-      Path.of(System.getProperty("stand.repo", "../..")).resolve("kubernetes.yml.dist");
+      Path.of(System.getProperty("stand.repo", "../..")).resolve("examples/kubernetes.yml");
   private static final String BUILT = "jagt-stand";
   private static final String RUN = "jagt-stand:run";
   private static final String NEXT = "jagt-stand:next";
@@ -24,8 +25,38 @@ public final class KindEngine implements UnitEngine {
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
   @FunctionalInterface
-  public interface Forwarder {
+  public interface Forwarder extends AutoCloseable {
     Process open(Path root, int port) throws IOException;
+
+    @Override
+    default void close() {}
+  }
+
+  private static final class Owned implements Forwarder {
+
+    private final ChildProcesses children = new ChildProcesses();
+    private final Map<String, String> env;
+
+    Owned(Map<String, String> env) {
+      this.env = env;
+    }
+
+    @Override
+    public Process open(Path dir, int local) throws IOException {
+      ProcessBuilder builder =
+          new ProcessBuilder(
+                  "kubectl", "port-forward", "--address", "127.0.0.1", "svc/jagt", local + ":8290")
+              .directory(dir.toFile())
+              .redirectErrorStream(true)
+              .redirectOutput(dir.resolve("forward.log").toFile());
+      builder.environment().putAll(env);
+      return children.spawn(builder);
+    }
+
+    @Override
+    public void close() {
+      children.close();
+    }
   }
 
   private final Path root;
@@ -57,22 +88,7 @@ public final class KindEngine implements UnitEngine {
   public static KindEngine start(Path root, int port, StandBoard board, Map<String, String> env) {
     Map<String, String> kube = Map.of("KUBECONFIG", root.resolve("kubeconfig").toString());
     StandShell.Runner shell = (cwd, command, ignored) -> StandShell.run(cwd, command, kube, LONG);
-    Forwarder forwarder =
-        (dir, local) -> {
-          ProcessBuilder builder =
-              new ProcessBuilder(
-                      "kubectl",
-                      "port-forward",
-                      "--address",
-                      "127.0.0.1",
-                      "svc/jagt",
-                      local + ":8290")
-                  .directory(dir.toFile())
-                  .redirectErrorStream(true)
-                  .redirectOutput(dir.resolve("forward.log").toFile());
-          builder.environment().putAll(kube);
-          return builder.start();
-        };
+    Forwarder forwarder = new Owned(kube);
     return new KindEngine(root, port, board, shell, forwarder, MANIFEST, STARTUP).up();
   }
 
@@ -176,6 +192,7 @@ public final class KindEngine implements UnitEngine {
     logs();
     usage();
     stopForward();
+    forwarder.close();
     StandShell.Result deleted = run("kind", "delete", "cluster", "--name", cluster());
     if (deleted.exit() != 0) {
       throw new StandFailure(
@@ -284,7 +301,7 @@ public final class KindEngine implements UnitEngine {
     StandShell.Result peak =
         exec("sh", "-c", "cat /sys/fs/cgroup/memory.peak; grep usage_usec /sys/fs/cgroup/cpu.stat");
     if (peak.exit() == 0) {
-      System.out.println(
+      StandConsole.line(
           "stand pod " + cluster() + " memory.peak and cpu: " + peak.output().replace('\n', ' '));
     }
   }
@@ -323,7 +340,7 @@ public final class KindEngine implements UnitEngine {
   private void ok(String what, String... command) {
     long began = System.nanoTime();
     StandShell.Result result = run(command);
-    System.out.println(
+    StandConsole.line(
         "stand step "
             + cluster()
             + " "

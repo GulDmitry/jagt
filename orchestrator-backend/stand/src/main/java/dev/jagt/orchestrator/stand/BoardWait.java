@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.stand;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
@@ -10,9 +9,9 @@ final class BoardWait {
   private BoardWait() {}
 
   static boolean up(StandBoard board, Duration limit, Runnable between) {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(limit);
+    Instant deadline = StandClock.now().plus(limit);
     while (!board.ready()) {
-      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+      if (StandClock.now().isAfter(deadline)) {
         return false;
       }
       between.run();
@@ -22,9 +21,9 @@ final class BoardWait {
   }
 
   static boolean until(BooleanSupplier done, Duration limit) {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(limit);
+    Instant deadline = StandClock.now().plus(limit);
     while (!done.getAsBoolean()) {
-      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+      if (StandClock.now().isAfter(deadline)) {
         return false;
       }
       JagtProcess.pause(Duration.ofMillis(200));
@@ -33,9 +32,9 @@ final class BoardWait {
   }
 
   static boolean down(StandBoard board, Duration limit) {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(limit);
+    Instant deadline = StandClock.now().plus(limit);
     while (board.ready()) {
-      if (Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+      if (StandClock.now().isAfter(deadline)) {
         return false;
       }
       JagtProcess.pause(Duration.ofMillis(200));

@@ -359,6 +359,21 @@ class WorktreeInspectionTest {
   }
 
   @Test
+  void failsTheCommitReadNamingGitsOwnWordsWhenGitLogExitsNonZero() throws Exception {
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
+    Processes failing =
+        ScriptedProcesses.answering(
+            List.of("git", "log"), new Processes.Result(128, "", "fatal: bad revision"));
+    WorktreeInspection failingGit =
+        new WorktreeInspection(
+            GitRepos.commands(failing), new StubAgentRuntime(StubAgentProperties.defaults()));
+
+    assertThatThrownBy(() -> failingGit.commitsSince(repo, repo, "origin/main"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("git log in " + repo + " failed (exit 128): fatal: bad revision");
+  }
+
+  @Test
   void fetchesTheTargetOnceForTwoTasksOfOneRepositoryInOneSweep() throws Exception {
     Processes runner = spy(new ProcessRunner());
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
@@ -366,7 +381,7 @@ class WorktreeInspectionTest {
         new WorktreeInspection(
             GitRepos.commands(runner), new StubAgentRuntime(StubAgentProperties.defaults()));
 
-    try (OriginContext.Scope ignored = SweepFetches.create().open()) {
+    try (OriginContext.Scope _ = SweepFetches.create().open()) {
       git.mergedIntoTarget(repo, repo, "main");
       git.mergedIntoTarget(repo, repo, "main");
     }

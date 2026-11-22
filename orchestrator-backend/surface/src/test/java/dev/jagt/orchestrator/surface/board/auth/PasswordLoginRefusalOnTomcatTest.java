@@ -9,11 +9,11 @@ import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAttempts;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginBackoff;
 import dev.jagt.orchestrator.surface.board.auth.attempts.PasswordLoginOutcome;
-import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
-import dev.jagt.orchestrator.surface.board.filter.LoginBackoffFilter;
-import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
+import dev.jagt.orchestrator.surface.board.filter.Doors;
 import dev.jagt.orchestrator.surface.board.terminal.SessionSocket;
 import dev.jagt.orchestrator.surface.board.terminal.SessionSocketRoute;
+import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.CookieManager;
@@ -60,9 +60,7 @@ class PasswordLoginRefusalOnTomcatTest {
   @EnableConfigurationProperties({AuthProperties.class, LoginBackoff.class})
   @Import({
     PasswordLogin.class,
-    LoopbackFilter.class,
-    BoardWriteFilter.class,
-    LoginBackoffFilter.class,
+    Doors.class,
     LoginAttempts.class,
     LoginAudit.class,
     PasswordLoginOutcome.class,
@@ -71,13 +69,18 @@ class PasswordLoginRefusalOnTomcatTest {
   })
   static class Board {
     @Bean
+    RootToken rootToken() {
+      return header -> false;
+    }
+
+    @Bean
     BoardUrl boardUrl() {
       return new BoardUrl("8290", "");
     }
 
     @Bean
     Clock clock() {
-      return Clock.systemUTC();
+      return new FakeClock();
     }
   }
 
@@ -87,12 +90,18 @@ class PasswordLoginRefusalOnTomcatTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "GET|/state|rebound.example.test|Accept: */*",
-        "POST|/api/tasks/say|localhost|Origin: http://evil.example.test",
-        "POST|/api/tasks/say|localhost|Accept: */*"
+        "GET|/state|rebound.example.test|Accept: */*|403",
+        "POST|/api/tasks/say|localhost|Origin: http://evil.example.test|403",
+        "POST|/api/tasks/say|localhost|Accept: */*|403",
+        "POST|/mcp|localhost|X-Working-Directory: /work/t|404",
+        "POST|/api/agent/hooks|localhost|X-Working-Directory: /work/t|404",
+        "POST|/mcp|localhost|X-Forwarded-For: 10.9.9.9|401",
+        "POST|/api/agent/hooks|localhost|X-Forwarded-For: 10.9.9.9|401",
+        "POST|/mcp;x=1|localhost|X-Working-Directory: /work/t|400",
+        "POST|/api/agent/%2e%2e/tasks|localhost|X-Working-Directory: /work/t|400"
       })
-  void answersItsRefusalNotTheLoginRedirect(String method, String path, String host, String header)
-      throws Exception {
+  void answersItsRefusalNotTheLoginRedirect(
+      String method, String path, String host, String header, int expected) throws Exception {
     String request =
         method
             + " "
@@ -114,7 +123,7 @@ class PasswordLoginRefusalOnTomcatTest {
               .readLine();
     }
 
-    assertThat(status).contains(" 403");
+    assertThat(status).contains(" " + expected);
   }
 
   @Test
@@ -191,7 +200,7 @@ class PasswordLoginRefusalOnTomcatTest {
             HttpResponse.BodyHandlers.discarding());
 
     assertThat(third.statusCode()).isEqualTo(429);
-    assertThat(third.headers().firstValue("Retry-After")).isPresent();
+    assertThat(third.headers().firstValue("Retry-After")).contains("301");
   }
 
   @Test

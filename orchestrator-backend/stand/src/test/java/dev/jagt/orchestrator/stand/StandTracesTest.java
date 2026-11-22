@@ -24,8 +24,8 @@ class StandTracesTest {
           "%1$s/jagt-stand-41-2/work/ABC-1": {"hasTrustDialogAccepted": true},
           "%1$s/jagt-stand-notes/work": {"hasTrustDialogAccepted": true},
           "%1$s/other/jagt-stand-41-1/work": {"hasTrustDialogAccepted": true},
-          "/home/me/jagt-stand-41-1/work": {"hasTrustDialogAccepted": true},
-          "/home/me/project": {"hasTrustDialogAccepted": true}
+          "/h/me/jagt-stand-41-1/work": {"hasTrustDialogAccepted": true},
+          "/h/me/project": {"hasTrustDialogAccepted": true}
         }, "theme": "dark"}
         """
             .formatted(base));
@@ -40,8 +40,8 @@ class StandTracesTest {
             base + "/jagt-stand-41-2/work/ABC-1",
             base + "/jagt-stand-notes/work",
             base + "/other/jagt-stand-41-1/work",
-            "/home/me/jagt-stand-41-1/work",
-            "/home/me/project");
+            "/h/me/jagt-stand-41-1/work",
+            "/h/me/project");
     assertThat(kept.path("theme").asString()).isEqualTo("dark");
   }
 

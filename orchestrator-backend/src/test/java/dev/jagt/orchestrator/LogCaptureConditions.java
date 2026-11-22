@@ -14,13 +14,13 @@ import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.ResourceLocks;
 
-final class LogCaptureConditions {
+public final class LogCaptureConditions {
 
   private static final String LIST_APPENDER = "ch.qos.logback.core.read.ListAppender";
 
   private LogCaptureConditions() {}
 
-  static ArchCondition<JavaClass> holdNoLockAndNoSameThread() {
+  public static ArchCondition<JavaClass> holdNoLockAndNoSameThread() {
     return new ArchCondition<>("hold no lock, no @Isolated and no same-thread execution") {
       @Override
       public void check(JavaClass type, ConditionEvents events) {
@@ -31,7 +31,7 @@ final class LogCaptureConditions {
     };
   }
 
-  static ArchCondition<JavaClass> buildNoListAppender() {
+  public static ArchCondition<JavaClass> buildNoListAppender() {
     return new ArchCondition<>("build no ListAppender") {
       @Override
       public void check(JavaClass type, ConditionEvents events) {

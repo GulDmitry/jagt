@@ -1,0 +1,34 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :fitness:core:dependencies --write-locks
+antlr:antlr:2.7.7=pitest
+net.bytebuddy:byte-buddy:1.18.3=testCompileClasspath,testRuntimeClasspath
+net.sf.jopt-simple:jopt-simple:4.9=pitest
+org.antlr:stringtemplate:3.2.1=pitest
+org.apache.commons:commons-lang3:3.18.0=pitest
+org.apache.commons:commons-text:1.14.0=pitest
+org.apiguardian:apiguardian-api:1.1.2=testCompileClasspath
+org.assertj:assertj-core:3.27.7=testCompileClasspath,testRuntimeClasspath
+org.jspecify:jspecify:1.0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.junit.jupiter:junit-jupiter-api:6.1.3=testCompileClasspath,testRuntimeClasspath
+org.junit.jupiter:junit-jupiter-engine:6.1.3=testRuntimeClasspath
+org.junit.jupiter:junit-jupiter-params:6.1.3=testCompileClasspath,testRuntimeClasspath
+org.junit.jupiter:junit-jupiter:6.1.3=testCompileClasspath,testRuntimeClasspath
+org.junit.platform:junit-platform-commons:6.1.3=testCompileClasspath,testRuntimeClasspath
+org.junit.platform:junit-platform-engine:6.1.3=testRuntimeClasspath
+org.junit.platform:junit-platform-launcher:6.1.3=testRuntimeClasspath
+org.junit:junit-bom:6.1.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.opentest4j:opentest4j:1.3.0=testCompileClasspath,testRuntimeClasspath
+org.ow2.asm:asm-analysis:9.11=pitest
+org.ow2.asm:asm-commons:9.11=pitest
+org.ow2.asm:asm-tree:9.11=pitest
+org.ow2.asm:asm-util:9.11=pitest
+org.ow2.asm:asm:9.11=pitest
+org.pitest:pitest-command-line:1.30.2=pitest
+org.pitest:pitest-entry:1.30.2=pitest
+org.pitest:pitest-html-report:1.30.2=pitest
+org.pitest:pitest-junit5-plugin:1.2.3=pitest
+org.pitest:pitest:1.30.2=pitest
+org.yaml:snakeyaml:2.7=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+empty=annotationProcessor,testAnnotationProcessor

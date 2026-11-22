@@ -1,0 +1,37 @@
+title = "jagt"
+
+[extend]
+useDefault = true
+
+# One entry per false positive, matched by file and by the matched text; never a blanket path.
+
+[[allowlists]]
+description = "Fake Codex JWT fixtures: header-less payloads, with or without the literal 's' signature"
+condition = "AND"
+paths = ['''orchestrator-backend/adapter/src/test/java/dev/jagt/orchestrator/adapter/agent/CodexCredentialsTest\.java''']
+regexes = ['''h\.eyJ[A-Za-z0-9_-]+(\.s)?''']
+
+[[allowlists]]
+description = "Fixture password asserting that a password is never echoed"
+condition = "AND"
+paths = ['''orchestrator-backend/surface/src/test/java/dev/jagt/orchestrator/surface/board/auth/AuthCheckTest\.java''']
+regexes = ['''hunter2-plain''']
+
+[[allowlists]]
+description = "RFC 6455 sample Sec-WebSocket-Key in a handshake fixture"
+condition = "AND"
+paths = ['''orchestrator-backend/surface/src/test/java/dev/jagt/orchestrator/surface/board/auth/PasswordLoginRefusalOnTomcatTest\.java''']
+regexes = ['''dGhlIHNhbXBsZSBub25jZQ==''']
+
+[[allowlists]]
+description = "Master eval fixture: an invented sk_live placeholder the Master must refuse to commit"
+condition = "AND"
+paths = ['''roles/master/eval/22-a-secret-in-the-diff\.yml''']
+regexes = ['''sk_live_EXAMPLE0+''']
+
+[[allowlists]]
+description = "Vendored minified mermaid: the match is a local variable named keyCount"
+condition = "AND"
+paths = ['''(board|orchestrator-backend/surface/(src/main|build)/resources/(main/)?static)/vendor/mermaid\.min\.js''']
+regexTarget = "line"
+regexes = ['''m\.keyCount,''']

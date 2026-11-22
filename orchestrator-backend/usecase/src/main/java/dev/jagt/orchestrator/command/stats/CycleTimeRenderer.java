@@ -74,7 +74,7 @@ public class CycleTimeRenderer {
                 all.rounds() / (double) clocks.size()))
         .append(
             "by you counts the moves a human made on the task; fewer is a task the agents and the"
-                + " Master carried.\n")
+                + " arbiter carried.\n")
         .append(
             all.partial()
                 ? "a + marks a task whose oldest steps have aged out of its history,"

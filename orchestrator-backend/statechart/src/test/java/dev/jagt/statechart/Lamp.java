@@ -39,8 +39,10 @@ final class Lamp {
   static final RegionId<Mode> MODE = new RegionId<>("mode", Mode.class);
   static final RegionId<Stage> STAGE = new RegionId<>("stage", Stage.class);
   static final RegionId<Gear> GEAR = new RegionId<>("gear", Gear.class);
-  static final RegionId<Mode> LEVEL = new RegionId<>("level", Mode.class);
-  static final RegionId<Mode> GLOW = new RegionId<>("glow", Mode.class);
+  static final DataId<Mode> LEVEL = new DataId<>("level", Mode.class);
+  static final DataId<Mode> GLOW = new DataId<>("glow", Mode.class);
+  static final RegionId<Mode> LEVEL_REGION = new RegionId<>("level", Mode.class);
+  static final RegionId<Mode> GLOW_REGION = new RegionId<>("glow", Mode.class);
 
   private Lamp() {}
 }

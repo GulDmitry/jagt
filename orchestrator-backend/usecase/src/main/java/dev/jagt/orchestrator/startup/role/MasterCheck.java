@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * The Master judges unless a human turned it off. What it judges lives in a file rather than in a
+ * The Master acts unless a human chose otherwise. What it judges lives in a file rather than in a
  * session, so a mode that names no readable one would run a reviewer with no standards.
  */
 @Component
@@ -32,9 +32,10 @@ public class MasterCheck implements StartupCheck {
   @Override
   public List<Problem> problems() {
     ConfigService.ConfigFile config = configService.load();
-    ConfigService.ConfigFile.MasterConfig master = config.master();
+    ConfigService.ConfigFile.ArbiterConfig master = config.arbiter();
     List<Problem> problems = new ArrayList<>();
-    if (MasterMode.of(master.mode()).isEmpty()) {
+    boolean written = master.mode() != null && !master.mode().isBlank();
+    if (written && MasterMode.of(master.mode()).isEmpty()) {
       problems.add(
           new Problem(
               MODE,
@@ -85,7 +86,7 @@ public class MasterCheck implements StartupCheck {
    */
   private static void refuseHalfAutomatedLoop(
       ConfigService.ConfigFile config,
-      ConfigService.ConfigFile.MasterConfig master,
+      ConfigService.ConfigFile.ArbiterConfig master,
       List<Problem> problems) {
     if (master.may(MasterRight.REPLY) && !config.codeReview().postReviewRepliesOrDefault()) {
       problems.add(

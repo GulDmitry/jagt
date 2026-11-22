@@ -9,7 +9,7 @@ Accepted 2026-11-10 by the owner.
 
 ## Context
 
-- Static mutable state and `@PostConstruct` work reach around the constructor `ProductionConstructorTest` guards.
+- Static mutable state and `@PostConstruct` work reach around the constructor `constructors-called-from-main` guards.
 - Measured 2026-11-10: `TaskChart` holds 3 static mutable fields and `ToolGate` 1; 7 `@PostConstruct` hooks follow events or install state.
 - About 71 static holders (~400 call sites) are pure and mutation-covered.
 
@@ -21,7 +21,7 @@ Accepted 2026-11-10 by the owner.
   a role composition is the context's, never the process's.
 - **Start work is `StateWritten` events**: `StateService` publishes through the `StateEvents` port,
   each listener is an `@EventListener`, none a `@PostConstruct`.
-- **`StaticStateTest` and `LifecycleHooksTest` freeze the offenders** in `src/test/resources/archunit/`; the store only shrinks.
+- **`static-state` and `post-construct-hooks` fail on the first offender**, none is stored.
 - Exempt by name: `TaskAliasLogFilter`, `AbortedConnectionFilter` (Logback predates the context).
 
 ## Rejected

@@ -80,6 +80,9 @@ public final class CommandReference {
       declared.add(new Declared(action.rank(), Verb.of(action), List.of(action.usage())));
     }
     for (GlobalCommand command : globals) {
+      if (!command.available()) {
+        continue;
+      }
       declared.add(new Declared(command.rank(), Verb.of(command), command.usage()));
     }
     // Rank, then the id: two equal ranks would come out in container order.

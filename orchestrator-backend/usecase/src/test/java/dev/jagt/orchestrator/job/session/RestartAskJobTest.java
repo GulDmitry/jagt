@@ -23,10 +23,10 @@ import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,8 +46,8 @@ class RestartAskJobTest {
   @BeforeEach
   void restartedJagtWithOneTaskOnItsFirstTurn() {
     state = stateService().withRoot(root).build();
-    turns = taskTurns().build(state, Clock.systemUTC());
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, Clock.systemUTC());
+    turns = taskTurns().build(state, new FakeClock());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
   }
@@ -58,7 +58,7 @@ class RestartAskJobTest {
     turns.opened("ABC-42", "round-not-ready", "digest", TaskStatus.REVIEW_PENDING);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince("ABC-42", 1793862000000L)).thenReturn(true);
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, Clock.systemUTC());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
 
     job.runOn(state.tasks());
 
@@ -116,7 +116,7 @@ class RestartAskJobTest {
     turns.opened("ABC-43", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive(anyString())).thenReturn(true);
     when(sessions.loggedSince(anyString(), eq(1793862000000L))).thenReturn(true);
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, Clock.systemUTC());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
     doThrow(new IllegalStateException("No session"))
         .when(relay)
         .say(
@@ -140,7 +140,7 @@ class RestartAskJobTest {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince("ABC-42", 1793862000000L)).thenReturn(false);
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, Clock.systemUTC());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
 
     job.runOn(state.tasks());
 

@@ -5,6 +5,8 @@ import static dev.jagt.orchestrator.adapter.assistant.TestOpenCodeReadBuilder.op
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,7 +52,7 @@ class HeadlessOpenCodeTest {
   @Test
   void runsStandaloneOnItsOwnConfigWithTheProjectsConfigDisabledAndTheSchemaInThePrompt(
       @TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
     headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
@@ -101,7 +103,7 @@ class HeadlessOpenCodeTest {
 
   @Test
   void answersNothingReadableWhereTheModelSaidNoObject(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(
             new Processes.Result(
                 0, "{\"type\":\"text\",\"part\":{\"text\":\"I could not tell.\"}}", ""));
@@ -114,7 +116,7 @@ class HeadlessOpenCodeTest {
 
   @Test
   void failsWithTheExitAndStillBooksWhatTheRunSpentWhereTheCliExitsNonZero(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(
             new Processes.Result(
                 1,
@@ -133,7 +135,7 @@ class HeadlessOpenCodeTest {
   void holdsFenceOfTheReadsScopeWhileTheRunLastsAndForgetsItWhenTheRunEnds(@TempDir Path worktree) {
     AtomicReference<String> fence = new AtomicReference<>();
     AtomicBoolean held = new AtomicBoolean();
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenAnswer(call -> {
           String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
           fence.set(
@@ -152,7 +154,7 @@ class HeadlessOpenCodeTest {
   @Test
   void discardsTheAnswerWhereCallCompletedAndNoneReachedTheReadGateSoThePluginNeverLoaded(
       @TempDir Path worktree) throws IOException {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(
             new Processes.Result(
                 0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), ""));
@@ -165,7 +167,7 @@ class HeadlessOpenCodeTest {
 
   @Test
   void keepsTheAnswerWhereNoToolWasCalledSoNothingHadToReachTheReadGate(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(
             new Processes.Result(
                 0,
@@ -185,7 +187,7 @@ class HeadlessOpenCodeTest {
   @Test
   void keepsTheAnswerWhereTheOnlyCallWasDeniedAndSoNeverRanNorReachedTheReadGate(
       @TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(
             new Processes.Result(
                 0,
@@ -238,7 +240,7 @@ class HeadlessOpenCodeTest {
 
   @Test
   void failsWithNoUsageWhereTheRunDoesNotReturnInTime(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenThrow(new IllegalStateException("Command timed out"));
 
     HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
@@ -250,7 +252,7 @@ class HeadlessOpenCodeTest {
 
   @Test
   void letsStopOfJagtThroughUnjudged(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenThrow(new Processes.Stopped(List.of("opencode")));
 
     assertThatThrownBy(

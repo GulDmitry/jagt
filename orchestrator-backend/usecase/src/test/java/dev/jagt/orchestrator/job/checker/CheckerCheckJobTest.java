@@ -27,10 +27,10 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +62,7 @@ class CheckerCheckJobTest {
     when(config.load()).thenReturn(ConfigFile.defaults());
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader, never()).check(any(), any(), any(), any());
@@ -73,7 +73,7 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().withAskedDigest(null).build());
 
     verify(reader, never()).check(any(), any(), any(), any());
@@ -84,11 +84,11 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
     when(outcomes.apply(any(), any(), any())).thenReturn(AcceptanceEnding.PASSED);
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader, times(1)).check(any(), any(), any(), any());
@@ -108,7 +108,7 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
     TaskState task = askedDeploy().build();
 
-    checkerCheckJob().build(config, paths, reader, outcomes, Clock.systemUTC()).run("ABC-42", task);
+    checkerCheckJob().build(config, paths, reader, outcomes, new FakeClock()).run("ABC-42", task);
 
     verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet));
   }
@@ -118,7 +118,7 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(outcomes).apply(eq("ABC-42"), any(), eq(acceptanceVerdict().build()));
@@ -134,7 +134,7 @@ class CheckerCheckJobTest {
     TaskState restarted = reducer.relayed(askedDeploy().build(), "accept", "digest", "", 1);
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", restarted);
 
     verify(reader)
@@ -153,7 +153,7 @@ class CheckerCheckJobTest {
 
     checkerCheckJob()
         .withRoleFile(role)
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader).check(any(), any(), any(), any());
@@ -165,7 +165,7 @@ class CheckerCheckJobTest {
 
     checkerCheckJob()
         .withRoleFile(role)
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader, never()).check(any(), any(), any(), any());
@@ -178,7 +178,7 @@ class CheckerCheckJobTest {
 
     checkerCheckJob()
         .withRoleFile(role)
-        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .build(config, paths, reader, outcomes, new FakeClock())
         .run("ABC-42", askedDeploy().withStatus(TaskStatus.DONE).build());
 
     verify(reader).check(any(), any(), any(), any());

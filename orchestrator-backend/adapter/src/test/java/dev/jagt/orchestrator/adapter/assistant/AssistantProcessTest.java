@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.assistant.AssistantUnavailable;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -77,7 +78,7 @@ class AssistantProcessTest {
           runner,
           new AssistantBreaker(
               AssistantProperties.empty().withBreakerFailures(3),
-              Clock.systemUTC(),
+              new FakeClock(),
               new ReachLedger()));
 
   @Test

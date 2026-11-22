@@ -16,6 +16,14 @@ if ! whoami >/dev/null 2>&1; then
   echo "jagt:x:$(id -u):0::$HOME:/bin/bash" >>/etc/passwd
 fi
 mkdir -p /data/dumps "$HOME"
+# The configuration the board edits lives on the volume; the image's copy only seeds a first start.
+if [ -n "$ORCHESTRATOR_CONFIG_FILE" ] && [ ! -e "$ORCHESTRATOR_CONFIG_FILE" ]; then
+  mkdir -p "$(dirname "$ORCHESTRATOR_CONFIG_FILE")"
+  seed=/app/jagt.seed.yml
+  # An upgrade from an image that read a mounted /app/jagt.yml keeps that file's projects.
+  [ -e /app/jagt.yml ] && seed=/app/jagt.yml
+  cp "$seed" "$ORCHESTRATOR_CONFIG_FILE"
+fi
 while true; do
   # Unquoted: the variable holds several options.
   # shellcheck disable=SC2086

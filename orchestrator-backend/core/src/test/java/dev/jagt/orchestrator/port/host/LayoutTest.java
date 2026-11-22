@@ -14,7 +14,7 @@ class LayoutTest {
     Layout layout = new Layout(Path.of("/d"), null);
 
     assertThat(layout.stateFile()).isEqualTo(Path.of("/d/jagt/state.json"));
-    assertThat(layout.masterToken()).isEqualTo(Path.of("/d/jagt/master-token"));
+    assertThat(layout.token()).isEqualTo(Path.of("/d/jagt/master-token"));
     assertThat(layout.checkerVerdicts("qa")).isEqualTo(Path.of("/d/jagt/qa-verdicts"));
     assertThat(layout.stops()).isEqualTo(Path.of("/d/records/stops.jsonl"));
     assertThat(layout.finished()).isEqualTo(Path.of("/d/records/finished.jsonl"));

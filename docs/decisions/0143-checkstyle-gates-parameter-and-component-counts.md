@@ -10,7 +10,7 @@ Amended by [0162](0162-a-check-holds-for-all-code.md): it holds for every source
 ## Context
 
 - Records had grown positionally to dozens of components; nothing failed the build on a long parameter list.
-- `CollaboratorCeilingTest` counts a bean's collaborators, not a record's components or a method's parameters.
+- `collaborators-per-class` counts a bean's collaborators, not a record's components or a method's parameters.
 
 ## Decision
 
@@ -19,7 +19,7 @@ Amended by [0162](0162-a-check-holds-for-all-code.md): it holds for every source
 - `gradle/checkstyle/suppressions.xml` lists today's breaches by file and check, each with its reason and estimated cost;
   zero is the target, and a split by composition deletes its line.
 - `UnusedImports` and `RedundantImport` gate main the same way, at their defaults.
-- A bean keeps `CollaboratorCeilingTest`'s 3/5.
+- A bean keeps `collaborators-per-class`'s 3/5.
 - The same config is Checkstyle's bundled Google checks with every Javadoc check off (comments default to none);
   google-java-format 2.0 through Spotless formats before compile; `TextBlockGoogleStyleFormatting` is commented out
   (no property accepts gjf's text blocks; one `replaceRegex` could not re-align them: 24 violations left).

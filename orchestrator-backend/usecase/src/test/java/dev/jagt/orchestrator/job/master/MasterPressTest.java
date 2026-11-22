@@ -20,10 +20,10 @@ import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,8 +43,7 @@ class MasterPressTest {
   @BeforeEach
   void masterPressOverAnEmptyState() {
     state = stateService().withRoot(root).build();
-    press =
-        new MasterPress(commands, humanPaths, stops, taskTurns().build(state, Clock.systemUTC()));
+    press = new MasterPress(commands, humanPaths, stops, taskTurns().build(state, new FakeClock()));
   }
 
   @Test
@@ -100,7 +99,7 @@ class MasterPressTest {
 
     press.press("ABC-1", task, TaskAction.DEPLOY);
 
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().left())
         .isEqualTo("deploy demo/src/auth/Login.java");
   }
 
@@ -115,7 +114,7 @@ class MasterPressTest {
 
     press.press("ABC-1", task, TaskAction.DEPLOY);
 
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().left())
         .isEqualTo("deploy demo/src/auth/Login.java");
   }
 
@@ -131,7 +130,7 @@ class MasterPressTest {
 
     press.press("ABC-1", task, TaskAction.DEPLOY);
 
-    assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left()).isEmpty();
+    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().left()).isEmpty();
   }
 
   @Test

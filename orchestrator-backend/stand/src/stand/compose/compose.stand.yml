@@ -6,6 +6,7 @@ services:
       - "127.0.0.1:${JAGT_PORT}:8290"
     volumes:
       - ${JAGT_STAND_ROOT}:${JAGT_STAND_ROOT}
+      - jagt-data:${JAGT_STAND_ROOT}/jagt
       - ${JAGT_STAND_ROOT}/home:/data/home
     environment:
       ORCHESTRATOR_ROOT: ${JAGT_STAND_ROOT}
@@ -26,6 +27,9 @@ services:
       - "host.docker.internal:host-gateway"
     secrets:
       - jagt_password_hash
+
+volumes:
+  jagt-data:
 
 secrets:
   jagt_password_hash:

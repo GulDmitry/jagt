@@ -25,11 +25,11 @@ import { bothNames } from "./format.js";
  * @typedef {{ id: string, label: string }} Phase
  * @typedef {{ said: string, fix: string[], retryAt?: number }} Reach
  * @typedef {{ failing?: number, count: number, nextRunAt?: number }} Jobs
- * @typedef {{ cause: string, at: number }} ActStop
+ * @typedef {{ key: string, verb: string | null, broken: boolean, at: number | null }} Chip
  * @typedef {{ summary: string | null, enabled: boolean }} AutoReview
  * @typedef {{
- *   tasks: Task[], projects: string[], autoReview: AutoReview, jobs: Jobs | null, actStop: ActStop | null,
- *   assistant: null, reach: Reach[], masterMode: string, verbs: Verb[], branchStrategies: BranchStrategy[],
+ *   tasks: Task[], projects: string[], autoReview: AutoReview, jobs: Jobs | null, chips: Chip[],
+ *   assistant: null, reach: Reach[], verbs: Verb[], branchStrategies: BranchStrategy[],
  *   phases: Phase[], offers: Record<string, string[]>
  * }} Data
  */
@@ -40,10 +40,9 @@ const data = {
   projects: [],
   autoReview: { summary: "", enabled: false },
   jobs: null,
-  actStop: null,
+  chips: [],
   assistant: null,
   reach: [],
-  masterMode: "off",
   verbs: [],
   branchStrategies: [],
   phases: [],
@@ -56,9 +55,8 @@ export const branchStrategies = () => data.branchStrategies;
 export const phases = () => data.phases;
 export const autoReview = () => data.autoReview;
 export const jobs = () => data.jobs;
-export const actStop = () => data.actStop;
+export const chips = () => data.chips;
 export const reach = () => data.reach;
-export const masterMode = () => data.masterMode;
 export const verbs = () => data.verbs;
 /** @param {Task} task */
 export const offersOn = (task) => data.offers[task.id] || [];

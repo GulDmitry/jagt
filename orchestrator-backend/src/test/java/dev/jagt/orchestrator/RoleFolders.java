@@ -7,11 +7,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class RoleFolders {
+public final class RoleFolders {
 
   private RoleFolders() {}
 
-  static List<String> ids() {
+  public static List<String> ids() {
     try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
       return folders
           .filter(Files::isDirectory)

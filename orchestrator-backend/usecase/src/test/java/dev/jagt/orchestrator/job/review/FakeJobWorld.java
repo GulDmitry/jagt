@@ -39,9 +39,9 @@ import dev.jagt.orchestrator.service.CarriedBlock;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.HandBack;
+import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.Assistants;
-import dev.jagt.orchestrator.service.assistant.ChargedReviews;
 import dev.jagt.orchestrator.service.assistant.KeptTicketTexts;
 import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.git.GitCommands;
@@ -49,6 +49,8 @@ import dev.jagt.orchestrator.service.git.GitWorktrees;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.git.WorktreeInspection;
 import dev.jagt.orchestrator.service.log.BoardUrl;
+import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.master.ChargedReviews;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -56,11 +58,11 @@ import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.review.ReviewSweepService;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.service.session.SessionHosting;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.service.usage.UsageLedger;
@@ -257,7 +259,8 @@ public final class FakeJobWorld implements AutoCloseable {
             new ConfigSource(paths, new FakeConfigInputs()),
             runtime,
             new ActStops(new MasterBrake(paths), new BoardStop(paths, clock)),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
     GitCommands git =
         new GitCommands(
             new FakeProcesses(root.resolve(".fake")),

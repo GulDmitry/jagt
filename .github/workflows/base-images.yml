@@ -1,0 +1,42 @@
+name: base-images
+
+on:
+  push:
+    branches: [main]
+    paths: ['base/**']
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: base-images
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  base:
+    name: base image
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/base-image.yml
+    with:
+      name: base
+      dockerfile: Dockerfile
+  stand-base:
+    name: stand-base image
+    needs: base
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/base-image.yml
+    with:
+      name: stand-base
+      dockerfile: Dockerfile.stand
+      from: base

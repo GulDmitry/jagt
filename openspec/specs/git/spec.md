@@ -8,7 +8,7 @@ Shared-branch writes, commits, ships, worktree hooks and multi-repo tasks.
 
 ### Requirement: Only deploy and revert write shared branches
 `deploy` SHALL merge `origin/<task>` into `deployBranch` (`mergeIntoAndPush`), `revert` its merge commit
-(`revertMergeAndPush`); Master-only (`Audience.MASTER`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves
+(`revertMergeAndPush`); root-only (`Audience.ROOT`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves
 the cut and the request's **target**, never the merge destination (`baseBranchOr`). A `deployBranch` naming
 `baseBranch`, however spelled, MUST be refused. With `remote: none` both fast-forward the target's checkout
 (git refuses a push to it), else push within the repository.

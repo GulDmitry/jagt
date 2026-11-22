@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.scenario.AcceptanceProbing;
+import dev.jagt.orchestrator.service.plan.PlanProbing;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.plan.Probe;
@@ -34,7 +34,7 @@ public class Verification {
 
   private final ConfigService configService;
   private final Processes processes;
-  private final AcceptanceProbing probing;
+  private final PlanProbing probing;
   private final WorktreeChanges changes;
 
   /**

@@ -33,9 +33,9 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ class DeployServiceTest {
     DeployTargets targets = new DeployTargets(config);
     deploys =
         new DeployService(
-            state, targets, git, new DeployRunner(state, targets, git, Clock.systemUTC()));
+            state, targets, git, new DeployRunner(state, targets, git, new FakeClock()));
   }
 
   @Test

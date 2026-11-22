@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -49,6 +51,7 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest(
     properties = {
       "spring.config.import=",
+      "orchestrator.platform=macos",
       "orchestrator.terminal=none",
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
@@ -91,7 +94,7 @@ class WholeApplicationWiringTest {
   }
 
   @Test
-  void readsTheMacKeychainAndSkipsTheLinuxSandboxCheckOnTheDefaultPlatform() {
+  void readsTheMacKeychainAndSkipsTheLinuxSandboxCheckOnMacos() {
     assertThat(context.containsBean("claudeKeychain")).isTrue();
     assertThat(context.containsBean("claudeSandboxCheck")).isFalse();
   }
@@ -106,7 +109,7 @@ class WholeApplicationWiringTest {
   void everyCommandIsRunnableByTheMasterOrSaysWhyItIsNot() {
     assertThat(globals.all())
         .allSatisfy(command ->
-            assertThat(command.whyNotTheMaster().map(String::isBlank).orElse(false))
+            assertThat(command.whyNotTheArbiter().map(String::isBlank).orElse(false))
                 .as(command.id())
                 .isFalse());
   }
@@ -172,7 +175,7 @@ class WholeApplicationWiringTest {
         new McpProtocolService(
             mapper,
             state,
-            Clock.systemUTC(),
+            Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
             List.copyOf(context.getBeansOfType(McpTools.class).values()));
 
     String answer =

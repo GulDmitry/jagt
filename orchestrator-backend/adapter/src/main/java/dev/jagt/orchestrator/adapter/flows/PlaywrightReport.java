@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.flows;
 
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.Verdict;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.Verdict;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;

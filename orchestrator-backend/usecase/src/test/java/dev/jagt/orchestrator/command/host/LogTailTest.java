@@ -42,14 +42,11 @@ class LogTailTest {
   void showsOnlyTheLastTwoHundredLines(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("jagt.log");
     Files.writeString(
-        log, IntStream.range(0, 201).mapToObj(i -> "line " + i).collect(Collectors.joining("\n")));
+        log, IntStream.range(0, 201).mapToObj(i -> "row " + i).collect(Collectors.joining("\n")));
 
     String shown = new LogTail(new JsonMapper(), log.toString()).render();
 
-    assertThat(shown)
-        .contains("the last 200 lines")
-        .doesNotContain("line 0\n")
-        .contains("line 1\n");
+    assertThat(shown).contains("the last 200 lines").doesNotContain("row 0\n").contains("row 1\n");
   }
 
   @Test

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -199,7 +200,7 @@ class WorktreeSetupTest {
             "origin/main",
             "u",
             true);
-    when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
+    when(processes.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "", ""));
 
     setup.setUp(NewTask.builder("ABC-1", "repo").build(), seeded);
 

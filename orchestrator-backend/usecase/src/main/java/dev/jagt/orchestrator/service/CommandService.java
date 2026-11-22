@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * What every surface calls to act on one task. It adds no rules of its own: the gate, the doer and
- * the transition all live in {@link FlowEngine}, where the Master may press in {@link CaseDoor}.
+ * the transition all live in {@link FlowEngine}, where the arbiter may press in {@link CaseDoor}.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,6 +40,6 @@ public class CommandService {
     return action.id()
         + " "
         + taskIdOrAlias
-        + ": no master case allows it at this status; see misses.jsonl";
+        + ": no arbiter case allows it at this status; see misses.jsonl";
   }
 }

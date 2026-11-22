@@ -5,7 +5,7 @@ import { duration } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import { marked } from "./facts.js";
 import { html } from "./html.js";
-import { pickLabel, quickClass, rowClass, stoppedLine } from "./rows.js";
+import { pickFacts, quickClass, rowClass, stoppedLine } from "./rows.js";
 
 export { grouped } from "./rows.js";
 
@@ -42,7 +42,7 @@ const Pick = ({ task, selected, changed, stopped, project, now }) =>
     data-select=${task.id}
     aria-current=${selected ? "true" : undefined}
     tabindex=${selected ? 0 : -1}
-    aria-label=${pickLabel(task, changed, stopped)}
+    aria-description=${pickFacts(task, changed, stopped)}
   >
     <span class="row-line">
       <span class="alias">${task.alias || "-"}</span>

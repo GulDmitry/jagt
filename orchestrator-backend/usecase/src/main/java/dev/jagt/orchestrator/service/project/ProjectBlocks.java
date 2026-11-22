@@ -11,7 +11,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * One block per project under {@code orchestrator.projects}, edited as lines: every line outside
- * the block stays.
+ * the block stays, and an inline entry is first rewritten as a block.
  */
 final class ProjectBlocks {
 
@@ -21,6 +21,7 @@ final class ProjectBlocks {
       Set.of(
           "path", "baseBranch", "deployBranch", "verifyCommand", "about", "labels", "humanPaths");
   private static final JsonMapper JSON = new JsonMapper();
+  private static final List<String> PROJECTS = List.of("orchestrator", "projects");
 
   private ProjectBlocks() {}
 
@@ -33,7 +34,8 @@ final class ProjectBlocks {
    * The file with the entry first under the {@code projects:} that is a direct child of {@code
    * orchestrator:}.
    */
-  static String inserted(String file, ProjectSetup.Entry entry, Path path, boolean keptLocally) {
+  static String inserted(String raw, ProjectSetup.Entry entry, Path path, boolean keptLocally) {
+    String file = SettingLines.blocked(raw, PROJECTS);
     Located at = locate(file);
     String[] lines = at.lines().toArray(String[]::new);
     String step = at.entryIndent().substring(at.parent().length());
@@ -53,13 +55,13 @@ final class ProjectBlocks {
    * The file with the managed keys of the project's block rewritten; its other keys and comments
    * stay.
    */
-  static String replaced(String file, ProjectSetup.Entry entry, Path path) {
+  static String replaced(String raw, ProjectSetup.Entry entry, Path path) {
+    String file = SettingLines.blocked(raw, projectAt(entry.key()));
     Located at = locate(file);
     Span span = span(at, entry.key());
     String[] lines = at.lines().toArray(String[]::new);
     if (!lines[span.from()].strip().matches(Pattern.quote(entry.key()) + ":\\s*(#.*)?")) {
-      throw new IllegalArgumentException(
-          entry.key() + " is written inline in jagt.yml: change it by hand");
+      throw new IllegalArgumentException(entry.key() + " is not a block of keys in jagt.yml");
     }
     String step = at.entryIndent().substring(at.parent().length());
     String child = childIndent(lines, span, at.entryIndent() + step);
@@ -71,12 +73,19 @@ final class ProjectBlocks {
   }
 
   /** The file without the project's block. */
-  static String removed(String file, String key) {
+  static String removed(String raw, String key) {
+    String file = SettingLines.blocked(raw, projectAt(key));
     Located at = locate(file);
     Span span = span(at, key);
     List<String> result = new ArrayList<>(at.lines().subList(0, span.from()));
     result.addAll(at.lines().subList(span.to(), at.lines().size()));
     return at.head() + String.join("\n", result);
+  }
+
+  private static List<String> projectAt(String key) {
+    List<String> path = new ArrayList<>(PROJECTS);
+    path.add(key);
+    return path;
   }
 
   private static Located locate(String file) {

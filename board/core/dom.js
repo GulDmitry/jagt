@@ -1,4 +1,4 @@
-// Built, never interpolated into markup: ids, aliases and project keys come out of a file a human edits by hand.
+// Built, never interpolated into markup: ids, aliases and project keys come out of a file a human edits.
 
 /**
  * @template {keyof HTMLElementTagNameMap} K

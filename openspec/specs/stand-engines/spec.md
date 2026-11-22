@@ -7,7 +7,7 @@ Where the stand starts jagt, on the host, under compose or in a kind cluster, an
 
 ### Requirement: The stand runs on an engine chosen by name
 `standTest` SHALL start jagt on the engine named by `-Pengine`: `host` the staged jar, `compose` jagt's image under docker compose,
-`kind` jagt's image in a Kubernetes cluster applying `kubernetes.yml.dist`. Without it the engine SHALL be `compose`.
+`kind` jagt's image in a Kubernetes cluster applying `examples/kubernetes.yml`. Without it the engine SHALL be `compose`.
 A missing docker SHALL skip the run naming it. An unknown name SHALL fail the run naming the three.
 
 #### Scenario: An engine is named
@@ -58,3 +58,21 @@ The stand SHALL stop jagt with SIGTERM on every engine and read `state.json` bef
 #### Scenario: SIGTERM with a session working
 - **WHEN** jagt gets SIGTERM, by `docker compose kill` under compose, the process signal on `host`, or the pod scaled away under `kind`
 - **THEN** `state.json` holds the task with its session gone
+
+### Requirement: The stand records its timings as a trend
+The server scenario SHALL write startup seconds and `/state` p95 in milliseconds, the median of five rounds of 50 calls.
+Each is a `customSmallerIsBetter` series per runner label and engine, written whether or not the absolute budgets hold.
+The CI stand job SHALL keep the history in the Actions cache, never a pushed branch.
+It SHALL compare each series with the median of its last ten history entries and fail naming the series past 200 % of that median.
+A series with no history entry SHALL pass.
+#### Scenario: A run on a shared runner
+- **WHEN** the stand job runs `-Pbudgets=false` on a runner
+- **THEN** `startup <runner>/<engine>` and `state p95 <runner>/<engine>` are written and compared with the median of the history
+
+#### Scenario: A slowdown
+- **WHEN** a timing is over 200 % of the median of its last ten history entries
+- **THEN** the stand job fails naming that series
+
+#### Scenario: One fast outlier in the history
+- **WHEN** the newest history entry is far faster than the rest and a normal run follows
+- **THEN** the stand job does not fail

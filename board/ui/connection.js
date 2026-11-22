@@ -8,7 +8,7 @@ const STALE = [
   "open-palette",
   "reports-toggle",
   "report-line",
-  "act-stopped",
+  "role-chips",
   "jobs-pulse",
   "launch",
   "project-form",

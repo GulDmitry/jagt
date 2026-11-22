@@ -1,0 +1,5 @@
+# Warnings only upstream can fix. One row each: pattern | source as artifact:version | what ends it.
+# The build fails on a warning missing here (javac -Werror, org.gradle.warning.mode=fail) and AcceptedWarningsTest
+# fails on a row whose source version is no longer the one in use: re-check it, then delete the row or move the version.
+# The pattern is the start of the warning text; jagt.pitest.gradle hides exactly the rows it names.
+Configuration.setVisible(boolean) has been deprecated | gradle-pitest-plugin:1.19.0 | a gradle-pitest-plugin release after 1.19.0 that no longer calls Configuration.setVisible (upstream issue: unknown)

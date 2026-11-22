@@ -157,6 +157,29 @@ class HeadlessClaudeTest {
   }
 
   @Test
+  void namesTheReadGateAndItsErrorWhenItRefusedEveryCallOfTheRun() {
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    "{\"result\":\"done\",\"permission_denials\":[{\"tool_name\":"
+                        + "\"StructuredOutput\",\"error\":\"curl: not found\"}]}",
+                    ""));
+    ReadOnlyTools reads = mock(ReadOnlyTools.class);
+    when(reads.refused(any())).thenReturn(true);
+    when(reads.lift(any())).thenReturn(Optional.of("no call reached the read gate"));
+
+    var answer =
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), reads)
+            .read(
+                "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(answer.failure()).contains("read gate", "curl: not found");
+  }
+
+  @Test
   void callsOnlyTheAllowedReadsAndRefusesWhateverElseWouldPrompt() {
     FakeProcesses runner =
         new FakeProcesses()
@@ -620,6 +643,49 @@ class HeadlessClaudeTest {
   }
 
   @Test
+  void failedCallHandsTheCallerTheCliErrorTextBesideTheExit() {
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    1, "{\"type\":\"result\",\"is_error\":true,\"result\":\"Not logged in\"}", ""));
+
+    var answer =
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
+            .read(
+                "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(answer.failure()).isEqualTo("exit 1: Not logged in");
+  }
+
+  @Test
+  void failedCallLogsTheCliErrorTextNotTheEnvelopeCountersThatPrecedeIt() {
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    1,
+                    """
+                    {"type":"result","is_error":true,"duration_api_ms":0,"total_cost_usd":0,\
+                    "usage":{"input_tokens":0,"output_tokens":0,"cache_creation_input_tokens":0,\
+                    "cache_read_input_tokens":0},"result":"Not logged in"}\
+                    """,
+                    ""));
+    try (FakeLogCapture log = new FakeLogCapture(HeadlessClaude.class)) {
+      headlessClaude()
+          .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
+          .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+      assertThat(log.events())
+          .filteredOn(event -> "assistant call failed".equals(event.getMessage()))
+          .flatExtracting(event ->
+              event.getKeyValuePairs().stream().map(pair -> pair.key + "=" + pair.value).toList())
+          .contains("cause=Not logged in");
+    }
+  }
+
+  @Test
   void warnsRatherThanErrsWhenTheReadWasDeniedCallAndAnsweredAnyway() {
     FakeProcesses runner =
         new FakeProcesses()
@@ -735,7 +801,21 @@ class HeadlessClaudeTest {
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
     assertThat(answer.facts()).isEmpty();
-    assertThat(answer.failure()).isEqualTo("exit 2");
+    assertThat(answer.failure()).isEqualTo("exit 2: claude: not logged in");
+  }
+
+  @Test
+  void callThatExitsWithOnlyPlainStdoutFailsNamingThatText() {
+    FakeProcesses runner =
+        new FakeProcesses().answering(new Processes.Result(2, "Service unavailable", ""));
+
+    var answer =
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
+            .read(
+                "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(answer.failure()).isEqualTo("exit 2: Service unavailable");
   }
 
   @Test

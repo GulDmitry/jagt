@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ class MasterBriefsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
 
-    assertThat(briefs.master("ABC-1", MasterConfig.defaults())).contains("judge hard");
+    assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).contains("judge hard");
   }
 
   @Test
@@ -38,7 +38,7 @@ class MasterBriefsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
 
-    assertThat(briefs.master("ABC-1", MasterConfig.defaults())).contains("judge by default");
+    assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).contains("judge by default");
   }
 
   @Test
@@ -51,7 +51,7 @@ class MasterBriefsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
 
-    assertThat(briefs.master("ABC-1", MasterConfig.defaults())).isEmpty();
+    assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).isEmpty();
   }
 
   @Test
@@ -65,7 +65,7 @@ class MasterBriefsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
 
-    assertThat(briefs.master("ABC-1", new MasterConfig("act", "mine.md", null, null, null)))
+    assertThat(briefs.master("ABC-1", new ArbiterConfig("act", "mine.md", null, null, null)))
         .isEmpty();
   }
 
@@ -78,7 +78,7 @@ class MasterBriefsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
 
-    assertThat(briefs.master("ABC-1", MasterConfig.defaults())).isEmpty();
+    assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).isEmpty();
   }
 
   @Test

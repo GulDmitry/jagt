@@ -21,7 +21,6 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,7 @@ class TicketCloseJobTest {
   void trackerWatchingAnEmptyState() {
     stateService = stateService().withRoot(root).build();
     when(configService.load()).thenReturn(ticketCloseJob().config());
-    job = ticketCloseJob().build(configService, stateService, close, commands, Clock.systemUTC());
+    job = ticketCloseJob().build(configService, stateService, close, commands, new FakeClock());
   }
 
   @Test

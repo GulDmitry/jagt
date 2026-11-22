@@ -6,6 +6,8 @@ package dev.jagt.orchestrator.config.role;
  */
 public final class RoleInvalid extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   public RoleInvalid(String reason) {
     super(reason);
   }

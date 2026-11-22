@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.AutoReviewCadence;
 import dev.jagt.orchestrator.service.review.Rounds;
-import dev.jagt.orchestrator.service.stop.ActStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
@@ -40,12 +39,7 @@ public class TaskViews {
    * One render's worth of answers, read from the configuration ONCE so two reads cannot disagree
    * mid-render.
    */
-  public record Snapshot(
-      List<TaskView> tasks,
-      AutoReviewCadence cadence,
-      List<String> projects,
-      @Nullable ActStop actStop,
-      String masterMode) {}
+  public record Snapshot(List<TaskView> tasks, AutoReviewCadence cadence, List<String> projects) {}
 
   public Snapshot snapshot() {
     return snapshot(stateService.tasks());
@@ -53,7 +47,6 @@ public class TaskViews {
 
   private Snapshot snapshot(Map<String, TaskState> tasks) {
     ConfigService.ConfigFile config = readableConfig();
-    Optional<ActStop> stop = configService.actStop();
     AutoReviewCadence cadence = AutoReviewCadence.from(config.autoReview());
     long now = clock.millis();
     Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
@@ -69,12 +62,7 @@ public class TaskViews {
                     cadence.watch(entry.getValue(), now),
                     deployBranches))
             .toList();
-    return new Snapshot(
-        views,
-        cadence,
-        List.copyOf(config.projects().keySet()),
-        stop.orElse(null),
-        config.master().modeOrDefault().id());
+    return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()));
   }
 
   public List<TaskView> all() {

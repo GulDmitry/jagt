@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.master.ReplyRight;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -30,9 +31,9 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,8 +61,8 @@ class ShipServiceTest {
             .withRoot(root)
             .build(
                 stateService,
-                taskStops().withRoot(root).build(stateService, Clock.systemUTC()),
-                Clock.systemUTC());
+                taskStops().withRoot(root).build(stateService, new FakeClock()),
+                new FakeClock());
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -74,7 +75,7 @@ class ShipServiceTest {
     when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
     when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
         .thenReturn(true);
-    ships = new ShipService(stateService, configService, relay, changes, door);
+    ships = new ShipService(stateService, configService, relay, changes, new ReplyRight(door));
   }
 
   @Test
@@ -416,7 +417,7 @@ class ShipServiceTest {
       when(configService.load())
           .thenReturn(
               ConfigService.ConfigFile.defaults()
-                  .withMaster(ConfigService.ConfigFile.MasterConfig.defaults().withMode("act"))
+                  .withArbiter(ConfigService.ConfigFile.ArbiterConfig.defaults().withMode("act"))
                   .withProjects(
                       Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     }

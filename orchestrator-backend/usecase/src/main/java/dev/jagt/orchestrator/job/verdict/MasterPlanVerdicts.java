@@ -38,7 +38,7 @@ class MasterPlanVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.MasterConfig config) {
+      ConfigService.ConfigFile.ArbiterConfig config) {
     return OriginContext.as(
         ActionOrigin.MASTER,
         () ->

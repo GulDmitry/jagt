@@ -22,6 +22,8 @@ public class LiftCapability implements TaskCapability {
   public Outcome run(String taskId) {
     stops.lift(taskId);
     return Outcome.ok(
-        "lift " + taskId + ": auto-review and the Master may move it again; its rounds count anew");
+        "lift "
+            + taskId
+            + ": auto-review and the arbiter may move it again; its rounds count anew");
   }
 }

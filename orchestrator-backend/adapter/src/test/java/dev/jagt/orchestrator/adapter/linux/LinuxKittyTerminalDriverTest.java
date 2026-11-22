@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
 import dev.jagt.orchestrator.port.host.Problem;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import org.junit.jupiter.api.Test;
 
 class LinuxKittyTerminalDriverTest {
@@ -17,7 +17,7 @@ class LinuxKittyTerminalDriverTest {
   void refusesToStartWhenNothingWouldShowTheAgentsSessions() {
     var driver =
         new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class), new KittyOptions("no-such-kitty", ""), Clock.systemUTC());
+            mock(ProcessRunner.class), new KittyOptions("no-such-kitty", ""), new FakeClock());
 
     assertThat(driver.problems())
         .extracting(Problem::key)
@@ -28,7 +28,7 @@ class LinuxKittyTerminalDriverTest {
   void addsNoneOfTheMacOnlyKeyboardWorkaroundToTheViewer() {
     var driver =
         new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class), new KittyOptions("kitty", ""), Clock.systemUTC());
+            mock(ProcessRunner.class), new KittyOptions("kitty", ""), new FakeClock());
 
     assertThat(driver.platformOptions()).isEmpty();
   }
@@ -38,7 +38,7 @@ class LinuxKittyTerminalDriverTest {
     ProcessRunner runner = mock(ProcessRunner.class);
 
     assertThatCode(() ->
-            new LinuxKittyTerminalDriver(runner, new KittyOptions("kitty", ""), Clock.systemUTC())
+            new LinuxKittyTerminalDriver(runner, new KittyOptions("kitty", ""), new FakeClock())
                 .bringToFront())
         .doesNotThrowAnyException();
     verifyNoInteractions(runner);

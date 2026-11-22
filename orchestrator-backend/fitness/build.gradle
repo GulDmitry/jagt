@@ -1,0 +1,83 @@
+import java.time.Duration
+
+plugins {
+    id 'info.solidsoft.pitest' version '1.19.0' apply false
+}
+
+apply plugin: 'base'
+
+group = 'fitness'
+
+tasks.register('test') {
+    dependsOn subprojects.collect { "${it.path}:test" }
+}
+tasks.named('check') {
+    dependsOn subprojects.collect { "${it.path}:check" }
+}
+
+def testJvmProperties = new Properties()
+testJvmProperties.load(new StringReader(providers.fileContents(layout.settingsDirectory.file('../build-logic/test-jvm.properties')).asText.get()))
+
+subprojects {
+    apply plugin: 'java-library'
+    group = 'fitness'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    dependencies {
+        api platform("org.junit:junit-bom:${junitVersion}")
+        implementation "org.jspecify:jspecify:${jspecifyVersion}"
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation "org.assertj:assertj-core:${assertjVersion}"
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs.addAll(['-parameters', '-Xlint:all,-processing', '-Werror'])
+    }
+
+    // Gradle reports setVisible's deprecation when the plugin applies; only a plugin release after 1.19.0 ends it.
+    org.gradle.internal.deprecation.DeprecationLogger.whileDisabled({ apply plugin: 'info.solidsoft.pitest' } as Runnable)
+
+    // Mutants of the classes named in the changed-lines file (`path.java:line,line` per row), the tree's diff scope;
+    // `-PpitestTargets=<classes>` overrides it.
+    def changedLines = rootProject.layout.projectDirectory.file(providers.gradleProperty('pitestChangedLines').get()).asFile
+    def ownSources = layout.projectDirectory.dir('src/main/java').asFile
+    pitest {
+        pitestVersion = pitestToolVersion
+        junit5PluginVersion = pitestJunit5PluginVersion
+        targetClasses = providers.gradleProperty('pitestTargets').map { it.split(',').toList() }.orElse(providers.provider {
+            def listed = changedLines.exists() ? changedLines.readLines().collect { it.split(':')[0] } as Set : [] as Set
+            def types = ownSources.exists() ? fileTree(ownSources).files.collect { ownSources.toPath().relativize(it.toPath()).toString() } : []
+            types.findAll { it in listed }.collectMany { path ->
+                def type = path.replace('.java', '').replace('/', '.')
+                [type, type + '$*']
+            }
+        })
+        targetTests = ['fitness.*']
+        excludedMethods = ['toString', 'hashCode']
+        failWhenNoMutations = false
+        threads = Runtime.runtime.availableProcessors().intdiv(2)
+        outputFormats = ['HTML', 'XML']
+        timestampedReports = false
+        jvmArgs = ['-Xshare:off'] + testJvmProperties.collect { key, value -> "-D${key}=${value}".toString() }
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        testJvmProperties.each { key, value -> systemProperty key.toString(), value.toString() }
+        timeout = Duration.ofMinutes(10)
+    }
+}

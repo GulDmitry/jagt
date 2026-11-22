@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.adapter.process.ChildProcesses;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -24,8 +24,26 @@ public final class JagtProcess implements JagtEngine {
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
   @FunctionalInterface
-  public interface Launcher {
+  public interface Launcher extends AutoCloseable {
     Process launch(Path root, int port) throws IOException;
+
+    @Override
+    default void close() {}
+  }
+
+  private static final class Owned implements Launcher {
+
+    private final ChildProcesses children = new ChildProcesses();
+
+    @Override
+    public Process launch(Path root, int port) throws IOException {
+      return children.spawn(command(root, port));
+    }
+
+    @Override
+    public void close() {
+      children.close();
+    }
   }
 
   private final Path root;
@@ -44,11 +62,7 @@ public final class JagtProcess implements JagtEngine {
   }
 
   public static JagtProcess start(Path root, int port, StandBoard board) {
-    return new JagtProcess(root, port, board, JagtProcess::launch, STARTUP).begin();
-  }
-
-  public static Process launch(Path root, int port) throws IOException {
-    return command(root, port).start();
+    return new JagtProcess(root, port, board, new Owned(), STARTUP).begin();
   }
 
   public static ProcessBuilder command(Path root, int port) {
@@ -149,7 +163,7 @@ public final class JagtProcess implements JagtEngine {
     if (how == Restart.UPGRADE) {
       throw new TestAbortedException("the host engine runs a jar, so it has no image to upgrade");
     }
-    close();
+    stop();
     if (how == Restart.UNIT) {
       StandShell.killTmux(root);
     }
@@ -159,11 +173,16 @@ public final class JagtProcess implements JagtEngine {
 
   @Override
   public void terminate() {
-    close();
+    stop();
   }
 
   @Override
   public void close() {
+    stop();
+    launcher.close();
+  }
+
+  private void stop() {
     StandShell.stopTree(running().toHandle());
   }
 
@@ -172,9 +191,9 @@ public final class JagtProcess implements JagtEngine {
   }
 
   private JagtProcess awaitReady() {
-    Instant deadline = Instant.now(Clock.systemUTC()).plus(startup);
+    Instant deadline = StandClock.now().plus(startup);
     while (!board.ready()) {
-      if (!running().isAlive() || Instant.now(Clock.systemUTC()).isAfter(deadline)) {
+      if (!running().isAlive() || StandClock.now().isAfter(deadline)) {
         close();
         throw new StandFailure(
             "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));

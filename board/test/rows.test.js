@@ -3,7 +3,7 @@ import { test } from "node:test";
 import {
   grouped,
   manyProjects,
-  pickLabel,
+  pickFacts,
   quickClass,
   rowClass,
   stoppedLine,
@@ -47,8 +47,8 @@ test("theStopIsSaid whenTheWatchStalled", () => {
   assert.equal(stoppedLine(task(stalled), 0), "Review — no answer");
 });
 
-test("theLabelListsEveryFact whenChangedAndChecked", () => {
-  const label = pickLabel(
+test("theFactsListEveryUnprintedFact whenChangedAndChecked", () => {
+  const label = pickFacts(
     task({
       alias: "a1",
       id: "ABC-42",
@@ -61,30 +61,17 @@ test("theLabelListsEveryFact whenChangedAndChecked", () => {
     "stopped",
   );
 
-  assert.equal(
-    label,
-    "a1 Fix, In work, checks: tests fail, stopped, list.changed",
-  );
+  assert.equal(label, "checks: tests fail, stopped, list.changed");
 });
 
 test("theChecksAreLowercased whenThePipelineSaidNothing", () => {
-  const label = pickLabel(
+  const label = pickFacts(
     task({ id: "ABC-42", statusLabel: "Done", pipeline: "RED" }),
     false,
     null,
   );
 
-  assert.equal(label, "ABC-42 , Done, checks: red");
-});
-
-test("theLabelFallsBackToTheId whenThereIsNoAlias", () => {
-  const label = pickLabel(
-    task({ id: "ABC-42", statusLabel: "Done", pipeline: "NONE" }),
-    false,
-    null,
-  );
-
-  assert.equal(label, "ABC-42 , Done");
+  assert.equal(label, "checks: red");
 });
 
 test("noLineIsStopped whenTheTaskHasNoWatch", () => {

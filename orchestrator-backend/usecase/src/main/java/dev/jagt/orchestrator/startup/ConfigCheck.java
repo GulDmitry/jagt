@@ -2,11 +2,11 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
-import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigRanges;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Files;
@@ -33,10 +33,8 @@ public class ConfigCheck implements StartupCheck {
           "webTerminal", "`focus` raises the terminal window",
           "dashboard", "nothing renders a console table",
           "openWarpWindow", "write `terminal: none` for no terminal window",
-          "openTerminalWindow", "write `terminal: none` for no terminal window",
-          "qa", "the role is called `acceptance`; write it under `roles.acceptance`");
-  private static final String RETIRED_ROLE = "qa";
-  private static final List<String> FOLDER_OPTIONS = List.of("environments", "flows", "model");
+          "openTerminalWindow", "write `terminal: none` for no terminal window");
+
   private final ConfigService configService;
   private final OrchestratorPaths paths;
   private final SessionHost sessions;
@@ -54,24 +52,14 @@ public class ConfigCheck implements StartupCheck {
     }
     ConfigService.ConfigFile config;
     try {
-      config = configService.load();
+      config = configService.loadAsWritten();
     } catch (RuntimeException unreadable) {
       return List.of(new Problem(CONFIG_FILE, String.valueOf(unreadable.getMessage())));
     }
     List<Problem> problems = new ArrayList<>(retiredKeys());
-    problems.addAll(retiredRole(config));
-    problems.addAll(folderOptions());
     problems.addAll(viewerProblems(config));
+    problems.addAll(numberProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
-    if (projects.isEmpty()) {
-      problems.add(
-          new Problem(
-              "orchestrator.projects",
-              paths.configFile()
-                  + " defines no projects. Add one"
-                  + " under `orchestrator.projects` (see jagt.desktop.yml.dist)."));
-      return problems;
-    }
     projects.forEach((key, project) -> problems.addAll(ProjectProblems.of(key, project)));
     return problems;
   }
@@ -122,44 +110,6 @@ public class ConfigCheck implements StartupCheck {
         .toList();
   }
 
-  private List<Problem> retiredRole(ConfigService.ConfigFile config) {
-    Map<String, ?> roles = config.sessions().roles();
-    if (roles == null || !roles.containsKey(RETIRED_ROLE)) {
-      return List.of();
-    }
-    return List.of(
-        new Problem(
-            "orchestrator.roles." + RETIRED_ROLE,
-            "orchestrator.roles."
-                + RETIRED_ROLE
-                + " is no longer read: the role is called `acceptance`. Rename it to"
-                + " `roles.acceptance` in "
-                + paths.configFile()
-                + "."));
-  }
-
-  private List<Problem> folderOptions() {
-    String role = "roles." + Checkers.ACCEPTANCE;
-    return configService.declaredKeys("roles", Checkers.ACCEPTANCE).stream()
-        .filter(FOLDER_OPTIONS::contains)
-        .sorted()
-        .map(key ->
-            new Problem(
-                "orchestrator." + role + "." + key,
-                "orchestrator."
-                    + role
-                    + "."
-                    + key
-                    + " is no longer read: write `"
-                    + key
-                    + "` in roles/"
-                    + Checkers.ACCEPTANCE
-                    + "/role.yml, and keep only `enabled` in "
-                    + paths.configFile()
-                    + "."))
-        .toList();
-  }
-
   /**
    * Spring reads {@code ./config/application.yml} above anything a launch hands it, so it outranks
    * jagt.yml.
@@ -175,6 +125,19 @@ public class ConfigCheck implements StartupCheck {
             shadowing
                 + " outranks jagt.yml for every key it"
                 + " names. Move what it holds into jagt.yml and delete it."));
+  }
+
+  /**
+   * A number is read as written or not at all: one outside its range is refused, never replaced.
+   */
+  private static List<Problem> numberProblems(ConfigService.ConfigFile config) {
+    return ConfigRanges.refusals(config).stream()
+        .map(refusal -> {
+          String key = "orchestrator." + refusal.key();
+          return new Problem(
+              key, key + " is " + refusal.value() + ": it must be " + refusal.range() + ".");
+        })
+        .toList();
   }
 
   private List<Problem> viewerProblems(ConfigService.ConfigFile config) {

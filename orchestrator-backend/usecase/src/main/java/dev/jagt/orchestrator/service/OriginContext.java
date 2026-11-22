@@ -34,7 +34,7 @@ public final class OriginContext {
   }
 
   public static <T> T as(ActionOrigin origin, Supplier<T> work) {
-    try (Scope ignored = open(origin)) {
+    try (Scope _ = open(origin)) {
       return work.get();
     }
   }

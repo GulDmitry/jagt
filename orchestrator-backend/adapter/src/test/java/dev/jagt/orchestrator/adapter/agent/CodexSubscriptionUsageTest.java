@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +24,7 @@ class CodexSubscriptionUsageTest {
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", "acct-42"));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Body("{}"));
 
-    new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    new CodexSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     verify(endpoint)
         .get(
@@ -44,7 +44,7 @@ class CodexSubscriptionUsageTest {
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", "acct-42"));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
 
-    var answer = new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    var answer = new CodexSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable(expected));
   }
@@ -55,7 +55,7 @@ class CodexSubscriptionUsageTest {
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
     when(credentials.read(any())).thenReturn(new OauthCredential.None());
 
-    var answer = new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    var answer = new CodexSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     assertThat(answer).isInstanceOf(SubscriptionUsage.NoSubscription.class);
   }

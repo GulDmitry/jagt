@@ -6,14 +6,14 @@
   --line: light-dark(#d9dde3, #2c3238);
   --text: light-dark(#1c2024, #e6e8ea);
   --muted: light-dark(#5f6672, #9aa3ad);
-  --you: light-dark(#b45309, #fbbf24);
+  --you: light-dark(#92400e, #fbbf24);
   --you-bg: light-dark(#fef3c7, #3a2c08);
   --agent: light-dark(#1d4ed8, #93b4ff);
   --ci: light-dark(#6d28d9, #c4b5fd);
   --accent: light-dark(#1d4ed8, #93b4ff);
   --on-accent: light-dark(#fff, #10131a);
   --danger: light-dark(#b42318, #fca5a5);
-  --ok: light-dark(#15803d, #86efac);
+  --ok: light-dark(#166534, #86efac);
   --chip-bg: light-dark(#eceef1, #24282c);
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -49,6 +49,9 @@ header {
   position: sticky;
   top: 0;
   z-index: 3;
+}
+.role-chips {
+  display: contents;
 }
 header .chip,
 header .waiting {
@@ -155,6 +158,7 @@ button.apart:hover:not(:disabled) {
   border-color: var(--danger);
 }
 dialog#launch-dialog,
+dialog#settings-dialog,
 dialog#project-dialog {
   border: 0;
   border-radius: 10px;
@@ -165,6 +169,7 @@ dialog#project-dialog {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 dialog#launch-dialog::backdrop,
+dialog#settings-dialog::backdrop,
 dialog#project-dialog::backdrop {
   background: rgba(16, 19, 26, 0.35);
 }
@@ -204,6 +209,27 @@ fieldset.field legend {
   gap: 6px 14px;
   color: var(--text);
   font-size: 13px;
+}
+#settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 16px;
+}
+#settings-body section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#settings-body h3 {
+  margin: 0;
+  font-size: 13px;
+}
+#settings-dialog .dialog-foot[hidden] {
+  display: none;
+}
+#settings-dialog .dialog-foot {
+  padding: 10px 16px;
 }
 .field-row {
   display: flex;
@@ -952,7 +978,7 @@ button.flag:hover:not(:disabled) {
 .status .age {
   font-family: var(--mono);
   font-weight: 400;
-  opacity: 0.7;
+  opacity: 0.92;
 }
 /* Where no verb is the deploy, the state says the work is live: same colour, one mark. */
 .status.live {

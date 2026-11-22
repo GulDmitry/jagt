@@ -35,7 +35,7 @@ class DataFolderDefaultTest {
     }
     environment
         .getPropertySources()
-        .addFirst(new MapPropertySource("desktop", Map.of("user.home", "/home/ann", key, given)));
+        .addFirst(new MapPropertySource("desktop", Map.of("user.home", "/h/ann", key, given)));
 
     assertThat(environment.getProperty("orchestrator.data")).isEqualTo(data);
     assertThat(environment.getProperty("logging.file.name")).isEqualTo(log);

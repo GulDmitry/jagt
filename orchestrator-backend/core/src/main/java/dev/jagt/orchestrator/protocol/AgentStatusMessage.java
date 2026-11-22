@@ -105,11 +105,11 @@ public record AgentStatusMessage(
               "needsProject",
               "With outcome=question only: the key of the configured project (`list_projects`)"
                   + " whose repository this task needs and lacks. jagt adds it to the task on a"
-                  + " human's or the Master's word; the message says why.")
+                  + " human's or the arbiter's word; the message says why.")
           .text(
               "taskId",
-              "Optional explicit task id or alias (Master use). Sub-agents may only target their"
-                  + " own task.")
+              "Optional explicit task id or alias (root session use). Sub-agents may only target"
+                  + " their own task.")
           .pairs(
               SwitchJudgements.FIELD,
               SwitchJudgements.DESCRIBES,

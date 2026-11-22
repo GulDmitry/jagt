@@ -21,7 +21,7 @@ Amended by [0192](0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-s
 - **A quarter of the memory for the heap**, the rest for the agent CLIs and the verify run; serial GC: a board needs no pause
   target, and it adds no collector threads beside a verify run; exit on out-of-memory so the restart policy acts, a heap dump
   on the volume first.
-- **One flat `kubernetes.yml.dist`**: one copied file and one command; an organisation lists it under a kustomization's
+- **One flat `examples/kubernetes.yml`**: one copied file and one command; an organisation lists it under a kustomization's
   `resources:` when it wants an overlay.
 - **Restricted Pod Security Standard**: non-root fixed UID and GID, no privilege escalation, `drop: [ALL]`, seccomp
   `RuntimeDefault`, no service-account token. The root filesystem stays writable: sessions install toolchains under HOME;

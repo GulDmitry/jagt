@@ -135,8 +135,9 @@ class StandShellRunTest {
   void theWakeLockIsHeldByProcessWeCanStopOnThisHost() {
     Optional<Process> lock = StandShell.holdAwake(directory);
 
+    boolean running = lock.map(Process::isAlive).orElse(true);
     lock.ifPresent(Process::destroy);
 
-    assertThat(lock).isNotNull();
+    assertThat(running).isTrue();
   }
 }

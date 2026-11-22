@@ -38,11 +38,11 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +61,8 @@ class AgentStatusReportsTest {
   private final ConfigService configService = mock(ConfigService.class);
   private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
 
-  private final ConfigService.ConfigFile.MasterConfig actMaster =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig actMaster =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final ConfigService.ConfigFile verifying =
       ConfigService.ConfigFile.defaults()
           .withProjects(
@@ -107,10 +107,7 @@ class AgentStatusReportsTest {
     state = TestStateServiceBuilder.stateService().withRoot(root).build();
     flowReports =
         new FlowReports(
-            state,
-            Clock.systemUTC(),
-            checkers,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+            state, new FakeClock(), checkers, new FlowRules(new TaskChart(Composition.builtIn())));
     handBack =
         new HandBack(
             worktreeChanges,
@@ -203,13 +200,13 @@ class AgentStatusReportsTest {
   void tellsTheSessionTheMasterReadsItsHandBackNext() {
     state.putTask("ABC-1", inProgress);
     when(configService.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withMaster(actMaster));
+        .thenReturn(ConfigService.ConfigFile.defaults().withArbiter(actMaster));
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
     assertThat(answer)
         .isEqualTo(
-            "Task ABC-1 -> REVIEW_PENDING (done); the Master reads this round next;"
+            "Task ABC-1 -> REVIEW_PENDING (done); the arbiter reads this round next;"
                 + " end your turn");
   }
 
@@ -637,7 +634,7 @@ class AgentStatusReportsTest {
 
   @Test
   void startsFreshPollingWindowForEachRoundHandedBackOnTheSameRequest() {
-    long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+    long lastRound = new FakeClock().millis() - Duration.ofHours(25).toMillis();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
@@ -655,7 +652,7 @@ class AgentStatusReportsTest {
 
   @Test
   void startsFreshWindowWhenTheAgentNamesAnotherRequestWithoutLeavingCiPolling() {
-    long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+    long lastRound = new FakeClock().millis() - Duration.ofHours(25).toMillis();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -831,13 +828,13 @@ class AgentStatusReportsTest {
   @Test
   void tellsTheSessionItsHandBackIsVerifiedBeforeTheMasterReadsIt() {
     state.putTask("ABC-1", inProgress);
-    when(configService.load()).thenReturn(verifying.withMaster(actMaster));
+    when(configService.load()).thenReturn(verifying.withArbiter(actMaster));
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
     assertThat(answer)
         .endsWith(
-            "verification runs first, and the Master reads this round once it passes;"
+            "verification runs first, and the arbiter reads this round once it passes;"
                 + " end your turn");
   }
 

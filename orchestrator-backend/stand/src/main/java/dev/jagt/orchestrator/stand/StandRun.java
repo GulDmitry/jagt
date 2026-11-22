@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.stand.replay.WorktreeSnapshots;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,13 +39,13 @@ public final class StandRun implements AutoCloseable {
   private final StandHost host;
   private final @Nullable Path replayed;
   private final WorktreeSnapshots snapshots;
-  private final Instant began = Instant.now(Clock.systemUTC());
+  private final Instant began = StandClock.now();
   private final Optional<Process> awake;
   private final StandTeardown teardown;
   private final Duration poll;
   private JagtEngine jagt;
   private StandMarker marker;
-  private Instant polled = Instant.now(Clock.systemUTC());
+  private Instant polled = StandClock.now();
   private @Nullable Duration slept;
   private @Nullable StandOutcome last;
   private boolean resting;
@@ -132,6 +131,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   public RunRecord record() {
+    jagt.harvest();
     return RunRecord.read(root);
   }
 
@@ -140,6 +140,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   public List<Violation> violations() {
+    jagt.harvest();
     return StandBooks.at(root).violations();
   }
 
@@ -151,7 +152,7 @@ public final class StandRun implements AutoCloseable {
     end = new RunEnd(mode, script.expectsDeployConflict(), script.conflictStepComes());
     StandWorld world = new World(timeline, script.ref());
     List<WorldEvent> pending = new ArrayList<>(script.events());
-    Instant start = Instant.now(Clock.systemUTC());
+    Instant start = StandClock.now();
     timeline.note(
         "open "
             + script.ref()
@@ -161,7 +162,7 @@ public final class StandRun implements AutoCloseable {
                 .toString()
                 .replaceAll("\\s+", " "));
     Instant deadline = start.plus(script.timeout());
-    polled = Instant.now(Clock.systemUTC());
+    polled = StandClock.now();
     while (going(script, timeline, deadline, !pending.isEmpty())) {
       JsonNode board = tick(timeline);
       pipelines.passDue(timeline);
@@ -169,11 +170,11 @@ public final class StandRun implements AutoCloseable {
       human.take(board, jagt.board(), timeline);
       resting = human.nothingToPress(board);
     }
-    Instant settled = Instant.now(Clock.systemUTC()).plus(script.settle());
+    Instant settled = StandClock.now().plus(script.settle());
     while (replayed == null
         && slept == null
         && timeline.lastStatus().equals(script.until())
-        && Instant.now(Clock.systemUTC()).isBefore(settled)) {
+        && StandClock.now().isBefore(settled)) {
       tick(timeline);
     }
     StandOutcome outcome = outcomeOf(script, timeline, start, pending.size());
@@ -207,7 +208,7 @@ public final class StandRun implements AutoCloseable {
     return new StandOutcome(
         timeline.lastStatus(),
         timeline.lastOwner(),
-        Duration.between(start, Instant.now(Clock.systemUTC())),
+        Duration.between(start, StandClock.now()),
         timeline.tail(20),
         root,
         ending,
@@ -230,13 +231,11 @@ public final class StandRun implements AutoCloseable {
           replay.drained()
               && timeline.lastStatus().equals(script.until())
               && (!acceptanceRecorded() || statusLabel(script.ref()).equals("accepted"));
-      return replay.divergences().isEmpty()
-          && !done
-          && Instant.now(Clock.systemUTC()).isBefore(deadline);
+      return replay.divergences().isEmpty() && !done && StandClock.now().isBefore(deadline);
     }
     return !Objects.requireNonNull(end)
             .reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
-        && Instant.now(Clock.systemUTC()).isBefore(deadline)
+        && StandClock.now().isBefore(deadline)
         && !timeline.stalledFor(STALL)
         && !held(timeline)
         && !end.waitingOnTheReviewer(sweepsWaiting, timeline);
@@ -252,7 +251,7 @@ public final class StandRun implements AutoCloseable {
 
   private JsonNode tick(Timeline timeline) {
     JagtProcess.pause(poll);
-    Instant now = Instant.now(Clock.systemUTC());
+    Instant now = StandClock.now();
     if (HostSleep.between(polled, now)) {
       slept = Duration.between(polled, now);
     }

@@ -41,7 +41,7 @@ class KindEngineTest {
   @BeforeEach
   void placeTheRootAndTheDistributedManifest() throws IOException {
     root = Files.createDirectories(dir.resolve("jagt-stand-41-1"));
-    manifest = Files.writeString(dir.resolve("kubernetes.yml.dist"), DIST);
+    manifest = Files.writeString(dir.resolve("kubernetes.yml"), DIST);
     when(forwarding.isAlive()).thenReturn(true);
   }
 
@@ -179,6 +179,16 @@ class KindEngineTest {
     assertThat(root.resolve("jagt.out")).hasContent("pod log");
     assertThat(seen.getLast())
         .containsExactly("kind", "delete", "cluster", "--name", "jagt-stand-41-1");
+  }
+
+  @Test
+  void closeEndsTheOwnerOfItsPortForwards() throws IOException {
+    StandShell.Runner shell = (cwd, command, env) -> new StandShell.Result(0, "");
+    KindEngine.Forwarder forwarder = mock(KindEngine.Forwarder.class);
+
+    new KindEngine(root, 9000, board, shell, forwarder, manifest, Duration.ofMinutes(5)).close();
+
+    verify(forwarder).close();
   }
 
   @Test

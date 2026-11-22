@@ -28,8 +28,8 @@ public class RestartCommand implements GlobalCommand {
   }
 
   @Override
-  public Optional<String> whyNotTheMaster() {
-    return Optional.of("a restart ends the Master's own run");
+  public Optional<String> whyNotTheArbiter() {
+    return Optional.of("a restart ends the arbiter's own run");
   }
 
   @Override

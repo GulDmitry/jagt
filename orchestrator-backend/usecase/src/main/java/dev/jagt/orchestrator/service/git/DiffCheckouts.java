@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** The two throwaway checkouts an IDE diff compares: the base, and the task's tree as it stands. */
+/**
+ * The two throwaway checkouts a diff viewer compares: the base, and the task's tree as it stands.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

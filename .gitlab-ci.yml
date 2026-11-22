@@ -29,9 +29,13 @@ default:
 
 test:
   stage: test
+  timeout: 25m
+  variables:
+    GIT_DEPTH: "0"
   rules:
     - if: $CI_PIPELINE_SOURCE != "schedule"
   script:
+    - (cd .. && orchestrator-backend/scripts/secret-scan.sh)
     - curl -fsSLo /tmp/node.tar.xz https://nodejs.org/dist/v22.23.5/node-v22.23.5-linux-x64.tar.xz
     - echo "cdeb8670a0c81f51b4dc4ac61919f9b1ad917b304bf8221eb939570663d240f8  /tmp/node.tar.xz" | sha256sum -c -
     - tar -xJf /tmp/node.tar.xz -C /opt && export PATH="/opt/node-v22.23.5-linux-x64/bin:$PATH"
@@ -46,8 +50,9 @@ test:
 
 heavy:
   stage: heavy
+  timeout: 25m
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_COMMIT_TAG =~ /^v/
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_TAG =~ /^v/
   services:
     - docker:29-dind@sha256:7bf70dcb85c822e3fa6f2d332143e474b99147b9d7b39102b0cfe8b04a7dd61b
   variables:
@@ -71,6 +76,7 @@ heavy:
 
 stand:
   stage: heavy
+  timeout: 25m
   services:
     - docker:29-dind@sha256:7bf70dcb85c822e3fa6f2d332143e474b99147b9d7b39102b0cfe8b04a7dd61b
   variables:
@@ -90,6 +96,7 @@ stand:
 
 release:
   stage: release
+  timeout: 10m
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
   needs: [test, heavy, stand]

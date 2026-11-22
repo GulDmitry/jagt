@@ -19,7 +19,7 @@ Accepted 2026-11-17 by the owner's order: the first Kubernetes run is an OpenShi
 
 - **The image runs as any UID in group 0**: `USER 10001:0`; `/app`, `/data` and the home folder are group 0 and group-writable
   (`g=u`), `HOME` is set. A plain cluster may set its own `runAsUser` in the manifest.
-- **`kubernetes.yml.dist` fixes no UID, GID or `fsGroup`**; `runAsNonRoot`, seccomp and dropped capabilities stay.
+- **`examples/kubernetes.yml` fixes no UID, GID or `fsGroup`**; `runAsNonRoot`, seccomp and dropped capabilities stay.
 - **Memory request 2Gi, limit 4Gi, an explicit CPU limit, ephemeral storage requested and limited, `/tmp` an `emptyDir` of
   256Mi.** These are estimates, to measure.
 - **The heap is fixed: `-Xmx512m`** in the image's `JAGT_JAVA_OPTIONS`, replacing a quarter of the limit.

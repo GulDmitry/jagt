@@ -5,7 +5,7 @@
 orchestrator:
   projects:
     my-project:
-      url: https://example.com/team/repo.git   # projects: cloned into the data folder
+      url: https://example.com/team/repo.git   # projects: cloned into the data folder; replace this placeholder, it cannot clone
       baseBranch: origin/main                  # projects
   platform: linux                              # platform
   codeHost: none                               # codeHost: github or gitlab need `gh` or `glab` in your image
@@ -22,6 +22,15 @@ orchestrator:
   roles:
     acceptance:
       enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
+    master:
+      mode: act                                # roles: the Master presses what a human would; `mine` keeps its default: plan and deploy stay yours
+  # releaseFeed:
+  #   autoUpgrade: false                       # true: switch to a kept release once no session is up
+  deploy:
+    onApproval: true                           # deploy: an approved request deploys itself, then its deploy check runs
+  autoReview:
+    enabled: true                              # autoReview: reads open requests; an approval moves the task on
+    waitingMaxIntervalMinutes: 60              # autoReview: a request waiting for an approval is read this often
   claude:
     mcpConfig: ${JAGT_MCP_CONFIG:}   # claude: the agent's tracker and code-host servers
   assistant:
@@ -37,7 +46,7 @@ orchestrator:
     enabled: false                             # usageLimits
   auth:
     mode: password                             # auth
-    passwordHash: ${JAGT_PASSWORD_HASH}        # auth: a bcrypt hash, from the env var
+    passwordHash: ${JAGT_PASSWORD_HASH}        # auth: a bcrypt hash from the env var: `htpasswd -nBC 10 "" | cut -d: -f2`; the login name is always `owner`
 server:
   address: 0.0.0.0                             # server
   publicUrl: ${JAGT_PUBLIC_URL}                # server.publicUrl

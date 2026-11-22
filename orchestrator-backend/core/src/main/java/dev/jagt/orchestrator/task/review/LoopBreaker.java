@@ -71,7 +71,8 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour,
         || origin == ActionOrigin.ACCEPTANCE
         || origin == ActionOrigin.AUTO_REVIEW
         || origin == ActionOrigin.TRACKER
-        || origin == ActionOrigin.JAGT;
+        || origin == ActionOrigin.JAGT
+        || origin == ActionOrigin.CODE_HOST;
   }
 
   public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {

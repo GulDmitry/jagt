@@ -73,6 +73,12 @@ form.addEventListener("input", (event) => {
     event.target.dataset.typed = "true";
 });
 
+document.addEventListener("project-form", (event) => {
+  const key = event instanceof CustomEvent ? event.detail?.key : null;
+  if (key) edit(key);
+  else open();
+});
+
 watchPath(() => state.editing);
 save({ editing: () => state.editing, done: () => dialog.close() });
 

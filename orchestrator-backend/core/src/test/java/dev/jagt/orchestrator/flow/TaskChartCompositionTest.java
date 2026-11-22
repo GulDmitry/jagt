@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.flow.role.CheckerRole;
 import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
-import dev.jagt.statechart.Chart;
+import dev.jagt.statechart.Statechart;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ class TaskChartCompositionTest {
 
   @Test
   void chartWithNoRoleComposedIsValidAndNamesNoRoleRegion() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(new Composition(List.of())).chart();
 
     assertThat(chart.initial().toPlain().keySet()).containsExactlyInAnyOrderElementsOf(CORE);
@@ -43,7 +43,7 @@ class TaskChartCompositionTest {
 
   @Test
   void eachRoleComposedAloneLeavesEveryCoreRegionAsDrawn() {
-    Chart<TaskMove, ChartFacts, TaskEffect> alone =
+    Statechart<TaskMove, ChartFacts, TaskEffect> alone =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -59,7 +59,7 @@ class TaskChartCompositionTest {
 
   @Test
   void everyRoleOnComposesOneRegionPerRole() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -75,7 +75,7 @@ class TaskChartCompositionTest {
 
   @Test
   void chartWithTwoCheckersTellsWhoseRoundTheSessionDeclined() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -87,7 +87,7 @@ class TaskChartCompositionTest {
     lintRound.put("lifecycle", TaskStatus.IN_PROGRESS.name());
     lintRound.put("turn", TurnKind.OPEN.name());
     lintRound.put("lint", CheckerPhase.ROUND_OPEN.name());
-    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults());
+    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED);
 
     Map<String, String> declinedByLint =
         chart
@@ -114,7 +114,7 @@ class TaskChartCompositionTest {
 
   @Test
   void composedCheckerOpensItsReadOnItsOwnStepAndNotOnAcceptances() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+    Statechart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
                 new Composition(
                     List.of(
@@ -124,7 +124,7 @@ class TaskChartCompositionTest {
             .chart();
     Map<String, String> deployed = new HashMap<>(chart.initial().toPlain());
     deployed.put("lifecycle", TaskStatus.DEPLOYED.name());
-    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults());
+    ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED);
 
     Map<String, String> onItsStep =
         chart
@@ -180,5 +180,24 @@ class TaskChartCompositionTest {
     assertThat(lintOnly.installedCheckers()).containsExactly("lint");
     assertThat(acceptanceOnly.chart().initial().toPlain()).doesNotContainKey("lint");
     assertThat(lintOnly.chart().initial().toPlain()).doesNotContainKey("acceptance");
+  }
+
+  @Test
+  void chartKeepsTheCompositionItWasBuiltFrom() {
+    Composition composition = new Composition(List.of());
+
+    assertThat(new TaskChart(composition).composition()).isSameAs(composition);
+  }
+
+  @Test
+  void taskWaitsOnTheHostWhilePollingChecksOrAwaitingItsDeploy() {
+    assertThat(TaskChart.waitsOnTheHost(TaskStatus.CI_POLLING)).isTrue();
+    assertThat(TaskChart.waitsOnTheHost(TaskStatus.IN_PROGRESS)).isFalse();
+  }
+
+  @Test
+  void reportStandsThroughReadOnlyWhenItWaitsOnAnAnswer() {
+    assertThat(TaskChart.standsThroughRead(AgentReport.QUESTION)).isTrue();
+    assertThat(TaskChart.standsThroughRead(AgentReport.WAIT)).isFalse();
   }
 }

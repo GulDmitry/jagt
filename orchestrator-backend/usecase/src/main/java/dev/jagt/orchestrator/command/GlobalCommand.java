@@ -39,6 +39,11 @@ public interface GlobalCommand {
     return false;
   }
 
+  /** False while the verb has nothing to do, so no surface lists it. */
+  default boolean available() {
+    return true;
+  }
+
   /** A report the card of {@code task} offers, so no surface keeps a list of when to show it. */
   default boolean offeredOn(TaskView task) {
     return false;
@@ -53,7 +58,7 @@ public interface GlobalCommand {
   }
 
   /** Why the Master never runs this command; empty where it may. */
-  default Optional<String> whyNotTheMaster() {
+  default Optional<String> whyNotTheArbiter() {
     return Optional.empty();
   }
 

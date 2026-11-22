@@ -68,6 +68,10 @@ orchestrator:
   onStop: keep            # keep | end. `end` (a server): stopping jagt ends every live session as gone, windows closed;
                           # `keep`: sessions outlive a restart
   keepAwake: none         # none | true. `true`: the machine stays awake while the Master acts, auto-review polls or `take` runs; `none` holds nothing
+  # releaseFeed:           # an installed jagt (jar under `versions/<v>/`) keeps a newer release, checksum-verified, beside the running one; `current` never changes
+  #   kind: github         # github | none. `none` looks for no release
+  #   url: https://github.com/GulDmitry/jagt/releases   # the feed the installers read
+  #   autoUpgrade: false   # true: switch to a kept release once no agent session is up, then exit 75; launcher only
   logging: file            # file | console. `console`: every line, the Master's included, is one ECS JSON object on stdout and no log file is written (a container); `file`: the files under logs/
   interactionLog: true    # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
   # terminal: kitty       # kitty | ghostty | none: the viewer; ghostty is macOS only and needs Ghostty 1.3 or newer; `none` opens no window, needs no kitty and `focus` names this key
@@ -177,18 +181,18 @@ orchestrator:
   # and your own MCP for logins. A checker's own options live in its folder, roles/<id>/role.yml; here it is on or off.
   roles:
     # master:               # the arbiter: an unattended reviewer that reads what a task produced before you do.
-    #                       # It judges unless you turn it off; what each mode does and costs: docs/usage.md#the-master.
-      # mode: judge            # off | judge (reads and writes what it found) | act (also presses the button).
-                               # Unset: judge where the agent CLI lets jagt read what you typed (Claude), else off.
+    #                       # It acts unless you choose otherwise; what each mode does and costs: docs/usage.md#the-master.
+      # mode: act              # off | judge (reads and writes what it found) | act (also presses the button).
+                               # Unset: act where the agent CLI lets jagt read what you typed (Claude), else off.
                                # Three tasks in a row act moved ending badly stop it until you press `act stopped`.
       # brief: roles/master/brief.md # what it judges by: copy roles/master/brief.md.dist to this name and edit it. Relative
                                # to this file. Unset and not copied, the shipped .dist; named and missing, refused
       # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                                # blank inherits the agent CLI's. One run per role of the brief, per round;
                                # a `model` column in the brief's role table overrides it for that role
-      # mine: [plan]           # the steps and verbs that stay YOURS in `act`: ship, deploy + revert (together), reply, answer,
+      # mine: [plan, deploy, revert]  # steps and verbs that stay YOURS in `act`: ship, deploy + revert (together), reply, answer,
                                # plan, repo, lift, or any other verb id (done, trust, escalate, pause, remove-repo, a command).
-                               # Unset: [plan]; [] hands the Master every verb. Anything not listed the Master may do;
+                               # Unset: [plan, deploy, revert]; [] hands the Master every verb. Anything not listed the Master may do;
                                # a plan you opened in `plan` mode is always yours
     acceptance:             # checks a deployed change against its ticket on a running environment
       enabled: false        # off: the session checks its own deploy
@@ -228,14 +232,14 @@ orchestrator:
                           # doubling to twice a day, so a deploy nobody finishes stops costing reads
   # It writes what placed an item no label could place to `memory/routing.md`, one rule per line, each with
   # how many items it has placed. Past 60 the least used goes, not the oldest. A rule stops being used when
-  # the router changes its mind or when you place by hand an item it had placed elsewhere, and is kept,
+  # the router changes its mind or when you place yourself an item it had placed elsewhere, and is kept,
   # commented out with the date. Open the file and fix a line: it outranks everything else the router is shown, and you can
   # write rules there before the first item of their kind ever arrives.
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:
     mrTitlePattern: "{ticket} {title}"
-    postReviewReplies: true    # false leaves every reply a draft for you to post by hand
+    postReviewReplies: true    # false leaves every reply a draft that you post yourself
     reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.
@@ -246,7 +250,12 @@ orchestrator:
     windowHours: 24         # stop polling a round this old
     minIntervalMinutes: 10
     maxIntervalMinutes: 60
-    waitingMaxIntervalMinutes: 240   # a request only a reviewer can move on is read past the window too, lengthening to this
+    waitingMaxIntervalMinutes: 60    # a request only a reviewer can move on is read past the window too, lengthening to this
+
+  # An approved request waits for your `deploy`. On, jagt presses it once when the code host approves,
+  # after the same guards: checks green, no conflict, the base branch read-only. A conflict waits for you.
+  # deploy:
+  #   onApproval: false
 
   # ── Infrastructure failures ────────────────────────────────────────────────────────────────────────────────
   # A pipeline the host says died on infrastructure, not on the code, is re-run by jagt after each wait here; one

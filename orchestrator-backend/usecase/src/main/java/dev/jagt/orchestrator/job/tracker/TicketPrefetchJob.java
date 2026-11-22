@@ -35,7 +35,7 @@ public class TicketPrefetchJob implements TaskJob {
 
   @Override
   public String describe() {
-    return "read each working task's ticket once, for the Master's next review of it";
+    return "read each working task's ticket once, for the arbiter's next review of it";
   }
 
   @Override
@@ -50,7 +50,7 @@ public class TicketPrefetchJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    if (configService.load().master().running() && due(taskId, task)) {
+    if (configService.load().arbiter().running() && due(taskId, task)) {
       tickets.read(taskId, Objects.requireNonNull(task.ticketUrl()), task.statusSince());
     }
   }

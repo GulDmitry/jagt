@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.time.Clock;
 import java.time.Duration;
@@ -57,7 +58,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(job), List.of()),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             mock(BoardStop.class));
   }
@@ -86,7 +87,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced))),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             stopped);
     halted.start();
@@ -172,7 +173,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(failing, job), List.of()),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             mock(BoardStop.class));
     both.start();
@@ -232,7 +233,7 @@ class JobsTest {
   @ParameterizedTest
   @CsvSource({
     "TASKS,your tasks",
-    "MASTER,the master",
+    "ARBITER,the arbiter",
     "TRACKER,the tracker",
     "HOUSEKEEPING,housekeeping"
   })
@@ -254,7 +255,7 @@ class JobsTest {
             new Jobs(
                 new Jobs.Catalog(List.of(job, second), List.of()),
                 scheduler,
-                Clock.systemUTC(),
+                new FakeClock(),
                 state,
                 mock(BoardStop.class)))
         .isInstanceOf(IllegalStateException.class)
@@ -270,7 +271,7 @@ class JobsTest {
             new Jobs(
                 new Jobs.Catalog(List.of(nameless), List.of()),
                 scheduler,
-                Clock.systemUTC(),
+                new FakeClock(),
                 state,
                 mock(BoardStop.class)))
         .isInstanceOf(IllegalStateException.class)
@@ -310,7 +311,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(job, later), List.of()),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             mock(BoardStop.class));
     both.start();
@@ -357,7 +358,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(job, healthy), List.of()),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             mock(BoardStop.class));
 
@@ -444,7 +445,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(taskJob), List.of()),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             mock(BoardStop.class));
     withTaskJob.start();
@@ -465,7 +466,7 @@ class JobsTest {
         new Jobs(
             new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced))),
             scheduler,
-            Clock.systemUTC(),
+            new FakeClock(),
             state,
             mock(BoardStop.class));
 

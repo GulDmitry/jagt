@@ -48,6 +48,26 @@ class GitWorktreesTest {
   }
 
   @Test
+  void refusesTheWorktreeCutNamingGitsOwnWordsWhenGitFailsToAddIt() throws Exception {
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
+    Processes failing =
+        ScriptedProcesses.answering(
+            List.of("git", "worktree", "add"),
+            new Processes.Result(128, "", "fatal: invalid reference: origin/gone"));
+    GitWorktrees failingGit = new GitWorktrees(GitRepos.commands(failing));
+    Path worktree = dir.resolve("wt");
+
+    assertThatThrownBy(() ->
+            failingGit.createWorktree(repo, worktree, "ABC-1", "origin/main", BranchStrategy.FRESH))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "git worktree add "
+                + worktree
+                + " failed (exit 128): fatal: invalid reference: origin/gone");
+    assertThat(worktree).doesNotExist();
+  }
+
+  @Test
   void readsLeftoverBranchAsHoldingWorkOnlyOnceItCarriesCommitTheBaseLacks() throws Exception {
     Path repo = GitRepos.clone(runner, dir, "repo", "base");
     GitRepos.git(runner, repo, "branch", "ABC-1");

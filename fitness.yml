@@ -1,0 +1,113 @@
+schema: 1
+extends: defaults
+project:
+  root: orchestrator-backend
+  basePackage: dev.jagt.orchestrator
+  sourceSets: all
+  modules:
+    statechart: { exposes: ["dev.jagt.statechart.."] }
+    core: { exposes: [".."] }
+    usecase: { exposes: [".."] }
+    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay", "dev.jagt.orchestrator.adapter.agent.trust", "dev.jagt.orchestrator.adapter.process"] }
+    surface: { exposes: [] }
+    stand: { exposes: [] }
+technical:
+  maintainability:
+    modularity:
+      collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
+      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 56, decision: "0176" }
+      gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
+      build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 23, decision: "0176" }
+      module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
+      spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone: its owner kills and reaps every live child at stop" }
+      spawn-owner-exec: { engine: archunit, set: main, calls: java.lang.Runtime.exec, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone" }
+      rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
+      ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
+      edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }
+      flow-doors: { fitness: FlowDoorsFitness, governs: class-dependency, max: 0, decision: "0144" }
+      task-opening-doors: { fitness: TaskOpeningDoorsFitness, governs: class-dependency, max: 0, decision: "0066" }
+      role-names: { fitness: RoleNamesFitness, governs: class-dependency, max: 0, decision: "0122" }
+      role-names-outside: { fitness: RoleNamesOutsideFitness, governs: class-dependency, max: 0, decision: "0203" }
+      collaborator-owners: { fitness: CollaboratorOwnersFitness, governs: count, max: 0 }
+      classes-per-package: { fitness: PackageCeilingFitness, governs: size, max: 10, decision: "0166" }
+      package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
+      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 92, decision: "0176" }
+    analysability:
+      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
+      ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
+      source-sets: { fitness: SourceSetsFitness, governs: count, max: 26, decision: "0176" }
+      start-triggers: { fitness: StartTriggersFitness, governs: count, max: 57, decision: "0176" }
+      task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
+      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 84, decision: "0176" }
+      capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
+      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 33, decision: "0176" }
+      roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 4, decision: "0176" }
+      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 52, decision: "0216" }
+      decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
+      rule-lines: { engine: scan, glob: "../docs/rules/*.md", per: file, measure: lines, governs: size, max: 100 }
+      page-lines: { engine: scan, glob: "../AGENTS.md,../README.md,../docs/decisions/README.md,../docs/*.md,../docs/features/*.md,../openspec/specs/*/spec.md", per: file, measure: lines, governs: size, max: 200 }
+      session-brief-step-lines: { engine: scan, glob: "../roles/session/brief.md.dist", per: section, measure: lines, regex: "(?m)^## [a-z][a-z0-9-]*$", governs: size, max: 200, hint: "a prompt: compress it, then run promptEval and roleEval -Prole=master (docs/rules/testing.md)" }
+      map-lines: { engine: scan, glob: "../ARCHITECTURE.md", per: file, measure: lines, governs: size, max: 500 }
+      line-characters: { engine: scan, glob: "../AGENTS.md,../README.md,../docs/decisions/README.md,../docs/*.md,../docs/features/*.md,../openspec/specs/*/spec.md,../docs/decisions/????-*.md,../docs/rules/*.md,../ARCHITECTURE.md,../roles/session/brief.md.dist", per: line, measure: characters, regex: "^[^|]", governs: size, max: 150 }
+      sentence-words: { engine: scan, glob: "../docs/rules/*.md,../openspec/specs/*/spec.md,../AGENTS.md", per: sentence, measure: words, governs: size, max: 25 }
+      session-brief-sentence-words: { engine: scan, glob: "../roles/session/brief.md.dist", per: sentence, measure: words, governs: size, max: 25, hint: "a prompt: compress it, then run promptEval and roleEval -Prole=master (docs/rules/testing.md)" }
+      rule-docs: { engine: scan, glob: "../docs/rules/*.md", per: name, governs: count, max: 8, decision: "0176" }
+      left-for-later-markers: { engine: scan, set: tracked, per: file, regex: "\\b(TO[D]O|FIXM[E]|XX[X])\\b", governs: count, max: 7 }
+      home-paths: { engine: scan, set: tracked, per: file, machine: paths, governs: count, max: 0 }
+      cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", except: "**/board/vendor/**,src/test/resources/archunit/**,**/recordings/**", governs: count, max: 0 }
+      ide-names: { engine: scan, glob: "**/*.{java,js,sh,gradle,groovy,yml},../board/**/*.js,../.github/**/*.yml,../.gitlab-ci.yml", except: "../fitness.yml,**/node_modules/**", per: file, regex: "\\bIDEs?\\b|\\bIde[A-Z]|Intell[i]J|VS ?Cod[e]", governs: count, max: 0, hint: "jagt has no IDE concept: name a code viewer or a diff viewer" }
+      editor-launcher-not-a-default: { engine: scan, glob: "src/main/resources/application.yml", per: file, regex: "(?m)^ *editor(-diff)?-command:\\s*\\[\\s*[^\\s\\]]", governs: count, max: 0, hint: "no editor is a default: an uncommented editor-command in application.yml stays empty" }
+      suite-stats-reads-no-other-project: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suite-stats.gradle", per: file, regex: "provider\\s*\\{\\s*allprojects", governs: count, max: 0 }
+      spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
+      release-not-on-tag-push: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "tags:\\s*\\[", governs: count, max: 0, hint: "the release job runs on a push to main; nobody pushes a tag" }
+      release-checks-tag-is-new: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "git ls-remote --exit-code --tags origin", governs: count, min: 1, hint: "release publishes only when the version's tag does not exist yet" }
+      release-runs-only-when-tag-new: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "needs\\.test\\.outputs\\.new == 'true'", governs: count, min: 1, hint: "release publishes only when the version's tag does not exist yet" }
+      pages-deployments-pruned-by-age: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "jq -r '\\.\\[1:\\]\\[\\] \\| \\.id'", governs: count, min: 1, hint: "a Pages deployment carries ref main, so all but the newest go, never matched by tag name" }
+      nightly-dispatchable: { engine: scan, glob: "../.github/workflows/nightly.yml", per: file, regex: "(?m)^  workflow_dispatch:", governs: count, min: 1, hint: "the nightly can be started by hand" }
+      skill-lines: { engine: scan, glob: "../.claude/skills/*/SKILL.md", per: file, measure: lines, governs: size, max: 500, hint: "a skill file: split into files one level deep (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)" }
+      skill-name: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A(?!---\\n(?:(?!^---).)*?^name: [a-z0-9-]{1,64}$)", governs: count, max: 0, hint: "frontmatter name: lowercase letters, digits and hyphens, at most 64 characters" }
+      skill-description: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A(?!---\\n(?:(?!^---).)*?^description: *(?:[^\\s>|]|[>|][-+]?\\s*\\n\\s+\\S))", governs: count, max: 0, hint: "frontmatter description: present and not empty" }
+      skill-description-characters: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A---\\n(?:(?!^---).)*?^description: (?:[^\\n]|\\n(?=[ \\t])){1025,}", governs: count, max: 0, hint: "frontmatter description: at most 1024 characters" }
+      skill-links-resolve: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/skills/*/*.md,../.claude/rules/*.md", per: link, measure: unresolved, governs: count, max: 0 }
+      skill-references-one-level: { engine: scan, glob: "../.claude/skills/*/SKILL.md", per: link, measure: nested, governs: count, max: 0, hint: "a file a skill links links no further file of the skill" }
+      agent-lines: { engine: scan, glob: "../.claude/agents/*.md", per: file, measure: lines, governs: size, max: 200 }
+      rule-pointer-lines: { engine: scan, glob: "../.claude/rules/*.md", per: file, regex: "(?s)\\A---\\n.*?\\n---\\n(?:[^\\n]*\\n){6,}", governs: count, max: 0, hint: "a rule pointer: its body is a link of five lines at most, its rule lives in docs/rules" }
+    modifiability:
+      constructors-called-from-main: { fitness: ConstructorsCalledFromMainFitness, governs: count, max: 0 }
+      members-called-from-main: { fitness: MembersCalledFromMainFitness, governs: count, max: 0 }
+      wither-defects: { fitness: WitherDefectsFitness, governs: count, max: 0 }
+      wither-count: { fitness: WitherCountFitness, governs: count, min: 81 }
+      guard-is-the-statecharts: { engine: scan, set: all, glob: "**/*Guard.java", except: "**/flow/**,**/dev/jagt/statechart/**", per: name, governs: count, max: 0, hint: "guard is the statechart's transition condition (flow/, dev.jagt.statechart): name a precondition, a check or a boundary (docs/rules/glossary.md)" }
+    testability:
+      autowired-fields: { engine: archunit, set: all, kind: field, annotated: org.springframework.beans.factory.annotation.Autowired, governs: annotation, max: 0 }
+      static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, except: "TaskAliasLogFilter,AbortedConnectionFilter", governs: count, max: 0 }
+      post-construct-hooks: { engine: archunit, set: all, kind: method, annotated: jakarta.annotation.PostConstruct, except: AbortedConnectionFilter, governs: annotation, max: 0 }
+      # StandClockTest reads real time (0055)
+      no-system-current-time-millis: { engine: archunit, set: &clockSet all, calls: java.lang.System.currentTimeMillis, except: &clockExcept "RuntimeWiring,StandClock,EvalStats,BoardActionsTest,BoardCardTest,BoardConnectionTest,BoardHeaderAndFiltersTest,BoardInteractionLogTest,BoardPageContext,BreakableJob,BoardPopupsAndTabsTest,BoardReportsTest,BoardWorkspaceTest,E2eWorkspace,MasterModeFlowTest,Stalled,StandClockTest,FakeOidcProvider", governs: class-dependency, max: 0 }
+      no-clock-system-utc: { engine: archunit, set: *clockSet, calls: java.time.Clock.systemUTC, except: *clockExcept, governs: class-dependency, max: 0 }
+      no-clock-system: { engine: archunit, set: *clockSet, calls: java.time.Clock.system, except: *clockExcept, governs: class-dependency, max: 0 }
+      test-builder-branches: { engine: scan, set: all, glob: "**/Test*Builder.java", regex: "\\b(if|for|while|switch)\\s*\\(|\\bdo\\s*\\{|\\s\\?\\s", governs: count, max: 0 }
+      test-builder-calls: { fitness: TestBuilderCallsFitness, governs: count, max: 0 }
+      test-builder-wiring: { fitness: TestBuilderWiringFitness, governs: count, max: 0 }
+      test-helper-methods: { fitness: TestHelperMethodsFitness, governs: count, max: 0 }
+      test-root-kinds: { fitness: TestRootKindsFitness, governs: count, max: 0 }
+      test-naming: { fitness: TestNamingFitness, governs: count, max: 0 }
+      log-capture: { fitness: LogCaptureFitness, governs: class-dependency, max: 0 }
+      suites-tap-nobody: { fitness: SuitesTapNobodyFitness, governs: count, max: 0, decision: "0058" }
+      sleep-in-tests: { engine: scan, set: test, per: file, regex: "Thread\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\(", governs: count, max: 0 }
+      context-booting-tests: { engine: scan, set: test, regex: "(?m)^import org\\.springframework\\.boot\\.(test\\.context\\.SpringBootTest|builder\\.SpringApplicationBuilder);", governs: count, max: 13, decision: "0187" }
+security:
+  security:
+    integrity:
+      vulnerability-scan: { engine: tool, tool: osv-scanner, measure: known-vulnerabilities, governs: security-scan, max: 0, decision: "0188", optional: true }
+operational:
+  performance-efficiency:
+    time-behaviour:
+      gate-minutes-heavy: { engine: tool, tool: gradle, task: "boardTest,e2eTest,linuxDriverTest", per: gate, measure: minutes, governs: size, max: 10, decision: "0139", axes: { scope: holistic } }
+      gate-minutes-stand: { engine: tool, tool: gradle, task: standTest, per: gate, measure: minutes, governs: size, max: 10, decision: "0139", axes: { scope: holistic } }
+      ci-jobs-without-timeout: { fitness: CiJobTimeoutsFitness, governs: count, max: 0, decision: "0139", axes: { scope: holistic } }
+      unlimited-runs: { engine: tool, tool: gradle, task: pitest, kind: test-or-gate, measure: runs-without-time-limit, governs: count, max: 8 }
+    resource-utilisation:
+      contexts-test: { engine: tool, tool: gradle, task: test, per: suite, measure: contexts, governs: count, max: 2, decision: "0187" }
+      contexts-board-test: { engine: tool, tool: gradle, task: boardTest, per: suite, measure: contexts, governs: count, max: 2, decision: "0187" }
+      contexts-e2e-test: { engine: tool, tool: gradle, task: e2eTest, per: suite, measure: contexts, governs: count, max: 4, decision: "0187" }

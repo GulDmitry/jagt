@@ -38,7 +38,7 @@ public class MasterReviewJob implements Job {
 
   @Override
   public Serves serves() {
-    return Serves.MASTER;
+    return Serves.ARBITER;
   }
 
   @Override
@@ -54,7 +54,7 @@ public class MasterReviewJob implements Job {
 
   @Override
   public void run() {
-    ConfigService.ConfigFile.MasterConfig config = configService.load().master();
+    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
     if (!config.running()) {
       return;
     }
@@ -62,7 +62,7 @@ public class MasterReviewJob implements Job {
     stateService
         .tasks()
         .forEach((taskId, task) -> {
-          if (!FlowRules.readByTheMaster(task.status()) || task.stopped()) {
+          if (!FlowRules.readByTheArbiter(task.status()) || task.stopped()) {
             return;
           }
           reviews.settle(taskId, task);
@@ -91,7 +91,7 @@ public class MasterReviewJob implements Job {
       String taskId,
       TaskState task,
       MasterReview.Verdict written,
-      ConfigService.ConfigFile.MasterConfig config) {
+      ConfigService.ConfigFile.ArbiterConfig config) {
     try {
       verdicts.act(taskId, task, written, config);
     } catch (TaskMovedOn dropped) {
@@ -104,13 +104,13 @@ public class MasterReviewJob implements Job {
    * the plan.
    */
   static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
-    return FlowRules.readByTheMaster(task.status())
+    return FlowRules.readByTheArbiter(task.status())
         && !judged
         && !task.stopped()
         && (FlowRules.holdsPlan(task.status()) || !(questionsAnswered && task.report().asks()));
   }
 
-  private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+  private void ask(String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
     if (FlowRules.holdsPlan(task.status())) {
       panel.plan(taskId, task, config);
     } else {

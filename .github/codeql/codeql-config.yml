@@ -1,0 +1,13 @@
+paths-ignore:
+  - board/vendor
+# Each query excluded here is answered by a row of docs/threat-model.md.
+query-filters:
+  # A path comes from the owner's configuration or a worktree jagt cut; a request path outside a worktree is refused.
+  - exclude:
+      id: java/path-injection
+  # A command is an argument list from the owner's configuration, never a shell line.
+  - exclude:
+      id: java/command-line-injection
+  # Spring's CSRF token is off by decision 0167: the Origin door and same-site strict stand for it.
+  - exclude:
+      id: java/spring-disabled-csrf-protection

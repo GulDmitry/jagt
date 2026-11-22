@@ -15,31 +15,31 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class SourceRoots {
+public final class SourceRoots {
 
-  static final String BASE_PACKAGE = "dev.jagt.orchestrator";
-  static final String BASE_PATH = BASE_PACKAGE.replace('.', '/');
+  public static final String BASE_PACKAGE = "dev.jagt.orchestrator";
+  public static final String BASE_PATH = BASE_PACKAGE.replace('.', '/');
 
   private static final Path BACKEND = Path.of(".");
   private static final int DEEPEST = 4;
 
-  static final List<Path> ROOTS = roots();
+  public static final List<Path> ROOTS = roots();
 
-  static final JavaClasses ALL = new ClassFileImporter().importPaths(classDirectories());
+  public static final JavaClasses ALL = new ClassFileImporter().importPaths(classDirectories());
 
   static final ClassLoader LOADER = loader();
 
   private SourceRoots() {}
 
-  static Stream<Path> mainJavaFiles() {
+  public static Stream<Path> mainJavaFiles() {
     return ROOTS.stream().filter(root -> !isTest(root)).flatMap(SourceRoots::javaFilesUnder);
   }
 
-  static Stream<Path> javaFiles() {
+  public static Stream<Path> javaFiles() {
     return ROOTS.stream().flatMap(SourceRoots::javaFilesUnder);
   }
 
-  static Stream<Path> javaFilesUnder(Path root) {
+  public static Stream<Path> javaFilesUnder(Path root) {
     try (Stream<Path> files = Files.walk(root)) {
       return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
     } catch (IOException e) {
@@ -47,7 +47,7 @@ final class SourceRoots {
     }
   }
 
-  static String read(Path path) {
+  public static String read(Path path) {
     try {
       return Files.readString(path);
     } catch (IOException e) {
@@ -55,18 +55,18 @@ final class SourceRoots {
     }
   }
 
-  static Path moduleOf(Path path) {
+  public static Path moduleOf(Path path) {
     return path.getName(0).toString().equals("src") ? Path.of(".") : path.getName(0);
   }
 
-  static boolean isFixture(Path root) {
+  public static boolean isFixture(Path root) {
     Path module = moduleOf(root);
     boolean harness =
         !module.equals(Path.of(".")) && !consumedModules().contains(module.toString());
     return isTest(root) || harness;
   }
 
-  static boolean isTest(Path root) {
+  public static boolean isTest(Path root) {
     return !setOf(root).equals("main");
   }
 

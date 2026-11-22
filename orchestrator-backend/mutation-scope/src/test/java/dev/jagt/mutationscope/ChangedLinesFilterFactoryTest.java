@@ -28,11 +28,11 @@ class ChangedLinesFilterFactoryTest {
   @Test
   void buildsFilterKeepingLinesOfTheFileTheFeatureNames() throws IOException {
     Path lines = dir.resolve("lines.txt");
-    Files.writeString(lines, "dev/jagt/Foo.java:12,13\ndev/jagt/Bar.java:7\n");
+    Files.writeString(lines, "dev/jagt/Foo.java" + ":12,13\ndev/jagt/Bar.java" + ":7\n");
     var setting =
         new FeatureSetting(
             "CHANGEDLINES", ToggleStatus.ACTIVATE, Map.of("lines", List.of(lines.toString())));
-    var parameters = new InterceptorParameters(setting, null, null, null, null, null);
+    var parameters = new InterceptorParameters(setting, null, null, null, null, null, null);
     MutationDetails onBar =
         new MutationDetails(
             new MutationIdentifier(
@@ -57,7 +57,7 @@ class ChangedLinesFilterFactoryTest {
             "CHANGEDLINES",
             ToggleStatus.ACTIVATE,
             Map.of("lines", List.of(dir.resolve("absent.txt").toString())));
-    var parameters = new InterceptorParameters(setting, null, null, null, null, null);
+    var parameters = new InterceptorParameters(setting, null, null, null, null, null, null);
 
     assertThatThrownBy(() -> new ChangedLinesFilterFactory().createInterceptor(parameters))
         .isInstanceOf(UncheckedIOException.class);

@@ -30,7 +30,7 @@ public class StopAnnouncements {
         .addKeyValue("alias", alias)
         .addKeyValue("cause", trigger.toLowerCase(Locale.ROOT))
         .addKeyValue("said", OneLine.clipped(stop.evidence()))
-        .addKeyValue("effect", "auto-review and the master leave the task")
+        .addKeyValue("effect", "auto-review and the arbiter leave the task")
         .addKeyValue("fix", "lift " + alias)
         .log();
     journal.record(

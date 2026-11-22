@@ -7,7 +7,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -85,7 +84,7 @@ final class StandTeardown {
     StandRunLog.keep(
         archive.runs(),
         new StandRunLog.Entry(
-            Instant.now(Clock.systemUTC()),
+            StandClock.now(),
             named[0],
             named.length > 1 ? named[1] : "",
             replayed ? "replay" : "live",
@@ -94,7 +93,7 @@ final class StandTeardown {
                 last == null ? "not driven" : last.ending().words(),
                 last == null ? "" : last.detail(),
                 found),
-            Duration.between(began, Instant.now(Clock.systemUTC())).toSeconds(),
+            Duration.between(began, StandClock.now()).toSeconds(),
             StandSpend.read(root)),
         root.getFileName().toString());
   }

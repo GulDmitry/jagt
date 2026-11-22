@@ -12,6 +12,9 @@ stay on the cloud until a model passes their evals here.
 | 16 GiB | `unsloth/Qwen3.5-4B-GGUF:Q6_K` | 3.5 GB |
 | 24 GiB and more | `unsloth/Qwen3.5-9B-GGUF:Q4_K_M` | 5.7 GB |
 
+Leave free disk for the file. A local model serves `COMMAND_MAP` reads only: the 9B maps 12 of 15 commands (the cloud
+15 of 15) and judged 0 of 2 acceptance cases in 10 minutes ([measured below](#what-it-serves)).
+
 1. `brew install llama.cpp` (Linux: a release build of [llama.cpp](https://github.com/ggml-org/llama.cpp)).
 2. Start the server with the model for your memory; the first run downloads it:
 
@@ -19,10 +22,11 @@ stay on the cloud until a model passes their evals here.
    llama-server -hf unsloth/Qwen3.5-9B-GGUF:Q4_K_M --no-mmproj --jinja --reasoning-budget 0 -c 16384 --port 8080
    ```
 
-   One model at a time. A model that pushes the machine into swap is too big for it: check `sysctl vm.swapusage`
-   before and after its first answer. Without `--reasoning-budget 0` the model spends its tokens thinking.
+   One model at a time. A model that pushes the machine into swap is too big for it: note `sysctl vm.swapusage`
+   before the start and after the first answer. A growth over 512 MB is swap; the total alone proves nothing on a
+   machine that already swaps. Without `--reasoning-budget 0` the model spends its tokens thinking.
    A first answer: `curl -s localhost:8080/v1/chat/completions -d '{"messages":[{"role":"user","content":"Say ok"}]}'`.
-3. Uncomment the `local:` block under `assistant` in `jagt.yml`; `model` is the name the server lists at
+3. Uncomment the `local:` block under `assistant` in `jagt.yml` (copied from `jagt.desktop.yml.dist`); `model` is the name the server lists at
    `http://127.0.0.1:8080/v1/models`.
 
 The board's head marks a server that is down or serves another model than the one configured.

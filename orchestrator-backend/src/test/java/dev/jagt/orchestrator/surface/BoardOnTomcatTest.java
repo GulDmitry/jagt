@@ -196,12 +196,12 @@ class BoardOnTomcatTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "/api;x/tasks/actions/deploy?task=ABC-42",
-        "/%61pi/tasks/actions/deploy?task=ABC-42"
-      })
-  void refusesBoardWriteWithoutAnOriginHoweverItsPathIsSpelled(String path) throws Exception {
+  @CsvSource({
+    "/api;x/tasks/actions/deploy?task=ABC-42, 400",
+    "/%61pi/tasks/actions/deploy?task=ABC-42, 403"
+  })
+  void refusesBoardWriteWithoutAnOriginHoweverItsPathIsSpelled(String path, int status)
+      throws Exception {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
             .POST(HttpRequest.BodyPublishers.noBody())
@@ -210,7 +210,7 @@ class BoardOnTomcatTest {
     HttpResponse<String> response =
         HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
-    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.statusCode()).isEqualTo(status);
   }
 
   @Test

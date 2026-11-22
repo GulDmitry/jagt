@@ -31,7 +31,7 @@ public record DeployLiftsStop(TaskStops stops) implements CapabilityInterceptor 
       if (stops.stopped(taskId)) {
         stops.lift(taskId);
       } else {
-        stops.restoreMasterLifts(taskId);
+        stops.restoreArbiterLifts(taskId);
       }
     }
     return outcome;

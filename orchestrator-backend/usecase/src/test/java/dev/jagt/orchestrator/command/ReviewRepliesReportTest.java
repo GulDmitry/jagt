@@ -16,10 +16,10 @@ import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,7 +46,7 @@ class ReviewRepliesReportTest {
                     () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(),
+                new FakeClock(),
                 new FlowRules(new TaskChart(Composition.builtIn()))),
             state,
             new ReviewDrafts(config));
@@ -62,7 +62,7 @@ class ReviewRepliesReportTest {
         > extract the grid cases into a separate parameterized test
         NO CHANGE - buildsTheGrid already is one, and its cases live in grids().
 
-        ## src/Grid.java:56
+        ## src/Grid.kt:56
         > the canonical row count is wrong
         FIXED - Measured it and pinned the count.
         """);
@@ -79,7 +79,7 @@ class ReviewRepliesReportTest {
             "  1 · NO CHANGE · !12 thread 1",
             "      > extract the grid cases into a separate parameterized test",
             "      buildsTheGrid already is one, and its cases live in grids().",
-            "  2 · FIXED · src/Grid.java:56");
+            "  2 · FIXED · src/Grid.kt:56");
   }
 
   @Test
@@ -218,14 +218,14 @@ class ReviewRepliesReportTest {
     Files.writeString(
         first.resolve("review_replies.md"),
         """
-        ## src/One.java:1
+        ## src/One.kt:1
         > first task comment
         FIXED - done in the first.
         """);
     Files.writeString(
         second.resolve("review_replies.md"),
         """
-        ## src/Two.java:2
+        ## src/Two.kt:2
         > second task comment
         FIXED - done in the second.
         """);
@@ -243,7 +243,7 @@ class ReviewRepliesReportTest {
     String out = report.render("a2");
 
     assertThat(out)
-        .contains("nothing is posted until `ship a2`\n\n  1 · FIXED · src/Two.java:2")
+        .contains("nothing is posted until `ship a2`\n\n  1 · FIXED · src/Two.kt:2")
         .doesNotContain("first task comment");
   }
 

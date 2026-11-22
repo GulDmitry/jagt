@@ -76,7 +76,7 @@ class StandLauncherTest {
 
     try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {
       assertThat(run.root().getParent()).isEqualTo(dir.resolve("base").toRealPath());
-      assertThat(run.root().getFileName().toString()).startsWith(StandRoots.PREFIX).endsWith("-1");
+      assertThat(StandRoots.named(run.root())).isTrue();
       assertThat(StandMarker.read(run.root(), 0).jagtPid()).isEqualTo(99);
       assertThat(StandMarker.read(run.root(), 0).scenario()).isEqualTo("happy/judge");
       assertThat(run.root().resolve("jagt.yml")).exists();
@@ -85,14 +85,27 @@ class StandLauncherTest {
   }
 
   @Test
-  void secondRunUnderTheSameBaseTakesTheNextRootNumber() throws Exception {
+  void secondRunUnderTheSameBaseTakesAnotherRoot() throws Exception {
     StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun first = launcher.start("happy", StandMode.JUDGE, null);
         StandRun second = launcher.start("happy", StandMode.JUDGE, null)) {
       assertThat(first.root()).isNotEqualTo(second.root());
-      assertThat(second.root().getFileName().toString()).endsWith("-2");
+    }
+  }
+
+  @Test
+  void rootNameIsNotTakenAgainOnceItsFolderIsGone() throws Exception {
+    StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
+    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
+    Path gone;
+    try (StandRun first = launcher.start("happy", StandMode.JUDGE, null)) {
+      gone = first.root();
+    }
+
+    try (StandRun second = launcher.start("happy", StandMode.JUDGE, null)) {
+      assertThat(second.root().getFileName()).isNotEqualTo(gone.getFileName());
     }
   }
 
@@ -111,7 +124,8 @@ class StandLauncherTest {
 
   @Test
   void containerRunGetsPasswordHashAndItsMarkerNamesTheContainer() throws Exception {
-    StandEngine engine = new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launches);
+    StandEngine engine =
+        new StandEngine(StandEngine.COMPOSE, tool -> true, name -> "set", launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {
@@ -139,6 +153,8 @@ class StandLauncherTest {
     assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
         .isInstanceOf(StandFailure.class)
         .hasMessageContaining("stand run happy did not start; kept ")
+        .hasMessageContaining(", evidence in ")
+        .hasMessageContaining("failed/happy-judge-jagt-stand-")
         .hasCauseInstanceOf(StandFailure.class);
     assertThat(dir.resolve("base").toFile().listFiles())
         .singleElement()
@@ -218,7 +234,9 @@ class StandLauncherTest {
 
     assertThatThrownBy(() -> launcher.server("server"))
         .isInstanceOf(StandFailure.class)
-        .hasMessageContaining("server run server did not start; kept ");
+        .hasMessageContaining("server run server did not start; kept ")
+        .hasMessageContaining(", evidence in ")
+        .hasMessageContaining("failed/server-jagt-stand-");
     assertThat(dir.resolve("base").toFile().listFiles())
         .singleElement()
         .satisfies(root -> assertThat(StandMarker.read(root.toPath(), 0).failed()).isTrue());

@@ -22,8 +22,8 @@ import org.springframework.util.FileSystemUtils;
 /**
  * WARNS about worktree directories no task owns: an orphan can hold uncommitted work AND copies of
  * gitignored secrets. Each is reported with how many of those copies it still holds. The one it
- * deletes instead of reporting is jagt's own residue — a directory the IDE wrote back into after
- * the checkout was already gone.
+ * deletes instead of reporting is jagt's own residue — a directory a code viewer wrote back into
+ * after the checkout was already gone.
  */
 @Service
 @RequiredArgsConstructor
@@ -103,7 +103,7 @@ public class WorktreeOrphanScanner implements Job {
   }
 
   private boolean holdsOnlyEditorFiles(Path directory) {
-    boolean[] onlyIdeFiles = {true};
+    boolean[] onlyViewerFiles = {true};
     try {
       Files.walkFileTree(
           directory,
@@ -120,7 +120,7 @@ public class WorktreeOrphanScanner implements Job {
               if (attrs.size() == 0 || WorktreeNoise.isResidue(file.getFileName().toString())) {
                 return FileVisitResult.CONTINUE;
               }
-              onlyIdeFiles[0] = false;
+              onlyViewerFiles[0] = false;
               return FileVisitResult.TERMINATE;
             }
           });
@@ -132,6 +132,6 @@ public class WorktreeOrphanScanner implements Job {
           .log();
       return false;
     }
-    return onlyIdeFiles[0];
+    return onlyViewerFiles[0];
   }
 }

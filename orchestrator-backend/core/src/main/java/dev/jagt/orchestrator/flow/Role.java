@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.flow.session.TurnKind;
-import dev.jagt.statechart.ChartBuilder;
+import dev.jagt.statechart.StatechartBuilder;
 
 interface Role {
 
@@ -14,11 +14,11 @@ interface Role {
 
   Kind kind();
 
-  void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing);
+  void declareRegion(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing);
 
-  void declareBeneath(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
+  void declareBeneath(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
 
-  void declareTurnEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from);
+  void declareTurnEdge(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from);
 
-  void declareLifecycleEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
+  void declareLifecycleEdge(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
 }

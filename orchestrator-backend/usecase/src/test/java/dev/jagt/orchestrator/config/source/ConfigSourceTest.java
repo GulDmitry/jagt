@@ -79,6 +79,23 @@ class ConfigSourceTest {
   }
 
   @Test
+  void answersNoSectionWhenThereIsNoConfigFile() {
+    Object section = new ConfigSource(paths, new FakeConfigInputs()).section();
+
+    assertThat(section).isNull();
+  }
+
+  @Test
+  void appliesAnEnvironmentOverrideWhenThereIsNoConfigFile() {
+    FakeConfigInputs inputs =
+        new FakeConfigInputs().setting("JAGT__orchestrator__keepAwake", "false");
+
+    Object section = new ConfigSource(paths, inputs).section();
+
+    assertThat(section).isEqualTo(Map.of("keepAwake", "false"));
+  }
+
+  @Test
   void refusesTheStartNamingTheKeyAndTheVariableWhenItIsUnsetWithoutDefault() throws IOException {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  tracker:\n    token: ${TOKEN}\n");
     ConfigSource source = new ConfigSource(paths, new FakeConfigInputs());

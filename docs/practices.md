@@ -9,14 +9,14 @@ The gates are requirements in [`engineering`](../openspec/specs/engineering/spec
 ```text
 Read docs/practices.md of the jagt repository. For each sphere, adopt the rows that fit my stack: copy the unit named in "copy",
 adapt its base package in `SourceRoots.BASE_PACKAGE`, and keep its check beside it.
-Class-name literals in `FlowDoorsTest`, `TaskOpeningDoorsTest`, `RoleNamesTest`, `CeilingKind` and `CodeCeilings` are adapted by hand.
+Class-name literals in the `Fitness` classes are adapted by hand.
 Link jagt's rule home, never copy its text.
 A check that fails is fixed in the code, never by raising its number. A row saying "gap" is not adopted: list it and ask me.
 Report a table: practice | adopted | unit copied | gap. Run my test suite after every sphere.
 ```
 
 Reading the columns: `NNNN` is `docs/decisions/NNNN-*.md`. "Java" is the backend, "JS" the board's JavaScript.
-`gap: JAGT-n` names the open task; `gap` has none yet; `n.a.` is out of scope (the spec says why).
+`gap` is not held yet; `n.a.` is out of scope (the spec says why).
 A row's evidence was checked 2026-11-16 against the tree and the ISO/IEC 25010, OWASP ASVS 5 level 2, Spring Boot production-ready,
 twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
@@ -24,9 +24,10 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Dependencies point inward only; ports in the centre (25010 modularity: six Gradle modules) | [rings](../ARCHITECTURE.md#the-rings), [seams](rules/seams.md) | `RingsTest`, `PackagesTest` 0166, `KindsTest` | gap: JAGT-96 | `RingsTest`, `PackagesTest`, `PackageMap` |
-| A kind of thing names its standard and its check; its count has a ceiling | [kinds](../ARCHITECTURE.md#the-kinds), 0180 | `KindsTest`, `ComplexityCeilingsTest` 0176 | gap: JAGT-96 | `ComplexityCeilingsTest`, `complexity-ceilings.json` |
-| No static state, no lifecycle hook that does work | [components](rules/components.md), 0160, 0169 | `StaticStateTest`, `LifecycleHooksTest` | ESLint top-level let/var, run by no gate: JAGT-96 | the two tests |
+| Dependencies point inward only; ports in the centre (25010 modularity: six Gradle modules) | [rings](../ARCHITECTURE.md#the-rings), [seams](rules/seams.md) | `RingsFitness`, `PackagesTest` 0166, `KindsTest` | ESLint `import-x/no-cycle`, five imports a module; rings: gap | `RingsFitness`, `PackagesTest`, `PackageMap` |
+| A name a discipline already has is its term, defined once in one glossary | [glossary](rules/glossary.md) | a reader, no gate | same | the glossary file |
+| A kind of thing names its standard and its check; its count has a ceiling | [kinds](../ARCHITECTURE.md#the-kinds), 0180 | `KindsTest`, `FitnessTest` 0176 | gap | `FitnessTest`, `fitness.yml` |
+| No static state, no lifecycle hook that does work | [components](rules/components.md), 0160, 0169 | `static-state`, `post-construct-hooks` | ESLint top-level let/var in `npm run lint` | `FitnessTest` |
 | A third party is a seam chosen in config; no vendor in code (25010 adaptability; 12F IV) | [seams](rules/seams.md), 0130 | `SeamSelectionTest`, `VendorNamesTest`, `PlatformCheck` | n.a. | `SeamSelectionTest`, `VendorNamesTest` |
 | Configuration is validated at start; secrets by env name (12F III, ASVS V2) | [components](rules/components.md) | `StartupValidationTest`, `ConfigReferenceTest`, `AuthCheckTest` | n.a. | `StartupValidationTest` |
 | 25010 reusability | n.a. | an application, no module is consumed elsewhere | n.a. | none |
@@ -35,29 +36,29 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Method at cognitive complexity 12 at most (25010 modifiability) | [style](rules/style.md), 0053 | `CognitiveComplexityTest` | gap: JAGT-96 | `CognitiveComplexityTest` |
-| Three collaborators a class, five the ceiling; five mocks a test | [style](rules/style.md) | `CollaboratorCeilingTest`, `MockCeilingTest` | n.a. | the two tests |
-| No block of 75 tokens twice | [style](rules/style.md) | `DuplicationTest` | gap | `DuplicationTest` |
-| Static analysis and format gate all code, tests included (25010 modifiability, ASVS V15) | [style](rules/style.md), 0143, 0146, 0162 | Checkstyle, Error Prone, NullAway, Spotless in `jagt.conventions.gradle`; `NullMarkedTest` | Prettier, ESLint configured, run by no gate: JAGT-96 | `jagt.conventions.gradle` |
-| Value records have withers or a builder, no null soup | [style](rules/style.md) | `WithersTest` | n.a. | `WithersTest` |
-| English and UTC only, set in main | [components](rules/components.md) | `EnglishAndUtcTest` | `BoardAssetsTest` | `EnglishAndUtcTest` |
+| Method at cognitive complexity 12 at most (25010 modifiability) | [style](rules/style.md), 0053 | `cognitive-complexity` | ESLint `complexity` 12, cyclomatic | `FitnessTest` |
+| Three collaborators a class, five the ceiling; five mocks a test | [style](rules/style.md) | `collaborators-per-class`, `mocks-per-test` | n.a. | `FitnessTest` |
+| No block of 75 tokens twice | [style](rules/style.md) | `duplication` | jscpd | `FitnessTest` |
+| Static analysis and format gate all code, tests included (25010 modifiability, ASVS V15) | [style](rules/style.md), 0143, 0146, 0162 | Checkstyle, Error Prone, NullAway, Spotless in `jagt.conventions.gradle`; `unmarked-packages` | Prettier, ESLint, strict `tsc` checkJs in `npm run lint` | `jagt.conventions.gradle` |
+| Value records have withers or a builder, no null soup | [style](rules/style.md) | `wither-defects`, `wither-count` | n.a. | `FitnessTest` |
+| English and UTC only, set in main | [components](rules/components.md) | `now-without-clock`, `no-zone-id-system-default`, `no-clock-system-utc` | `BoardAssetsTest` | `FitnessTest`, `BoardAssetsTest` |
 
 ## Tests and the pyramid
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Line coverage floor per module (25010 testability) | [testing](rules/testing.md), 0181 | JaCoCo in `jagt.conventions.gradle`, 0.80 per module | gap: JAGT-96 | `jagt.conventions.gradle` |
-| Mutants judged on the diff at every test run (pyramid mutation) | [testing](rules/testing.md), 0125, 0127, 0151 | `pitestDiff`, `jagt.pitest.gradle` | gap | `jagt.pitest.gradle` |
-| Unit and rule tests run whole in one gate | [testing-suites](rules/testing-suites.md) | `./gradlew test` | `npm test` is a no-op: JAGT-96 | `jagt.suites.gradle` |
+| Line coverage floor per module (25010 testability) | [testing](rules/testing.md), 0181 | JaCoCo in `jagt.conventions.gradle`, 0.80 per module | c8, 80 % lines per file `.c8rc.json` lists | `jagt.conventions.gradle` |
+| Mutants judged on the diff at every test run (pyramid mutation) | [testing](rules/testing.md), 0125, 0127, 0151 | `pitestDiff`, `jagt.pitest.gradle` | Stryker on demand; per diff: gap, [listed](../openspec/specs/engineering/spec.md) | `jagt.pitest.gradle` |
+| Unit and rule tests run whole in one gate | [testing-suites](rules/testing-suites.md) | `./gradlew test` | `npm test` in CI's `test` job | `jagt.suites.gradle` |
 | Property-based (pyramid) | [testing](rules/testing.md) | jqwik properties of the task reducer | gap | one properties class |
 | Contract (pyramid, 25010 interoperability) | [testing](rules/testing.md), 0170 | `WholeApplicationWiringTest` against `contracts/openapi.yaml`, `SchemaTest` | `board-events.schema.json` | `WholeApplicationWiringTest` |
 | Integration and slice (pyramid) | [testing-suites](rules/testing-suites.md) | `OidcLoginOnTomcatTest`, `PasswordLoginRefusalOnTomcatTest`, the stand's `ServerStandTest` | `boardTest` | the two `OnTomcat` tests |
 | End to end (pyramid, 12F X parity) | [testing-suites](rules/testing-suites.md) | `e2eTest`, `standTest`, nightly and on a tag; same scripts in CI | `boardTest` in Chromium | `ci.yml` heavy and stand jobs |
 | Performance and load (pyramid, 25010 time behaviour) | [testing-suites](rules/testing-suites.md), 0139 | ready 15 s, `/state` p95 100 ms | `ServerStandTest` | `ServerStandTest` |
-| Security tests (pyramid) | [testing](rules/testing.md) | `AgentDoorFilterTest`, `LoopbackFilterTest`, `BoardWriteFilterTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap: JAGT-96 | the filter tests |
-| A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `EveryTestAssertsTest`, `ProductionConstructorTest`, `TestBuilderLogicTest`, `NoHelperMethodTest`, `TestNamingTest` | n.a. | the five tests |
+| Security tests (pyramid) | [testing](rules/testing.md) | `LoopbackOrRootTokenTest`, `NotThePageTest`, `RefusedRequestsTest`, `MasterTokenTest`; DAST n.a. | gap | the filter tests |
+| A test reaches an assertion, uses production's constructor, shares only a builder, fake or scanner | [testing](rules/testing.md), 0051, 0163, 0164 | `assertionless-tests`, `constructors-called-from-main`, `test-builder-calls`, `test-helper-methods`, `test-naming` | n.a. | `FitnessTest` |
 | A suite ends within a ceiling; a flaky test is registered or fixed (25010 maturity) | [testing](rules/testing.md), 0139 | `jagt.suites.gradle`, `jagt.suite-stats.gradle` | n.a. | `jagt.suites.gradle` |
-| A test never reaches the developer's terminal | [testing](rules/testing.md), 0058 | `TestTmuxCleanupTest`, `SuitesTapNobodyTest` | n.a. | `TestTmuxCleanupTest` |
+| A test never reaches the developer's terminal | [testing](rules/testing.md), 0058 | `TestTmuxCleanupTest`, `SuitesTapNobodyFitness` | n.a. | `TestTmuxCleanupTest` |
 
 ## Gates and CI
 
@@ -65,8 +66,8 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 |---|---|---|---|---|
 | Three groups: unit+functional every commit, heavy nightly and on a tag, stand before a release | [testing-suites](rules/testing-suites.md) | `ci.yml`, `CiWorkflowTest` | `boardTest` in the heavy group | `ci.yml` |
 | A release builds on a hosted runner from the tag (12F V, SLSA L2 build) | [testing-suites](rules/testing-suites.md) | `ci.yml` release job, `CiWorkflowTest` | n.a. | `ci.yml` release job |
-| Every gate of the inventory stays wired into the commit suite or CI | [engineering](../openspec/specs/engineering/spec.md) | `QualityGatesTest` | gap: JAGT-96 | `QualityGatesTest` |
-| One gate per stack; a check holds for all code; no hook in the repository | [AGENTS.md](../AGENTS.md#git-and-committing), 0162 | `./gradlew test --rerun-tasks` | gap: JAGT-96 | `jagt.conventions.gradle` |
+| Every gate of the inventory stays wired into the commit suite or CI | [engineering](../openspec/specs/engineering/spec.md) | `QualityGatesTest` | gap, [listed](../openspec/specs/engineering/spec.md): no test pins the board's CI step | `QualityGatesTest` |
+| One gate per stack; a check holds for all code; no hook in the repository | [AGENTS.md](../AGENTS.md#git-and-committing), 0162 | `./gradlew test --rerun-tasks` | `npm run lint && npm test` in CI's `test` job | `jagt.conventions.gradle` |
 
 ## Review
 
@@ -79,7 +80,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Text budgets: decision 50, rule 100, page 200 lines; no line past 150 characters outside a table | [style](rules/style.md) | `TextBudgetTest` | n.a. | `TextBudgetTest`, `BudgetedTexts` |
+| Text budgets: decision 50, rule 100, page 200 lines; no line past 150 characters outside a table | [style](rules/style.md) | `decision-lines`, `rule-lines`, `page-lines`, `line-characters` | n.a. | `FitnessTest` |
 | Every relative link and anchor reaches its target; a rule has its path-scoped pointer | [style](rules/style.md) | `DocLinksTest` | n.a. | `DocLinksTest`, `DocFiles` |
 | An architectural decision has its record, indexed (25010 analysability) | [decisions](decisions/README.md) | `DecisionIndexTest` | n.a. | `DecisionIndexTest` |
 | A behaviour change carries its spec delta; a capability its features line | [spec-changes](../openspec/specs/spec-changes/spec.md) | `SpecLimitsTest`, `FeaturesTest`, `OpenSpecTest` | n.a. | the three tests |
@@ -89,21 +90,21 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| A task opens only from a command or tracker intake, never a model's answer | [AGENTS.md](../AGENTS.md#the-human-in-the-loop) | `TaskOpeningDoorsTest` | n.a. | `TaskOpeningDoorsTest` |
-| A prompt is budgeted and evaluated; a vendor CLI's screen is pinned on a capture | [style](rules/style.md), [seams](rules/seams.md) | `TextBudgetTest`, `promptEval`, `roleEval` | n.a. | `TextBudgetTest` |
+| A task opens only from a command or tracker intake, never a model's answer | [AGENTS.md](../AGENTS.md#the-human-in-the-loop) | `TaskOpeningDoorsFitness` | n.a. | `TaskOpeningDoorsFitness` |
+| A prompt is budgeted and evaluated; a vendor CLI's screen is pinned on a capture | [style](rules/style.md), [seams](rules/seams.md) | `session-brief-step-lines`, `promptEval`, `roleEval` | n.a. | `FitnessTest` |
 | A guard names what it cannot stop; the base branch is read-only (ASVS V1 shell, 25010 integrity) | [guards](rules/guards.md), 0022, 0040 | `ToolGateTest`; arguments as lists, one fixed `sh -c` | n.a. | the guard tests |
-| A new role starts from its design file | [components](rules/components.md) | `RoleModulesTest` | n.a. | `RoleModulesTest` |
+| A new role starts from its design file | [components](rules/components.md) | `RoleNamesFitness` | n.a. | `RoleNamesFitness` |
 | What the board draws has one meaning per colour and mark | [design](rules/design.md) | `BoardAssetsTest` | `boardTest` | `BoardAssetsTest` |
 
 ## Security
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| A write carries its Origin; a remote peer authenticates (ASVS V4 CSRF, 25010 integrity) | [board-security](../openspec/specs/board-security/spec.md), 0167 | `BoardWriteFilterTest`, `OriginFilterTest`, `LoopbackFilterTest` | the board sends Origin | `BoardWriteFilterTest` |
-| One role, one door; the agent door resolves its caller (ASVS V8) | [guards](rules/guards.md) | `AgentDoorFilterTest`, `McpProtocolServiceTest` | n.a. | `AgentDoorFilterTest` |
+| A write carries its Origin; a remote peer authenticates (ASVS V4 CSRF, 25010 integrity) | [board-security](../openspec/specs/board-security/spec.md), 0167 | `NotThePageTest`, `OriginFilterTest` | the board sends Origin | `NotThePageTest` |
+| One role, one door; the agent door resolves its caller (ASVS V8) | [guards](rules/guards.md) | `LoopbackOrRootTokenTest`, `McpProtocolServiceTest` | n.a. | `LoopbackOrRootTokenTest` |
 | Password is a BCrypt hash by env name; no default credential; an issuer subject is allow-listed (V6.2, V9/10, V11; 25010 authenticity) | [board-security](../openspec/specs/board-security/spec.md) | `AuthCheckTest`, `OidcLoginOnTomcatTest`, `MasterTokenTest` | n.a. | `AuthCheckTest` |
 | Session fixation and rotation by the framework's defaults (V7) | 0167 | Spring Security, no own session code | n.a. | none |
-| Logout ends the session; a guessing peer is backed off; every login is one structured line (V6.3, V7, V16; 25010 non-repudiation) | [board-security](../openspec/specs/board-security/spec.md) | `PasswordLoginRefusalOnTomcatTest`, `LoginBackoffFilterTest`, `PasswordLoginOutcomeTest` | the gear's log-out | the three tests |
+| Logout ends the session; a guessing peer is backed off; every login is one structured line (V6.3, V7, V16; 25010 non-repudiation) | [board-security](../openspec/specs/board-security/spec.md) | `PasswordLoginRefusalOnTomcatTest`, `BackedOffPeersTest`, `PasswordLoginOutcomeTest` | the gear's log-out | the three tests |
 | Content-Security-Policy of the board's own origin (V3.4) | [design](rules/design.md), 0184 | `BoardAssetsTest`, `BoardVendorLoadTest` | no CDN, no inline script | `BoardCsp` |
 | Secure cookie, session timeout, forwarded headers, Ingress tls (V3.4, V7, V12) | [server-environment](../openspec/specs/server-environment/spec.md) | `ServerStarterTest`, `KubernetesManifestsTest` | n.a. | the two tests |
 | Management exposes health only; the cookie is same-site strict (V13) | [server-environment](../openspec/specs/server-environment/spec.md), 0172 | `KubernetesManifestsTest` | n.a. | the manifest |
@@ -119,12 +120,12 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Probes: startup, liveness, readiness; graceful shutdown (Boot health groups, 12F IX; 25010 availability) | [shutdown](../openspec/specs/shutdown/spec.md), 0161, 0169, 0172, 0179 | `KubernetesManifestsTest`, `ShutdownEndingsTest`, `ClonesHealthTest`; tini and a TERM trap | n.a. | `KubernetesManifestsTest` |
 | Failure is contained: breaker, wait-out, error shape (25010 fault tolerance) | [seams](rules/seams.md), 0086, 0105, 0108 | `AssistantBreakerTest`, `InfraRetryTest`, `RetryPolicyTest`, `AbortedConnectionFilterTest` | n.a. | `RetryPolicyTest` |
 | State is written atomically and read across a minor (25010 recoverability, 12F XII) | [components](rules/components.md) | `AtomicFilesTest`, `StateServiceCompatibilityTest`, `TaskStateFileCompatibilityTest` | n.a. | `AtomicFilesTest` |
-| Logs are structured to stdout with a cause (Boot logging, 12F XI) | [style](rules/style.md) | `LogbackTargetTest`, `FailureCausesTest` | n.a. | `FailureCausesTest` |
+| Logs are structured to stdout with a cause (Boot logging, 12F XI) | [style](rules/style.md) | `LogbackTargetTest`, `failure-cause-from-message` | n.a. | `LogbackTargetTest`, `FitnessTest` |
 | Every store, call, loop and task count is bounded (25010 resource use, capacity) | [components](rules/components.md), 0045, 0048, 0104, 0179 | `ImageJvmOptionsTest`, `StandSlotsTest`, `LoopBreakerTest` | n.a. | `ImageJvmOptionsTest` |
-| Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerStandTest`, `ServerRestartStandTest` | n.a. | `Dockerfile`, `kubernetes.yml.dist` |
+| Install is one file and one command; two instances co-exist (25010 installability, co-existence, 12F VII) | [AGENTS.md](../AGENTS.md#interfaces), 0058 | `DockerComposeContainersTest`, `ServerStandTest`, `ServerRestartStandTest` | n.a. | `Dockerfile`, `examples/kubernetes.yml` |
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |
 | Metrics and build info answer to the owner (Boot metrics, info) | [board-security](../openspec/specs/board-security/spec.md#requirement-metrics-and-build-info-answer-the-owner) | `BoardOnTomcatTest` | `BoardHeaderAndFiltersTest` | `BoardOnTomcatTest` |
-| Start-to-ready and latency stay under a measured budget (25010 time behaviour) | none yet | gap: JAGT-131 | gap: JAGT-131 | gap: JAGT-131 |
+| Start-to-ready and latency stay under a measured budget (25010 time behaviour) | [engineering](../openspec/specs/engineering/spec.md) | `ServerStandTest`: start 15 s, `/state` p95 100 ms | n.a. | `ServerStandTest` |
 | Upgrade, backup and rollback of data are documented (25010 replaceability) | [server](server.md) | `StateServiceCompatibilityTest` | n.a. | `StateServiceCompatibilityTest` |
 | Scale out (12F VIII) and stateless processes (12F VI) | 0179 | rejected: one replica, state on `/data` | n.a. | none |
 
@@ -135,5 +136,5 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | A bill of materials ships with a release (SBOM) | [release-artifacts](../openspec/specs/release-artifacts/spec.md), 0182 | `CiWorkflowTest`, `jagt.sbom.gradle` | gap | `jagt.sbom.gradle` |
 | Signed provenance and checksums for the jar and the image (SLSA L2) | [release-artifacts](../openspec/specs/release-artifacts/spec.md), 0183 | `CiWorkflowTest` | n.a. | `ci.yml` release job |
 | Dependencies, actions, base images and the wrapper are pinned; an update bot (12F II, SLSA integrity, update automation) | [engineering](../openspec/specs/engineering/spec.md), 0189 | `PinningTest`, lockfiles | n.a. | `PinningTest` |
-| A dependency vulnerability stops the build (ASVS V13) | [engineering](../openspec/specs/engineering/spec.md), 0188 | osv-scanner on the release SBOM, `QualityGatesTest` | gap: JAGT-96 | `ci.yml` test job |
+| A dependency vulnerability stops the build (ASVS V13) | [engineering](../openspec/specs/engineering/spec.md), 0188 | osv-scanner on the release SBOM, `QualityGatesTest` | `npm audit --audit-level=high` | `ci.yml` test job |
 | One codebase, the image built from it (12F I) | 0171 | `Dockerfile` | n.a. | `Dockerfile` |

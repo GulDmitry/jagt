@@ -14,10 +14,10 @@ import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class CheckerWaitJobTest {
         root.resolve("roles/acceptance/role.yml"),
         "environments: [{url: \"https://stage.example.com\","
             + " landed: \"https://stage.example.com/health\"}]\n");
-    records = new CheckerRecords(paths, Clock.systemUTC(), "acceptance");
+    records = new CheckerRecords(paths, new FakeClock(), "acceptance");
     job =
         new CheckerWaitJob(
             new RoleSettings(

@@ -1,19 +1,15 @@
 package dev.jagt.orchestrator.capability.ship;
 
-import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.flow.view.Refusal;
-import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.turn.RepliesInstruction;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.review.ReviewRequestTitle;
-import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.util.List;
 import java.util.Objects;
@@ -35,14 +31,10 @@ public class ShipService {
   private final ConfigService configService;
   private final StepRelay relay;
   private final WorktreeChanges changes;
-  private final CaseDoor door;
+  private final RepliesInstruction repliesInstruction;
 
   /** One ship at a time per task: two clicks in a row would relay the same instruction twice. */
   private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
-
-  private static final String MASTER_MAY_NOT_REPLY =
-      "Do NOT post any replies — this ship is the Master session's,"
-          + " which may not answer a person. LEAVE review_replies.md for the human.\n";
 
   public Outcome ship(String taskIdOrAlias) {
     String taskId = stateService.canonicalTaskId(taskIdOrAlias);
@@ -132,16 +124,10 @@ public class ShipService {
   }
 
   private String repliesStep(String taskId, ConfigService.ConfigFile config) {
-    return config.master().may(MasterRight.REPLY) && !door.presses(taskId, MasterMove.REPLY.id())
-        ? MASTER_MAY_NOT_REPLY
-        : repliesStep(config);
+    return repliesInstruction.repliesStep(taskId, config).orElseGet(() -> repliesStep(config));
   }
 
   static String repliesStep(ConfigService.ConfigFile config) {
-    // A right withheld from the Master is withheld from the ship it asked for, not from every ship.
-    if (OriginContext.current() == ActionOrigin.MASTER && !config.master().may(MasterRight.REPLY)) {
-      return MASTER_MAY_NOT_REPLY;
-    }
     if (!config.codeReview().postReviewRepliesOrDefault()) {
       return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
     }

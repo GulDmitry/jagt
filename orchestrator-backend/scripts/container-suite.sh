@@ -56,4 +56,16 @@ cd "$BACKEND_DIR"
 JAGT_BOARD_URL="http://localhost:$PORT" JAGT_BOARD_PASSWORD="$PASSWORD" \
     ./gradlew --no-daemon boardTest --tests '*BoardContainerTest'
 
+echo "==> jagt.yml on the volume survives a recreate"
+image=$(compose images --quiet jagt)
+volume=$PROJECT-config
+docker volume create "$volume" >/dev/null
+trap 'docker volume rm -f "$volume" >/dev/null 2>&1 || true; cleanup' EXIT
+start() { docker run --rm -v "$volume":/data -e JAGT_JAVA_OPTIONS=-version --entrypoint /app/entrypoint.sh "$image" >/dev/null 2>&1; }
+inside() { docker run --rm -v "$volume":/data --entrypoint sh "$image" -c "$1"; }
+start
+inside 'echo "# added from the board" >>"$ORCHESTRATOR_CONFIG_FILE"'
+start
+inside 'grep -q "added from the board" "$ORCHESTRATOR_CONFIG_FILE"'
+
 compose down --volumes --rmi local >/dev/null

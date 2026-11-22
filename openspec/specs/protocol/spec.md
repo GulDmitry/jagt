@@ -8,7 +8,7 @@ Everything crossing into jagt is a message, validated once at the door.
 
 ### Requirement: The protocol lives in core
 `protocol/` in `core/` SHALL hold the wire record, its rules and the types the rest of jagt works in. It speaks the
-centre's vocabulary; the centre does not know it (`RingsTest`). What a message cannot carry is not the
+centre's vocabulary; the centre does not know it (`RingsFitness`). What a message cannot carry is not the
 protocol's: a worktree claim is measured where the worktree is (`service/HandBack`), and which status it may land on is
 `flow/FlowRules`'s ([task-flow](../task-flow/spec.md)).
 
@@ -152,7 +152,7 @@ Off by default, a tracker stage SHALL open or close a task with no human action 
 
 ### Requirement: An MCP caller is a task or the Master, never assumed
 A call whose `X-Working-Directory` lies in a task's worktree SHALL be that task's. Else it SHALL present the
-`master-token` beside `state.json`, drawn at each start (`surface/mcp/MasterToken`), to be the Master's, or be refused 401.
+`master-token` beside `state.json`, drawn at each start (`surface/mcp/refusal/MasterToken`), to be the Master's, or be refused 401.
 
 #### Scenario: Nobody in particular
 - **WHEN** a tokenless `curl`, or a worktree no task holds, calls

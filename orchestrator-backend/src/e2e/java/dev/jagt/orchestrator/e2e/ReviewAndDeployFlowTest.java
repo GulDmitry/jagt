@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.flow.view.TaskView;
+import dev.jagt.orchestrator.job.deploy.DeployOnApprovalJob;
 import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.StateService;
@@ -21,7 +22,7 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.service.task.TaskViews;
-import dev.jagt.orchestrator.surface.mcp.MasterToken;
+import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.launch.TicketFacts;
@@ -32,6 +33,7 @@ import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -67,6 +69,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
   private final StateService stateService;
   private final TaskStops stops;
   private final TaskViews views;
+  private final DeployOnApprovalJob deployOnApproval;
   private final OrchestratorPaths paths;
   private final ToolchainProperties properties;
   private final FlowHarness flow;
@@ -77,12 +80,14 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       StateService stateService,
       TaskStops stops,
       TaskViews views,
+      DeployOnApprovalJob deployOnApproval,
       ApplicationContext context,
       @LocalServerPort int port) {
     this.provisioning = provisioning;
     this.stateService = stateService;
     this.stops = stops;
     this.views = views;
+    this.deployOnApproval = deployOnApproval;
     this.paths = context.getBean(OrchestratorPaths.class);
     this.properties = context.getBean(ToolchainProperties.class);
     this.flow = new FlowHarness(context, workspace, TASK, port);
@@ -315,8 +320,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
         """
             .formatted(TASK);
 
-    flow.post(
-        "/mcp", call, Map.of(MasterToken.HEADER, Files.readString(paths.masterToken()).strip()));
+    flow.post("/mcp", call, Map.of(MasterToken.HEADER, Files.readString(paths.token()).strip()));
 
     assertThat(flow.task().history())
         .extracting(StatusChange::status, StatusChange::origin)
@@ -377,12 +381,12 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
               new Answer<>(
                   Optional.of(
                       reviewFacts()
-                          .withThreads(List.of("bot (Widget.java:12): tighten this"))
+                          .withThreads(List.of("bot (Widget.kt:12): tighten this"))
                           .build()),
                   TokenUsage.NONE));
       flow.act("sweep");
       assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
-          .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
+          .contains("bot (Widget.kt:12): tighten this", "Do NOT push or post anything yourself");
 
       Files.writeString(flow.worktree().resolve("widget.txt"), "tightened\n");
       Files.writeString(flow.worktree().resolve("review_replies.md"), "> tighten this\n\nDone.\n");
@@ -447,6 +451,24 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
       assertThat(flow.worktree()).doesNotExist();
       assertThat(stateService.task(TASK)).isEmpty();
       assertThat(E2eWorkspace.git(flow.repo(), "branch", "--list", TASK)).contains(TASK);
+    }
+
+    @Test
+    void approvedRequestDeploysItselfWhenDeployOnApprovalIsOnAndNamesTheCodeHostAsWhoActed()
+        throws Exception {
+      Files.writeString(
+          paths.configFile(), "  deploy: { onApproval: true }\n", StandardOpenOption.APPEND);
+      when(assistants.codeHost().readReview(flow.request()))
+          .thenReturn(
+              new Answer<>(Optional.of(reviewFacts().withApproved(true).build()), TokenUsage.NONE));
+      flow.act("sweep");
+
+      deployOnApproval.runOn(stateService.tasks());
+
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOYED);
+      assertThat(flow.task().history())
+          .extracting(StatusChange::status, StatusChange::origin)
+          .contains(tuple(TaskStatus.DEPLOYED, ActionOrigin.CODE_HOST));
     }
 
     @Test

@@ -21,9 +21,16 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
 - The OS layer (git, tmux, tini, procps, lsof, openssh-client, uid 10001, gid-0 permissions) and the stand layer are
   Dockerfiles of their own, published to ghcr.io and named by digest, never a floating tag.
 - Base images are built amd64 and arm64 with signed provenance, an SBOM and the osv-scanner scan the app image carries.
+- The OS layer is `base/Dockerfile`, built by `.github/workflows/base-images.yml` (push to `base/**`, weekly, manual).
+- The stand layer is `base/Dockerfile.stand`, published as `<repository>-stand-base` after the OS base, `FROM` it by tag.
 - They rebuild in their own workflow on a change to a base Dockerfile and weekly for OS security fixes.
 - Renovate bumps the temurin digest in a base Dockerfile and the base digest in an app Dockerfile, as a request passing full CI.
-- CI caches Gradle with `gradle/actions/setup-gradle`, `cache-provider: basic`, written only from `main`.
+- After each publish the workflow keeps the newest 10 untagged base images with their per-arch and attestation children
+  and deletes partial and orphaned ones (`dataaxiom/ghcr-cleanup-action`, multi-arch aware); a release's pinned base
+  stays pullable for about 10 weeks, and the release package is never pruned by it.
+- CI caches Gradle with `gradle/actions/setup-gradle` on `cache-provider: external` plus one `actions/cache` step per job
+  keyed by the build files' hash with restore keys: `basic` has none, so a build-file change started cold,
+  and the Enhanced provider is proprietary.
 
 ## Rejected
 

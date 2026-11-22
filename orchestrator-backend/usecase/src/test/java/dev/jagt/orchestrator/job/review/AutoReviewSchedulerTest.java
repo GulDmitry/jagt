@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -43,7 +44,7 @@ class AutoReviewSchedulerTest {
       new AutoReviewCadence(true, Duration.ofHours(24), 10, 60, 240);
   private static final long NOW = 1_000_000_000_000L;
 
-  private final long now = System.currentTimeMillis();
+  private final long now = new FakeClock().millis();
   private final TaskState due =
       pollingTask()
           .withMrCreatedAt(now - Duration.ofMinutes(30).toMillis())
@@ -74,7 +75,7 @@ class AutoReviewSchedulerTest {
     scheduler =
         autoReviewScheduler()
             .withRoot(root)
-            .build(state, config, sweep, Runnable::run, Clock.systemUTC());
+            .build(state, config, sweep, Runnable::run, new FakeClock());
   }
 
   @ParameterizedTest
@@ -201,7 +202,7 @@ class AutoReviewSchedulerTest {
     AutoReviewScheduler queuing =
         autoReviewScheduler()
             .withRoot(root)
-            .build(state, config, sweep, queued::add, Clock.systemUTC());
+            .build(state, config, sweep, queued::add, new FakeClock());
 
     queuing.run();
     queuing.run();

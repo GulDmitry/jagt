@@ -1,11 +1,12 @@
 package dev.jagt.orchestrator.job.checker;
 
-import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
+import dev.jagt.orchestrator.port.worktree.FlowRunner.FlowResult;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Row;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict.Status;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -20,25 +21,66 @@ final class FlowRows {
 
   private FlowRows() {}
 
+  /** What a flow result did to one row, from the weakest to the strongest. */
+  enum Outcome {
+    UNCHANGED,
+    EVIDENCE_ADDED,
+    MET_BY_FLOW,
+    NOT_MET_BY_FLOW,
+    OWN_MET,
+    OWN_NOT_MET,
+    OWN_UNPROVABLE;
+
+    boolean readsDecided() {
+      return switch (this) {
+        case EVIDENCE_ADDED, MET_BY_FLOW, NOT_MET_BY_FLOW -> true;
+        case UNCHANGED, OWN_MET, OWN_NOT_MET, OWN_UNPROVABLE -> false;
+      };
+    }
+  }
+
+  record Decided(Row row, Outcome outcome) {}
+
   static AcceptanceVerdict merge(
       AcceptanceVerdict verdict, AcceptanceVerdict.Flows ask, List<FlowResult> results) {
-    List<Row> rows = new ArrayList<>(verdict.rows());
-    List<Row> separate = new ArrayList<>();
-    boolean decidedAny = false;
+    List<Decided> decided = decide(verdict.rows(), ask, results);
+    List<Row> rows = decided.stream().map(Decided::row).toList();
+    boolean decidedAny = decided.stream().anyMatch(each -> each.outcome().readsDecided());
+    boolean unproven = rows.stream().anyMatch(row -> row.status() == Status.UNPROVABLE);
+    AcceptanceVerdict merged = verdict.withRows(rows);
+    return decidedAny && !unproven ? merged.withQuestion("") : merged;
+  }
+
+  /** One entry per criterion: the read's rows in order, then one for each flow naming none. */
+  static List<Decided> decide(List<Row> read, AcceptanceVerdict.Flows ask, List<FlowResult> run) {
+    List<Row> rows = new ArrayList<>(read);
+    List<Outcome> outcomes = new ArrayList<>(Collections.nCopies(rows.size(), Outcome.UNCHANGED));
+    List<Decided> separate = new ArrayList<>();
     for (FlowResult result :
-        results.stream().sorted(Comparator.comparingInt(FlowRows::rank)).toList()) {
+        run.stream().sorted(Comparator.comparingInt(FlowRows::rank)).toList()) {
       int index = indexOf(rows, ask.criterionOf(result.flow()));
       if (index < 0) {
         separate.add(own(result));
       } else {
         rows.set(index, decided(rows.get(index), result));
-        decidedAny = true;
+        Outcome outcome = outcomeOn(result);
+        outcomes.set(index, Collections.max(List.of(outcomes.get(index), outcome)));
       }
     }
-    rows.addAll(separate);
-    boolean unproven = rows.stream().anyMatch(row -> row.status() == Status.UNPROVABLE);
-    AcceptanceVerdict merged = verdict.withRows(rows);
-    return decidedAny && !unproven ? merged.withQuestion("") : merged;
+    List<Decided> all = new ArrayList<>();
+    for (int index = 0; index < rows.size(); index++) {
+      all.add(new Decided(rows.get(index), outcomes.get(index)));
+    }
+    all.addAll(separate);
+    return all;
+  }
+
+  private static Outcome outcomeOn(FlowResult result) {
+    return switch (result.verdict()) {
+      case PASSED -> Outcome.MET_BY_FLOW;
+      case FAILED -> Outcome.NOT_MET_BY_FLOW;
+      case UNPROVABLE -> Outcome.EVIDENCE_ADDED;
+    };
   }
 
   private static int rank(FlowResult result) {
@@ -81,14 +123,20 @@ final class FlowRows {
     };
   }
 
-  private static Row own(FlowResult result) {
+  private static Decided own(FlowResult result) {
+    Outcome outcome =
+        switch (result.verdict()) {
+          case PASSED -> Outcome.OWN_MET;
+          case FAILED -> Outcome.OWN_NOT_MET;
+          case UNPROVABLE -> Outcome.OWN_UNPROVABLE;
+        };
     Status status =
         switch (result.verdict()) {
           case PASSED -> Status.MET;
           case FAILED -> Status.NOT_MET;
           case UNPROVABLE -> Status.UNPROVABLE;
         };
-    return new Row(result.flow(), status, detail(result));
+    return new Decided(new Row(result.flow(), status, detail(result)), outcome);
   }
 
   private static String said(FlowResult result) {

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -9,16 +10,12 @@ import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.SwitchJudgements;
 import dev.jagt.orchestrator.service.reach.SessionReach;
-import dev.jagt.orchestrator.service.stop.ActStop;
-import dev.jagt.orchestrator.service.stop.ActStops;
-import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.service.stop.ActHalt;
 import dev.jagt.orchestrator.task.launch.TrackerMode;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.review.LoopBreaker;
-import dev.jagt.orchestrator.task.review.RoundTrail;
-import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -76,7 +73,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     public record Reviewing(
         @Nullable CodeReviewConfig codeReview,
         @Nullable AutoReviewConfig autoReview,
-        @Nullable MasterConfig master) {}
+        @JsonProperty("master") @Nullable ArbiterConfig arbiter,
+        @With(AccessLevel.NONE) @Nullable DeployConfig deploy) {}
 
     @With
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -123,11 +121,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public long maxBytesOrDefault() {
-        return (maxMegabytes == null || maxMegabytes <= 0 ? 20L : maxMegabytes) * 1024 * 1024;
+        return (maxMegabytes == null ? 20L : maxMegabytes) * 1024 * 1024;
       }
     }
 
-    /** Each ceiling read as at most one below what a task keeps of its rounds, turns or moves. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
     public record LoopBreakerConfig(
@@ -141,21 +138,19 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int perHourOrDefault() {
-        return perHour == null || perHour <= 0 ? 20 : Math.min(perHour, TaskState.MAX_HISTORY - 1);
+        return perHour == null ? 20 : perHour;
       }
 
       public int roundsOrDefault() {
-        return rounds == null || rounds <= 0 ? 3 : Math.min(rounds, Turn.MAX_RUN - 1);
+        return rounds == null ? 3 : rounds;
       }
 
       public int stalledRoundsOrDefault() {
-        return stalledRounds == null || stalledRounds <= 0
-            ? 3
-            : Math.min(stalledRounds, RoundTrail.MAX_ROUNDS - 1);
+        return stalledRounds == null ? 3 : stalledRounds;
       }
 
       public int shipsOrDefault() {
-        return ships == null || ships <= 0 ? 4 : ships;
+        return ships == null ? 4 : ships;
       }
     }
 
@@ -369,7 +364,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
        */
       public int probeSecondsOrDefault() {
         Integer written = cadence.probeSeconds();
-        return written == null || written <= 0 ? 600 : written;
+        return written == null ? 600 : written;
       }
     }
 
@@ -386,7 +381,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int filesOrDefault() {
-        return files == null || files <= 0 ? 30 : files;
+        return files == null ? 30 : files;
       }
     }
 
@@ -475,7 +470,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
-    public record MasterConfig(
+    public record ArbiterConfig(
         @Nullable String mode,
         @Nullable String brief,
         @Nullable String model,
@@ -485,8 +480,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       /** Copied from `roles/master/brief.md.dist`, and not versioned. */
       private static final String BRIEF = "roles/master/brief.md";
 
-      public static MasterConfig defaults() {
-        return new MasterConfig(null, null, null, null, null);
+      public static ArbiterConfig defaults() {
+        return new ArbiterConfig(null, null, null, null, null);
       }
 
       /**
@@ -494,7 +489,9 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
        * holds in `act`.
        */
       public List<String> mineOrDefault() {
-        return mine == null ? List.of(MasterRight.PLAN.id()) : mine;
+        return mine == null
+            ? List.of(MasterRight.PLAN.id(), MasterRight.DEPLOY.id(), MasterRight.REVERT.id())
+            : mine;
       }
 
       /**
@@ -534,12 +531,28 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         return modeOrDefault() != MasterMode.OFF;
       }
 
+      public boolean acts() {
+        return modeOrDefault() == MasterMode.ACT;
+      }
+
       public Arbiter.Profile profile() {
         return new Arbiter.Profile(
             modeOrDefault(),
             mineOrDefault().stream()
                 .map(word -> word.strip().toLowerCase(Locale.ROOT))
                 .collect(java.util.stream.Collectors.toSet()));
+      }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record DeployConfig(@Nullable Boolean onApproval) {
+
+      public static DeployConfig defaults() {
+        return new DeployConfig(null);
+      }
+
+      public boolean onApprovalOrDefault() {
+        return onApproval != null && onApproval;
       }
     }
 
@@ -562,26 +575,21 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int windowHoursOrDefault() {
-        return windowHours == null || windowHours <= 0 ? 24 : windowHours;
+        return windowHours == null ? 24 : windowHours;
       }
 
       public int minIntervalMinutesOrDefault() {
-        return minIntervalMinutes == null || minIntervalMinutes <= 0 ? 10 : minIntervalMinutes;
+        return minIntervalMinutes == null ? 10 : minIntervalMinutes;
       }
 
       public int maxIntervalMinutesOrDefault() {
         int min = minIntervalMinutesOrDefault();
-        if (maxIntervalMinutes == null || maxIntervalMinutes < min) {
-          return Math.max(60, min);
-        }
-        return maxIntervalMinutes;
+        return maxIntervalMinutes == null ? Math.max(60, min) : maxIntervalMinutes;
       }
 
       public int waitingMaxIntervalMinutesOrDefault() {
         int max = maxIntervalMinutesOrDefault();
-        return waitingMaxIntervalMinutes == null || waitingMaxIntervalMinutes < max
-            ? Math.max(240, max)
-            : waitingMaxIntervalMinutes;
+        return waitingMaxIntervalMinutes == null ? Math.max(60, max) : waitingMaxIntervalMinutes;
       }
     }
 
@@ -645,7 +653,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       public int everyMinutesOrDefault() {
-        return everyMinutes == null || everyMinutes <= 0 ? 10 : everyMinutes;
+        return everyMinutes == null ? 10 : everyMinutes;
       }
 
       /**
@@ -708,7 +716,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           null,
           null,
           new Sessions(null, null, null, null, null, null),
-          new Reviewing(null, null, null),
+          new Reviewing(null, null, null, null),
           new Outside(null, null, null));
     }
 
@@ -736,8 +744,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       return withReviewing(reviewing.withAutoReview(autoReview));
     }
 
-    public ConfigFile withMaster(@Nullable MasterConfig master) {
-      return withReviewing(reviewing.withMaster(master));
+    public ConfigFile withArbiter(@Nullable ArbiterConfig arbiter) {
+      return withReviewing(reviewing.withArbiter(arbiter));
     }
 
     public ConfigFile withTracker(@Nullable TrackerConfig tracker) {
@@ -764,7 +772,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     public Duration conflictStallOrDefault() {
       Integer minutes = sessions.conflictStallMinutes();
-      return Duration.ofMinutes(minutes == null || minutes <= 0 ? 20 : minutes);
+      return Duration.ofMinutes(minutes == null ? 20 : minutes);
     }
 
     /**
@@ -773,13 +781,12 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
      */
     public int maxTasksOrDefault() {
       Integer max = sessions.maxTasks();
-      return max == null || max <= 0 ? 50 : max;
+      return max == null ? 50 : max;
     }
 
     /** The ship ceiling counts over the auto-review window. */
     public LoopBreaker loopBreakerOrDefault() {
-      LoopBreakerConfig config =
-          sessions.loopBreaker() == null ? LoopBreakerConfig.defaults() : sessions.loopBreaker();
+      LoopBreakerConfig config = loopBreaker();
       return new LoopBreaker(
           config.stalledRoundsOrDefault(),
           config.shipsOrDefault(),
@@ -788,8 +795,12 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           Duration.ofHours(autoReview().windowHoursOrDefault()));
     }
 
-    public MasterConfig master() {
-      return reviewing.master() == null ? MasterConfig.defaults() : reviewing.master();
+    public LoopBreakerConfig loopBreaker() {
+      return sessions.loopBreaker() == null ? LoopBreakerConfig.defaults() : sessions.loopBreaker();
+    }
+
+    public ArbiterConfig arbiter() {
+      return reviewing.arbiter() == null ? ArbiterConfig.defaults() : reviewing.arbiter();
     }
 
     @Override
@@ -807,6 +818,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     public WorktreeConfig worktree() {
       return sessions.worktree() == null ? WorktreeConfig.defaults() : sessions.worktree();
+    }
+
+    public DeployConfig deploy() {
+      return reviewing.deploy() == null ? DeployConfig.defaults() : reviewing.deploy();
     }
 
     public AutoReviewConfig autoReview() {
@@ -848,15 +863,29 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   private final JsonMapper mapper = new JsonMapper();
   private final ConfigSource source;
   private final AgentRuntime agentRuntime;
-  private final ActStops actStops;
+  private final ActHalt actStops;
   private final Checkers checkers;
+  private final KeptNumbers kept;
 
   public boolean anyCheckerEnabled() {
     return load().anyCheckerEnabled(checkers.withJobs());
   }
 
+  /** The file as written, a number outside its range included: what the start check judges. */
+  public ConfigFile loadAsWritten() {
+    return read(section());
+  }
+
   public ConfigFile load() {
     Object section = section();
+    if (section == null) {
+      return read(null);
+    }
+    ConfigFile written = read(section);
+    return kept.of(section, written).map(this::read).orElse(written);
+  }
+
+  private ConfigFile read(@Nullable Object section) {
     if (section == null) {
       return masterByDefault(ConfigFile.defaults());
     }
@@ -911,7 +940,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     Map<Object, Object> merged = new java.util.LinkedHashMap<>();
     Stream.of(layers)
         .filter(Map.class::isInstance)
-        .map(Map.class::cast)
+        .map(layer -> (Map<?, ?>) layer)
         .forEach(layer ->
             layer.forEach((key, value) -> {
               if (value != null) {
@@ -922,19 +951,18 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   }
 
   /**
-   * Unset, the Master judges where the runtime reads the human's words, else is off; a stopped act
+   * Unset, the Master acts where the runtime reads the human's words, else is off; a stopped act
    * judges.
    */
   private ConfigFile masterByDefault(ConfigFile config) {
-    ConfigFile.MasterConfig master = config.master();
-    if (master.modeOrDefault() == MasterMode.ACT && actStops.standing().isPresent()) {
-      return config.withMaster(master.withMode(MasterMode.JUDGE.id()));
-    }
-    return master.mode() != null && !master.mode().isBlank()
-        ? config
-        : config.withMaster(
-            master.withMode(
-                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
+    ConfigFile.ArbiterConfig written = config.arbiter();
+    ConfigFile.ArbiterConfig master =
+        written.mode() != null && !written.mode().isBlank()
+            ? written
+            : written.withMode(
+                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.ACT : MasterMode.OFF).id());
+    return config.withArbiter(
+        master.acts() && actStops.halted() ? master.withMode(MasterMode.JUDGE.id()) : master);
   }
 
   @Override
@@ -952,10 +980,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         .filter(Files::isDirectory)
         .map(WorktreeSandbox::real)
         .toList();
-  }
-
-  public Optional<ActStop> actStop() {
-    return actStops.standing();
   }
 
   /**

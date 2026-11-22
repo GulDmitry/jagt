@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -28,7 +29,7 @@ class KittyTerminalDriverTest {
   private final ProcessRunner runner = mock(ProcessRunner.class);
   private final OsaScript osaScript = mock(OsaScript.class);
   private final ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
-  private final Clock clock = Clock.systemUTC();
+  private final Clock clock = new FakeClock();
   private final KittyTerminalDriver driver = kittyDriver().build(runner, osaScript, clock);
 
   @Test

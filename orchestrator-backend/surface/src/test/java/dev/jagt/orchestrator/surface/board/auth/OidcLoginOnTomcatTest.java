@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
-import dev.jagt.orchestrator.surface.board.filter.BoardWriteFilter;
-import dev.jagt.orchestrator.surface.board.filter.LoopbackFilter;
+import dev.jagt.orchestrator.surface.board.filter.Doors;
+import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
 import java.net.CookieManager;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -49,13 +49,18 @@ class OidcLoginOnTomcatTest {
   @SpringBootConfiguration
   @EnableAutoConfiguration
   @EnableConfigurationProperties({AuthProperties.class, OidcProperties.class})
-  @Import({OidcLogin.class, LoopbackFilter.class, BoardWriteFilter.class, LoginAudit.class})
+  @Import({OidcLogin.class, Doors.class, LoginAudit.class})
   static class Board {
     @Bean
     RouterFunction<ServerResponse> state() {
       return RouterFunctions.route()
           .GET("/state", request -> ServerResponse.ok().body("board"))
           .build();
+    }
+
+    @Bean
+    RootToken rootToken() {
+      return header -> false;
     }
 
     @Bean

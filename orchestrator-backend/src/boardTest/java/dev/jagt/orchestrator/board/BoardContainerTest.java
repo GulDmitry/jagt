@@ -16,7 +16,7 @@ class BoardContainerTest {
   @Test
   void boardOpensLiveAfterPasswordLoginWhenItRunsInsideContainer(Browser browser) {
     String url = System.getenv("JAGT_BOARD_URL");
-    Assumptions.assumeTrue(url != null, "JAGT_BOARD_URL names no running board, so it is skipped");
+    Assumptions.assumeTrue(url != null, "JAGT_BOARD_URL is unset"); // skipped without a board
     Page page = browser.newContext().newPage();
 
     page.navigate(url);
@@ -30,7 +30,7 @@ class BoardContainerTest {
   @Test
   void logOutInTheGearEndsTheSessionAndShowsTheLoginPage(Browser browser) {
     String url = System.getenv("JAGT_BOARD_URL");
-    Assumptions.assumeTrue(url != null, "JAGT_BOARD_URL names no running board, so it is skipped");
+    Assumptions.assumeTrue(url != null, "JAGT_BOARD_URL is unset"); // skipped without a board
     Page page = browser.newContext().newPage();
     page.navigate(url);
     page.fill("input[name=password]", Objects.requireNonNull(System.getenv("JAGT_BOARD_PASSWORD")));

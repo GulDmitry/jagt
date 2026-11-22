@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.capability.ship;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
@@ -12,21 +12,10 @@ import org.junit.jupiter.api.Test;
 class ShipServiceRepliesTest {
 
   @Test
-  void forbidsTheMasterFromAnsweringPersonWhereThatRightWasWithheld() {
-    ConfigFile config =
-        ConfigFile.defaults()
-            .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("reply")));
-
-    String step = OriginContext.as(ActionOrigin.MASTER, () -> ShipService.repliesStep(config));
-
-    assertThat(step).contains("may not answer a person");
-  }
-
-  @Test
   void leavesHumansOwnShipPostingItsRepliesAsBefore() {
     ConfigFile config =
         ConfigFile.defaults()
-            .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("reply")));
+            .withArbiter(ArbiterConfig.defaults().withMode("act").withMine(List.of("reply")));
 
     String step = OriginContext.as(ActionOrigin.BOARD, () -> ShipService.repliesStep(config));
 

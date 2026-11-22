@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.review.RoundTrail;
 import dev.jagt.orchestrator.task.session.Session;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
@@ -433,15 +433,17 @@ class TaskStateTest {
   }
 
   @Test
-  void countsEveryRefusalPerGuardAcrossRefusals() {
+  void countsEveryRefusalPerKindAcrossRefusals() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
     TaskState refused =
-        task.refused(Guard.STATUS_REPORT).refused(Guard.STATUS_REPORT).refused(Guard.GIT_STATE);
+        task.refused(RefusalKind.STATUS_REPORT)
+            .refused(RefusalKind.STATUS_REPORT)
+            .refused(RefusalKind.GIT_STATE);
 
     assertThat(refused.refusals())
-        .containsEntry(Guard.STATUS_REPORT, 2)
-        .containsEntry(Guard.GIT_STATE, 1);
+        .containsEntry(RefusalKind.STATUS_REPORT, 2)
+        .containsEntry(RefusalKind.GIT_STATE, 1);
   }
 
   @Test
@@ -588,14 +590,14 @@ class TaskStateTest {
             .build()
             .withChecksUnread(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"))
             .withProbes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("make"), 0)))
-            .refused(Guard.GIT_STATE);
+            .refused(RefusalKind.GIT_STATE);
 
     TaskState read = mapper.readValue(mapper.writeValueAsString(written), TaskState.class);
 
     assertThat(read.checksUnread())
         .containsExactly(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"));
     assertThat(read.probes()).hasSize(1);
-    assertThat(read.refusals()).containsEntry(Guard.GIT_STATE, 1);
+    assertThat(read.refusals()).containsEntry(RefusalKind.GIT_STATE, 1);
     assertThat(read.history()).hasSize(1);
   }
 

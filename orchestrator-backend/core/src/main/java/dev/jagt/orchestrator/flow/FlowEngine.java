@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -58,26 +59,21 @@ public class FlowEngine {
             ? read
             : capabilities.of(action).map(named -> named.naming(read)).orElse(read);
     if (!rules.allows(task.status(), action, facts)) {
-      Facts projected = Facts.projected(task);
-      throw new Refusal(
-          Refusal.Code.ACTION_NOT_AVAILABLE,
-          action.label()
-              + " is not available for "
-              + taskId
-              + " (it is "
-              + task.status()
-              + " — "
-              + Move.forTask(
-                      rules,
-                      task.status(),
-                      projected.withDelivery(
-                          projected
-                              .delivery()
-                              .withShippedWithoutRequest(sources.shippedWithoutRequest(task))),
-                      dev.jagt.orchestrator.flow.view.RoundState.of(task.report(), false),
-                      SessionPhase.silent(task))
-                  .hint()
-              + ")");
+      throw notAvailable(taskId, task, action);
+    }
+    Facts pressed = pressed(facts, taskId);
+    ActionOrigin by = sources.pressedBy();
+    if (!rules.allows(task.status(), action, pressed, by)) {
+      Decline decline =
+          rules.declined(action, pressed, by).orElseThrow(() -> notAvailable(taskId, task, action));
+      if (decline.quiet()) {
+        return apply(
+            taskId,
+            task.status(),
+            action,
+            Outcome.nothing(action.id() + " " + taskId + ": " + decline.why()));
+      }
+      throw Refusal.byState(action.id() + " " + taskId + " refused: " + decline.why());
     }
     TaskCapability capability =
         capabilities
@@ -94,6 +90,35 @@ public class FlowEngine {
       capability.vetLine(line);
     }
     return apply(taskId, task.status(), action, wrapped(taskId, action, capability, project, line));
+  }
+
+  private Refusal notAvailable(String taskId, TaskState task, TaskAction action) {
+    Facts projected = Facts.projected(task);
+    return new Refusal(
+        Refusal.Code.ACTION_NOT_AVAILABLE,
+        action.label()
+            + " is not available for "
+            + taskId
+            + " (it is "
+            + task.status()
+            + " — "
+            + Move.forTask(
+                    rules,
+                    task.status(),
+                    projected.withDelivery(
+                        projected
+                            .delivery()
+                            .withShippedWithoutRequest(sources.shippedWithoutRequest(task))),
+                    dev.jagt.orchestrator.flow.view.RoundState.of(task.report(), false),
+                    SessionPhase.silent(task))
+                .hint()
+            + ")");
+  }
+
+  /** The facts a press alone reads, each read at most once and only by the gate that asks. */
+  private Facts pressed(Facts read, String taskId) {
+    return read.withDelivery(read.delivery().withMergedNow(sources.mergedNow(taskId)))
+        .withWorkspace(read.workspace().withDistrust(sources.distrust(taskId)));
   }
 
   private void named(

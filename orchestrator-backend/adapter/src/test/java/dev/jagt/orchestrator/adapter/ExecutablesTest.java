@@ -56,13 +56,12 @@ class ExecutablesTest {
             Executables.resolve(
                 "idea",
                 "/usr/bin",
-                "/Users/me",
+                "/h/me",
                 path ->
                     path.toString()
-                        .equals(
-                            "/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
+                        .equals("/h/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
                 List.of()))
-        .isEqualTo("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
+        .isEqualTo("/h/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
   }
 
   @Test
@@ -101,12 +100,12 @@ class ExecutablesTest {
   void findsLauncherThatSitsOnlyInsideItsApplicationBundle(@TempDir Path applications)
       throws IOException {
     Files.createDirectories(applications.resolve("Notes.app"));
-    Path bundle = Files.createDirectories(applications.resolve("IntelliJ IDEA.app"));
-    Path launcher = bundle.resolve("Contents").resolve("MacOS").resolve("idea");
+    Path bundle = Files.createDirectories(applications.resolve("Viewer.app"));
+    Path launcher = bundle.resolve("Contents").resolve("MacOS").resolve("viewer");
 
     assertThat(
             Executables.resolve(
-                "idea", "/usr/bin", "/Users/me", launcher::equals, List.of(applications)))
+                "viewer", "/usr/bin", "/h/me", launcher::equals, List.of(applications)))
         .isEqualTo(launcher.toString());
   }
 
@@ -119,7 +118,7 @@ class ExecutablesTest {
             Executables.resolve(
                 "idea",
                 "/usr/bin",
-                "/Users/me",
+                "/h/me",
                 path -> path.endsWith(Path.of("Contents", "MacOS", "idea")),
                 List.of(applications)))
         .isEqualTo("idea");
@@ -127,8 +126,8 @@ class ExecutablesTest {
 
   @Test
   void searchesTheUsersOwnApplicationsBesideTheSystemOnes() {
-    assertThat(Executables.applicationDirs("/Users/me"))
-        .containsExactly(Path.of("/Applications"), Path.of("/Users/me/Applications"));
+    assertThat(Executables.applicationDirs("/h/me"))
+        .containsExactly(Path.of("/Applications"), Path.of("/h/me/Applications"));
   }
 
   @ParameterizedTest

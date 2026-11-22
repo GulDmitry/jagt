@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +24,7 @@ class ClaudeSubscriptionUsageTest {
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Body("{}"));
 
-    new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    new ClaudeSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     verify(endpoint)
         .get(
@@ -39,7 +39,7 @@ class ClaudeSubscriptionUsageTest {
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(401, "http 401"));
 
-    var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    var answer = new ClaudeSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     assertThat(answer)
         .isEqualTo(
@@ -52,7 +52,7 @@ class ClaudeSubscriptionUsageTest {
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
     when(credentials.read(any())).thenReturn(new OauthCredential.None());
 
-    var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    var answer = new ClaudeSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     assertThat(answer).isEqualTo(new SubscriptionUsage.NoSubscription());
   }
@@ -68,7 +68,7 @@ class ClaudeSubscriptionUsageTest {
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
 
-    var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
+    var answer = new ClaudeSubscriptionUsage(credentials, endpoint, new FakeClock()).read();
 
     assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable(expected));
   }

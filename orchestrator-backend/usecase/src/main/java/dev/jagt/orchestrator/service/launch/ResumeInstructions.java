@@ -18,8 +18,8 @@ public final class ResumeInstructions {
         + " conflicted — resolve the conflicts, `git rebase --continue`"
         + afterTheRebase(remote, taskId)
         + ", and report `question` where a resolution was not obvious. Otherwise do NOT"
-        + " re-implement and do NOT call update_agent_status: the Master has already set your"
-        + " status (CI_POLLING). Stay idle; only when the Master relays review comments via"
+        + " re-implement and do NOT call update_agent_status: the root session has already set your"
+        + " status (CI_POLLING). Stay idle; only when the root session relays review comments via"
         + " task_context.md do you address them.";
   }
 

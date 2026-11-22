@@ -15,13 +15,13 @@ Accepted 2026-11-17, owner's choice.
 
 ## Decision
 
-- `testReachCheck` (`jagt.reach`, root) finalizes `test`: it merges every module's `jacoco/test.exec`, reports every module's main classes
+- `testReachCheck` (fitness plugin, row `test-reach`) finalizes `test`: it merges every module's `jacoco/test.exec`, reports the main classes
   and fails each top-level class with a BRANCH counter above zero and no covered line, naming the class and its module.
 - A class reached only by another module's tests counts as reached; nested classes count with their top-level class.
 - Nothing is exempt by name: a branchless class (a delegating controller, a config, a mapper) passes by measurement.
 - It skips a `--tests` run and a run whose module has no `test.exec`: part of a suite proves nothing about reach.
 - Each missing test pins the class's business case, a happy path or a couple of branches; how much it covers is 0181's.
-- Ceilings raised by one ([0176](0176-every-kind-has-a-ceiling.md)): `buildLogic` 16 (the `jagt.reach` convention).
+- Ceilings raised by one ([0176](0176-every-kind-has-a-ceiling.md)): `buildLogic` 16 (the fitness convention, replacing `jagt.reach`).
 
 ## Rejected
 

@@ -1,0 +1,50 @@
+name: base-image
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        type: string
+        required: true
+      dockerfile:
+        type: string
+        required: true
+      from:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: ${{ inputs.name }} image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: publish the image for amd64 and arm64
+        id: image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: orchestrator-backend/scripts/publish-base-image.sh ${{ inputs.name }} ${{ inputs.dockerfile }} ${{ inputs.from }}
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+      - name: scan the image for known vulnerabilities
+        working-directory: orchestrator-backend
+        run: scripts/vulnerability-scan.sh scan image ${{ steps.image.outputs.name }}@${{ steps.image.outputs.digest }}
+      - name: prune superseded base images
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          packages: ${{ github.event.repository.name }}-${{ inputs.name }}
+          keep-n-untagged: 10
+          delete-partial-images: true
+          delete-orphaned-images: true

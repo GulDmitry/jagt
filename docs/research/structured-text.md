@@ -35,7 +35,7 @@ output distribution. What a template buys:
 | cache order is enforceable | slots are visible, so a test can assert "no slot before the constant part ends" |
 | one prefix per call kind | values interleaved in prose move the first differing token forward |
 | no swapped arguments | `sub-agent-context.md` fills 11 positional `%s`; a named slot cannot be misplaced |
-| the text is reviewable | one file, diffable, counted by `TextBudgetTest` |
+| the text is reviewable | one file, diffable, counted by the `fitness.yml` size rows |
 
 ### "Send the template once, then only its name and parameters"
 

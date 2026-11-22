@@ -47,6 +47,12 @@ public final class JagtContainer implements UnitEngine {
   }
 
   public JagtContainer up() {
+    StandShell.Result prepared = prepareData();
+    if (prepared.exit() != 0) {
+      close();
+      throw new StandFailure(
+          "jagt's data volume was not prepared under " + root + ": " + prepared.output());
+    }
     StandShell.Result up = compose("up", "-d", "--wait", "--pull", "never");
     if (up.exit() != 0) {
       close();
@@ -77,6 +83,24 @@ public final class JagtContainer implements UnitEngine {
   @Override
   public Path data() {
     return root;
+  }
+
+  @Override
+  public String state() {
+    StandShell.Result copied = copyState();
+    if (copied.exit() != 0) {
+      throw new StandFailure("cannot read state.json of " + root + ": " + copied.output());
+    }
+    try {
+      return Files.readString(stateFile());
+    } catch (IOException e) {
+      throw new StandFailure("cannot read " + stateFile(), e);
+    }
+  }
+
+  @Override
+  public void harvest() {
+    copyState();
   }
 
   @Override
@@ -134,6 +158,7 @@ public final class JagtContainer implements UnitEngine {
   @Override
   public void close() {
     logs();
+    harvest();
     compose("down", "-v", "--remove-orphans");
   }
 
@@ -159,6 +184,44 @@ public final class JagtContainer implements UnitEngine {
     List<String> args = new ArrayList<>(List.of("exec", "-T", "-e", TMUX, "jagt"));
     args.addAll(List.of(command));
     return compose(args.toArray(String[]::new));
+  }
+
+  private StandShell.Result prepareData() {
+    makeDataDir();
+    String data = dataDir().toString();
+    return compose(
+        "run",
+        "--rm",
+        "--no-deps",
+        "-T",
+        "--user",
+        "0",
+        "--entrypoint",
+        "sh",
+        "jagt",
+        "-c",
+        "mkdir -p " + data + " && chmod 0777 " + data);
+  }
+
+  private void makeDataDir() {
+    try {
+      Files.createDirectories(dataDir());
+    } catch (IOException e) {
+      throw new StandFailure("cannot make " + dataDir(), e);
+    }
+  }
+
+  private StandShell.Result copyState() {
+    makeDataDir();
+    return compose("cp", "jagt:" + stateFile(), stateFile().toString());
+  }
+
+  private Path dataDir() {
+    return root.resolve("jagt");
+  }
+
+  private Path stateFile() {
+    return dataDir().resolve("state.json");
   }
 
   private StandShell.Result compose(String... args) {

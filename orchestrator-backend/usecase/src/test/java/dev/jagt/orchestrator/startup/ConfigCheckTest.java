@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -15,7 +15,9 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.KeptNumbers;
+import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +52,8 @@ class ConfigCheckTest {
                 new ConfigSource(new OrchestratorPaths(properties), new FakeConfigInputs()),
                 mock(AgentRuntime.class),
                 mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new KeptNumbers(new ReachLedger())),
             new OrchestratorPaths(properties),
             sessions,
             new WorkingDirHost(root));
@@ -85,20 +88,16 @@ class ConfigCheckTest {
   }
 
   @Test
-  void anIncompleteInstallationStopsTheStartInsteadOfServingBoardThatCannotWork() throws Exception {
+  void freshInstallStartsWithNoProject() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     StartupValidation validation = new StartupValidation(List.of(check), true);
 
-    assertThatThrownBy(validation::refuseToRunWithoutWhatItNeeds)
-        .isInstanceOf(Misconfigured.class)
-        .hasMessageContaining("defines no projects");
+    assertThatCode(validation::refuseToRunWithoutWhatItNeeds).doesNotThrowAnyException();
   }
 
   @Test
-  void saysWhereTheConfigFileShouldBeWhenThereIsNone() {
-    assertThat(check.problems())
-        .extracting(Problem::key)
-        .containsExactly("orchestrator.config-file");
+  void freshInstallWithNoConfigFileStartsOnTheDefaults() {
+    assertThat(check.problems()).isEmpty();
   }
 
   @ParameterizedTest
@@ -124,37 +123,7 @@ class ConfigCheckTest {
         Arguments.of("openWarpWindow: false", "orchestrator.openWarpWindow"),
         Arguments.of("openTerminalWindow: false", "orchestrator.openTerminalWindow"),
         Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal"),
-        Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"),
-        Arguments.of("qa: { enabled: true }", "orchestrator.qa"),
-        Arguments.of("roles: { qa: { enabled: true } }", "orchestrator.roles.qa"),
-        Arguments.of(
-            "roles: { acceptance: { enabled: true, model: opus } }",
-            "orchestrator.roles.acceptance.model"),
-        Arguments.of(
-            "roles: { acceptance: { environments: [] } }",
-            "orchestrator.roles.acceptance.environments"),
-        Arguments.of(
-            "roles: { acceptance: { flows: { driver: none } } }",
-            "orchestrator.roles.acceptance.flows"));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"qa: { enabled: true }", "roles: { qa: { enabled: true } }"})
-  void refusesTheStartNamingRolesAcceptanceWhereTheRoleIsStillWrittenAsQa(String key)
-      throws Exception {
-    Files.createDirectories(root.resolve("repo").resolve(".git"));
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        """
-        orchestrator:
-          %s
-          projects:
-            demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
-        """
-            .formatted(key, root.resolve("repo")));
-    assertThatThrownBy(new StartupValidation(List.of(check), true)::refuseToRunWithoutWhatItNeeds)
-        .isInstanceOf(Misconfigured.class)
-        .hasMessageContaining("roles.acceptance");
+        Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"));
   }
 
   @ParameterizedTest
@@ -168,12 +137,6 @@ class ConfigCheckTest {
 
   static Stream<Arguments> namesWhatConfiguredProjectWouldFailOn() {
     return Stream.of(
-        Arguments.of(
-            """
-            orchestrator:
-              projects: {}
-            """,
-            "orchestrator.projects"),
         Arguments.of(
             """
             orchestrator:
@@ -272,5 +235,60 @@ class ConfigCheckTest {
                 shadowing
                     + " outranks jagt.yml for every key it"
                     + " names. Move what it holds into jagt.yml and delete it."));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, 0, 20, 999})
+  void refusesRoundsOutsideOneToNineteenNamingKeyValueAndRange(int rounds) throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  loopBreaker: { rounds: %d }\n".formatted(rounds));
+
+    assertThat(check.problems())
+        .containsExactly(
+            new Problem(
+                "orchestrator.loopBreaker.rounds",
+                "orchestrator.loopBreaker.rounds is " + rounds + ": it must be 1 to 19."));
+  }
+
+  @Test
+  void refusesKeyWithNoCeilingBelowOneSayingAtLeastOne() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n");
+
+    assertThat(check.problems())
+        .containsExactly(
+            new Problem(
+                "orchestrator.maxTasks", "orchestrator.maxTasks is 0: it must be at least 1."));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 19})
+  void acceptsRoundsAtEitherEndOfTheirRange(int rounds) throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  loopBreaker: { rounds: %d }\n".formatted(rounds));
+
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void refusesWaitingMaxIntervalBelowTheMaxIntervalSayingAtLeastTheMax() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  autoReview: { maxIntervalMinutes: 90, waitingMaxIntervalMinutes: 80 }\n");
+
+    assertThat(check.problems())
+        .containsExactly(
+            new Problem(
+                "orchestrator.autoReview.waitingMaxIntervalMinutes",
+                "orchestrator.autoReview.waitingMaxIntervalMinutes is 80: it must be at least"
+                    + " 90."));
+  }
+
+  @Test
+  void startsOnTheDefaultsWhereNoNumberIsSet() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n");
+
+    assertThat(check.problems()).isEmpty();
   }
 }

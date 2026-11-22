@@ -11,10 +11,13 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.KeptNumbers;
+import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -36,9 +39,16 @@ class RoleBeansTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
 
-    RoleKits kits = new RoleBeans().roleKits(new InstalledRoles(paths), config, paths);
+    RoleKits kits =
+        new RoleBeans()
+            .roleKits(
+                new InstalledRoles(paths),
+                config,
+                paths,
+                List.of(new RoleKits.Expected(Checkers.ACCEPTANCE)));
 
     assertThat(kits.find(Checkers.ACCEPTANCE).orElseThrow().settings().load().enabled()).isFalse();
   }
@@ -52,22 +62,10 @@ class RoleBeansTest {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     RoleKits kits =
-        new RoleBeans().roleKits(new InstalledRoles(paths), mock(ConfigService.class), paths);
+        new RoleBeans()
+            .roleKits(new InstalledRoles(paths), mock(ConfigService.class), paths, List.of());
 
     assertThat(kits.find("audit").orElseThrow().definition().checking().readSteps())
         .containsExactly("audit", "audit-again", "audit-decline");
-  }
-
-  @Test
-  void acceptanceFilesAndSettingsAreThoseOfTheAcceptanceKit(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    RoleKits kits =
-        new RoleBeans().roleKits(new InstalledRoles(paths), mock(ConfigService.class), paths);
-
-    assertThat(new RoleBeans().acceptanceFiles(kits))
-        .isSameAs(kits.find(Checkers.ACCEPTANCE).orElseThrow().files());
-    assertThat(new RoleBeans().acceptanceSettings(kits))
-        .isSameAs(kits.find(Checkers.ACCEPTANCE).orElseThrow().settings());
   }
 }

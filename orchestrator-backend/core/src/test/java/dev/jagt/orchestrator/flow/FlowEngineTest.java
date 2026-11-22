@@ -20,7 +20,10 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -31,13 +34,21 @@ import org.mockito.ArgumentCaptor;
 
 class FlowEngineTest {
 
+  private static final Clock CLOCK = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC);
+
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
   private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ReducingStore stateService = mock(ReducingStore.class);
   private final AgentPresence sessions = mock(AgentPresence.class);
-  private final FactSources facts = new FactSources(sessions, ignored -> false);
+  private final FactSources facts =
+      new FactSources(
+          sessions,
+          ignored -> false,
+          id -> Optional.empty(),
+          id -> false,
+          () -> ActionOrigin.BOARD);
   private final TaskState shipping = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build();
   private final Capabilities neverRunShip =
       new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of());
@@ -49,7 +60,7 @@ class FlowEngineTest {
           stateService,
           new Capabilities(List.of(new LineCapability()), List.of()),
           facts,
-          Clock.systemUTC(),
+          CLOCK,
           rules);
 
   private static final class FixedCapability implements TaskCapability {
@@ -186,7 +197,7 @@ class FlowEngineTest {
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.FOCUS)), List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
@@ -231,7 +242,7 @@ class FlowEngineTest {
   void refusesLineTypedForVerbThatTakesNone() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
-    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
+    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, CLOCK, rules);
 
     assertThatThrownBy(() -> engine.runLine("ABC-1", TaskAction.SHIP, "ls -la"))
         .isInstanceOf(Refusal.class)
@@ -248,7 +259,7 @@ class FlowEngineTest {
             stateService,
             new Capabilities(List.of(new ScenariosThatAre(false, Outcome.ok("opened"))), List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SCENARIOS))
@@ -267,7 +278,7 @@ class FlowEngineTest {
             stateService,
             new Capabilities(List.of(new ScenariosThatAre(true, Outcome.ok("opened"))), List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThat(engine.run("ABC-1", TaskAction.SCENARIOS)).isEqualTo("opened");
@@ -283,7 +294,7 @@ class FlowEngineTest {
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.DEPLOY)), List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.DEPLOY))
@@ -310,7 +321,7 @@ class FlowEngineTest {
                         Outcome.ok("ship ABC-1: request opened", "review request: http://host/1"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
@@ -339,7 +350,7 @@ class FlowEngineTest {
                         TaskAction.SHIP, Outcome.relayed("ship ABC-1: relayed", "shipping"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
@@ -365,7 +376,7 @@ class FlowEngineTest {
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThat(engine.run("ABC-1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
@@ -395,7 +406,7 @@ class FlowEngineTest {
                             cause))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
@@ -434,7 +445,7 @@ class FlowEngineTest {
                 List.of(new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
@@ -469,7 +480,7 @@ class FlowEngineTest {
                         Outcome.ok("ABC-1: pipeline still running", "checks running"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
@@ -499,7 +510,7 @@ class FlowEngineTest {
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThat(engine.run("a1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
@@ -510,8 +521,7 @@ class FlowEngineTest {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
-        new FlowEngine(
-            stateService, new Capabilities(List.of(), List.of()), facts, Clock.systemUTC(), rules);
+        new FlowEngine(stateService, new Capabilities(List.of(), List.of()), facts, CLOCK, rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
         .isInstanceOf(IllegalStateException.class)
@@ -531,7 +541,7 @@ class FlowEngineTest {
                         TaskAction.SHIP, Outcome.ok("ship ABC-1: request opened", null))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
@@ -548,7 +558,7 @@ class FlowEngineTest {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenReturn(true);
-    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
+    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, CLOCK, rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .asInstanceOf(type(Refusal.class))
@@ -568,7 +578,7 @@ class FlowEngineTest {
                 List.of(new FixedCapability(TaskAction.SHIP, Outcome.ok("shipped again"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("shipped again");
@@ -579,7 +589,7 @@ class FlowEngineTest {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenThrow(new AgentPresence.Unread("tmux timed out"));
-    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
+    FlowEngine engine = new FlowEngine(stateService, neverRunShip, facts, CLOCK, rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .asInstanceOf(type(Refusal.class))
@@ -601,7 +611,7 @@ class FlowEngineTest {
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> writes = ArgumentCaptor.captor();
 
@@ -635,7 +645,7 @@ class FlowEngineTest {
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "beta"))
@@ -659,7 +669,7 @@ class FlowEngineTest {
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "gamma"))
@@ -680,7 +690,7 @@ class FlowEngineTest {
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS, "beta"))

@@ -1,0 +1,198 @@
+package dev.jagt.orchestrator.job.host;
+
+import dev.jagt.orchestrator.config.home.InstalledJar;
+import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.port.host.Host;
+import dev.jagt.orchestrator.port.host.ReleaseFeed;
+import dev.jagt.orchestrator.port.reach.Reach;
+import dev.jagt.orchestrator.port.reach.ReachLost;
+import dev.jagt.orchestrator.service.release.Releases;
+import dev.jagt.orchestrator.service.release.Sha256;
+import dev.jagt.orchestrator.service.release.Versions;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
+
+/**
+ * Keeps the newest release beside the running one, verified; switching is the upgrade command's or
+ * the opt-in auto upgrade's. Only a jar running from {@code <root>/versions/<v>/} has anywhere to
+ * keep it.
+ */
+@Service
+@Slf4j
+public class ReleaseCheckJob implements Job {
+
+  private static final String JAR = Versions.JAR;
+
+  private final Host host;
+  private final ReleaseFeed feed;
+  private final Reach reach;
+  private final Releases releases;
+  private final AutoUpgrade autoUpgrade;
+
+  public ReleaseCheckJob(
+      Host host, ReleaseFeed feed, Reach reach, Releases releases, AutoUpgrade autoUpgrade) {
+    this.autoUpgrade = autoUpgrade;
+    this.host = host;
+    this.feed = feed;
+    this.reach = reach;
+    this.releases = releases;
+  }
+
+  @Override
+  public String id() {
+    return "releasecheck";
+  }
+
+  @Override
+  public String describe() {
+    return "keep a newer release verified beside the running one";
+  }
+
+  @Override
+  public Duration every() {
+    return Duration.ofHours(1);
+  }
+
+  @Override
+  public void run() {
+    installed().ifPresent(this::check);
+  }
+
+  private Optional<InstalledJar> installed() {
+    return host.jar().flatMap(InstalledJar::at);
+  }
+
+  private void check(InstalledJar installed) {
+    sweepLeftovers(installed.root());
+    Optional<String> latest;
+    try {
+      latest = feed.latest();
+      reach.reached(feed.driver(), feed.host());
+    } catch (IOException e) {
+      reach.marked(
+          new ReachLost(
+              feed.driver(),
+              feed.host(),
+              List.of(),
+              feed.driver() + " cannot read the release feed on " + feed.host()));
+      log.atWarn()
+          .setMessage("release read failed")
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "no newer release looked for until the next run")
+          .setCause(e)
+          .log();
+      return;
+    }
+    Optional<String> newest = latest.filter(version -> newer(version, installed.version()));
+    newest
+        .filter(version -> !Files.exists(installed.versions().resolve(version).resolve(JAR)))
+        .ifPresent(version -> keep(installed.versions(), version));
+    newest
+        .filter(version -> Files.exists(installed.versions().resolve(version).resolve(JAR)))
+        .ifPresentOrElse(version -> releases.keep(installed.root(), version), releases::keepNone);
+    autoUpgrade.attempt();
+  }
+
+  private static boolean newer(String candidate, String running) {
+    if (!Versions.valid(candidate) || !Versions.valid(running)) {
+      return false;
+    }
+    long[] wanted = parts(candidate);
+    long[] current = parts(running);
+    for (int i = 0; i < Math.max(wanted.length, current.length); i++) {
+      long a = i < wanted.length ? wanted[i] : 0;
+      long b = i < current.length ? current[i] : 0;
+      if (a != b) {
+        return a > b;
+      }
+    }
+    return false;
+  }
+
+  private static long[] parts(String version) {
+    return Arrays.stream(version.split("\\.")).mapToLong(Long::parseLong).toArray();
+  }
+
+  private void keep(Path versions, String version) {
+    @Nullable Path staging = null;
+    try {
+      staging = Files.createTempDirectory(versions.getParent(), ".staging.");
+      Path ready = stage(staging, version);
+      Files.move(ready, versions.resolve(version), StandardCopyOption.ATOMIC_MOVE);
+      log.atInfo()
+          .setMessage("release kept")
+          .addKeyValue("ref", version)
+          .addKeyValue("path", versions.resolve(version))
+          .log();
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("release discarded")
+          .addKeyValue("ref", version)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "nothing kept, the installed versions stay as they were")
+          .setCause(e)
+          .log();
+    } finally {
+      sweep(staging);
+    }
+  }
+
+  private Path stage(Path staging, String version) throws IOException {
+    String name = "jagt-" + version + ".jar";
+    Path jar = staging.resolve(name);
+    Path sums = staging.resolve("jagt-" + version + ".sha256");
+    feed.jar(version, jar);
+    feed.checksums(version, sums);
+    String want = Sha256.listed(sums, name);
+    String got = Sha256.of(jar);
+    if (!got.equalsIgnoreCase(want)) {
+      throw new IOException("checksum mismatch for " + name);
+    }
+    Path folder = Files.createDirectory(staging.resolve(version));
+    Files.move(jar, folder.resolve(JAR));
+    Files.writeString(folder.resolve(Versions.SUM), want + "  " + JAR + "\n");
+    return folder;
+  }
+
+  private static void sweepLeftovers(Path root) {
+    try (DirectoryStream<Path> leftovers = Files.newDirectoryStream(root, ".staging.*")) {
+      leftovers.forEach(ReleaseCheckJob::sweep);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("staging leftovers not listed")
+          .addKeyValue("path", root)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "an interrupted run's hidden folders stay until the next check")
+          .setCause(e)
+          .log();
+    }
+  }
+
+  private static void sweep(@Nullable Path staging) {
+    if (staging == null) {
+      return;
+    }
+    try {
+      FileSystemUtils.deleteRecursively(staging);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("staging left behind")
+          .addKeyValue("path", staging)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "a hidden folder stays in the install root")
+          .setCause(e)
+          .log();
+    }
+  }
+}

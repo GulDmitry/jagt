@@ -3,6 +3,7 @@
 [← README](../README.md)
 
 jagt has one surface: the **board** at `http://localhost:8290`.
+Its HTTP API is described in [`contracts/openapi.yaml`](../contracts/openapi.yaml); a write carries the board's `Origin` header or is refused.
 
 ## The board
 
@@ -45,7 +46,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `do <ticket> <projA>,<projB>` | one task, one agent, a worktree per repository |
 | `do <ticket> recreate` / `resume` | the branch already exists: cut it fresh, or take over its commits |
 | `focus <ticket>` | jump to the agent's session and talk to it directly |
-| `code <ticket>` | open the worktree as a project — Git → Local Changes is the live diff |
+| `code <ticket>` | the board's Code tab, and the worktree in the code viewer `editor-command` names, if one is set |
 | `code <ticket> diff` | a static snapshot against the branch the request targets |
 | `diff <ticket>` | every repository's diff against the branch its request targets |
 | `ship <ticket>` | commit, push, open or update the review request |
@@ -74,6 +75,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `acceptance [project]` | an interactive acceptance session in its workspace, one per project: write scenarios, answer its questions |
 | `supervise` | with `supervisor: launchd`, have the machine keep the staged jar running; the jagt you started ends itself and launchd takes over |
 | `restart` | restart jagt from the staged jar, after a rebuild or a fixed `jagt.yml` |
+| `upgrade` | switch to the newer release kept beside the running one; offered only while one is kept |
 | `stop` / `unstop` | interrupt every working session and pause jobs and intake until you lift it; the mark in the header lifts too, a restart keeps it |
 | `login` | log in where jagt lost its reach, in a window of its own |
 | `activity [created\|shipped\|deployed\|stopped\|done] [<project>]` | every status change of every task, live or finished, newest first |
@@ -120,7 +122,7 @@ A reader between the session and you, on by default.
 | `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a green request; any other verb `mine` does not keep, only where it is asked | the same |
 
 It judges by the shipped brief; to edit one, copy `roles/master/brief.md.dist` and set `roles.master.brief`.
-`roles.master.mine` keeps named steps and verbs yours in `act`, `[plan]` unset; what you type to a session overrules it.
+`roles.master.mine` keeps named steps and verbs yours in `act`, `[plan, deploy, revert]` unset; what you type to a session overrules it.
 Each step is a line in the `master` window.
 
 ## Notes on the tricky ones

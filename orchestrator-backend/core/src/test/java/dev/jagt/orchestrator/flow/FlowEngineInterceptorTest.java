@@ -17,7 +17,10 @@ import dev.jagt.orchestrator.flow.capability.TaskCapability;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +28,8 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 class FlowEngineInterceptorTest {
+
+  private static final Clock CLOCK = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC);
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
@@ -90,7 +95,9 @@ class FlowEngineInterceptorTest {
   private final List<String> log = new ArrayList<>();
   private final ReducingStore tasks = mock(ReducingStore.class);
   private final AgentPresence agents = mock(AgentPresence.class);
-  private final FactSources facts = new FactSources(agents, ignored -> false);
+  private final FactSources facts =
+      new FactSources(
+          agents, ignored -> false, id -> Optional.empty(), id -> false, () -> ActionOrigin.BOARD);
   private final TaskState inProgress =
       TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build();
 
@@ -104,7 +111,7 @@ class FlowEngineInterceptorTest {
             new Capabilities(
                 List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     engine.run("ABC-1", TaskAction.SHIP);
@@ -121,7 +128,7 @@ class FlowEngineInterceptorTest {
             tasks,
             new Capabilities(List.of(new Ships(log)), List.of(new Refuses())),
             facts,
-            Clock.systemUTC(),
+            CLOCK,
             rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
@@ -137,11 +144,7 @@ class FlowEngineInterceptorTest {
     when(tasks.task("ABC-1")).thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
-            tasks,
-            new Capabilities(List.of(new Ships(log)), List.of()),
-            facts,
-            Clock.systemUTC(),
-            rules);
+            tasks, new Capabilities(List.of(new Ships(log)), List.of()), facts, CLOCK, rules);
 
     assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: done");
     assertThat(log).containsExactly("shipped");

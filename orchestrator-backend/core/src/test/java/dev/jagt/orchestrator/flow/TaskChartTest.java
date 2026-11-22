@@ -11,15 +11,17 @@ import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.deploy.InfraPhase;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn;
-import dev.jagt.statechart.ChartStep;
+import dev.jagt.statechart.Macrostep;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -188,12 +190,12 @@ class TaskChartTest {
     Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("deploy", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 new TaskMove.DeployStepped(step));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("deploy", to);
@@ -283,12 +285,12 @@ class TaskChartTest {
     Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("infra", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 move);
 
     assertThat(stepped.configuration().toPlain()).containsEntry("infra", to);
@@ -323,12 +325,12 @@ class TaskChartTest {
     Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("session", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 new TaskMove.Signed(sign));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("session", to);
@@ -410,6 +412,31 @@ class TaskChartTest {
   void landsTaskOnlyWhereTheChartDrawsTheMoveFromItsStatus(
       TaskStatus from, TaskMove move, TaskStatus to) {
     assertThat(taskChart.land(from, move)).contains(to);
+  }
+
+  @Test
+  void taskReachesDoneByTheHumansVerbsAloneWhenNoRoleIsComposed() {
+    TaskChart noRole = new TaskChart(new Composition(List.of()));
+    Facts facts =
+        Facts.defaults()
+            .withDelivery(
+                Facts.Delivery.defaults().withHasReviewRequest(true).withLiveDeploy(true));
+    FlowRules rules = new FlowRules(noRole);
+
+    assertThat(rules.allows(TaskStatus.IN_PROGRESS, TaskAction.SHIP, facts)).isTrue();
+    assertThat(
+            noRole.land(TaskStatus.IN_PROGRESS, new TaskMove.Ran(TaskAction.SHIP, Outcome.Kind.OK)))
+        .contains(TaskStatus.CI_POLLING);
+    assertThat(noRole.land(TaskStatus.CI_POLLING, new TaskMove.Read(TaskStatus.REVIEWED)))
+        .contains(TaskStatus.REVIEWED);
+    assertThat(rules.allows(TaskStatus.REVIEWED, TaskAction.DEPLOY, facts)).isTrue();
+    assertThat(
+            noRole.land(TaskStatus.REVIEWED, new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.OK)))
+        .contains(TaskStatus.DEPLOYED);
+    assertThat(rules.allows(TaskStatus.DEPLOYED, TaskAction.DONE, facts)).isTrue();
+    assertThat(
+            noRole.land(TaskStatus.DEPLOYED, new TaskMove.Ran(TaskAction.DONE, Outcome.Kind.GONE)))
+        .contains(TaskStatus.DONE);
   }
 
   static Stream<Arguments> acceptanceEdges() {
@@ -527,12 +554,13 @@ class TaskChartTest {
     plain.put("lifecycle", lifecycle);
     plain.put("acceptance", from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of("acceptance", beneath), Facts.defaults()),
+                new ChartFacts(
+                    false, Map.of("acceptance", beneath), Facts.defaults(), ChartFacts.PROJECTED),
                 move);
 
     assertThat(stepped.configuration().toPlain()).containsEntry("acceptance", to);
@@ -546,13 +574,16 @@ class TaskChartTest {
     plain.put("turn", "OPEN");
     plain.put("acceptance", "ROUND_OPEN");
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(
-                    false, Map.of("acceptance", CheckerPhase.ROUND_OPEN), Facts.defaults()),
+                    false,
+                    Map.of("acceptance", CheckerPhase.ROUND_OPEN),
+                    Facts.defaults(),
+                    ChartFacts.PROJECTED),
                 new TaskMove.Checked.RoundDeclined(
                     "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS));
 
@@ -600,6 +631,46 @@ class TaskChartTest {
             new TaskMove.DeployRead(false),
             "QUESTION",
             List.of()),
+        arguments(
+            "report", "QUESTION", "IN_PROGRESS", new TaskMove.RepoUnasked(), "QUESTION", List.of()),
+        arguments("report", "WAIT", "IN_PROGRESS", new TaskMove.RepoUnasked(), "WAIT", List.of()),
+        arguments(
+            "report",
+            "QUESTION",
+            "IN_PROGRESS",
+            new TaskMove.Said(AgentReport.WAIT),
+            "WAIT",
+            List.of(new TaskEffect.Reports(AgentReport.WAIT))),
+        arguments(
+            "report", "QUESTION", "REVERTED", new TaskMove.RepoUnasked(), "QUESTION", List.of()),
+        arguments(
+            "git",
+            "UNREAD",
+            "IN_PROGRESS",
+            new TaskMove.GitTrusted(GitTrust.of(Map.of())),
+            "TRUSTED",
+            List.of(new TaskEffect.TrustsGit(GitTrust.of(Map.of())))),
+        arguments(
+            "git",
+            "TRUSTED",
+            "IN_PROGRESS",
+            new TaskMove.GitRepoJoined(GitTrust.of(Map.of())),
+            "TRUSTED",
+            List.of(new TaskEffect.JoinsGit(GitTrust.of(Map.of())))),
+        arguments(
+            "repo",
+            "NONE",
+            "IN_PROGRESS",
+            new TaskMove.RepoAsked("p"),
+            "ASKED",
+            List.of(new TaskEffect.AsksRepo("p"))),
+        arguments(
+            "checks",
+            "NONE",
+            "IN_PROGRESS",
+            new TaskMove.ChecksUnread(new ChecksUnread(1L, "c")),
+            "UNREAD",
+            List.of(new TaskEffect.FailsToReadChecks(new ChecksUnread(1L, "c")))),
         arguments(
             "repo",
             "ASKED",
@@ -678,12 +749,12 @@ class TaskChartTest {
     plain.put("lifecycle", lifecycle);
     plain.put(region, from);
 
-    ChartStep<TaskEffect> stepped =
+    Macrostep<TaskEffect> stepped =
         taskChart
             .chart()
             .step(
                 taskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of(), Facts.defaults()),
+                new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
                 move);
 
     assertThat(stepped.configuration().toPlain()).containsEntry(region, to);

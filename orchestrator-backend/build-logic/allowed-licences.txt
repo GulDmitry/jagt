@@ -1,0 +1,9 @@
+# SPDX ids a shipped dependency may be licensed under; `checkLicences` reads the SBOM against this list.
+# A component with several licences passes when one of them is listed. Add an id only after review.
+Apache-2.0
+MIT
+BSD-2-Clause
+BSD-3-Clause
+EPL-2.0
+MPL-2.0
+CC0-1.0

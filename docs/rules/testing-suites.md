@@ -4,15 +4,19 @@
 
 | group | suites | where | when |
 |---|---|---|---|
-| **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties, mutants on the changed lines, 0.80 line coverage per module | locally and CI | every commit; CI on a push or pull request |
-| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | nightly and on a release tag |
+| **Unit + functional** | `./gradlew test`: each class, AGENTS.md's rules (ArchUnit, budgets), jqwik properties (50 tries, 200 at the release gate by `-PjqwikTries`), mutants on the changed lines, 0.80 line coverage per module | locally and CI | every commit; CI on a push or pull request |
+| **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | the `nightly` workflow (03:17 UTC schedule, calls `ci.yml`), a pull or merge request |
 | **Stand** | `standTest -Pmodelfree -Pengine=host\|compose\|kind`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally: docker, an agent login, tokens; CI runs `standTest -Pmodelfree` in its `stand` job | before a minor release; CI per push (compose), nightly (kind) |
 
 CI's `stand` job runs `standTest -Pmodelfree -Pbudgets=false` (absolute time budgets hold on the reference machine)
-per `strategy.matrix.engine`: compose per push and pull request, kind nightly;
+per `strategy.matrix.engine`: compose per push and pull request, kind nightly and per pull request;
 GitLab runs compose alone, since kind needs a privileged runner.
-CI sees only what is pushed, and jagt pushes at a release: a heavy break in new code shows on the release push,
-which waits for it. Times are wall clock, dated in `measurements.md`.
+CI sees only what is pushed: a heavy break in new code shows on the pull request, which waits for it.
+A `schedule` run starts late under GitHub load, worst at the top of the hour,
+and runs the default branch's latest commit
+([events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows),
+checked 2026-11-19): the old `0 4` cron started 08:20-08:40 late on 2026-11-16..18, so the cron sits off the hour
+and `nightly` logs its delay. Times are wall clock, dated in `measurements.md`.
 
 ## What each suite proves
 
@@ -41,9 +45,9 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 
 ## Context ceilings
 
-- `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contextsTest`,
-  `contextsBoardTest`, `contextsE2eTest` in `complexity-ceilings.json`): past the ceiling the build fails naming the suite and count.
-- Ceilings start at the measured count and only go down ([0186](../decisions/0187-a-suite-creates-no-more-spring-contexts-than-its-ceiling.md)).
+- `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contexts-test`,
+  `contexts-board-test`, `contexts-e2e-test` in `fitness.yml`): past the ceiling the build fails naming the suite and count.
+- Ceilings start at the measured count and only go down ([0187](../decisions/0187-a-suite-creates-no-more-spring-contexts-than-its-ceiling.md)).
 
 ## Planned
 

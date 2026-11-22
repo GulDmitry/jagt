@@ -20,7 +20,7 @@ Accepted 2026-10-28. Amends [0061](0061-jagt-stops-a-task-it-suspects-it-is-loop
 - A request written for a repository that leaves a recorded URL out of the task's requests voids the stop.
 - It clears through `TaskState.lifted`, the one clearing path, and logs `stop lifted` with `cause=new request`.
 - A stop with no request, and the same request written again, stand.
-- Safe because `StopGuard` refuses an unattended ship on a stopped task: a new request on one comes from the human, or
+- Safe because `StopPrecondition` refuses an unattended ship on a stopped task: a new request on one comes from the human, or
   from the session on the human's word.
 
 ## Rejected

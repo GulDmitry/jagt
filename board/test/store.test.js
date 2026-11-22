@@ -88,9 +88,9 @@ test("noVerbIsOffered whenTheTaskDoesNotOfferThatTabsVerb", () => {
 });
 
 test("onlyTheGivenKeysChange whenTheStoreIsUpdated", () => {
-  store.set({ projects: ["alpha"], masterMode: "off" });
-  store.set({ masterMode: "act" });
+  store.set({ projects: ["alpha"], reach: [] });
+  store.set({ reach: [{ said: "glab", fix: [] }] });
 
   assert.deepEqual(store.projects(), ["alpha"]);
-  assert.equal(store.masterMode(), "act");
+  assert.equal(store.reach().length, 1);
 });

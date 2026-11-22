@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
-import java.time.Clock;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -13,7 +13,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 class PasswordLoginOutcomeTest {
 
   private final LoginAttempts attempts =
-      new LoginAttempts(new LoginBackoff(1, Duration.ofMinutes(5), 10), Clock.systemUTC());
+      new LoginAttempts(new LoginBackoff(1, Duration.ofMinutes(5), 10), new FakeClock());
   private final PasswordLoginOutcome outcome = new PasswordLoginOutcome(attempts, new LoginAudit());
 
   @Test

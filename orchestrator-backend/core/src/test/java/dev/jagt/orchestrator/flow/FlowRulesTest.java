@@ -490,7 +490,7 @@ class FlowRulesTest {
   @ParameterizedTest
   @CsvSource({"PLAN_PENDING,true", "REVIEW_PENDING,true", "VERIFYING,false"})
   void theMasterReadsPlanOrHandBackButNotRoundStillBeingVerified(TaskStatus status, boolean read) {
-    assertThat(FlowRules.readByTheMaster(status)).isEqualTo(read);
+    assertThat(FlowRules.readByTheArbiter(status)).isEqualTo(read);
   }
 
   @ParameterizedTest
@@ -705,13 +705,13 @@ class FlowRulesTest {
   })
   void headsHandBackForTheMasterOnceItIsVerifyingOrWaitingToBeRead(
       TaskStatus status, boolean headed) {
-    assertThat(FlowRules.headedForTheMaster(status)).isEqualTo(headed);
+    assertThat(FlowRules.headedForTheArbiter(status)).isEqualTo(headed);
   }
 
   @ParameterizedTest
   @CsvSource({"REVIEWED,true", "APPROVED,true", "CI_POLLING,false", "DEPLOYED,false"})
   void letsTheMasterDeployOnlyRequestWaitingForOne(TaskStatus status, boolean deployed) {
-    assertThat(FlowRules.deployedByTheMaster(status)).isEqualTo(deployed);
+    assertThat(FlowRules.deployedByTheArbiter(status)).isEqualTo(deployed);
   }
 
   @ParameterizedTest

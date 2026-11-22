@@ -34,7 +34,7 @@ class MasterVerdictReportTest {
                             new Finding(
                                 "A.java", "leaks the caller", "", "blocking", "run", "leak")),
                         "",
-                        List.of(new Premise("A names its caller", "grep: A.java:3")),
+                        List.of(new Premise("A names its caller", "grep: A.kt:3")),
                         "")),
                 new Read(
                     "acceptance",
@@ -56,7 +56,7 @@ class MasterVerdictReportTest {
             stored verdict, round 7:
             - architect: not_ready
                 finding [blocking] A.java run - leaks the caller
-                premise: A names its caller (proven by: grep: A.java:3)
+                premise: A names its caller (proven by: grep: A.kt:3)
             - acceptance: question
                 premise: no test (reasoned only)
                 question: which test pins it?

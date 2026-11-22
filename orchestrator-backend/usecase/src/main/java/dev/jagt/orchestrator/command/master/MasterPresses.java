@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command.master;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.command.RootPresses;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
@@ -18,12 +19,13 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class MasterPresses {
+public class MasterPresses implements RootPresses {
 
   private final CommandService commands;
   private final GlobalCommands globals;
   private final ConfigService configService;
 
+  @Override
   public String press(
       String taskIdOrAlias, String verb, @Nullable String project, @Nullable String line) {
     TaskAction action =
@@ -40,19 +42,20 @@ public class MasterPresses {
                 : commands.executeLine(taskIdOrAlias, action, line));
   }
 
+  @Override
   public String run(String verb, String tail) {
     GlobalCommand command =
         globals
             .byId(verb)
             .orElseThrow(() -> new Refusal(Refusal.Code.STATE, "No command " + verb + "."));
     command
-        .whyNotTheMaster()
+        .whyNotTheArbiter()
         .ifPresent(reason -> {
           throw new Refusal(
               Refusal.Code.ACTION_NOT_AVAILABLE,
               command.id() + " is never the Master's: " + reason + ".");
         });
-    if (configService.load().master().profile().keeps(verb)) {
+    if (configService.load().arbiter().profile().keeps(verb)) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           command.id() + " is kept for the human: mine names it.");

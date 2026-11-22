@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.adapter.assistant;
 import static dev.jagt.orchestrator.adapter.assistant.TestOpenCodeGateBuilder.openCodeGate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +57,7 @@ class OpenCodeCheckerReaderTest {
 
   @Test
   void mapsFencedAnswerToTheAcceptanceVerdictItsRowsCarry(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(
             new Processes.Result(
                 0,
@@ -86,7 +88,7 @@ class OpenCodeCheckerReaderTest {
   @Test
   void readsOnTheModelTheRoleIsNamedWithAndHoldsItToItsOwnToolsAndEnvironments(
       @TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
     reader.reconsider(
@@ -111,7 +113,7 @@ class OpenCodeCheckerReaderTest {
 
   @Test
   void failsTheCheckWhereTheRunDoesNotReturn(@TempDir Path worktree) {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
+    when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenThrow(new IllegalStateException("Command timed out"));
 
     Answer<AcceptanceDecline> answer =

@@ -42,6 +42,9 @@ public interface JagtEngine extends AutoCloseable {
 
   default void logs() {}
 
+  /** Brings what the host reads of jagt's data folder into the run's root. */
+  default void harvest() {}
+
   @Override
   void close();
 }

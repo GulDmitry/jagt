@@ -17,7 +17,7 @@ Accepted 2026-07-25 (`5ab120b`), recorded retroactively 2026-10-02. Lombok claus
   (`99e7564`, 2026-08-13).
 - On 2026-08-19 the rule stopped being greppable and became asserted:
   - `dc2758f`: folders named after the kinds, the OS in `adapter/`.
-  - `c8c168b`: `RingsTest`, which found two leaks — `ProcessRunner` in `service/`, a use case importing
+  - `c8c168b`: `RingsFitness`, which found two leaks — `ProcessRunner` in `service/`, a use case importing
     `adapter/agent/AgentWorktree`.
   - `61938cb`, `035883d`: one Gradle module per ring, so an outward import does not compile.
   - `6c8fab5`, `9bcadb3`: tmux behind `SessionHost`, the agent binary as that agent's key.
@@ -35,9 +35,9 @@ Accepted 2026-07-25 (`5ab120b`), recorded retroactively 2026-10-02. Lombok claus
 ## Rejected
 
 - A generated `CLAUDE.md` per worktree (`5ab120b`): another CLI reads `AGENTS.md` (`99e7564`).
-- Greppable rules with no test: `RingsTest` found two leaks the first time it ran (`c8c168b`).
+- Greppable rules with no test: `RingsFitness` found two leaks the first time it ran (`c8c168b`).
 - The test alone: until the modules existed "the compiler is not the one enforcing the rule" (`c8c168b`).
-  `RingsTest` stays for what one module cannot separate.
+  `RingsFitness` stays for what one module cannot separate.
 
 ## Reopen when
 

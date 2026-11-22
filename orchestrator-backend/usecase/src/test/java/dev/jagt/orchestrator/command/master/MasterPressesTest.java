@@ -16,7 +16,7 @@ import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -125,8 +125,8 @@ class MasterPressesTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
+                .withArbiter(
+                    new ConfigService.ConfigFile.ArbiterConfig(
                         "act", null, null, List.of("spend"), null)));
     MasterPresses presses =
         new MasterPresses(

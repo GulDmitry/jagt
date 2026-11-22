@@ -1,20 +1,25 @@
-# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a tag,
+# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a pull request,
 # `stand` per engine (compose on every
-# run, kind nightly: the runner ships kind and kubectl), `release` on a tag after all. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
+# run, kind nightly and on a pull request: the runner ships kind and kubectl), `release` on a push to main after all,
+# only when the version's tag is new. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
 name: ci
-run-name: "${{ github.event_name == 'schedule' && 'nightly' || ' ' }}"
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
-  schedule:
-    - cron: '17 3 * * *'
+  workflow_call:
+    inputs:
+      nightly:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}-${{ inputs.nightly }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
   run:
@@ -23,16 +28,35 @@ defaults:
 jobs:
   test:
     name: unit + functional
-    if: github.event_name != 'schedule'
+    if: '!inputs.nightly'
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      new: ${{ steps.version.outputs.new }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+        with:
+          fetch-depth: 0
+      - run: orchestrator-backend/scripts/secret-scan.sh
+        working-directory: .
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
           distribution: temurin
-          cache: gradle
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: npm
@@ -40,10 +64,19 @@ jobs:
       - run: npm ci && npm audit --audit-level=high && npm run lint && npm test
         working-directory: board
       - run: ./gradlew --no-daemon test
-      - run: ./gradlew --no-daemon cyclonedxBom
-      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
-        with:
-          scan-args: -L orchestrator-backend/build/reports/sbom/jagt.cdx.json
+      - run: scripts/vulnerability-scan.sh
+      - run: ./gradlew --no-daemon checkLicences
+      - id: version
+        name: read the version and whether its tag is new
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          tag="v$(./gradlew --no-daemon -q printVersion)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -53,19 +86,28 @@ jobs:
 
   heavy:
     name: heavy suites
-    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/v')
+    if: inputs.nightly || github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
           distribution: temurin
-          cache: gradle
-      - run: ./gradlew --no-daemon cyclonedxBom
-      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
-          scan-args: -L orchestrator-backend/build/reports/sbom/jagt.cdx.json
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
+      - run: scripts/vulnerability-scan.sh
       - name: install what the suites shell out to
         run: sudo scripts/linux-test-deps.sh
       - name: give git an identity
@@ -97,25 +139,52 @@ jobs:
   stand:
     name: stand (${{ matrix.engine }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        engine: ${{ github.event_name == 'schedule' && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
+        engine: ${{ (inputs.nightly || github.event_name == 'pull_request') && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
           distribution: temurin
-          cache: gradle
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - name: install what the stand shells out to
         run: sudo scripts/linux-test-deps.sh
       - name: give the runner an identity
         run: |
           git config --global user.email "ci@example.com"
           git config --global user.name "jagt ci"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: orchestrator-backend/stand/build/stand/timings-history.json
+          key: stand-timings-${{ matrix.engine }}-${{ github.run_id }}
+          restore-keys: stand-timings-${{ matrix.engine }}-
       - name: run the stand without a model on the engine
-        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Pbudgets=false
+        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Pbudgets=false -Prunner=ubuntu-24.04
+      - name: fail when a stand timing passes twice the median of its last ten runs
+        run: ./gradlew --no-daemon standTimingGate
+      - name: store the stand timing trend
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
+        with:
+          tool: customSmallerIsBetter
+          output-file-path: orchestrator-backend/stand/build/stand/timings.json
+          external-data-json-path: orchestrator-backend/stand/build/stand/timings-history.json
+          fail-on-alert: false
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -123,15 +192,50 @@ jobs:
           retention-days: 14
           path: orchestrator-backend/stand/build/stand/failed
 
+  install:
+    name: install (${{ matrix.os }})
+    if: '!inputs.nightly'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          java-version: '25'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
+      - run: ./gradlew --no-daemon bootJar
+        shell: bash
+      - name: install, upgrade and restart against a fake release feed
+        run: scripts/install-check.sh build/libs/jagt.jar
+        shell: bash
+
   release:
     name: release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, heavy, stand]
+    if: needs.test.outputs.new == 'true'
+    needs: [test, stand, install]
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
       packages: write
       pages: write
+      deployments: write
       id-token: write
       attestations: write
     environment:
@@ -139,11 +243,22 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
           distribution: temurin
-          cache: gradle
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
       - run: ./gradlew --no-daemon bootJar cyclonedxBom
       - name: name the assets after the version they are
         run: |
@@ -152,23 +267,30 @@ jobs:
           cp build/libs/jagt.jar "build/release/jagt-$version.jar"
           cp build/reports/sbom/jagt.cdx.json "build/release/jagt-$version.cdx.json"
           (cd build/release && sha256sum "jagt-$version.jar" "jagt-$version.cdx.json" > "jagt-$version.sha256")
+          cp ../install.sh build/release/install.sh
+          cp ../install.ps1 build/release/install.ps1
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: orchestrator-backend/build/release/*.jar
+          subject-path: |
+            orchestrator-backend/build/release/*.jar
+            orchestrator-backend/build/release/*.cdx.json
+            orchestrator-backend/build/release/*.sha256
       - name: attach them to the release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.test.outputs.tag }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" build/release/* --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" build/release/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" build/release/* --generate-notes --verify-tag
+            gh release create "$TAG" build/release/* --generate-notes --target "$GITHUB_SHA"
           fi
       - name: publish the image
         id: image
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: scripts/publish-image.sh "$GITHUB_REF_NAME"
+          TAG: ${{ needs.test.outputs.tag }}
+        run: scripts/publish-image.sh "$TAG"
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ steps.image.outputs.name }}
@@ -178,20 +300,39 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           DIGEST: ${{ steps.image.outputs.digest }}
+          TAG: ${{ needs.test.outputs.tag }}
         run: |
           version=$(./gradlew --no-daemon -q printVersion)
           echo "${DIGEST#sha256:}  ghcr.io image jagt:$version" > "build/release/jagt-$version.image.sha256"
-          gh release upload "$GITHUB_REF_NAME" "build/release/jagt-$version.image.sha256" --clobber
+          gh release upload "$TAG" "build/release/jagt-$version.image.sha256" --clobber
       - name: keep every patch of the last two minors
+        id: retention
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release list --limit 1000 --json tagName,createdAt -q '
+          tags=$(gh release list --limit 1000 --json tagName,createdAt -q '
             map(. + {minor: (.tagName | try capture("^v(?<v>[0-9]+[.][0-9]+)").v catch .)})
             | (group_by(.minor) | map({minor: .[0].minor, at: (map(.createdAt) | max)})
                | sort_by(.at) | reverse | .[:2] | map(.minor)) as $kept
-            | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName' |
-            while read -r tag; do gh release delete "$tag" --yes; done
+            | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName')
+          for tag in $tags; do gh release delete "$tag" --yes; done
+          echo "image-tags=$(printf '%s\n' $tags | sed 's/^v//' | paste -sd, -)" >> "$GITHUB_OUTPUT"
+      - name: delete the deleted releases' images
+        if: steps.retention.outputs.image-tags != ''
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          packages: ${{ github.event.repository.name }}
+          delete-tags: ${{ steps.retention.outputs.image-tags }}
+      - name: delete every Pages deployment but the newest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=100" |
+            jq -r '.[1:][] | .id' |
+            while read -r id; do
+              gh api -X POST "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" -f state=inactive
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/deployments/$id"
+            done
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:

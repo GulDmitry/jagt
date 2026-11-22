@@ -63,6 +63,19 @@ class ServerStarterTest {
   }
 
   @Test
+  void theServerStarterDeploysAnApprovedRequestAndLetsTheMasterActWhereTheDesktopDoesNot() {
+    String server = SourceRoots.read(SERVER);
+    String desktop = SourceRoots.read(DESKTOP);
+
+    assertThat(server).containsPattern("(?m)^  deploy:\\n    onApproval: true\\b");
+    assertThat(server).containsPattern("(?m)^    master:\\n      mode: act\\b");
+    assertThat(server).containsPattern("(?m)^  autoReview:\\n    enabled: true\\b");
+    assertThat(server).containsPattern("(?m)^    waitingMaxIntervalMinutes: 60\\b");
+    assertThat(desktop).containsPattern("(?m)^  # deploy:\\n  #   onApproval: false\\b");
+    assertThat(desktop).containsPattern("(?m)^    waitingMaxIntervalMinutes: 60\\b");
+  }
+
+  @Test
   void theServerStarterTurnsTheAcceptanceRoleOn() {
     String server = SourceRoots.read(SERVER);
 

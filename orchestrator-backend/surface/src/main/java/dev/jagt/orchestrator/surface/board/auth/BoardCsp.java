@@ -20,7 +20,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 /**
  * The one origin the board loads from; vendored libraries inject style, an import map is script.
  */
-final class BoardCsp {
+public final class BoardCsp {
 
   private static final Pattern IMPORT_MAP =
       Pattern.compile("<script type=\"importmap\">(.*?)</script>", Pattern.DOTALL);
@@ -29,7 +29,7 @@ final class BoardCsp {
 
   private BoardCsp() {}
 
-  static void apply(HeadersConfigurer<HttpSecurity> headers) {
+  public static void apply(HeadersConfigurer<HttpSecurity> headers) {
     headers.cacheControl(cache -> cache.disable());
     headers.contentSecurityPolicy(csp -> csp.policyDirectives(policy()));
   }

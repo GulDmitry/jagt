@@ -14,18 +14,20 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -59,13 +61,14 @@ class ConfigServiceTest {
                 .withData(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC()));
+    stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock()));
     service =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             mock(ActStops.class),
-            checkers);
+            checkers,
+            new KeptNumbers(new ReachLedger()));
   }
 
   @Test
@@ -160,11 +163,24 @@ class ConfigServiceTest {
   }
 
   @Test
+  void deployOnApprovalIsOffUntilJagtYmlTurnsItOn() throws Exception {
+    Path configFile = root.resolve("jagt.yml");
+    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+    boolean unset = service.load().deploy().onApprovalOrDefault();
+    Files.writeString(configFile, "orchestrator:\n  deploy:\n    onApproval: true\n");
+
+    boolean written = service.load().deploy().onApprovalOrDefault();
+
+    assertThat(unset).isFalse();
+    assertThat(written).isTrue();
+  }
+
+  @Test
   void jagtYmlWithTheOldMasterKeyStillActs() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
     assertThat(master.mineOrDefault()).containsExactly("ship");
@@ -185,7 +201,7 @@ class ConfigServiceTest {
               mine: [reply]
         """);
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
@@ -205,7 +221,7 @@ class ConfigServiceTest {
               mode: act
         """);
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.mineOrDefault()).containsExactly("plan", "deploy", "revert");
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
@@ -218,7 +234,7 @@ class ConfigServiceTest {
         configFile,
         "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
 
-    MasterConfig master = service.load().master();
+    ArbiterConfig master = service.load().arbiter();
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
@@ -235,7 +251,7 @@ class ConfigServiceTest {
             mode: off
         """);
 
-    String mode = service.load().master().mode();
+    String mode = service.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("off");
   }
@@ -251,9 +267,10 @@ class ConfigServiceTest {
                 new ConfigSource(paths, new FakeConfigInputs()),
                 mock(AgentRuntime.class),
                 stops,
-                checkers)
+                checkers,
+                new KeptNumbers(new ReachLedger()))
             .load()
-            .master()
+            .arbiter()
             .mode();
 
     assertThat(mode).isEqualTo("judge");
@@ -269,9 +286,10 @@ class ConfigServiceTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             stops,
-            checkers);
+            checkers,
+            new KeptNumbers(new ReachLedger()));
 
-    String mode = stoppedBoard.load().master().mode();
+    String mode = stoppedBoard.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("judge");
     assertThat(Files.readString(configFile)).contains("mode: act");
@@ -285,14 +303,14 @@ class ConfigServiceTest {
     configService.load();
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
 
-    String mode = configService.load().master().mode();
+    String mode = configService.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("act");
   }
 
   @ParameterizedTest
-  @CsvSource({"true, judge", "false, off"})
-  void leavesTheMasterJudgingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(
+  @CsvSource({"true, act", "false, off"})
+  void leavesTheMasterActingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(
       boolean reads, String expected) throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
@@ -304,9 +322,10 @@ class ConfigServiceTest {
                 new ConfigSource(paths, new FakeConfigInputs()),
                 runtime,
                 mock(ActStops.class),
-                checkers)
+                checkers,
+                new KeptNumbers(new ReachLedger()))
             .load()
-            .master()
+            .arbiter()
             .mode();
 
     assertThat(mode).isEqualTo(expected);
@@ -317,7 +336,7 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n  master:\n    mode: \"\"\n");
 
-    String mode = service.load().master().mode();
+    String mode = service.load().arbiter().mode();
 
     assertThat(mode).isEqualTo("off");
   }
@@ -339,11 +358,7 @@ class ConfigServiceTest {
   }
 
   static Stream<Arguments> probeIntervals() {
-    return Stream.of(
-        Arguments.of(null, 600),
-        Arguments.of(-5, 600),
-        Arguments.of(0, 600),
-        Arguments.of(300, 300));
+    return Stream.of(Arguments.of(null, 600), Arguments.of(300, 300));
   }
 
   @ParameterizedTest
@@ -357,27 +372,23 @@ class ConfigServiceTest {
   @ParameterizedTest
   @EnumSource(MasterRight.class)
   void grantsTheMasterNoRightWhileItOnlyJudges(MasterRight right) {
-    assertThat(MasterConfig.defaults().withMode("judge").may(right)).isFalse();
+    assertThat(ArbiterConfig.defaults().withMode("judge").may(right)).isFalse();
+  }
+
+  @Test
+  void readsAnUnsetMasterModeAsOffWhereNoRuntimeDecidedTheDefault() {
+    assertThat(ArbiterConfig.defaults().modeOrDefault()).isEqualTo(MasterMode.OFF);
   }
 
   @Test
   void keepsApprovingPlanTheHumansWhileNoStepIsNamedAsTheirs() {
-    assertThat(MasterConfig.defaults().withMode("act").may(MasterRight.PLAN)).isFalse();
+    assertThat(ArbiterConfig.defaults().withMode("act").may(MasterRight.PLAN)).isFalse();
   }
 
   @Test
-  void readsNoStopWhereNothingStopsTheMaster() throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-
-    ConfigService config =
-        new ConfigService(
-            new ConfigSource(paths, new FakeConfigInputs()),
-            mock(AgentRuntime.class),
-            stops,
-            checkers);
-
-    assertThat(config.actStop()).isEmpty();
+  void keepsThePlanAndTheDeployTheHumansWhenNoStepIsNamedAsTheirs() {
+    assertThat(ArbiterConfig.defaults().mineOrDefault())
+        .containsExactly("plan", "deploy", "revert");
   }
 
   @Test
@@ -388,11 +399,16 @@ class ConfigServiceTest {
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
 
     ConfigFile config =
-        new ConfigService(new ConfigSource(paths, new FakeConfigInputs()), runtime, stops, checkers)
+        new ConfigService(
+                new ConfigSource(paths, new FakeConfigInputs()),
+                runtime,
+                stops,
+                checkers,
+                new KeptNumbers(new ReachLedger()))
             .load();
 
     assertThat(config.projects()).isEmpty();
-    assertThat(config.master().mode()).isEqualTo("judge");
+    assertThat(config.arbiter().mode()).isEqualTo("act");
   }
 
   @Test
@@ -406,7 +422,8 @@ class ConfigServiceTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             stops,
-            checkers);
+            checkers,
+            new KeptNumbers(new ReachLedger()));
 
     assertThat(config.project("api").path()).isEqualTo("/srv/api");
     assertThatThrownBy(() -> config.project("web"))
@@ -453,7 +470,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,24", "0,24", "1,1", "48,48"},
+      value = {"null,24", "1,1", "48,48"},
       nullValues = "null")
   void resolvesHowManyHoursAnAutoReviewWindowStaysOpen(Integer configured, int expected) {
     assertThat(
@@ -465,7 +482,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,10", "0,10", "1,1", "30,30"},
+      value = {"null,10", "1,1", "30,30"},
       nullValues = "null")
   void resolvesTheShortestWaitBetweenTwoAutoReviewPolls(Integer configured, int expected) {
     assertThat(
@@ -477,14 +494,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {
-        "null,null,240",
-        "null,300,300",
-        "null,30,240",
-        "null,100,100",
-        "100,300,300",
-        "100,100,100"
-      },
+      value = {"null,null,60", "null,300,300", "null,100,100", "100,300,300", "100,100,100"},
       nullValues = "null")
   void resolvesTheLongestWaitOnRequestOnlyReviewerMovesNeverBelowTheLongestPoll(
       Integer max, Integer waiting, int expected) {
@@ -498,7 +508,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,null,60", "100,null,100", "10,30,30", "10,9,60", "10,10,10", "100,50,100"},
+      value = {"null,null,60", "100,null,100", "10,30,30", "10,10,10"},
       nullValues = "null")
   void resolvesTheLongestWaitBetweenTwoAutoReviewPollsNeverBelowTheShortest(
       Integer min, Integer max, int expected) {
@@ -510,9 +520,111 @@ class ConfigServiceTest {
     assertThat(review.maxIntervalMinutesOrDefault()).isEqualTo(expected);
   }
 
+  @Test
+  void keepsTheLastValidRoundsAndMarksTheBoardWhenLiveEditWritesOneOutsideItsRange()
+      throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: 7 }\n");
+    live.load();
+
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: -1 }\n");
+
+    assertThat(live.load().loopBreaker().roundsOrDefault()).isEqualTo(7);
+    assertThat(reach.standing())
+        .containsExactly(
+            new ReachLost(
+                "config",
+                "orchestrator.loopBreaker.rounds",
+                List.of(),
+                "is -1: it must be 1 to 19; the read keeps 7"));
+  }
+
+  @Test
+  void readsTheDefaultAndMarksTheBoardWhenNoValidValueWasReadBeforeTheEdit() throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n");
+
+    assertThat(live.load().maxTasksOrDefault()).isEqualTo(50);
+    assertThat(reach.standing())
+        .extracting(ReachLost::said)
+        .containsExactly("is 0: it must be at least 1; the read keeps its default");
+  }
+
+  @Test
+  void remembersValidNumberReadWhileAnotherKeyStandsRefused() throws Exception {
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(new ReachLedger()));
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n  loopBreaker: { rounds: 7 }\n");
+    live.load();
+
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  maxTasks: 0\n  loopBreaker: { rounds: -1 }\n");
+
+    assertThat(live.load().loopBreaker().roundsOrDefault()).isEqualTo(7);
+  }
+
+  @Test
+  void clearsTheBoardMarkOnTheReadThatFindsTheEditCorrected() throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: 99 }\n");
+    live.load();
+
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  loopBreaker: { rounds: 5 }\n");
+
+    assertThat(live.load().loopBreaker().roundsOrDefault()).isEqualTo(5);
+    assertThat(reach.standing()).isEmpty();
+  }
+
+  @Test
+  void refusesLiveMaxIntervalBelowTheMinIntervalInsteadOfRaisingIt() throws Exception {
+    ReachLedger reach = new ReachLedger();
+    ConfigService live =
+        new ConfigService(
+            new ConfigSource(paths, new FakeConfigInputs()),
+            mock(AgentRuntime.class),
+            stops,
+            checkers,
+            new KeptNumbers(reach));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  autoReview: { minIntervalMinutes: 10, maxIntervalMinutes: 9 }\n");
+
+    assertThat(live.load().autoReview().maxIntervalMinutesOrDefault()).isEqualTo(60);
+    assertThat(reach.standing())
+        .extracting(ReachLost::said)
+        .containsExactly("is 9: it must be at least 10; the read keeps its default");
+  }
+
   @ParameterizedTest
   @CsvSource(
-      value = {"null,10", "0,10", "1,1", "5,5"},
+      value = {"null,10", "1,1", "5,5"},
       nullValues = "null")
   void resolvesHowOftenTheTrackerIsPolled(Integer configured, int expected) {
     assertThat(
@@ -538,7 +650,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,20", "0,20", "1,1", "7,7", "500,49"},
+      value = {"null,20", "1,1", "7,7"},
       nullValues = "null")
   void resolvesHowManyUnattendedMovesTaskMayMakeAnHour(Integer configured, int expected) {
     assertThat(ConfigFile.LoopBreakerConfig.defaults().withPerHour(configured).perHourOrDefault())
@@ -547,7 +659,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,20971520", "0,20971520", "1,1048576", "5,5242880"},
+      value = {"null,20971520", "1,1048576", "5,5242880"},
       nullValues = "null")
   void resolvesHowManyBytesTheArchiveMayHold(Integer configured, long expected) {
     assertThat(ConfigFile.ArchiveConfig.defaults().withMaxMegabytes(configured).maxBytesOrDefault())
@@ -556,7 +668,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,30", "0,30", "1,1", "12,12"},
+      value = {"null,30", "1,1", "12,12"},
       nullValues = "null")
   void resolvesHowManyFilesAnAutoplanReads(Integer configured, int expected) {
     assertThat(ConfigFile.AutoplanConfig.defaults().withFiles(configured).filesOrDefault())
@@ -619,9 +731,9 @@ class ConfigServiceTest {
 
   @Test
   void judgesByTheBriefTheHumanNamedAndOtherwiseByTheShippedOne() {
-    assertThat(MasterConfig.defaults().withBrief("my-brief.md").briefOrDefault())
+    assertThat(ArbiterConfig.defaults().withBrief("my-brief.md").briefOrDefault())
         .isEqualTo("my-brief.md");
-    assertThat(MasterConfig.defaults().withBrief(" ").briefOrDefault())
+    assertThat(ArbiterConfig.defaults().withBrief(" ").briefOrDefault())
         .isEqualTo("roles/master/brief.md");
   }
 
@@ -633,7 +745,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,3", "0,3", "1,1", "19,19", "25,19"},
+      value = {"null,3", "1,1", "19,19"},
       nullValues = "null")
   void resolvesHowManyRoundsOfOneStepMayRunBeforeTheTaskStops(Integer configured, int expected) {
     assertThat(ConfigFile.LoopBreakerConfig.defaults().withRounds(configured).roundsOrDefault())
@@ -642,7 +754,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,3", "0,3", "1,1", "19,19", "25,19"},
+      value = {"null,3", "1,1", "19,19"},
       nullValues = "null")
   void resolvesHowManyRoundsRunningMayResolveNoThreadBeforeTheTaskStops(
       Integer configured, int expected) {
@@ -655,7 +767,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,4", "0,4", "1,1", "9,9"},
+      value = {"null,4", "1,1", "9,9"},
       nullValues = "null")
   void resolvesHowManyShipsMayGoRoundBeforeTheTaskStops(Integer configured, int expected) {
     assertThat(ConfigFile.LoopBreakerConfig.defaults().withShips(configured).shipsOrDefault())
@@ -664,7 +776,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,20", "0,20", "1,1", "45,45"},
+      value = {"null,20", "1,1", "45,45"},
       nullValues = "null")
   void resolvesHowManyMinutesConflictMayStandStill(Integer configured, long expectedMinutes) {
     assertThat(ConfigFile.defaults().withConflictStallMinutes(configured).conflictStallOrDefault())
@@ -673,7 +785,7 @@ class ConfigServiceTest {
 
   @ParameterizedTest
   @CsvSource(
-      value = {"null,50", "0,50", "1,1", "10,10"},
+      value = {"null,50", "1,1", "10,10"},
       nullValues = "null")
   void resolvesHowManyTasksMayBeOpen(Integer configured, int expected) {
     assertThat(
@@ -764,22 +876,6 @@ class ConfigServiceTest {
         AgentConfig.defaults()
             .withCadence(new AgentConfig.Cadence(null, null, null, null, written));
     assertThat(agent.draftPollOrDefault()).isEqualTo(expected);
-  }
-
-  @Test
-  void readsTheStopThatStandsOnTheMaster() throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-
-    ConfigService config =
-        new ConfigService(
-            new ConfigSource(paths, new FakeConfigInputs()),
-            mock(AgentRuntime.class),
-            stops,
-            checkers);
-
-    assertThat(config.actStop()).isPresent();
   }
 
   @Test

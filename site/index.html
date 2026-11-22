@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>jagt: one ticket, one agent, one worktree</title>
-<meta name="description" content="jagt hands a ticket to an AI coding agent in its own Git worktree and lets you drive every session from one board.">
+<title>jagt: agent sessions on a desktop and on a server</title>
+<meta name="description" content="jagt orchestrates AI coding-agent sessions on a desktop and on a server, each in its own Git worktree, all driven from one board.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -13,9 +13,8 @@
 <nav>
   <div class="container">
     <a class="brand" href="#top"><img src="favicon.svg" alt="">jagt</a>
-    <a href="#features">Features</a>
-    <a href="#how">How it works</a>
     <a href="#install">Install</a>
+    <a href="#engineers">For engineers</a>
     <a href="#docs">Docs</a>
   </div>
 </nav>
@@ -23,65 +22,112 @@
 <main id="top">
   <header class="hero container">
     <h1>One ticket. One agent session. One Git worktree.</h1>
-    <p class="lede">You decide each step, or let an agent decide it.</p>
-    <pre class="install"><span class="prompt">$ </span>git clone https://github.com/GulDmitry/jagt.git &amp;&amp; cd jagt</pre>
+    <p class="lede">jagt orchestrates AI coding-agent sessions on a desktop and on a server.</p>
     <p class="actions">
-      <a class="button primary" href="#install">Install</a>
+      <a class="button primary" href="#desktop">Install on a desktop</a>
+      <a class="button" href="#server">Install on a server</a>
       <a class="button" href="https://github.com/GulDmitry/jagt">GitHub</a>
     </p>
   </header>
 
-  <section class="container" id="features">
-    <h2>What jagt does</h2>
-    <div class="grid">
-      <div class="card"><h3>Several tickets at once</h3><p>Each in its own worktree and branch: agents never trip over each other or your base branch.</p></div>
-      <div class="card"><h3>You look only when it needs you</h3><p>Questions, stalls and crashes are flagged and ranked by whose move it is, with a banner.</p></div>
-      <div class="card"><h3>Review comments answered for you</h3><p>Each thread is fixed, declined with a why, or asked; replies are drafted for you to read first.</p></div>
-      <div class="card"><h3>A red pipeline goes back by itself</h3><p>The session fixes it; a failure the host blames on infrastructure is re-run.</p></div>
-      <div class="card"><h3>A reviewer before you read</h3><p>The Master judges every round by your brief; in <code>act</code> it ships and deploys, your word overrules it.</p></div>
-      <div class="card"><h3>Done means checked</h3><p>jagt runs the plan's acceptance probes itself and refuses a hand-back without a valid spec change.</p></div>
-      <div class="card"><h3>Tickets in, tickets out</h3><p>A ready ticket can open a task and a done one close it, through your own MCP; jagt holds no token.</p></div>
-    </div>
-    <p class="more">Everything jagt does, one line each and linked to its spec: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/features.md">Features</a>.</p>
-  </section>
-
-  <section class="container" id="how">
-    <h2>How it works</h2>
-    <p>jagt hands a ticket to an autonomous AI coding agent in its own isolated Git worktree, so two agents cannot see or break each other's work. You drive all of them from one board in your browser.</p>
-    <div class="grid three">
-      <div class="card"><h3>The board</h3><p>A row shows status, age and checks; pick one and its detail opens beside the list.</p></div>
-      <div class="card"><h3>Sessions</h3><p>Sessions live in tmux and the state is one JSON file, so restarting the backend loses nothing</p></div>
-      <div class="card"><h3>Git worktree</h3><p>Nothing is written into your project's tracked files</p></div>
-    </div>
-    <h3 class="subhead">The session, and you</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>the agent session</th><th>you</th></tr></thead>
-        <tbody>
-          <tr><td>reads the ticket, writes the code, runs your tests</td><td>look at the live diff — <code>ide</code></td></tr>
-          <tr><td>leaves <strong>everything uncommitted</strong></td><td><code>ship</code> — the first commit and push there is</td></tr>
-          <tr><td>fixes the CI failures and the comments, drafts every reply</td><td>read the drafts — <code>replies</code> — then <code>ship</code></td></tr>
-          <tr><td>touches no shared branch and no other task</td><td><code>deploy</code>, then <code>done</code></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
   <section class="container" id="install">
     <h2>Install</h2>
-    <p>Tools: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/installation.md">Technologies</a></p>
-    <ol class="steps">
-      <li>check MCP access
-        <pre class="install"><span class="prompt">$ </span>cd "$TMPDIR" &amp;&amp; claude "Name your MCP tools for &lt;your tracker&gt; and &lt;your code host&gt;, or say NONE." -p</pre></li>
-      <li>clone, and name one repository
-        <pre class="install"><span class="prompt">$ </span>git clone https://github.com/GulDmitry/jagt.git &amp;&amp; cd jagt
-<span class="prompt">$ </span>cp jagt.desktop.yml.dist jagt.yml</pre></li>
-      <li>build, and run
-        <pre class="install"><span class="prompt">$ </span>cd orchestrator-backend
-<span class="prompt">$ </span>./gradlew build stageJar
-<span class="prompt">$ </span>java -jar build/libs/jagt-run.jar</pre></li>
-      <li>open the board <code>http://localhost:8290</code> <strong>New task</strong> It starts an agent session in tmux at once, and a session costs tokens.</li>
-    </ol>
+    <div class="grid two">
+      <div class="card" id="desktop">
+        <h3>On a desktop</h3>
+        <p>macOS, Linux and WSL:</p>
+        <pre class="install"><span class="prompt">$ </span>curl -fsSL https://github.com/GulDmitry/jagt/releases/latest/download/install.sh | sh</pre>
+        <p>Windows, in PowerShell:</p>
+        <pre class="install"><span class="prompt">PS&gt; </span>irm https://github.com/GulDmitry/jagt/releases/latest/download/install.ps1 | iex</pre>
+        <p>Both install for your user only, without admin rights, and check the download against its published checksum.</p>
+        <p>Run <code>jagt</code>, then open the board at http://localhost:8290.</p>
+      </div>
+      <div class="card" id="server">
+        <h3>On a server</h3>
+        <p>Name your project in <code>jagt.server.yml.dist</code> first: the image bakes it in as the starting <code>jagt.yml</code>.</p>
+        <pre class="install"><span class="prompt">$ </span>docker compose up -d --build</pre>
+        <p>One container with the board behind a password login: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/server.md">docs/server.md</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="container" id="engineers">
+    <h2>For engineers</h2>
+    <p>Eight architecture principles, each with the file that holds it: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/principles.md">Architecture principles</a>.</p>
+    <div class="slides">
+      <article class="slide">
+        <span class="n">1</span>
+        <h3>Roles are isolated folders</h3>
+        <dl>
+          <dt>What it is</dt><dd>a role is one folder with its brief, its cases and a design file. jagt installs a role. It does not code one.</dd>
+          <dt>Why it matters</dt><dd>a new role changes no existing role, and one role can break only itself.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/roles/session/design.md">roles/session/design.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/roles/master/design.md">roles/master/design.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">2</span>
+        <h3>A statechart decides every status</h3>
+        <dl>
+          <dt>What it is</dt><dd>a capability does its work and reports an outcome. The chart says which status that outcome leads to. Guards read facts.</dd>
+          <dt>Why it matters</dt><dd>no code path can move a task to a status the chart does not allow.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/task-flow/spec.md">task-flow</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0110-the-task-statechart-runs-on-an-engine-of-our-own.md">0110</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">3</span>
+        <h3>A typed protocol</h3>
+        <dl>
+          <dt>What it is</dt><dd>every message from a session, and every read, is a record checked against a schema once, at the door.</dd>
+          <dt>Why it matters</dt><dd>jagt never parses prose, so a changed sentence cannot change a decision.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/protocol/spec.md">protocol</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0077-the-masters-verdict-stays-typed.md">0077</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">4</span>
+        <h3>Deterministic beats a model</h3>
+        <dl>
+          <dt>What it is</dt><dd>triggers, guards and legal moves belong to the machine. A model supplies judgement only.</dd>
+          <dt>Why it matters</dt><dd>the Master in act mode picks one legal move and cannot invent one, so an unattended run stays inside the rules.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/master/spec.md">master</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/AGENTS.md">AGENTS.md</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">5</span>
+        <h3>Every third party is a configured seam</h3>
+        <dl>
+          <dt>What it is</dt><dd>one port, one driver for each vendor, and a key in jagt.yml that names the driver.</dd>
+          <dt>Why it matters</dt><dd>jagt guesses no vendor from a name or a URL, and swapping a vendor is a config change.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0130-every-third-party-is-a-configured-seam.md">0130</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/rules/seams.md">seams</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">6</span>
+        <h3>What a session does is read, not asked</h3>
+        <dl>
+          <dt>What it is</dt><dd>jagt learns what a session does from its CLI's hooks and logs. No model sits in that path.</dd>
+          <dt>Why it matters</dt><dd>the state of a session costs no tokens and cannot be a model's guess.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/runtime/spec.md">runtime</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0115-a-session-is-one-stored-record-read-from-typed-signs.md">0115</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">7</span>
+        <h3>Rings, and a test for every rule</h3>
+        <dl>
+          <dt>What it is</dt><dd>the core imports no Spring, and arrows point inward only. Each rule is a test over all code.</dd>
+          <dt>Why it matters</dt><dd>a rule that a test checks does not erode when the code grows.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0162-a-check-holds-for-all-code.md">0162</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0180-each-spheres-industry-standard-is-jagts-floor.md">0180</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">8</span>
+        <h3>Use cases first</h3>
+        <dl>
+          <dt>What it is</dt><dd>every behaviour is a WHEN and THEN scenario in a spec, and a test pins it.</dd>
+          <dt>Why it matters</dt><dd>a change shows its effect as a scenario before it shows as code.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/spec-changes/spec.md">spec-changes</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/rules/testing.md">testing</a></dd>
+        </dl>
+      </article>
+    </div>
   </section>
 
   <section class="container" id="docs">
@@ -89,7 +135,7 @@
     <div class="table-wrap">
       <table>
         <tbody>
-          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/installation.md">Installation</a></td><td>every technology, per platform, and the first run</td></tr>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/installation.md">Installation</a></td><td>the installed layout, every technology, per platform, building from source</td></tr>
           <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/usage.md">Usage</a></td><td>the board, every command, the review loop</td></tr>
           <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/configuration.md">Configuration</a></td><td>where a setting goes, and what outranks what</td></tr>
           <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/troubleshooting.md">Troubleshooting</a></td><td>symptom → cause → fix</td></tr>

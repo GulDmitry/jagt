@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.service.project.ProjectCards;
 import dev.jagt.orchestrator.service.project.ProjectFolders;
 import dev.jagt.orchestrator.service.project.ProjectRemoval;
 import dev.jagt.orchestrator.service.project.ProjectSetup;
@@ -25,6 +26,7 @@ public class ProjectsController {
   private final ProjectSetup setup;
   private final ProjectFolders folders;
   private final ProjectRemoval removal;
+  private final ProjectCards cards;
 
   /** A GET: reading a path writes nothing. */
   @GetMapping("/check")
@@ -38,6 +40,12 @@ public class ProjectsController {
   @GetMapping("/{key}")
   public ProjectSetup.Entry entry(@PathVariable("key") String key) {
     return setup.entry(key);
+  }
+
+  /** A GET: reading a card writes nothing. */
+  @GetMapping("/{key}/card")
+  public ProjectCards.Card card(@PathVariable("key") String key) {
+    return cards.of(key);
   }
 
   /** A GET: listing folders writes nothing. */

@@ -18,8 +18,12 @@ public class ProcessExit implements Exit {
   private final ConfigurableApplicationContext context;
 
   @Override
-  public void afterAnswer() {
-    log.atInfo().setMessage("jagt exits").addKeyValue("graceMs", GRACE.toMillis()).log();
+  public void afterAnswer(int code) {
+    log.atInfo()
+        .setMessage("jagt exits")
+        .addKeyValue("code", code)
+        .addKeyValue("graceMs", GRACE.toMillis())
+        .log();
     Thread.ofPlatform()
         .name("jagt-exit")
         .start(() -> {
@@ -29,7 +33,7 @@ public class ProcessExit implements Exit {
             Thread.currentThread().interrupt();
             return;
           }
-          System.exit(SpringApplication.exit(context, () -> 0));
+          System.exit(SpringApplication.exit(context, () -> code));
         });
   }
 }

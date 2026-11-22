@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -67,7 +68,7 @@ class CommandServiceTest {
     when(door.presses("ABC-1", TaskAction.RUN)).thenReturn(false);
 
     assertThat(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la"))
-        .contains("no master case allows it");
+        .contains("no arbiter case allows it");
     verify(flow, never()).runLine("ABC-1", TaskAction.RUN, "ls -la");
   }
 
@@ -102,8 +103,8 @@ class CommandServiceTest {
         taskStops()
             .withRoot(root)
             .withProfile(new Arbiter.Profile(MasterMode.ACT, Set.of("done")))
-            .build(state, Clock.systemUTC());
-    CaseDoor door = caseDoor().withRoot(root).build(state, stops, Clock.systemUTC());
+            .build(state, new FakeClock());
+    CaseDoor door = caseDoor().withRoot(root).build(state, stops, new FakeClock());
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CommandService guarded = new CommandService(flow, door);
 
@@ -144,7 +145,7 @@ class CommandServiceTest {
                 + ":\"master\"}\n");
     assertThat(state.task("ABC-1").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
-        .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
+        .containsExactly(TaskStop.Trigger.MISS, "no arbiter case allows deploy at REVIEWED");
   }
 
   @Test
@@ -154,7 +155,7 @@ class CommandServiceTest {
     String said = commands.execute("ABC-1", TaskAction.SHIP);
 
     assertThat(said)
-        .isEqualTo("ship ABC-1: no master case allows it at this status; see misses.jsonl");
+        .isEqualTo("ship ABC-1: no arbiter case allows it at this status; see misses.jsonl");
     verify(flow, never()).run("ABC-1", TaskAction.SHIP);
   }
 }

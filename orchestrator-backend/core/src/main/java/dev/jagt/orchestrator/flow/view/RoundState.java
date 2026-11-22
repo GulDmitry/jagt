@@ -19,8 +19,8 @@ import lombok.With;
 public record RoundState(
     AgentReport report,
     boolean draftedReplies,
-    @With boolean masterReading,
-    @With Arbiter.Profile master,
+    @With boolean arbiterReading,
+    @With Arbiter.Profile arbiter,
     @With Map<String, CheckerPhase> checkers,
     @With boolean requestless,
     @With long repliesWrittenAt,

@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.service.task.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -75,7 +75,7 @@ public class FinishedCommand implements GlobalCommand {
     if (!clock.isEmpty()) {
       lines.add(clock);
     }
-    Map<Guard, Integer> refused = new EnumMap<>(Guard.class);
+    Map<RefusalKind, Integer> refused = new EnumMap<>(RefusalKind.class);
     records.forEach(task ->
         task.course()
             .refusals()

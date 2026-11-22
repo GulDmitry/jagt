@@ -41,7 +41,7 @@ class SessionWakeJobTest {
     when(sessions.composing("ABC-42")).thenReturn(true);
     when(wakes.takeDue(any()))
         .thenAnswer(call ->
-            ((Predicate<String>) call.getArgument(0)).test("ABC-42")
+            call.<Predicate<String>>getArgument(0).test("ABC-42")
                 ? List.of()
                 : List.of(new SessionWakes.Due("ABC-42", Step.WAKE, Standing.ABSENT)));
 

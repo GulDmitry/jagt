@@ -16,7 +16,7 @@ Accepted 2026-10-08.
 ## Decision
 
 - jagt draws a random token at each start into `master-token` beside `state.json`, mode 0600, compared in
-  constant time (`surface/mcp/MasterToken`); a read-only root still starts.
+  constant time (`surface/mcp/refusal/MasterToken`); a read-only root still starts.
 - The root's own MCP config presents it as `X-Jagt-Master`: Claude through `headersHelper`, Codex through
   `mcp_client.js`, each reading the file only when run from the root.
 - A registered worktree is a task; else the token is the Master; else 401, which makes Claude mint its header again

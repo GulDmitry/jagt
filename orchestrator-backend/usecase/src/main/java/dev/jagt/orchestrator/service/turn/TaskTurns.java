@@ -129,29 +129,29 @@ public class TaskTurns {
 
   public void left(String taskId, String step) {
     stateService.reduce(
-        stateService.canonicalTaskId(taskId), (reducer, task) -> reducer.masterLeft(task, step));
+        stateService.canonicalTaskId(taskId), (reducer, task) -> reducer.arbiterLeft(task, step));
   }
 
   public void took(String taskId) {
-    stateService.reduce(stateService.canonicalTaskId(taskId), TaskReducer::masterTook);
+    stateService.reduce(stateService.canonicalTaskId(taskId), TaskReducer::arbiterTook);
   }
 
   public void unanswered(String taskId) {
     stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        (reducer, task) -> reducer.masterUnanswered(task, task.askedDigest()));
+        (reducer, task) -> reducer.arbiterUnanswered(task, task.askedDigest()));
   }
 
   public void askedStop(String taskId, String key) {
     stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        (reducer, task) -> reducer.masterAskedStop(task, key));
+        (reducer, task) -> reducer.arbiterAskedStop(task, key));
   }
 
   public void pressedDeploy(String taskId, String arrival) {
     stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        (reducer, task) -> reducer.masterPressedDeploy(task, arrival));
+        (reducer, task) -> reducer.arbiterPressedDeploy(task, arrival));
   }
 
   public void mark(String taskId, String step, String value) {

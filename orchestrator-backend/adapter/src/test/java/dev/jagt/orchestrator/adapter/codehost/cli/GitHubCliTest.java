@@ -467,6 +467,19 @@ class GitHubCliTest {
   }
 
   @Test
+  void openRequestOfBranchFailsNamingTheHostsStatusAndWordsWhenTheHostAnswersWithServerError() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", "HTTP 502: Bad Gateway"));
+
+    Answer<String> answer =
+        github.openRequestOf(host, "git@github.example.invalid:shop/web.git", "ABC-42");
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.reach()).isEmpty();
+    assertThat(answer.failure()).isEqualTo("gh exited 1: HTTP 502: Bad Gateway");
+  }
+
+  @Test
   void openRequestOfBranchIsTheOpenPullRequest() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(

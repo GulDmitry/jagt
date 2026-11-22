@@ -30,26 +30,26 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state | standard it follows · check pinning it |
 |------|-------------|-------|------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` | ISO/IEC 25010 recoverability: atomic writes, state read across a minor · `StateServiceCompatibilityTest` |
-| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsTest`, `FlowDoorsTest` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsFitness`, `FlowDoorsFitness` |
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
-| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `LifecycleHooksTest` |
+| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
 | `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/channel/Notification` + `port/channel/ChannelDriver` | twelve-factor IV, a channel a backing service chosen in `jagt.yml` · `RoutesTest` |
-| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `BoardWriteFilterTest`, `AgentDoorFilterTest`; the board's `ui/`: `boardTest`, `node --test` under c8 |
+| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `NotThePageTest`, `LoopbackOrRootTokenTest`; the board's `ui/`: `boardTest`, `node --test` under c8 |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb | command pattern, one class per verb · `KindsTest` |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks | ASVS V2 input validation against a JSON Schema · `SchemaTest`; the board's `core/grammar`: `node --test` under c8 |
-| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `CognitiveComplexityTest`, `DuplicationTest`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
+| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `cognitive-complexity`, `duplication`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
+| fitness function | one automated fitness function with a measured number, a threshold and a direction, in one place in the reserved tree | built — `fitness.yml` read by the included build `fitness/`; a coded fitness function a `Fitness` class found by id ([0209](docs/decisions/0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md)); its own boundary [0210](docs/decisions/0210-fitness-is-an-included-build-with-its-own-boundary.md) | Building Evolutionary Architectures, ch. 2; ISO/IEC 25010 and 25012 section names · `FitnessTest` |
 | `startup/` | why the assembly must not start | built — `port/host/StartupCheck`, `StartupValidation` and every check | fail-fast configuration validation · `StartupValidationTest` |
-| deployment example | a file a user copies and edits to run jagt somewhere, beside `docker-compose.yml` at the root, its `.dist` suffix saying so | built — `Dockerfile` and `docker-compose.yml` (jagt's own image), `Dockerfile.dist`, `kubernetes.yml.dist`, `.env.dist`; one walk-through, [`docs/server.md`](docs/server.md), [0171](docs/decisions/0171-the-image-is-a-base-without-agent-clis.md) | twelve-factor app, Kubernetes restricted Pod Security Standard · `KubernetesManifestsTest` |
-| `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` | use cases as WHEN/THEN before code · `RoleNamesTest` |
+| deployment example | a file a user copies and edits to run jagt somewhere, in `examples/`; `.dist` stays for a file whose copy is ignored | built — `Dockerfile` and `docker-compose.yml` (jagt's own image), `examples/agent-image.Dockerfile`, `examples/kubernetes.yml`, `examples/server.env`; one walk-through, [`docs/server.md`](docs/server.md), [0171](docs/decisions/0171-the-image-is-a-base-without-agent-clis.md) | twelve-factor app, Kubernetes restricted Pod Security Standard · `KubernetesManifestsTest` |
+| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesFitness` | use cases as WHEN/THEN before code · `RoleNamesFitness` |
 
 **A new kind names its sphere's standard and the check pinning it before its first code.** The gates of testing, QA,
-operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`;
-[`docs/practices.md`](docs/practices.md) is the page to copy them from.
+operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`; [`docs/practices.md`](docs/practices.md) copies them.
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
 surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it.
-`ComplexityCeilingsTest` ratchets each kind's count to `complexity-ceilings.json`
+`FitnessTest` ratchets each kind's count to `fitness.yml`
 ([0176](docs/decisions/0176-every-kind-has-a-ceiling.md)). The board renders
 `flow/view/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
@@ -60,7 +60,7 @@ implements the ports, and the use cases (`capability/` `command/` `job/` `notify
 centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the interfaces they declare. `port/` is
 *inside* that centre: the rules write those interfaces for their own needs, and `flow/` depends on them.
 
-`RingsTest` asserts exactly this, on the bytecode through ArchUnit, on the text where bytecode is blind:
+`RingsFitness` asserts exactly this, on the bytecode through ArchUnit, on the text where bytecode is blind:
 
 - `task/`, `flow/` and `port/` depend on no other ring; `protocol/` only on them; `task/` on neither `flow/` nor
   `port/`, and `port/` not on `flow/`.
@@ -70,7 +70,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge depends on `adapter/`.
-- no static mutable field in any ring (`StaticStateTest`).
+- no static mutable field in any ring (`static-state`).
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
 - it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, keys naming a vendor by design; renaming one a human already
@@ -121,10 +121,9 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
   [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
   [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
-  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the
-  reducer alone ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other
-  marks are bookkeeping, written by `withMark` from anywhere.
-- `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW (`service/TaskProvisioning`).
+  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the reducer alone
+  ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other marks are bookkeeping, written by `withMark`.
+- `withStatus` has exactly two callers outside the record: the two doors (`FlowDoorsFitness`). A task is born at NEW (`service/TaskProvisioning`).
 - **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
@@ -165,7 +164,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TaskStore` | `service/StateService` |
 | `AgentPresence` | `service/AgentSessions` |
 | `flow/capability/TaskCapability` | one per verb under `capability/` |
-| `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/GitStateGuard`; an install may add its own step |
+| `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/stop/DeployLiftsStop`; an install may add its own step |
 | `Specs` | `adapter/worktree/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/agent/{codex/Codex,opencode/OpenCode}AgentRuntime`, `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `reach/ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
@@ -174,7 +173,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
-| `AcceptanceRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
+| `FlowRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/reach/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `ChannelDriver` | `adapter/channel/{DesktopNotifier,CommandChannel,TeamsWorkflowChannel}` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
@@ -221,10 +220,10 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/assistant` | core | the headless assistants and readers, their answers |
 | `port/channel` | core | the channel driver port and what it carries |
 | `port/codehost` | core | the code host port and its commands |
-| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout |
+| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout, the release feed |
 | `port/reach` | core | what jagt's reach loss is told in |
 | `port/terminal` | core | terminal, editor and session-host ports |
-| `port/worktree` | core | worktree-facing ports: acceptance runner, build tools, line diff, specs, containers, processes |
+| `port/worktree` | core | worktree-facing ports: flow runner, build tools, line diff, specs, containers, processes |
 | `protocol` | core | what crosses into jagt: tool messages, reads, hooks, schema |
 | `protocol/debug` | core | the read-only debug reads' messages |
 | `protocol/message` | core | the tool messages a session sends and their arguments |
@@ -259,6 +258,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `command/workspace` | usecase | projects and worktrees as commands |
 | `config` | usecase | the properties jagt reads from `jagt.yml` |
 | `config/source` | usecase | `jagt.yml` read and resolved: `${VAR}`, `${file:}`, `JAGT__` overrides, the environment and files it reads |
+| `config/home` | usecase | the install home of a jar run from `versions/<v>/`, and the files the jar carries into it |
 | `config/role` | usecase | a role's definition, files, options, cases and session brief |
 | `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, the worktree sweep |
 | `job/checker` | usecase | one checker role's jobs: check, decline, wait, records and prompts |
@@ -266,10 +266,12 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/checker/workspace` | usecase | a checker's workspace offered as a request after a check, once the role turns it on |
 | `job/conflict` | usecase | deploy-conflict jobs and the reads that end them |
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
+| `job/host` | usecase | jobs about the install: keep-awake, the running-jar watch and the newer-release check |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
-| `job/stop` | usecase | stop reads and the stop triage |
+| `job/stop` | usecase | stop reads |
+| `job/triage` | usecase | the triage role's job, panel and failure |
 | `job/usage` | usecase | usage-limit alerts and the job reading them |
 | `job/tracker` | usecase | tracker intake and ticket close jobs |
 | `job/verdict` | usecase | the Master's verdict and answer jobs |
@@ -282,15 +284,16 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/launch` | usecase | starting a task: routing, placement, resume |
 | `service/log` | usecase | jagt's own logs: rolling files, press, stop and miss logs |
 | `service/master` | usecase | what the Master reads: panels, briefs, decisions, brake |
-| `service/plan` | usecase | plan approval, baseline and placement |
+| `service/plan` | usecase | plan approval, baseline, placement and probes |
 | `service/presence` | usecase | session presence: ledger, probe, wakes, keep-alive |
-| `service/project` | usecase | projects: cards, folders, setup, removal |
+| `service/project` | usecase | projects: cards, folders, setup, removal; the basic settings and the line-wise writer of `jagt.yml` |
 | `service/reach` | usecase | the reach ledger and what writes it |
+| `service/release` | usecase | the kept newer release and the switch of `current` to it |
 | `service/repo` | usecase | repositories: remotes, departures, hostless ships, merged requests |
 | `service/report` | usecase | status reports and their effects |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |
 | `service/role` | usecase | installed roles, their beans, settings and config origins |
-| `service/scenario` | usecase | scenario sessions, windows and acceptance probing |
+| `service/scenario` | usecase | scenario sessions and windows |
 | `service/session` | usecase | session hosting, lines, prompts and offered models |
 | `service/stop` | usecase | stops: announcements, policy, per-task stops |
 | `service/task` | usecase | task views, facts, artifacts and finished tasks |
@@ -305,6 +308,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/agent/hook` | adapter | Claude's hook JSON and tool-gate envelope |
 | `adapter/agent/log` | adapter | session logs and prices per agent |
 | `adapter/agent/opencode` | adapter | the OpenCode driver |
+| `adapter/agent/trust` | adapter | Claude's config directory and trust file, exposed to `stand` |
 | `adapter/assistant` | adapter | the headless assistants, readers and replays |
 | `adapter/assistant/reach` | adapter | MCP and local-model reach probes |
 | `adapter/channel` | adapter | notification channel drivers |
@@ -314,6 +318,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
 | `adapter/replay` | adapter | a stand recording played back: runtime, sessions, moves, reads |
+| `adapter/process` | adapter | the one owner of child processes: spawn, end each tree, reap; exposed to `stand` |
+| `adapter/release` | adapter | the release feed drivers: GitHub releases, none |
 | `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
 | `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
 | `adapter/tmux` | adapter | the tmux session host and its reads |
@@ -324,11 +330,11 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `surface/board/auth` | surface | the board's login: the `auth` seam's properties, start check, security chains and CSP |
 | `surface/board/auth/attempts` | surface | the board's login attempts: per-peer back-off, the login audit line, the password outcome events |
 | `surface/board/files` | surface | what the board is served from: the jar's copy or `board.dir`, the user's i18n overlay, the manifest MIME |
-| `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
+| `surface/board/filter` | surface | what stands in front of the board's requests: the chains for refused requests and the agent door, the strict firewall, origin, aborted connections |
 | `surface/board/terminal` | surface | the Session tab's live terminal: the WebSocket a window's output goes out on and a human's keys come in |
 | `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
-| `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, token, handlers |
-| `surface/mcp/refusal` | surface | how a tool refuses: caller scope, failure, refusal |
+| `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, handlers |
+| `surface/mcp/refusal` | surface | how a tool refuses and who may call: caller scope, root token, failure, refusal |
 | `surface/mcp/tools` | surface | the MCP tool groups, each declaring its own scope |
 | `surface/ui` | surface | the console banner, failure page and startup failure |
 | `surface/ui/log` | surface | log archives and rolling, the port guard, task alias feed and filter |
@@ -340,16 +346,16 @@ row with no package, on a package of more than ten classes and on one of a singl
 
 ### Over ten classes
 
-A package-private partner that cannot move without being widened keeps its package whole. An exception ends when its
-partners move or are widened, never by raising the number.
+A package-private partner that cannot move without widening keeps its package whole, until its partners move; never by raising the number.
 
 | package | why |
 |---------|-----|
 | `flow` | package-private chart types (`Fact`, `Landing`, `TaskMove`, `Phases`, `Role`) are partners of `TaskChart` and `TaskReducer` |
 | `protocol` | package-private `Wire` is the codec of eight message and read records beside it |
 | `service` | package-private `RoundBrief`, `TaskNotes` and `WorktreeSandbox` tie `HandBack`, `RoundRelay`, `AgentSessions` and their readers |
+| `service/master` | package-private `RoundQuotes` and `RoundFacts` are partners of `MasterPanel` |
 | `service/git` | twelve classes of one feature, no sub-kind of three; `GitStates` is package-private to `GitWorktrees` |
-| `adapter/agent` | package-private `ClaudeConfigDir` and `ClaudeTranscripts` tie the Claude classes together |
+| `adapter/agent` | package-private `ClaudeTranscripts` ties the Claude classes together |
 | `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |
 | `stand/invariant` | seventeen checks of one feature, no sub-kind of three; `StateFiles` is package-private to them |
 | `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
@@ -371,8 +377,7 @@ None today; a package of one class folds into its parent.
 | notify somewhere else | one `ChannelDriver` in `adapter/` and a channel of its `kind` in `jagt.yml`; no caller changes |
 | support another host, tracker, agent or OS | one adapter behind its port, plus the `@ConditionalOnProperty` value |
 
-- A new verb reaches the board because the board is generated from `flow/capability/TaskAction`: it renders `Move.actions()` (the
-  legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
+- A new verb reaches the board generated from `flow/capability/TaskAction`: `Move.actions()` (legal only), an illegal one refused by `FlowEngine`.
 - **The surface holds no list** — the usual way to break that is building a button in `board/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - **The tree shows layers, then features, then kinds**: a new kind of thing is named in [the package map](#the-package-map)
@@ -468,12 +473,11 @@ key that fixes it. The composition half, and what of it exists:
 
 ## The build
 
-Eight Gradle modules under `orchestrator-backend/`, one per ring, the engine, the stand harness and the mutation filter, so the dependency rule is
-the compiler's: an import that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsTest`.
+Eight Gradle modules under `orchestrator-backend/`, the compiler holding the dependency rule; `module-isolation` pins a module's inside (0211).
 
 | module | holds | sees |
 |--------|-------|------|
-| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step over stored and derived regions | the JDK and JSpecify only, no jagt type |
+| `:statechart` | `dev.jagt.statechart`: a Harel/SCXML statechart engine, a pure macrostep over regions and a data model | the JDK and JSpecify only, no jagt type |
 | `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
@@ -484,17 +488,13 @@ the compiler's: an import that points outward does not compile. Two folders insi
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
   `lsof`, binaries), `:surface:test`, `:stand:test` (the stand harness's own, outside the assembly), and the root's own few.
-- The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests
-  and `WorktreeHooksTest` live in `:adapter:test`, where git is.
+- A `:usecase` class only a real binary tests honestly (the git components, `WorktreeHooksTest`) is tested in `:adapter:test`.
 - Six suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `standTest` (docker, kind),
   `boardTest` (a real browser), `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, tokens).
 - Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
-- `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's
-  `build.gradle` only applies and declares. New build logic is a new plugin there, never code in a build file.
-- `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar
-  build/libs/jagt-run.jar` starts the board.
+- `build-logic/` and `fitness/` are included builds: one plugin per concern, never build logic in a build file.
+- `./gradlew test e2eTest boardTest` runs everything runnable here; `./gradlew build stageJar && java -jar build/libs/jagt-run.jar` starts the board.
 - **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
-  a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
-- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job`
-  (`LifecycleHooksTest`).
+  a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`constructors-called-from-main`).
+- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job` (`post-construct-hooks`).
 - `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names `adapter/Executables`.

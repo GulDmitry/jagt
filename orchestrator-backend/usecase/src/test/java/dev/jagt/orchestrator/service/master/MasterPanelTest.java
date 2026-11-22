@@ -24,7 +24,6 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.assistant.ChargedReviews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Probe;
@@ -55,10 +54,10 @@ class MasterPanelTest {
   private final ChargedReviews reviews = mock(ChargedReviews.class);
   private final MasterBriefs briefs = mock(MasterBriefs.class);
   private final RoundQuotes quotes = mock(RoundQuotes.class);
-  private final ConfigService.ConfigFile.MasterConfig judge =
-      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-  private final ConfigService.ConfigFile.MasterConfig act =
-      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig judge =
+      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
+  private final ConfigService.ConfigFile.ArbiterConfig act =
+      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final MasterPanel.RoundRead emptyRead =
       new MasterPanel.RoundRead("", "", "", List.of(), "");
   private final MasterPanel.Briefs briefsPair =
@@ -480,11 +479,10 @@ class MasterPanelTest {
             "ABC-1",
             reviewPending,
             new MasterPanel.RoundRead(
-                "", "", "", List.of(), "disputed: drop v2 — Api.java:12 has no caller"));
+                "", "", "", List.of(), "disputed: drop v2 — Api.kt:12 has no caller"));
 
     assertThat(prompt)
-        .contains(
-            "<session_notes>\ndisputed: drop v2 — Api.java:12 has no caller\n</session_notes>");
+        .contains("<session_notes>\ndisputed: drop v2 — Api.kt:12 has no caller\n</session_notes>");
   }
 
   @Test
@@ -968,11 +966,11 @@ class MasterPanelTest {
             planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), "disputed: the ticket line 2"),
+            new MasterPanel.RoundRead("", "", "", List.of(), "disputed: the ticket row 2"),
             false,
             true);
 
-    assertThat(prompt).contains("<session_notes>\ndisputed: the ticket line 2\n</session_notes>");
+    assertThat(prompt).contains("<session_notes>\ndisputed: the ticket row 2\n</session_notes>");
   }
 
   @Test

@@ -155,13 +155,20 @@ class LogFileRollTest {
   }
 
   @Test
+  void createsTheLogsFolderBeforeTheAppenderOpensItsFile(@TempDir Path root) {
+    roll.start(root.resolve("logs/master.log"));
+
+    assertThat(root.resolve("logs")).isDirectory();
+  }
+
+  @Test
   void rollsTheMasterFeedAsWellAsTheMainLog(@TempDir Path root) throws IOException {
     Path feed = root.resolve("master.log");
     Files.writeString(feed, "yesterday's steps\n");
     roll.apply(
         new MockEnvironment()
             .withProperty("logging.file.name", root.resolve("jagt.log").toString())
-            .withProperty("logging.master.name", feed.toString())
+            .withProperty("logging.feed.name", feed.toString())
             .withProperty("server.port", String.valueOf(freePort)));
 
     assertThat(root.resolve("master.log.1")).content().contains("yesterday's steps");

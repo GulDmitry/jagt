@@ -274,7 +274,25 @@ class HeadlessClaude {
           .log();
       return HeadlessReply.failed(reply.usage(), "unfenced: " + unheard.get());
     }
-    return reply.refusedByGate(refused);
+    return gateFailure(replied, refused, unheard)
+        .map(cause -> new HeadlessReply(null, reply.usage(), cause, true))
+        .orElseGet(() -> reply.refusedByGate(refused));
+  }
+
+  private static Optional<String> gateFailure(
+      @Nullable JsonNode replied, boolean refused, Optional<String> unheard) {
+    if (replied == null
+        || replied.path("structured_output").isObject()
+        || !(refused || unheard.isPresent())) {
+      return Optional.empty();
+    }
+    JsonNode denials = replied.path("permission_denials");
+    String error = denials.isArray() && !denials.isEmpty() ? oneLine(denials.toString()) : "none";
+    return Optional.of(
+        "the read gate refused the run's calls: "
+            + unheard.orElse("a call was refused")
+            + "; denied: "
+            + error);
   }
 
   private HeadlessReply booked(
@@ -351,14 +369,14 @@ class HeadlessClaude {
       return HeadlessReply.failed(usage, cause);
     }
     if (result.exitCode() != 0 || envelope == null) {
+      String cause = oneLine(failureText(result, envelope));
       log.atWarn()
           .setMessage("assistant call failed")
           .addKeyValue("ref", label)
           .addKeyValue("exit", result.exitCode())
-          .addKeyValue(
-              "cause", oneLine(result.stderr().isBlank() ? result.stdout() : result.stderr()))
+          .addKeyValue("cause", cause)
           .log();
-      return HeadlessReply.failed(usage, "exit " + result.exitCode());
+      return HeadlessReply.failed(usage, "exit " + result.exitCode() + ": " + cause);
     }
     if (envelope.path("is_error").asBoolean(false)) {
       String cause = errorOf(envelope);
@@ -370,6 +388,15 @@ class HeadlessClaude {
       return HeadlessReply.failed(usage, "errored: " + cause);
     }
     return new HeadlessReply(envelope, usage, "");
+  }
+
+  /** The CLI's own error text leads: stdout's envelope opens with counters that fill the clip. */
+  private static String failureText(Processes.Result result, @Nullable JsonNode envelope) {
+    String said = envelope == null ? "" : errorOf(envelope);
+    if (!said.isBlank()) {
+      return said;
+    }
+    return result.stderr().isBlank() ? result.stdout() : result.stderr();
   }
 
   /** An error with a blank result still names its subtype and what ended its run. */

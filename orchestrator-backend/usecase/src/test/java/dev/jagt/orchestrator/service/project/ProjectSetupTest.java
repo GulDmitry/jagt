@@ -21,7 +21,9 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.stop.ActStops;
+import dev.jagt.orchestrator.service.KeptNumbers;
+import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,15 +71,17 @@ class ProjectSetupTest {
             new ConfigSource(paths, new FakeConfigInputs()),
             mock(AgentRuntime.class),
             mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
     when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
     when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     doReturn(new Processes.Result(0, repo + "\n", ""))
         .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    setup = new ProjectSetup(config, paths, git, checkout -> List.of());
-    bareSetup = new ProjectSetup(config, paths, bareGit, checkout -> List.of());
+    setup = new ProjectSetup(config, new ConfigWriter(config, paths), git, checkout -> List.of());
+    bareSetup =
+        new ProjectSetup(config, new ConfigWriter(config, paths), bareGit, checkout -> List.of());
   }
 
   @AfterEach
@@ -215,6 +219,18 @@ class ProjectSetupTest {
   }
 
   @Test
+  void addsTheFirstProjectOfFreshInstallThatHasNoConfigFileYet() throws Exception {
+    Files.delete(configFile);
+
+    setup.add(billingEntry);
+
+    assertThat(Files.readString(configFile))
+        .isEqualTo(
+            "orchestrator:\n  projects:\n    billing:\n      path: \"%s\"\n".formatted(repo)
+                + "      baseBranch: \"origin/main\"\n");
+  }
+
+  @Test
   void refusesFolderInsideRepositoryAndNamesTheRepositoryToAddInstead() throws Exception {
     Path docs = Files.createDirectories(repo.resolve("docs"));
     doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), anyList());
@@ -275,10 +291,15 @@ class ProjectSetupTest {
   void putsTheFileBackWhenTheInsertedEntryDoesNotRead() throws Exception {
     ConfigService spied = spy(config);
     doThrow(new IllegalStateException("bad yaml")).when(spied).project("billing");
-    ProjectSetup spying = new ProjectSetup(spied, paths, git, checkout -> List.of());
+    ProjectSetup spying =
+        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of());
 
     assertThatThrownBy(() -> spying.add(billingEntry))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOfSatisfying(
+            ConfigWriteFailed.class,
+            failure ->
+                assertThat(failure.reason())
+                    .isEqualTo(ConfigWriteFailed.Reason.UNREADABLE_RESTORED))
         .hasMessage("jagt.yml did not read after the change, so it was put back: bad yaml");
     assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
   }
@@ -294,12 +315,17 @@ class ProjectSetupTest {
             })
         .when(spied)
         .project("billing");
-    ProjectSetup spying = new ProjectSetup(spied, paths, git, checkout -> List.of());
+    ProjectSetup spying =
+        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of());
 
     assertThatThrownBy(() -> spying.add(billingEntry))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOfSatisfying(
+            ConfigWriteFailed.class,
+            failure ->
+                assertThat(failure.reason())
+                    .isEqualTo(ConfigWriteFailed.Reason.UNREADABLE_NOT_RESTORED))
         .hasMessageStartingWith(
-            "jagt.yml did not read after the change and could not be put back; fix it by hand:");
+            "jagt.yml did not read after the change and the last good file was not put back:");
   }
 
   @Test
@@ -427,7 +453,11 @@ class ProjectSetupTest {
         .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup scripted =
-        new ProjectSetup(config, paths, bareGit, checkout -> List.of("./gradlew", "test"));
+        new ProjectSetup(
+            config,
+            new ConfigWriter(config, paths),
+            bareGit,
+            checkout -> List.of("./gradlew", "test"));
 
     ProjectSetup.Reading reading = scripted.read(repo.toString());
 
@@ -678,14 +708,18 @@ class ProjectSetupTest {
   }
 
   @Test
-  void editRefusesAnEntryWrittenInlineAndLeavesTheFileUnchanged() throws Exception {
-    String before =
-        "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n";
-    Files.writeString(configFile, before);
-    assertThatThrownBy(() -> setup.edit(billingEntry))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("written inline");
-    assertThat(Files.readString(configFile)).isEqualTo(before);
+  void editRewritesEntryWrittenInlineAsBlock() throws Exception {
+    Files.writeString(
+        configFile,
+        "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n");
+
+    setup.edit(billingEntry);
+
+    assertThat(Files.readString(configFile))
+        .isEqualTo(
+            "orchestrator:\n  projects:\n    billing:\n      path: \""
+                + repo
+                + "\"\n      baseBranch: \"origin/main\"\n");
   }
 
   @Test
@@ -768,7 +802,8 @@ class ProjectSetupTest {
   }
 
   @Test
-  void addRefusesAndLeavesTheFileUnchangedWhereItsFolderCannotBeWritten() throws Exception {
+  void addFailsAsTypedWriteFailureAndLeavesTheFileUnchangedWhereItsFolderCannotBeWritten()
+      throws Exception {
     String before =
         """
         orchestrator:
@@ -780,12 +815,13 @@ class ProjectSetupTest {
     Files.writeString(configFile, before);
     confFolder.toFile().setWritable(false);
 
-    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(ConfigWriteFailed.class);
     assertThat(Files.readString(configFile)).isEqualTo(before);
   }
 
   @Test
-  void addRefusesAsAnArgumentAndLeavesTheFileUnchangedWhereJagtYmlIsReadOnly() throws Exception {
+  void addFailsAsTypedWriteFailureAndLeavesTheFileUnchangedWhereJagtYmlIsReadOnly()
+      throws Exception {
     String before =
         """
         orchestrator:
@@ -797,7 +833,7 @@ class ProjectSetupTest {
     Files.writeString(configFile, before);
     configFile.toFile().setWritable(false);
 
-    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> setup.add(billingEntry)).isInstanceOf(ConfigWriteFailed.class);
     assertThat(Files.readString(configFile)).isEqualTo(before);
   }
 

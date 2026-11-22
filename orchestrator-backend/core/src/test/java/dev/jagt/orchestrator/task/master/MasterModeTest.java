@@ -17,8 +17,8 @@ class MasterModeTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"", "  "})
-  void judgesWhenNoMasterModeWasWritten(String word) {
-    assertThat(MasterMode.of(word)).contains(MasterMode.JUDGE);
+  void decidesNoMasterModeWhenNoneWasWritten(String word) {
+    assertThat(MasterMode.of(word)).isEmpty();
   }
 
   @Test

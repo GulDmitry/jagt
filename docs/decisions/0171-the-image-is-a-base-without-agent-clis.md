@@ -23,7 +23,7 @@ Amended by [0192](0192-the-image-runs-as-an-arbitrary-uid-and-the-pod-is-quota-s
 - The image sets `platform: linux` and `terminal: none`: no terminal window opens, so no kitty is checked for.
 - The image holds git, tmux, procps, lsof and openssh-client, and runs as a non-root user.
 - No agent CLI, `gh`, `glab` or node: a user's image is `FROM` jagt's and adds what its agent needs.
-- `docker-compose.yml` runs the service on 8290 with the named volume; Secrets come from `.env`, copied from `.env.dist`.
+- `docker-compose.yml` runs the service on 8290 with the named volume; Secrets come from `.env`, copied from `examples/server.env`.
 - A clone stays how a developer runs jagt; 0021 holds for that.
 
 ## Rejected

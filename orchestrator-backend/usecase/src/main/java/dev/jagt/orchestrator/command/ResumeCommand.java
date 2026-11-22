@@ -30,7 +30,7 @@ public class ResumeCommand implements GlobalCommand {
   }
 
   @Override
-  public Optional<String> whyNotTheMaster() {
+  public Optional<String> whyNotTheArbiter() {
     return Optional.of("a task opens from a command of yours or the tracker, never from a model");
   }
 

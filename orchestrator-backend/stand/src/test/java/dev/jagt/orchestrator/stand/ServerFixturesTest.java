@@ -43,8 +43,17 @@ class ServerFixturesTest {
         .contains("passwordHash: ${file:/data/stand/password-hash}")
         .contains("publicUrl: http://127.0.0.1:8290")
         .contains("cookie.secure: false")
-        .contains("command: \"/data/stand/fake-claude.sh\"")
-        .contains("master: { mode: \"off\" }");
+        .contains("command: \"/data/stand/fake-claude.sh\"");
+  }
+
+  @Test
+  void masterIsTurnedOffInTheStartersOwnRolesKeyNotAddedTwice() throws Exception {
+    ServerFixtures.write(SHIPPED, new ServerFixtures.Where(dir, dir, 8290, true), "pw");
+
+    assertThat(dir.resolve("jagt.yml"))
+        .content()
+        .containsOnlyOnce("    master:")
+        .contains("    master:\n      mode: \"off\"");
   }
 
   @Test

@@ -32,7 +32,7 @@ public class SuperviseCommand implements GlobalCommand {
   }
 
   @Override
-  public Optional<String> whyNotTheMaster() {
+  public Optional<String> whyNotTheArbiter() {
     return Optional.of("installing what restarts jagt is the human's");
   }
 
@@ -45,7 +45,7 @@ public class SuperviseCommand implements GlobalCommand {
     return switch (supervisor.install(jar)) {
       case Supervisor.Supervision.Done done -> done.sentence();
       case Supervisor.Supervision.Handover handover -> {
-        exit.afterAnswer();
+        exit.afterAnswer(0);
         yield handover.sentence();
       }
       case Supervisor.Supervision.Refused refused ->

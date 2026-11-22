@@ -18,7 +18,7 @@ and the reviewer's own question; nothing held who may open a task.
 - A task opens from a deterministic source alone: the human's own command, or tracker intake; never a model's answer.
 - The Master opens no task: a `do` line in its answer opens nothing, and the session is told only the human opens one.
 - Work a task needs is done in it, on its own branch; only a repository it lacks goes to the human.
-- `MasterOpen` is gone; `TaskOpeningDoorsTest` lets only those doors reach `TaskLauncher`.
+- `MasterOpen` is gone; `TaskOpeningDoorsFitness` lets only those doors reach `TaskLauncher`.
 
 ## Rejected
 

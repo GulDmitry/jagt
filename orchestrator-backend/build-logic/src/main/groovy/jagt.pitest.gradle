@@ -3,13 +3,20 @@ def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'Git
     .collect { "dev.jagt.orchestrator.service.git.${it}".toString() } + ['dev.jagt.orchestrator.job.checker.workspace.WorkspaceRequests']
 
 allprojects {
-    apply plugin: 'info.solidsoft.pitest'
+    // The register's one row for this plugin: its deprecation is Gradle-reported at apply time and only upstream can end it.
+    def pitestWarningAccepted = file("${rootDir}/build-logic/accepted-warnings.txt").readLines().any { it.startsWith('Configuration.setVisible(boolean)') }
+    def applyPitest = { apply plugin: 'info.solidsoft.pitest' }
+    if (pitestWarningAccepted) {
+        org.gradle.internal.deprecation.DeprecationLogger.whileDisabled(applyPitest as Runnable)
+    } else {
+        applyPitest()
+    }
     def pitestTargets = providers.gradleProperty('pitestTargets').map { it.split(',').toList() }
     // Only `:adapter`'s real-git tests run the `:usecase` classes listed above, so `:adapter` mutates them and `:usecase` does not.
     def ownTargets = project.path == ':adapter' ? ['dev.jagt.orchestrator.adapter.*'] + usecaseGitClasses : ['dev.jagt.*']
 
     pitest {
-        pitestVersion = '1.30.1'
+        pitestVersion = '1.30.2'
         junit5PluginVersion = '1.2.3'
         targetClasses = pitestTargets.orElse(ownTargets)
         targetTests = ['dev.jagt.*']
@@ -25,16 +32,14 @@ allprojects {
         }
         threads = (project.findProperty('pitestThreads') ?: Runtime.runtime.availableProcessors().intdiv(2)) as int
         outputFormats = ['HTML', 'XML']
-        // Every killing test per mutant, not the first: the refresh finds tests that kill nothing another test does not.
-        fullMutationMatrix = providers.gradleProperty('fullMatrix').isPresent()
         timestampedReports = false
         // A property run per mutant at jqwik's 1,000 tries is what made `:core` take 47 min (0139).
-        // The unit suite runs with Spring's logging system off (jagt.parallel-tests); a minion without it resets Logback under every log capture.
+        // A minion carries the test JVM properties too (jagt.parallel-tests): without them it resets Logback under every log capture.
         // Mockito as an agent: its self-attach starts a second JVM in each of the minions, one per mutated class.
         jvmArgs = project.provider {
             def mockito = configurations.findByName('testRuntimeClasspath')?.files?.find { it.name.startsWith('mockito-core-') }
             (mockito ? ["-javaagent:${mockito.absolutePath}"] : []) +
-                    ['-Xshare:off', '-Dorg.springframework.boot.logging.LoggingSystem=none', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC', '-Djqwik.tries.default=100']
+                    ['-Xshare:off', '-Djqwik.tries.default=100'] + project.testJvmProperties.collect { key, value -> "-D${key}=${value}".toString() }
         }
     }
 
@@ -107,7 +112,14 @@ def moduleOf = { String path ->
     owner
 }
 def targets = [:].withDefault { [] }
+// The included build `fitness/` mutates its own modules (0162); it reads the changed-lines file below for its classes.
+def fitnessModules = [] as Set
 changedLines.keySet().each { path ->
+    def fitnessModule = path =~ /^orchestrator-backend\/fitness\/([^\/]+)\/src\/main\/java\//
+    if (fitnessModule) {
+        fitnessModules << fitnessModule[0][1]
+        return
+    }
     def type = classOf(path)
     def owner = moduleOf(path)
     if (owner == ':usecase' && type in usecaseGitClasses) {
@@ -120,7 +132,7 @@ changedLines.keySet().each { path ->
 }
 // Pitest mutates every line of a target class; the filter drops what is off the diff before a mutant runs (0196).
 def changedLinesFile = rootProject.layout.buildDirectory.file('pitest-diff/changed-lines.txt').get().asFile
-if (targets) {
+if (targets || fitnessModules) {
     changedLinesFile.parentFile.mkdirs()
     changedLinesFile.text = changedLines.collect { path, numbers ->
         "${path.replaceFirst('^.*?src/main/java/', '')}:${numbers.sort().join(',')}"
@@ -134,7 +146,9 @@ targets.each { module, types ->
 }
 tasks.register('pitestDiff') {
     dependsOn targets.keySet().collect { project(it).tasks.named('pitest') }
-    def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile }
+    dependsOn fitnessModules.collect { gradle.includedBuild('fitness').task(":${it}:pitest") }
+    def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile } +
+            fitnessModules.collect { rootDir.toPath().resolve("fitness/${it}/build/reports/pitest/mutations.xml").toFile() }
     def lines = changedLines.collectEntries { path, numbers -> [(path.replaceFirst('^.*?src/main/java/', '')): numbers] }
     doLast {
         if (!lines) {
@@ -163,7 +177,11 @@ tasks.register('pitestDiff') {
 }
 
 def gateTests = allprojects.collect { it == rootProject ? ':test' : "${it.path}:test" }
+// A `--tests` run executes part of the suite, so mutating after it proves nothing.
+def filteredRun = gradle.startParameter.taskNames.contains('--tests')
 allprojects {
-    tasks.matching { it.name == 'test' }.configureEach { finalizedBy ':pitestDiff' }
+    if (!filteredRun) {
+        tasks.matching { it.name == 'test' }.configureEach { finalizedBy ':pitestDiff' }
+    }
     tasks.matching { it.name == 'pitest' }.configureEach { mustRunAfter gateTests }
 }

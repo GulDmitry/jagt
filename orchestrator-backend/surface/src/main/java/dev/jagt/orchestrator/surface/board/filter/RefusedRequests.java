@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.board.filter;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.Causes;
+import dev.jagt.orchestrator.service.project.ConfigWriteFailed;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
@@ -28,6 +30,16 @@ public class RefusedRequests {
             e instanceof Refusal refusal
                 ? Map.of("error", message, "code", refusal.code().name())
                 : Map.of("error", message));
+  }
+
+  @ExceptionHandler(ConfigWriteFailed.class)
+  public ResponseEntity<Map<String, String>> notWritten(ConfigWriteFailed e) {
+    HttpStatus status =
+        e.reason() == ConfigWriteFailed.Reason.NOT_WRITABLE
+            ? HttpStatus.CONFLICT
+            : HttpStatus.INTERNAL_SERVER_ERROR;
+    return ResponseEntity.status(status)
+        .body(Map.of("error", String.valueOf(e.getMessage()), "code", e.reason().name()));
   }
 
   /** A request the framework could not bind answers in the same shape as a refusal. */
@@ -53,5 +65,26 @@ public class RefusedRequests {
                 ? framework.getStatusCode()
                 : HttpStatus.BAD_REQUEST)
         .body(Map.of("error", said));
+  }
+
+  @ExceptionHandler(AsyncRequestNotUsableException.class)
+  public void clientGone() {
+    // the browser closed the stream; nobody is left to answer
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Map<String, String>> failed(Exception e, HttpServletRequest request) {
+    if (e instanceof ErrorResponse framework) {
+      return ResponseEntity.status(framework.getStatusCode())
+          .body(Map.of("error", String.valueOf(e.getMessage())));
+    }
+    log.atError()
+        .setMessage("request failed")
+        .addKeyValue("url", request.getRequestURI())
+        .addKeyValue("cause", Causes.of(e))
+        .setCause(e)
+        .log();
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(Map.of("error", "the board could not answer the request"));
   }
 }

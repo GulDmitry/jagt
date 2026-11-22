@@ -24,3 +24,15 @@ shipped one of the same code, and a language only the root has is listed in `<ro
 #### Scenario: A catalog in the root
 - **WHEN** `<root>/i18n/pl.json` holds a key and the board loads
 - **THEN** Polish is offered with that key overriding the shipped one
+
+### Requirement: The board passes an accessibility check
+`boardTest` SHALL run axe-core on the board, its new-task form, its command palette, the styleguide and the login page.
+It fails on a serious or critical violation.
+
+#### Scenario: A serious violation
+- **WHEN** a board view carries a serious or critical axe-core violation
+- **THEN** `boardTest` fails naming the rule and the element
+
+#### Scenario: A row's name
+- **WHEN** a task row prints its alias, title and status
+- **THEN** its accessible name is that text, and the checks, the stop and the change it does not print are its description

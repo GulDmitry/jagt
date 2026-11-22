@@ -80,7 +80,7 @@ class McpToolScopeTest {
             Objects.requireNonNull(handler)
                 .call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(tool + " is Master-only");
+        .hasMessageContaining(tool + " is root-only");
     verifyNoInteractions(commands);
   }
 
@@ -212,7 +212,7 @@ class McpToolScopeTest {
                     new JsonMapper().readTree("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"),
                     "ABC-1"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("initialize_task is Master-only");
+        .hasMessageContaining("initialize_task is root-only");
     verifyNoInteractions(provisioning);
   }
 
@@ -258,7 +258,7 @@ class McpToolScopeTest {
                         .readTree("{\"taskId\":\"MINE-1\",\"instructions\":\"commit and push\"}"),
                     "MINE-1"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(tool + " is Master-only");
+        .hasMessageContaining(tool + " is root-only");
     verifyNoInteractions(sessions);
   }
 
@@ -405,7 +405,7 @@ class McpToolScopeTest {
     assertThatThrownBy(
             () -> Objects.requireNonNull(handler).call(new JsonMapper().readTree("{}"), "MINE-1"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("list_tasks is Master-only");
+        .hasMessageContaining("list_tasks is root-only");
     verifyNoInteractions(taskViews);
   }
 
@@ -423,7 +423,7 @@ class McpToolScopeTest {
                     new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"done\"}"),
                     "MINE-1"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(tool + " is Master-only");
+        .hasMessageContaining(tool + " is root-only");
     verifyNoInteractions(presses);
   }
 

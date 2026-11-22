@@ -12,21 +12,22 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.PlanProbes;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.review.Rounds;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Probe;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -65,8 +66,9 @@ class HandBackTest {
           new ConfigService(
               new ConfigSource(paths, new FakeConfigInputs()),
               mock(AgentRuntime.class),
-              new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC())),
-              new Checkers(new TaskChart(Composition.builtIn())));
+              new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock())),
+              new Checkers(new TaskChart(Composition.builtIn())),
+              new KeptNumbers(new ReachLedger()));
       handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
     }
 
@@ -98,10 +100,10 @@ class HandBackTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withMaster(new MasterConfig(mode, null, null, null, null)));
+                .withArbiter(new ArbiterConfig(mode, null, null, null, null)));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
-    assertThat(handBack.masterReads()).isEqualTo(expected);
+    assertThat(handBack.arbiterReads()).isEqualTo(expected);
   }
 
   @Test

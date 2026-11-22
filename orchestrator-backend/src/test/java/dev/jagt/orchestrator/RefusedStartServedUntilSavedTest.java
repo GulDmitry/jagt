@@ -64,8 +64,10 @@ class RefusedStartServedUntilSavedTest {
     }
     String base = "http://127.0.0.1:" + port;
     HttpClient client = HttpClient.newHttpClient();
+    AtomicReference<Throwable> ended = new AtomicReference<>();
     Thread.ofPlatform()
         .daemon()
+        .uncaughtExceptionHandler((thread, failure) -> ended.set(failure))
         .start(() -> OrchestratorApplication.main(launchArgs(root, port).build()));
     await()
         .atMost(Duration.ofSeconds(60))
@@ -96,12 +98,14 @@ class RefusedStartServedUntilSavedTest {
         .ignoreExceptions()
         .until(() ->
             client
-                .send(
-                    HttpRequest.newBuilder(URI.create(base + "/state")).build(),
-                    HttpResponse.BodyHandlers.ofString())
-                .body()
-                .startsWith("{"));
+                    .send(
+                        HttpRequest.newBuilder(URI.create(base + "/state")).build(),
+                        HttpResponse.BodyHandlers.ofString())
+                    .body()
+                    .startsWith("{")
+                || ended.get() != null);
 
+    assertThat(ended.get()).isNull();
     assertThat(Files.readString(root.resolve("jagt.yml"))).isEqualTo(valid);
   }
 }

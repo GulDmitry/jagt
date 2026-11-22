@@ -20,7 +20,7 @@ public class PauseTools implements McpTools {
   public void declare(McpToolRegistry tools) {
     tools.tool(
         "pause_task",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         PauseOrder.schema(
             "Pause a started task because the human told you to, in this conversation: nothing of"

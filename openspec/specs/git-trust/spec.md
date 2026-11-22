@@ -22,9 +22,9 @@ The keys git writes as a branch is pushed are not recorded: `branch.<name>.remot
 - **THEN** what the check reads becomes its record
 
 ### Requirement: Git with the human's credentials waits for trust
-`ship`, `deploy` and `revert` (`GitStateGuard`) and a Master read (`ChargedReviews`) SHALL compare the record with
+`ship`, `deploy`, `revert` and a Master read (`ChargedReviews`) SHALL compare the record with
 what git obeys now. A difference refuses, naming each key and file, and parks the task: `NEEDS YOU` on its card,
-`trust` its only move among those three. A state that cannot be read refuses without parking.
+`trust` its only move among those three. A state that cannot be read refuses without parking, with `git state of <task> could not be read: <why>`.
 
 #### Scenario: A session sets a program
 - **WHEN** a session runs `git config core.fsmonitor /tmp/x` and you press Deploy
@@ -38,6 +38,10 @@ what git obeys now. A difference refuses, naming each key and file, and parks th
 - **WHEN** a session pushes with `-u`
 - **THEN** nothing parks
 
+#### Scenario: Git is read on a press only
+- **WHEN** the board is projected, or a verb git does not gate is pressed
+- **THEN** git's state is not read
+
 ### Requirement: Only the human adopts a change
 `trust` SHALL record what git obeys now as the task's record and unpark it. It is offered only to a parked task and
 is the human's in every Master mode.
@@ -46,4 +50,4 @@ is the human's in every Master mode.
 - **WHEN** you press Trust git on a parked task
 - **THEN** its record is what git obeys now, and `deploy` is offered again
 - **WHEN** its session had asked you to trust it
-- **THEN** the session is told `answered`: retry what the guard refused
+- **THEN** the session is told `answered`: retry what the git-state precondition refused

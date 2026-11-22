@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.flow.session.TurnKind;
-import dev.jagt.statechart.ChartBuilder;
 import dev.jagt.statechart.RegionId;
+import dev.jagt.statechart.StatechartBuilder;
 
 record MasterRegion() implements Role {
 
@@ -21,7 +21,8 @@ record MasterRegion() implements Role {
   }
 
   @Override
-  public void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
+  public void declareRegion(
+      StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
     chart.region(REGION, MasterPhase.STANDS_IN);
     for (MasterPhase from : MasterPhase.values()) {
       for (MasterPhase to : MasterPhase.values()) {
@@ -38,12 +39,12 @@ record MasterRegion() implements Role {
   }
 
   @Override
-  public void declareBeneath(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {}
+  public void declareBeneath(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {}
 
   @Override
   public void declareTurnEdge(
-      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {}
+      StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {}
 
   @Override
-  public void declareLifecycleEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {}
+  public void declareLifecycleEdge(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {}
 }

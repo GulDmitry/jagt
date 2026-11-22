@@ -221,6 +221,21 @@ class StateServiceTest {
   }
 
   @Test
+  void failsTheWriteNamingTheStateFileAndItsCauseAndKeepsThePreviousFileWhenTheDiskRefuses(
+      @TempDir Path root) throws IOException {
+    StateService state = stateService().withRoot(root).build();
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+    String before = Files.readString(root.resolve("state.json"));
+    assertThat(root.toFile().setWritable(false)).isTrue();
+
+    assertThatThrownBy(() -> state.putTask("ABC-2", fresh))
+        .isInstanceOf(UncheckedIOException.class)
+        .hasMessage("Cannot write state file " + root.resolve("state.json"))
+        .hasCauseInstanceOf(IOException.class);
+    assertThat(Files.readString(root.resolve("state.json"))).isEqualTo(before);
+  }
+
+  @Test
   void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state = stateService().withRoot(root).build();

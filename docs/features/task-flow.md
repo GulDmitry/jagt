@@ -11,6 +11,8 @@
   [spec](../../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed)
   · [role](../../openspec/specs/acceptance/spec.md)
   · [host](../../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
+- **Deploy on approval** — An approved request deploys itself once, the code host named as who acted. Key: `deploy.onApproval`, off by default.
+  [spec](../../openspec/specs/deploy-on-approval/spec.md#requirement-an-approved-request-deploys-itself-when-deployonapproval-is-on)
 - **More checkers** — A folder `roles/<id>/role.yml` declaring `jobs: true` runs its own check at deploy beside acceptance.
   [spec](../../openspec/specs/acceptance/spec.md#requirement-a-checker-declares-its-jobs-and-its-read-steps)
 - **Acceptance workspace** — Acceptance keeps scenarios in its own folder, writes only there, and asks one question per ticket gap in a session.

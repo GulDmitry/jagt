@@ -24,10 +24,10 @@ import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,7 +72,7 @@ class CheckerJobsTest {
                 new RoleKits(kits),
                 readers,
                 acts,
-                new CheckerLedgers(paths, Clock.systemUTC()),
+                new CheckerLedgers(paths, new FakeClock()),
                 url -> true)
             .jobs();
 
@@ -116,7 +116,7 @@ class CheckerJobsTest {
                 new RoleKits(kits),
                 readers,
                 acts,
-                new CheckerLedgers(paths, Clock.systemUTC()),
+                new CheckerLedgers(paths, new FakeClock()),
                 url -> true)
             .jobs().stream()
                 .filter(job -> job.id().equals("audit-check"))

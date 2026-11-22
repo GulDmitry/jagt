@@ -68,10 +68,10 @@ ship on. The Deploy button is green while the work is live. A `⚐` beside the t
 - **THEN** its request chip's hover reads `shipped 2 times`
 
 ### Requirement: The gear holds the board's settings
-One gear at the header's top right SHALL open a menu: the theme (`auto` follows `prefers-color-scheme`, `light` and `dark` force it) and the
-language, one entry per catalog file present, named by that catalog. Both are kept in this browser alone and applied before the first paint. English
-is the default and fills any key a catalog lacks; only the board's own UI text is translated, never the backend's words or times. A colour keeps its
-one meaning in both themes. The legend has the gear's row.
+One gear at the header's top right SHALL open a menu. It offers the `jagt.yml` settings ([`settings`](../project-setup/spec.md)), the theme and
+the language, one entry per catalog file present, named by that catalog. `auto` follows `prefers-color-scheme`; `light` and `dark` force it.
+Theme and language are kept in this browser alone and applied before the first paint. English fills any key a catalog lacks;
+only the board's own UI text is translated. The legend has the gear's row.
 #### Scenario: Dark and Polish chosen
 - **WHEN** the human chooses `dark` and Polish on the gear and reloads the board
 - **THEN** the page is dark with no flash and its header reads Polish, a key Polish lacks reads English, and `auto` clears the theme
@@ -104,7 +104,7 @@ The board SHALL render Preact components written with `htm`, served from `board/
 import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 224 KB
 (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
-- **WHEN** `vendor/preact.mjs` differs from the published 11.0.1 by one byte
+- **WHEN** `vendor/preact.mjs` differs from the published 11.2.0 by one byte
 - **THEN** `BoardAssetsTest` fails naming the file
 - **WHEN** a page under `board/` loads a script or a stylesheet from `https://`
 - **THEN** `BoardAssetsTest` fails
@@ -161,15 +161,13 @@ off loopback or forwarded, they answer 401 without the Master token.
 - **WHEN** `auth` is `none` and `server.address` is not loopback, or `server.publicUrl` is `https://jagt.example.com`
 - **THEN** the start is refused naming `auth`
 
-### Requirement: A lost reach of a code host shows in the board's head
-Where jagt cannot reach a code host or an MCP server, the header SHALL show ONE mark naming driver and host. Its hover gives
-the fix command and the time left to the next probe, if scheduled. It replaces the per-card `DEPLOY_UNREAD` stop on that
-cause and wears the broken colour. `login` SHALL open the driver's login as a window's process, never by keystroke,
-and that window is on the Session tab.
+### Requirement: A lost reach shows in the board's head
+Where jagt cannot reach a code host, an MCP server or the release feed, the header SHALL show ONE mark naming driver
+and host. Its hover gives the fix command and the next probe's time, if scheduled. It replaces the per-card `DEPLOY_UNREAD`
+stop on that cause and wears the broken colour. `login` SHALL open the driver's login as a Session tab window's process, never a keystroke.
 #### Scenario: The code host's CLI is signed out
 - **WHEN** the code host's CLI is signed out of `git.example.invalid` while ABC-42 and ABC-43 are deployed
-- **THEN** no card stops, and the header says the CLI is not logged in to `git.example.invalid`
-- **AND** its hover gives the driver's login command for `git.example.invalid`
+- **THEN** no card stops; the header says the CLI is not logged in there, its hover the driver's login command
 #### Scenario: The human logs in
 - **WHEN** the human presses the mark and signs in
 - **THEN** the next deploy read through that CLI on that host clears the mark, with no restart
@@ -178,17 +176,19 @@ and that window is on the Session tab.
 - **THEN** the mark names it and is not pressable
 #### Scenario: The assistant's MCP server needs a login
 - **WHEN** a failed read finds an MCP server down
-- **THEN** the header's mark opens `claude` as the login window on the Session tab, and `say` types `/mcp` into it
-- **AND** while the mark stands jagt asks the CLI again each minute, and the read finding every server connected clears it
+- **THEN** the mark opens `claude` as the Session tab's login window, `say` types `/mcp`; a minutely read finding all connected clears it
+#### Scenario: The release feed cannot be read
+- **WHEN** a release check cannot read the feed
+- **THEN** the head mark names its driver and host, and the next good read clears it
 
 ### Requirement: A foreign request is refused
-`LoopbackFilter` SHALL refuse a foreign Host or Origin and `/mcp` anything but JSON, unless its host is the `publicUrl`'s or in `auth.allowedHosts`;
-`BoardWriteFilter` any write without Origin but the two above.
+The refused-request door SHALL refuse a foreign Host or Origin unless the host is the `publicUrl`'s or in `auth.allowedHosts`.
+It SHALL refuse a write without Origin but to `/mcp` and `/api/agent/`; the firewall SHALL reject a respelled path.
 #### Scenario: Behind an ingress, or a stranger posts
 - **WHEN** a request's Host is `server.publicUrl`'s or is in `auth.allowedHosts`
-- **THEN** `LoopbackFilter` lets it through
+- **THEN** the refused-request door lets it through
 - **WHEN** a foreign page, a rebound name, a session's `curl` or a respelled `/api;x/…` posts a verb
-- **THEN** refused 403; `ToolGate` stops the `curl` first
+- **THEN** refused: 403, or 400 where the firewall rejects the spelling; `ToolGate` stops the `curl` first
 
 ### Requirement: A login jagt opens shows its code whole
 A login jagt opens SHALL open no browser: the board shows the login's one-time code and device URL whole.

@@ -44,6 +44,9 @@ tasks.register('standTest', Test) {
     systemProperty 'stand.jar', standJar
     systemProperty 'stand.repo', standRepo
     systemProperty 'stand.engine', standEngine
+    // -Prunner=<label> names the machine class a timing series belongs to; the server scenario writes them to stand.timings.
+    systemProperty 'stand.runner', project.findProperty('runner') ?: 'local'
+    systemProperty 'stand.timings', layout.buildDirectory.file('stand/timings.json').get().asFile.absolutePath
     // -PstandRuns=N repeats each run; -Pengine=host|compose|kind picks where jagt runs; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
     ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }
@@ -51,7 +54,7 @@ tasks.register('standTest', Test) {
     // A run starts the staged jar, so a replay checks the frame as built now.
     dependsOn ':stageJar', 'standImage'
     doFirst { standReport.delete() }
-    testLogging { showStandardStreams = true }
+    testLogging { showStandardStreams = true; exceptionFormat = 'full' }
     outputs.upToDateWhen { false }
     finalizedBy 'standCleanup', 'standReport'
 }
@@ -70,7 +73,7 @@ tasks.register('standImage', Exec) {
         'docker build --build-context "jar=$2" -t jagt-stand-base "$0" && ' +
             'docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
         standRepo, standCompose, rootProject.layout.buildDirectory.dir('libs').get().asFile.absolutePath
-    onlyIf {
+    onlyIf { // no Docker means no stand image
         if (!standHost && !standDocker) {
             System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Pengine=host runs it on the host')
         }
@@ -81,7 +84,16 @@ tasks.register('standImage', Exec) {
 tasks.register('standImageRemove', Exec) {
     description = 'Removes the jagt-stand* image tags.'
     commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand-base jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true'
-    onlyIf { standDocker }
+    onlyIf { standDocker }  // nothing to remove without Docker
+}
+
+tasks.register('standTimingGate', JavaExec) {
+    description = 'Fails when a stand timing passes twice the median of its last ten history entries.'
+    group = 'verification'
+    classpath = sourceSets.stand.runtimeClasspath
+    mainClass = 'dev.jagt.orchestrator.stand.StandTimingGate'
+    args(layout.buildDirectory.file('stand/timings-history.json').get().asFile.absolutePath,
+            layout.buildDirectory.file('stand/timings.json').get().asFile.absolutePath)
 }
 
 tasks.register('standReport', JavaExec) {

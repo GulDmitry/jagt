@@ -21,8 +21,8 @@ import dev.jagt.orchestrator.service.master.MasterStopPanel;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +70,7 @@ class MasterStopJobTest {
     state.putTask("ABC-42", scenario.task());
     when(config.load()).thenReturn(scenario.config());
 
-    scenario.build(config, panel, moves, state, Clock.systemUTC()).runOn(state.tasks());
+    scenario.build(config, panel, moves, state, new FakeClock()).runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
   }
@@ -85,7 +85,7 @@ class MasterStopJobTest {
     state.putTask("ABC-42", scenario.task());
     when(config.load()).thenReturn(scenario.config());
     when(panel.ask(anyString(), any(), any())).thenReturn(scenario.answer());
-    MasterStopJob job = scenario.build(config, panel, moves, state, Clock.systemUTC());
+    MasterStopJob job = scenario.build(config, panel, moves, state, new FakeClock());
 
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -101,12 +101,12 @@ class MasterStopJobTest {
     when(config.load()).thenReturn(scenario.config());
     when(panel.ask(anyString(), any(), any()))
         .thenThrow(new IllegalStateException("model unreachable"));
-    MasterStopJob job = scenario.build(config, panel, moves, state, Clock.systemUTC());
+    MasterStopJob job = scenario.build(config, panel, moves, state, new FakeClock());
 
     assertThatThrownBy(() -> job.runOn(state.tasks())).isInstanceOf(IllegalStateException.class);
     job.runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().askedStop()).isNotEmpty();
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().askedStop()).isNotEmpty();
     verify(panel, times(1)).ask(anyString(), any(), any());
   }
 
@@ -172,7 +172,7 @@ class MasterStopJobTest {
     when(panel.ask(anyString(), any(), any())).thenReturn(scenario.answer());
     when(moves.lift(anyString())).thenReturn(liftWorks);
 
-    scenario.build(config, panel, moves, state, Clock.systemUTC()).runOn(state.tasks());
+    scenario.build(config, panel, moves, state, new FakeClock()).runOn(state.tasks());
 
     verify(moves, lifts).lift("ABC-42");
     verify(moves, escalations).escalate("ABC-42");

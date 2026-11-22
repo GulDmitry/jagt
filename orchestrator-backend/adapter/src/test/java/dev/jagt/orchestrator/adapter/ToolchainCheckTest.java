@@ -27,6 +27,15 @@ class ToolchainCheckTest {
   }
 
   @Test
+  void raisesNoHookTransportProblemWhereItsToolIsOnPath() {
+    ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("no-such-tmux");
+
+    assertThat(new ToolchainCheck(properties).problems())
+        .extracting(Problem::key)
+        .doesNotContain("curl");
+  }
+
+  @Test
   void raisesNoAgentProcessProblemWhereItsToolIsOnPath() {
     ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("no-such-tmux");
 

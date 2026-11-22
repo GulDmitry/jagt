@@ -38,7 +38,7 @@ public final class StandRunLog {
       MAPPER.writerWithDefaultPrettyPrinter().writeValue(dir.resolve(name).toFile(), entry);
       fold(dir);
     } catch (IOException e) {
-      System.out.println("stand run record not written to " + dir + ": " + e.getMessage());
+      StandConsole.line("stand run record not written to " + dir + ": " + e.getMessage());
     }
   }
 

@@ -10,10 +10,12 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptNumbers;
+import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.RoleKit;
 import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.role.RoleSettings;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,7 +51,8 @@ public record TestAcceptanceRoleSettingsBuilder(Path root, String jagtYml) {
                         new ConfigSource(paths, new FakeConfigInputs()),
                         agentRuntime,
                         actStops,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
+                        new Checkers(new TaskChart(Composition.builtIn())),
+                        new KeptNumbers(new ReachLedger())),
                     paths),
                 new RoleFiles(paths, "acceptance"))));
   }

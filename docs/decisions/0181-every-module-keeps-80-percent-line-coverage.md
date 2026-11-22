@@ -15,7 +15,7 @@ Accepted 2026-11-16, owner's choice.
 ## Decision
 
 - JaCoCo, applied to every project in `jagt.conventions.gradle`; JaCoCo's defaults otherwise.
-- `jacocoTestCoverageVerification` (LINE, COVEREDRATIO, 0.80 per module) finalizes `test`; a miss fails naming the module and its ratio.
+- `jacocoTestCoverageVerification` (LINE, COVEREDRATIO, row `line-coverage`: 0.80) finalizes `test`; a module's miss fails naming it and its ratio.
 - A `--tests` run skips the verification: part of a suite proves nothing about a ratio.
 
 ## Rejected

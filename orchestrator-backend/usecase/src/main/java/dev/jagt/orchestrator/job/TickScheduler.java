@@ -9,6 +9,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 /** Every run it fires reads the windows once, whatever the job asks of them. */
 public class TickScheduler extends ThreadPoolTaskScheduler {
 
+  private static final long serialVersionUID = 1L;
+
   private final transient ReadScope reads;
 
   public TickScheduler(ReadScope reads) {

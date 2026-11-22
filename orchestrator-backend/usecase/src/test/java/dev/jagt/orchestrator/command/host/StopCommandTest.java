@@ -71,6 +71,6 @@ class StopCommandTest {
     StopCommand command = new StopCommand(board, state, sessions);
 
     assertThat(command.confirmation()).isPresent();
-    assertThat(command.whyNotTheMaster()).isEmpty();
+    assertThat(command.whyNotTheArbiter()).isEmpty();
   }
 }

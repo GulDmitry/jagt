@@ -62,6 +62,9 @@ final class StandLauncher {
       throws IOException {
     engine.ready();
     engine.needsRoot(scenario);
+    if (replayed == null) {
+      engine.needsCredential();
+    }
     Path root = newRoot();
     boolean container = engine.image();
     StandMarker marker =
@@ -110,7 +113,14 @@ final class StandLauncher {
       host.close();
       StandShell.killTmux(root);
       marker.withOutcome(StandMarker.FAILED).writeTo(root);
-      throw new StandFailure("stand run " + scenario + " did not start; kept " + root, e);
+      throw new StandFailure(
+          "stand run "
+              + scenario
+              + " did not start; kept "
+              + root
+              + ", evidence in "
+              + evidence(root, scenario + "/" + mode.id()),
+          e);
     }
   }
 
@@ -144,8 +154,19 @@ final class StandLauncher {
           root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), jagt, teardown);
     } catch (RuntimeException e) {
       marker.withOutcome(StandMarker.FAILED).writeTo(root);
-      throw new StandFailure("server run " + scenario + " did not start; kept " + root, e);
+      throw new StandFailure(
+          "server run "
+              + scenario
+              + " did not start; kept "
+              + root
+              + ", evidence in "
+              + evidence(root, scenario),
+          e);
     }
+  }
+
+  private static Path evidence(Path root, String scenario) {
+    return StandEvidence.target(root, scenario, StandEvidence.DIR.toAbsolutePath());
   }
 
   private static Path placed(Path root, Path recording, String appUrl) throws IOException {
@@ -156,7 +177,7 @@ final class StandLauncher {
   private Path newRoot() throws IOException {
     String prefix = StandRoots.PREFIX + ProcessHandle.current().pid() + "-";
     Files.createDirectories(place.base());
-    int run = 1;
+    long run = StandClock.now().toEpochMilli();
     while (!created(place.base().resolve(prefix + run))) {
       run++;
     }

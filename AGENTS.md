@@ -9,7 +9,7 @@ MCP server; a root session presents jagt's Master token, so every one is Master.
 ## First priority
 
 **One source of truth, no leaking abstraction, composition pinned by small tests**, above all. A unit knows
-what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsTest`).
+what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsFitness`).
 **jagt is agnostic to everything**: no tracked file names a user's employer, project, ticket, skill, machine
 or local setup; such names live only in git-ignored files. **A check holds for all code**: its kind is in
 [`ARCHITECTURE.md`](ARCHITECTURE.md#the-kinds) ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)).
@@ -53,14 +53,15 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
 | a Gradle file, `build-logic/` | [`ARCHITECTURE.md`](ARCHITECTURE.md#the-build) |
-| a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |
+| a comment, a doc, a prompt, the shape of a class; a name a discipline already has | [`docs/rules/style.md`](docs/rules/style.md), [`glossary`](docs/rules/glossary.md) |
 | a **kind** of thing no rule covers | [`ARCHITECTURE.md`](ARCHITECTURE.md) — if it fits no kind, add a kind |
 
 ## Git and committing
 
-- **The base branch is read-only.** Nothing pushes or merges to it, ever.
+- **The base branch is read-only**; jagt's own merges a green request ([0223](docs/decisions/0223-main-moves-by-a-green-pull-request.md)).
+- **jagt's own work lands on `release`**; `main` moves by a release or a hotfix ([0225](docs/decisions/0225-work-lands-on-a-release-branch.md)).
 - **Only `deploy` and its undo `revert` write a shared branch**: `ship` only opens or updates a request; `revert` adds a commit — no force-push.
-- A sub-agent pushes **its own task branch** and nothing else.
+  A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
@@ -70,8 +71,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
   Permission to commit is standing, to push is not.
-- **One feature, one commit**: its steps, fixes and review findings fold into it (`git commit --amend`);
-  an agent branch is squashed on merge.
+- **One feature, one commit**: its steps, fixes and review findings fold into it (`git commit --amend`); an agent branch is squashed on merge.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)),
   and its mutants on the diff when `main` changed ([`testing`](docs/rules/testing.md)).
   **A rejected finding keeps its why where the next review meets it**: a site comment or a Rejected row.
@@ -82,28 +82,30 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
 - **The industry-standard library for a job before our own code**: own code only for what is jagt's own, its why in a decision.
-- **Three collaborators per class is the target, five the ceiling**, delegates included (`CollaboratorCeilingTest`):
+- **Three collaborators per class is the target, five the ceiling**, delegates included (`collaborators-per-class`):
   group them into a component, never add a field.
-- **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
+- **A method reads at cognitive complexity 12 at most** (`cognitive-complexity`): split it, never raise the number.
 - **No static state, no lifecycle hook that does work**: a static field is final and immutable.
-  A holder's inputs are its arguments; a collaborator arrives through the constructor (`CollaboratorOwnersTest`).
+  A holder's inputs are its arguments; a collaborator arrives through the constructor (`collaborator-owners`).
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`; stop work is a `SmartLifecycle` after the web server
-  (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
+  (`static-state`, `post-construct-hooks`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
   [0169](docs/decisions/0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).
-- **No duplicated block of 75 tokens or more** (`DuplicationTest`): one holder in main, a builder or parameterized case
+- **No duplicated block of 75 tokens or more** (`duplication`): one holder in main, a builder or parameterized case
   in tests. Never raise the number.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
-- **A test wiring over 5 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
+- **A compiler or Gradle warning fails the build**: fixed, never suppressed without its reason; only upstream's go in
+  `build-logic/accepted-warnings.txt`, each row naming what ends it (`AcceptedWarningsTest`).
+- **A test wiring over 5 mocks means the class does too much** (`mocks-per-test`): fix the class, never the fixture.
 - **A test shares a `Test<Thing>Builder`, a fake or a file scanner, nothing else**: no helper method or class, no logic in a builder
   ([0163](docs/decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)).
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
-  seam in `main` that only tests call (`ProductionConstructorTest`).
-- **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).
+  seam in `main` that only tests call (`constructors-called-from-main`).
+- **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`now-without-clock`, `BoardAssetsTest`).
   Only the board's UI text may come from a language catalog, English the default
   ([0141](docs/decisions/0141-the-boards-words-are-catalog-files.md)).
 - **A new role starts from its `roles/<id>/design.md`**, agreed before its first code ([`ARCHITECTURE.md`](ARCHITECTURE.md)).
-- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
+- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsFitness`).
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring.
 - **Every third-party service or technology is a seam chosen in `jagt.yml`**: a port, a driver per vendor, a key with a
   default — never guessed from a name, a URL or a host ([0130](docs/decisions/0130-every-third-party-is-a-configured-seam.md)).
@@ -131,8 +133,10 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 
 ## Tests
 
-- **Three groups** ([every suite](docs/rules/testing-suites.md)): a commit runs `cd orchestrator-backend && ./gradlew test --rerun-tasks`,
-  every source set compiled; the heavy and stand groups run before a minor release's push. **A cached green is not a run.**
+- **Three groups** ([every suite](docs/rules/testing-suites.md)), run as narrow as the change. A task runs its targeted
+  tests (`scripts/tests-for.sh`). A batch runs its changed modules, their dependents and the rule tests. A build change
+  and a release run everything; the heavy and stand groups run before a minor release's push. A red reruns only what
+  failed. **A cached green is not a run.**
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. Its commit
   carries a `Defect-family: <A–M>` trailer ([families](docs/rules/testing.md)).
@@ -148,7 +152,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - **One fact per line**, in every text: a decision plus one clause of why, never the road to it nor what it used to be.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
 - **Never cite a line number or a line count** in a doc or a comment; name the file, the symbol or the rule.
-- **Budgets, asserted by `TextBudgetTest`**, in lines on Anthropic's scale
+- **Budgets, asserted by the `fitness.yml` size rows**, in lines on Anthropic's scale
   ([memory](https://code.claude.com/docs/en/memory), [skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)):
   a decision 50, a rule 100, a page read whole 200, `ARCHITECTURE.md` 500; no line past 150 characters outside a
   table; comments ≤ 15% of all sources. Past a limit, compress first: review the text,
@@ -162,19 +166,19 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 
 ## The human in the loop
 
-- **One thing other than a human may act as one: the Master session in `act`** — it stands where the human
-  stands and holds the same rights. Opt-in — the default is `judge` — and bounded by
-  `FlowRules`: it picks a legal move, never invents one.
-- **Nothing else acts unasked but on a stage the tracker reports**: intake opens a task, the close ends one,
-  both `ActionOrigin.TRACKER` and off by default. The auto-review loop reads and drafts, its gate in the
-  outcome rather than the trigger. The base branch stays read-only for all three.
+- **One thing other than a human may act as one: the Master session in `act`**, the default
+  ([0214](docs/decisions/0214-the-master-acts-by-default.md)): it holds the human's rights but the plan approval and
+  the deploy (`roles.master.mine`); the human opts into `judge` or keeps more. Bounded by `FlowRules`, never inventing a move.
+- **Nothing else acts unasked but on a stage the tracker or the code host reports**: intake opens a task, the close ends one
+  (`ActionOrigin.TRACKER`), an approved request deploys itself (`ActionOrigin.CODE_HOST`, `deploy.onApproval`, on in the server
+  starter, [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default.
+  The auto-review loop reads and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four.
   jagt re-runs a pipeline the host says died on infrastructure, bounded by `infraWait`, and a red deploy pipeline once
-  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)).
-  The acceptance role's workspace request is the fifth, off by default (`workspace.mergeRequest`).
-  It holds one open request per role on `jagt/acceptance-<role>`, updated by later checks, and never the base branch.
-  jagt's own code opens it through the code-host seam ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)).
-  Nothing else writes to the code host unasked.
-- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsTest`).
+  per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance workspace request is sixth, off by default
+  (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`, never the base branch, opened through the code-host seam
+  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked.
+  A kept release switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
+- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsFitness`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A
   task contradicting what the code guarantees is such a question, asked before the code picks a side. It is

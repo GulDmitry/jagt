@@ -17,7 +17,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.GitTrust;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.nio.file.Path;
 import java.util.List;
@@ -210,7 +210,8 @@ class TrustedGitStateTest {
 
     trusted.distrust("ABC-42");
 
-    assertThat(state.task("ABC-42").orElseThrow().refusals()).containsEntry(Guard.GIT_STATE, 1);
+    assertThat(state.task("ABC-42").orElseThrow().refusals())
+        .containsEntry(RefusalKind.GIT_STATE, 1);
   }
 
   @Test

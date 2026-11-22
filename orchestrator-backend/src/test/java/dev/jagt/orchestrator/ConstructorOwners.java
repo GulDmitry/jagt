@@ -11,11 +11,11 @@ import org.springframework.boot.diagnostics.FailureAnalyzer;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
-final class ConstructorOwners {
+public final class ConstructorOwners {
 
   private ConstructorOwners() {}
 
-  static DescribedPredicate<JavaConstructor> notCalledFromMain() {
+  public static DescribedPredicate<JavaConstructor> notCalledFromMain() {
     return DescribedPredicate.describe(
         "is never called from main",
         constructor ->
@@ -25,7 +25,7 @@ final class ConstructorOwners {
                         && call.getOriginOwner().equals(constructor.getOwner())));
   }
 
-  static DescribedPredicate<JavaConstructor> springOrRecordOwns() {
+  public static DescribedPredicate<JavaConstructor> springOrRecordOwns() {
     return DescribedPredicate.describe(
         "be a Spring bean's, Logback component's or spring.factories type's only constructor"
             + " or a record's canonical one",

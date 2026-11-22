@@ -1,0 +1,47 @@
+package dev.jagt.orchestrator.job.host;
+
+import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.port.host.KeepAwake;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import java.time.Duration;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+
+@Service
+@ConditionalOnProperty(name = "orchestrator.keep-awake", havingValue = "true")
+@RequiredArgsConstructor
+public class KeepAwakeJob implements Job {
+
+  private final ConfigService config;
+  private final KeepAwake keepAwake;
+
+  @Override
+  public String id() {
+    return "keepawake";
+  }
+
+  @Override
+  public String describe() {
+    return "keep the machine awake while the arbiter acts, auto-review polls or the tracker hands"
+        + " out work";
+  }
+
+  @Override
+  public Duration every() {
+    return Duration.ofMinutes(1);
+  }
+
+  @Override
+  public void run() {
+    ConfigFile file = config.load();
+    if (file.arbiter().acts()
+        || file.autoReview().enabledOrDefault()
+        || file.tracker().modeOrOff().takes()) {
+      keepAwake.hold();
+    } else {
+      keepAwake.release();
+    }
+  }
+}

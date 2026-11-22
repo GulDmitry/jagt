@@ -18,7 +18,7 @@ public final class StandCleanup {
     plan.dead().forEach(found -> stop(found, StandShell::run));
     StandTmuxServers.stopOrphaned(base);
     StandTraces.Removed removed = sweep(plan, failedDir, StandTraces.ofTheHuman(base), alive);
-    System.out.println(
+    StandConsole.line(
         "stand cleanup: removed "
             + plan.dead().size()
             + " roots, "
@@ -32,7 +32,7 @@ public final class StandCleanup {
       StandRoots.Plan plan, Path failedDir, StandTraces traces, LongPredicate alive) {
     for (StandRoots.Found found : plan.dead()) {
       if (found.marker().failed()) {
-        System.out.println(
+        StandConsole.line(
             "failed stand run "
                 + found.marker().scenario()
                 + " evidence: "

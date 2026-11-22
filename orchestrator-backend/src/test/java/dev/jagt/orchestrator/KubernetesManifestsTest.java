@@ -13,7 +13,7 @@ import org.yaml.snakeyaml.Yaml;
 
 class KubernetesManifestsTest {
 
-  private static final Path MANIFESTS = Path.of("../kubernetes.yml.dist");
+  private static final Path MANIFESTS = Path.of("../examples/kubernetes.yml");
   private static final Path SERVER = Path.of("../jagt.server.yml.dist");
   private static final Path CONTRACT = Path.of("../contracts/openapi.yaml");
 

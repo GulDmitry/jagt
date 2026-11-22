@@ -7,7 +7,7 @@ jagt's base image, the organisation's image built from it with the projects' too
 
 ### Requirement: jagt's image carries no project toolchain
 jagt's image SHALL hold jagt, git and tmux, and no compiler, runtime or agent CLI of a project. An organisation builds its own image
-`FROM` it, adding its projects' toolchains (`Dockerfile.dist`); sessions run in that image.
+`FROM` it, adding its projects' toolchains (`examples/agent-image.Dockerfile`); sessions run in that image.
 
 #### Scenario: The shipped image
 - **WHEN** a session runs in jagt's image with nothing added
@@ -96,7 +96,7 @@ The environment SHALL override the variable. Programs a session starts SHALL NOT
 
 ### Requirement: The server starter sits behind a TLS ingress
 `jagt.server.yml.dist` SHALL set `server.forward-headers-strategy: native`, `server.servlet.session.cookie.secure: true` and
-`server.servlet.session.timeout: 30m`. `kubernetes.yml.dist`'s Ingress SHALL carry a `tls` block for its host with a Secret of its own.
+`server.servlet.session.timeout: 30m`. `examples/kubernetes.yml`'s Ingress SHALL carry a `tls` block for its host with a Secret of its own.
 #### Scenario: A login behind the ingress
 - **WHEN** the ingress ends TLS and forwards `X-Forwarded-Proto: https` and `X-Forwarded-For`
 - **THEN** redirects keep `https`, the session cookie is Secure, and a login's peer address is the client's
@@ -123,3 +123,18 @@ The image SHALL set `HOME` to `/data/home`, created at every start, so a session
 #### Scenario: A pod is replaced
 - **WHEN** the pod is deleted and a new one starts on the same volume
 - **THEN** a revived session finds its conversation under `HOME`
+
+### Requirement: The configuration is on the volume
+The image SHALL read and write `jagt.yml` at `/data/jagt.yml`.
+A start finding no file there SHALL copy the image's `jagt.server.yml.dist` to it; a start finding one SHALL leave it alone.
+
+#### Scenario: A project added, then a recreate
+- **WHEN** a project is added from the board and the container is recreated on the same volume
+- **THEN** the project is still in `jagt.yml`
+
+#### Scenario: A first start
+- **WHEN** the volume holds no `jagt.yml`
+- **THEN** the image's starter is copied there
+#### Scenario: A first start after an upgrade
+- **WHEN** the volume holds no `jagt.yml` and one is mounted at `/app/jagt.yml`
+- **THEN** the mounted file is copied there instead of the starter

@@ -28,9 +28,10 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.session.SessionHosting;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -38,12 +39,12 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.usage.ModelTier;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -93,8 +94,9 @@ class AgentSessionsTest {
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
             agentRuntime,
-            new ActStops(new MasterBrake(paths), new BoardStop(paths, Clock.systemUTC())),
-            new Checkers(new TaskChart(Composition.builtIn())));
+            new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock())),
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new KeptNumbers(new ReachLedger()));
     sessions =
         new AgentSessions(
             config,
@@ -234,7 +236,9 @@ class AgentSessionsTest {
         """;
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1"))
-        .thenReturn(Optional.of("❯ "), Optional.of(left), Optional.of("❯ "));
+        .thenReturn(Optional.of("❯ "))
+        .thenReturn(Optional.of(left))
+        .thenReturn(Optional.of("❯ "));
     when(agentRuntime.draft(left))
         .thenReturn(Optional.of("task_context.md changed — re-read it now and follow the"));
     when(tmux.nudgeTaskWindow(
@@ -255,7 +259,9 @@ class AgentSessionsTest {
     state.putTask("ABC-1", inProgress);
     String left = "❯ task_context.md changed — re-read it now and follow the new instructions.";
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("❯ "), Optional.of(left));
+    when(tmux.screenOf("jagt", "ABC-1"))
+        .thenReturn(Optional.of("❯ "))
+        .thenReturn(Optional.of(left));
     when(agentRuntime.draft(left))
         .thenReturn(
             Optional.of(
@@ -302,7 +308,8 @@ class AgentSessionsTest {
     state.putTask("ABC-1", inProgress);
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1"))
-        .thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
+        .thenReturn(Optional.of("> where is the merge re"))
+        .thenReturn(Optional.of("> "));
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
 
     sessions.writeTaskContext("ABC-1", "new instructions");
@@ -384,7 +391,8 @@ class AgentSessionsTest {
                     .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null))));
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1"))
-        .thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
+        .thenReturn(Optional.of("> where is the merge re"))
+        .thenReturn(Optional.of("> "));
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
     when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1)))
         .thenReturn(false, true);
@@ -813,7 +821,8 @@ class AgentSessionsTest {
             SessionHost.WindowState.AGENT_RUNNING,
             SessionHost.WindowState.MISSING);
     when(tmux.screenOf("jagt", "ABC-1"))
-        .thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
+        .thenReturn(Optional.of("> where is the merge re"))
+        .thenReturn(Optional.of("> "));
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
 
     sessions.writeTaskContext("ABC-1", "new instructions");
@@ -1060,12 +1069,11 @@ class AgentSessionsTest {
     String left = "❯ " + AgentSessions.NUDGE;
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1"))
-        .thenReturn(
-            Optional.of("❯ "),
-            Optional.of(left),
-            Optional.of(left),
-            Optional.of(left),
-            Optional.of("❯ "));
+        .thenReturn(Optional.of("❯ "))
+        .thenReturn(Optional.of(left))
+        .thenReturn(Optional.of(left))
+        .thenReturn(Optional.of(left))
+        .thenReturn(Optional.of("❯ "));
     when(agentRuntime.draft(left)).thenReturn(Optional.of(AgentSessions.NUDGE));
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE)).thenReturn(true);
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
@@ -1102,7 +1110,10 @@ class AgentSessionsTest {
     String left = "❯ " + AgentSessions.NUDGE;
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1"))
-        .thenReturn(Optional.of(draft), Optional.of("> "), Optional.of(left), Optional.of("> "));
+        .thenReturn(Optional.of(draft))
+        .thenReturn(Optional.of("> "))
+        .thenReturn(Optional.of(left))
+        .thenReturn(Optional.of("> "));
     when(agentRuntime.holdsDraft(draft)).thenReturn(true);
     when(agentRuntime.draft(left)).thenReturn(Optional.of(AgentSessions.NUDGE));
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE)).thenReturn(true);

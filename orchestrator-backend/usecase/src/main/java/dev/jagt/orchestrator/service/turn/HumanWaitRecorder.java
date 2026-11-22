@@ -70,8 +70,8 @@ public class HumanWaitRecorder {
   }
 
   private Holder holder(TaskState task) {
-    Arbiter.Profile master = rounds.of(task).master();
+    Arbiter.Profile arbiter = rounds.of(task).arbiter();
     return Turns.next(
-        task.status(), task.report(), StopHold.of(task, master), checkers.of(task), master);
+        task.status(), task.report(), StopHold.of(task, arbiter), checkers.of(task), arbiter);
   }
 }

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
+import dev.jagt.orchestrator.service.role.RoleTurnEndNote;
 import dev.jagt.orchestrator.service.turn.TurnTree;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -19,6 +20,8 @@ import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +35,7 @@ class TurnEndsTest {
   private final AgentRuntime runtime = mock(AgentRuntime.class);
   private final ConfigService config = mock(ConfigService.class);
   private final TurnTree turnTree = mock(TurnTree.class);
+  private final List<RoleTurnEndNote> noRoleNotes = List.of();
   private final NotesDue notes =
       new NotesDue(Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
 
@@ -47,7 +51,8 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -58,7 +63,8 @@ class TurnEndsTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEmpty();
   }
@@ -76,7 +82,8 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -92,21 +99,18 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEmpty();
   }
 
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
-  void tellsTheHumanRoundHandedBackIsWithTheMasterWhetherOrNotTheTurnWasSentOn(boolean sentOn) {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(runtime.toldTheHuman("→ with the Master for review · its verdict arrives here"))
-        .thenReturn("{\"systemMessage\": \"with the Master\"}");
+  void tellsTheHumanWhatTheRoleNotesWhetherOrNotTheTurnWasSentOn(boolean sentOn) {
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(runtime.toldTheHuman("with the role"))
+        .thenReturn("{\"systemMessage\": \"with the role\"}");
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -114,18 +118,31 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, sentOn, false);
+        new TurnEnds(
+                runtime, config, notes, turnTree, List.of(given -> Optional.of("with the role")))
+            .answer("ABC-1", task, sentOn, false);
 
-    assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
+    assertThat(answered).isEqualTo("{\"systemMessage\": \"with the role\"}");
   }
 
   @Test
-  void saysNothingAtHandedBackRoundNoMasterReads() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+  void tellsTheHumanWhatTheRoleNotesWhileTheTurnWaitsOnBackgroundWork() {
+    when(runtime.toldTheHuman("with the role"))
+        .thenReturn("{\"systemMessage\": \"with the role\"}");
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build();
+
+    String answered =
+        new TurnEnds(
+                runtime, config, notes, turnTree, List.of(given -> Optional.of("with the role")))
+            .answer("ABC-1", task, false, true);
+
+    assertThat(answered).isEqualTo("{\"systemMessage\": \"with the role\"}");
+  }
+
+  @Test
+  void saysNothingAtHandedBackRoundNoRoleNotes() {
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -133,7 +150,8 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, List.of(given -> Optional.empty()))
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEmpty();
   }
@@ -148,31 +166,10 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, sentOn, paused);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, sentOn, paused);
 
     assertThat(answered).isEmpty();
-  }
-
-  @Test
-  void tellsTheHumanRoundBeingVerifiedIsVerifiedBeforeTheMasterReadsIt() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(runtime.toldTheHuman(
-            "→ verification runs first · the Master reads the round once it passes"))
-        .thenReturn("{\"systemMessage\": \"verification first\"}");
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
-            .alias("a1")
-            .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L))
-            .build();
-
-    String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
-
-    assertThat(answered).isEqualTo("{\"systemMessage\": \"verification first\"}");
   }
 
   @Test
@@ -191,7 +188,8 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -209,7 +207,8 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, true, false);
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, true, false);
 
     assertThat(answered).isEmpty();
   }

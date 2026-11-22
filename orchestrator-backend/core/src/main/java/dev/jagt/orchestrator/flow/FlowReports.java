@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Clock;
@@ -104,7 +104,7 @@ public class FlowReports {
           Optional<String> why = rules.refusedReport(task.status(), status, means);
           if (why.isPresent()) {
             refused.set(why.get());
-            return task.refused(Guard.STATUS_REPORT);
+            return task.refused(RefusalKind.STATUS_REPORT);
           }
           TaskMove.Reported move =
               new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));

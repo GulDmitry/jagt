@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
@@ -28,6 +29,35 @@ class StandEngineTest {
         .hasMessage(
             "docker is absent on this machine, so the stand run is skipped;"
                 + " -Pengine=host runs it on the host");
+  }
+
+  @Test
+  void imageRunWithNeitherClaudeCredentialFailsNamingBothVariables() {
+    StandEngine engine =
+        new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launchers);
+
+    assertThatThrownBy(engine::needsCredential)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY");
+  }
+
+  @Test
+  void imageRunWithOneClaudeCredentialIsReady() {
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.COMPOSE,
+            tool -> true,
+            name -> name.equals("ANTHROPIC_API_KEY") ? "set" : null,
+            launchers);
+
+    assertThatCode(engine::needsCredential).doesNotThrowAnyException();
+  }
+
+  @Test
+  void hostRunNeedsNoCredentialVariable() {
+    StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launchers);
+
+    assertThatCode(engine::needsCredential).doesNotThrowAnyException();
   }
 
   @Test

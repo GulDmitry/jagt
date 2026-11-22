@@ -205,9 +205,8 @@ class StandHostTest {
       route.connect(InetAddress.getByName("192.0.2.1"), 9);
       own = route.getLocalAddress();
     }
-    Assumptions.assumeFalse(
-        own.isLoopbackAddress() || own.isAnyLocalAddress(),
-        "this machine has no address but loopback");
+    boolean loopbackOnly = own.isLoopbackAddress() || own.isAnyLocalAddress();
+    Assumptions.assumeFalse(loopbackOnly, "loopback only"); // needs a real address
 
     try (StandHost open = StandHost.listen(directory, InetAddress.getByName("0.0.0.0")).start()) {
       HttpResponse<String> response =

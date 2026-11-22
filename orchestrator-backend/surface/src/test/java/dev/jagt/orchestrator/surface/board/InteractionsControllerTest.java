@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.service.log.PressLog;
 import dev.jagt.orchestrator.service.log.PressLog.Interaction;
-import java.time.Clock;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +19,7 @@ class InteractionsControllerTest {
   void recordsTheBatchOfPressesThePageSent() {
     List<Interaction> sent = List.of(new Interaction(1_000L, "verb:ship", "REVIEW_PENDING"));
 
-    new InteractionsController(presses, Clock.systemUTC())
+    new InteractionsController(presses, new FakeClock())
         .record(new InteractionsController.Batch(sent));
 
     verify(presses).record(eq(sent), anyLong());
@@ -27,7 +27,7 @@ class InteractionsControllerTest {
 
   @Test
   void recordsAnEmptyBatchForBodyCarryingNoPresses() {
-    new InteractionsController(presses, Clock.systemUTC())
+    new InteractionsController(presses, new FakeClock())
         .record(new InteractionsController.Batch(List.of()));
 
     verify(presses).record(eq(List.of()), anyLong());

@@ -3,7 +3,7 @@
 #
 # Build:  docker build -f docker/linux-suite.Dockerfile -t jagt-linux-suite .
 # Use:    scripts/linux-suite.sh   (mounts the repo, runs the suites inside)
-FROM eclipse-temurin:25-jdk
+FROM eclipse-temurin:25-jdk@sha256:ce2ef9d2d67a68de5e196d4de9d743327c44a10b57fe02ec39f572c652cacfd3
 
 # The package list lives in scripts/linux-test-deps.sh — the SAME list every CI runner installs, so the
 # container and the pipeline cannot drift apart.

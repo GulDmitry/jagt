@@ -30,19 +30,21 @@
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
-  [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-shows-in-the-boards-head)
+  [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-shows-in-the-boards-head)
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
 - **Board as its own app** — `board/` from the jar or `orchestrator.board.dir`; coupled by `contracts/`. [spec](../openspec/specs/board-app/spec.md)
-- **Local or a login** — Loopback, or `auth: password` or `oidc`; refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
-- **Board security** — Own-origin CSP, log out, login back-off, audit line, owner-only metrics. [spec](../openspec/specs/board-security/spec.md)
+- **Accessible board** — axe-core checks every view. [spec](../openspec/specs/board-app/spec.md#requirement-the-board-passes-an-accessibility-check)
+- **Board access** — Loopback, `password` or `oidc`; refuses foreign writes; own-origin CSP, login back-off, audit line, owner-only metrics.
+  [spec](../openspec/specs/board/spec.md)
+  [spec](../openspec/specs/board-security/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
   [row](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row) ·
   [open](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
 - **The open task's tabs** — Session, Artifacts, Code and Diff, and the shell line the Session tab runs: [their own page](features/board.md).
-- **Add a project, run a job now** — Add, change or drop a project, labels and human paths too, from the board or `project`; any job runs now.
-  [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+- **Add a project, change a setting, run a job** — Projects and the basic `jagt.yml` settings from the gear; any job runs now.
+  [settings](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Project by url** — A `url` with no existing `path` is cloned under the data folder; a failed clone marks the head. `localFiles` feeds `copyGlobs`.
   [spec](../openspec/specs/project-setup/spec.md#requirement-a-project-named-by-url-is-cloned)
 - **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
@@ -51,17 +53,15 @@
   [keys](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key) ·
   [who](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
 
-## Cases · [spec](../openspec/specs/cases/spec.md)
+## Cases · [spec](../openspec/specs/cases/spec.md) · [debug reads](../openspec/specs/debug-reads/spec.md)
 - **Your own cases** — A case sends a step and opens a turn, or lets the Master move.
   [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
-
-## Debug reads · [spec](../openspec/specs/debug-reads/spec.md)
 - **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
-- **Architecture rule tests** — Kind, collaborator, complexity, duplication, mock and text ceilings, cycle-freedom and a count ratchet over
-  CI, source sets, triggers, statuses and the public surface fail the build, for every source set. [kinds](../ARCHITECTURE.md#the-kinds)
+- **Fitness functions in one file** — `fitness.yml` declares each in a reserved tree and each module's exposed packages; `./gradlew fitness` runs all.
+  [spec](../openspec/specs/fitness/spec.md#requirement-a-fitness-function-reports-its-number-against-its-threshold)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
@@ -71,16 +71,15 @@
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
 - **A repository kept on this machine** — `remote: none` cuts worktrees from the local base, pushes nothing and deploys into the local branch.
   [spec](../openspec/specs/task-start/spec.md#requirement-a-project-names-the-remote-its-branches-are-shared-through)
-- **Push guard** — A session cannot push off its task's branch, force, delete or skip hooks.
-  [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
 - **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one, `remove-repo` drops one.
   [spec](../openspec/specs/repo-attach/spec.md#requirement-a-running-task-gains-a-repository)
 - **Trust before credentials** — Git runs with your credentials only under config and hooks you trusted; only you adopt a change.
   [spec](../openspec/specs/git-trust/spec.md#requirement-git-with-the-humans-credentials-waits-for-trust)
   [spec](../openspec/specs/git-trust/spec.md#requirement-only-the-human-adopts-a-change)
-- **Guards** — A session's shell writes only inside its task's worktrees and the tool caches; each refusal is counted on its task.
+- **Guards** — A session writes only in its worktrees and tool caches, pushes only its own branch, no force or skipped hooks.
   [spec](../openspec/specs/guards/spec.md#requirement-a-session-writes-only-inside-its-task)
   [spec](../openspec/specs/guards/spec.md#requirement-a-refusal-is-counted-on-its-task)
+  [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
 
 ## Judgement resilience · [spec](../openspec/specs/judgement-resilience/spec.md)
 - **Majority of runs** — An eval case passes when most of its runs do; `-PevalRuns` and `-PevalPasses` set the quorum.
@@ -93,7 +92,7 @@
 - **Master review** — A headless reader judges every handed-back round and writes its verdict for you.
   [spec](../openspec/specs/master/spec.md#requirement-the-master-is-a-headless-run-per-role-not-a-window)
 - **Master brief** — The Master judges by a brief you copy and edit. [spec](../openspec/specs/master/spec.md#requirement-the-master-judges-by-a-brief)
-- **Master acts for you** — In `act` the Master ships and deploys; your word overrules it. Key: `orchestrator.roles.master.mode`, `judge` by default.
+- **Master acts for you** — The Master ships and answers; the plan and the deploy stay yours. Key: `orchestrator.roles.master.mode`, `act` by default.
   [spec](../openspec/specs/master/spec.md#requirement-in-act-the-master-moves-for-you)
 - **Lessons** — When you disagree with the Master, it offers a lesson and changes no brief.
   [spec](../openspec/specs/master/spec.md#requirement-a-disagreement-offers-a-lesson-never-applies-one)
@@ -119,11 +118,10 @@
 - **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
   [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
 - **Take over** — A new task can take over an open review request. [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
-- **Red round** — A failing pipeline goes back to its session unless the host says infrastructure, which jagt re-runs: `infraWait.backoff`, `[]` off.
+- **Infrastructure waits** — A red pipeline goes back to its session unless the host blames infrastructure; a `wait` probes on, then stops.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
   [spec](../openspec/specs/infra-wait/spec.md#requirement-infrastructure-failures-are-waited-out)
   [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-is-one-of-jagts-five-words)
-- **Session waits** — A session whose dependency is down reports `wait`; jagt says when to probe again and stops the task after the last wait.
   [spec](../openspec/specs/infra-wait/spec.md#requirement-a-session-waits-out-a-dependency-that-is-down)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
@@ -159,8 +157,10 @@
 - **Engineering gates** — Each gate: [spec](../openspec/specs/engineering/spec.md), [practices](practices.md), [stand](features/stand-engines.md).
 
 ## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
-- **Install checks** — A missing part of the installation is refused at start, with no network.
-  [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
+- **Install checks** — A missing part of the installation is refused at start, with no network. [spec](../openspec/specs/startup/spec.md)
+- **One-line install** — `install.sh` and `install.ps1` install a verified jar and Java runtime per user; it starts with no checkout or project.
+  [spec](../openspec/specs/release-artifacts/spec.md#requirement-one-line-installs-jagt-per-user)
+- **Upgrade** — `upgrade` switches to a newer kept release and restarts on it under the launcher. [spec](../openspec/specs/board-verbs/spec.md)
 - **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.
   [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
 - **Server image** — Yours adds tools, agent seed. [spec](../openspec/specs/readiness/spec.md) · [env](../openspec/specs/server-environment/spec.md)
@@ -178,23 +178,23 @@
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)
 - **The life of a task** — statuses, verify, deploy check, acceptance workspace, start and plan first: [their own page](features/task-flow.md).
+- **A real statechart** — Harel/SCXML: nested and parallel states, history, completion, choices. [spec](../openspec/specs/statechart/spec.md)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 - **Auto-review** — jagt polls an open request for comments, only reading and drafting. Key: `orchestrator.autoReview.enabled`, off by default.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
 - **Task activity log** — `activity` lists every status change of live and finished tasks, filtered by kind and project; a live task's line opens it.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-is-the-task-activity-log)
-- **Brakes** — `act` stops after bad endings, an hourly ceiling bounds unasked moves; a looping or case-less task waits for your lift or the Master's.
+- **Stops and what ends them** — Bad endings, the hourly cap, loops, pauses and `stop` halt work until lifted; a failure lifts on a stronger tier.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
   [spec](../openspec/specs/unattended-work/spec.md#requirement-a-task-has-a-ceiling-of-unattended-moves-an-hour)
   [spec](../openspec/specs/task-stops/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
   [spec](../openspec/specs/task-stops/spec.md#requirement-in-act-the-master-decides-a-stop-for-a-suspected-loop)
-- **Stop triage** — A stop's hover says who looped. [spec](../openspec/specs/task-stops/spec.md#requirement-triage-reads-a-stop-onto-its-hover)
-- **Pause** — Nothing of jagt runs on a paused task until you lift. [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
-- **Board stop** — `stop` interrupts every working session and pauses jobs and intake until your `unstop`; a restart keeps it.
+  [spec](../openspec/specs/task-stops/spec.md#requirement-triage-reads-a-stop-onto-its-hover)
+  [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
   [spec](../openspec/specs/board-verbs/spec.md#requirement-a-board-wide-stop-halts-all-work-until-your-lift)
-- **Next tier** — A failure stop lifts on a stronger model. [spec](../openspec/specs/task-stops/spec.md#requirement-a-stop-lifts-on-the-next-tier)
+  [spec](../openspec/specs/task-stops/spec.md#requirement-a-stop-lifts-on-the-next-tier)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)
 - **Limits and spend** — warned once per period, a spend ceiling, the week's cost per accepted task: [their own page](features/usage-limits.md).

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.plan;
 
-import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.StateService;
@@ -42,7 +42,7 @@ public class PlanApproval {
     if (claim != null) {
       relay.requireStanding(id, Step.PLAN, claim);
     }
-    if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
+    if (!door.presses(id, TaskAction.APPROVE_PLAN.id())) {
       return false;
     }
     boolean placed = plan.settle(id);

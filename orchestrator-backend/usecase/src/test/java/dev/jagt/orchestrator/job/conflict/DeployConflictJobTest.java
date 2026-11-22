@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -89,11 +90,11 @@ class DeployConflictJobTest {
                     pipelines,
                     new FlowReports(
                         state,
-                        Clock.systemUTC(),
+                        new FakeClock(),
                         new Checkers(new TaskChart(Composition.builtIn())),
                         new FlowRules(new TaskChart(Composition.builtIn()))))),
             state,
-            Clock.systemUTC())
+            new FakeClock())
         .runOn(state.tasks());
 
     TaskState read = state.task("ABC-42").orElseThrow();
@@ -136,7 +137,7 @@ class DeployConflictJobTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
     when(request.read("ABC-42", conflicted)).thenReturn(true);
 
-    new DeployConflictJob(List.of(request, staged), state, Clock.systemUTC())
+    new DeployConflictJob(List.of(request, staged), state, new FakeClock())
         .run("ABC-42", conflicted);
 
     verify(staged, never()).read(eq("ABC-42"), any());
@@ -148,7 +149,7 @@ class DeployConflictJobTest {
     state.putTask("ABC-42", told);
     when(request.read("ABC-42", conflicted)).thenReturn(true);
 
-    new DeployConflictJob(List.of(request, staged), state, Clock.systemUTC())
+    new DeployConflictJob(List.of(request, staged), state, new FakeClock())
         .run("ABC-42", conflicted);
 
     verify(staged).read("ABC-42", state.task("ABC-42").orElseThrow());

@@ -48,7 +48,7 @@ public class MasterReview {
     }
     return JagtJson.bytes(file)
         .flatMap(bytes -> {
-          if (JagtJson.fingerprint(bytes).equals(task.masterOrNone().seal())) {
+          if (JagtJson.fingerprint(bytes).equals(task.arbiterOrNone().seal())) {
             return JagtJson.parse(file, bytes, Review.class);
           }
           log.atWarn()
@@ -109,7 +109,7 @@ public class MasterReview {
 
   private void reconcile(String taskId, TaskState task, Path file, byte[] bytes) {
     String fingerprint = JagtJson.fingerprint(bytes);
-    Master sealed = task.masterOrNone();
+    Master sealed = task.arbiterOrNone();
     if (!fingerprint.equals(sealed.seal())) {
       clearSeal(taskId, task);
       return;
@@ -126,25 +126,25 @@ public class MasterReview {
                 taskId,
                 (reducer, current) ->
                     sealedAs(current, fingerprint)
-                            && current.masterOrNone().sealedRound() != read.round()
-                        ? reducer.masterSealed(current, fingerprint, read.round())
+                            && current.arbiterOrNone().sealedRound() != read.round()
+                        ? reducer.arbiterSealed(current, fingerprint, read.round())
                         : current));
   }
 
   private void clearSeal(String taskId, TaskState task) {
-    String held = task.masterOrNone().seal();
+    String held = task.arbiterOrNone().seal();
     if (!held.isEmpty()) {
       state.reduce(
           taskId,
           (reducer, current) ->
-              current.masterOrNone().seal().equals(held)
-                  ? reducer.masterVerdictGone(current)
+              current.arbiterOrNone().seal().equals(held)
+                  ? reducer.arbiterVerdictGone(current)
                   : current);
     }
   }
 
   private static boolean sealedAs(TaskState task, String fingerprint) {
-    return fingerprint.equals(task.masterOrNone().seal());
+    return fingerprint.equals(task.arbiterOrNone().seal());
   }
 
   /**
@@ -157,7 +157,7 @@ public class MasterReview {
           String fingerprint = JagtJson.fingerprint(bytes);
           state.reduce(
               taskId,
-              (reducer, current) -> reducer.masterSealed(current, fingerprint, review.round()));
+              (reducer, current) -> reducer.arbiterSealed(current, fingerprint, review.round()));
           return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
         })
         .orElse(false);

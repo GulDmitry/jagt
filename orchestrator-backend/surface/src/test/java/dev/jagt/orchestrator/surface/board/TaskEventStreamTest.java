@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
+import dev.jagt.orchestrator.testing.FakeClock;
 import jakarta.servlet.AsyncEvent;
 import java.io.IOException;
 import java.time.Clock;
@@ -58,10 +59,10 @@ class TaskEventStreamTest {
   private final ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
   private final ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
   private final TaskEventStream stream =
-      new TaskEventStream(Clock.systemUTC(), scheduler, broadcaster);
+      new TaskEventStream(new FakeClock(), scheduler, broadcaster);
   private final TaskEventStream spiedStream = spy(stream);
   private final TaskEventStream beatingStream =
-      spy(new TaskEventStream(Clock.systemUTC(), scheduler, Executors.newSingleThreadExecutor()));
+      spy(new TaskEventStream(new FakeClock(), scheduler, Executors.newSingleThreadExecutor()));
 
   @Test
   void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
@@ -249,11 +250,12 @@ class TaskEventStreamTest {
                         new Jobs(
                             new Jobs.Catalog(List.of(), List.of()),
                             mock(TaskScheduler.class),
-                            Clock.systemUTC(),
+                            new FakeClock(),
                             mock(StateService.class),
                             mock(BoardStop.class)),
                         new ReachLedger(),
-                        Clock.systemUTC())))
+                        new FakeClock(),
+                        List.of())))
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();

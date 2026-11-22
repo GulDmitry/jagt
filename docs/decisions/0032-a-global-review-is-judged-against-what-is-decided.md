@@ -24,7 +24,7 @@ Accepted 2026-10-09. Its guard rows gather the gaps of 0022 and 0026 to 0031; th
   no finding.
 - A finding rejected in review gets its why where the next round meets it: a comment at the site, or a record's
   Rejected row.
-- A class found in a second round becomes a test. `KindsTest` holds where a class lives, `MockCeilingTest` the three
+- A class found in a second round becomes a test. `KindsTest` holds where a class lives, `mocks-per-test` the three
   mocks a test wires.
 
 ## Rejected

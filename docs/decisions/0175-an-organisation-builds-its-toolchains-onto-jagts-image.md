@@ -15,7 +15,7 @@ Accepted 2026-11-16 by the owner's order.
 
 ## Decision
 
-- An organisation builds its own image `FROM` jagt's, adding its projects' toolchains; `Dockerfile.dist` holds optional blocks.
+- An organisation builds its own image `FROM` jagt's, adding its projects' toolchains; `examples/agent-image.Dockerfile` holds optional blocks.
 - Inner loop: the session builds and tests in its own container, in seconds, with the toolchain the repository names.
 - mise resolves each repository's `.tool-versions` or `mise.toml` to its Java, Node or PHP version; Playwright and its browsers are a second block.
 - Outer loop: the acceptance role, on by default on a server, checks the deployed environment.

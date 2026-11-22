@@ -1,0 +1,84 @@
+# Static analysis for security on every push and pull request: CodeQL over the Gradle build and the board's JavaScript.
+# A finding of severity error fails the run; the results are uploaded to code scanning either way.
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyse:
+    name: analyse (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        if: matrix.language == 'java-kotlin'
+        with:
+          java-version: '25'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        if: matrix.language == 'java-kotlin'
+        with:
+          cache-provider: external
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        if: matrix.language == 'java-kotlin'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
+      - uses: github/codeql-action/init@f3bbb05694c2f74569081c28664c0866d64dec21 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+      - name: build what CodeQL traces
+        if: matrix.language == 'java-kotlin'
+        working-directory: orchestrator-backend
+        # CodeQL traces only the compilers that run: an up-to-date or cached task hides its classes.
+        run: ./gradlew --no-daemon --no-build-cache --rerun-tasks classes testClasses
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        if: matrix.language == 'java-kotlin' && github.ref == 'refs/heads/main'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+      - uses: github/codeql-action/analyze@f3bbb05694c2f74569081c28664c0866d64dec21 # v4.39.3
+        with:
+          category: /language:${{ matrix.language }}
+          output: sarif-results
+      - name: fail on a finding of severity error
+        run: |
+          errors=$(jq -s '[.[] | .runs[]
+            | ([.tool.driver.rules[]?] + [.tool.extensions[]?.rules[]?]) as $rules
+            | .results[] | (.ruleId // .rule.id) as $id
+            | (.level // ([$rules[] | select(.id == $id)][0].defaultConfiguration.level) // "warning")
+            | select(. == "error")] | length' sarif-results/*.sarif)
+          echo "codeql.errors=$errors"
+          test "$errors" -eq 0

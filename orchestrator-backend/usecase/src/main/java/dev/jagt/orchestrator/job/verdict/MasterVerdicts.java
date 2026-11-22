@@ -46,7 +46,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.MasterConfig config) {
+      ConfigService.ConfigFile.ArbiterConfig config) {
     return OriginContext.as(ActionOrigin.MASTER, () -> judged(taskId, task, verdict, config));
   }
 
@@ -54,7 +54,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.MasterConfig config) {
+      ConfigService.ConfigFile.ArbiterConfig config) {
     boolean plan = FlowRules.holdsPlan(task.status());
     return switch (verdict.kind()) {
       case NOT_READY -> returned(taskId, task, verdict, plan);
@@ -73,7 +73,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.MasterConfig config) {
+      ConfigService.ConfigFile.ArbiterConfig config) {
     decisions.returned(task, verdict.round(), List.of());
     return config.may(MasterRight.SHIP) && ship.ship(taskId, task);
   }

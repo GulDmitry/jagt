@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -109,7 +110,7 @@ class OrchestratorPathsTest {
                 .withData(root.resolve("vault").toString()));
 
     assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
-    assertThat(paths.masterToken()).isEqualTo(root.resolve("vault/jagt/master-token"));
+    assertThat(paths.token()).isEqualTo(root.resolve("vault/jagt/master-token"));
     assertThat(paths.worktree("web", "ABC-1"))
         .isEqualTo(root.resolve("vault/tasks/ABC-1/worktrees/web"));
   }
@@ -131,5 +132,43 @@ class OrchestratorPathsTest {
     assertThat(paths.scratchCeiling(paths.scratch("ABC-1"))).isEqualTo(root.resolve("data/tasks"));
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-1")).isTrue();
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-2")).isFalse();
+  }
+
+  @Test
+  void takesTheInstallHomeAsRootWhenNoRootIsNamed() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[0], null, "/h/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).contains(Path.of("/h/me/.jagt"));
+  }
+
+  @Test
+  void takesNoInstallHomeWhenTheLaunchNamesTheRoot() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[] {"--orchestrator.root=/srv/jagt"},
+            null,
+            "/h/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).isEmpty();
+  }
+
+  @Test
+  void takesNoInstallHomeWhenTheEnvironmentNamesTheRoot() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[0], "/srv/jagt", "/h/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).isEmpty();
+  }
+
+  @Test
+  void takesTheInstallHomeWhenTheNamedRootIsBlank() {
+    Optional<Path> home =
+        OrchestratorPaths.installedRoot(
+            new String[] {"--orchestrator.root= "}, " ", "/h/me/.jagt/versions/0.24.1/jagt.jar");
+
+    assertThat(home).contains(Path.of("/h/me/.jagt"));
   }
 }

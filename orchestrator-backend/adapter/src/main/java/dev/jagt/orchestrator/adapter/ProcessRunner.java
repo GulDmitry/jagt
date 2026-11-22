@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.process.ChildProcesses;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.OneLine;
-import jakarta.annotation.PreDestroy;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -11,19 +11,21 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class ProcessRunner implements Processes {
+public class ProcessRunner implements Processes, SmartLifecycle, AutoCloseable {
+
+  /** Stops after {@code ShutdownEndings}, whose window kills still run commands through here. */
+  static final int PHASE = DEFAULT_PHASE - 4096;
 
   /**
    * POSIX tools that can put a launch in its own session; absolute because they ARE the mechanism.
@@ -35,10 +37,8 @@ public class ProcessRunner implements Processes {
   /** Long enough for a wrapper that could not exec to have exited, short enough to be invisible. */
   private static final Duration LAUNCH_CHECK = Duration.ofMillis(200);
 
-  private final Set<Process> running = ConcurrentHashMap.newKeySet();
-  private final Set<Process> stopped = ConcurrentHashMap.newKeySet();
+  private final ChildProcesses children = new ChildProcesses();
   private volatile boolean closing;
-  private volatile boolean destroyed;
 
   @Override
   public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
@@ -69,13 +69,15 @@ public class ProcessRunner implements Processes {
         builder.directory(workingDir.toFile());
       }
       builder.redirectError(ProcessBuilder.Redirect.DISCARD);
-      Process started = builder.start();
-      running.add(started);
-      CompletableFuture<Void> _ = started.onExit().thenAccept(running::remove);
-      return started;
+      return children.spawn(builder);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
     }
+  }
+
+  @Override
+  public void start() {
+    children.reopen();
   }
 
   /**
@@ -98,7 +100,7 @@ public class ProcessRunner implements Processes {
       builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
       builder.redirectError(ProcessBuilder.Redirect.DISCARD);
       long startedAt = System.nanoTime();
-      Process launched = builder.start();
+      Process launched = children.spawnDetached(builder);
       // The wrapper always starts, so a missing binary is not an IOException but the wrapper
       // exiting 127.
       // A launcher handing off to a running instance also exits at once, and that one exits ZERO.
@@ -125,10 +127,10 @@ public class ProcessRunner implements Processes {
   /**
    * A session of its OWN, because the terminal delivers Ctrl-C to jagt's whole process group, and
    * SIGINT back at its default: a parent started with it ignored (a daemon born in a background
-   * shell) hands the ignore to every child, and an IDE's Stop button IS a SIGINT. Only perl can
-   * reset it before the {@code exec}, so {@code setsid} alone is the fallback. Both wrappers {@code
-   * exec}, so the returned process is the app itself and still killable by pid. With neither tool
-   * present the command is returned unchanged — no session, but a launch.
+   * shell) hands the ignore to every child, and a code viewer's Stop button IS a SIGINT. Only perl
+   * can reset it before the {@code exec}, so {@code setsid} alone is the fallback. Both wrappers
+   * {@code exec}, so the returned process is the app itself and still killable by pid. With neither
+   * tool present the command is returned unchanged — no session, but a launch.
    */
   static List<String> detachedFrom(List<String> command) {
     if (command.isEmpty()) {
@@ -221,12 +223,7 @@ public class ProcessRunner implements Processes {
       if (stdin == null) {
         builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
       }
-      process = builder.start();
-      running.add(process);
-      if (destroyed) {
-        stopped.add(process);
-        destroyTree(process, "shutdown");
-      }
+      process = children.spawn(builder);
       if (stdin != null) {
         feed(process, stdin);
       }
@@ -239,13 +236,13 @@ public class ProcessRunner implements Processes {
       Thread errThread = Thread.startVirtualThread(new OutputDrain(stderrReader, stderr));
       boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
       if (!finished) {
-        destroyTree(process, "timeout");
+        children.kill(process, "timeout");
         throw new IllegalStateException(
             "Command timed out after " + timeout + ": " + String.join(" ", command));
       }
       outThread.join(2_000);
       errThread.join(2_000);
-      boolean killed = stopped.remove(process);
+      boolean killed = children.wasStopped(process);
       if (killed || closing) {
         throw new Processes.Stopped(command);
       }
@@ -256,7 +253,7 @@ public class ProcessRunner implements Processes {
       throw interrupted(process, command, e);
     } finally {
       if (process != null) {
-        running.remove(process);
+        children.release(process);
       }
     }
   }
@@ -264,7 +261,7 @@ public class ProcessRunner implements Processes {
   private RuntimeException interrupted(
       @Nullable Process process, List<String> command, InterruptedException e) {
     if (process != null) {
-      destroyTree(process, "interrupted");
+      children.kill(process, "interrupted");
     }
     Thread.currentThread().interrupt();
     if (closing) {
@@ -316,24 +313,24 @@ public class ProcessRunner implements Processes {
     closing = true;
   }
 
-  /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
-  @PreDestroy
-  void destroyRunning() {
-    destroyed = true;
-    stopped.addAll(running);
-    running.forEach(process -> destroyTree(process, "shutdown"));
+  @Override
+  public boolean isRunning() {
+    return !children.isClosed();
   }
 
-  /** Listed first: a descendant whose parent died is reparented and no longer reachable from it. */
-  private static void destroyTree(Process process, String reason) {
-    List<ProcessHandle> descendants = process.descendants().toList();
-    process.destroyForcibly();
-    descendants.forEach(ProcessHandle::destroyForcibly);
-    log.atWarn()
-        .setMessage("process killed")
-        .addKeyValue("pid", process.pid())
-        .addKeyValue("descendants", descendants.size())
-        .addKeyValue("reason", reason)
-        .log();
+  @Override
+  public int getPhase() {
+    return PHASE;
+  }
+
+  @Override
+  public void stop() {
+    close();
+  }
+
+  /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
+  @Override
+  public void close() {
+    children.close();
   }
 }

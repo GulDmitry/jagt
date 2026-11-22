@@ -63,10 +63,9 @@ final class ServerFixtures {
             "  claude:\n",
             "  claude:\n    command: \"" + where.inside().resolve("fake-claude.sh") + "\"\n");
     text = where.image() ? text : swap(text, "  platform: linux", "");
+    text = swap(text, "    master:\n      mode: act", "    master:\n      mode: \"off\"");
     return swap(
-        text,
-        "    acceptance:\n      enabled: true",
-        "    master: { mode: \"off\" }\n    acceptance:\n      enabled: false");
+        text, "    acceptance:\n      enabled: true", "    acceptance:\n      enabled: false");
   }
 
   private static String swap(String text, String from, String to) {

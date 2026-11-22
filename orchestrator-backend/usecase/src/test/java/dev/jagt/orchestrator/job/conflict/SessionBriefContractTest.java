@@ -26,6 +26,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.launch.ResumeInstructions;
+import dev.jagt.orchestrator.service.master.ReplyRight;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -37,9 +38,9 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.Remote;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,9 +72,7 @@ class SessionBriefContractTest {
         caseDoor()
             .withRoot(root)
             .build(
-                state,
-                taskStops().withRoot(root).build(state, Clock.systemUTC()),
-                Clock.systemUTC());
+                state, taskStops().withRoot(root).build(state, new FakeClock()), new FakeClock());
   }
 
   @Test
@@ -92,7 +91,7 @@ class SessionBriefContractTest {
         "ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
     new ConflictHandover(
-            sessions, stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC()))
+            sessions, stepRelay().withRoot(root).build(state, sessions, new FakeClock()))
         .hand(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -162,9 +161,9 @@ class SessionBriefContractTest {
         new ShipService(
             state,
             config,
-            stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC()),
+            stepRelay().withRoot(root).build(state, sessions, new FakeClock()),
             changes,
-            door);
+            new ReplyRight(door));
 
     OriginContext.as(ActionOrigin.BOARD, () -> ships.ship("ABC-42"));
 

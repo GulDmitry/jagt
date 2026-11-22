@@ -19,7 +19,7 @@ from a worktree, run in the human's checkout.
 
 - Each task carries `GitTrust` in `state.json`: one SHA-256 per config key and file, and per hook file, never a
   value. It is read as the worktrees are cut, removed with the task, and folds to one digest per file past 512.
-- Before `ship`, `deploy`, `revert` and a Master read, `GitStateGuard` and `ChargedReviews` compare. A difference
+- Before `ship`, `deploy`, `revert` and a Master read, `GitStatePrecondition` and `ChargedReviews` compare. A difference
   refuses, names key and file, and stays on the task: its card is the human's, `trust` the move.
 - `trust` is a human-only verb from `Move.actions()`; nothing else adopts a change.
 - Detection, not prevention: no hook in a repository ([0004](0004-jagt-keeps-its-invariants-out-of-git-hooks.md)).

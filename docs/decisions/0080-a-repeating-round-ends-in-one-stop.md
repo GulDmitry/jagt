@@ -22,7 +22,7 @@ Amended by [0100](0100-a-stop-is-scoped-to-its-request.md): a new request replac
   with trigger `ROUNDS`, its status kept.
 - A round of only repeats is a round like any: relayed `[repeat]`, counted, never a question.
 - `task/stop/TaskStop` stands on `TaskState.stop`; `task/review/RoundTrail` keeps the rounds alone. `service/stop/TaskStops` is its one
-  writer, `lift` clearing it and restarting the window; `StopGuard` refuses at the door.
+  writer, `lift` clearing it and restarting the window; `StopPrecondition` refuses at the door.
 - A `state.json` holding `loop.stop` is read once into the two fields.
 
 ## Rejected

@@ -5,6 +5,7 @@
 Everything is in **one file**: `jagt.yml` at the repository root — `cp jagt.desktop.yml.dist jagt.yml`. **Every key is
 described in `jagt.desktop.yml.dist`, and nowhere else**: it carries each one with its shipped value and what that
 value means, so the file you edit is the reference. Your copy is gitignored, so comment it freely.
+Both `.dist` files validate against a JSON Schema generated from the configuration records in `ConfigReferenceTest`.
 
 One root, `orchestrator:`, holds all of it.
 
@@ -84,6 +85,9 @@ starting jagt from another loses the derived path to a session's log.
 
 **`autoReview`** polls every task with an open review request: approval advances it, comments are drafted for
 you. **It never posts, pushes or deploys.** One model call per poll.
+
+**`deploy.onApproval`** deploys an approved request once, with the guards of your own `deploy`; off by default,
+on in `jagt.server.yml.dist`. The history names the code host as who acted.
 
 **`startupChecks`.** What is missing is [said at startup, all of it at
 once](rules/components.md#what-is-missing-is-said-at-startup-not-at-the-click-that-needed-it). Nothing reaches

@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.surface.mcp;
 
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,7 +22,7 @@ public class McpController {
   private final McpProtocolService protocolService;
   private final StateService stateService;
   private final ObjectMapper mapper;
-  private final MasterToken masterToken;
+  private final RootToken rootToken;
 
   @PostMapping(
       value = "/mcp",
@@ -29,7 +31,7 @@ public class McpController {
   public ResponseEntity<JsonNode> mcp(
       @RequestBody String body,
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-      @RequestHeader(value = MasterToken.HEADER, required = false) String token) {
+      HttpServletRequest request) {
     JsonNode message;
     try {
       message = mapper.readTree(body);
@@ -38,7 +40,7 @@ public class McpController {
       return ResponseEntity.ok(protocolService.parseError(e.getMessage()));
     }
     return protocolService
-        .handle(message, cwd, masterToken.matches(token))
+        .handle(message, cwd, rootToken.presentedBy(request::getHeader))
         .map(answer ->
             answer.path("error").path("code").asInt() == McpProtocolService.UNKNOWN_CALLER
                 ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(answer)

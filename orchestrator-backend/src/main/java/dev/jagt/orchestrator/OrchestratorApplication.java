@@ -1,12 +1,13 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.home.ShippedFiles;
 import dev.jagt.orchestrator.surface.ui.Console;
 import dev.jagt.orchestrator.surface.ui.FailurePage;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import dev.jagt.orchestrator.surface.ui.log.LogFileRoll;
 import dev.jagt.orchestrator.surface.ui.log.LogTarget;
-import dev.jagt.orchestrator.surface.ui.log.PortGuard;
+import dev.jagt.orchestrator.surface.ui.log.PortCheck;
 import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.Optional;
@@ -25,6 +26,9 @@ public class OrchestratorApplication {
   public static void main(String[] args) {
     Locale.setDefault(Locale.ENGLISH);
     TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
+    OrchestratorPaths.installedRootOutside(args)
+        .ifPresent(
+            home -> ShippedFiles.placeInto(home, OrchestratorApplication.class.getClassLoader()));
     String[] launch = withConfigFile(args);
     while (true) {
       try {
@@ -91,7 +95,9 @@ public class OrchestratorApplication {
   static SpringApplication application() {
     SpringApplication application = new SpringApplication(OrchestratorApplication.class);
     application.addListeners(
-        new PortGuard(), new LogTarget(), new LogFileRoll(RuntimeWiring.utcClock(), System.err));
+        new PortCheck(System::exit),
+        new LogTarget(),
+        new LogFileRoll(RuntimeWiring.utcClock(), System.err));
     return application;
   }
 }

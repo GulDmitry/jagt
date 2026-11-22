@@ -15,12 +15,12 @@ import org.jspecify.annotations.Nullable;
 public record TestMasterDeployJobBuilder(String mode, @Nullable List<String> mine) {
 
   public static TestMasterDeployJobBuilder masterDeployJob() {
-    return new TestMasterDeployJobBuilder("act", null);
+    return new TestMasterDeployJobBuilder("act", List.of());
   }
 
   public ConfigService.ConfigFile config() {
     return ConfigService.ConfigFile.defaults()
-        .withMaster(new ConfigService.ConfigFile.MasterConfig(mode, null, null, mine, null));
+        .withArbiter(new ConfigService.ConfigFile.ArbiterConfig(mode, null, null, mine, null));
   }
 
   public MasterDeployJob build(

@@ -131,7 +131,7 @@ public record TaskView(
   }
 
   private static String statusLabel(TaskState task, RoundState round) {
-    if (round.masterReading() || StopHold.of(task, round.master()) == StopHold.MASTER) {
+    if (round.arbiterReading() || StopHold.of(task, round.arbiter()) == StopHold.ARBITER) {
       return "master review";
     }
     Optional<String> passer = round.checkers().keySet().stream().filter(task::passedBy).findFirst();

@@ -22,7 +22,7 @@ Never a model's answer.
 
 ## Use cases
 
-- **WHEN** a session hands back a round in `judge` or unset mode
+- **WHEN** a session hands back a round in `judge` mode
   **THEN** each role reads it into the worktree's `master-review.md` and presses nothing
 - **WHEN** the diff touches none of a role's `applies` globs
   **THEN** a `# skipped` line replaces that role's read
@@ -39,7 +39,7 @@ Never a model's answer.
 
 ## Usage
 
-- Mode, model, `mine` and `humanPaths` under `roles.master` in `jagt.yml`; `act` is opt-in, the default is `judge`.
+- Mode, model, `mine` and `humanPaths` under `roles.master` in `jagt.yml`; `act` is the default, `mine` unset keeps the plan and the deploy yours.
 - `roles.master.brief`, else the first of `roles/master/brief.md` and `roles/master/brief.md.dist`; a named brief
   missing refuses the start.
 - The brief's role table replaces the author's roles; a `model` column picks a role's model, `applies` its paths.

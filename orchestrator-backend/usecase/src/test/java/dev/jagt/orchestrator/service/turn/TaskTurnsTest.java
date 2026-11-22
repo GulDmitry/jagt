@@ -18,9 +18,9 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ class TaskTurnsTest {
             reducer,
             event -> {});
     turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+        new TaskTurns(state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn())));
   }
 
   @Nested
@@ -198,12 +198,12 @@ class TaskTurnsTest {
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
     turns.left("ABC-42", "deploy src/Login.java");
     turns.unanswered("ABC-42");
-    String left = state.task("ABC-42").orElseThrow().masterOrNone().left();
+    String left = state.task("ABC-42").orElseThrow().arbiterOrNone().left();
     turns.took("ABC-42");
 
     assertThat(left).isEqualTo("deploy src/Login.java");
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().left()).isEmpty();
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().unanswered())
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().left()).isEmpty();
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().unanswered())
         .isEqualTo("28e31f5a9bb2534351673c735fe222a1");
   }
 }

@@ -89,6 +89,6 @@ class DeployLiftsStopTest {
 
     OriginContext.as(human, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));
 
-    assertThat(state.task("ABC-42").orElseThrow().masterOrNone().liftedStops()).isZero();
+    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().liftedStops()).isZero();
   }
 }

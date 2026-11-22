@@ -1,0 +1,4 @@
+dependencies {
+    api project(':core')
+    implementation "net.sourceforge.pmd:pmd-java:${pmdVersion}"
+}

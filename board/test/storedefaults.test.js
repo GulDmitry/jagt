@@ -13,20 +13,8 @@ test("theBoardIsEmptyAndOff whenNothingWasLoaded", () => {
       store.phases(),
       store.autoReview(),
       store.jobs(),
-      store.actStop(),
-      store.masterMode(),
+      store.chips(),
     ],
-    [
-      [],
-      [],
-      [],
-      [],
-      [],
-      [],
-      { summary: "", enabled: false },
-      null,
-      null,
-      "off",
-    ],
+    [[], [], [], [], [], [], { summary: "", enabled: false }, null, []],
   );
 });

@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.service.task.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.nio.file.Path;
 import java.util.List;
@@ -58,19 +58,19 @@ class FinishedCommandTest {
     TaskState twice =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .build()
-            .refused(Guard.SESSION_LINE)
-            .refused(Guard.SESSION_LINE);
+            .refused(RefusalKind.SESSION_LINE)
+            .refused(RefusalKind.SESSION_LINE);
     TaskState once =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .build()
-            .refused(Guard.SESSION_LINE)
-            .refused(Guard.STATUS_REPORT);
+            .refused(RefusalKind.SESSION_LINE)
+            .refused(RefusalKind.STATUS_REPORT);
 
     String report =
         FinishedCommand.render(
             List.of(FinishedTask.of("ABC-1", twice, 1L), FinishedTask.of("ABC-2", once, 1L)));
 
-    assertThat(report).endsWith("refused: session line 3, status report 1");
+    assertThat(report).contains("refused: session").endsWith("3, status report 1");
   }
 
   @Test

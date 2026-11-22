@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.task;
 
-import dev.jagt.orchestrator.task.acceptance.RoleRecord;
+import dev.jagt.orchestrator.task.turn.RoleRecord;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;

@@ -13,9 +13,11 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
-import dev.jagt.orchestrator.task.stop.Guard;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +29,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 class FlowReportsTest {
+
+  private static final Clock CLOCK = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC);
 
   private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
@@ -40,7 +44,7 @@ class FlowReportsTest {
   private final FlowReports reports =
       new FlowReports(
           stateService,
-          Clock.systemUTC(),
+          CLOCK,
           new Checkers(new TaskChart(Composition.builtIn())),
           new FlowRules(new TaskChart(Composition.builtIn())));
 
@@ -132,7 +136,7 @@ class FlowReportsTest {
         .isInstanceOf(IllegalArgumentException.class);
 
     assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    assertThat(written.get().refusals()).containsExactly(Map.entry(Guard.STATUS_REPORT, 1));
+    assertThat(written.get().refusals()).containsExactly(Map.entry(RefusalKind.STATUS_REPORT, 1));
   }
 
   @Test

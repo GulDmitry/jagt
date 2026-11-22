@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -38,7 +39,7 @@ class FreshWorktreeTest {
 
   @Test
   void runsSetupCommandInTheNewWorktreeWithBranchAndWorktreeFilled() {
-    when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
+    when(processes.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "", ""));
 
     fresh.setUp(request, seeded);
 
@@ -61,7 +62,7 @@ class FreshWorktreeTest {
             "origin/main",
             "u",
             true);
-    when(processes.run(any(), any(), any(List.class))).thenReturn(new Processes.Result(0, "", ""));
+    when(processes.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "", ""));
 
     fresh.setUp(request, limited);
 
@@ -88,7 +89,7 @@ class FreshWorktreeTest {
 
   @Test
   void failsNamingProjectExitAndOutputTailWhereSetupExitsNonZero() {
-    when(processes.run(any(), any(), any(List.class)))
+    when(processes.run(any(), any(), anyList()))
         .thenReturn(new Processes.Result(3, "", "cannot link node_modules"));
 
     assertThatThrownBy(() -> fresh.setUp(request, seeded))
@@ -100,7 +101,7 @@ class FreshWorktreeTest {
 
   @Test
   void failsAsRefusalTheBoardAnswersWhereSetupExitsNonZero() {
-    when(processes.run(any(), any(), any(List.class)))
+    when(processes.run(any(), any(), anyList()))
         .thenReturn(new Processes.Result(3, "", "cannot link node_modules"));
 
     assertThatThrownBy(() -> fresh.setUp(request, seeded))
@@ -109,7 +110,7 @@ class FreshWorktreeTest {
 
   @Test
   void failsNamingProjectWhereSetupPassesItsLimit() {
-    when(processes.run(any(), any(), any(List.class)))
+    when(processes.run(any(), any(), anyList()))
         .thenThrow(new IllegalStateException("Command timed out after PT20M: seed"));
 
     assertThatThrownBy(() -> fresh.setUp(request, seeded))
@@ -121,8 +122,7 @@ class FreshWorktreeTest {
   @Test
   void keepsTheLastLinesOfLongFailure() {
     String output = "first line\n" + "x\n".repeat(60) + "last line";
-    when(processes.run(any(), any(), any(List.class)))
-        .thenReturn(new Processes.Result(1, output, ""));
+    when(processes.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, output, ""));
 
     assertThatThrownBy(() -> fresh.setUp(request, seeded))
         .satisfies(

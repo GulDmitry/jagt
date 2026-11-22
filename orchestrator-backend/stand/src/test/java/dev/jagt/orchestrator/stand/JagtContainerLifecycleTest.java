@@ -34,7 +34,7 @@ class JagtContainerLifecycleTest {
         new JagtContainer(dir, 9000, board, shell, Map.of(), Duration.ofMinutes(5)).up();
 
     assertThat(container.port()).isEqualTo(9000);
-    assertThat(seen.get(0)).containsSubsequence("up", "-d", "--wait", "--pull", "never");
+    assertThat(seen.get(1)).containsSubsequence("up", "-d", "--wait", "--pull", "never");
   }
 
   @Test

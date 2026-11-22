@@ -50,7 +50,7 @@ public record Conflict(
     return !stalled() && now - movedAt >= after.toMillis();
   }
 
-  public boolean askedTheMaster() {
+  public boolean askedTheArbiter() {
     return asked != null;
   }
 

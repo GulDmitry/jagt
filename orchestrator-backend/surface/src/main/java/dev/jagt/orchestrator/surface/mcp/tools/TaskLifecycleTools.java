@@ -27,7 +27,7 @@ public class TaskLifecycleTools implements McpTools {
   public void declare(McpToolRegistry tools) {
     tools.tool(
         "initialize_task",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.CHANGES,
         NewTaskMessage.SCHEMA,
         NewTaskMessage.class,
@@ -46,7 +46,7 @@ public class TaskLifecycleTools implements McpTools {
 
     tools.tool(
         "list_tasks",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.REPORTS,
         NoArguments.schema(
             "Every task, one per line: its id, status, title, last message, each worktree with its"
@@ -57,7 +57,7 @@ public class TaskLifecycleTools implements McpTools {
 
     tools.tool(
         "list_projects",
-        Audience.MASTER,
+        Audience.ROOT,
         Effect.REPORTS,
         NoArguments.schema(
             "Every project jagt works on, one per line: its key (what initialize_task's projectKey"

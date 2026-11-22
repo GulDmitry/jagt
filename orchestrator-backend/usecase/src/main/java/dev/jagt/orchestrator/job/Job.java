@@ -23,7 +23,7 @@ public interface Job {
   @RequiredArgsConstructor
   enum Serves {
     TASKS("your tasks"),
-    MASTER("the master"),
+    ARBITER("the arbiter"),
     TRACKER("the tracker"),
     HOUSEKEEPING("housekeeping");
 

@@ -27,9 +27,9 @@ import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -97,7 +97,7 @@ class CheckerReadsTest {
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
             new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(CheckerFlows.class),
             mock(CheckerWorkspace.class))
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
@@ -153,7 +153,7 @@ class CheckerReadsTest {
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 reader,
                 new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                    state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
                 flows,
                 mock(CheckerWorkspace.class))
             .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
@@ -184,7 +184,7 @@ class CheckerReadsTest {
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
             new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
             flows,
             workspace)
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
@@ -212,7 +212,7 @@ class CheckerReadsTest {
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
             new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(CheckerFlows.class),
             workspace)
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);

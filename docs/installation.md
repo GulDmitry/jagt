@@ -3,6 +3,7 @@
 [← README](../README.md)
 
 On a server, see [docs/server.md](server.md).
+The installers are the install path; [building from source](#build-from-source) is the other.
 
 ## Technologies
 
@@ -13,13 +14,14 @@ absolute path in `jagt.yml` to pin one.
 |---|---|---|
 | Java 25+ | runs the backend | `sdk install java 25-tem` |
 | git | worktrees, branches, and the merge `deploy` makes | Xcode CLT · `apt install git` |
+| `curl` | every hook jagt installs and every headless read | in the OS · `apt install curl` |
 | [Claude Code](https://claude.com/claude-code) | reads every ticket, merge request and review round, headless — whichever CLI writes the code | its own installer |
 | [tmux](https://github.com/tmux/tmux) | the session an agent lives in, outliving the board and the window | `brew install tmux` · `apt install tmux` |
 | `pgrep` | reading whether an agent still runs in its window | in the OS · `apt install procps` |
-| [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent | `brew install kitty` · `apt install kitty` |
+| [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent; not needed with `terminal: none` | `brew install kitty` · `apt install kitty` |
 | [Ghostty](https://ghostty.org) 1.3+ | the alternative to kitty on macOS, `terminal: ghostty` | `brew install --cask ghostty` |
 | [bubblewrap](https://github.com/containers/bubblewrap) + socat | Claude's sandbox, only when `sandbox.enabled: true` keeps a session's writes in its task | built in · `apt install bubblewrap socat` |
-| [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `code` checkpoint | `idea` or `code` on PATH, or installed as an application |
+| A code viewer, for example [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `code` checkpoint | its launcher on PATH, or installed as an application |
 
 jagt refuses to start when one of those is missing — bar Claude Code, whose absence shows at the first read.
 The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
@@ -34,12 +36,48 @@ The rest are optional, and what selects each is in `jagt.desktop.yml.dist`:
 | [Docker](https://www.docker.com/) | `standTest` runs jagt's container; without it the run is skipped, `-Pengine=host` runs the host; `-Pengine=kind` also needs [kind](https://kind.sigs.k8s.io/) and kubectl |
 | [OpenSpec](https://github.com/Fission-AI/OpenSpec) | a repository holding `openspec/`: its hand-back is gated and `ship` folds the change; `npm i -g @fission-ai/openspec` |
 
-## Where jagt writes
+## Where an installed jagt keeps things
 
-Everything jagt writes lives in one data folder, `data/` in the jagt folder by default ([the tree](rules/components.md#the-data-folder)).
+`install.sh` and `install.ps1` install for your user, with no admin rights, and check each download against its published checksum.
+
+| | macOS | Linux | Windows |
+|---|---|---|---|
+| install root | `~/Library/Application Support/jagt` | `$XDG_DATA_HOME/jagt`, else `~/.local/share/jagt` | `%LOCALAPPDATA%\jagt` |
+| launcher | `~/.local/bin/jagt` | `~/.local/bin/jagt` | `jagt.cmd` in `<root>\bin` |
+
+`JAGT_HOME` names another root, `JAGT_BIN` another launcher folder and `JAGT_VERSION` a release instead of the latest.
+The installer adds the launcher's folder to your PATH on Windows; on macOS and Linux it says so when the folder is missing from it.
+
+Inside the root:
+
+| path | holds |
+|---|---|
+| `runtime/` | a Temurin 25 JRE the installer downloads from Adoptium and checks against its checksum; you need no Java of your own |
+| `versions/<v>/jagt.jar` | one folder per installed release; `current` points at the running one |
+| `jagt.yml` | your configuration, absent until the board adds the first project or you copy `jagt.desktop.yml.dist` to it |
+| `roles/`, `jagt.desktop.yml.dist` | jagt's `.dist` files, rewritten at every start; your own copies stay as they are |
+| `data/` | everything jagt writes: state, tasks, worktrees, logs |
+
+Everything jagt writes lives in that one data folder, `data/` in the root by default ([the tree](rules/components.md#the-data-folder)).
 Name another with `orchestrator.data` in `jagt.yml`, `ORCHESTRATOR_DATA` or `JAGT__orchestrator__data`.
 A repository stays where it is.
+With no `jagt.yml` and no project it starts on the defaults, and the board adds the first project.
 What an older version kept in the jagt folder's root, `~/.jagt` or flat in the data folder moves into the tree at the first start.
+
+## Upgrading
+
+An installed jagt, its jar under `versions/<v>/`, keeps a newer release beside the running one and checks its checksum.
+By default an installed jagt asks the release feed, GitHub's releases, once an hour.
+`releaseFeed.kind: none` in `jagt.yml` stops that contact.
+While a newer release is kept, the board offers `upgrade`.
+With `releaseFeed.autoUpgrade: true` and the launcher, jagt switches by itself once no agent session is up, then exits with 75
+so the launcher starts the new release.
+
+## Stopping
+
+Stop an installed jagt by sending TERM or INT to the launcher, or press Ctrl+C in its terminal.
+The launcher passes the signal to jagt, waits until it has ended and then ends itself, so the port is free.
+On Windows, end the launcher's whole process tree: `taskkill /T /PID <pid>`.
 
 ## MCP access comes first
 
@@ -98,7 +136,7 @@ instead.
 
 ## Notes
 
-**IntelliJ run configs.** A fresh worktree opens without the base project's run configs. Mark a config *Store
+**Run configs of a code viewer** (IntelliJ, for example). A fresh worktree opens without the base project's run configs. Mark a config *Store
 as project file* (Run → Edit Configurations) so it lands under `.run/`, which jagt copies into every worktree.
 
 **MCP pre-approval.** Every agent worktree gets a generated `.claude/settings.local.json` pre-approving jagt's
@@ -110,3 +148,22 @@ UTF-8 locale, kitty drops non-ASCII input:
 ```sh
 echo 'export LANG=en_US.UTF-8' >> ~/.zshenv
 ```
+
+## Build from source
+
+Needs Java 25+ and the tools above.
+
+```sh
+git clone https://github.com/GulDmitry/jagt.git && cd jagt
+cp jagt.desktop.yml.dist jagt.yml
+cd orchestrator-backend
+./gradlew build stageJar
+java -jar build/libs/jagt-run.jar
+```
+
+`jagt.yml` sits at the repository root; [Configuration](configuration.md) explains it.
+The board is at http://localhost:8290.
+
+> [!IMPORTANT]
+> Run the **staged** `jagt-run.jar`. `./gradlew build` rewrites `jagt.jar` in place, and a JVM still reading it
+> dies with a `NoClassDefFoundError` that hides the real error — [Troubleshooting](troubleshooting.md).

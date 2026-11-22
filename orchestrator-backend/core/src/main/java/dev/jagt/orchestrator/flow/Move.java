@@ -56,9 +56,9 @@ public record Move(
           "git config or hooks changed since you trusted them; read the line, then trust");
     }
     if (facts.hold().stopped()
-        && facts.hold().stopIsTheMasters()
-        && round.master().may(MasterRight.LIFT)) {
-      return masterDecidesStop(rules, status, facts);
+        && facts.hold().stopIsTheArbiters()
+        && round.arbiter().may(MasterRight.LIFT)) {
+      return arbiterDecidesStop(rules, status, facts);
     }
     if (facts.hold().stopped()) {
       return new Move(
@@ -123,7 +123,7 @@ public record Move(
             facts.delivery().revertConflict()));
   }
 
-  private static Move masterDecidesStop(FlowRules rules, TaskStatus status, Facts facts) {
+  private static Move arbiterDecidesStop(FlowRules rules, TaskStatus status, Facts facts) {
     return new Move(
         phaseOf(status),
         Owner.AGENT,
@@ -150,7 +150,7 @@ public record Move(
     return facts.delivery().requestMerged()
         && FlowRules.awaitsApproval(status)
         && !asking(status, round)
-        && !masterReading(status, round);
+        && !arbiterReading(status, round);
   }
 
   private static Phase phaseOf(TaskStatus status) {
@@ -171,7 +171,7 @@ public record Move(
       RoundState round,
       boolean agentSilent,
       boolean pollStopped) {
-    if (masterReading(status, round) || Checkers.reading(round.checkers()).isPresent()) {
+    if (arbiterReading(status, round) || Checkers.reading(round.checkers()).isPresent()) {
       return Owner.AGENT;
     }
     // ASKING IS STOPPING, whatever status it was asked from: the session waits until its question
@@ -287,11 +287,11 @@ public record Move(
   }
 
   private static Owner turnOf(TaskStatus status, RoundState round) {
-    return Owner.of(Turns.next(status, round.report(), false, round.checkers(), round.master()));
+    return Owner.of(Turns.next(status, round.report(), false, round.checkers(), round.arbiter()));
   }
 
-  private static boolean masterReading(TaskStatus status, RoundState round) {
-    return FlowRules.readByTheMaster(status) && round.masterReading();
+  private static boolean arbiterReading(TaskStatus status, RoundState round) {
+    return FlowRules.readByTheArbiter(status) && round.arbiterReading();
   }
 
   private static boolean asking(TaskStatus status, RoundState round) {
@@ -322,7 +322,7 @@ public record Move(
     if (asking(status, round)) {
       return TaskAction.FOCUS;
     }
-    if (masterReading(status, round)) {
+    if (arbiterReading(status, round)) {
       return null;
     }
     return primaryOf(status, hasReviewRequest, round.report(), round.draftedReplies(), polled);
@@ -390,7 +390,7 @@ public record Move(
       boolean agentSilent,
       boolean polled,
       boolean revertConflict) {
-    if (masterReading(status, round)) {
+    if (arbiterReading(status, round)) {
       return "the Master is reading this round; no action required";
     }
     if (asking(status, round)) {

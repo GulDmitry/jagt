@@ -28,7 +28,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 @Service
 @Slf4j
-public class McpProtocolService implements McpToolRegistry {
+public final class McpProtocolService implements McpToolRegistry {
 
   private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
 
@@ -61,10 +61,10 @@ public class McpProtocolService implements McpToolRegistry {
   }
 
   /**
-   * {@code master}: the call presented the Master's token; a worktree of a registered task outranks
-   * it.
+   * {@code root}: the call presented the root session's token; a worktree of a registered task
+   * outranks it.
    */
-  public Optional<JsonNode> handle(JsonNode message, @Nullable String callerCwd, boolean master) {
+  public Optional<JsonNode> handle(JsonNode message, @Nullable String callerCwd, boolean root) {
     String method = message.path("method").asString(null);
     JsonNode id = message.get("id");
     if (method == null) {
@@ -74,13 +74,13 @@ public class McpProtocolService implements McpToolRegistry {
     boolean isNotification = id == null || id.isNull();
     try {
       String callerTaskId = keepAlive(callerCwd);
-      if (callerTaskId == null && !master) {
+      if (callerTaskId == null && !root) {
         return Optional.of(
             error(
                 id == null ? mapper.nullNode() : id,
                 UNKNOWN_CALLER,
                 "Unknown caller: no registered task's worktree in X-Working-Directory, and no"
-                    + " Master token"));
+                    + " root token"));
       }
       JsonNode result =
           switch (method) {

@@ -75,7 +75,7 @@ export const pageRows = () => [
   [
     span("chip", t("auto-review-off")),
     span("chip bad", t("jobs-failed", { failing: 1, count: 16 })),
-    span("chip", t("header.master")),
+    span("chip", t("header.acting")),
   ],
   [
     span("chip bad", t("offline")),

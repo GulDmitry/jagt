@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.master.MasterMode;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,7 @@ class StagedFixRead implements ConflictRead {
 
   @Override
   public boolean read(String taskId, TaskState task) {
-    if (configService.load().master().modeOrDefault() != MasterMode.ACT) {
+    if (!configService.load().arbiter().acts()) {
       return false;
     }
     Optional<DeployConflicts.WaitingConflict> waiting = conflicts.waiting(taskId, task);

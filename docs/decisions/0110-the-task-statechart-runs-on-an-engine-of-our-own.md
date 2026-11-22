@@ -6,7 +6,7 @@
 
 Accepted 2026-10-30. Extends [0006](0006-the-machine-owns-every-move-a-model-only-judges.md)
 and [0108](0108-a-stop-ends-on-the-read-that-disproves-it.md).
-Completed 2026-10-31: every task condition is a region, legality is the chart's `Offers` edges.
+Completed 2026-10-31 (legality: the chart's `Offers` edges); amended by [0216](0216-the-statechart-engine-follows-harel-and-scxml.md).
 
 ## Context
 

@@ -14,8 +14,10 @@ import dev.jagt.orchestrator.flow.role.CheckerRole;
 import dev.jagt.orchestrator.flow.role.Roles;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptNumbers;
+import dev.jagt.orchestrator.service.master.ActStops;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import dev.jagt.orchestrator.service.stop.ActStops;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +58,11 @@ class RoleCheckStartupTest {
         new RoleCheck(
             roles,
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+                new ConfigSource(paths, new FakeConfigInputs()),
+                agents,
+                actStops,
+                checkers,
+                new KeptNumbers(new ReachLedger())),
             paths);
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -134,59 +140,6 @@ class RoleCheckStartupTest {
   }
 
   @Test
-  void disabledAcceptanceWithNoAcceptanceRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(
-      @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    InstalledRoles roles = new InstalledRoles(paths);
-
-    RoleCheck check =
-        new RoleCheck(
-            roles,
-            new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
-            paths);
-
-    assertThat(check.problems()).isEmpty();
-    assertThat(check.notes())
-        .singleElement()
-        .satisfies(note -> {
-          assertThat(note.key()).isEqualTo("roles/acceptance");
-          assertThat(note.text()).contains("no roles/acceptance/role.yml");
-        });
-  }
-
-  @Test
-  void anEnabledAcceptanceWithNoAcceptanceRoleInstalledRefusesTheStartNamingTheReason(
-      @TempDir Path root) throws Exception {
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    InstalledRoles roles = new InstalledRoles(paths);
-
-    assertThat(
-            new RoleCheck(
-                    roles,
-                    new ConfigService(
-                        new ConfigSource(paths, new FakeConfigInputs()),
-                        agents,
-                        actStops,
-                        checkers),
-                    paths)
-                .problems())
-        .singleElement()
-        .satisfies(problem -> {
-          assertThat(problem.key()).isEqualTo("roles/acceptance");
-          assertThat(problem.text()).contains("no roles/acceptance/role.yml");
-        });
-  }
-
-  @Test
   void rolesKeyNamingFolderWithBriefAndNoRoleFileIsNoUnknownRole(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
@@ -207,7 +160,11 @@ class RoleCheckStartupTest {
         new RoleCheck(
             new InstalledRoles(paths),
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers),
+                new ConfigSource(paths, new FakeConfigInputs()),
+                agents,
+                actStops,
+                checkers,
+                new KeptNumbers(new ReachLedger())),
             paths);
 
     assertThat(check.notes()).isEmpty();
@@ -230,7 +187,11 @@ class RoleCheckStartupTest {
 
     ConfigService config =
         new ConfigService(
-            new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers);
+            new ConfigSource(paths, new FakeConfigInputs()),
+            agents,
+            actStops,
+            checkers,
+            new KeptNumbers(new ReachLedger()));
 
     RoleCheck check = new RoleCheck(new InstalledRoles(paths), config, paths);
 

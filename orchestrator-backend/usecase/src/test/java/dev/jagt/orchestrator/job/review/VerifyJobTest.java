@@ -124,7 +124,9 @@ class VerifyJobTest {
 
     @Test
     void verifiesChangedTreeAgainAfterFailedVerification() {
-      when(verification.key(any())).thenReturn(Optional.of("tree-1"), Optional.of("tree-2"));
+      when(verification.key(any()))
+          .thenReturn(Optional.of("tree-1"))
+          .thenReturn(Optional.of("tree-2"));
       job.runOn(state.tasks());
 
       job.runOn(state.tasks());
@@ -195,7 +197,7 @@ class VerifyJobTest {
             eq(Step.PROBES),
             eq("artifact docs/guide.md — FAILED\nno such file"),
             any(Standing.class));
-    verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-1");
+    verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-1");
     assertThat(state.task("ABC-1").orElseThrow().probes()).containsExactly(passed, failed);
   }
 
@@ -242,7 +244,7 @@ class VerifyJobTest {
               Step.PROBES,
               "artifact docs/guide.md — FAILED\nno such file",
               Standing.of(state.task("ABC-42").orElseThrow()));
-      verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-42");
+      verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-42");
     }
   }
 }

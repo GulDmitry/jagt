@@ -22,7 +22,7 @@ public final class DynamicFailureWatch implements InvocationInterceptor {
       throws Throwable {
     try {
       invocation.proceed();
-    } catch (Throwable thrown) {
+    } catch (Throwable thrown) { // records the failure, then rethrows it unchanged
       failed = true;
       throw thrown;
     }
