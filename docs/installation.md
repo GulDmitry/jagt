@@ -14,6 +14,7 @@ absolute path in `jagt.yml` to pin one.
 |---|---|---|
 | Java 25+ | runs the backend | `sdk install java 25-tem` |
 | git | worktrees, branches, and the merge `deploy` makes | Xcode CLT · `apt install git` |
+| `curl` | every hook jagt installs and every headless read | in the OS · `apt install curl` |
 | [Claude Code](https://claude.com/claude-code) | reads every ticket, merge request and review round, headless — whichever CLI writes the code | its own installer |
 | [tmux](https://github.com/tmux/tmux) | the session an agent lives in, outliving the board and the window | `brew install tmux` · `apt install tmux` |
 | `pgrep` | reading whether an agent still runs in its window | in the OS · `apt install procps` |

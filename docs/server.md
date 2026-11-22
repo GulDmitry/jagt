@@ -2,7 +2,7 @@
 
 [← README](../README.md)
 
-One container, one replica, the board behind a password login. The image holds jagt, git and tmux and no agent CLI
+One container, one replica, the board behind a password login. The image holds jagt, git, curl and tmux and no agent CLI
 ([0171](decisions/0171-the-image-is-a-base-without-agent-clis.md)).
 `tini` is PID 1 and jagt runs under a relaunch loop: a jagt killed by a signal starts again and its sessions' tmux
 keeps running; any other exit ends the container; stopping the container stops both.

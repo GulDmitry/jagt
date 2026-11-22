@@ -24,6 +24,13 @@ public class ToolchainCheck implements StartupCheck {
               "git",
               "git is not on PATH — every worktree, branch and merge jagt makes runs through it."));
     }
+    if (!Executables.onPath("curl")) {
+      problems.add(
+          new Problem(
+              "curl",
+              "curl is not on PATH — every hook jagt installs and every headless read runs through"
+                  + " it, so without it each tool call is refused."));
+    }
     if (Executables.unresolved(Executables.resolve(properties.tmuxCommand()))) {
       problems.add(
           new Problem(
