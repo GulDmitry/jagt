@@ -133,6 +133,48 @@ class StandTimingGateTest {
   }
 
   @Test
+  void seriesExactlyTwiceItsMedianPassesAfterAnOverRun() throws IOException {
+    Path history = dir.resolve("history.json");
+    Files.writeString(
+        history,
+        """
+        {"entries":{"Benchmark":[
+          {"date":1,"benches":[{"name":"startup ubuntu-24.04/compose","value":10.0}]},
+          {"date":2,"benches":[{"name":"startup ubuntu-24.04/compose","value":10.0}]},
+          {"date":3,"benches":[{"name":"startup ubuntu-24.04/compose","value":21.0}]}
+        ]}}
+        """);
+    Path current = dir.resolve("timings.json");
+    Files.writeString(
+        current, "[{\"name\":\"startup ubuntu-24.04/compose\",\"unit\":\"s\",\"value\":20.0}]");
+
+    List<String> violations = StandTimingGate.violations(history, current);
+
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  void seriesExactlyAtItsReferenceBudgetPassesAfterAnOverRun() throws IOException {
+    Path history = dir.resolve("history.json");
+    Files.writeString(
+        history,
+        """
+        {"entries":{"Benchmark":[
+          {"date":1,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":40.0}]},
+          {"date":2,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":40.0}]},
+          {"date":3,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":120.0}]}
+        ]}}
+        """);
+    Path current = dir.resolve("timings.json");
+    Files.writeString(
+        current, "[{\"name\":\"state p95 ubuntu-24.04/kind\",\"unit\":\"ms\",\"value\":100.0}]");
+
+    List<String> violations = StandTimingGate.violations(history, current);
+
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
   void everySeriesPassesWhenThereIsNoHistoryYet() throws IOException {
     Path history = dir.resolve("history.json");
     Files.writeString(history, "{\"entries\":{}}");
