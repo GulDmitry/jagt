@@ -81,7 +81,8 @@ tasks.register('standImage', Exec) {
 
 tasks.register('standImageRemove', Exec) {
     description = 'Removes the jagt-stand* image tags.'
-    commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true'
+    commandLine 'sh', '-c',
+        'docker image rm -f jagt-stand jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true' // absent is removed
     onlyIf { standDocker }  // nothing to remove without Docker
 }
 

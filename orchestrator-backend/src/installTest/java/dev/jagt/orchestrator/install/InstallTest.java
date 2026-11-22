@@ -253,7 +253,7 @@ class InstallTest {
 
   @Test
   @Order(3)
-  @DisabledOnOs(OS.WINDOWS)
+  @DisabledOnOs(OS.WINDOWS) // Windows has no SIGTERM
   void endsTheJvmAndFreesThePortWhenTheLauncherGetsTerm() throws Exception {
     List<ProcessHandle> jvms =
         ProcessHandle.allProcesses()
