@@ -58,9 +58,9 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 
 ## Git and committing
 
-- **The base branch is read-only.** Nothing pushes or merges to it, ever.
+- **The base branch is read-only**; jagt's own merges a green request ([0223](docs/decisions/0223-main-moves-by-a-green-pull-request.md)).
 - **Only `deploy` and its undo `revert` write a shared branch**: `ship` only opens or updates a request; `revert` adds a commit — no force-push.
-- A sub-agent pushes **its own task branch** and nothing else.
+  A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's

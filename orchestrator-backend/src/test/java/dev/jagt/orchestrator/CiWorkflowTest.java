@@ -18,11 +18,11 @@ class CiWorkflowTest {
   private static final Path CODEQL = Path.of("../.github/workflows/codeql.yml");
 
   @Test
-  void publishesReleaseOnlyOnceEveryOtherJobIsGreen() {
+  void publishesReleaseOnlyOnceEveryJobOnTheMainPushIsGreen() {
     Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
     Set<String> others =
         jobs.keySet().stream()
-            .filter(job -> !job.equals("release") && !job.equals("pages"))
+            .filter(job -> !job.equals("release") && !job.equals("heavy"))
             .collect(Collectors.toSet());
     assertThat(Objects.requireNonNull(jobs.get("release")).get("needs"))
         .asInstanceOf(list(String.class))
@@ -87,7 +87,7 @@ class CiWorkflowTest {
   }
 
   @Test
-  void startsOnGithubOnlyOnPushPullRequestWorkflowCallAndTag() {
+  void startsOnGithubOnlyOnPushPullRequestAndWorkflowCall() {
     assertThat(CiWorkflow.githubTriggers())
         .containsExactlyInAnyOrder("push", "pull_request", "workflow_call");
   }
@@ -103,11 +103,45 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheHeavyJobOnScheduleTagAndPullRequest() {
+  void runsTheHeavyJobOnScheduleAndPullRequest() {
     assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
-        .isEqualTo(
-            "inputs.nightly || github.event_name == 'pull_request'"
-                + " || startsWith(github.ref, 'refs/tags/v')");
+        .isEqualTo("inputs.nightly || github.event_name == 'pull_request'");
+  }
+
+  @Test
+  void startsNoCiRunOnTagsSoNobodyPublishesByPushingOne() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .doesNotContainPattern("(?m)^\\s+tags:")
+        .doesNotContain("refs/tags/v");
+  }
+
+  @Test
+  void publishesOnThePushToMainOnlyWhenTheVersionsTagDoesNotExistYet() {
+    Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
+    String test = Objects.requireNonNull(jobs.get("test")).toString();
+
+    assertThat(test)
+        .contains("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+        .contains("printVersion")
+        .contains("git ls-remote --exit-code --tags origin");
+    assertThat(Objects.requireNonNull(jobs.get("release")).get("if"))
+        .isEqualTo("needs.test.outputs.new == 'true'");
+  }
+
+  @Test
+  void createsTheReleaseTagOnThePushedShaWithoutCancellingTheRunOnMain() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release).contains("--target \"$GITHUB_SHA\"").doesNotContain("--verify-tag");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .contains("cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}");
+  }
+
+  @Test
+  void letsTheNightlyBeStartedByHandAndLogsItsDelayOnlyOnTheSchedule() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
+        .contains("  workflow_dispatch:")
+        .contains("if: github.event_name == 'schedule'");
   }
 
   @Test
@@ -172,7 +206,7 @@ class CiWorkflowTest {
         .contains("cyclonedxBom")
         .contains("build/reports/sbom/jagt.cdx.json")
         .contains("jagt-$version.cdx.json")
-        .contains("gh release upload \"$GITHUB_REF_NAME\" build/release/*");
+        .contains("gh release upload \"$TAG\" build/release/*");
   }
 
   @Test
@@ -290,12 +324,14 @@ class CiWorkflowTest {
   }
 
   @Test
-  void deletesTheImageAndThePagesDeploymentsOfEveryReleaseTheRetentionDeletes() {
+  void deletesTheImageOfEveryReleaseTheRetentionDeletesAndEveryPagesDeploymentButTheNewest() {
     String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
 
     assertThat(release)
         .containsPattern("dataaxiom/ghcr-cleanup-action@[0-9a-f]{40}")
         .contains("delete-tags=${{ steps.retention.outputs.image-tags }}")
+        .contains("jq -r '.[1:][] | .id'")
+        .doesNotContain("REFS")
         .contains("state=inactive")
         .contains("deployments/$id")
         .contains("packages=write")

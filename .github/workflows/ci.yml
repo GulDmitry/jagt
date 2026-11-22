@@ -1,12 +1,12 @@
-# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly, on a pull request and on a tag,
+# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a pull request,
 # `stand` per engine (compose on every
-# run, kind nightly and on a pull request: the runner ships kind and kubectl), `release` on a tag after all. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
+# run, kind nightly and on a pull request: the runner ships kind and kubectl), `release` on a push to main after all,
+# only when the version's tag is new. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
 name: ci
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
   workflow_call:
     inputs:
@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}-${{ inputs.nightly }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
   run:
@@ -31,6 +31,9 @@ jobs:
     if: '!inputs.nightly'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      new: ${{ steps.version.outputs.new }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -54,6 +57,17 @@ jobs:
       - run: ./gradlew --no-daemon test
       - run: scripts/vulnerability-scan.sh
       - run: ./gradlew --no-daemon checkLicences
+      - id: version
+        name: read the version and whether its tag is new
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          tag="v$(./gradlew --no-daemon -q printVersion)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -63,7 +77,7 @@ jobs:
 
   heavy:
     name: heavy suites
-    if: inputs.nightly || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+    if: inputs.nightly || github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -175,8 +189,8 @@ jobs:
 
   release:
     name: release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, heavy, stand, install]
+    if: needs.test.outputs.new == 'true'
+    needs: [test, stand, install]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -217,17 +231,19 @@ jobs:
       - name: attach them to the release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.test.outputs.tag }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" build/release/* --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" build/release/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" build/release/* --generate-notes --verify-tag
+            gh release create "$TAG" build/release/* --generate-notes --target "$GITHUB_SHA"
           fi
       - name: publish the image
         id: image
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: scripts/publish-image.sh "$GITHUB_REF_NAME"
+          TAG: ${{ needs.test.outputs.tag }}
+        run: scripts/publish-image.sh "$TAG"
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ steps.image.outputs.name }}
@@ -237,10 +253,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           DIGEST: ${{ steps.image.outputs.digest }}
+          TAG: ${{ needs.test.outputs.tag }}
         run: |
           version=$(./gradlew --no-daemon -q printVersion)
           echo "${DIGEST#sha256:}  ghcr.io image jagt:$version" > "build/release/jagt-$version.image.sha256"
-          gh release upload "$GITHUB_REF_NAME" "build/release/jagt-$version.image.sha256" --clobber
+          gh release upload "$TAG" "build/release/jagt-$version.image.sha256" --clobber
       - name: keep every patch of the last two minors
         id: retention
         env:
@@ -252,7 +269,6 @@ jobs:
                | sort_by(.at) | reverse | .[:2] | map(.minor)) as $kept
             | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName')
           for tag in $tags; do gh release delete "$tag" --yes; done
-          echo "refs=$(echo $tags)" >> "$GITHUB_OUTPUT"
           echo "image-tags=$(printf '%s\n' $tags | sed 's/^v//' | paste -sd, -)" >> "$GITHUB_OUTPUT"
       - name: delete the deleted releases' images
         if: steps.retention.outputs.image-tags != ''
@@ -260,13 +276,12 @@ jobs:
         with:
           packages: ${{ github.event.repository.name }}
           delete-tags: ${{ steps.retention.outputs.image-tags }}
-      - name: delete the deleted releases' Pages deployments
+      - name: delete every Pages deployment but the newest
         env:
           GH_TOKEN: ${{ github.token }}
-          REFS: ${{ steps.retention.outputs.refs }}
         run: |
           gh api "repos/$GITHUB_REPOSITORY/deployments?environment=github-pages&per_page=100" |
-            jq -r --arg refs "$REFS" '.[1:][] | select(.ref as $r | ($refs | split(" ")) | index($r)) | .id' |
+            jq -r '.[1:][] | .id' |
             while read -r id; do
               gh api -X POST "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" -f state=inactive
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/deployments/$id"

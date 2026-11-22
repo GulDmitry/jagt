@@ -59,15 +59,11 @@ and the MCP servers its reads need.
 
 ## Releasing
 
-1. Bump `version` in `orchestrator-backend/build.gradle`.
-2. Commit that bump — the tag must point at it, or the `jar` job reads the old version and attaches the
-   previous jar to the release with the pipeline green.
-3. Push `main` alone and wait until CI on that commit is green; a red run is fixed on `main` first.
-4. Tag the bump commit: `git tag -a vX.Y.Z -m "Release X.Y.Z"`.
-5. Push the tag: `git push origin vX.Y.Z`.
+1. Bump `version` in `orchestrator-backend/build.gradle` on a branch; open one pull request.
+2. Merge it once its required CI is green: `main` is protected.
+3. CI on the push to `main` reads the version and, only when tag `vX.Y.Z` does not exist yet, creates it and publishes.
 
-The `jar` job builds `jagt-X.Y.Z.jar`; the `release` job attaches it to that tag's GitHub release only once every
-suite is green.
+The `release` job builds `jagt-X.Y.Z.jar` and attaches it to that tag's GitHub release only once every suite is green.
 Nothing else is published — jagt is on no package manager.
 
 ## The board's icon
