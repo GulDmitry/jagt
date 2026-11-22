@@ -38,8 +38,9 @@ tasks.register('standTest', Test) {
     systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
     systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '8'
     systemProperty 'stand.parallelism', standParallelism
-    // Absolute time budgets hold on the reference machine only; a shared runner sets -Pbudgets=false.
-    systemProperty 'stand.budgets', project.findProperty('budgets') ?: 'true'
+    // Absolute time budgets are judged only with -Pbudgets=true, on the idle reference machine; any other run
+    // records its timings and the trend gate judges them.
+    systemProperty 'stand.budgets', project.findProperty('budgets') ?: 'false'
     systemProperty 'stand.base', standBase
     systemProperty 'stand.jar', standJar
     systemProperty 'stand.repo', standRepo

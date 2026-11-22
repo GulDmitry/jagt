@@ -66,7 +66,7 @@ The CI stand job SHALL keep the history in the Actions cache, never a pushed bra
 It SHALL compare each series with the median of its last ten history entries and fail naming the series past 200 % of that median.
 A series with no history entry SHALL pass.
 #### Scenario: A run on a shared runner
-- **WHEN** the stand job runs `-Pbudgets=false` on a runner
+- **WHEN** the stand job runs without `-Pbudgets=true` on a runner
 - **THEN** `startup <runner>/<engine>` and `state p95 <runner>/<engine>` are written and compared with the median of the history
 
 #### Scenario: A slowdown

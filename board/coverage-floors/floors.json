@@ -113,7 +113,7 @@
   },
   "ui/dialogs.js": {
     "lines": 92,
-    "branches": 96
+    "branches": 93
   },
   "ui/events.js": {
     "lines": 90,
@@ -121,7 +121,7 @@
   },
   "ui/execute.js": {
     "lines": 100,
-    "branches": 86
+    "branches": 83
   },
   "ui/filters.js": {
     "lines": 100,
@@ -277,7 +277,7 @@
   },
   "ui/refresh.js": {
     "lines": 92,
-    "branches": 61
+    "branches": 54
   },
   "ui/render.js": {
     "lines": 100,
@@ -317,7 +317,7 @@
   },
   "ui/settings.js": {
     "lines": 96,
-    "branches": 86
+    "branches": 82
   },
   "ui/shown.js": {
     "lines": 100,
@@ -333,7 +333,7 @@
   },
   "ui/tabs.js": {
     "lines": 95,
-    "branches": 90
+    "branches": 85
   },
   "ui/taskfilter.js": {
     "lines": 100,

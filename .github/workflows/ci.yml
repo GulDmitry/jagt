@@ -182,7 +182,7 @@ jobs:
           key: stand-timings-${{ matrix.engine }}-${{ github.run_id }}
           restore-keys: stand-timings-${{ matrix.engine }}-
       - name: run the stand without a model on the engine
-        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Pbudgets=false -Prunner=ubuntu-24.04
+        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Prunner=ubuntu-24.04
       - name: fail when a stand timing passes twice the median of its last ten runs
         run: ./gradlew --no-daemon standTimingGate
       - name: store the stand timing trend

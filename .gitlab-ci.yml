@@ -91,7 +91,7 @@ stand:
     - apt-get install -y --no-install-recommends docker.io docker-compose-v2 curl
     - git config --global user.email "ci@example.com"
     - git config --global user.name "jagt ci"
-    - ./gradlew --no-daemon standTest -Pmodelfree -Pengine=compose -Pbudgets=false
+    - ./gradlew --no-daemon standTest -Pmodelfree -Pengine=compose
   artifacts:
     when: on_failure
     expire_in: 1 week

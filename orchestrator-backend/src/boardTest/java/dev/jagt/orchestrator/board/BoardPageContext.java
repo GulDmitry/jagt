@@ -135,7 +135,7 @@ abstract class BoardPageContext {
 
   BrowserContext session;
 
-  private BoardCoverage coverage;
+  private BoardBrowser.Coverage coverage;
 
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
@@ -260,7 +260,7 @@ abstract class BoardPageContext {
     }
     nameTheProjectsTheBoardOffers(root);
     session = browser.newContext();
-    coverage = new BoardCoverage(session, port);
+    coverage = new BoardBrowser.Coverage(session, port);
   }
 
   @AfterEach
