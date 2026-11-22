@@ -18,6 +18,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    `./gradlew pitestDiff -PpitestDiff=main` runs once, at the done step; the brief's done command runs once, after the last round.
    The full suite is never run: the session that launched you runs its batch's modules as AGENTS.md "Tests" says.
    One Gradle run per tree at a time: a second one rewrites the class dirs the first is reading.
+   Each Gradle command runs through the machine-wide Gradle slot your setup provides, if any, as the brief names it.
    Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
    A defect class that can recur becomes a row of `fitness.yml` or a `Fitness` class, prose only where neither can say it;
    `./gradlew fitness -Pfitness.block=<dimension>[.<characteristic>[.<subcharacteristic>]]` runs one block of the rules.
