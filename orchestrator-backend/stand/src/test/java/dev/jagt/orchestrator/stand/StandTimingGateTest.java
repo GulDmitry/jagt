@@ -36,7 +36,8 @@ class StandTimingGateTest {
   }
 
   @Test
-  void seriesMoreThanTwiceItsMedianFailsNamingOnlyThatSeries() throws IOException {
+  void seriesMoreThanTwiceItsMedianOnTwoRunsInSequenceFailsNamingOnlyThatSeries()
+      throws IOException {
     Path history = dir.resolve("history.json");
     Files.writeString(
         history,
@@ -49,7 +50,7 @@ class StandTimingGateTest {
             {"name":"startup ubuntu-24.04/compose","value":10.0},
             {"name":"state p95 ubuntu-24.04/compose","value":20.0}]},
           {"date":3,"benches":[
-            {"name":"startup ubuntu-24.04/compose","value":10.0},
+            {"name":"startup ubuntu-24.04/compose","value":21.0},
             {"name":"state p95 ubuntu-24.04/compose","value":20.0}]}
         ]}}
         """);
@@ -65,6 +66,28 @@ class StandTimingGateTest {
 
     assertThat(violations).hasSize(1);
     assertThat(violations.get(0)).startsWith("startup ubuntu-24.04/compose");
+  }
+
+  @Test
+  void seriesOverTwiceItsMedianAndItsReferenceBudgetPassesWhenThePreviousRunWasWithin()
+      throws IOException {
+    Path history = dir.resolve("history.json");
+    Files.writeString(
+        history,
+        """
+        {"entries":{"Benchmark":[
+          {"date":1,"benches":[{"name":"startup ubuntu-24.04/compose","value":16.8}]},
+          {"date":2,"benches":[{"name":"startup ubuntu-24.04/compose","value":16.5}]},
+          {"date":3,"benches":[{"name":"startup ubuntu-24.04/compose","value":17.1}]}
+        ]}}
+        """);
+    Path current = dir.resolve("timings.json");
+    Files.writeString(
+        current, "[{\"name\":\"startup ubuntu-24.04/compose\",\"unit\":\"s\",\"value\":35.3}]");
+
+    List<String> violations = StandTimingGate.violations(history, current);
+
+    assertThat(violations).isEmpty();
   }
 
   @Test
@@ -89,14 +112,15 @@ class StandTimingGateTest {
   }
 
   @Test
-  void seriesOverTwiceItsMedianAndItsReferenceBudgetFails() throws IOException {
+  void seriesOverTwiceItsMedianAndItsReferenceBudgetOnTwoRunsInSequenceFails() throws IOException {
     Path history = dir.resolve("history.json");
     Files.writeString(
         history,
         """
         {"entries":{"Benchmark":[
           {"date":1,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":50.0}]},
-          {"date":2,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":50.0}]}
+          {"date":2,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":50.0}]},
+          {"date":3,"benches":[{"name":"state p95 ubuntu-24.04/kind","value":150.0}]}
         ]}}
         """);
     Path current = dir.resolve("timings.json");

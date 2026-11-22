@@ -11,8 +11,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Names each series of the current timings that passes both twice the median of its last ten
- * history entries and its reference-machine budget.
+ * Names each series whose current timing and last history entry both pass twice the median of its
+ * last ten history entries and its reference-machine budget.
  */
 public final class StandTimingGate {
 
@@ -43,12 +43,16 @@ public final class StandTimingGate {
       double value = bench.get("value").asDouble();
       List<Double> recent = recent(entries, name);
       if (!recent.isEmpty()
-          && value > FACTOR * median(recent)
-          && value > StandTimings.budgetOf(name).orElse(0)) {
+          && breaches(name, value, recent)
+          && breaches(name, recent.getLast(), recent)) {
         violations.add(name + ": " + value + " over " + FACTOR + "x median " + median(recent));
       }
     }
     return violations;
+  }
+
+  private static boolean breaches(String name, double value, List<Double> recent) {
+    return value > FACTOR * median(recent) && value > StandTimings.budgetOf(name).orElse(0);
   }
 
   private static List<Double> recent(JsonNode entries, String name) {

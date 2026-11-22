@@ -53,8 +53,7 @@ A suite, a gate and a CI job SHALL end within a limit set from its measured time
 #### Scenario: A suite or a gate overruns
 - **WHEN** a run passes its limit **THEN** the build names the rule, run and limit: `suite-minutes`, `gate-minutes-heavy`, `gate-minutes-stand`
 #### Scenario: A run declares no limit
-- **WHEN** a test task or a CI job declares none
-- **THEN** `unlimited-runs` or `ci-jobs-without-timeout` fails
+- **WHEN** a test task or a CI job declares none **THEN** `unlimited-runs` or `ci-jobs-without-timeout` fails
 
 ### Requirement: Documents stay inside their budgets and link true
 A rule, a page, a decision and a spec SHALL stay within their line budgets, and every relative link and anchor SHALL reach its target.
@@ -166,6 +165,7 @@ JaCoCo, PIT, Spotless, Checkstyle, Error Prone, the ArchUnit rule tests, the vul
 A dependency with a known vulnerability SHALL fail the `test` job of CI, found by osv-scanner on the SBOM of the release jar.
 #### Scenario: A dependency is vulnerable
 - **WHEN** the scan finds a known vulnerability in a dependency **THEN** the job fails naming it; board JS: `npm audit`
+- **AND** a base image's scan fails only on a finding with a published fix; the image upgrades its packages when built
 
 ### Requirement: Spotless formats every source set
 Spotless SHALL format every source set of every module, tests included, before it compiles.

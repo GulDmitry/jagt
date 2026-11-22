@@ -180,6 +180,29 @@ class CiWorkflowTest {
   }
 
   @Test
+  void grantsTheNightlyEveryPermissionThatCiJobsItCallsAskFor() {
+    Map<?, ?> nightly =
+        new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")));
+    Set<Object> asked =
+        CiWorkflow.jobs().values().stream()
+            .map(job -> job.get("permissions"))
+            .filter(Map.class::isInstance)
+            .flatMap(permissions -> ((Map<?, ?>) permissions).entrySet().stream())
+            .collect(Collectors.<Object>toSet());
+
+    Map<?, ?> granted = (Map<?, ?>) Objects.requireNonNull(nightly.get("permissions"));
+
+    assertThat(Set.<Object>copyOf(granted.entrySet())).containsAll(asked);
+  }
+
+  @Test
+  void storesTheStandTimingTrendOnAnEventWithoutCommitByReadingTheCommitThroughTheApi() {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps")))
+        .contains("github-token=${{ github.token }}")
+        .contains("ref=${{ github.sha }}");
+  }
+
+  @Test
   void startsTheNightlyOffTheHourAndLogsItsStartDelayAsNotice() {
     String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
 
@@ -393,6 +416,22 @@ class CiWorkflowTest {
                 + " steps.image.outputs.digest }}")
         .doesNotContain("osv-scanner-action");
     assertThat(scan).contains("sha256sum -c").contains("\"$tool\" \"$@\"");
+  }
+
+  @Test
+  void failsAnImageScanOnlyWhenFindingHasPublishedFix() {
+    String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
+    String dockerfile = SourceRoots.read(Path.of("../base/Dockerfile"));
+
+    assertThat(scan).contains("--format vertical").contains("Minimal Fix Version: '[^N]");
+    assertThat(dockerfile).contains("apt-get upgrade -y");
+  }
+
+  @Test
+  void passesAnImageScanWhenTheOnlyFixNeedsUbuntuPro() {
+    String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
+
+    assertThat(scan).contains("grep -Fvq '~esm'");
   }
 
   @Test
