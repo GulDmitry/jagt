@@ -3,4 +3,7 @@ FROM ${BASE}
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
 RUN npm install -g @anthropic-ai/claude-code@2.1.319
+# A home without this stops an interactive agent CLI at its first-run theme picker; entrypoint.sh lays it over HOME.
+ENV JAGT_AGENT_SEED=/opt/agent-seed JAGT_AGENT_HOME=/data/home
+RUN mkdir -p /opt/agent-seed && printf '{"hasCompletedOnboarding":true,"theme":"dark"}\n' > /opt/agent-seed/.claude.json
 USER 10001:0

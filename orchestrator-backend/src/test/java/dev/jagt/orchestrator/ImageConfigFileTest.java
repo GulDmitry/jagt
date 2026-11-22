@@ -40,4 +40,14 @@ class ImageConfigFileTest {
     assertThat(SourceRoots.read(Path.of(dockerfile)))
         .contains("install -y --no-install-recommends git curl tmux ");
   }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"stand/src/stand/compose/Dockerfile", "../base/Dockerfile.stand"})
+  void standAgentStartsPastItsFirstRunOnboarding(String dockerfile) {
+    assertThat(SourceRoots.read(Path.of(dockerfile)))
+        .contains(
+            "JAGT_AGENT_SEED=/opt/agent-seed JAGT_AGENT_HOME=/data/home",
+            "\"hasCompletedOnboarding\":true",
+            "> /opt/agent-seed/.claude.json");
+  }
 }
