@@ -21,7 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class BoardAssetsTest {
 
-  private static final Path STATIC = Path.of("../../board");
+  private static final Path STATIC = Path.of("build/resources/main/static");
   private static final Pattern LOADED_FROM_OUTSIDE =
       Pattern.compile(
           "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:"
@@ -152,8 +152,6 @@ class BoardAssetsTest {
           files
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
-              .filter(path -> !path.startsWith(STATIC.resolve("node_modules")))
-              .filter(path -> !path.startsWith(STATIC.resolve("test")))
               .filter(path -> !path.endsWith("mermaid.min.js"))
               .filter(path -> !path.endsWith("hooks.mjs"))
               .filter(path -> !path.startsWith(STATIC.resolve("vendor/codemirror")))
@@ -175,7 +173,6 @@ class BoardAssetsTest {
           files
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$"))
-              .filter(path -> !path.startsWith(STATIC.resolve("node_modules")))
               .toList();
     }
 
@@ -189,11 +186,7 @@ class BoardAssetsTest {
   void noBoardPageRunsAnInlineScriptButItsImportMap() throws IOException {
     List<Path> pages;
     try (Stream<Path> files = Files.walk(STATIC)) {
-      pages =
-          files
-              .filter(path -> path.toString().endsWith(".html"))
-              .filter(path -> !path.startsWith(STATIC.resolve("node_modules")))
-              .toList();
+      pages = files.filter(path -> path.toString().endsWith(".html")).toList();
     }
 
     assertThat(pages)
@@ -205,6 +198,16 @@ class BoardAssetsTest {
   }
 
   @Test
+  void theJarServesNoTestOfTheBoard() throws IOException {
+    List<Path> tests;
+    try (Stream<Path> files = Files.walk(STATIC)) {
+      tests = files.filter(path -> path.toString().endsWith(".test.js")).toList();
+    }
+
+    assertThat(tests).isEmpty();
+  }
+
+  @Test
   void noBoardScriptFormatsTimeInTheBrowsersLocaleOrZone() throws IOException {
     List<Path> scripts;
     try (Stream<Path> files = Files.walk(STATIC)) {
@@ -213,7 +216,6 @@ class BoardAssetsTest {
               .filter(Files::isRegularFile)
               .filter(path -> path.toString().matches(".*\\.m?js$"))
               .filter(path -> !path.startsWith(STATIC.resolve("vendor")))
-              .filter(path -> !path.startsWith(STATIC.resolve("node_modules")))
               .toList();
     }
 
