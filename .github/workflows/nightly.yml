@@ -19,6 +19,21 @@ jobs:
     secrets: inherit
     with:
       nightly: true
+  mutate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: board/package-lock.json
+      - name: Mutate the board's covered JavaScript
+        working-directory: board
+        run: |
+          npm ci
+          npm run mutate
   delay:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest

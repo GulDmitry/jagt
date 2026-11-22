@@ -8,5 +8,5 @@ export default {
   reporters: ["clear-text"],
   tempDirName: ".stryker-tmp",
   cleanTempDir: true,
-  thresholds: { high: 80, low: 60, break: null },
+  thresholds: { high: 80, low: 60, break: 95 },
 };
