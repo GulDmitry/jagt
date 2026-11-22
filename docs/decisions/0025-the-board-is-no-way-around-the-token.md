@@ -35,6 +35,8 @@ That admission superseded by [0026](0026-the-guards-gaps-after-round-three.md).
 - `Sec-Fetch-Site`: a browser omits it outside a secure context, so a board on `server.address` would lose every
   button.
 - A per-task token now: every runtime's MCP config, the hooks and the e2e harness change for the same reach.
+  Server mode keeps it rejected: one OS user per pod, so a session reads `master-token` and the credential
+  beside any token ([threat model](../threat-model.md#gaps)).
 
 ## Reopen when
 

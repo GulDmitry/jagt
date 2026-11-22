@@ -11,6 +11,9 @@
 | state | `state.json`, `finished.jsonl`, `/data` on a server | tasks, history, who asked; read whole by `GET /state` |
 | Master token | `jagt/master-token` beside `state.json`, mode `rw-------`, drawn at each start (`MasterToken`) | whoever presents it is the Master and holds every verb |
 | worktrees | one per task, plus the repositories | code a session writes; a push leaves from here |
+| session tools | a session's shell, network, Read and Edit tools | run as the session's OS user, which is jagt's |
+| code-host credential | an SSH key or `GH_TOKEN`/`GITLAB_TOKEN` in the session's HOME or environment | pushes and opens requests as the bot |
+| tracker MCP | the mounted MCP file, its `${VAR}` secrets | reads and writes the tracker as the bot |
 | credential references | env names (`passwordHash`, `clientSecretEnv`, `webhookEnv`), a mounted MCP file, `GH_TOKEN`/`GITLAB_TOKEN` | jagt holds names, never values in `jagt.yml` or an image |
 | the board | HTTP on `server.address:8290`, default `127.0.0.1` | acts as the human: every verb a human holds |
 | the login session | cookie `JSESSIONID`, same-site strict, Secure behind an ingress | what stands for the owner under `password` or `oidc` |
@@ -121,6 +124,41 @@ then the board (login, `BackedOffPeers`). Filters: `OriginFilter` (sets who aske
 | a value reaches a shell | every process starts from an argument list, its binary from configuration; no shell line | `ProcessRunnerTest` | V5 |
 | a container escapes | restricted Pod Security, no service-account token, NetworkPolicy | `KubernetesManifestsTest` | V13 |
 
+## Agent sessions
+
+A session is a model run on text it did not write: a ticket, a repository file, a review comment. Its reach is the OS user's.
+
+### What a session reaches
+
+| asset | what it does there |
+|-------|--------------------|
+| worktrees | reads and writes its own; the tools reach the others by path |
+| session tools | runs any shell line `ToolGate` allows, any network call the pod's `NetworkPolicy` allows |
+| Master token | reads `master-token` with the Read tool |
+| code-host credential | uses it through `git`, `gh`, `glab` |
+| tracker MCP | calls the tracker's tools with the bot's rights |
+
+### What a session forges
+
+| forged | how | what stands in |
+|--------|-----|----------------|
+| `X-Working-Directory` | names another worktree to `/mcp` or `/api/agent` | `LoopbackOrRootTokenTest` off loopback; same-user pass ([0025](decisions/0025-the-board-is-no-way-around-the-token.md)) |
+| Master token | reads the file | `ToolGateTest` refuses a shell line naming it; the Read tool passes |
+| `state.json` | writes it | `StateServiceTest` restores a damaged file; same-user pass |
+| verdict file | writes it with `state.json` | same-user pass ([guards](rules/guards.md)) |
+| origin | sends `Origin` from `curl` | `NotThePageTest`; a board write needs Origin or the token |
+
+### OWASP LLM Top 10 2025
+
+| risk | in scope | defence | holds it |
+|------|----------|---------|----------|
+| LLM01 prompt injection | a ticket, repository file or review comment steers a session | no defence against the text; its effect is bounded to the task | `ToolGateTest`, `McpToolScopeTest`, Gaps |
+| LLM02 sensitive information disclosure | a session writes a secret into a log, a card or a request | values only by env name; log filter | `TaskAliasLogFilterTest`, Gaps |
+| LLM06 excessive agency | a session pushes, deploys or calls a Master verb | tool list by audience, shell gate, plan first, read-only base branch | `McpToolScopeTest`, `ToolGateTest`, `ReadGateControllerTest` |
+| LLM07 system prompt leakage | a session reads its role prompt | prompts hold no secret, credentials come by env name | Gaps |
+
+LLM03, LLM04, LLM05, LLM08, LLM09 and LLM10 name no jagt-owned model, store or endpoint: jagt trains and hosts nothing.
+
 ## Gaps
 
 | gap | what stands in for it | open |
@@ -132,3 +170,5 @@ then the board (login, `BackedOffPeers`). Filters: `OriginFilter` (sets who aske
 | no DAST | the filter and refusal tests | a DAST scan |
 | no HSTS from jagt | TLS ends at the ingress | none |
 | ASVS IDs are chapters, not individual requirements | practices names the same grain | a requirement-level audit |
+| a pod session reaches the Master token and the code-host credential | one OS user per pod: the Read tool opens `master-token` and the credential; `NetworkPolicy` and host branch protection bound what a copy does ([0025](decisions/0025-the-board-is-no-way-around-the-token.md)) | sessions as another user |
+| a session reads its role prompt, the seed and every file of its worktree | no prompt or seed holds a secret | none |
