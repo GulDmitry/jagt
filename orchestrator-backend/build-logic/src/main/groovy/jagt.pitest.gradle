@@ -141,6 +141,7 @@ if (targets || fitnessModules) {
 def filterJar = files(project(':mutation-scope').tasks.named('jar'))
 targets.each { module, types ->
     project(module).pitest.targetClasses = types.collectMany { [it, it + '$*'] }
+    project(module).pitest.targetTests = types.collect { "*${it.tokenize('.').last()}*".toString() }.unique()
     project(module).pitest.features = ["+CHANGEDLINES(lines[${changedLinesFile.absolutePath}])".toString()]
     project(module).dependencies.add('pitest', filterJar) // a file, not a project dependency: the lock state of `pitest` stays as it is
 }
