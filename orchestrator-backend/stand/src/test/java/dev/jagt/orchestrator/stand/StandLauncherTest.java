@@ -111,7 +111,8 @@ class StandLauncherTest {
 
   @Test
   void containerRunGetsPasswordHashAndItsMarkerNamesTheContainer() throws Exception {
-    StandEngine engine = new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launches);
+    StandEngine engine =
+        new StandEngine(StandEngine.COMPOSE, tool -> true, name -> "set", launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
     try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {

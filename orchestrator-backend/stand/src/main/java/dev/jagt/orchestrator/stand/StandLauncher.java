@@ -62,6 +62,9 @@ final class StandLauncher {
       throws IOException {
     engine.ready();
     engine.needsRoot(scenario);
+    if (replayed == null) {
+      engine.needsCredential();
+    }
     Path root = newRoot();
     boolean container = engine.image();
     StandMarker marker =

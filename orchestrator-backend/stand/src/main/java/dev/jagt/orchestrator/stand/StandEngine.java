@@ -19,6 +19,8 @@ public final class StandEngine {
 
   private static final Path POD_FIXTURES = Path.of("/data/stand");
   private static final int IMAGE_PORT = 8290;
+  private static final List<String> CREDENTIALS =
+      List.of("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY");
 
   @FunctionalInterface
   public interface Launch {
@@ -114,12 +116,21 @@ public final class StandEngine {
     }
   }
 
+  public void needsCredential() {
+    if (image() && CREDENTIALS.stream().allMatch(key -> environment.apply(key) == null)) {
+      throw new StandFailure(
+          "the image has no Claude login: export "
+              + String.join(" or ", CREDENTIALS)
+              + " in the shell that runs the stand");
+    }
+  }
+
   public JagtEngine start(Path root, int port, String password) {
     ready();
     Map<String, String> env = new HashMap<>();
     env.put("JAGT_PORT", Integer.toString(port));
     env.put("JAGT_STAND_ROOT", root.toString());
-    for (String key : List.of("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")) {
+    for (String key : CREDENTIALS) {
       Optional.ofNullable(environment.apply(key)).ifPresent(value -> env.put(key, value));
     }
     return Objects.requireNonNull(launchers.get(engine)).start(root, port, password, env);
