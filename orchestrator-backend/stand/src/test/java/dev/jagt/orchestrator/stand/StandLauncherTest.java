@@ -140,6 +140,8 @@ class StandLauncherTest {
     assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
         .isInstanceOf(StandFailure.class)
         .hasMessageContaining("stand run happy did not start; kept ")
+        .hasMessageContaining(", evidence in ")
+        .hasMessageContaining("failed/happy-judge-jagt-stand-")
         .hasCauseInstanceOf(StandFailure.class);
     assertThat(dir.resolve("base").toFile().listFiles())
         .singleElement()
@@ -219,7 +221,9 @@ class StandLauncherTest {
 
     assertThatThrownBy(() -> launcher.server("server"))
         .isInstanceOf(StandFailure.class)
-        .hasMessageContaining("server run server did not start; kept ");
+        .hasMessageContaining("server run server did not start; kept ")
+        .hasMessageContaining(", evidence in ")
+        .hasMessageContaining("failed/server-jagt-stand-");
     assertThat(dir.resolve("base").toFile().listFiles())
         .singleElement()
         .satisfies(root -> assertThat(StandMarker.read(root.toPath(), 0).failed()).isTrue());
