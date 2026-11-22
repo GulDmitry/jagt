@@ -118,6 +118,7 @@ then the board (login, `BackedOffPeers`). Filters: `OriginFilter` (sets who aske
 | a headless read runs a write | `ReadGate` allow-list, fails closed | `ReadGateControllerTest` | V8 |
 | a session pushes to a shared branch | `ToolGate`, pre-push hook, host branch protection | `ToolGateTest` | V8, V1 |
 | a request path reaches a file | a resource handler only | `BoardFolderTest` | V5 |
+| a value reaches a shell | every process starts from an argument list, its binary from configuration; no shell line | `ProcessRunnerTest` | V5 |
 | a container escapes | restricted Pod Security, no service-account token, NetworkPolicy | `KubernetesManifestsTest` | V13 |
 
 ## Gaps

@@ -60,7 +60,8 @@ jobs:
       - name: build what CodeQL traces
         if: matrix.language == 'java-kotlin'
         working-directory: orchestrator-backend
-        run: ./gradlew --no-daemon classes testClasses
+        # CodeQL traces only the compilers that run: an up-to-date or cached task hides its classes.
+        run: ./gradlew --no-daemon --no-build-cache --rerun-tasks classes testClasses
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         if: matrix.language == 'java-kotlin' && github.ref == 'refs/heads/main'
         with:
@@ -74,8 +75,10 @@ jobs:
           output: sarif-results
       - name: fail on a finding of severity error
         run: |
-          errors=$(jq -s '[.[] | .runs[] | . as $run | .results[]
-            | (.level // $run.tool.driver.rules[.ruleIndex].defaultConfiguration.level // "warning")
+          errors=$(jq -s '[.[] | .runs[]
+            | ([.tool.driver.rules[]?] + [.tool.extensions[]?.rules[]?]) as $rules
+            | .results[] | (.ruleId // .rule.id) as $id
+            | (.level // ([$rules[] | select(.id == $id)][0].defaultConfiguration.level) // "warning")
             | select(. == "error")] | length' sarif-results/*.sarif)
           echo "codeql.errors=$errors"
           test "$errors" -eq 0

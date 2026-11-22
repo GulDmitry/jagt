@@ -74,7 +74,7 @@ public final class TaskName {
     }
     String head = text.strip().lines().findFirst().orElse("").toLowerCase(Locale.ROOT);
     String slug =
-        NOT_PLAIN.matcher(head).replaceAll("-").replaceAll("-{2,}", "-").replaceAll("^-+|-+$", "");
+        NOT_PLAIN.matcher(head).replaceAll("-").replaceAll("-{2,}", "-").replaceAll("^-|-$", "");
     if (slug.length() > WRITTEN_MAX) {
       String whole = slug.substring(0, WRITTEN_MAX).replaceAll("-[^-]*$", "");
       slug = whole.isEmpty() ? slug.substring(0, WRITTEN_MAX) : whole;
