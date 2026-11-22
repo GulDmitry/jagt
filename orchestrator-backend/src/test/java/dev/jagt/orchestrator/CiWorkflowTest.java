@@ -266,6 +266,26 @@ class CiWorkflowTest {
         .doesNotContain("cache=gradle");
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"test", "heavy", "stand", "install", "release"})
+  void letsEveryRunWriteItsGradleCacheSoPullRequestRerunsReadAWarmOne(String job) {
+    String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
+
+    assertThat(steps).contains("cache-read-only=false");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "systemProp.org.gradle.internal.repository.max.tentatives=5",
+        "systemProp.org.gradle.internal.repository.initial.backoff=5000",
+        "systemProp.org.gradle.internal.network.retry.max.attempts=5",
+        "systemProp.org.gradle.internal.network.retry.initial.backOff=5000"
+      })
+  void retriesRepositoryRequestsFiveTimesWithDoublingWaitsFromFiveSeconds(String property) {
+    assertThat(SourceRoots.read(Path.of("gradle.properties"))).contains(property);
+  }
+
   @Test
   void signsProvenanceOfTheJarAndTheImageByOnePinnedAction() {
     String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
