@@ -22,6 +22,8 @@ public final class KindEngine implements UnitEngine {
   private static final List<String> SEEDED =
       List.of("jagt.yml", "password-hash", "fake-claude.sh", "origin.git");
   private static final Duration LONG = Duration.ofMinutes(10);
+  private static final int DELETE_TRIES = 4;
+  private static final Duration DELETE_BACKOFF = Duration.ofSeconds(1);
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
   @FunctionalInterface
@@ -193,8 +195,8 @@ public final class KindEngine implements UnitEngine {
     usage();
     stopForward();
     forwarder.close();
-    StandShell.Result deleted = run("kind", "delete", "cluster", "--name", cluster());
-    if (deleted.exit() != 0) {
+    StandShell.Result deleted = deleteCluster();
+    if (deleted.exit() != 0 && exists()) {
       throw new StandFailure(
           "cluster "
               + cluster()
@@ -203,6 +205,20 @@ public final class KindEngine implements UnitEngine {
               + ": "
               + deleted.output());
     }
+  }
+
+  private StandShell.Result deleteCluster() {
+    StandShell.Result deleted = run("kind", "delete", "cluster", "--name", cluster());
+    for (int attempt = 1; deleted.exit() != 0 && attempt < DELETE_TRIES; attempt++) {
+      JagtProcess.pause(DELETE_BACKOFF);
+      deleted = run("kind", "delete", "cluster", "--name", cluster());
+    }
+    return deleted;
+  }
+
+  private boolean exists() {
+    StandShell.Result listed = run("kind", "get", "clusters");
+    return listed.exit() != 0 || listed.output().lines().anyMatch(cluster()::equals);
   }
 
   private <T extends RuntimeException> T abandoned(T failure) {
