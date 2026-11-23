@@ -22,6 +22,13 @@ teardown() {
   [ "$(cat .git/ci-local.ok)" = "$(git rev-parse 'HEAD^{tree}')" ]
 }
 
+@test "every green run adds its tree to the list of recorded greens" {
+  JAGT_CI_LOCAL_SUITE=true run "$script"
+  echo b > f
+  JAGT_CI_LOCAL_SUITE=true run "$script"
+  [ "$(wc -l < .git/ci-local.greens)" -eq 2 ]
+}
+
 @test "a green run of a chosen job records nothing" {
   JAGT_CI_LOCAL_SUITE=true run "$script" heavy
   [ "$status" -eq 0 ]

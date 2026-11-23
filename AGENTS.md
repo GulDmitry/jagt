@@ -136,7 +136,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - **Three groups** ([every suite](docs/rules/testing-suites.md)), run as narrow as the change. A task runs its targeted
   tests (`./gradlew -q testsFor`). A batch runs its changed modules, their dependents and the rule tests. A build change
   and a release run everything; the heavy and stand groups run before a minor release's push. A red reruns only what
-  failed. **A cached green is not a run.**
+  failed. **A cached green is not a run.** **A CI red after a local green** gets a row in the [divergence register](docs/divergences.md).
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. Its commit
   carries a `Defect-family: <A–M>` trailer ([families](docs/rules/testing.md)).

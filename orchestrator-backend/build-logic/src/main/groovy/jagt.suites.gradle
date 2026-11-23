@@ -180,7 +180,13 @@ tasks.register('linuxDriverTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
-tasks.register('guardsTest', dev.jagt.gradle.guards.GuardsGateTask) {
+tasks.register('divergenceRegister', dev.jagt.gradle.divergence.DivergenceRegisterTask) {
+    description = 'Fails for each red CI run of a locally green tree that docs/divergences.md has no row for.'
+    group = 'verification'
+    repository = layout.settingsDirectory
+}
+
+tasks.register('guardsTest',dev.jagt.gradle.guards.GuardsGateTask) {
     description = 'Gates every script in scripts/guards/test/scripts.list: shellcheck, a case file and the contract tags, then the bats cases.'
     group = 'verification'
     repository = layout.settingsDirectory.dir('..')

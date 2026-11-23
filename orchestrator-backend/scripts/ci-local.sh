@@ -2,11 +2,12 @@
 # Usage: ci-local.sh [job...]   (from the checkout; jobs: test heavy stand install install-macos; default: all of them)
 # Runs a pull request's CI jobs over the tree as it stands: each Linux job's gate in a container (linux-suite.sh),
 # install-macos's natively. Only the argument-free run, green, records the tree's hash in the git dir;
+# ci-local.greens keeps every one, which `./gradlew divergenceRegister` reads against CI's red runs.
 # guards/push-after-local-ci.sh lets a push through only when HEAD's tree is the recorded one.
 # JAGT_CI_LOCAL_SUITE replaces both runners, given every job.
 # exits: 0 1 2
 # options: -h
-case "${1:-}" in -h|--help) sed -n '2,6p' "$0" | cut -c3-; exit 0 ;; -*) echo "ci-local: arguments are jobs, not options: $1" >&2; exit 2 ;; esac
+case "${1:-}" in -h|--help) sed -n '2,7p' "$0" | cut -c3-; exit 0 ;; -*) echo "ci-local: arguments are jobs, not options: $1" >&2; exit 2 ;; esac
 root=$(git rev-parse --show-toplevel) || exit 1
 cd "$root" || exit 1
 untracked=$(git ls-files --others --exclude-standard -- orchestrator-backend .github)
@@ -32,7 +33,9 @@ fi
 if [ "$rc" -ne 0 ]; then
   echo "ci-local: red (exit $rc), nothing recorded" >&2
 elif [ "$#" -eq 0 ]; then
-  printf '%s\n' "$tree" > "$(git rev-parse --git-common-dir)/ci-local.ok"
+  common=$(git rev-parse --git-common-dir)
+  printf '%s\n' "$tree" > "$common/ci-local.ok"
+  printf '%s\n' "$tree" >> "$common/ci-local.greens"
   echo "ci-local: green, tree $tree recorded"
 else
   echo "ci-local: green on$linux${macos:+ install-macos}; only the argument-free run records a tree"

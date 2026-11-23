@@ -35,7 +35,8 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 ## The divergence rule
 
 - A CI red after a local green is a defect in the local run, not in CI and not a flake.
-- It gets a row in the divergence register: run id, tier, cause, the local change that would have caught it.
+- It gets a row the same day in the [divergence register](../divergences.md): date, run id, recorded-green tree, class
+  (why the local run missed it), the fix commit. `divergenceRegister` fails while a red run of a recorded-green tree has none.
 - It is fixed in the local run, so the same cause turns the next local run red.
 - It is never rerun to see whether it passes ([flaky-test](testing.md)).
 - A cause only the real machine shows (a Windows permission, a runner's load) is named in the row, and T2 keeps that job.
