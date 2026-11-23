@@ -7,7 +7,7 @@
 | T0 edit loop | targeted tests, mutants on the diff | `./gradlew -q testsFor`, `pitestDiff` | fix before the commit |
 | T1 local gate = T2 pull request | `test` (rules, ArchUnit, budgets, jqwik 50 tries, 0.80 line coverage per module), `boardTest`, `e2eTest`, `linuxDriverTest`, `guardsTest`, `standTest -Pmodelfree` on compose, `installTest` | `ci-local.sh`, jobs by name | local: fix before the push; CI: a divergence |
 | T3 main | none: publish what T2 proved | `release` job | a publish failure |
-| T4 nightly | `standTest -Pmodelfree -Pengine=kind`, repeated and cold runs, full `pitest`, Stryker, jqwik at high tries, install on the real feed, live scans | `nightly.yml` | a task opens |
+| T4 nightly | `standTest -Pmodelfree -Pengine=kind`, repeated and cold runs, full `pitest`, Stryker, jqwik at high tries, install on the real feed, live scans | `nightly.yml`: `gateStand` x3 on compose and kind, `gateRepeat` (`e2eTest` x5), `gateProperties` (1000 tries), `gateMutation`, Stryker, `gateScan`, install on the real feed | an issue opens |
 | T5 weekly and release gate | `standTest` live, `promptEval`, `roleEval -Prole=master`, base images, Scorecard; jqwik at 200 tries (`-PjqwikTries`) | locally: docker, an agent login, tokens | before a minor release |
 
 Windows and macOS install run in T2 only: the one job without a local twin.
@@ -54,7 +54,8 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 
 ## The local CI
 
-Each CI job runs one `gate<Job>` task (`gateTest`, `gateHeavy`, `gateStand`, `gateInstall`, `gateRelease`, `gateCodeql`)
+Each CI job runs one `gate<Job>` task (`gateTest`, `gateHeavy`, `gateStand`, `gateInstall`, `gateRelease`, `gateCodeql`;
+the nightly's `gateRepeat`, `gateProperties`, `gateMutation`, `gateScan`)
 and no other Gradle line (`workflow-gradle-lines`); `scripts/ci-local.sh` runs the same line. Both CI engines set
 `-Ptimed=false`: no time limit, no time record, no timing gate; a job's timeout is its only stop
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).

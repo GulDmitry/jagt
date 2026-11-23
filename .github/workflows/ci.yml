@@ -1,5 +1,5 @@
-# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a pull request,
-# `stand` per engine (compose on every run, kind nightly and on a pull request: the runner ships kind and kubectl),
+# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` on a pull request,
+# `stand` per engine (compose on every run, kind on a pull request: the runner ships kind and kubectl),
 # `install` on three systems per push and pull request, `release` on a push to main after all, only when the version's
 # tag is new. Each job's work is one `gate<Job>` Gradle task, which `scripts/ci-local.sh` runs too; no run is timed here.
 name: ci
@@ -8,11 +8,6 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_call:
-    inputs:
-      nightly:
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -21,7 +16,7 @@ env:
   ORG_GRADLE_PROJECT_timed: 'false'
 
 concurrency:
-  group: ci-${{ github.ref }}-${{ inputs.nightly }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
@@ -31,7 +26,6 @@ defaults:
 jobs:
   test:
     name: unit + functional
-    if: '!inputs.nightly'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     outputs:
@@ -83,7 +77,7 @@ jobs:
 
   heavy:
     name: heavy suites
-    if: inputs.nightly || github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -146,7 +140,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine: ${{ (inputs.nightly || github.event_name == 'pull_request') && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
+        engine: ${{ github.event_name == 'pull_request' && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -185,7 +179,6 @@ jobs:
 
   install:
     name: install (${{ matrix.os }})
-    if: '!inputs.nightly'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     strategy:

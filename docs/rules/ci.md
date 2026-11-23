@@ -12,7 +12,7 @@ A local green predicts a CI green. CI adds no check the local gate lacks and tak
 | T1 local gate | every job a pull request runs, in CI's image, runner-sized, offline, time ceilings on | `ci-local.sh`, jobs by name | the session, before a push | fix before the push |
 | T2 pull request | T1's commands, Windows and macOS install, CodeQL; a job timeout and no other limit | one `./gradlew` line or script per job | GitHub, per push to a request | a divergence when T1 was green |
 | T3 main | publish the tree T2 proved: the version read and tree equality with the request head | `release` job | GitHub, on a merge | a publish failure |
-| T4 nightly | what the default T1 run leaves out: long, repeated, cold, live | `nightly.yml` jobs, each with a local twin | GitHub, once a night | a task opens, never a rerun |
+| T4 nightly | what the default T1 run leaves out: long, repeated, cold, live | `nightly.yml` jobs, each with a local twin | GitHub, once a night | an issue opens (`nightly` label), never a rerun |
 | T5 weekly and release gate | base images, Scorecard, live stand, `promptEval`, `roleEval` | named workflows, `standTest` | schedule, the release | a task opens before the release |
 
 ## The stability policy
@@ -30,7 +30,8 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 7. **A per-push check reads no live data**: a scan or feed read that needs the network runs nightly, or per push on a dependency diff. none yet.
 8. **A wait is a hang guard** from one shared constant, never a speed assert. `sleep-in-tests`, `ci-no-sleep`; a literal wait: none yet.
 9. **A rerun or retry never turns a CI red green.** `ci-no-retry`.
-10. **The nightly runs only what T1 does not**; no nightly job repeats a pull request job unchanged. none yet.
+10. **The nightly runs only what T1 does not**; no nightly job repeats a pull request job unchanged.
+    `nightly-calls-no-pull-request-job`; the rest: none yet.
 11. **Main publishes the tree the pull request proved**; the stand and install do not re-run there. none yet.
 
 ## The divergence rule

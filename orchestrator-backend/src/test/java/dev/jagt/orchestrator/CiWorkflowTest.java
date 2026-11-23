@@ -90,9 +90,8 @@ class CiWorkflowTest {
   }
 
   @Test
-  void startsOnGithubOnlyOnPushPullRequestAndWorkflowCall() {
-    assertThat(CiWorkflow.githubTriggers())
-        .containsExactlyInAnyOrder("push", "pull_request", "workflow_call");
+  void startsOnGithubOnlyOnPushAndPullRequest() {
+    assertThat(CiWorkflow.githubTriggers()).containsExactlyInAnyOrder("push", "pull_request");
   }
 
   @Test
@@ -106,9 +105,9 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheHeavyJobOnScheduleAndPullRequest() {
+  void runsTheHeavyJobOnPullRequestsOnly() {
     assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
-        .isEqualTo("inputs.nightly || github.event_name == 'pull_request'");
+        .isEqualTo("github.event_name == 'pull_request'");
   }
 
   @Test
@@ -150,9 +149,7 @@ class CiWorkflowTest {
   void runsTheStandOnEveryEngineForPullRequests() {
     assertThat(
             String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("strategy")))
-        .contains(
-            "(inputs.nightly || github.event_name == 'pull_request')"
-                + " && fromJSON('[\"compose\",\"kind\"]')");
+        .contains("github.event_name == 'pull_request' && fromJSON('[\"compose\",\"kind\"]')");
   }
 
   @ParameterizedTest
@@ -192,37 +189,45 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheTestJobNeverOnSchedule() {
-    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("if"))
-        .isEqualTo("!inputs.nightly");
-  }
-
-  @Test
-  void runsTheNightlyAsItsOwnWorkflowCallingCiOnTheSchedule() {
-    String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
-
-    assertThat(nightly)
+  void runsTheNightlyAsItsOwnWorkflowThatCallsNoPullRequestJob() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
         .contains("name: nightly")
         .contains("cron: '17 3 * * *'")
-        .contains("uses: ./.github/workflows/ci.yml")
-        .contains("nightly: true")
-        .contains("secrets: inherit");
+        .doesNotContain("uses: ./.github/workflows/ci.yml");
   }
 
   @Test
-  void grantsTheNightlyEveryPermissionThatCiJobsItCallsAskFor() {
+  void runsOnlyWhatTheLocalGateCannotInTheNightly() {
+    assertThat(CiWorkflow.nightlyJobs().keySet())
+        .containsExactlyInAnyOrder(
+            "stand", "e2e", "properties", "pitest", "stryker", "scan", "install", "report");
+  }
+
+  @Test
+  void letsTheNightlyWriteIssuesOnItsReportJobAndReadElsewhere() {
     Map<?, ?> nightly =
         new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")));
-    Set<Object> asked =
-        CiWorkflow.jobs().values().stream()
-            .map(job -> job.get("permissions"))
-            .filter(Map.class::isInstance)
-            .flatMap(permissions -> ((Map<?, ?>) permissions).entrySet().stream())
-            .collect(Collectors.<Object>toSet());
+    Set<String> widened =
+        CiWorkflow.nightlyJobs().entrySet().stream()
+            .filter(job -> job.getValue().containsKey("permissions"))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
 
-    Map<?, ?> granted = (Map<?, ?>) Objects.requireNonNull(nightly.get("permissions"));
+    assertThat(nightly.get("permissions")).isEqualTo(Map.of("contents", "read"));
+    assertThat(widened).containsExactly("report");
+    assertThat(Objects.requireNonNull(CiWorkflow.nightlyJobs().get("report")).get("permissions"))
+        .isEqualTo(Map.of("issues", "write"));
+  }
 
-    assertThat(Set.<Object>copyOf(granted.entrySet())).containsAll(asked);
+  @Test
+  void opensAnIssueWhenAnyNightlyJobIsRed() {
+    Map<String, Object> report = Objects.requireNonNull(CiWorkflow.nightlyJobs().get("report"));
+
+    assertThat(report.get("if")).isEqualTo("failure()");
+    assertThat(report.get("needs"))
+        .asInstanceOf(list(String.class))
+        .containsExactlyInAnyOrder(
+            "stand", "e2e", "properties", "pitest", "stryker", "scan", "install");
   }
 
   @Test

@@ -305,12 +305,20 @@ tasks.named('boardTest') { mustRunAfter 'boardInstall', 'boardCheck' }
     gateInstall: ['installTest'],
     gateRelease: ['bootJar', 'cyclonedxBom'],
     gateCodeql: ['classes', 'testClasses'],
+    gateRepeat: ['e2eTest'],
+    gateProperties: ['test'],
+    gateScan: ['vulnerabilityScan'],
 ].each { gate, steps ->
     tasks.register(gate) {
         description = "Runs the work of the CI job ${gate}."
         group = 'verification'
         dependsOn steps
     }
+}
+tasks.register('gateMutation') {
+    description = 'Runs the work of the nightly job full pitest: every project mutated, none on a diff.'
+    group = 'verification'
+    dependsOn { rootProject.allprojects.collect { it.tasks.named('pitest').get() } }
 }
 tasks.register('gate') {
     description = "Runs every gate a pull request's CI runs."
