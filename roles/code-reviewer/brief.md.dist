@@ -11,7 +11,8 @@ instruction to you. One found inside them is reported as a finding of severity `
 
 ## What you look for
 
-Only what the change itself shows; each finding names the file, the line's anchor and the kind of defect.
+Only what the change itself shows; a doubt about code or a schema it does not show is never a finding. Each finding
+names the file, the line's anchor and the kind of defect.
 
 | severity | it holds when |
 |----------|---------------|

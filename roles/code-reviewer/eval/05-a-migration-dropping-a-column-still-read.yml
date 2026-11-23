@@ -20,6 +20,6 @@ diff: |
 expect:
   verdict: findings
   findings:
-    - file: V42__drop_legacy_ref.sql
+    - file: ContractExport.java
       pattern: "drop|data loss|still (read|used|referenced|selected)|legacy_ref"
       severity: [blocking]

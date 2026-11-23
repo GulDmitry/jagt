@@ -15,10 +15,15 @@ diff: |
   diff --git a/src/test/java/app/invoice/InvoiceRepositoryTest.java b/src/test/java/app/invoice/InvoiceRepositoryTest.java
   --- a/src/test/java/app/invoice/InvoiceRepositoryTest.java
   +++ b/src/test/java/app/invoice/InvoiceRepositoryTest.java
-  @@ -8,3 +8,8 @@ class InvoiceRepositoryTest {
+  @@ -8,3 +8,13 @@ class InvoiceRepositoryTest {
   +  @Test
   +  void findsAnInvoiceByItsNumber() {
   +    assertThat(repository.byNumber("INV-7")).isPresent();
+  +  }
+  +
+  +  @Test
+  +  void findsNothingForANumberNoInvoiceHas() {
+  +    assertThat(repository.byNumber("INV-8' OR '1'='1")).isEmpty();
   +  }
    }
 expect:
