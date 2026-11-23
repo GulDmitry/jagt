@@ -137,7 +137,7 @@ final class MasterEvalWorkspace {
         """
         orchestrator:
           projects:
-            proj: { path: "%s", baseBranch: main }
+            proj: { path: "%s", baseBranch: main, codeHost: none }
           viewer: { tmuxSession: "%s" }
           master: { mode: %s, brief: "%s", model: "%s" }
         """
