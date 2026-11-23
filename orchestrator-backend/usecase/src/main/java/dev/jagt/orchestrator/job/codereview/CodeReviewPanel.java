@@ -54,7 +54,7 @@ public class CodeReviewPanel {
             .append('\n'));
     return judged(
         subject,
-        "<role>You answer the newest note of one review thread on request "
+        RoundReviewer.ANSWER_LEAD
             + subject.url()
             + ". Answer in one of three ways: fix, change nothing and say why, or ask. Put the"
             + " answer in the issue of one finding. Read and change nothing.</role>\n<thread>\n"
@@ -84,7 +84,7 @@ public class CodeReviewPanel {
   }
 
   private String prompt(Subject subject, RequestChange change, Path checkout) {
-    return "<role>You review request "
+    return RoundReviewer.REVIEW_LEAD
         + subject.url()
         + ", checked out at "
         + checkout

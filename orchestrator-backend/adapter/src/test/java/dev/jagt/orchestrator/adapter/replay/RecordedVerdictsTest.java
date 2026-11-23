@@ -91,4 +91,67 @@ class RecordedVerdictsTest {
 
     assertThat(read.verdict()).isEqualTo("not ready");
   }
+
+  @Test
+  void codeReviewReadGetsTheCodeReviewersVerdictWhereMasterVerdictsComeFirst(@TempDir Path root)
+      throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(
+        file,
+        """
+        {"type":"verdict","round":2,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
+        {"type":"verdict","round":2,"role":"code-reviewer","judgement":{"failure":"","verdict":"code","findings":[],"question":"","premises":[],"newTask":""}}
+        """);
+    RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
+
+    Judgement read =
+        verdicts
+            .answer(RoundReviewer.REVIEW_LEAD + "https://h/a/b/pull/7, checked out")
+            .orElseThrow();
+
+    assertThat(read.verdict()).isEqualTo("code");
+  }
+
+  @Test
+  void masterReadNeverTakesTheCodeReviewersVerdict(@TempDir Path root) throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(
+        file,
+        """
+        {"type":"verdict","round":2,"role":"code-reviewer","judgement":{"failure":"","verdict":"code","findings":[],"question":"","premises":[],"newTask":""}}
+        {"type":"verdict","round":2,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
+        """);
+    RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
+
+    Judgement read = verdicts.answer("<role>You judge the plan of task ABC-1</role>").orElseThrow();
+
+    assertThat(read.verdict()).isEqualTo("ready");
+  }
+
+  @Test
+  void answerToThreadGetsTheBotAnswerVerdict(@TempDir Path root) throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(
+        file,
+        """
+        {"type":"verdict","round":1,"role":"bot-answer","judgement":{"failure":"","verdict":"answer","findings":[],"question":"","premises":[],"newTask":""}}
+        """);
+    RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
+
+    Judgement read =
+        verdicts.answer(RoundReviewer.ANSWER_LEAD + "https://h/a/b/pull/7. Answer").orElseThrow();
+
+    assertThat(read.verdict()).isEqualTo("answer");
+  }
+
+  @Test
+  void endsTheReplayWhenTheCodeReviewerReadsPastTheRecording(@TempDir Path root) throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(file, "\n");
+    Recording recording = new Recording(file.toString());
+
+    new RecordedVerdicts(recording).answer(RoundReviewer.REVIEW_LEAD + "https://h/a/b/pull/7");
+
+    assertThat(recording.diverged()).isTrue();
+  }
 }

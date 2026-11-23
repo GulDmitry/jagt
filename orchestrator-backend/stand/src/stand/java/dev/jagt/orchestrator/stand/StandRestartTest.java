@@ -54,7 +54,6 @@ class StandRestartTest {
       stand.killJagtAfterFirstNote();
       assertThat(stand.awaitActorNotes(1, Duration.ofMinutes(3))).isTrue();
 
-      stand.dropStaleCheckouts();
       stand.restartJagt();
 
       assertThat(stand.awaitActorNotes(2, Duration.ofMinutes(3))).isTrue();

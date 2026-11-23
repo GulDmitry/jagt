@@ -12,6 +12,12 @@ public interface RoundReviewer {
 
   String QUESTION_LEAD = "The session working it stopped to ask:";
 
+  /** How the code reviewer's read of a request opens. */
+  String REVIEW_LEAD = "<role>You review request ";
+
+  /** How the code reviewer's answer to a review thread opens. */
+  String ANSWER_LEAD = "<role>You answer the newest note of one review thread on request ";
+
   /**
    * {@code shared} is what every reader of one round is given alike, apart from {@code prompt} so a
    * later reader finds it cached; blank where there is none. {@code worktrees} are read, the first

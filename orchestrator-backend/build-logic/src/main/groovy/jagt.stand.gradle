@@ -15,7 +15,8 @@ tasks.named('test') {
     systemProperty 'stand.repo', standRepo
 }
 
-def standBase = System.getProperty('java.io.tmpdir')
+// tmux binds a socket under the run's root, and a macOS tmpdir is too long for a socket path (104 bytes).
+def standBase = new File('/tmp').isDirectory() ? '/tmp' : System.getProperty('java.io.tmpdir')
 def standReport = layout.buildDirectory.file('stand/report.txt').get().asFile
 
 tasks.register('standTest', Test) {

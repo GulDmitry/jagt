@@ -115,14 +115,6 @@ public final class StandRun implements AutoCloseable {
     REVIEWS.forEach(jagt.board()::run);
   }
 
-  public void dropStaleCheckouts() {
-    Path checkouts = root.resolve("jagt").resolve("code-review").resolve("checkouts");
-    if (Files.isDirectory(checkouts)) {
-      StandShell.deleteTree(checkouts);
-    }
-    StandShell.git(project.repo(), "worktree", "prune");
-  }
-
   public void killJagtAfterFirstNote() {
     AtomicBoolean once = new AtomicBoolean();
     host.afterPost(() -> {

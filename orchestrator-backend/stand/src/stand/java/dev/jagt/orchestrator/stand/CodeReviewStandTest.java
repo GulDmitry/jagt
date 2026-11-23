@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class CodeReviewStandTest {
 
   @Test
-  void ownRequestGetsNotesOpeningWithTheAiLineAndNoApprovalIsSent() throws Exception {
+  void ownRequestHeldByTaskGetsNotesOpeningWithTheAiLineAndNoApprovalIsSent() throws Exception {
     Path recording =
         Path.of(CodeReviewStandTest.class.getResource("/recordings/code-review-own.jsonl").toURI());
     try (StandRun stand =
@@ -19,12 +19,12 @@ class CodeReviewStandTest {
 
       StandOutcome outcome =
           stand.drive(
-              Script.to("ABC-1", "DEPLOYED")
+              Script.to("ABC-1", "CI_POLLING")
                   .within(Duration.ofMinutes(5))
                   .with(WorldEvent.ownRequestListed(1, "ABC-1 Greet the world by default")));
 
       assertThat(stand.replayLog().divergences()).as(outcome.describe()).isEmpty();
-      assertThat(outcome.status()).as(outcome.describe()).isEqualTo("DEPLOYED");
+      assertThat(outcome.status()).as(outcome.describe()).isEqualTo("CI_POLLING");
       assertThat(stand.awaitActorNotes(2, Duration.ofMinutes(1))).as(outcome.describe()).isTrue();
       assertThat(stand.violations()).as(outcome.describe()).isEmpty();
       stand.passed();

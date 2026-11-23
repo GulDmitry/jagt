@@ -59,6 +59,9 @@ public class SubjectCheckout {
     if (fetched.exitCode() != 0) {
       return refused(subject, "fetch", fetched);
     }
+    processes.run(
+        repository, TIMEOUT, List.of("git", "worktree", "remove", "--force", dir.toString()));
+    processes.run(repository, TIMEOUT, List.of("git", "worktree", "prune"));
     Processes.Result added =
         processes.run(
             repository,

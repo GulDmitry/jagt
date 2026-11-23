@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.stand.invariant;
 
-import dev.jagt.orchestrator.service.codereview.NotePoster;
+import dev.jagt.orchestrator.job.codereview.request.NotePoster;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
