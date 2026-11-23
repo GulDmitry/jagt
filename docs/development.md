@@ -17,6 +17,7 @@ project rule into a vendor-named file.
 | task | needs | answers |
 |------|-------|---------|
 | `./gradlew test` | nothing | the fast hermetic gate; runs everywhere |
+| `./gradlew compileAll` | nothing | every source set of every module compiles; run it after a main symbol is removed or renamed |
 | `./gradlew e2eTest` | git + tmux | the task flow over real worktrees, one row per case |
 | `./gradlew boardTest` | a Chromium (downloaded on first run) | the board in a real browser |
 | `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against real binaries |

@@ -4,3 +4,5 @@ tasks.register('testsFor', dev.jagt.gradle.testsfor.TestsForTask) {
     backend = layout.projectDirectory
     base = 'release'
 }
+
+dev.jagt.gradle.compileall.CompileAll.registerOn(project)
