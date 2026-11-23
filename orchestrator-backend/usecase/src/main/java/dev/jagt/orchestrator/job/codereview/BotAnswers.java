@@ -1,12 +1,17 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview;
 
+import dev.jagt.orchestrator.job.codereview.request.NotePoster;
+import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
+import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
+import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,7 +24,7 @@ import org.springframework.stereotype.Service;
 /**
  * Answers review bots: one answer per bot note, at most three per thread. A thread past the bound
  * stays unanswered until it resolves or the request closes; a thread whose newest note is the
- * reviewer's own is left.
+ * reviewer's own is left. A request whose third-party reads cost the ceiling is not answered.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,7 +39,10 @@ public class BotAnswers {
   private final SubjectCheckout checkout;
   private final NotePoster poster;
 
-  public void answer(Subject subject, String model) {
+  public void answer(Subject subject, CodeReviewSettings.Settings settings, String model) {
+    if (ledger.row(subject.url()).map(row -> row.spentUp(settings.maxCostUsd())).orElse(false)) {
+      return;
+    }
     Answer<List<RequestNote>> read = notes.notes(subject.project(), subject.url());
     if (read.facts().isEmpty()) {
       return;
@@ -88,7 +96,8 @@ public class BotAnswers {
               change.facts().get().headSha(),
               key,
               judged.findings().getFirst().issue(),
-              newest.id());
+              newest.id(),
+              NoteAnchor.NONE);
       if (outcome == NotePoster.Outcome.POSTED) {
         counted(subject, thread);
       }

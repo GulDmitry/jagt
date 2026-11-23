@@ -7,15 +7,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -24,6 +28,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class GitLabNotesTest {
 
@@ -120,7 +125,7 @@ class GitLabNotesTest {
             new Processes.Result(0, "[{\"id\":\"d1\",\"notes\":[{\"id\":31}]}]", ""),
             new Processes.Result(0, "{\"id\":77}", ""));
 
-    Answer<String> answer = gitlab.post(host, REQUEST, new NoteDraft("Done", "31"));
+    Answer<String> answer = gitlab.post(host, REQUEST, NoteDraft.replyTo("Done", "31"));
 
     assertThat(answer.facts()).contains("77");
   }
@@ -130,7 +135,7 @@ class GitLabNotesTest {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[{\"id\":\"d1\",\"notes\":[{\"id\":31}]}]", ""));
 
-    Answer<String> answer = gitlab.post(host, REQUEST, new NoteDraft("Done", "99"));
+    Answer<String> answer = gitlab.post(host, REQUEST, NoteDraft.replyTo("Done", "99"));
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure()).isEqualTo("no note 99 on the request");
@@ -149,5 +154,44 @@ class GitLabNotesTest {
     Answer<Map<String, Reaction>> answer = gitlab.reactions(host, REQUEST, List.of("31"));
 
     assertThat(answer.facts().get()).containsEntry("31", new Reaction(1, 2));
+  }
+
+  @Test
+  void noteWithFileAndLineOpensDiscussionOnThatLine() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0, "{\"diff_refs\":{\"base_sha\":\"b1\",\"start_sha\":\"s1\"}}", ""),
+            new Processes.Result(0, "{\"id\":\"d9\",\"notes\":[{\"id\":88}]}", ""));
+
+    Answer<String> answer =
+        gitlab.post(
+            host,
+            REQUEST,
+            new NoteDraft("Null here", "", new NoteAnchor("src/A.java", 11, "0123abc")));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getAllValues().getLast())
+        .contains(
+            "position[new_path]=src/A.java",
+            "position[new_line]=11",
+            "position[head_sha]=0123abc",
+            "position[base_sha]=b1",
+            "position[start_sha]=s1");
+    assertThat(answer.facts()).contains("88");
+  }
+
+  @Test
+  void closedRequestIsReadAsClosed() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0, "{\"title\":\"t\",\"sha\":\"0123abc\",\"state\":\"closed\"}", ""),
+            new Processes.Result(0, "{\"changes\":[]}", ""));
+
+    Answer<RequestChange> answer = gitlab.change(host, REQUEST);
+
+    assertThat(answer.facts().get().state()).isEqualTo(RequestState.CLOSED);
   }
 }

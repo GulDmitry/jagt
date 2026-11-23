@@ -28,7 +28,7 @@ class ModelRolesTest {
   }
 
   @Test
-  void countsARoleWhoseConfigCannotBeReadAsNotRunning() {
+  void countsRoleWhoseConfigCannotBeReadAsNotRunning() {
     when(master.id()).thenReturn("master");
     when(master.running()).thenThrow(new IllegalStateException("jagt.yml unreadable"));
     when(triage.id()).thenReturn("triage");

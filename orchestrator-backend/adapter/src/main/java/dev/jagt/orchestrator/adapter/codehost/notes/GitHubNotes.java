@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -32,6 +33,7 @@ public class GitHubNotes implements NotesDriver {
           + "comments(first:100){nodes{databaseId body author{login __typename}}}"
           + " reviewThreads(first:100){nodes{id isResolved comments(first:100){nodes{"
           + "databaseId body path author{login __typename}}}}}}}}";
+  private static final String ISSUE_ID = "issue-";
   private static final JsonMapper JSON = new JsonMapper();
 
   private final HostCli cli;
@@ -82,7 +84,7 @@ public class GitHubNotes implements NotesDriver {
                             "view",
                             requestUrl.strip(),
                             "--json",
-                            "title,body,baseRefName,headRefOid")),
+                            "title,body,baseRefName,headRefOid,state")),
                     GitHubNotes::described),
                 change ->
                     cli.run(address.hostname(), List.of("pr", "diff", requestUrl.strip()))
@@ -117,20 +119,24 @@ public class GitHubNotes implements NotesDriver {
   @Override
   public Answer<String> post(HostSettings host, String requestUrl, NoteDraft draft) {
     return HostAddress.ofPipeline(requestUrl, MARKER, false)
-        .map(address ->
-            cli.parsed(
-                cli.run(
-                    address.hostname(),
-                    List.of(
-                        "api",
-                        "--hostname",
-                        address.hostname(),
-                        "-X",
-                        "POST",
-                        "repos/" + address.project() + "/" + target(address, draft),
-                        "-f",
-                        "body=" + draft.body())),
-                output -> JSON.readTree(output).path("id").asString("")))
+        .map(address -> {
+          String target = target(address, draft);
+          List<String> command = new ArrayList<>(List.of("api", "--hostname", address.hostname()));
+          command.addAll(List.of("-X", "POST", "repos/" + address.project() + "/" + target));
+          command.addAll(List.of("-f", "body=" + draft.body()));
+          if (inline(draft)) {
+            command.addAll(
+                List.of(
+                    "-f", "commit_id=" + draft.anchor().headSha(),
+                    "-f", "path=" + draft.anchor().file(),
+                    "-F", "line=" + draft.anchor().line(),
+                    "-f", "side=RIGHT"));
+          }
+          String prefix = target.startsWith("issues/") ? ISSUE_ID : "";
+          return cli.parsed(
+              cli.run(address.hostname(), command),
+              output -> prefix + JSON.readTree(output).path("id").asString(""));
+        })
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
@@ -149,19 +155,28 @@ public class GitHubNotes implements NotesDriver {
                                 "api",
                                 "--hostname",
                                 address.hostname(),
-                                "repos/"
-                                    + address.project()
-                                    + "/pulls/comments/"
-                                    + id
-                                    + "/reactions?per_page=100")),
+                                "repos/" + address.project() + "/" + reactionsOf(id))),
                         GitHubNotes::tallied)))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
+  private static boolean inline(NoteDraft draft) {
+    return draft.replyTo().isBlank() && draft.anchor().inline();
+  }
+
+  private static String reactionsOf(String noteId) {
+    String comments = noteId.startsWith(ISSUE_ID) ? "issues/comments/" : "pulls/comments/";
+    return comments + noteId.replace(ISSUE_ID, "") + "/reactions?per_page=100";
+  }
+
   private static String target(HostAddress address, NoteDraft draft) {
-    return draft.replyTo().isBlank()
-        ? "issues/" + address.id() + "/comments"
-        : "pulls/" + address.id() + "/comments/" + draft.replyTo() + "/replies";
+    if (inline(draft)) {
+      return "pulls/" + address.id() + "/comments";
+    }
+    if (draft.replyTo().isBlank() || draft.replyTo().startsWith(ISSUE_ID)) {
+      return "issues/" + address.id() + "/comments";
+    }
+    return "pulls/" + address.id() + "/comments/" + draft.replyTo() + "/replies";
   }
 
   private static String owner(HostAddress address) {
@@ -191,7 +206,8 @@ public class GitHubNotes implements NotesDriver {
         .withTitle(request.path("title").asString(""))
         .withDescription(request.path("body").asString(""))
         .withBaseBranch(request.path("baseRefName").asString(""))
-        .withHeadSha(request.path("headRefOid").asString(""));
+        .withHeadSha(request.path("headRefOid").asString(""))
+        .withState(RequestState.of(request.path("state").asString("")));
   }
 
   private static Reaction tallied(String output) {
@@ -213,7 +229,7 @@ public class GitHubNotes implements NotesDriver {
     request
         .path("comments")
         .path("nodes")
-        .forEach(comment -> notes.add(note(comment, "", Resolution.UNKNOWN, me, bots)));
+        .forEach(comment -> notes.add(note(comment, "", ISSUE_ID, Resolution.UNKNOWN, me, bots)));
     request
         .path("reviewThreads")
         .path("nodes")
@@ -224,14 +240,19 @@ public class GitHubNotes implements NotesDriver {
           thread
               .path("comments")
               .path("nodes")
-              .forEach(comment -> notes.add(note(comment, id, resolution, me, bots)));
+              .forEach(comment -> notes.add(note(comment, id, "", resolution, me, bots)));
         });
     return notes;
   }
 
   private static RequestNote note(
-      JsonNode comment, String thread, Resolution resolution, String me, List<String> bots) {
-    String id = comment.path("databaseId").asString("");
+      JsonNode comment,
+      String thread,
+      String idPrefix,
+      Resolution resolution,
+      String me,
+      List<String> bots) {
+    String id = idPrefix + comment.path("databaseId").asString("");
     String author = comment.path("author").path("login").asString("");
     boolean bot = "Bot".equals(comment.path("author").path("__typename").asString(""));
     return RequestNote.defaults()

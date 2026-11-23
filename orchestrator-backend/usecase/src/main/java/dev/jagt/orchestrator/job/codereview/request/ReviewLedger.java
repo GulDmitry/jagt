@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview.request;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.text.AtomicFiles;

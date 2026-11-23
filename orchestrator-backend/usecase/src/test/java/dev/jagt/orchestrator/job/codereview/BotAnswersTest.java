@@ -1,13 +1,18 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.job.codereview.request.LedgerRow;
+import dev.jagt.orchestrator.job.codereview.request.NotePoster;
+import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
+import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
+import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +45,7 @@ class BotAnswersTest {
         .thenReturn(
             Optional.of(LedgerRow.of(subject.url(), "shop", "t1").withAnswers(Map.of("T1", 3))));
 
-    answers.answer(subject, "");
+    answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
 
     verifyNoInteractions(panel, poster, checkout);
   }
@@ -63,8 +68,18 @@ class BotAnswersTest {
                 TokenUsage.NONE));
     when(ledger.row(subject.url())).thenReturn(Optional.empty());
 
-    answers.answer(subject, "");
+    answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
 
     verifyNoInteractions(panel, poster, checkout);
+  }
+
+  @Test
+  void requestWhoseThirdPartyReadsCostTheCeilingIsNotAnswered() {
+    when(ledger.row(subject.url()))
+        .thenReturn(Optional.of(LedgerRow.of(subject.url(), "shop", "t1").withCostUsd(3.0)));
+
+    answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
+
+    verifyNoInteractions(notes, panel, poster, checkout);
   }
 }

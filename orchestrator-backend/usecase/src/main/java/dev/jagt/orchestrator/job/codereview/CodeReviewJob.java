@@ -2,10 +2,8 @@ package dev.jagt.orchestrator.job.codereview;
 
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.codereview.CodeReviewRound;
 import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
 import dev.jagt.orchestrator.service.codereview.CodeReviewSettings.Settings;
-import dev.jagt.orchestrator.service.codereview.ReviewSubjects;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

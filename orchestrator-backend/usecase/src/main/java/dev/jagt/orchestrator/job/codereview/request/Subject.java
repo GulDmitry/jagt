@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview.request;
 
 /**
  * One request the code reviewer reads: where it lives, the repository's address, and the task that

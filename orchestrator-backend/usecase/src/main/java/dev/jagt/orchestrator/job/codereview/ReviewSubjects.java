@@ -1,5 +1,6 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview;
 
+import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;

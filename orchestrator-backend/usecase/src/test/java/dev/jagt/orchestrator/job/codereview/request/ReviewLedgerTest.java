@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview.request;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,5 +41,25 @@ class ReviewLedgerTest {
     LedgerRow read = new ReviewLedger(paths).row("https://h/a/b/7").orElseThrow();
 
     assertThat(read.heads()).containsExactly("0123abc");
+  }
+
+  @Test
+  void spendAnswersAndCountsSurviveNewLedgerReadingTheSameFile() {
+    when(paths.codeReviewLedger()).thenReturn(data.resolve("code-review.json"));
+    new ReviewLedger(paths)
+        .update(
+            "https://h/a/b/7",
+            "shop",
+            "",
+            row ->
+                row.withCostUsd(1.25)
+                    .withAnswers(Map.of("T1", 2))
+                    .withCounts(Map.of("5", "1/0/fixed")));
+
+    LedgerRow read = new ReviewLedger(paths).row("https://h/a/b/7").orElseThrow();
+
+    assertThat(read.signals().costUsd()).isEqualTo(1.25);
+    assertThat(read.answers()).containsEntry("T1", 2);
+    assertThat(read.counts()).containsEntry("5", "1/0/fixed");
   }
 }

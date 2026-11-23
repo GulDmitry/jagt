@@ -22,7 +22,7 @@ A diff not quoted is read in full by git before any verdict; never `ready` from 
 | role | the question it asks | applies | unless |
 |------|----------------------|---------|--------|
 | architect | should this exist, at the scope the ticket asked, and at what cost to carry; is the architecture held — one source of truth, layers, composition, decisions where they belong | | |
-| QA | is it tested right: only what the project decides, as below; a bug-fix test verified RED on the report's own signal, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason | `!**/*.md`, `!**/*.yml`, `!**/*.yaml` | |
+| QA | is it tested right: only what the project decides, as below; a bug-fix test verified RED on the report's own signal, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason | `!**/*.md`, `!**/*.yml`, `!**/*.yaml` | code-reviewer |
 | developer | is the code itself right, safe and fast enough, and the diff the shortest correct one; where it touches a UI file, is the craft intact — one meaning per name, mark and colour, and less text | | code-reviewer |
 
 **What QA asks a test for.** A test pins what this project decides: a rule, a branch, a calculation, a UI's

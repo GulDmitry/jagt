@@ -135,7 +135,8 @@ class ProjectConfigTest {
         {"path":"/repos/parser","baseBranch":"upstream/main","deployBranch":"dev","labels":["pdf"],
          "verifyCommand":["make","check"],"about":"the parser","humanPaths":["db/**"],
          "codeHost":"gitlab","codeHostName":"main","pipelineCommand":["p"],"retryCommand":["r"],
-         "loginCommand":["l"],"remote":"upstream","closeCommand":["c"],"notesCommand":["n"],"verifyMinutes":7}\
+         "loginCommand":["l"],"remote":"upstream","closeCommand":["c"],"notesCommand":["n"],"verifyMinutes":7,
+         "awaitingCommand":["a"],"changeCommand":["ch"],"postCommand":["po"],"reviewBots":["bot"]}\
         """;
     JsonMapper mapper = JsonMapper.builder().build();
 
@@ -143,6 +144,7 @@ class ProjectConfigTest {
 
     assertThat(project.path()).isEqualTo("/repos/parser");
     assertThat(project.verifyMinutes()).isEqualTo(7);
+    assertThat(project.host().review().postCommand()).containsExactly("po");
     assertThat(mapper.<JsonNode>valueToTree(project)).isEqualTo(mapper.readTree(written));
   }
 }

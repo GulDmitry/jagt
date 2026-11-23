@@ -1,10 +1,17 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview;
 
+import dev.jagt.orchestrator.job.codereview.request.DiffAnchors;
+import dev.jagt.orchestrator.job.codereview.request.LedgerRow;
+import dev.jagt.orchestrator.job.codereview.request.NotePoster;
+import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
+import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.service.codereview.CodeReviewSettings.Settings;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +44,15 @@ public class CodeReviewRound {
     if (!may) {
       return;
     }
+    Optional<LedgerRow> row = ledger.row(subject.url());
+    if (row.map(standing -> standing.spentUp(settings.maxCostUsd())).orElse(false)) {
+      log.atDebug()
+          .setMessage("code review spend ceiling reached")
+          .addKeyValue("request", subject.url())
+          .addKeyValue("limit", settings.maxCostUsd())
+          .log();
+      return;
+    }
     Answer<RequestChange> read = notes.change(subject.project(), subject.url());
     if (read.facts().isEmpty()) {
       log.atWarn()
@@ -48,7 +64,15 @@ public class CodeReviewRound {
       return;
     }
     RequestChange change = read.facts().get();
-    List<String> heads = ledger.row(subject.url()).map(LedgerRow::heads).orElse(List.of());
+    if (change.state() != RequestState.OPEN) {
+      log.atInfo()
+          .setMessage("code review dropped a request that is over")
+          .addKeyValue("request", subject.url())
+          .addKeyValue("state", change.state())
+          .log();
+      return;
+    }
+    List<String> heads = row.map(LedgerRow::heads).orElse(List.of());
     if (heads.contains(change.headSha()) || heads.size() >= allowed(change)) {
       return;
     }
@@ -92,20 +116,24 @@ public class CodeReviewRound {
             .log();
         return;
       }
-      if (post(subject, change.headSha(), judged.findings())) {
+      if (post(subject, change, judged.findings())) {
         reviewed(subject, change.headSha());
       }
     }
   }
 
-  private boolean post(Subject subject, String head, List<Finding> findings) {
+  private boolean post(Subject subject, RequestChange change, List<Finding> findings) {
+    String head = change.headSha();
     for (Finding finding : findings) {
       if ("noise".equals(finding.severity())) {
         continue;
       }
       String key =
           NotePoster.digest(subject.url(), head, finding.file(), finding.anchor(), finding.kind());
-      NotePoster.Outcome outcome = poster.post(subject, head, key, text(finding), "");
+      int line = DiffAnchors.lineOf(change.diff(), finding.file(), finding.anchor());
+      NotePoster.Outcome outcome =
+          poster.post(
+              subject, head, key, text(finding), "", new NoteAnchor(finding.file(), line, head));
       if (outcome == NotePoster.Outcome.FAILED || outcome == NotePoster.Outcome.DROPPED) {
         return false;
       }

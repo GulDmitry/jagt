@@ -1,17 +1,15 @@
 package dev.jagt.orchestrator.job.codereview;
 
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.job.codereview.request.LedgerRow;
+import dev.jagt.orchestrator.job.codereview.request.NotePoster;
+import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
-import dev.jagt.orchestrator.port.codehost.review.Resolution;
-import dev.jagt.orchestrator.service.codereview.CodeReviewPanel;
-import dev.jagt.orchestrator.service.codereview.LedgerRow;
-import dev.jagt.orchestrator.service.codereview.NotePoster;
-import dev.jagt.orchestrator.service.codereview.ReviewLedger;
-import dev.jagt.orchestrator.service.codereview.ReviewSubjects;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,7 +22,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Reads the likes, dislikes and resolutions of the notes the code reviewer posted and records a
- * line only where one changed. A request that is no longer listed is read once more and ends.
+ * line only where one changed. A request that is no longer listed, or that the host says is merged
+ * or closed, is read once more and ends.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,8 +33,7 @@ public class ReviewSignalsJob implements Job {
   private final ReviewLedger ledger;
   private final ReviewSubjects subjects;
   private final RequestNotes notes;
-  private final ReviewStats stats;
-  private final CodeReviewPanel panel;
+  private final SignalRecorder recorder;
 
   @Override
   public String id() {
@@ -62,7 +60,8 @@ public class ReviewSignalsJob implements Job {
         continue;
       }
       boolean read = read(row);
-      if (read && !listed.contains(row.url()) && listing.complete(row.project())) {
+      boolean unlisted = !listed.contains(row.url()) && listing.complete(row.project());
+      if (read && (unlisted || over(row))) {
         ledger.update(row.url(), row.project(), row.taskId(), standing -> standing.withEnded(true));
       }
     }
@@ -88,26 +87,16 @@ public class ReviewSignalsJob implements Job {
     if (reactions.facts().isEmpty()) {
       return reactions.failure().isBlank() || warn(row, reactions.failure());
     }
-    record(row, ours, reactions.facts().get());
+    recorder.record(row, ours, reactions.facts().get());
     return true;
   }
 
-  private void record(LedgerRow row, Map<String, RequestNote> ours, Map<String, Reaction> read) {
-    Map<String, String> counts = new LinkedHashMap<>(row.counts());
-    String brief = NotePoster.digest(panel.brief());
-    read.forEach((id, reaction) -> {
-      RequestNote note = ours.get(id);
-      if (note == null) {
-        return;
-      }
-      String resolution = note.resolution() == Resolution.RESOLVED ? "fixed" : "unknown";
-      String now = reaction.likes() + "/" + reaction.dislikes() + "/" + resolution;
-      if (!now.equals(counts.get(id))) {
-        stats.append(row.url(), id, reaction.likes(), reaction.dislikes(), resolution, brief);
-        counts.put(id, now);
-      }
-    });
-    ledger.update(row.url(), row.project(), row.taskId(), standing -> standing.withCounts(counts));
+  private boolean over(LedgerRow row) {
+    return notes
+        .change(row.project(), row.url())
+        .facts()
+        .map(change -> change.state() != RequestState.OPEN)
+        .orElse(false);
   }
 
   private static boolean warn(LedgerRow row, String cause) {

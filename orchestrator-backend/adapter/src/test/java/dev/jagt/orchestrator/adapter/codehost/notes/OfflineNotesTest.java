@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;
@@ -35,7 +36,7 @@ class OfflineNotesTest {
 
   @Test
   void noNoteIsPostedWhereNoHostIsReached() {
-    Answer<String> answer = offline.post(host, "u", new NoteDraft("x", ""));
+    Answer<String> answer = offline.post(host, "u", new NoteDraft("x", "", NoteAnchor.NONE));
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure()).startsWith("orchestrator.codeHost");

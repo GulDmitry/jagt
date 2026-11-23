@@ -23,6 +23,18 @@ Only what the change itself shows; each finding names the file, the line's ancho
 
 A clean change gets no finding. Never invent one to have something to say.
 
+## Patterns that stop a change
+
+Each is a finding of severity `blocking` wherever it appears; the pattern is its name.
+
+- **`secret in diff`** — a credential, token or key written into the diff, a config file or a test included.
+- **`unsafe input`** — a query, command, path or page built by concatenating a value from outside: a request, a
+  file, a message. A parameter, an argument list or an encoder carries it instead.
+- **`open endpoint`** — a new endpoint, verb or page that does not check the role or owner the description names.
+- **`unbounded work`** — a query or remote call per item of a loop, a read with no limit, or a blocking call where the
+  surrounding code is asynchronous.
+- **`unasked dependency`** — a dependency added or bumped that the description and the fix do not need, or one unpinned.
+
 ## Answering a bot
 
 A review bot's note is answered in one of three ways, and the answer is the issue of one finding:

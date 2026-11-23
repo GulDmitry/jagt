@@ -32,6 +32,14 @@ class MasterPanelRolesTest {
       | developer | is the code right | code-reviewer |
       """;
 
+  private static final String BOTH =
+      """
+      | role | the question it asks | applies | unless |
+      |------|----------------------|---------|--------|
+      | architect | is the architecture held | | |
+      | QA | is it tested right | `!**/*.md` | code-reviewer |
+      """;
+
   private static final String WORKTREE = "/wt/ABC-1-proj";
 
   private final ChargedReviews reviews = mock(ChargedReviews.class);
@@ -100,5 +108,34 @@ class MasterPanelRolesTest {
     panel.review("ABC-1", task, judge);
 
     verify(reviews, times(2)).review(eq("ABC-1"), any());
+  }
+
+  @Test
+  void skippedLineNamesTheRoleItYieldsToWhereRowHasBothAppliesAndUnless() {
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(BOTH));
+    when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/A.java")));
+    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
+
+    panel.review("ABC-1", task, judge);
+
+    ArgumentCaptor<String> markdown = ArgumentCaptor.captor();
+    verify(stored).write(eq("ABC-1"), eq(task), any(), markdown.capture());
+    assertThat(markdown.getValue()).contains("# skipped [QA] the code-reviewer role reads it\n");
+  }
+
+  @Test
+  void skippedLineNamesTheGlobWhereRowHasBothAndTheRoleItYieldsToIsOff() {
+    ConfigFile.RoleConfig off = ConfigFile.RoleConfig.defaults().withEnabled(false);
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(BOTH));
+    when(quotes.paths(task)).thenReturn(Optional.of(List.of("docs/A.md")));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults().withCodeHost("github").withRoles(Map.of("code-reviewer", off)));
+
+    panel.review("ABC-1", task, judge);
+
+    ArgumentCaptor<String> markdown = ArgumentCaptor.captor();
+    verify(stored).write(eq("ABC-1"), eq(task), any(), markdown.capture());
+    assertThat(markdown.getValue()).contains("# skipped [QA] no changed path matches !**/*.md\n");
   }
 }

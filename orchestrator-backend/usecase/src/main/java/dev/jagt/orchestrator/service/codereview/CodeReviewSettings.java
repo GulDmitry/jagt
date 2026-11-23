@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.codereview;
 
+import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.io.IOException;
@@ -24,22 +25,31 @@ public class CodeReviewSettings {
 
   public static final String ROLE = "code-reviewer";
 
-  /** {@code maxDiffLines} is an estimate: a diff past it is skipped. */
-  public record Settings(boolean enabled, boolean postOwn, boolean postOthers, int maxDiffLines) {
+  /**
+   * {@code maxDiffLines} is an estimate: a diff past it is skipped. {@code maxCostUsd} is what the
+   * third-party reads of one request may cost together, the assistant's own ceiling.
+   */
+  public record Settings(
+      boolean enabled, boolean postOwn, boolean postOthers, int maxDiffLines, double maxCostUsd) {
 
     public static Settings defaults() {
-      return new Settings(true, true, false, 5000);
+      return new Settings(true, true, false, 5000, AssistantProperties.DEFAULT_MAX_COST_USD);
     }
   }
 
   private final ConfigService configService;
   private final OrchestratorPaths paths;
+  private final AssistantProperties assistant;
 
   public Settings load() {
     Settings read = fromFiles(paths.root().resolve("roles").resolve(ROLE));
     Boolean enabled = configService.load().role(ROLE).enabled();
     return new Settings(
-        enabled == null || enabled, read.postOwn(), read.postOthers(), read.maxDiffLines());
+        enabled == null || enabled,
+        read.postOwn(),
+        read.postOthers(),
+        read.maxDiffLines(),
+        assistant.maxCostUsd());
   }
 
   private static Settings fromFiles(Path folder) {
@@ -71,7 +81,8 @@ public class CodeReviewSettings {
             .map(Integer.class::cast)
             .filter(lines -> lines > 0)
             .findFirst()
-            .orElse(below.maxDiffLines()));
+            .orElse(below.maxDiffLines()),
+        below.maxCostUsd());
   }
 
   private static boolean flag(@Nullable Object written, boolean standing) {

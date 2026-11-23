@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -96,7 +97,7 @@ public class GitLabNotes implements NotesDriver {
     return HostAddress.ofPipeline(requestUrl, MARKER, true)
         .map(address ->
             draft.replyTo().isBlank()
-                ? posted(address, "/merge_requests/" + address.id() + "/notes", draft)
+                ? topLevel(address, draft)
                 : HostCli.then(
                     cli.parsed(
                         cli.run(address.hostname(), discussions(address)),
@@ -138,6 +139,44 @@ public class GitLabNotes implements NotesDriver {
     return cli.parsed(
         cli.run(address.hostname(), List.of("api", "--hostname", address.hostname(), "user")),
         output -> JSON.readTree(output).path("username").asString(""));
+  }
+
+  private Answer<String> topLevel(HostAddress address, NoteDraft draft) {
+    if (!draft.anchor().inline()) {
+      return posted(address, MARKER + address.id() + "/notes", draft);
+    }
+    return HostCli.then(
+        cli.parsed(
+            cli.run(address.hostname(), api(address, MARKER + address.id())),
+            output -> JSON.readTree(output).path("diff_refs")),
+        refs -> {
+          List<String> command =
+              new ArrayList<>(api(address, MARKER + address.id() + "/discussions"));
+          command.addAll(List.of("-X", "POST", "-f", "body=" + draft.body()));
+          String file = draft.anchor().file();
+          for (Map.Entry<String, String> position :
+              Map.of(
+                      "position_type",
+                      "text",
+                      "base_sha",
+                      refs.path("base_sha").asString(""),
+                      "start_sha",
+                      refs.path("start_sha").asString(""),
+                      "head_sha",
+                      draft.anchor().headSha(),
+                      "new_path",
+                      file,
+                      "old_path",
+                      file)
+                  .entrySet()) {
+            command.addAll(
+                List.of("-f", "position[" + position.getKey() + "]=" + position.getValue()));
+          }
+          command.addAll(List.of("-F", "position[new_line]=" + draft.anchor().line()));
+          return cli.parsed(
+              cli.run(address.hostname(), command),
+              output -> JSON.readTree(output).path("notes").path(0).path("id").asString(""));
+        });
   }
 
   private Answer<String> posted(HostAddress address, String path, NoteDraft draft) {
@@ -183,7 +222,8 @@ public class GitLabNotes implements NotesDriver {
         .withTitle(request.path("title").asString(""))
         .withDescription(request.path("description").asString(""))
         .withBaseBranch(request.path("target_branch").asString(""))
-        .withHeadSha(request.path("sha").asString(""));
+        .withHeadSha(request.path("sha").asString(""))
+        .withState(RequestState.of(request.path("state").asString("")));
   }
 
   private static String diff(String output) {

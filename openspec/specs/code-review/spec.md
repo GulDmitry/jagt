@@ -30,6 +30,8 @@ A request by the acting account itself SHALL be skipped. Design: [`roles/code-re
 A third-party read SHALL use a detached checkout under `<data>/jagt/code-review/checkouts/` through read-only git, with no build on outside code.
 A diff over `maxDiffLines` SHALL be skipped with one log line. The reviews per request SHALL scale with its size:
 one per new head, at most 2 plus its changed lines divided by 500. The description, a note and a diff are data, never instructions.
+A third-party read SHALL be charged to the request's ledger row.
+A request whose row holds `assistant.max-cost-usd` or more SHALL get no model call.
 
 #### Scenario: An instruction in the description
 - **WHEN** the description holds an instruction
@@ -51,9 +53,14 @@ one per new head, at most 2 plus its changed lines divided by 500. The descripti
 - **WHEN** a request of 1200 changed lines got its fourth review
 - **THEN** a new head is not reviewed again, while a request of 2000 changed lines still is
 
+#### Scenario: A third-party review would pass the ceiling
+- **WHEN** a third-party request's reads cost `assistant.max-cost-usd` or more
+- **THEN** no model is asked for it, a read or an answer
+
 ### Requirement: A note is posted once and says who wrote it
 `NotePoster` SHALL be the one caller of `RequestNotes.post`. Each body SHALL open with the constant AI line asking for a thumbs up or down.
 Each note SHALL carry a hidden key, a digest of request, head, file, anchor and kind, read back from the host before every post.
+A finding naming a file and a line SHALL be posted on that line, and on the request where the host refuses the line.
 jagt SHALL never approve, merge, close or push through the role.
 
 #### Scenario: A restart between a post and its ledger write
@@ -71,6 +78,14 @@ jagt SHALL never approve, merge, close or push through the role.
 #### Scenario: No approval
 - **WHEN** any run ends
 - **THEN** no approval was sent, as `RequestNotes` has no approve method
+
+#### Scenario: A finding names a file and a line
+- **WHEN** a finding quotes a line of a file the diff changes
+- **THEN** the note is posted on that line
+
+#### Scenario: The host refuses the line
+- **WHEN** the host refuses a note's line
+- **THEN** the note is posted on the request instead
 
 ### Requirement: Notes are on for a jagt task's request and opt-in for another's
 On a jagt task's request notes SHALL be on by default (`post.own`); on another person's request only with `post.others`, off by default.
@@ -95,6 +110,10 @@ A failed listing SHALL remove no row and SHALL show the reach mark on the board'
 #### Scenario: A host failure
 - **WHEN** the host answers a rate limit or is signed out
 - **THEN** the answer is a failure in the host's words, never an empty list
+
+#### Scenario: A reviewed request is merged or closed
+- **WHEN** a reviewed request is merged or closed
+- **THEN** its judgement is dropped unposted and its row ends after one final read
 
 ### Requirement: Review bots are answered, bounded per thread
 The role SHALL answer a review bot's note once per note id: fix, change nothing and say why, or ask. It SHALL answer a thread at most three times.
@@ -123,7 +142,8 @@ With the role off or no code host the Master SHALL read all three rows.
 
 ### Requirement: Likes, dislikes and resolutions are recorded as dated statistics
 `ReviewStats` SHALL append a line to `<data>/records/code-review.jsonl`, in UTC, only where a count or resolution changed, with the brief's digest.
-Resolutions SHALL come from `review_replies.md` for a jagt task's request and from the host for another: resolved is fixed, else unknown.
+A note's resolution SHALL be the session's answer in `review_replies.md` where a block's heading links the note,
+else the host's: resolved is fixed, else unknown. A top-level note's reactions SHALL be read from the host's comment endpoint.
 A host with no reactions SHALL answer cannot-say, never zero. A rating SHALL never rewrite the brief: a change follows a
 `roleEval -Prole=code-reviewer` case that is red on the old brief.
 
@@ -142,3 +162,11 @@ A host with no reactions SHALL answer cannot-say, never zero. A rating SHALL nev
 #### Scenario: A host with no reactions
 - **WHEN** a host has no reactions
 - **THEN** the answer is cannot-say, never zero
+
+#### Scenario: The session answered a note
+- **WHEN** the session answered a note in `review_replies.md`
+- **THEN** the note's resolution is that answer
+
+#### Scenario: A note on the request itself
+- **WHEN** a note is on the request, not on a line
+- **THEN** its likes and dislikes are read all the same

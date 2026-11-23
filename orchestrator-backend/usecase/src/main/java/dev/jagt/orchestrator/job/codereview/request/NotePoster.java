@@ -1,10 +1,12 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.job.codereview.request;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.task.review.AiLine;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -41,12 +43,16 @@ public class NotePoster {
   private final ReviewLedger ledger;
 
   /**
-   * A note on the request for one finding, or an answer to {@code replyTo}. Dropped where the
-   * request's head is no longer {@code head}, or it can no longer be read.
+   * A note on the request for one finding, on the line {@code anchor} names where it names one, or
+   * an answer to {@code replyTo}. Dropped where the request is over, its head is no longer {@code
+   * head}, or it can no longer be read. A line the host refuses is posted on the request instead.
    */
-  public Outcome post(Subject subject, String head, String key, String text, String replyTo) {
+  public Outcome post(
+      Subject subject, String head, String key, String text, String replyTo, NoteAnchor anchor) {
     Answer<RequestChange> change = notes.change(subject.project(), subject.url());
-    if (change.facts().isEmpty() || !change.facts().get().headSha().equals(head)) {
+    if (change.facts().isEmpty()
+        || !change.facts().get().headSha().equals(head)
+        || change.facts().get().state() != RequestState.OPEN) {
       return Outcome.DROPPED;
     }
     Answer<List<RequestNote>> read = notes.notes(subject.project(), subject.url());
@@ -57,8 +63,18 @@ public class NotePoster {
       remember(subject, key);
       return Outcome.DUPLICATE;
     }
+    String body = body(text, key);
     Answer<String> posted =
-        notes.post(subject.project(), subject.url(), new NoteDraft(body(text, key), replyTo));
+        notes.post(subject.project(), subject.url(), new NoteDraft(body, replyTo, anchor));
+    if (posted.facts().isEmpty() && anchor.inline()) {
+      log.atInfo()
+          .setMessage("code review inline note refused")
+          .addKeyValue("request", subject.url())
+          .addKeyValue("cause", posted.failure())
+          .addKeyValue("effect", "the note is posted on the request instead")
+          .log();
+      posted = notes.post(subject.project(), subject.url(), NoteDraft.replyTo(body, replyTo));
+    }
     if (posted.facts().isEmpty()) {
       log.atWarn()
           .setMessage("code review note not posted")

@@ -92,6 +92,14 @@ public class MasterPanel {
             .noneMatch(repo -> file.hasNoCodeHost(Objects.requireNonNull(repo.project())));
   }
 
+  private static MasterVerdictFile.Skipped skipped(Role role, boolean yielded) {
+    return new MasterVerdictFile.Skipped(
+        role.name(),
+        yielded
+            ? "the " + role.unless() + " role reads it"
+            : "no changed path matches " + String.join(", ", role.applies()));
+  }
+
   /**
    * Writes the round's review file; false where the brief could not be read, and nothing was asked.
    */
@@ -168,7 +176,12 @@ public class MasterPanel {
         task,
         review,
         MasterVerdictFile.of(
-            taskId, reads, named.stream().filter(role -> !roles.contains(role)).toList()));
+            taskId,
+            reads,
+            named.stream()
+                .filter(role -> !roles.contains(role))
+                .map(role -> skipped(role, yieldsTo(role, task, file)))
+                .toList()));
   }
 
   /**

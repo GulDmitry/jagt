@@ -6,10 +6,13 @@ import dev.jagt.orchestrator.adapter.codehost.cli.HostCli;
 import dev.jagt.orchestrator.adapter.codehost.command.CommandPipeline;
 import dev.jagt.orchestrator.adapter.codehost.command.CommandRun;
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
+import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -31,6 +34,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Any provider: the project's own commands print what the port reads, as JSON, and post a note. A
  * command that is not set reads nothing, but for a change or a post, whose absence is a failure.
+ * The notes command prints a JSON array of notes with id, author and body; one printing ids only is
+ * a failure, as a note's body and author are then cannot-say.
  */
 @Component
 public class CommandNotes implements NotesDriver {
@@ -76,18 +81,23 @@ public class CommandNotes implements NotesDriver {
 
   @Override
   public Answer<List<RequestNote>> notes(HostSettings host, String requestUrl) {
-    if (host.host().notesCommand().isEmpty()) {
+    List<String> command = host.host().notesCommand();
+    if (command.isEmpty()) {
       return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
     }
-    return run.run(
-            host, "notesCommand", host.host().notesCommand(), Map.of("{request}", requestUrl))
-        .map(printed ->
-            printed
-                .lines()
-                .map(String::strip)
-                .filter(id -> !id.isEmpty())
-                .map(id -> RequestNote.defaults().withId(id).withThread(id))
-                .toList());
+    Answer<String> printed =
+        run.run(host, "notesCommand", command, Map.of("{request}", requestUrl));
+    if (printed.facts().isEmpty()) {
+      return HostCli.failureOf(printed);
+    }
+    String output = printed.facts().get().strip();
+    if (!output.isEmpty() && !output.startsWith("[")) {
+      return Answer.failed(
+          TokenUsage.NONE,
+          host.key("notesCommand") + " prints ids only: a note's body and author are cannot-say");
+    }
+    return parsed(
+        host, "notesCommand", printed, text -> noted(text, host.host().review().reviewBots()));
   }
 
   @Override
@@ -156,6 +166,30 @@ public class CommandNotes implements NotesDriver {
         .toList();
   }
 
+  private static List<RequestNote> noted(String output, List<String> bots) {
+    return StreamSupport.stream(JSON.readTree(output).spliterator(), false)
+        .map(note -> {
+          String id = note.path("id").asString("");
+          String author = note.path("author").asString("");
+          Resolution resolution =
+              note.has("resolved")
+                  ? (note.path("resolved").asBoolean(false) ? Resolution.RESOLVED : Resolution.OPEN)
+                  : Resolution.UNKNOWN;
+          return RequestNote.defaults()
+              .withId(id)
+              .withThread(note.path("thread").asString(id))
+              .withAuthor(author)
+              .withKind(
+                  note.path("mine").asBoolean(false)
+                      ? AuthorKind.ACTOR
+                      : NoteReads.kind(author, "", note.path("bot").asBoolean(false), bots))
+              .withBody(note.path("body").asString(""))
+              .withPath(note.path("path").asString(""))
+              .withResolution(resolution);
+        })
+        .toList();
+  }
+
   private static RequestChange described(String output) {
     JsonNode change = JSON.readTree(output);
     return RequestChange.defaults()
@@ -163,6 +197,7 @@ public class CommandNotes implements NotesDriver {
         .withDescription(change.path("description").asString(""))
         .withBaseBranch(change.path("baseBranch").asString(""))
         .withHeadSha(change.path("headSha").asString(""))
-        .withDiff(change.path("diff").asString(""));
+        .withDiff(change.path("diff").asString(""))
+        .withState(RequestState.of(change.path("state").asString("")));
   }
 }

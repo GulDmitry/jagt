@@ -28,7 +28,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 - **WHEN** a role's row names a `model`
 - **THEN** it runs on it; blank keeps `roles.master.model`
 - **WHEN** the diff touches none of a role's `applies` globs, only paths its `!` globs name, or its `unless` names a role that is on
-- **THEN** a `# skipped` line replaces its read; unread paths, no role left, or no code host, read every role
+- **THEN** a `# skipped` line names its reason and replaces its read; unread paths, no role left, or no code host, read every role
 - **WHEN** a session hands back a round
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
 

@@ -2,10 +2,8 @@ package dev.jagt.orchestrator.job.codereview;
 
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.codereview.BotAnswers;
 import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
 import dev.jagt.orchestrator.service.codereview.CodeReviewSettings.Settings;
-import dev.jagt.orchestrator.service.codereview.ReviewSubjects;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,6 +47,6 @@ public class BotAnswerJob implements Job {
     String model = configService.load().role(CodeReviewSettings.ROLE).modelOrInherited();
     subjects.list().subjects().stream()
         .filter(subject -> subject.own() ? read.postOwn() : read.postOthers())
-        .forEach(subject -> answers.answer(subject, model));
+        .forEach(subject -> answers.answer(subject, read, model));
   }
 }

@@ -13,9 +13,12 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
+import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
+import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.port.codehost.review.ReviewRequest;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -124,7 +127,7 @@ class GitHubNotesTest {
     assertThat(answer.facts().get())
         .extracting(RequestNote::id, RequestNote::kind, RequestNote::resolution)
         .containsExactly(
-            tuple("11", AuthorKind.PERSON, Resolution.UNKNOWN),
+            tuple("issue-11", AuthorKind.PERSON, Resolution.UNKNOWN),
             tuple("21", AuthorKind.BOT, Resolution.RESOLVED),
             tuple("22", AuthorKind.ACTOR, Resolution.RESOLVED));
   }
@@ -156,7 +159,7 @@ class GitHubNotesTest {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "{\"id\":99}", ""));
 
-    Answer<String> answer = github.post(host, REQUEST, new NoteDraft("Done", "21"));
+    Answer<String> answer = github.post(host, REQUEST, NoteDraft.replyTo("Done", "21"));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(processes).run(isNull(), any(Duration.class), command.capture());
@@ -189,5 +192,83 @@ class GitHubNotesTest {
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure()).contains("rate limit exceeded");
+  }
+
+  @Test
+  void topLevelNoteIsPostedAsAnIssueCommentAndItsIdTellsSo() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "{\"id\":99}", ""));
+
+    Answer<String> answer = github.post(host, REQUEST, new NoteDraft("Done", "", NoteAnchor.NONE));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue()).contains("repos/acme/shop/issues/7/comments");
+    assertThat(answer.facts()).contains("issue-99");
+  }
+
+  @Test
+  void replyToTopLevelNoteIsAnotherTopLevelNote() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "{\"id\":99}", ""));
+
+    github.post(host, REQUEST, NoteDraft.replyTo("Done", "issue-11"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue()).contains("repos/acme/shop/issues/7/comments");
+  }
+
+  @Test
+  void noteWithFileAndLineIsPostedOnThatLineOfTheCommit() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "{\"id\":99}", ""));
+
+    Answer<String> answer =
+        github.post(
+            host,
+            REQUEST,
+            new NoteDraft("Null here", "", new NoteAnchor("src/A.java", 11, "0123abc")));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue())
+        .contains(
+            "repos/acme/shop/pulls/7/comments",
+            "commit_id=0123abc",
+            "path=src/A.java",
+            "line=11",
+            "side=RIGHT");
+    assertThat(answer.facts()).contains("99");
+  }
+
+  @Test
+  void topLevelNoteReactionsAreReadFromTheIssueCommentEndpoint() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "[{\"content\":\"+1\"}]", ""));
+
+    Answer<Map<String, Reaction>> answer = github.reactions(host, REQUEST, List.of("issue-11"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue())
+        .contains("repos/acme/shop/issues/comments/11/reactions?per_page=100");
+    assertThat(answer.facts().get()).containsEntry("issue-11", new Reaction(1, 0));
+  }
+
+  @Test
+  void mergedRequestIsReadAsMerged() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                "{\"title\":\"t\",\"body\":\"b\",\"baseRefName\":\"main\","
+                    + "\"headRefOid\":\"0123abc\",\"state\":\"MERGED\"}",
+                ""),
+            new Processes.Result(0, "diff", ""));
+
+    Answer<RequestChange> answer = github.change(host, REQUEST);
+
+    assertThat(answer.facts().get().state()).isEqualTo(RequestState.MERGED);
   }
 }
