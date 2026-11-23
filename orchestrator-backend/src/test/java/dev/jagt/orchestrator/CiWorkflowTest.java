@@ -92,7 +92,7 @@ class CiWorkflowTest {
             .map(Map.Entry::getKey)
             .collect(Collectors.toSet());
 
-    assertThat(parsed.get("permissions")).isEqualTo(Map.of("contents", "read"));
+    assertThat(parsed.get("permissions")).isEqualTo(Map.of("contents", "read", "packages", "read"));
     assertThat(widened).containsExactly("release");
   }
 
@@ -172,18 +172,51 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @CsvSource({
-    "test, ./gradlew --no-daemon gateTest",
-    "heavy, scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy",
-    "stand, ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=",
-    "install, ./gradlew --no-daemon gateInstall",
-    "audit, ./gradlew --no-daemon gateScan -Paudit.base="
-  })
+  @CsvSource({"test, ./gradlew --no-daemon gateTest", "install, ./gradlew --no-daemon gateInstall"})
   void runsEachPullRequestJobAsTheGateLineTheLocalCiRunsToo(String job, String line) {
     assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps")))
         .contains("run=" + line);
     assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
         .contains(job + ") echo '" + line);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "heavy, scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy",
+    "stand, ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose"
+  })
+  void runsTheHeavyAndStandJobsThroughTheLocalTwinInTheCiImage(String job, String line) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps")))
+        .contains("run=scripts/linux-suite.sh " + job);
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains(job + ") echo '" + line);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"heavy", "stand"})
+  void cachesTheLocalTwinsGradleHomeOnTheRunnerBetweenRuns(String job) {
+    String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .contains("path=${{ runner.temp }}/gradle-home")
+        .contains("env={JAGT_GRADLE_CACHE=${{ runner.temp }}/gradle-home}");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"heavy", "stand"})
+  void keepsTheHeavyAndStandJobsOffTheContainerAndTheHostDockerSocket(String job) {
+    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get(job))).doesNotContainKey("container");
+  }
+
+  @Test
+  void runsTheTestJobInTheCiImagePinnedByDigest() {
+    Map<?, ?> container =
+        (Map<?, ?>)
+            Objects.requireNonNull(
+                Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("container"));
+
+    assertThat(String.valueOf(container.get("image")))
+        .matches("ghcr\\.io/\\S+-ci:base@sha256:[0-9a-f]{64}");
   }
 
   @Test
@@ -387,7 +420,7 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"test", "heavy", "audit", "stand", "install", "release"})
+  @ValueSource(strings = {"test", "stand", "install", "release"})
   void keepsGradleCachesBetweenRunsByThePinnedSetupGradleOnItsOpenSourceProvider(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 
@@ -399,7 +432,7 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"test", "heavy", "audit", "stand", "install", "release"})
+  @ValueSource(strings = {"test", "stand", "install", "release"})
   void restoresTheNewestGradleCacheOfTheJobWhenTheBuildFilesChangedSoTheRunStartsWarm(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 

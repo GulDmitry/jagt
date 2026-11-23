@@ -15,7 +15,8 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BACKEND_DIR="$REPO_ROOT/orchestrator-backend"
 IMAGE="$(grep -m1 -oE 'ghcr\.io/[^ ]+-ci:base@sha256:[0-9a-f]{64}' "$REPO_ROOT/.github/workflows/ci.yml" || true)"
 LOCAL_IMAGE=jagt-ci:local
-CACHE_VOLUME=jagt-gradle-home
+# A path in JAGT_GRADLE_CACHE puts the shared cache on the host, where a CI cache action saves and restores it.
+CACHE_VOLUME=${JAGT_GRADLE_CACHE:-jagt-gradle-home}
 ENGINE_VOLUME=jagt-ci-docker
 RUN_VOLUME="jagt-gradle-run-$$"
 # shellcheck source=runner.env
@@ -37,7 +38,7 @@ gate() {
 live() {
     case "$1" in
         test) echo 'secretScan boardCheck' ;;
-        heavy) echo 'playwrightChromium' ;;
+        heavy | boardTest) echo 'playwrightChromium' ;;
         *) echo '' ;;
     esac
 }
@@ -80,13 +81,15 @@ else
         -t "$LOCAL_IMAGE" "$REPO_ROOT/base" >/dev/null
     IMAGE="$LOCAL_IMAGE"
 fi
-docker volume create "$CACHE_VOLUME" >/dev/null
+if [[ $CACHE_VOLUME == /* ]]; then mkdir -p "$CACHE_VOLUME"; else docker volume create "$CACHE_VOLUME" >/dev/null; fi
 docker volume create "$ENGINE_VOLUME" >/dev/null
 docker volume create "$RUN_VOLUME" >/dev/null
 trap 'docker volume rm -f "$RUN_VOLUME" >/dev/null 2>&1 || true' EXIT # absent is removed
 
 host_cpus=$(docker info --format '{{.NCPU}}' 2>/dev/null || echo "$RUNNER_CPUS")
 cpus=$CONTAINER_CPUS
+# A hosted runner is the size calibrated against, so it keeps every CPU it has.
+if [[ ${GITHUB_ACTIONS:-} == true ]]; then cpus=$host_cpus; fi
 if awk -v h="$host_cpus" -v q="$CONTAINER_CPUS" 'BEGIN { exit !(h < q) }'; then cpus=$host_cpus; fi
 # Slower per CPU than a runner, never fewer things at once: concurrency follows the runner's size.
 CONCURRENCY=(--max-workers="$RUNNER_CPUS" -PstandParallelism="$RUNNER_CPUS" -Pe2eForks=$(( RUNNER_CPUS / 2 ))

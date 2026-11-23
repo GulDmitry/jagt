@@ -11,6 +11,7 @@ exit 0
 EOF
   chmod +x "$BATS_TEST_TMPDIR/bin/docker"
   export PATH="$BATS_TEST_TMPDIR/bin:$PATH" DOCKER_LOG="$BATS_TEST_TMPDIR/docker.log"
+  unset GITHUB_ACTIONS JAGT_GRADLE_CACHE
 }
 
 # bats test_tags=exit:0
@@ -22,6 +23,13 @@ EOF
   [ "$(grep -c resolveAll "$DOCKER_LOG")" -eq 1 ]
 }
 
+@test "the board job installs its browser online and leaves it out offline" {
+  run "$script" boardTest
+  [ "$status" -eq 0 ]
+  grep resolveAll "$DOCKER_LOG" | grep -q playwrightChromium
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-x playwrightChromium'
+}
+
 @test "the offline container still resolves its own hostname" {
   run "$script" test
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--hostname runner --add-host runner:127.0.0.1'
@@ -30,6 +38,18 @@ EOF
 @test "the container is capped to the runner's size" {
   run "$script" test
   grep -q -- '--cpus 1.25 --memory 16g --memory-swap 16g' "$DOCKER_LOG"
+}
+
+@test "a cache path on the host holds the shared Gradle home in place of a volume" {
+  JAGT_GRADLE_CACHE="$BATS_TEST_TMPDIR/gradle-home" run "$script" test
+  [ -d "$BATS_TEST_TMPDIR/gradle-home" ]
+  grep -q -- "-v $BATS_TEST_TMPDIR/gradle-home:/gradle-ro:ro" "$DOCKER_LOG"
+  ! grep -q 'volume create jagt-gradle-home' "$DOCKER_LOG"
+}
+
+@test "a hosted runner keeps every CPU it has" {
+  GITHUB_ACTIONS=true FAKE_CPUS=4 run "$script" test
+  grep -q -- '--cpus 4 ' "$DOCKER_LOG"
 }
 
 @test "a host with fewer CPUs than the quota caps the container to the host" {
