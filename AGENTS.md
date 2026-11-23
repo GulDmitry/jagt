@@ -1,6 +1,6 @@
 # jagt — rules
 
-Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees. Java 25 / Spring Boot 4.x,
+Orchestration of AI coding-agent CLI sessions across isolated Git worktrees, on a laptop or a server. Java 25 / Spring Boot 4.x,
 macOS-first, every OS- and agent-specific piece behind a strategy interface. **This file is `AGENTS.md`**,
 `CLAUDE.md` a symlink to it, and nothing here is named after one vendor. Every CLI reads it and reaches the same
 MCP server; a root session presents jagt's Master token, so every one is Master. Each CLI's file:
