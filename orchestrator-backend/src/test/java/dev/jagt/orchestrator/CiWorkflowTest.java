@@ -458,7 +458,7 @@ class CiWorkflowTest {
     assertThat(SourceRoots.read(Path.of("../.github/workflows/base-images.yml")))
         .contains("name: ci\n      dockerfile: Dockerfile.ci");
     assertThat(SourceRoots.read(Path.of("../base/Dockerfile.ci")))
-        .containsPattern("(?m)^FROM eclipse-temurin:25-jdk@sha256:[0-9a-f]{64}$")
+        .containsPattern("(?m)^FROM eclipse-temurin:25-jdk-noble@sha256:[0-9a-f]{64}$")
         .containsPattern("(?m)^FROM node:22\\S+@sha256:[0-9a-f]{64} AS node$")
         .contains("linux-test-deps.sh");
   }
