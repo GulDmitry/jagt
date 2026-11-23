@@ -280,6 +280,13 @@ class CiWorkflowTest {
   }
 
   @Test
+  void verifiesTheRealFeedInstallsProvenanceWithTheRunsToken() {
+    Map<String, Object> install = Objects.requireNonNull(CiWorkflow.nightlyJobs().get("install"));
+
+    assertThat(install.get("env")).isEqualTo(Map.of("GH_TOKEN", "${{ github.token }}"));
+  }
+
+  @Test
   void startsTheNightlyOffTheHour() {
     assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
         .doesNotContainPattern("cron: '0 ");

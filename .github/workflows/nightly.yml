@@ -167,6 +167,8 @@ jobs:
     name: real-feed install (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
     defaults:
       run:
         working-directory: .
