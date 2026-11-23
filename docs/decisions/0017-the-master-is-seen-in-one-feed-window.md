@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-07.
+Accepted 2026-10-07. Amended by [0232](0232-every-model-roles-log-is-on-the-board-and-in-no-tmux-window.md): the feed is on the board, in no window.
 
 ## Context
 

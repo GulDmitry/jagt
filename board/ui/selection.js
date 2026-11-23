@@ -1,4 +1,5 @@
 import { current as pick, nextRequiredTarget, stepTarget } from "./cursor.js";
+import * as rolelog from "./rolelog.js";
 
 /** @typedef {import("../core/store.js").Task} Task */
 
@@ -11,6 +12,7 @@ const state = {
 
 /** @param {string} taskId */
 export const choose = (taskId) => {
+  rolelog.close();
   state.chosen = taskId;
   state.opened = true;
 };
@@ -18,11 +20,13 @@ export const choose = (taskId) => {
 // A task a link names, by alias or id, stays open until the human picks another.
 /** @param {string} name */
 export const link = (name) => {
+  rolelog.close();
   state.linked = name;
   state.opened = true;
 };
 
 export const back = () => {
+  rolelog.close();
   state.opened = false;
 };
 

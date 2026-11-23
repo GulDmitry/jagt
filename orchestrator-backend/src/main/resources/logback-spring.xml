@@ -7,6 +7,46 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
+    <!--
+    The board's role logs: one in-memory feed per model role, `ROLE_<id>`, on the classes of the role's module (`RoleModules`).
+    A role added later declares its appender and loggers here, and a `ModelRole` bean.
+    -->
+    <appender name="ROLE_master" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
+        <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterAnswerJob"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.master.MasterStopJob"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterReviewJob"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterVerdicts"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterPlanVerdicts"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.master.MasterPress"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.conflict.ConflictHandOff"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.job.conflict.ConflictFinish"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterPanel"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterBriefs"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterDecisions"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterReview"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterBrake"><appender-ref ref="ROLE_master"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.ChargedReviews"><appender-ref ref="ROLE_master"/></logger>
+    <appender name="ROLE_acceptance" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
+        <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="dev.jagt.orchestrator.job.checker"><appender-ref ref="ROLE_acceptance"/></logger>
+    <logger name="dev.jagt.orchestrator.service.scenario"><appender-ref ref="ROLE_acceptance"/></logger>
+    <appender name="ROLE_triage" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
+        <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="dev.jagt.orchestrator.job.triage"><appender-ref ref="ROLE_triage"/></logger>
+
     <springProfile name="!jagt-console-logging">
     <!-- Boot's console appender, declared here to carry the alias filter every appender needs. -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -41,7 +81,7 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
         </triggeringPolicy>
     </appender>
 
-    <!-- The human's: what the Master does, followed in the `master` window (`MasterFeedWindow`). -->
+    <!-- The human's: what the Master does, kept in `jagt-master.log`. -->
     <springProperty name="MASTER_LOG" source="logging.master.name" defaultValue="jagt-master.log"/>
     <appender name="MASTER" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>

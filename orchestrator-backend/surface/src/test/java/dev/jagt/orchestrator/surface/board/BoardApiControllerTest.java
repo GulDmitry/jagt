@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.model.ModelRoles;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
@@ -72,7 +73,8 @@ class BoardApiControllerTest {
                   idleStop),
               new ReachLedger(),
               new FakeClock(),
-              List.of()));
+              List.of(),
+              new ModelRoles(List.of())));
 
   @Test
   void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -158,6 +160,7 @@ class BoardApiControllerTest {
             "jobs",
             "chips",
             "reach",
+            "roleLogs",
             "branchStrategies",
             "phases");
   }
@@ -181,7 +184,8 @@ class BoardApiControllerTest {
                     idleStop),
                 new ReachLedger(),
                 new FakeClock(),
-                List.of(() -> List.of(acting), () -> List.of(stopped))));
+                List.of(() -> List.of(acting), () -> List.of(stopped)),
+                new ModelRoles(List.of())));
 
     assertThat(board.tasks().header().chips()).containsExactly(acting, stopped);
   }
@@ -211,7 +215,8 @@ class BoardApiControllerTest {
                     idleStop),
                 reach,
                 new FakeClock(),
-                List.of()));
+                List.of(),
+                new ModelRoles(List.of())));
 
     assertThat(board.tasks().header().reach()).containsExactly(lost);
   }
@@ -234,7 +239,8 @@ class BoardApiControllerTest {
                     idleStop),
                 new ReachLedger(),
                 new FakeClock(),
-                List.of()));
+                List.of(),
+                new ModelRoles(List.of())));
 
     assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
   }
@@ -258,7 +264,8 @@ class BoardApiControllerTest {
                     idleStop),
                 new ReachLedger(),
                 new FakeClock(),
-                List.of()));
+                List.of(),
+                new ModelRoles(List.of())));
 
     assertThat(board.tasks().header().jobs().count()).isEqualTo(1);
   }
@@ -282,7 +289,8 @@ class BoardApiControllerTest {
                     idleStop),
                 new ReachLedger(),
                 new FakeClock(),
-                List.of()));
+                List.of(),
+                new ModelRoles(List.of())));
 
     assertThat(board.events()).isSameAs(browser);
   }
@@ -345,7 +353,8 @@ class BoardApiControllerTest {
                     idleStop),
                 new ReachLedger(),
                 new FakeClock(),
-                List.of()));
+                List.of(),
+                new ModelRoles(List.of())));
     TaskView drafted =
         TaskView.of(
             new FlowRules(new TaskChart(Composition.builtIn())),

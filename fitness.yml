@@ -39,7 +39,7 @@ technical:
       source-sets: { fitness: SourceSetsFitness, governs: count, max: 27, decision: "0176" }
       start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
       task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
-      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 84, decision: "0176" }
+      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 85, decision: "0176" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
       startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 34, decision: "0176" }
       roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }

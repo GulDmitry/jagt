@@ -294,6 +294,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/codereview` | usecase | the code reviewer: ledger, settings, subjects, checkout, panel, note poster |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |
 | `service/role` | usecase | installed roles, their beans, settings and config origins |
+| `service/role/model` | usecase | the model roles a role module declares and which of them run |
 | `service/scenario` | usecase | scenario sessions and windows |
 | `service/session` | usecase | session hosting, lines, prompts and offered models |
 | `service/stop` | usecase | stops: announcements, policy, per-task stops |

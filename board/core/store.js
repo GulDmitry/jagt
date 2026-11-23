@@ -28,7 +28,7 @@ import { bothNames } from "./format.js";
  * @typedef {{ key: string, verb: string | null, broken: boolean, at: number | null }} Chip
  * @typedef {{ summary: string | null, enabled: boolean }} AutoReview
  * @typedef {{
- *   tasks: Task[], projects: string[], autoReview: AutoReview, jobs: Jobs | null, chips: Chip[],
+ *   tasks: Task[], projects: string[], autoReview: AutoReview, jobs: Jobs | null, chips: Chip[], roleLogs: string[],
  *   assistant: null, reach: Reach[], verbs: Verb[], branchStrategies: BranchStrategy[],
  *   phases: Phase[], offers: Record<string, string[]>
  * }} Data
@@ -41,6 +41,7 @@ const data = {
   autoReview: { summary: "", enabled: false },
   jobs: null,
   chips: [],
+  roleLogs: [],
   assistant: null,
   reach: [],
   verbs: [],
@@ -56,6 +57,7 @@ export const phases = () => data.phases;
 export const autoReview = () => data.autoReview;
 export const jobs = () => data.jobs;
 export const chips = () => data.chips;
+export const roleLogs = () => data.roleLogs;
 export const reach = () => data.reach;
 export const verbs = () => data.verbs;
 /** @param {Task} task */

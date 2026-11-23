@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.role.model.ModelRoles;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.testing.FakeClock;
@@ -255,7 +256,8 @@ class TaskEventStreamTest {
                             mock(BoardStop.class)),
                         new ReachLedger(),
                         new FakeClock(),
-                        List.of())))
+                        List.of(),
+                        new ModelRoles(List.of()))))
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();

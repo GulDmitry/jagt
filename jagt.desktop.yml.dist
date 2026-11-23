@@ -32,7 +32,7 @@ orchestrator:
                                                # a non-zero exit or the limit fails the start, no session opens
       # setupMinutes: 20    # minutes the setup command may run before jagt stops it; 20 where you write none
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
-      #                             # name is shipped and deployed by you alone; the master window names the path
+      #                             # name is shipped and deployed by you alone; the Master's log names the path
 
   # ── The code host ──────────────────────────────────────────────────────────────────────────────────────────
   # What jagt reads a deploy's pipeline through; never guessed from a host name. The CLI or command holds the credential.

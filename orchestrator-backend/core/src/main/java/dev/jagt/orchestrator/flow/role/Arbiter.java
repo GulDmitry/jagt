@@ -8,15 +8,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * The one role that stands where the human stands: its id, the window its steps are fed to, and
- * what it may press.
- */
+/** The one role that stands where the human stands: its id and what it may press. */
 public final class Arbiter {
 
   public static final String ID = "master";
-
-  public static final String WINDOW = "master";
 
   /** A verb the word of a {@link MasterRight} keeps as well. */
   private static final Map<TaskAction, MasterRight> STEPS =

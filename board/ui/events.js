@@ -1,6 +1,7 @@
 import { connected } from "./connection.js";
 import { repaintReport } from "./dialogs.js";
 import { loadVerbs, readBoard } from "./load.js";
+import * as rolelog from "./rolelog.js";
 import * as tabs from "./tabs.js";
 
 // A new run reloads the page, but not under a form someone is filling in.
@@ -56,6 +57,10 @@ export function listen() {
     tabs.forget();
     readBoard();
     repaintReport();
+  });
+  // A role's log gained a line: the open one reads what is new.
+  events.addEventListener("role-log", (line) => {
+    if (line instanceof MessageEvent) rolelog.follow(line.data);
   });
   // A refused connect is final for an EventSource; only a new one tries again.
   events.onerror = () => {

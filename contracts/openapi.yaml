@@ -379,6 +379,23 @@ paths:
       requestBody: {$ref: '#/components/requestBodies/Line'}
       responses:
         '200': {$ref: '#/components/responses/Result'}
+  /api/roles/{id}/log:
+    get:
+      description: The lines a running model role's feed holds after the cursor `after`, and the cursor that follows them
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: after, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: The new lines
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lines, next]
+                properties:
+                  lines: {type: array, items: {type: string}}
+                  next: {type: integer}
   /user/i18n/{file}:
     get:
       parameters:
@@ -599,6 +616,7 @@ components:
               verb: {type: [string, 'null']}
               broken: {type: boolean}
               at: {type: [integer, 'null']}
+        roleLogs: {type: array, items: {type: string}}
         reach:
           type: array
           items:

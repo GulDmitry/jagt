@@ -95,12 +95,6 @@ public interface SessionHost {
       Path worktreePath);
 
   /**
-   * A window following a file as it grows, opened where it is missing and left alone where it is
-   * there or where the session's windows cannot be listed.
-   */
-  void keepFeedWindow(String session, String name, Path file);
-
-  /**
    * Runs {@code command} as the process of a window named {@code name}, replacing one of that name,
    * and shows it to the human.
    */

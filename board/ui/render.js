@@ -2,6 +2,7 @@
 
 import { body } from "./body.js";
 import { chrome } from "./chrome.js";
+import * as rolelog from "./rolelog.js";
 import { view } from "./view.js";
 
 const board = /** @type {HTMLElement} */ (document.getElementById("board"));
@@ -11,6 +12,8 @@ export function render() {
   chrome(now);
   body(now, render);
 }
+
+rolelog.onChange(render);
 
 /** @param {{ task: string, action: string }} pressed */
 const buttonOf = ({ task, action }) => {

@@ -123,7 +123,7 @@ A reader between the session and you, on by default.
 
 It judges by the shipped brief; to edit one, copy `roles/master/brief.md.dist` and set `roles.master.brief`.
 `roles.master.mine` keeps named steps and verbs yours in `act`, `[plan, deploy, revert]` unset; what you type to a session overrules it.
-Each step is a line in the `master` window.
+Each step is a line in the Master's log, opened from its chip on the board.
 
 ## Notes on the tricky ones
 

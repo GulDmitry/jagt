@@ -9,6 +9,7 @@ const STALE = [
   "reports-toggle",
   "report-line",
   "role-chips",
+  "role-logs",
   "jobs-pulse",
   "launch",
   "project-form",

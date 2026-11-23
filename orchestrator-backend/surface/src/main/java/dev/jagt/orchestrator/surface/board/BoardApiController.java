@@ -40,7 +40,8 @@ public class BoardApiController {
 
     public record Cadence(String autoReview, boolean autoReviewEnabled) {}
 
-    public record Header(Jobs.Summary jobs, List<HeaderChip> chips, List<ReachLost> reach) {}
+    public record Header(
+        Jobs.Summary jobs, List<HeaderChip> chips, List<ReachLost> reach, List<String> roleLogs) {}
 
     public record Choices(
         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {}
@@ -59,7 +60,7 @@ public class BoardApiController {
         snapshot.projects(),
         offers(snapshot.tasks()),
         new Board.Cadence(snapshot.cadence().summary(), snapshot.cadence().enabled()),
-        new Board.Header(header.summary(), header.chips(), header.reachLost()),
+        new Board.Header(header.summary(), header.chips(), header.reachLost(), header.roleLogs()),
         new Board.Choices(BranchStrategy.choices(), Phase.choices()));
   }
 

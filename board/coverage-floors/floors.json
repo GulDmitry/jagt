@@ -35,6 +35,10 @@
     "lines": 100,
     "branches": 91
   },
+  "components/RoleLog.js": {
+    "lines": 100,
+    "branches": 100
+  },
   "components/Session.js": {
     "lines": 100,
     "branches": 100
@@ -294,6 +298,10 @@
   "ui/reports.js": {
     "lines": 100,
     "branches": 85
+  },
+  "ui/rolelog.js": {
+    "lines": 90,
+    "branches": 75
   },
   "ui/route.js": {
     "lines": 100,

@@ -32,6 +32,7 @@ export async function refresh() {
       autoReview: { summary: data.autoReview, enabled: data.autoReviewEnabled },
       jobs: data.jobs,
       chips: data.chips || [],
+      roleLogs: data.roleLogs || [],
       reach: data.reach || [],
       offers: data.offers || {},
     });

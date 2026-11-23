@@ -3,6 +3,7 @@ import { countdown } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import * as store from "../core/store.js";
 import { full } from "../core/time.js";
+import * as rolelog from "./rolelog.js";
 
 const jobsChip = /** @type {HTMLButtonElement} */ (
   document.getElementById("jobs-pulse")
@@ -72,7 +73,28 @@ function renderRoleChips() {
   roleChips.replaceChildren(...store.chips().map(roleChip));
 }
 
+const roleLogs = /** @type {HTMLElement} */ (
+  document.getElementById("role-logs")
+);
+
+// One chip per running model role; pressed, its log stands in the pane.
+/** @param {string} role */
+const logChip = (role) => {
+  const on = rolelog.open() === role;
+  const node = make("button", on ? "chip log on" : "chip log", role);
+  node.dataset.role = role;
+  node.setAttribute("aria-pressed", String(on));
+  node.dataset.tip = t("header.role-log.tip", { role });
+  return node;
+};
+
+roleLogs.onclick = (event) => {
+  const chip = /** @type {HTMLElement} */ (event.target).closest("[data-role]");
+  if (chip instanceof HTMLElement) rolelog.toggle(chip.dataset.role ?? "");
+};
+
 export function render() {
+  roleLogs.replaceChildren(...store.roleLogs().map(logChip));
   renderJobs();
   renderReach();
   renderRoleChips();

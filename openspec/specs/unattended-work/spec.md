@@ -95,13 +95,12 @@ Three tasks in a row the Master moved in `act` ending silent, in a deploy confli
 - **THEN** it only judges, across restarts, until you press the header's `act stopped`
 - **AND** a strike counts when the Master ships ABC-42 and its session falls silent, none where you converse in its window and it idles
 
-### Requirement: Every Master step is seen in one window
-While `roles.master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following `jagt-master.log`, one line per Master step
-(`MasterFeedWindow`). Closed, it SHALL come back within seconds; each start rolls the log into `.1`.
-
+### Requirement: Every Master step is seen in the role's log on the board
+The Master's steps SHALL be lines of its feed, shown by the board's [role log](../board/spec.md); jagt SHALL open no tmux window for them.
+Each start rolls `jagt-master.log` into `.1`.
 #### Scenario: You want to know why a window opened or closed
 - **WHEN** the Master answers, asks, returns, starts, ships, deploys or stops `act`
-- **THEN** the `master` window shows it with the task, and an answer with its question and decision
+- **THEN** the Master's log shows it with the task, and an answer with its question and decision
 
 ### Requirement: A second wording of a rule merges into it
 When a written rule leaves `memory/routing.md` at its ceiling, one read of the whole file SHALL name two rules placing the same items

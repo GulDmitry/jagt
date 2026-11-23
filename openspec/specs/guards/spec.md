@@ -34,7 +34,7 @@ bounded by its agent CLI.
 
 #### Scenario: A long run
 - **WHEN** the Master's log passes 10 MB
-- **THEN** it becomes `jagt-master.log.1` and the master window keeps following the new file
+- **THEN** it becomes `jagt-master.log.1` and the Master's feed on the board is not touched
 
 #### Scenario: A headless read ends
 - **WHEN** a ticket read returns
