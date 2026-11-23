@@ -89,8 +89,8 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### Linux, and one set of steps per host
 
-- `scripts/linux-suite.sh` runs `test`, `e2eTest`, `boardTest`, `linuxDriverTest`, `guardsTest` in a container (`docker/linux-suite.Dockerfile`),
-  the only place the Linux drivers meet real binaries: the notifier off the session bus (`dbus-monitor`), kitty under Xvfb.
+- `scripts/ci-local.sh` runs each CI job's own command in CI's image at a runner's size ([suites](testing-suites.md#the-local-ci)).
+  **A CI red after a local green is a defect**: its postmortem names why the local run missed it, its fix goes into the local run, never a rerun.
 - What a container cannot host — a code viewer, the AppleScript raise, the real `claude` — stays **named as
   uncovered**, never faked; raising and closing the viewer stay `@Disabled` (`LinuxKittyTerminalDriverLinuxTest`).
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,

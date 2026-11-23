@@ -22,6 +22,12 @@ teardown() {
   [ "$(cat .git/ci-local.ok)" = "$(git rev-parse 'HEAD^{tree}')" ]
 }
 
+@test "a green run of a chosen job records nothing" {
+  JAGT_CI_LOCAL_SUITE=true run "$script" heavy
+  [ "$status" -eq 0 ]
+  [ ! -f .git/ci-local.ok ]
+}
+
 # bats test_tags=exit:1
 @test "a red suite records nothing" {
   JAGT_CI_LOCAL_SUITE=false run "$script"

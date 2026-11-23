@@ -61,7 +61,7 @@ jobs:
         if: matrix.language == 'java-kotlin'
         working-directory: orchestrator-backend
         # CodeQL traces only the compilers that run: an up-to-date or cached task hides its classes.
-        run: ./gradlew --no-daemon --no-build-cache --rerun-tasks classes testClasses
+        run: ./gradlew --no-daemon --no-build-cache --rerun-tasks gateCodeql
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         if: matrix.language == 'java-kotlin' && github.ref == 'refs/heads/main'
         with:

@@ -41,11 +41,11 @@ path rather than sitting at a prompt nobody sees.
 
 ## Testing Linux from a Mac
 
-`orchestrator-backend/scripts/linux-suite.sh` runs five tasks on a real Linux in a container: the unit suite on
-a Linux JVM, `e2eTest` with real git and tmux, `boardTest` in a headless Chromium, `guardsTest` (shellcheck and bats
-over `scripts/guards`), and `linuxDriverTest` against the real binaries
-(`notify-send` over a session D-Bus, kitty on an Xvfb display answering remote control). It
-needs Docker and nothing else, and leaves an image and a Gradle cache volume behind.
+`orchestrator-backend/scripts/ci-local.sh [job…]` runs a pull request's CI jobs, each the same `gate<Job>` task its CI
+job runs: `test`, `heavy` (with `linuxDriverTest` against the real binaries: `notify-send` over a session D-Bus, kitty on
+an Xvfb display), `stand` and `install` on a real Linux in a container with a Docker engine of its own, and
+`install-macos` natively. It needs Docker and nothing else, and leaves an image, a Gradle cache volume and a Docker
+engine volume behind.
 
 ## CI
 

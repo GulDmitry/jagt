@@ -35,6 +35,8 @@ public final class FitnessPlugin implements Plugin<Project> {
 
   private static final String BLOCK = "fitness.block";
 
+  private static final Set<String> TIME_MEASURES = Set.of("minutes", "runs-without-time-limit");
+
   private final FlowScope flow;
   private final FlowProviders providers;
 
@@ -48,6 +50,7 @@ public final class FitnessPlugin implements Plugin<Project> {
   public void apply(Project root) {
     FitnessExtension extension = root.getExtensions().create("fitness", FitnessExtension.class);
     extension.getMinutesProperty().convention("fitness.minutes");
+    extension.getTimed().convention(true);
     root.getGradle().projectsEvaluated(gradle -> wire(root, extension));
   }
 
@@ -58,7 +61,11 @@ public final class FitnessPlugin implements Plugin<Project> {
     Block block = block(root);
     List<Object> measured = new ArrayList<>();
     List<FitnessFunction> minutes = new ArrayList<>();
-    List<FitnessFunction> toolFitnessFunctions = FitnessLoader.forTools().load(extension.getFile().get().getAsFile().toPath()).functions();
+    boolean timed = extension.getTimed().get();
+    List<FitnessFunction> toolFitnessFunctions =
+        FitnessLoader.forTools().load(extension.getFile().get().getAsFile().toPath()).functions().stream()
+            .filter(function -> timed || !TIME_MEASURES.contains(function.selectors().getOrDefault("measure", "").toString()))
+            .toList();
     TaskProvider<RequirementsCheck> requirements = requirements(root, toolFitnessFunctions);
     for (FitnessFunction function : toolFitnessFunctions) {
       String tool = function.selectors().getOrDefault("tool", "").toString();

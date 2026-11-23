@@ -18,4 +18,6 @@ def stats = gradle.sharedServices.registerIfAbsent('suiteStats', SuiteStats) {
     parameters.trendRuns = providers.gradleProperty('suiteTrendRuns').map { it as Integer }
     parameters.slowdownFactor = providers.gradleProperty('suiteSlowdownFactor').map { new BigDecimal(it) }
 }
-services.get(BuildEventsListenerRegistry).onTaskCompletion(stats)
+if (providers.gradleProperty('timed').getOrElse('true') != 'false') {
+    services.get(BuildEventsListenerRegistry).onTaskCompletion(stats)
+}

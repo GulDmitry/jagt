@@ -5,6 +5,8 @@ fitness {
     file = layout.projectDirectory.file('../fitness.yml')
     classpath.from(sourceSets.test.runtimeClasspath)
     minutesProperty = 'runMinutes'
+    // 0139: -Ptimed=false (CI) stops a hang by its job's timeout alone; a shared runner's minutes are no measure.
+    timed = providers.gradleProperty('timed').map { it != 'false' }.orElse(true)
     contextsSystemProperties = ['logging.level.org.springframework.test.context.cache': 'DEBUG']
     contextsPattern = 'DefaultContextCache@(\\w+) .*?missCount = (\\d+)'
 }

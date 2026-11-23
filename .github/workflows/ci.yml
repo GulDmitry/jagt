@@ -1,7 +1,7 @@
 # Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a pull request,
-# `stand` per engine (compose on every
-# run, kind nightly and on a pull request: the runner ships kind and kubectl), `release` on a push to main after all,
-# only when the version's tag is new. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
+# `stand` per engine (compose on every run, kind nightly and on a pull request: the runner ships kind and kubectl),
+# `install` on three systems per push and pull request, `release` on a push to main after all, only when the version's
+# tag is new. Each job's work is one `gate<Job>` Gradle task, which `scripts/ci-local.sh` runs too; no run is timed here.
 name: ci
 
 on:
@@ -16,6 +16,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  ORG_GRADLE_PROJECT_timed: 'false'
 
 concurrency:
   group: ci-${{ github.ref }}-${{ inputs.nightly }}
@@ -38,8 +41,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - run: orchestrator-backend/scripts/secret-scan.sh
-        working-directory: .
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
@@ -61,11 +62,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: board/package-lock.json
-      - run: npm ci && npm audit --audit-level=high && npm run lint && npm test
-        working-directory: board
-      - run: ./gradlew --no-daemon test
-      - run: scripts/vulnerability-scan.sh
-      - run: ./gradlew --no-daemon checkLicences
+      - run: ./gradlew --no-daemon gateTest
       - id: version
         name: read the version and whether its tag is new
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -107,7 +104,6 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - run: scripts/vulnerability-scan.sh
       - name: install what the suites shell out to
         run: sudo scripts/linux-test-deps.sh
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -115,8 +111,6 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: board/package-lock.json
-      - run: npm ci
-        working-directory: board
       - name: give git an identity
         run: |
           git config --global user.email "ci@example.com"
@@ -126,11 +120,8 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('orchestrator-backend/build-logic/src/main/groovy/jagt.suites.gradle') }}
           restore-keys: playwright-
-      - name: run the matrix, the drivers and the board
-        run: scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest boardTest
-      - name: run the image under compose
-        if: '!cancelled()'
-        run: scripts/container-suite.sh
+      - name: run the matrix, the drivers, the board and the image under compose
+        run: scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -140,11 +131,11 @@ jobs:
             orchestrator-backend/build/reports/tests/e2eTest
             orchestrator-backend/build/reports/tests/linuxDriverTest
             orchestrator-backend/build/reports/tests/boardTest
-            orchestrator-backend/build/reports/tests/boardTestContainer
+            orchestrator-backend/build/reports/tests/boardContainerTest
             orchestrator-backend/build/test-results/e2eTest
             orchestrator-backend/build/test-results/linuxDriverTest
             orchestrator-backend/build/test-results/boardTest
-            orchestrator-backend/build/test-results/boardTestContainer
+            orchestrator-backend/build/test-results/boardContainerTest
             /tmp/jagt-xvfb.log
             /tmp/jagt-dunst.log
 
@@ -181,24 +172,8 @@ jobs:
         run: |
           git config --global user.email "ci@example.com"
           git config --global user.name "jagt ci"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: orchestrator-backend/stand/build/stand/timings-history.json
-          key: stand-timings-${{ matrix.engine }}-${{ github.run_id }}
-          restore-keys: stand-timings-${{ matrix.engine }}-
       - name: run the stand without a model on the engine
-        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Prunner=ubuntu-24.04
-      - name: fail when a stand timing passes twice the median of its last ten runs
-        run: ./gradlew --no-daemon standTimingGate
-      - name: store the stand timing trend
-        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
-        with:
-          tool: customSmallerIsBetter
-          output-file-path: orchestrator-backend/stand/build/stand/timings.json
-          external-data-json-path: orchestrator-backend/stand/build/stand/timings-history.json
-          fail-on-alert: false
-          github-token: ${{ github.token }}
-          ref: ${{ github.sha }}
+        run: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=${{ matrix.engine }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -236,7 +211,7 @@ jobs:
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
       - name: install, upgrade and stop against a fake release feed
-        run: ./gradlew --no-daemon installTest
+        run: ./gradlew --no-daemon gateInstall
         shell: bash
 
   release:
@@ -273,7 +248,7 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - run: ./gradlew --no-daemon bootJar cyclonedxBom
+      - run: ./gradlew --no-daemon gateRelease
       - name: name the assets after the version they are
         run: |
           version=$(./gradlew --no-daemon -q printVersion)

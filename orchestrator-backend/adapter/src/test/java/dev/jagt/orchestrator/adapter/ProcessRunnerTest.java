@@ -329,8 +329,9 @@ class ProcessRunnerTest {
     runner.stop();
 
     try {
-      assertThat(command.isAlive()).isFalse();
-      assertThat(descendant.isAlive()).isFalse();
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> !command.isAlive() && !descendant.isAlive());
     } finally {
       command.destroyForcibly();
       descendant.destroyForcibly();

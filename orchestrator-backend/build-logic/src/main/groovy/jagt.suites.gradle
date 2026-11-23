@@ -125,10 +125,6 @@ tasks.register('boardTest', Test) {
     doFirst { coverageDump.deleteDir() }
     finalizedBy 'boardCoverage'
     shouldRunAfter tasks.named('test')
-    if (System.getenv('JAGT_BOARD_URL')) { // the container run must not overwrite the board run's reports
-        reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/boardTestContainer')
-        reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/boardTestContainer')
-    }
 }
 
 tasks.register('boardCoverage', Exec) {
@@ -177,7 +173,7 @@ tasks.register('linuxDriverTest', Test) {
         }
         if (missing) {
             task.logger.lifecycle("Skipping linuxDriverTest — missing: ${missing.join(', ')}."
-                    + " On a Mac: scripts/linux-suite.sh runs it in a container.")
+                    + " On a Mac: scripts/ci-local.sh heavy runs it in a container.")
         }
         missing.isEmpty()
     }
@@ -228,6 +224,87 @@ tasks.register('installTest', Test) {
     def jar = tasks.named('bootJar').flatMap { it.archiveFile }
     systemProperty 'install.repo', layout.settingsDirectory.dir('..').asFile.absolutePath
     doFirst { systemProperty 'install.jar', jar.get().asFile.absolutePath }
-    timeout = java.time.Duration.ofMinutes(20)
     shouldRunAfter tasks.named('test')
+}
+
+// One gate per CI job: the workflows and scripts/ci-local.sh call these and no other task (row `workflow-gradle-lines`).
+def repository = layout.settingsDirectory.dir('..').asFile
+def board = new File(repository, 'board')
+def sbom = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
+
+tasks.register('secretScan', Exec) {
+    description = 'Scans the tree and its history for secrets.'
+    group = 'verification'
+    workingDir = repository
+    commandLine new File(repository, 'orchestrator-backend/scripts/secret-scan.sh').absolutePath
+}
+
+tasks.register('boardCheck', Exec) {
+    description = 'Installs the board, audits its dependencies, lints it and runs its node tests.'
+    group = 'verification'
+    workingDir = board
+    commandLine 'sh', '-c', 'npm ci && npm audit --audit-level=high && npm run lint && npm test'
+}
+
+tasks.register('boardInstall', Exec) {
+    description = 'Installs the board from its lock file.'
+    workingDir = board
+    commandLine 'npm', 'ci'
+}
+
+tasks.register('vulnerabilityScan', Exec) {
+    description = 'Scans the release SBOM for known vulnerabilities.'
+    group = 'verification'
+    dependsOn tasks.named('cyclonedxBom')
+    commandLine file('scripts/vulnerability-scan.sh').absolutePath, 'scan', 'source', '-L'
+    argumentProviders.add({ [sbom.get().asFile.absolutePath] } as CommandLineArgumentProvider)
+}
+
+tasks.register('containerUp', Exec) {
+    description = "Starts jagt's image under compose with a stub project."
+    dependsOn tasks.named('bootJar')
+    commandLine file('scripts/container-suite.sh').absolutePath, 'up'
+    finalizedBy 'containerDown'
+}
+
+tasks.register('containerDown', Exec) {
+    description = 'Removes what containerUp started.'
+    commandLine file('scripts/container-suite.sh').absolutePath, 'down'
+}
+
+tasks.register('boardContainerTest', Test) {
+    description = "Drives the board of jagt's image under compose."
+    group = 'verification'
+    testClassesDirs = sourceSets.boardTest.output.classesDirs
+    classpath = sourceSets.boardTest.runtimeClasspath
+    useJUnitPlatform()
+    filter { includeTestsMatching '*BoardContainerTest' }
+    dependsOn tasks.named('playwrightChromium'), tasks.named('containerUp')
+    environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
+    def login = layout.buildDirectory.file('container-suite/board.env')
+    doFirst { login.get().asFile.readLines().each { line -> environment(*line.split('=', 2)) } }
+    finalizedBy 'containerDown'
+    mustRunAfter 'boardTest'
+}
+tasks.named('containerDown') { mustRunAfter 'boardContainerTest' }
+tasks.named('boardTest') { mustRunAfter 'boardInstall', 'boardCheck' }
+
+[
+    gateTest: ['secretScan', 'boardCheck', 'test', 'guardsTest', 'vulnerabilityScan', 'checkLicences'],
+    gateHeavy: ['vulnerabilityScan', 'boardInstall', 'e2eTest', 'linuxDriverTest', 'boardTest', 'boardContainerTest'],
+    gateStand: [':stand:standTest'],
+    gateInstall: ['installTest'],
+    gateRelease: ['bootJar', 'cyclonedxBom'],
+    gateCodeql: ['classes', 'testClasses'],
+].each { gate, steps ->
+    tasks.register(gate) {
+        description = "Runs the work of the CI job ${gate}."
+        group = 'verification'
+        dependsOn steps
+    }
+}
+tasks.register('gate') {
+    description = "Runs every gate a pull request's CI runs."
+    group = 'verification'
+    dependsOn 'gateTest', 'gateHeavy', 'gateStand', 'gateInstall'
 }

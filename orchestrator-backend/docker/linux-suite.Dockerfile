@@ -1,14 +1,22 @@
-# A real Linux without a Linux machine: everything jagt shells out to, installed for real.
-# Why it exists, and what it can and cannot answer: scripts/linux-suite.sh.
-#
-# Build:  docker build -f docker/linux-suite.Dockerfile -t jagt-linux-suite .
-# Use:    scripts/linux-suite.sh   (mounts the repo, runs the suites inside)
+# A CI runner without a runner: Ubuntu 24.04, the JDK, Node, Docker and everything jagt shells out to.
+# Use:    scripts/linux-suite.sh <job…>   (mounts the repo, runs each job's gate inside)
+FROM node:22.23.5-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS node
+
 FROM eclipse-temurin:25-jdk@sha256:ce2ef9d2d67a68de5e196d4de9d743327c44a10b57fe02ec39f572c652cacfd3
+
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # The package list lives in scripts/linux-test-deps.sh — the SAME list every CI runner installs, so the
 # container and the pipeline cannot drift apart.
 COPY scripts/linux-test-deps.sh /tmp/linux-test-deps.sh
 RUN sh /tmp/linux-test-deps.sh && rm /tmp/linux-test-deps.sh
+
+# A Docker engine of its own, as a CI runner has one: the image under compose and the compose stand run on it.
+RUN apt-get update && apt-get install -y --no-install-recommends docker.io docker-compose-v2 iptables \
+    && rm -rf /var/lib/apt/lists/*
 
 # A committer identity: the deploy/revert flows make real commits, and git refuses without one.
 RUN git config --system user.email "linux-suite@example.com" \

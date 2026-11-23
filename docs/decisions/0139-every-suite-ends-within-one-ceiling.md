@@ -17,14 +17,14 @@ Accepted 2026-11-05, by the owner's order: "development of jagt has to be fast";
 ## Decision
 
 - The declared fitness function `suite-minutes` of `fitness.yml` is the one ceiling, 10: the fitness plugin gives every `Test` task its timeout.
+- Off CI only: `-Ptimed=false`, set by both CI engines, binds no time row and records no suite time; a job's timeout stops a hang.
 - A suite over it is a defect to speed up, never a raised number.
 - The full gate (`test`, `boardTest`, `e2eTest`, `standTest`, one `--rerun-tasks` run) ends within the same 10 minutes
   and as far under as it can (owner, 2026-11-07); evals and `pitest` aside. Each refresh measures it; over it opens a
   speed-up task, ending in sped up or the owner raising it; never a failed build.
 - An investigation (a measurement, a model comparison, a spike, a local-model eval) states its expected length
   before it starts as `-PrunMinutes=<n>`, which replaces the ceiling for that run only.
-- The regular flow (commit gate, batch-end suites, release gate) never passes `-PrunMinutes`.
-- Excluded until sped up: `pitest` on a push's diff (the cause above); it still reports its seconds.
+- The regular flow (commit gate, batch-end suites, release gate) never passes `-PrunMinutes`; `pitest` on a push's diff is excluded.
 - `suite-stats.jsonl` keeps each `Test` and `pitest` task's seconds; a `Test` task slower than `suiteSlowdownFactor`
   times the median of its last `suiteTrendRuns` runs is named at the build's end, never failing it; `pitest` has no trend.
 - `pitest` runs jqwik at 100 tries: `TaskReducer`'s 95 mutants, 4 min 17 s at 1,000, 30 s at 100, all detected.
@@ -36,7 +36,7 @@ Accepted 2026-11-05, by the owner's order: "development of jagt has to be fast";
 - `e2eTest` runs its classes in parallel forks, each naming its tmux sessions by its pid: 168 s to 90 s, bounded by
   `MasterModeFlowTest`: 92 s at load 2 on 2026-11-08, its 115 s at load 9, the same 32 tests.
 - Every `Test` task runs jqwik at 50 tries, 200 at the release gate (`-PjqwikTries=200`); `JobsTellOnceProperties` took 154 s at 200 (2026-11-19).
-- `TaskChart.ranTargets` is computed once: each call took 2 s and `FlowCheckTest` made about 15, 31 s to 0.3 s.
+- `TaskChart.ranTargets` is computed once: 2 s a call, about 15 calls in `FlowCheckTest`, 31 s to 0.3 s.
 - `pitestDiff` runs only tests named after a changed class: 274 s to 53 s and 300 s to 64 s, survivors equal (2026-11-22).
 - Left: `AgentSessionsTest` `after(n).never()` and `ReplaySessionsTest`'s 500 ms tick need a test-only seam.
 

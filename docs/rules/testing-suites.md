@@ -15,8 +15,9 @@ GitLab runs compose alone: kind needs a privileged runner. Absolute stand budget
 CI sets no time ceiling; the ceilings below and `suite-minutes` run locally.
 A `schedule` run starts late under GitHub load and runs the default branch's latest commit
 ([events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows),
-checked 2026-11-19): the cron sits off the hour and `nightly` logs its delay. `gh workflow run nightly.yml --ref main` starts it on demand.
-Times are wall clock, dated in `measurements.md`.
+checked 2026-11-19): the old `0 4` cron started 08:20-08:40 late on 2026-11-16..18, so the cron sits off the hour.
+Under heavy load GitHub drops a scheduled run (none on 2026-11-23):
+`gh workflow run nightly.yml --ref main` starts it on demand. Times are wall clock, dated in `measurements.md`.
 
 ## What each suite proves
 
@@ -50,6 +51,23 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 - `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contexts-test`,
   `contexts-board-test`, `contexts-e2e-test` in `fitness.yml`): past the ceiling the build fails naming the suite and count.
 - Ceilings start at the measured count and only go down ([0187](../decisions/0187-a-suite-creates-no-more-spring-contexts-than-its-ceiling.md)).
+
+## The local CI
+
+Each CI job runs one `gate<Job>` task (`gateTest`, `gateHeavy`, `gateStand`, `gateInstall`, `gateRelease`, `gateCodeql`)
+and no other Gradle line (`workflow-gradle-lines`); `scripts/ci-local.sh` runs the same line. Both CI engines set
+`-Ptimed=false`: no time limit, no time record, no timing gate; a job's timeout is its only stop
+([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
+
+| job | local twin |
+|---|---|
+| `test`, `heavy`, `stand` (compose), `install` (ubuntu) | `ci-local.sh <job>`: in `docker/linux-suite.Dockerfile` with a Docker engine of its own, `-Ptimed=false` |
+| `install` (macOS) | `ci-local.sh install-macos`: natively, on a Mac |
+| `install` (Windows) | none: a Mac cannot run it; the pull request's CI run reproduces it |
+| `stand` (kind), `release`, CodeQL, the nightly's mutation | none yet |
+
+- Only the argument-free run, every job above green, records the tree for the push guard; the release gate runs it on the released tree.
+- A CI red after a local green is a defect ([testing](testing.md)).
 
 ## Planned
 

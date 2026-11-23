@@ -177,3 +177,9 @@ The vulnerability scan counts exit code 1 as findings found.
 #### Scenario: The tool logs to its error stream
 - **WHEN** the scanner exits 0 and writes `scanning` to its error stream
 - **THEN** the check measures the findings it printed
+
+### Requirement: A CI job runs one gate task
+Each job of a workflow SHALL run its work as one `gate<Job>` Gradle task, which `ci-local.sh` runs too; a version read is the one other Gradle line.
+#### Scenario: A workflow runs another task
+- **WHEN** a workflow line runs `./gradlew test`
+- **THEN** `workflow-gradle-lines` fails naming the workflow

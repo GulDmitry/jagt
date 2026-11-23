@@ -1,52 +1,55 @@
 #!/usr/bin/env bash
-# Runs jagt's suites on a REAL Linux, from a Mac, in a container.
+# Runs CI's Linux jobs on a REAL Linux, from a Mac, each in its own container: the line its ci.yml job runs, in an image
+# carrying what a runner carries (docker/linux-suite.Dockerfile), with a Docker engine of its own as a runner has.
 #
-# Every Linux-specific piece — the `notify-send` notifier, the kitty driver, tmux windows on another kernel,
-# git on overlayfs, the jar on a Linux JVM — was written from macOS, and only a real Linux answers for it.
-#
-# What it runs, in order:
-#   1. `test`            — the hermetic unit suite, on a Linux JVM (Java 25, aarch64 or x86_64)
-#   2. `e2eTest`         — the task-flow matrix with real git + real tmux (GUI drivers are doubles there)
-#   3. `boardTest`       — the web board in a headless Chromium (Playwright's own, downloaded on first run)
-#   4. `linuxDriverTest` — the Linux DRIVERS against real binaries: notify-send over a session D-Bus with a
-#                          notification daemon, and kitty on an Xvfb display answering remote control
-#   5. `guardsTest`      — shellcheck and bats over the contributor guards in scripts/guards
-#
-# What it CANNOT answer, and therefore does not pretend to: a code viewer, the macOS AppleScript raise,
-# the real agent CLI, a live code host or tracker.
-#
-# Usage: scripts/linux-suite.sh [gradle-task…]      (default: all five above)
-# Requires: Docker. Leaves nothing on the host but a Gradle cache volume and the image.
+# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install)
+# Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume and the image.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BACKEND_DIR="$REPO_ROOT/orchestrator-backend"
 IMAGE=jagt-linux-suite
 CACHE_VOLUME=jagt-gradle-home
-TASKS=("$@")
-if [[ ${#TASKS[@]} -eq 0 ]]; then TASKS=(test e2eTest boardTest linuxDriverTest guardsTest); fi
+ENGINE_VOLUME=jagt-ci-docker
 
+gate() {
+    case "$1" in
+        test) echo './gradlew --no-daemon gateTest' ;;
+        heavy) echo 'scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy' ;;
+        stand) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose' ;;
+        install) echo './gradlew --no-daemon gateInstall' ;;
+        *) echo "linux-suite: no job $1; jobs: test heavy stand install" >&2; return 2 ;;
+    esac
+}
+
+[[ $# -gt 0 ]] || { gate usage; exit 2; }
+for job in "$@"; do gate "$job" >/dev/null || exit 2; done
 command -v docker >/dev/null || { echo "docker is required"; exit 2; }
 
 echo "==> building $IMAGE"
 docker build -q -f "$BACKEND_DIR/docker/linux-suite.Dockerfile" -t "$IMAGE" "$BACKEND_DIR" >/dev/null
 docker volume create "$CACHE_VOLUME" >/dev/null
+docker volume create "$ENGINE_VOLUME" >/dev/null
 
-# The display, the session bus and the notification daemon come from with-linux-desktop.sh — the same script
-# a CI job runs, so what is verified here is what CI verifies.
-# Gradle's project state records absolute paths, so the container's own lives in anonymous volumes, never on the host.
-STATE_MOUNTS=()
+# Gradle's project state records absolute paths, so the container's own lives in anonymous volumes, never on the host;
+# so do the board's Linux node_modules.
+STATE_MOUNTS=(-v /jagt/board/node_modules)
 for project in "$BACKEND_DIR"/build.gradle "$BACKEND_DIR"/*/build.gradle; do
     dir="/jagt/${project#"$REPO_ROOT"/}"
     dir="${dir%/build.gradle}"
     STATE_MOUNTS+=(-v "$dir/build" -v "$dir/.gradle")
 done
 
-# Root ignores file modes, so the suites run as the image's own user, as they do on a CI runner;
-# only the volumes it writes are handed to it first.
-DROP_ROOT='[[ $(stat -c %u /gradle-home) == 1000 ]] || chown -R 1000:1000 /gradle-home
-chown 1000:1000 /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
-exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME="$(getent passwd 1000 | cut -d: -f6)" "$@"' # the home of the image's own user, uid 1000
+# The engine starts as root; the job runs as the image's own user, uid 1000, as on a CI runner, since root ignores file
+# modes. Only the volumes it writes are handed to it first.
+# shellcheck disable=SC2016 # the container's shell expands it
+AS_RUNNER='dockerd >/tmp/dockerd.log 2>&1 &
+timeout 60 sh -c "until docker info >/dev/null 2>&1; do sleep 1; done" || { cat /tmp/dockerd.log; exit 1; }
+chmod 666 /var/run/docker.sock
+[[ $(stat -c %u /gradle-home) == 1000 ]] || chown -R 1000:1000 /gradle-home
+chown 1000:1000 /jagt/board/node_modules /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle \
+    /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
+exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME="$(getent passwd 1000 | cut -d: -f6)" "$@"'
 
 # A linked worktree's .git points at its main checkout's git dir by absolute path, so that dir is mounted there too.
 GIT_MOUNTS=()
@@ -58,12 +61,18 @@ if [[ $(uname -s) == Darwin ]]; then
     docker run --rm --privileged "$IMAGE" sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches' >/dev/null
 fi
 
-echo "==> running: ${TASKS[*]}"
-# --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
-docker run --rm --init \
-    -v "$REPO_ROOT:/jagt" \
-    "${STATE_MOUNTS[@]}" \
-    ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"} \
-    -v "$CACHE_VOLUME:/gradle-home" \
-    "$IMAGE" bash -c "$DROP_ROOT" - scripts/with-linux-desktop.sh ./gradlew --no-daemon "${TASKS[@]}"
-echo "==> done"
+status=0
+for job in "$@"; do
+    line=$(gate "$job")
+    echo "==> $job: $line"
+    # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
+    # shellcheck disable=SC2086 # the gate is a command line
+    docker run --rm --init --privileged -e CI=true -e ORG_GRADLE_PROJECT_timed=false \
+        -v "$REPO_ROOT:/jagt" \
+        "${STATE_MOUNTS[@]}" \
+        ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"} \
+        -v "$CACHE_VOLUME:/gradle-home" \
+        -v "$ENGINE_VOLUME:/var/lib/docker" \
+        "$IMAGE" bash -c "$AS_RUNNER" - $line || { status=$?; echo "==> $job red (exit $status)"; }
+done
+exit "$status"
