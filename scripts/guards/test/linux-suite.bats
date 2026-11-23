@@ -29,7 +29,7 @@ EOF
 
 @test "the container is capped to the runner's size" {
   run "$script" test
-  grep -q -- '--cpus 0.8 --memory 16g --memory-swap 16g' "$DOCKER_LOG"
+  grep -q -- '--cpus 1.25 --memory 16g --memory-swap 16g' "$DOCKER_LOG"
 }
 
 @test "a host with fewer CPUs than the quota caps the container to the host" {
