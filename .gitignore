@@ -86,3 +86,5 @@ roles/*/*
 /measurements.md
 # Everything jagt writes: state, records, clones, worktrees, logs
 /data/
+# A JVM attaching to itself leaves this behind when it dies first.
+.attach_pid*
