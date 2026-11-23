@@ -28,7 +28,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.SmartLifecycle;
 
-class ProcessRunnerTest {
+public class ProcessRunnerTest {
+
+  public static final Duration WAIT_CEILING = Duration.ofMinutes(5);
 
   @Test
   void takesNoOptionalGitLockSoReadNeverBlocksAnAgentsCommit() {
@@ -152,7 +154,7 @@ class ProcessRunnerTest {
 
     try {
       await()
-          .atMost(Duration.ofSeconds(10))
+          .atMost(WAIT_CEILING)
           .untilAsserted(() ->
               assertThat(
                       runner
@@ -209,7 +211,7 @@ class ProcessRunnerTest {
                             List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .ignoreExceptions()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(WAIT_CEILING)
         .until(() -> Files.readString(pid).endsWith("\n"));
     ProcessHandle command =
         ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
@@ -287,7 +289,7 @@ class ProcessRunnerTest {
                     Duration.ofSeconds(30),
                     List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(WAIT_CEILING)
         .until(() -> Files.exists(pid) && Files.readString(pid).endsWith("\n"));
     ProcessHandle command =
         ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
@@ -320,7 +322,7 @@ class ProcessRunnerTest {
                         ignoring + "sleep 30 & echo $$ $! > " + pids + "; wait; wait")))));
     await()
         .ignoreExceptions()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(WAIT_CEILING)
         .until(() -> Files.readString(pids).endsWith("\n"));
     String[] ids = Files.readString(pids).strip().split(" ", 2);
     ProcessHandle command = ProcessHandle.of(Long.parseLong(ids[0])).orElseThrow();
@@ -329,9 +331,7 @@ class ProcessRunnerTest {
     runner.stop();
 
     try {
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .until(() -> !command.isAlive() && !descendant.isAlive());
+      await().atMost(WAIT_CEILING).until(() -> !command.isAlive() && !descendant.isAlive());
     } finally {
       command.destroyForcibly();
       descendant.destroyForcibly();
@@ -373,7 +373,7 @@ class ProcessRunnerTest {
                         List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .ignoreExceptions()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(WAIT_CEILING)
         .until(() -> Files.readString(pid).endsWith("\n"));
 
     runner.close();
@@ -418,7 +418,7 @@ class ProcessRunnerTest {
 
     try {
       await()
-          .atMost(Duration.ofSeconds(10))
+          .atMost(WAIT_CEILING)
           .until(() -> launched.info().command().filter(c -> c.endsWith("/sleep")).isPresent());
       Process kill = new ProcessBuilder("kill", "-INT", String.valueOf(launched.pid())).start();
 
@@ -541,7 +541,7 @@ class ProcessRunnerTest {
         });
     await()
         .ignoreExceptions()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(WAIT_CEILING)
         .until(() -> Files.readString(pid).endsWith("\n"));
 
     ProcessHandle command =

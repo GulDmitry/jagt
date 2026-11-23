@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.stand;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,14 +21,14 @@ class ServerRestartStandTest {
     try (ServerRun server = ServerRun.start("restart-" + how)) {
       server.board().create("my-project", "keep working");
       await()
-          .atMost(Duration.ofMinutes(2))
+          .atMost(WaitCeiling.LIMIT)
           .ignoreExceptions()
           .untilAsserted(() ->
               assertThat(server.board().text("/api/tasks/screen?task=keep-working"))
                   .contains("agent working"));
       server.board().say("keep-working", "remember this");
       await()
-          .atMost(Duration.ofSeconds(30))
+          .atMost(WaitCeiling.LIMIT)
           .untilAsserted(() ->
               assertThat(server.board().text("/api/tasks/screen?task=keep-working"))
                   .contains("got: remember this"));
@@ -39,7 +38,7 @@ class ServerRestartStandTest {
 
       assertThat(server.board().state().path("tasks").has("keep-working")).isTrue();
       await()
-          .atMost(Duration.ofMinutes(1))
+          .atMost(WaitCeiling.LIMIT)
           .untilAsserted(() ->
               assertThat(server.board().text("/api/tasks/screen?task=keep-working"))
                   .contains(shown)
@@ -53,7 +52,7 @@ class ServerRestartStandTest {
     try (ServerRun server = ServerRun.start("sigterm")) {
       server.board().create("my-project", "keep working");
       await()
-          .atMost(Duration.ofMinutes(2))
+          .atMost(WaitCeiling.LIMIT)
           .ignoreExceptions()
           .untilAsserted(() ->
               assertThat(server.board().text("/api/tasks/screen?task=keep-working"))

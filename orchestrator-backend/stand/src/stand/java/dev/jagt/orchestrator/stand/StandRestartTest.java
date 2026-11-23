@@ -81,7 +81,7 @@ class StandRestartTest {
             return true;
           };
 
-      stand.drive(Script.to("ABC-1", "DEPLOYED").within(Duration.ofMinutes(5)).with(restart));
+      stand.drive(Script.to("ABC-1", "DEPLOYED").within(WaitCeiling.LIMIT).with(restart));
 
       assertThat(before.get()).isNotBlank();
       assertThat(after.get()).isEqualTo(before.get());

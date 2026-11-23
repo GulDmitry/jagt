@@ -5,7 +5,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -54,9 +53,7 @@ class StandShellTest {
                   + " 2>/dev/null; do : > "
                   + root
                   + "/w/f$RANDOM; done"));
-      await()
-          .atMost(Duration.ofSeconds(5))
-          .until(() -> root.resolve("w").toFile().list().length > 0);
+      await().atMost(WaitCeiling.LIMIT).until(() -> root.resolve("w").toFile().list().length > 0);
 
       StandShell.killTmux(root);
       StandShell.deleteRoot(root);

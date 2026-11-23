@@ -292,10 +292,7 @@ class StandLauncherTest {
           }
         });
 
-    await()
-        .during(Duration.ofMillis(300))
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> !waiting.isDone());
+    await().during(Duration.ofMillis(300)).atMost(WaitCeiling.LIMIT).until(() -> !waiting.isDone());
     slots.free();
     try (ServerRun run = waiting.get(30, TimeUnit.SECONDS)) {
       assertThat(run.root().resolve("jagt.yml")).exists();

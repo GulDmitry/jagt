@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.stand;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class ReplayStandTest {
@@ -14,8 +13,7 @@ class ReplayStandTest {
         Path.of(ReplayStandTest.class.getResource("/recordings/happy-path.jsonl").toURI());
     try (StandRun stand = StandRun.replay("replay-happy-path", StandMode.ACT, recording)) {
 
-      StandOutcome outcome =
-          stand.drive(Script.to("ABC-1", "DEPLOYED").within(Duration.ofMinutes(5)));
+      StandOutcome outcome = stand.drive(Script.to("ABC-1", "DEPLOYED").within(WaitCeiling.LIMIT));
 
       assertThat(stand.replayLog().divergences()).as(outcome.describe()).isEmpty();
       assertThat(stand.replayLog().drained()).as(outcome.describe()).isTrue();
@@ -35,8 +33,7 @@ class ReplayStandTest {
             ReplayStandTest.class.getResource("/recordings/happy-path-acceptance.jsonl").toURI());
     try (StandRun stand = StandRun.replay("replay-acceptance-flow", StandMode.ACT, recording)) {
 
-      StandOutcome outcome =
-          stand.drive(Script.to("ABC-1", "DEPLOYED").within(Duration.ofMinutes(5)));
+      StandOutcome outcome = stand.drive(Script.to("ABC-1", "DEPLOYED").within(WaitCeiling.LIMIT));
 
       assertThat(stand.replayLog().divergences()).as(outcome.describe()).isEmpty();
       assertThat(outcome.status()).as(outcome.describe()).isEqualTo("DEPLOYED");
@@ -53,8 +50,7 @@ class ReplayStandTest {
             ReplayStandTest.class.getResource("/recordings/happy-path-skips-ship.jsonl").toURI());
     try (StandRun stand = StandRun.replay("replay-skips-ship", StandMode.ACT, recording)) {
 
-      StandOutcome outcome =
-          stand.drive(Script.to("ABC-1", "DEPLOYED").within(Duration.ofMinutes(5)));
+      StandOutcome outcome = stand.drive(Script.to("ABC-1", "DEPLOYED").within(WaitCeiling.LIMIT));
 
       assertThat(stand.replayLog().divergences())
           .as(outcome.describe())

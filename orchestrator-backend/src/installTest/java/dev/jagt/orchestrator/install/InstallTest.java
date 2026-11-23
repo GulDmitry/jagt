@@ -40,6 +40,8 @@ import org.junit.jupiter.api.io.TempDir;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class InstallTest {
 
+  private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
+
   @TempDir static Path work;
 
   private final HttpClient http = HttpClient.newHttpClient();
@@ -196,9 +198,7 @@ class InstallTest {
               .toList();
       started.forEach(ProcessHandle::destroyForcibly);
       Stream.ofNullable(launcher.get()).forEach(Process::destroyForcibly);
-      await()
-          .atMost(Duration.ofMinutes(1))
-          .until(() -> started.stream().noneMatch(ProcessHandle::isAlive));
+      await().atMost(WAIT_CEILING).until(() -> started.stream().noneMatch(ProcessHandle::isAlive));
       if (log != null && Files.isRegularFile(log)) {
         List<String> lines = Files.readAllLines(log);
         System.out.println(
@@ -221,7 +221,7 @@ class InstallTest {
     launcher.set(launch.start());
 
     await()
-        .atMost(Duration.ofMinutes(3))
+        .atMost(WAIT_CEILING)
         .pollInterval(Duration.ofSeconds(1))
         .ignoreExceptions()
         .until(answersState);
@@ -235,18 +235,18 @@ class InstallTest {
   @Test
   @Order(2)
   void keepsTheNewerReleaseBesideTheFirstAndUpgradesThroughTheBoardsCommand() throws Exception {
-    await().atMost(Duration.ofMinutes(2)).ignoreExceptions().until(startupCheckDone);
+    await().atMost(WAIT_CEILING).ignoreExceptions().until(startupCheckDone);
     latest.set("0.0.2");
     http.send(releaseCheck, HttpResponse.BodyHandlers.discarding());
     await()
-        .atMost(Duration.ofMinutes(2))
+        .atMost(WAIT_CEILING)
         .until(() -> Files.isRegularFile(home.resolve("versions/0.0.2/jagt.jar")));
-    await().atMost(Duration.ofMinutes(1)).ignoreExceptions().until(offersUpgrade);
+    await().atMost(WAIT_CEILING).ignoreExceptions().until(offersUpgrade);
 
     http.send(upgrade, HttpResponse.BodyHandlers.discarding());
 
-    await().atMost(Duration.ofMinutes(3)).ignoreExceptions().until(() -> !offersUpgrade.call());
-    await().atMost(Duration.ofMinutes(1)).ignoreExceptions().until(answersState);
+    await().atMost(WAIT_CEILING).ignoreExceptions().until(() -> !offersUpgrade.call());
+    await().atMost(WAIT_CEILING).ignoreExceptions().until(answersState);
     assertThat(home.resolve("versions/0.0.1/jagt.jar")).isRegularFile();
     assertThat(currentVersion.call()).isEqualTo(expectedCurrent);
   }
@@ -264,9 +264,7 @@ class InstallTest {
     launcher.get().destroy();
     assertThat(launcher.get().waitFor(1, TimeUnit.MINUTES)).isTrue();
 
-    await()
-        .atMost(Duration.ofMinutes(1))
-        .until(() -> jvms.stream().noneMatch(ProcessHandle::isAlive));
+    await().atMost(WAIT_CEILING).until(() -> jvms.stream().noneMatch(ProcessHandle::isAlive));
     assertThatThrownBy(answersState::call).isInstanceOf(IOException.class);
   }
 }

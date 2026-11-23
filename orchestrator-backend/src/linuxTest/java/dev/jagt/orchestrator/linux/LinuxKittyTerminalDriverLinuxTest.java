@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 
 class LinuxKittyTerminalDriverLinuxTest {
 
+  static final Duration WAIT_CEILING = Duration.ofMinutes(5);
   private static final Duration T = Duration.ofSeconds(20);
   private static final Duration PROBE_CUT_OFF_SINCE_A_DEAD_SOCKET_BLOCKS = Duration.ofSeconds(3);
-  private static final Duration UP_ON_A_SLOW_SHARED_RUNNER = Duration.ofSeconds(60);
   private static final String SESSION = "jagt-kitty-linux-test";
   private static final String SOCKET =
       "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-" + SESSION);
@@ -57,7 +57,7 @@ class LinuxKittyTerminalDriverLinuxTest {
           Path.of(System.getProperty("java.io.tmpdir")));
       try {
         await()
-            .atMost(UP_ON_A_SLOW_SHARED_RUNNER)
+            .atMost(WAIT_CEILING)
             .pollInterval(Duration.ofMillis(250))
             .until(
                 () ->
@@ -85,7 +85,7 @@ class LinuxKittyTerminalDriverLinuxTest {
             "kitty never answered on "
                 + SOCKET
                 + " in "
-                + UP_ON_A_SLOW_SHARED_RUNNER.toSeconds()
+                + WAIT_CEILING.toSeconds()
                 + "s — asked in the foreground, it says: exit "
                 + probe.exitCode()
                 + " "
@@ -111,7 +111,7 @@ class LinuxKittyTerminalDriverLinuxTest {
       driver.closeViewerWindow(SESSION);
 
       await("the instance holding the socket is gone")
-          .atMost(Duration.ofSeconds(5))
+          .atMost(WAIT_CEILING)
           .pollInterval(Duration.ofMillis(250))
           .until(() ->
               runner

@@ -105,6 +105,7 @@ technical:
       log-capture: { fitness: LogCaptureFitness, governs: class-dependency, max: 0 }
       suites-tap-nobody: { fitness: SuitesTapNobodyFitness, governs: count, max: 0, decision: "0058" }
       sleep-in-tests: { engine: scan, set: test, per: file, regex: "Thread\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\(", governs: count, max: 0 }
+      wait-literal-in-tests: { engine: scan, set: test, per: file, regex: "\\.(atMost|within|timeout)\\(\\s*(Duration\\.of|\\d)", governs: count, max: 0, decision: "0233", hint: "a wait is a hang guard: use the source set's one wait ceiling constant, never a literal duration (docs/rules/ci.md rule 8)" }
       context-booting-tests: { engine: scan, set: test, regex: "(?m)^import org\\.springframework\\.boot\\.(test\\.context\\.SpringBootTest|builder\\.SpringApplicationBuilder);", governs: count, max: 13, decision: "0187" }
 security:
   security:

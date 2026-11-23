@@ -6,7 +6,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,7 +118,7 @@ class StandShellRunTest {
             "alpha",
             "echo marker-7; sleep 30"));
     await()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(WaitCeiling.LIMIT)
         .untilAsserted(() -> assertThat(StandShell.screens(root)).contains("marker-7"));
 
     final String windows = StandShell.windows(root);

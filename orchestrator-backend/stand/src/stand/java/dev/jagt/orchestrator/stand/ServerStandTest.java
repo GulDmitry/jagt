@@ -118,7 +118,7 @@ class ServerStandTest {
               server.board().create("my-project", "fix the widget");
 
               await()
-                  .atMost(Duration.ofMinutes(2))
+                  .atMost(WaitCeiling.LIMIT)
                   .ignoreExceptions()
                   .untilAsserted(() ->
                       assertThat(
@@ -167,13 +167,13 @@ class ServerStandTest {
             "sessionTabShowsTheAgentAndOneLineReachesIt",
             () -> {
               await()
-                  .atMost(Duration.ofSeconds(30))
+                  .atMost(WaitCeiling.LIMIT)
                   .untilAsserted(
                       () -> assertThat(server.board().text(SCREEN)).contains("agent ready"));
               server.board().say("fix-the-widget", "hello agent");
 
               await()
-                  .atMost(Duration.ofSeconds(30))
+                  .atMost(WaitCeiling.LIMIT)
                   .untilAsserted(
                       () -> assertThat(server.board().text(SCREEN)).contains("got: hello agent"));
             }),

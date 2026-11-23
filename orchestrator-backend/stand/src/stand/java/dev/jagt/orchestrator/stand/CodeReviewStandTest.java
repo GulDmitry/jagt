@@ -20,7 +20,7 @@ class CodeReviewStandTest {
       StandOutcome outcome =
           stand.drive(
               Script.to("ABC-1", "CI_POLLING")
-                  .within(Duration.ofMinutes(5))
+                  .within(WaitCeiling.LIMIT)
                   .with(WorldEvent.ownRequestListed(1, "ABC-1 Greet the world by default")));
 
       assertThat(stand.replayLog().divergences()).as(outcome.describe()).isEmpty();
@@ -61,7 +61,7 @@ class CodeReviewStandTest {
       stand.store().react(1, 1, 0);
 
       await()
-          .atMost(Duration.ofMinutes(2))
+          .atMost(WaitCeiling.LIMIT)
           .ignoreExceptions()
           .untilAsserted(() -> {
             stand.reviewNow();
