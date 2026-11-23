@@ -308,7 +308,8 @@ public final class FakeJobWorld implements AutoCloseable {
                 stored),
             stored,
             new RoleYields(
-                config, new CodeReviewSettings(config, paths, AssistantProperties.empty())));
+                config,
+                List.of(new CodeReviewSettings(config, paths, AssistantProperties.empty()))));
     MasterReviewJob master = new MasterReviewJob(state, config, panel, stored, ruling);
     StepRelay relay = stepRelay().withRoot(root).build(state, sessions, clock);
     AliveStamp alive = new AliveStamp(paths, clock);

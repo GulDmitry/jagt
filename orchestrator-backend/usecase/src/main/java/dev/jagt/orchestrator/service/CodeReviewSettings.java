@@ -20,7 +20,7 @@ import org.yaml.snakeyaml.error.YAMLException;
  */
 @Component
 @RequiredArgsConstructor
-public class CodeReviewSettings {
+public class CodeReviewSettings implements RolePosting {
 
   public static final String ROLE = "code-reviewer";
 
@@ -39,6 +39,16 @@ public class CodeReviewSettings {
   private final ConfigService configService;
   private final OrchestratorPaths paths;
   private final AssistantProperties assistant;
+
+  @Override
+  public String role() {
+    return ROLE;
+  }
+
+  @Override
+  public boolean mayPostOnTasksOwnRequest() {
+    return load().postOwn();
+  }
 
   public Settings load() {
     Settings read = fromFiles(paths.root().resolve("roles").resolve(ROLE));

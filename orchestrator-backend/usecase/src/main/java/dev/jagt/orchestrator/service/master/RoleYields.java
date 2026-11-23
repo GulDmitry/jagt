@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.RolePosting;
 import dev.jagt.orchestrator.task.TaskState;
+import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class RoleYields {
 
   private final ConfigService configService;
-  private final CodeReviewSettings reviews;
+  private final List<RolePosting> posting;
 
   boolean yields(String unless, TaskState task) {
     if (unless.isBlank() || task.repos().isEmpty()) {
@@ -28,6 +29,8 @@ public class RoleYields {
     return !Boolean.FALSE.equals(file.role(unless).enabled())
         && task.repos().stream()
             .noneMatch(repo -> file.hasNoCodeHost(Objects.requireNonNull(repo.project())))
-        && (!CodeReviewSettings.ROLE.equals(unless) || reviews.load().postOwn());
+        && posting.stream()
+            .filter(role -> role.role().equals(unless))
+            .allMatch(RolePosting::mayPostOnTasksOwnRequest);
   }
 }

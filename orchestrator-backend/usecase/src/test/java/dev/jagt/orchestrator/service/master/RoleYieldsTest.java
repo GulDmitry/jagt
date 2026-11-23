@@ -4,55 +4,67 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.RolePosting;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class RoleYieldsTest {
 
   private final ConfigService configService = mock(ConfigService.class);
-  private final CodeReviewSettings settings = mock(CodeReviewSettings.class);
-  private final RoleYields yields = new RoleYields(configService, settings);
+  private final RolePosting poster = mock(RolePosting.class);
+  private final RoleYields yields = new RoleYields(configService, List.of(poster));
   private final TaskState task =
       TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
   @Test
   void yieldsWhileTheRoleIsOnAndTheProjectHasCodeHost() {
+    when(poster.role()).thenReturn("poster");
+    when(poster.mayPostOnTasksOwnRequest()).thenReturn(true);
     when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
-    when(settings.load()).thenReturn(CodeReviewSettings.Settings.defaults());
 
-    assertThat(yields.yields("code-reviewer", task)).isTrue();
+    assertThat(yields.yields("poster", task)).isTrue();
+  }
+
+  @Test
+  void yieldsToTheRoleThatPostsNothing() {
+    when(poster.role()).thenReturn("poster");
+    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
+
+    assertThat(yields.yields("reader", task)).isTrue();
   }
 
   @Test
   void doesNotYieldWhereTheRoleIsOff() {
     ConfigFile.RoleConfig off = ConfigFile.RoleConfig.defaults().withEnabled(false);
+    when(poster.role()).thenReturn("poster");
+    when(poster.mayPostOnTasksOwnRequest()).thenReturn(true);
     when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withCodeHost("github").withRoles(Map.of("code-reviewer", off)));
-    when(settings.load()).thenReturn(CodeReviewSettings.Settings.defaults());
+        .thenReturn(ConfigFile.defaults().withCodeHost("github").withRoles(Map.of("poster", off)));
 
-    assertThat(yields.yields("code-reviewer", task)).isFalse();
+    assertThat(yields.yields("poster", task)).isFalse();
   }
 
   @Test
   void doesNotYieldWhereTheProjectHasNoCodeHost() {
+    when(poster.role()).thenReturn("poster");
+    when(poster.mayPostOnTasksOwnRequest()).thenReturn(true);
     when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("none"));
-    when(settings.load()).thenReturn(CodeReviewSettings.Settings.defaults());
 
-    assertThat(yields.yields("code-reviewer", task)).isFalse();
+    assertThat(yields.yields("poster", task)).isFalse();
   }
 
   @Test
   void doesNotYieldWhereTheRoleMayNotPostOnTheTasksOwnRequest() {
+    when(poster.role()).thenReturn("poster");
+    when(poster.mayPostOnTasksOwnRequest()).thenReturn(false);
     when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
-    when(settings.load()).thenReturn(new CodeReviewSettings.Settings(true, false, false, 5000, 1));
 
-    assertThat(yields.yields("code-reviewer", task)).isFalse();
+    assertThat(yields.yields("poster", task)).isFalse();
   }
 
   @Test

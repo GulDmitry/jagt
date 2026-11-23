@@ -21,7 +21,6 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -83,12 +82,7 @@ class MasterPanelTest {
             event -> {});
     stored = new MasterReview(state);
     panel =
-        new MasterPanel(
-            reviews,
-            briefs,
-            quotes,
-            stored,
-            new RoleYields(configService, mock(CodeReviewSettings.class)));
+        new MasterPanel(reviews, briefs, quotes, stored, new RoleYields(configService, List.of()));
     reviewPending =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     planPending = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();

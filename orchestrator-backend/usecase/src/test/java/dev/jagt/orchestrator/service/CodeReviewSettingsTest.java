@@ -49,4 +49,29 @@ class CodeReviewSettingsTest {
     assertThat(read.maxDiffLines()).isEqualTo(100);
     assertThat(read.postOwn()).isTrue();
   }
+
+  @Test
+  void mayPostOnTheTasksOwnRequestByDefault() {
+    when(paths.root()).thenReturn(root);
+    when(configService.load()).thenReturn(ConfigFile.defaults());
+
+    CodeReviewSettings settings =
+        new CodeReviewSettings(configService, paths, AssistantProperties.empty());
+
+    assertThat(settings.mayPostOnTasksOwnRequest()).isTrue();
+  }
+
+  @Test
+  void mayNotPostOnTheTasksOwnRequestWhereTheReviewFileForbidsIt() throws IOException {
+    Files.createDirectories(root.resolve("roles/code-reviewer"));
+    Files.writeString(root.resolve("roles/code-reviewer/review.yml"), "post:\n  own: false\n");
+    when(paths.root()).thenReturn(root);
+    when(configService.load()).thenReturn(ConfigFile.defaults());
+
+    CodeReviewSettings settings =
+        new CodeReviewSettings(configService, paths, AssistantProperties.empty());
+
+    assertThat(settings.role()).isEqualTo("code-reviewer");
+    assertThat(settings.mayPostOnTasksOwnRequest()).isFalse();
+  }
 }
