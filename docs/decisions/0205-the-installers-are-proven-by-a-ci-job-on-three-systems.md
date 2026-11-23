@@ -5,7 +5,7 @@ rule: [`release-artifacts`](../../openspec/specs/release-artifacts/spec.md)
 
 ## Status
 
-Accepted 2026-11-20.
+Accepted 2026-11-20; feed and release wait amended by [0233](0233-a-local-green-predicts-ci.md).
 
 ## Context
 

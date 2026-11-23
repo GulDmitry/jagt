@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
+Accepted 2026-11-05, by the owner's order: "development of jagt has to be fast"; amended by [0233](0233-a-local-green-predicts-ci.md).
 
 ## Context
 

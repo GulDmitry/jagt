@@ -5,7 +5,7 @@
 
 ## Status
 
-Accepted 2026-11-22.
+Accepted 2026-11-22; superseded by [0233](0233-a-local-green-predicts-ci.md).
 
 ## Context
 

@@ -51,7 +51,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | a seam (agent, terminal, editor, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
 | a message from a session or a read, a schema, a validation | [`protocol`](openspec/specs/protocol/spec.md) |
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
-| a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
+| a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md), [`ci`](docs/rules/ci.md) |
 | a Gradle file, `build-logic/` | [`ARCHITECTURE.md`](ARCHITECTURE.md#the-build) |
 | a comment, a doc, a prompt, the shape of a class; a name a discipline already has | [`docs/rules/style.md`](docs/rules/style.md), [`glossary`](docs/rules/glossary.md) |
 | a **kind** of thing no rule covers | [`ARCHITECTURE.md`](ARCHITECTURE.md) — if it fits no kind, add a kind |
