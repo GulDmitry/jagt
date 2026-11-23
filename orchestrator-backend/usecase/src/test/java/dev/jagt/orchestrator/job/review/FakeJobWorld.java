@@ -11,6 +11,7 @@ import static dev.jagt.orchestrator.notify.TestPointWatchBuilder.pointWatch;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 
+import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
@@ -37,6 +38,7 @@ import dev.jagt.orchestrator.notify.Routes;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.CarriedBlock;
+import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.FreshStarts;
@@ -58,6 +60,7 @@ import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.service.master.RoleYields;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
@@ -304,7 +307,8 @@ public final class FakeJobWorld implements AutoCloseable {
                 new MasterDecisions(changes),
                 stored),
             stored,
-            config);
+            new RoleYields(
+                config, new CodeReviewSettings(config, paths, AssistantProperties.empty())));
     MasterReviewJob master = new MasterReviewJob(state, config, panel, stored, ruling);
     StepRelay relay = stepRelay().withRoot(root).build(state, sessions, clock);
     AliveStamp alive = new AliveStamp(paths, clock);

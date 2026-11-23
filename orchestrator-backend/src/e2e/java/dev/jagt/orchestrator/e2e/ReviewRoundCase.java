@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -24,6 +25,15 @@ record ReviewRoundCase(
                     "http://mr/1#note_4\nhuman: rename it")),
             TaskStatus.CI_POLLING,
             "2 thread(s) relayed, checks success",
+            true),
+        new ReviewRoundCase(
+            "a code reviewer's note awaiting an answer",
+            facts(
+                false,
+                "success",
+                List.of("http://mr/1#note_7\nreviewer: " + AiLine.TEXT + "\nthis loop never ends")),
+            TaskStatus.CI_POLLING,
+            "1 thread(s) relayed, checks success",
             true),
         new ReviewRoundCase(
             "red checks, nothing unresolved",

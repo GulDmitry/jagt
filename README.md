@@ -132,6 +132,9 @@ and sent each one where `roles/session/cases.md.dist` has a case for it until yo
 The Master presses a verb only where `roles/master/cases.md.dist` has a case, until you copy that to `roles/master/cases.md`.
 An installed jagt keeps these files in its install folder: [Installation](docs/installation.md#where-an-installed-jagt-keeps-things).
 
+The code reviewer is on too: it reads requests and posts notes once a code host is chosen;
+[what it does](docs/usage.md#the-code-reviewer). `roles.code-reviewer.enabled: false` turns it off.
+
 ### 4 — start a task
 
 **New task** (key `t`): a ticket key or URL in Ticket; or leave Ticket empty, pick a project

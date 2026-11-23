@@ -12,11 +12,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +43,7 @@ class MasterPanelRolesTest {
   private final ChargedReviews reviews = mock(ChargedReviews.class);
   private final MasterBriefs briefs = mock(MasterBriefs.class);
   private final RoundQuotes quotes = mock(RoundQuotes.class);
-  private final ConfigService configService = mock(ConfigService.class);
+  private final RoleYields yields = mock(RoleYields.class);
   private final ConfigFile.ArbiterConfig judge =
       new ConfigFile.ArbiterConfig("judge", null, null, null, null);
 
@@ -56,7 +54,7 @@ class MasterPanelRolesTest {
 
   @BeforeEach
   void wirePanel() {
-    panel = new MasterPanel(reviews, briefs, quotes, stored, configService);
+    panel = new MasterPanel(reviews, briefs, quotes, stored, yields);
     task = TaskState.builder("proj", WORKTREE, TaskStatus.REVIEW_PENDING).build();
     when(briefs.author()).thenReturn("");
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(BRIEF));
@@ -76,8 +74,8 @@ class MasterPanelRolesTest {
   }
 
   @Test
-  void skipsRowWhileTheRoleItYieldsToIsOnAndTheProjectHasCodeHost() {
-    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
+  void skipsRowWhereItYieldsToTheRoleItNames() {
+    when(yields.yields("code-reviewer", task)).thenReturn(true);
 
     panel.review("ABC-1", task, judge);
 
@@ -90,21 +88,7 @@ class MasterPanelRolesTest {
   }
 
   @Test
-  void readsEveryRowWhereTheRoleItYieldsToIsOff() {
-    ConfigFile.RoleConfig off = ConfigFile.RoleConfig.defaults().withEnabled(false);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withCodeHost("github").withRoles(Map.of("code-reviewer", off)));
-
-    panel.review("ABC-1", task, judge);
-
-    verify(reviews, times(2)).review(eq("ABC-1"), any());
-  }
-
-  @Test
-  void readsEveryRowWhereTheProjectHasNoCodeHost() {
-    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("none"));
-
+  void readsEveryRowWhereNoRowYields() {
     panel.review("ABC-1", task, judge);
 
     verify(reviews, times(2)).review(eq("ABC-1"), any());
@@ -114,7 +98,7 @@ class MasterPanelRolesTest {
   void skippedLineNamesTheRoleItYieldsToWhereRowHasBothAppliesAndUnless() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(BOTH));
     when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/A.java")));
-    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
+    when(yields.yields("code-reviewer", task)).thenReturn(true);
 
     panel.review("ABC-1", task, judge);
 
@@ -125,12 +109,8 @@ class MasterPanelRolesTest {
 
   @Test
   void skippedLineNamesTheGlobWhereRowHasBothAndTheRoleItYieldsToIsOff() {
-    ConfigFile.RoleConfig off = ConfigFile.RoleConfig.defaults().withEnabled(false);
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(BOTH));
     when(quotes.paths(task)).thenReturn(Optional.of(List.of("docs/A.md")));
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withCodeHost("github").withRoles(Map.of("code-reviewer", off)));
 
     panel.review("ABC-1", task, judge);
 

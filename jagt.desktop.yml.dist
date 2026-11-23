@@ -203,6 +203,10 @@ orchestrator:
                             # everything else, environments, model and runner, lives in roles/acceptance/role.yml,
                             # described in role.yml.dist there; written here, it refuses the start
 
+    code-reviewer:          # reads each request's change once per head and posts notes on it; answers review bots; learns from likes
+      enabled: true         # on by default, idle while no code host is chosen (`codeHost`); false turns it off.
+                            # Where it posts and the largest diff it reads: copy roles/code-reviewer/review.yml.dist to review.yml
+
     triage:                 # reads each stop once, read-only: who looped, its defect family, whether a lift looks safe
       enabled: false        # off: a stop carries no triage line on its hover; on: one read per stop, charged as the Master's
       # model: haiku        # the model of the read; blank inherits the agent CLI's

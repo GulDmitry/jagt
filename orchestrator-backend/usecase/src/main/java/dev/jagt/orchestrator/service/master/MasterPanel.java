@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterReview.Review;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -41,7 +39,7 @@ public class MasterPanel {
   private final MasterBriefs briefs;
   private final RoundQuotes quotes;
   private final MasterReview stored;
-  private final ConfigService configService;
+  private final RoleYields yields;
 
   static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
 
@@ -80,18 +78,6 @@ public class MasterPanel {
     }
   }
 
-  /**
-   * A role yields to the one it names while that one is not turned off and every repository of the
-   * task has a code host to post on.
-   */
-  private static boolean yieldsTo(Role role, TaskState task, ConfigFile file) {
-    return !role.unless().isBlank()
-        && !task.repos().isEmpty()
-        && !Boolean.FALSE.equals(file.role(role.unless()).enabled())
-        && task.repos().stream()
-            .noneMatch(repo -> file.hasNoCodeHost(Objects.requireNonNull(repo.project())));
-  }
-
   private static MasterVerdictFile.Skipped skipped(Role role, boolean yielded) {
     return new MasterVerdictFile.Skipped(
         role.name(),
@@ -126,9 +112,10 @@ public class MasterPanel {
         named.stream().allMatch(role -> role.applies().isEmpty())
             ? Optional.empty()
             : quotes.paths(task);
-    ConfigFile file = configService.load();
     List<Role> applying =
-        named.stream().filter(role -> role.reads(changed) && !yieldsTo(role, task, file)).toList();
+        named.stream()
+            .filter(role -> role.reads(changed) && !yields.yields(role.unless(), task))
+            .toList();
     // A round no role reads would pass unread.
     List<Role> roles = applying.isEmpty() ? named : applying;
     String shared =
@@ -180,7 +167,7 @@ public class MasterPanel {
             reads,
             named.stream()
                 .filter(role -> !roles.contains(role))
-                .map(role -> skipped(role, yieldsTo(role, task, file)))
+                .map(role -> skipped(role, yields.yields(role.unless(), task)))
                 .toList()));
   }
 
