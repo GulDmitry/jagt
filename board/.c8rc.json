@@ -99,6 +99,8 @@
     "ui/repliesOpened.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "ui/reportdialog.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "ui/reports.js": "imports DOM or browser-global modules, so node cannot load it; covered by boardTest",
+    "ui/rolelogchips.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
+    "ui/rolelogpane.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "ui/rolelog.js": "imports DOM or browser-global modules, so node cannot load it; covered by boardTest",
     "ui/say.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "ui/seen.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",

@@ -303,6 +303,14 @@
     "lines": 90,
     "branches": 75
   },
+  "ui/rolelogchips.js": {
+    "lines": 100,
+    "branches": 78
+  },
+  "ui/rolelogpane.js": {
+    "lines": 100,
+    "branches": 100
+  },
   "ui/route.js": {
     "lines": 100,
     "branches": 100

@@ -14,5 +14,6 @@ export const RoleLog = ({ role, lines }) =>
     aria-label=${t("rolelog.label", { role })}
   >
     <button class="back" data-back="">${t("pane.back")}</button>
-    <pre ref=${following}>${lines.length ? lines.join("\n") : t("rolelog.empty", { role })}</pre>
+    <pre ref=${following}>
+${lines.length ? lines.join("\n") : t("rolelog.empty", { role })}</pre>
   </section>`;

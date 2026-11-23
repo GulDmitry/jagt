@@ -3,6 +3,7 @@
 import { body } from "./body.js";
 import { chrome } from "./chrome.js";
 import * as rolelog from "./rolelog.js";
+import * as rolelogchips from "./rolelogchips.js";
 import { view } from "./view.js";
 
 const board = /** @type {HTMLElement} */ (document.getElementById("board"));
@@ -10,6 +11,7 @@ const board = /** @type {HTMLElement} */ (document.getElementById("board"));
 export function render() {
   const now = view();
   chrome(now);
+  rolelogchips.render();
   body(now, render);
 }
 
