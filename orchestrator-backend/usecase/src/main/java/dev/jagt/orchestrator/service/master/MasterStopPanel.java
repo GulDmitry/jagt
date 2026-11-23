@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -25,8 +25,8 @@ public class MasterStopPanel {
 
   /** Empty where nothing usable came back, which leaves the stop to the human. */
   public Optional<MasterStopAnswer> ask(
-      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
-    TaskStop stop = task.stop();
+      String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
+    TaskStop stop = task.work().stop();
     Optional<String> brief = briefs.master(taskId, config);
     if (stop == null || brief.isEmpty()) {
       return Optional.empty();
@@ -43,7 +43,7 @@ public class MasterStopPanel {
   }
 
   static String prompt(String taskId, TaskState task, TaskStop stop, String brief) {
-    return MasterPanel.GOAL
+    return MasterPrompts.GOAL
         + "<role>You stand in for the human on task "
         + taskId
         + ", which jagt stopped because it"
@@ -63,7 +63,7 @@ public class MasterStopPanel {
         + ", worktrees "
         + task.repos().stream().map(TaskRepo::worktreePath).toList()
         + ", base "
-        + task.baseBranchOr("the base branch")
+        + task.ticket().baseBranchOr("the base branch")
         + ". Run no build and no test.\n"
         + "<rules>\n"
         + "1. Read what the stop's evidence points at in the worktrees, with read-only git in plain"

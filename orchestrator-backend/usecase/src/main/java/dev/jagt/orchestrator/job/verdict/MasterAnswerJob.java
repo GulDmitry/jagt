@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -58,7 +59,7 @@ public class MasterAnswerJob implements Job {
 
   @Override
   public void run() {
-    ConfigService.ConfigFile.ArbiterConfig config = configService.load().arbiter();
+    ConfigFile.ArbiterConfig config = configService.load().arbiter();
     if (!config.may(MasterRight.ANSWER)) {
       return;
     }
@@ -71,9 +72,9 @@ public class MasterAnswerJob implements Job {
 
   /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
   private boolean answers(TaskState task, Arbiter.Profile profile) {
-    return Move.asking(task.status(), task.report())
+    return Move.asking(task.standing().status(), task.standing().report())
         && turns.next(task, profile).equals(Turn.Holder.ARBITER)
-        && !task.arbiterOrNone().unanswered().equals(task.askedDigest());
+        && !task.work().arbiterOrNone().unanswered().equals(task.standing().askedDigest());
   }
 
   private void unanswered(String taskId) {
@@ -85,22 +86,21 @@ public class MasterAnswerJob implements Job {
    * plan.
    */
   private static Optional<String> humans(TaskState task) {
-    if (task.report() == AgentReport.PERMISSION) {
+    if (task.standing().report() == AgentReport.PERMISSION) {
       return Optional.of("a permission only the human grants");
     }
-    if (task.message() == null) {
+    if (task.standing().message() == null) {
       return Optional.of("a question with no text");
     }
-    if (task.asksForRepository()) {
+    if (task.work().asksForRepository()) {
       return Optional.of("a repository jagt attaches");
     }
-    return FlowRules.holdsPlan(task.status())
+    return FlowRules.holdsPlan(task.standing().status())
         ? Optional.of("the plan review answers it")
         : Optional.empty();
   }
 
-  private void answer(
-      String taskId, TaskState task, ConfigService.ConfigFile.ArbiterConfig config) {
+  private void answer(String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
     Optional<String> humans = humans(task);
     if (humans.isPresent()) {
       log.atInfo()
@@ -129,9 +129,9 @@ public class MasterAnswerJob implements Job {
     log.atInfo()
         .setMessage("master answers")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .log();
-    String question = Objects.requireNonNull(task.message());
+    String question = Objects.requireNonNull(task.standing().message());
     try {
       switch (panel.answer(taskId, task, question, config, stuck)) {
         case MasterPanel.Undecided undecided -> unusable(taskId, undecided.cause());

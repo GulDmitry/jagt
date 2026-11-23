@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.launch.TaskLaunches;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

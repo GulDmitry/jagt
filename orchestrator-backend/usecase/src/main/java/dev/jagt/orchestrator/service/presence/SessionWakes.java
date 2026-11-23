@@ -37,7 +37,7 @@ public class SessionWakes {
 
   /** Arms the one wake of the task, replacing any pending, for the turn standing now. */
   public synchronized void arm(String taskId, Instant at, Step step) {
-    long turn = stateService.task(taskId).map(task -> task.turnOrNone().id()).orElse(0L);
+    long turn = stateService.task(taskId).map(task -> task.work().turnOrNone().id()).orElse(0L);
     turns.mark(taskId, Wake.MARK, new Wake(turn, at.toEpochMilli(), step).mark());
     log.atInfo()
         .setMessage("session wake armed")
@@ -52,7 +52,10 @@ public class SessionWakes {
   }
 
   public synchronized void cancel(String taskId) {
-    if (stateService.task(taskId).map(task -> task.turnOrNone().mark(Wake.MARK)).isPresent()) {
+    if (stateService
+        .task(taskId)
+        .map(task -> task.work().turnOrNone().mark(Wake.MARK))
+        .isPresent()) {
       turns.unmark(taskId, Wake.MARK);
       log.atInfo().setMessage("session wake cancelled").addKeyValue("task", taskId).log();
     }
@@ -69,11 +72,11 @@ public class SessionWakes {
         .sorted(Map.Entry.comparingByKey())
         .forEach(entry -> {
           Optional<Wake> wake = wakeOf(entry.getValue()).filter(pending -> pending.at() <= now);
-          if (wake.isEmpty() || entry.getValue().paused() || held.test(entry.getKey())) {
+          if (wake.isEmpty() || entry.getValue().work().paused() || held.test(entry.getKey())) {
             return;
           }
           turns.unmark(entry.getKey(), Wake.MARK);
-          if (wake.get().turn() == entry.getValue().turnOrNone().id()) {
+          if (wake.get().turn() == entry.getValue().work().turnOrNone().id()) {
             due.add(new Due(entry.getKey(), wake.get().step(), Standing.of(entry.getValue())));
           }
         });
@@ -81,6 +84,6 @@ public class SessionWakes {
   }
 
   private static Optional<Wake> wakeOf(TaskState task) {
-    return Wake.parse(task.turnOrNone().mark(Wake.MARK));
+    return Wake.parse(task.work().turnOrNone().mark(Wake.MARK));
   }
 }

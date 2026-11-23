@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -57,8 +58,7 @@ class ProjectClonesJobTest {
     Path folder = dir.resolve("projects/api");
     ProjectConfig api =
         clonedProject().withUrl(origin.toString()).withPath(folder.toString()).build();
-    when(config.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", api)));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", api)));
 
     job.run();
 
@@ -71,8 +71,7 @@ class ProjectClonesJobTest {
     Path existing = Files.createDirectories(dir.resolve("mine"));
     ProjectConfig api =
         clonedProject().withUrl(origin.toString()).withPath(existing.toString()).build();
-    when(config.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", api)));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", api)));
 
     job.run();
 
@@ -92,7 +91,7 @@ class ProjectClonesJobTest {
             .withPath(bad.toString())
             .build());
     both.put("good", clonedProject().withUrl(origin.toString()).withPath(good.toString()).build());
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(both));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(both));
 
     job.run();
 
@@ -112,8 +111,7 @@ class ProjectClonesJobTest {
     Path later = dir.resolve("later.git");
     ProjectConfig api =
         clonedProject().withUrl(later.toString()).withPath(folder.toString()).build();
-    when(config.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", api)));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", api)));
     job.run();
     runner.run(
         dir, TIMEOUT, List.of("git", "clone", "-q", "--bare", origin.toString(), later.toString()));
@@ -139,8 +137,7 @@ class ProjectClonesJobTest {
             .withUrl(origin.toString())
             .withPath(dir.resolve("projects/api").toString())
             .build();
-    when(config.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", api)));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", api)));
     boolean before = watched.cloning();
 
     watched.run();
@@ -158,7 +155,7 @@ class ProjectClonesJobTest {
     when(config.load())
         .thenAnswer(call -> {
           duringTheRun.set(watched.cloning());
-          return ConfigService.ConfigFile.defaults();
+          return ConfigFile.defaults();
         });
 
     watched.run();

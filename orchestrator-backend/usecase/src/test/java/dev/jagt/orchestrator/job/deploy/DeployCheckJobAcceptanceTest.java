@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -38,11 +39,10 @@ class DeployCheckJobAcceptanceTest {
     state.putTask("ABC-42", askedDeploy().withAskedDigest(null).build());
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
-                .withRoles(
-                    Map.of("acceptance", new ConfigService.ConfigFile.RoleConfig(true, null))));
+                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
     when(config.anyCheckerEnabled()).thenReturn(true);
     when(pipelines.read(eq("ABC-42"), any()))
         .thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of()));
@@ -57,7 +57,8 @@ class DeployCheckJobAcceptanceTest {
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     assertThat(
-            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
+                .askedDigest())
         .isNotNull();
   }
 }

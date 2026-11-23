@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
@@ -48,7 +49,7 @@ class NaturalLanguageDispatchTest {
 
   @BeforeEach
   void setUp() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1",

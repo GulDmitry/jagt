@@ -98,7 +98,8 @@ class StopTriageJobTest {
     verify(panel, times(1)).read(anyString(), any(), any(), anyString());
     assertThat(
             Objects.requireNonNull(
-                    Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage())
+                    Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop())
+                        .triage())
                 .line())
         .isEqualTo(line);
   }
@@ -110,7 +111,8 @@ class StopTriageJobTest {
     stopTriageJob().build(config, panel, state, paths, new FakeClock()).runOn(state.tasks());
 
     verifyNoInteractions(panel);
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage()).isNull();
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop()).triage())
+        .isNull();
   }
 
   @Test
@@ -119,13 +121,13 @@ class StopTriageJobTest {
     job.runOn(state.tasks());
 
     state.updateTask("ABC-42", task -> task.lifted(6));
-    assertThat(state.task("ABC-42").orElseThrow().stop()).isNull();
+    assertThat(state.task("ABC-42").orElseThrow().work().stop()).isNull();
     state.updateTask(
         "ABC-42", task -> task.withStop(new TaskStop(TaskStop.Trigger.ROUNDS, 9, "4 rounds")));
     job.runOn(state.tasks());
 
     verify(panel, times(2)).read(anyString(), any(), any(), anyString());
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage())
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop()).triage())
         .isEqualTo(jagtRead);
   }
 
@@ -160,6 +162,6 @@ class StopTriageJobTest {
   void liftThatLooksSafeStillLeavesTheStopStanding() {
     stopTriageJob().build(config, panel, state, paths, new FakeClock()).runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
+    assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isTrue();
   }
 }

@@ -57,7 +57,7 @@ public class PointWatch {
     StopHold hold = StopHold.of(task, profiles.at(task));
     for (Standing standing : PointCatalogue.of(task, roles.points(), hold)) {
       String id = standing.point().id();
-      if (task.toldOrNone().saidPoint(id, standing.key())) {
+      if (task.round().toldOrNone().saidPoint(id, standing.key())) {
         continue;
       }
       Point point = standing.point();
@@ -66,7 +66,7 @@ public class PointWatch {
       state.reduce(
           taskId,
           (reducer, current) -> {
-            if (current.toldOrNone().saidPoint(id, key)) {
+            if (current.round().toldOrNone().saidPoint(id, key)) {
               return current;
             }
             fresh.set(true);

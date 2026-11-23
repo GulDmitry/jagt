@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.presence.KeepAlive;
 import dev.jagt.orchestrator.surface.mcp.refusal.ToolFailure;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Clock;
@@ -197,7 +196,11 @@ public final class McpProtocolService implements McpToolRegistry {
                       .toList()));
     }
     if (callerTaskId != null) {
-      Turn turn = stateService.task(callerTaskId).map(TaskState::turnOrNone).orElse(Turn.none());
+      Turn turn =
+          stateService
+              .task(callerTaskId)
+              .map(taskState -> taskState.work().turnOrNone())
+              .orElse(Turn.none());
       log.atDebug()
           .setMessage("mcp tool called")
           .addKeyValue("task", callerTaskId)

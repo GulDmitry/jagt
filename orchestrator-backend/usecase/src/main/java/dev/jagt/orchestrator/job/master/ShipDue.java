@@ -32,7 +32,7 @@ class ShipDue {
   private boolean shippedAsItStands(TaskState task) {
     return content
         .of(task)
-        .filter(shipped -> task.turnOrNone().marked(TaskTurns.PRESSED_SHIP, shipped))
+        .filter(shipped -> task.work().turnOrNone().marked(TaskTurns.PRESSED_SHIP, shipped))
         .isPresent();
   }
 }

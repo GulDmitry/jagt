@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.scenario.ScenarioSessions;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -24,7 +25,7 @@ class ScenarioCommandTest {
   void opensTheOnlyProjectsSessionWhenNoneIsNamed() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("alpha", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
 
@@ -37,7 +38,7 @@ class ScenarioCommandTest {
   void opensTheProjectNamedWhereSeveralExist() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "alpha", new ProjectConfig("/a", "origin/main", "dev", List.of()),
@@ -52,7 +53,7 @@ class ScenarioCommandTest {
   void refusesWhereSeveralProjectsExistAndNoneIsNamed() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "alpha", new ProjectConfig("/a", "origin/main", "dev", List.of()),

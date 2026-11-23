@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TestProjectConfigBuilder;
 import dev.jagt.orchestrator.task.repo.Remote;
@@ -20,7 +21,7 @@ class ConfigRemotesTest {
   void namesTheRemoteOfTheConfiguredProjectAtThatRepository() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
@@ -35,7 +36,7 @@ class ConfigRemotesTest {
 
   @Test
   void namesNoRemoteForRepositoryNoProjectPointsAt() {
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(remotes.of(Path.of("/repo/other"))).isEmpty();
   }

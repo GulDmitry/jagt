@@ -22,7 +22,7 @@ import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.job.master.MasterShip;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -61,10 +61,10 @@ class MasterVerdictsTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final MasterShip ship = mock(MasterShip.class);
   private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
-  private final ConfigService.ConfigFile.ArbiterConfig acting =
-      new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null);
-  private final ConfigService.ConfigFile.ArbiterConfig judging =
-      new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null);
+  private final ConfigFile.ArbiterConfig acting =
+      new ConfigFile.ArbiterConfig("act", null, null, null, null);
+  private final ConfigFile.ArbiterConfig judging =
+      new ConfigFile.ArbiterConfig("judge", null, null, null, null);
   private final MasterReview.Verdict guardInvertedBeforeAnyRound =
       new MasterReview.Verdict(
           MasterReview.Kind.NOT_READY,
@@ -261,13 +261,14 @@ class MasterVerdictsTest {
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.SHIPPING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.SHIPPING);
   }
 
   @Test
   void dropsTheAnswerToQuestionTheSessionMovedOnFromWhileTheMasterRead() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(2_000)));
+    state.updateTask("ABC-1", live -> live.withTurn(live.work().turnOrNone().closed(2_000)));
 
     assertThatThrownBy(() ->
             verdicts.answered(
@@ -292,9 +293,10 @@ class MasterVerdictsTest {
         .isInstanceOf(IllegalStateException.class);
 
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.REVIEW_PENDING, TaskState::status)
+        .returns(TaskStatus.REVIEW_PENDING, taskState -> taskState.standing().status())
         .returns(
-            TaskStop.Trigger.UNDELIVERED, live -> Objects.requireNonNull(live.stop()).trigger());
+            TaskStop.Trigger.UNDELIVERED,
+            live -> Objects.requireNonNull(live.work().stop()).trigger());
   }
 
   @Test
@@ -315,8 +317,8 @@ class MasterVerdictsTest {
         .isInstanceOf(IllegalStateException.class);
 
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.SHIPPING, TaskState::status)
-        .returns(false, TaskState::stopped);
+        .returns(TaskStatus.SHIPPING, taskState -> taskState.standing().status())
+        .returns(false, taskState -> taskState.work().stopped());
   }
 
   @Test
@@ -358,7 +360,8 @@ class MasterVerdictsTest {
     boolean moved = verdicts.act("ABC-1", reviewPending, guardInverted, acting);
 
     assertThat(moved).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -367,7 +370,7 @@ class MasterVerdictsTest {
 
     verdicts.act("ABC-1", reviewPending, guardInverted, acting);
 
-    assertThat(state.task("ABC-1").orElseThrow().history().getLast().origin())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history().getLast().origin())
         .isEqualTo(ActionOrigin.MASTER);
   }
 
@@ -393,8 +396,8 @@ class MasterVerdictsTest {
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-        .returns("master answered the question", TaskState::message);
+        .returns(TaskStatus.IN_PROGRESS, taskState -> taskState.standing().status())
+        .returns("master answered the question", taskState -> taskState.standing().message());
   }
 
   @Test
@@ -405,7 +408,8 @@ class MasterVerdictsTest {
 
     assertThat(told).isTrue();
     verify(sessions).writeTaskContext(eq("ABC-1"), contains("fix the fixture, not the test"));
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -469,8 +473,8 @@ class MasterVerdictsTest {
     verdicts.act("ABC-1", reviewPending, unguardedDelayOnRound7, acting);
 
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(AgentReport.PLAIN, TaskState::report)
-        .returns(TaskStatus.IN_PROGRESS, TaskState::status);
+        .returns(AgentReport.PLAIN, taskState -> taskState.standing().report())
+        .returns(TaskStatus.IN_PROGRESS, taskState -> taskState.standing().status());
   }
 
   @Test
@@ -491,7 +495,9 @@ class MasterVerdictsTest {
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
-        .extracting(TaskState::report, done -> Objects.requireNonNull(done.stop()).trigger())
+        .extracting(
+            taskState -> taskState.standing().report(),
+            done -> Objects.requireNonNull(done.work().stop()).trigger())
         .containsExactly(AgentReport.PLAIN, TaskStop.Trigger.ROUNDS);
   }
 
@@ -546,7 +552,7 @@ class MasterVerdictsTest {
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinnedAgain, acting);
 
     assertThat(actual).isEqualTo(moved);
-    assertThat(state.task("ABC-1").orElseThrow().stopped()).isEqualTo(stopped);
+    assertThat(state.task("ABC-1").orElseThrow().work().stopped()).isEqualTo(stopped);
   }
 
   @Test
@@ -591,13 +597,14 @@ class MasterVerdictsTest {
 
     assertThat(moved).isTrue();
     verify(ship).ship("ABC-1", reviewPending);
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEW_PENDING);
   }
 
   @Test
   void shipsNothingWhereTheHumanKeptThatStep() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    var kept = new ConfigService.ConfigFile.ArbiterConfig("act", null, null, List.of("ship"), null);
+    var kept = new ConfigFile.ArbiterConfig("act", null, null, List.of("ship"), null);
 
     boolean moved = verdicts.act("ABC-1", reviewPending, ready, kept);
 
@@ -638,7 +645,7 @@ class MasterVerdictsTest {
             ""),
         acting);
 
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
@@ -696,9 +703,11 @@ class MasterVerdictsTest {
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-        .returns(AgentReport.QUESTION, TaskState::report)
-        .returns("reviewer: Add v3 beside v2, or replace it?", TaskState::message);
+        .returns(TaskStatus.IN_PROGRESS, taskState -> taskState.standing().status())
+        .returns(AgentReport.QUESTION, taskState -> taskState.standing().report())
+        .returns(
+            "reviewer: Add v3 beside v2, or replace it?",
+            taskState -> taskState.standing().message());
     verify(ship, never()).ship(anyString(), any());
   }
 
@@ -728,7 +737,8 @@ class MasterVerdictsTest {
             acting);
 
     assertThat(moved).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEW_PENDING);
   }
 
   @Test
@@ -817,7 +827,7 @@ class MasterVerdictsTest {
         "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
     boolean third =
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), paymentGuardInverted, acting);
-    boolean stoppedAfterThird = state.task("ABC-1").orElseThrow().stopped();
+    boolean stoppedAfterThird = state.task("ABC-1").orElseThrow().work().stopped();
     state.updateTask(
         "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
 
@@ -828,7 +838,9 @@ class MasterVerdictsTest {
     assertThat(stoppedAfterThird).isFalse();
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
-        .extracting(TaskState::status, done -> Objects.requireNonNull(done.stop()).trigger())
+        .extracting(
+            taskState -> taskState.standing().status(),
+            done -> Objects.requireNonNull(done.work().stop()).trigger())
         .containsExactly(TaskStatus.REVIEW_PENDING, TaskStop.Trigger.ROUNDS);
   }
 

@@ -27,8 +27,8 @@ public class TaskAliasFeed {
 
   private static void remember(Map<String, TaskState> tasks) {
     tasks.forEach((id, task) -> {
-      if (task.alias() != null) {
-        TaskAliasLogFilter.remember(id, task.alias());
+      if (task.ticket().alias() != null) {
+        TaskAliasLogFilter.remember(id, task.ticket().alias());
       }
     });
   }

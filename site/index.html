@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>jagt: agent sessions on a desktop and on a server</title>
+<title>jagt: AI coding-agent session orchestrator</title>
 <meta name="description" content="jagt orchestrates AI coding-agent sessions on a desktop and on a server, each in its own Git worktree, all driven from one board.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
@@ -13,22 +13,98 @@
 <nav>
   <div class="container">
     <a class="brand" href="#top"><img src="favicon.svg" alt="">jagt</a>
+    <a href="#features">Features</a>
     <a href="#install">Install</a>
-    <a href="#engineers">For engineers</a>
     <a href="#docs">Docs</a>
   </div>
 </nav>
 
 <main id="top">
   <header class="hero container">
-    <h1>One ticket. One agent session. One Git worktree.</h1>
-    <p class="lede">jagt orchestrates AI coding-agent sessions on a desktop and on a server.</p>
+    <h1>AI coding-agent session orchestrator</h1>
+    <p class="lede">Each session works in its own Git worktree. Run it on a desktop or a server, and drive it from one board.</p>
     <p class="actions">
       <a class="button primary" href="#desktop">Install on a desktop</a>
       <a class="button" href="#server">Install on a server</a>
       <a class="button" href="https://github.com/GulDmitry/jagt">GitHub</a>
     </p>
   </header>
+
+  <section class="container" id="features">
+    <h2>Features</h2>
+    <p>Eight architecture principles, each with the file that holds it: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/principles.md">Architecture principles</a>.</p>
+    <div class="slides">
+      <article class="slide">
+        <span class="n">1</span>
+        <h3>Fitness functions guard the architecture</h3>
+        <dl>
+          <dt>What it is</dt><dd>every architecture rule is a fitness function declared in fitness.yml. Each one reports its number against its threshold, over all code, tests included. The core imports no Spring, and arrows point inward only.</dd>
+          <dt>Why it matters</dt><dd>a rule that a build checks does not erode when the code grows.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/fitness/spec.md">fitness</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/fitness.yml">fitness.yml</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0162-a-check-holds-for-all-code.md">0162</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">2</span>
+        <h3>A statechart decides every status</h3>
+        <dl>
+          <dt>What it is</dt><dd>a capability does its work and reports an outcome. A Harel statechart with nested and parallel states, history and choices says which status that outcome leads to.</dd>
+          <dt>Why it matters</dt><dd>no code path can move a task to a status the chart does not allow.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/statechart/spec.md">statechart</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/task-flow/spec.md">task-flow</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0110-the-task-statechart-runs-on-an-engine-of-our-own.md">0110</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">3</span>
+        <h3>Roles are isolated folders</h3>
+        <dl>
+          <dt>What it is</dt><dd>a role is one folder with its brief, its cases and a design file. jagt installs a role. It does not code one.</dd>
+          <dt>Why it matters</dt><dd>a new role changes no existing role, and one role can break only itself.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/roles/session/design.md">roles/session/design.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/roles/master/design.md">roles/master/design.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">4</span>
+        <h3>Pluggable agents and models</h3>
+        <dl>
+          <dt>What it is</dt><dd>a session runs on Claude Code, Codex or OpenCode, on the model you name. A local model can answer the reads that need no tool. Each is a key in jagt.yml, like every third party: one port, one driver for each vendor.</dd>
+          <dt>Why it matters</dt><dd>jagt guesses no vendor from a name or a URL, and swapping an agent or a model is a config change.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/agent-seams/spec.md">agent-seams</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0130-every-third-party-is-a-configured-seam.md">0130</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/rules/seams.md">seams</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">5</span>
+        <h3>Use cases first</h3>
+        <dl>
+          <dt>What it is</dt><dd>every behaviour is a WHEN and THEN scenario in a spec, and a test pins it.</dd>
+          <dt>Why it matters</dt><dd>a change shows its effect as a scenario before it shows as code.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/spec-changes/spec.md">spec-changes</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/rules/testing.md">testing</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">6</span>
+        <h3>A protocol validated at every step</h3>
+        <dl>
+          <dt>What it is</dt><dd>at each step a session reports a typed record. jagt checks it against a schema at the door and returns every violation at once.</dd>
+          <dt>Why it matters</dt><dd>jagt never parses prose, so a changed sentence cannot change a decision.</dd>
+          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/protocol/spec.md">protocol</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0077-the-masters-verdict-stays-typed.md">0077</a></dd>
+        </dl>
+      </article>
+      <article class="slide">
+        <span class="n">+</span>
+        <h3>Everything jagt does</h3>
+        <ul>
+          <li>Command palette</li>
+          <li>Master review</li>
+          <li>Autoplan</li>
+          <li>Visualize</li>
+          <li>Notifications routed per point</li>
+          <li>Auto-review</li>
+          <li>Limits and spend</li>
+          <li>Signed release</li>
+        </ul>
+        <p>Everything jagt does, one line each and linked to its spec: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/features.md">Features</a></p>
+      </article>
+    </div>
+  </section>
 
   <section class="container" id="install">
     <h2>Install</h2>
@@ -48,85 +124,6 @@
         <pre class="install"><span class="prompt">$ </span>docker compose up -d --build</pre>
         <p>One container with the board behind a password login: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/server.md">docs/server.md</a>.</p>
       </div>
-    </div>
-  </section>
-
-  <section class="container" id="engineers">
-    <h2>For engineers</h2>
-    <p>Eight architecture principles, each with the file that holds it: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/principles.md">Architecture principles</a>.</p>
-    <div class="slides">
-      <article class="slide">
-        <span class="n">1</span>
-        <h3>Roles are isolated folders</h3>
-        <dl>
-          <dt>What it is</dt><dd>a role is one folder with its brief, its cases and a design file. jagt installs a role. It does not code one.</dd>
-          <dt>Why it matters</dt><dd>a new role changes no existing role, and one role can break only itself.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/roles/session/design.md">roles/session/design.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/roles/master/design.md">roles/master/design.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">2</span>
-        <h3>A statechart decides every status</h3>
-        <dl>
-          <dt>What it is</dt><dd>a capability does its work and reports an outcome. The chart says which status that outcome leads to. Guards read facts.</dd>
-          <dt>Why it matters</dt><dd>no code path can move a task to a status the chart does not allow.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/task-flow/spec.md">task-flow</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0110-the-task-statechart-runs-on-an-engine-of-our-own.md">0110</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">3</span>
-        <h3>A typed protocol</h3>
-        <dl>
-          <dt>What it is</dt><dd>every message from a session, and every read, is a record checked against a schema once, at the door.</dd>
-          <dt>Why it matters</dt><dd>jagt never parses prose, so a changed sentence cannot change a decision.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/protocol/spec.md">protocol</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0077-the-masters-verdict-stays-typed.md">0077</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">4</span>
-        <h3>Deterministic beats a model</h3>
-        <dl>
-          <dt>What it is</dt><dd>triggers, guards and legal moves belong to the machine. A model supplies judgement only.</dd>
-          <dt>Why it matters</dt><dd>the Master in act mode picks one legal move and cannot invent one, so an unattended run stays inside the rules.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/master/spec.md">master</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/AGENTS.md">AGENTS.md</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">5</span>
-        <h3>Every third party is a configured seam</h3>
-        <dl>
-          <dt>What it is</dt><dd>one port, one driver for each vendor, and a key in jagt.yml that names the driver.</dd>
-          <dt>Why it matters</dt><dd>jagt guesses no vendor from a name or a URL, and swapping a vendor is a config change.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0130-every-third-party-is-a-configured-seam.md">0130</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/rules/seams.md">seams</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">6</span>
-        <h3>What a session does is read, not asked</h3>
-        <dl>
-          <dt>What it is</dt><dd>jagt learns what a session does from its CLI's hooks and logs. No model sits in that path.</dd>
-          <dt>Why it matters</dt><dd>the state of a session costs no tokens and cannot be a model's guess.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/runtime/spec.md">runtime</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0115-a-session-is-one-stored-record-read-from-typed-signs.md">0115</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">7</span>
-        <h3>Rings, and a test for every rule</h3>
-        <dl>
-          <dt>What it is</dt><dd>the core imports no Spring, and arrows point inward only. Each rule is a test over all code.</dd>
-          <dt>Why it matters</dt><dd>a rule that a test checks does not erode when the code grows.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0162-a-check-holds-for-all-code.md">0162</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/decisions/0180-each-spheres-industry-standard-is-jagts-floor.md">0180</a></dd>
-        </dl>
-      </article>
-      <article class="slide">
-        <span class="n">8</span>
-        <h3>Use cases first</h3>
-        <dl>
-          <dt>What it is</dt><dd>every behaviour is a WHEN and THEN scenario in a spec, and a test pins it.</dd>
-          <dt>Why it matters</dt><dd>a change shows its effect as a scenario before it shows as code.</dd>
-          <dt>Held by</dt><dd><a href="https://github.com/GulDmitry/jagt/blob/main/openspec/specs/spec-changes/spec.md">spec-changes</a>, <a href="https://github.com/GulDmitry/jagt/blob/main/docs/rules/testing.md">testing</a></dd>
-        </dl>
-      </article>
     </div>
   </section>
 

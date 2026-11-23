@@ -89,7 +89,7 @@ class DeployPipelinesRetryTest {
     assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
     verify(fixes, never()).open(any(), anyString(), anyString());
     assertThat(
-            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                 .targets()
                 .getFirst()
                 .retriedTip())

@@ -17,9 +17,12 @@ project rule into a vendor-named file.
 | task | needs | answers |
 |------|-------|---------|
 | `./gradlew test` | nothing | the fast hermetic gate; runs everywhere |
+| `./gradlew compileAll` | nothing | every source set of every module compiles; run it after a main symbol is removed or renamed |
+| `./gradlew checkScope` | nothing | every source set with sources has Checkstyle gated by `test`, Error Prone, NullAway at error and google-java-format; part of `check` |
 | `./gradlew e2eTest` | git + tmux | the task flow over real worktrees, one row per case |
 | `./gradlew boardTest` | a Chromium (downloaded on first run) | the board in a real browser |
 | `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against real binaries |
+| `./gradlew guardsTest` | shellcheck, bats, jq | the contributor guards in `scripts/guards` |
 | `./gradlew promptEval` | the assistant's CLI, and tokens | whether an operator's own words still map onto one command; `-PlocalEndpoint=<url> -PlocalModel=<name>` reads them through `assistant.local` instead, no cloud fallback |
 | `./gradlew roleEval -Prole=master` | the assistant's CLI, tokens, minutes, and `.master-eval/root` trusted once | whether the shipped Master brief still reaches a human's verdict |
 
@@ -33,11 +36,15 @@ The rest are asked for by name, each needing something a hermetic run must not d
 directory nobody has trusted: run `claude` there once and accept. The suite checks that and refuses with the
 path rather than sitting at a prompt nobody sees.
 
+`orchestrator-backend/scripts/gradle-slot.sh <command>` caps concurrent Gradle runs on one machine
+(`GRADLE_SLOTS`, default 2).
+
 ## Testing Linux from a Mac
 
-`orchestrator-backend/scripts/linux-suite.sh` runs four tasks on a real Linux in a container: the unit suite on
-a Linux JVM, `e2eTest` with real git and tmux, `boardTest` in a headless Chromium, and `linuxDriverTest` against
-the real binaries (`notify-send` over a session D-Bus, kitty on an Xvfb display answering remote control). It
+`orchestrator-backend/scripts/linux-suite.sh` runs five tasks on a real Linux in a container: the unit suite on
+a Linux JVM, `e2eTest` with real git and tmux, `boardTest` in a headless Chromium, `guardsTest` (shellcheck and bats
+over `scripts/guards`), and `linuxDriverTest` against the real binaries
+(`notify-send` over a session D-Bus, kitty on an Xvfb display answering remote control). It
 needs Docker and nothing else, and leaves an image and a Gradle cache volume behind.
 
 ## CI

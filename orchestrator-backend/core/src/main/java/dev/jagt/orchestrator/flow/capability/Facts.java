@@ -81,16 +81,16 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
    * one it runs on.
    */
   public static boolean tierAbove(TaskState task) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     return stop != null
         && ESCALATING.contains(stop.trigger())
-        && task.tier() != null
-        && task.tier().higher();
+        && task.work().tier() != null
+        && task.work().tier().higher();
   }
 
   /** A recorded merge is one no revert has taken out yet. */
   public static boolean deployLive(TaskState task) {
-    return task.deployment() != null && task.deployment().live();
+    return task.work().deployment() != null && task.work().deployment().live();
   }
 
   /** Whether the conflict the task stands in is a revert's. */
@@ -108,12 +108,12 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
             .withRequestMerged(task.requestsMerged())
             .withRevertConflict(revertConflicted(task)),
         Hold.defaults()
-            .withStopped(task.stopped())
+            .withStopped(task.work().stopped())
             .withTierAbove(tierAbove(task))
             .withStopIsTheArbiters(StopHold.mayBeLifted(task) && !StopHold.asked(task)),
         Workspace.defaults()
-            .withGitStateChanged(task.gitStateChanged())
-            .withRepoRequested(task.asksForRepository())
+            .withGitStateChanged(task.gate().gitStateChanged())
+            .withRepoRequested(task.work().asksForRepository())
             .withSeveralRepos(task.repos().size() > 1),
         Reach.defaults());
   }

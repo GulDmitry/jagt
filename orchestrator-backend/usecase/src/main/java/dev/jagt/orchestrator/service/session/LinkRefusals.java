@@ -105,7 +105,7 @@ public class LinkRefusals {
   }
 
   private static String said(TaskState task, ForeignLinks.Foreign foreign) {
-    return (task.alias() == null ? "" : task.alias() + " ")
+    return (task.ticket().alias() == null ? "" : task.ticket().alias() + " ")
         + foreign.project()
         + ": request is not under "
         + GitRemote.projectPath(foreign.remote());

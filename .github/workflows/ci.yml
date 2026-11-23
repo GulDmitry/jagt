@@ -110,6 +110,13 @@ jobs:
       - run: scripts/vulnerability-scan.sh
       - name: install what the suites shell out to
         run: sudo scripts/linux-test-deps.sh
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: board/package-lock.json
+      - run: npm ci
+        working-directory: board
       - name: give git an identity
         run: |
           git config --global user.email "ci@example.com"
@@ -133,6 +140,11 @@ jobs:
             orchestrator-backend/build/reports/tests/e2eTest
             orchestrator-backend/build/reports/tests/linuxDriverTest
             orchestrator-backend/build/reports/tests/boardTest
+            orchestrator-backend/build/reports/tests/boardTestContainer
+            orchestrator-backend/build/test-results/e2eTest
+            orchestrator-backend/build/test-results/linuxDriverTest
+            orchestrator-backend/build/test-results/boardTest
+            orchestrator-backend/build/test-results/boardTestContainer
             /tmp/jagt-xvfb.log
             /tmp/jagt-dunst.log
 
@@ -175,7 +187,7 @@ jobs:
           key: stand-timings-${{ matrix.engine }}-${{ github.run_id }}
           restore-keys: stand-timings-${{ matrix.engine }}-
       - name: run the stand without a model on the engine
-        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Pbudgets=false -Prunner=ubuntu-24.04
+        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Prunner=ubuntu-24.04
       - name: fail when a stand timing passes twice the median of its last ten runs
         run: ./gradlew --no-daemon standTimingGate
       - name: store the stand timing trend
@@ -192,7 +204,9 @@ jobs:
         with:
           name: stand-${{ matrix.engine }}-evidence
           retention-days: 14
-          path: orchestrator-backend/stand/build/stand/failed
+          path: |
+            orchestrator-backend/stand/build/stand/failed
+            orchestrator-backend/stand/build/test-results/standTest
 
   install:
     name: install (${{ matrix.os }})
@@ -221,10 +235,8 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - run: ./gradlew --no-daemon bootJar
-        shell: bash
-      - name: install, upgrade and restart against a fake release feed
-        run: scripts/install-check.sh build/libs/jagt.jar
+      - name: install, upgrade and stop against a fake release feed
+        run: ./gradlew --no-daemon installTest
         shell: bash
 
   release:

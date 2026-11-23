@@ -402,7 +402,8 @@ class YourMoveJobTest {
     state.putTask("ABC-1", yourMoveTask().withWorktree(worktree).withStatus(status).build());
     job.run();
     TaskState judged = state.task("ABC-1").orElseThrow();
-    reviews.write("ABC-1", judged, bareMasterReview().withRound(judged.statusSince()).build(), "");
+    reviews.write(
+        "ABC-1", judged, bareMasterReview().withRound(judged.standing().statusSince()).build(), "");
 
     job.run();
     clock.advance(Duration.ofSeconds(10));
@@ -426,7 +427,8 @@ class YourMoveJobTest {
     state.putTask("ABC-1", yourMoveTask().withWorktree(worktree).withStatus(judgedAt).build());
     job.run();
     TaskState judged = state.task("ABC-1").orElseThrow();
-    reviews.write("ABC-1", judged, bareMasterReview().withRound(judged.statusSince()).build(), "");
+    reviews.write(
+        "ABC-1", judged, bareMasterReview().withRound(judged.standing().statusSince()).build(), "");
 
     job.run();
     clock.advance(Duration.ofSeconds(1));
@@ -515,7 +517,10 @@ class YourMoveJobTest {
     job.run();
     TaskState drafted = state.task("ABC-1").orElseThrow();
     reviews.write(
-        "ABC-1", drafted, bareMasterReview().withRound(drafted.statusSince()).build(), "");
+        "ABC-1",
+        drafted,
+        bareMasterReview().withRound(drafted.standing().statusSince()).build(),
+        "");
 
     job.run();
     clock.advance(Duration.ofSeconds(10));

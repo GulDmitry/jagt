@@ -12,6 +12,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ class ScenarioWindowsTest {
 
   @BeforeEach
   void configAndHostAreReady() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(hosts.sessionName(any())).thenReturn("jagt");
     when(agent.workspaceCommand(Path.of("/ws"), "", "go", workspace)).thenReturn("line");
   }

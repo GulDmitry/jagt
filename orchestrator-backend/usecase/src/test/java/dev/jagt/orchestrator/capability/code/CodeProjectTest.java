@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
@@ -52,7 +53,7 @@ class CodeProjectTest {
             .build();
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api", new ProjectConfig(api.toString(), "origin/main", "dev", List.of()),
@@ -87,7 +88,7 @@ class CodeProjectTest {
             .build();
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "proj",
@@ -105,7 +106,7 @@ class CodeProjectTest {
     Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-demo"));
     TaskState task =
         TaskState.builder("gone", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT).build();
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of()));
 
     String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
@@ -154,7 +155,7 @@ class CodeProjectTest {
             .build();
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "proj",

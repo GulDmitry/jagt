@@ -27,7 +27,7 @@ class PauseCapabilityTest {
     var outcome = pause.run("ABC-1");
 
     assertThat(pause.action()).isEqualTo(TaskAction.PAUSE);
-    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().stop()).trigger())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().stop()).trigger())
         .isEqualTo(TaskStop.Trigger.PAUSE);
     assertThat(outcome.message())
         .isEqualTo("pause ABC-1: nothing of jagt moves it until you lift the stop");

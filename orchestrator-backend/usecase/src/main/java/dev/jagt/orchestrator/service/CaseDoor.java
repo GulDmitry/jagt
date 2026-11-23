@@ -44,7 +44,8 @@ public class CaseDoor {
   /** A task jagt does not hold is left to the relay, which refuses it by name. */
   public Admission opens(String taskId, Step step) {
     String id = stateService.canonicalTaskId(taskId);
-    Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
+    Optional<TaskStatus> status =
+        stateService.task(id).map(taskState -> taskState.standing().status());
     if (status.isEmpty()) {
       return new Admission(true, null);
     }
@@ -82,7 +83,8 @@ public class CaseDoor {
 
   private boolean held(String taskId, String move) {
     String id = stateService.canonicalTaskId(taskId);
-    Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
+    Optional<TaskStatus> status =
+        stateService.task(id).map(taskState -> taskState.standing().status());
     return status.isEmpty() || allows(id, move, status.get());
   }
 
@@ -159,14 +161,15 @@ public class CaseDoor {
   public boolean takes(String taskId, TaskStatus reported, AgentReport kind) {
     String id = stateService.canonicalTaskId(taskId);
     Optional<TaskState> task = stateService.task(id);
-    Turn turn = task.map(TaskState::turnOrNone).orElse(Turn.none());
+    Turn turn = task.map(taskState -> taskState.work().turnOrNone()).orElse(Turn.none());
     Optional<CaseBook.Replies> expected =
         turn.open() ? cases.book().replies(turn.step()) : Optional.empty();
     if (expected.isEmpty() || expected.get().takes(reported, kind)) {
       return true;
     }
     String got = reported + "; " + CaseBook.Replies.kind(kind);
-    misses.refused(id, turn.step(), task.orElseThrow().status(), got, expected.get().toString());
+    misses.refused(
+        id, turn.step(), task.orElseThrow().standing().status(), got, expected.get().toString());
     log.atWarn()
         .setMessage("reply refused")
         .addKeyValue("task", id)

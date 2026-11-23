@@ -6,6 +6,7 @@
     "lint": "prettier --check . && eslint . && tsc -p jsconfig.json && tsc -p test/jsconfig.json && jscpd",
     "format": "prettier --write .",
     "test": "c8 node --test \"test/**/*.test.js\"",
+    "coverage:browser": "c8 --config .c8rc.browser.json node --test \"test/**/*.test.js\" && node --test coverage-floors/floors.test.js",
     "mutate": "stryker run"
   },
   "devDependencies": {

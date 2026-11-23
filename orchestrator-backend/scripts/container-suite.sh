@@ -21,8 +21,8 @@ compose() {
 }
 cleanup() {
     status=$?
-    [ "$status" -eq 0 ] || compose logs --no-color --tail 200 || true
-    compose down --volumes --rmi local >/dev/null 2>&1 || true
+    [ "$status" -eq 0 ] || compose logs --no-color --tail 200 || true # the failing status is kept
+    compose down --volumes --rmi local >/dev/null 2>&1 || true # cleanup never masks the status
     rm -rf "$FIXTURES"
 }
 trap cleanup EXIT
@@ -43,7 +43,7 @@ sed 's|${JAGT_PASSWORD_HASH}|${file:/run/secrets/jagt_password_hash}|' "$REPO_RO
 chmod -R a+rX "$FIXTURES"
 
 echo "==> building the jar and starting the image"
-(cd "$BACKEND_DIR" && ./gradlew --no-daemon bootJar -x test)
+(cd "$BACKEND_DIR" && ./gradlew --no-daemon bootJar -x test) # the suite under test is the image
 compose up --detach --build
 for _ in $(seq 1 90); do
     curl -fsS "http://localhost:$PORT/actuator/health/readiness" >/dev/null 2>&1 && break
@@ -60,7 +60,7 @@ echo "==> jagt.yml on the volume survives a recreate"
 image=$(compose images --quiet jagt)
 volume=$PROJECT-config
 docker volume create "$volume" >/dev/null
-trap 'docker volume rm -f "$volume" >/dev/null 2>&1 || true; cleanup' EXIT
+trap 'docker volume rm -f "$volume" >/dev/null 2>&1 || true; cleanup' EXIT # a missing volume is gone
 start() { docker run --rm -v "$volume":/data -e JAGT_JAVA_OPTIONS=-version --entrypoint /app/entrypoint.sh "$image" >/dev/null 2>&1; }
 inside() { docker run --rm -v "$volume":/data --entrypoint sh "$image" -c "$1"; }
 start

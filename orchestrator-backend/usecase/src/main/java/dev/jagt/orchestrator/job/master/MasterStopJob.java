@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.MasterStopAnswer;
 import dev.jagt.orchestrator.service.master.MasterStopPanel;
@@ -62,12 +63,12 @@ public class MasterStopJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    ConfigService.ConfigFile file = configService.load();
-    ConfigService.ConfigFile.ArbiterConfig config = file.arbiter();
+    ConfigFile file = configService.load();
+    ConfigFile.ArbiterConfig config = file.arbiter();
     if (StopHold.of(task, rounds.of(task, file).arbiter()) != StopHold.ARBITER) {
       return;
     }
-    TaskStop stop = Objects.requireNonNull(task.stop());
+    TaskStop stop = Objects.requireNonNull(task.work().stop());
     turns.askedStop(taskId, stop.key());
     Optional<MasterStopAnswer> answer =
         panel.ask(taskId, task, config).filter(said -> decides(task, said, config));
@@ -95,11 +96,11 @@ public class MasterStopJob implements TaskJob {
    * is the Master's only where {@code mine} does not keep it.
    */
   private static boolean decides(
-      TaskState task, MasterStopAnswer answer, ConfigService.ConfigFile.ArbiterConfig config) {
+      TaskState task, MasterStopAnswer answer, ConfigFile.ArbiterConfig config) {
     return switch (answer.kind()) {
       case LIFT -> true;
       case ESCALATE -> !config.profile().keeps(TaskAction.ESCALATE);
-      case RETURN -> !FlowRules.holdsPlan(task.status());
+      case RETURN -> !FlowRules.holdsPlan(task.standing().status());
       case HUMAN -> false;
     };
   }

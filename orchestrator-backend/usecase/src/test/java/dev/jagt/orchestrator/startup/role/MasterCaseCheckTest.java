@@ -9,8 +9,9 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,9 +57,7 @@ class MasterCaseCheckTest {
     @Test
     void passesTheShippedCasesAgainstTheMastersMoves() throws Exception {
       when(config.load())
-          .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
+          .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems()).isEmpty();
     }
@@ -70,9 +69,7 @@ class MasterCaseCheckTest {
           root.resolve("roles/master/cases.md"),
           "## " + move + "\n\nmove: " + move + "\nat: DEPLOYED\nby: master\nThe Master moves.\n");
       when(config.load())
-          .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
+          .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems())
           .containsExactly(
@@ -100,8 +97,7 @@ class MasterCaseCheckTest {
           """);
       when(config.load())
           .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(ArbiterConfig.defaults().withMode("judge")));
+              ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("judge")));
 
       assertThat(check.problems())
           .containsExactly(
@@ -117,9 +113,7 @@ class MasterCaseCheckTest {
           root.resolve("roles/master/cases.md"),
           "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: human\nYou ship it.\n");
       when(config.load())
-          .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
+          .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems())
           .containsExactly(
@@ -132,9 +126,7 @@ class MasterCaseCheckTest {
     void refusesToStartWhenTheHumansMasterCasesCannotBeRead() throws Exception {
       Files.createDirectory(root.resolve("roles/master/cases.md"));
       when(config.load())
-          .thenReturn(
-              ConfigService.ConfigFile.defaults()
-                  .withArbiter(ArbiterConfig.defaults().withMode("act")));
+          .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
       assertThat(check.problems())
           .extracting(Problem::text)
@@ -154,9 +146,7 @@ class MasterCaseCheckTest {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(ArbiterConfig.defaults().withMode("judge")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("judge")));
 
     assertThat(check.problems())
         .containsExactly(
@@ -169,9 +159,7 @@ class MasterCaseCheckTest {
   @Test
   void readsNoCaseWhileTheMasterIsOff() throws Exception {
     when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(ArbiterConfig.defaults().withMode("off")));
+        .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("off")));
 
     assertThat(check.problems()).isEmpty();
   }

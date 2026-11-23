@@ -116,7 +116,7 @@ public class RevertRunner {
   }
 
   private static Deployment.Target recorded(TaskState task, Target target) {
-    Deployment deployment = Objects.requireNonNull(task.deployment());
+    Deployment deployment = Objects.requireNonNull(task.work().deployment());
     return deployment.targets().get(deployment.indexOf(target.project()));
   }
 

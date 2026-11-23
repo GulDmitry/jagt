@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleDefinitions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import java.nio.file.Files;
@@ -34,9 +35,8 @@ class CheckerWorkspaceTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withRoles(
-                    Map.of("acceptance", new ConfigService.ConfigFile.RoleConfig(true, null))));
+            ConfigFile.defaults()
+                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
     workspace =
         new CheckerWorkspace(
             role,

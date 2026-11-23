@@ -22,6 +22,8 @@ public final class JagtProcess implements JagtEngine {
   public static final String BEFORE_RESTART = ".before-restart";
   private static final List<String> OUTPUTS = List.of("jagt.out", "jagt-backend.log");
   private static final Duration STARTUP = Duration.ofMinutes(5);
+  private static final int REBINDS = 3;
+  private static final String IN_USE = "already in use";
 
   @FunctionalInterface
   public interface Launcher extends AutoCloseable {
@@ -52,6 +54,7 @@ public final class JagtProcess implements JagtEngine {
   private final Launcher launcher;
   private final Duration startup;
   private @Nullable Process process;
+  private int rebinds;
 
   public JagtProcess(Path root, int port, StandBoard board, Launcher launcher, Duration startup) {
     this.root = root;
@@ -92,11 +95,7 @@ public final class JagtProcess implements JagtEngine {
   }
 
   public JagtProcess begin() {
-    try {
-      process = launcher.launch(root, port);
-    } catch (IOException e) {
-      throw new StandFailure("cannot launch " + JAR + " under " + root, e);
-    }
+    launch();
     return awaitReady();
   }
 
@@ -190,10 +189,43 @@ public final class JagtProcess implements JagtEngine {
     return Objects.requireNonNull(process, "jagt is not launched");
   }
 
+  private void launch() {
+    try {
+      process = launcher.launch(root, port);
+    } catch (IOException e) {
+      throw new StandFailure("cannot launch " + JAR + " under " + root, e);
+    }
+  }
+
+  private boolean rebound() {
+    if (rebinds >= REBINDS || !addressInUse()) {
+      return false;
+    }
+    rebinds++;
+    StandConsole.line(
+        "WARN event=stand-port-in-use-retry port="
+            + port
+            + " attempt="
+            + rebinds
+            + " root="
+            + root);
+    launch();
+    return true;
+  }
+
+  private boolean addressInUse() {
+    Path out = root.resolve("jagt.out");
+    try {
+      return Files.isRegularFile(out) && Files.readString(out).contains(IN_USE);
+    } catch (IOException unread) {
+      return false;
+    }
+  }
+
   private JagtProcess awaitReady() {
     Instant deadline = StandClock.now().plus(startup);
     while (!board.ready()) {
-      if (!running().isAlive() || StandClock.now().isAfter(deadline)) {
+      if (StandClock.now().isAfter(deadline) || (!running().isAlive() && !rebound())) {
         close();
         throw new StandFailure(
             "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.deploy.Checks;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -49,7 +50,9 @@ public class RoundRecord {
                   tip));
       return new Recorded(
           stops.trip(
-              taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now)),
+              taskId,
+              task ->
+                  ChecksUnread.stop(task.checks().checksUnread(), task.round().trailOrNone(), now)),
           RedCauses.Verdict.CODE);
     }
     recordListed(taskId, facts, tip);
@@ -67,19 +70,24 @@ public class RoundRecord {
       return;
     }
     Optional<TaskState> before = stateService.task(taskId);
+    Optional<Checks> beforeChecks = before.map(TaskState::checks);
     String read = orUnknown(facts.pipeline().status());
     boolean newChecks =
-        !Objects.equals(before.map(TaskState::pipelineStatus).orElse(null), read)
-            || before.map(TaskState::pipelineUnread).orElse(false);
-    boolean newTip = !tip.isBlank() && !tip.equals(before.map(TaskState::checksTip).orElse(null));
+        !Objects.equals(beforeChecks.map(Checks::pipelineStatus).orElse(null), read)
+            || beforeChecks.map(Checks::unread).orElse(false);
+    boolean newTip =
+        !tip.isBlank() && !tip.equals(beforeChecks.map(Checks::checksTip).orElse(null));
     boolean newApproval =
-        !Objects.equals(before.map(TaskState::approved).orElse(null), facts.request().approved());
+        !Objects.equals(
+            before.map(taskState -> taskState.round().approved()).orElse(null),
+            facts.request().approved());
     boolean newOpened =
         facts.request().openedAt() > 0
-            && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.request().openedAt();
+            && before.map(taskState -> taskState.round().requestOpenedAt()).orElse(0L)
+                != facts.request().openedAt();
     boolean newUrl =
         !facts.pipeline().url().isBlank()
-            && !facts.pipeline().url().equals(before.map(TaskState::pipelineUrl).orElse(null));
+            && !facts.pipeline().url().equals(beforeChecks.map(Checks::pipelineUrl).orElse(null));
     if (newChecks || newTip || newApproval || newOpened || newUrl) {
       stateService.reduce(
           taskId,

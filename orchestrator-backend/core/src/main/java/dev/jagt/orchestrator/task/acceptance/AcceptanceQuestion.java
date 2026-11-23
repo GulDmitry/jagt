@@ -13,8 +13,10 @@ public final class AcceptanceQuestion {
 
   /** The question standing on {@code task}, null where none is acceptance's. */
   public static @Nullable String standing(TaskState task) {
-    String asked = task.message();
-    return task.report() == AgentReport.QUESTION && asked != null && asked.startsWith(PREFIX)
+    String asked = task.standing().message();
+    return task.standing().report() == AgentReport.QUESTION
+            && asked != null
+            && asked.startsWith(PREFIX)
         ? asked
         : null;
   }

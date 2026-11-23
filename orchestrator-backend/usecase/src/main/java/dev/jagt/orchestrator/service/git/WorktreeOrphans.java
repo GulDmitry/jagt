@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.git;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.task.ArchivedTaskFolder;
@@ -124,7 +125,7 @@ public class WorktreeOrphans {
   public List<Orphan> scan() {
     Map<Path, Orphan> found = new LinkedHashMap<>();
     Set<String> owned = ownedDirectoryNames();
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     List<PathMatcher> secretMatchers =
         WorktreeFiles.localFileMatchers(config.worktree().copyGlobsOrDefault());
     config

@@ -3,7 +3,7 @@ services:
     image: ${JAGT_IMAGE:-jagt-stand}
     user: ${JAGT_USER:-10001:0}
     ports:
-      - "127.0.0.1:${JAGT_PORT}:8290"
+      - "127.0.0.1:${JAGT_PORT:-}:8290"
     volumes:
       - ${JAGT_STAND_ROOT}:${JAGT_STAND_ROOT}
       - jagt-data:${JAGT_STAND_ROOT}/jagt

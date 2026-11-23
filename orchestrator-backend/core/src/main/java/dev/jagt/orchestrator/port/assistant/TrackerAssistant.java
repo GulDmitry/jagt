@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.port.assistant;
 
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.List;
 
 /**

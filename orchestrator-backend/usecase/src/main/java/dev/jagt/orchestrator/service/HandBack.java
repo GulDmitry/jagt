@@ -44,7 +44,7 @@ public class HandBack {
 
   /** Whether this hand-back still owes jagt a verification run, which holds it at VERIFYING. */
   public boolean verificationOwed(TaskState task) {
-    return !task.probes().isEmpty()
+    return !task.gate().probes().isEmpty()
         || task.repos().stream()
             .anyMatch(repo ->
                 !Verification.command(configService.load().projects().get(repo.project()))

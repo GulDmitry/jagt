@@ -21,7 +21,8 @@ class StandingTest {
   void differsWhereTheTurnWasOpened() {
     TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
-    TaskState relayed = read.withTurn(read.turnOrNone().relayed("ship", "digest", "", 1_000));
+    TaskState relayed =
+        read.withTurn(read.work().turnOrNone().relayed("ship", "digest", "", 1_000));
 
     assertThat(Standing.of(relayed)).isNotEqualTo(Standing.of(read));
   }

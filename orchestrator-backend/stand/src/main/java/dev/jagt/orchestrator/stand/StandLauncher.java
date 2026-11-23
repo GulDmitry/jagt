@@ -79,11 +79,12 @@ final class StandLauncher {
                 container ? InetAddress.getByName("0.0.0.0") : InetAddress.getLoopbackAddress())
             .start();
     try {
-      int port = JagtProcess.freePort();
+      int port = engine.hostPort();
       String password = container ? UUID.randomUUID().toString() : "";
       StandConfig.Target target =
           container
-              ? StandConfig.Target.container(root, host.mcpUrl(reach), "http://127.0.0.1:" + port)
+              ? StandConfig.Target.container(
+                  root, host.mcpUrl(reach), "http://127.0.0.1:" + engine.publicPort(port))
               : StandConfig.Target.local(project.repo(), host.mcpUrl(reach));
       StandConfig.write(
           place.repo(),
@@ -139,7 +140,7 @@ final class StandLauncher {
     Path root = newRoot();
     StandMarker marker = engine.mark(StandMarker.started(scenario), root).writeTo(root);
     try {
-      int port = JagtProcess.freePort();
+      int port = engine.hostPort();
       String password = UUID.randomUUID().toString();
       ServerFixtures.write(
           place.repo(),

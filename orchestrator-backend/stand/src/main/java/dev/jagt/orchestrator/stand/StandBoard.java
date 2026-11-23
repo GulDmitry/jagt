@@ -41,6 +41,10 @@ public final class StandBoard {
     this.password = password;
   }
 
+  public StandBoard at(int port) {
+    return new StandBoard("http://127.0.0.1:" + port, password);
+  }
+
   public boolean ready() {
     try {
       return send(HttpRequest.newBuilder(URI.create(base + "/state")).timeout(READING).GET())

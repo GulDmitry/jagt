@@ -439,7 +439,7 @@ class StepRelayTest {
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(
             TaskStop.Trigger.MISS, "no case sends deploy at IN_PROGRESS, set off by jagt");
@@ -478,7 +478,7 @@ class StepRelayTest {
 
     assertThat(told).isFalse();
     verify(sessions, times(3)).relayFresh(anyString(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(
             TaskStop.Trigger.ROUNDS,
@@ -523,7 +523,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(true);
     verify(sessions).writeTaskContext("ABC-42", "ABC-42 is deployed");
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(true);
   }
 
   @Test
@@ -539,7 +539,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(false);
   }
 
   @Test
@@ -555,7 +555,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(true);
     verify(sessions).say("ABC-42", "ABC-42 is deployed");
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(true);
   }
 
   @Test
@@ -571,7 +571,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).say(anyString(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(false);
   }
 
   @Test
@@ -587,7 +587,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(true);
     verify(sessions).relayUnder("ABC-42", "ABC-42 is deployed", true);
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(true);
   }
 
   @Test
@@ -603,7 +603,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).relayUnder(anyString(), anyString(), anyBoolean());
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(false);
   }
 
   @Nested
@@ -629,7 +629,7 @@ class StepRelayTest {
 
       assertThat(told).isFalse();
       verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
-      assertThat(state.task("ABC-42").orElseThrow().stop())
+      assertThat(state.task("ABC-42").orElseThrow().work().stop())
           .extracting(TaskStop::trigger, TaskStop::evidence)
           .containsExactly(
               TaskStop.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
@@ -642,7 +642,7 @@ class StepRelayTest {
               "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
 
       assertThat(told).isTrue();
-      assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+      assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
     }
   }
 }

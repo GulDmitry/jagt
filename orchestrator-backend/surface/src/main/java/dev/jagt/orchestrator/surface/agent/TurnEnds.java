@@ -37,22 +37,22 @@ public class TurnEnds {
     if (sentOn) {
       return withTheRole(task);
     }
-    Session session = task.session();
+    Session session = task.work().session();
     boolean unreported =
         session.workStartedAt() != 0 && session.reportedAt() < session.workStartedAt();
     if (unreported
-        && !Move.endsUnreported(task.status())
-        && Move.endsOnTheTree(task.status())
+        && !Move.endsUnreported(task.standing().status())
+        && Move.endsOnTheTree(task.standing().status())
         && treeChanged) {
       return runtime.refusedTurnEnd(
           "Your turn is ending with "
               + taskId
               + " at "
-              + task.status()
+              + task.standing().status()
               + " on the board and the tree changed without a report. Call update_agent_status"
               + " first: IN_PROGRESS to hand the change back as a round, or revert the change.");
     }
-    if (!unreported || !Move.endsUnreported(task.status())) {
+    if (!unreported || !Move.endsUnreported(task.standing().status())) {
       return notes
           .reminder(task, configService.load().agent().notesEveryOrDefault())
           .map(runtime::refusedTurnEnd)
@@ -62,7 +62,7 @@ public class TurnEnds {
         "Your turn is ending with "
             + taskId
             + " at "
-            + task.status()
+            + task.standing().status()
             + " on the board and nothing reported this turn. Call update_agent_status first:"
             + " REVIEW_PENDING if the work is done, outcome=question if you need the human,"
             + " IN_PROGRESS if you go on.");

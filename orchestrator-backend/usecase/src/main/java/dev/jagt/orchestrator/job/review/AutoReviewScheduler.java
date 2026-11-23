@@ -66,7 +66,7 @@ public class AutoReviewScheduler implements Job {
     tasks.forEach((taskId, task) -> {
       // A task the poller has no business with any more re-arms its pings.
       if (!cadence.polls(task)) {
-        ToldOnce told = task.toldOrNone();
+        ToldOnce told = task.round().toldOrNone();
         if (told.has(ToldOnce.Kind.AUTO_REVIEW_WINDOW)
             || told.has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE)) {
           stateService.reduce(
@@ -81,13 +81,13 @@ public class AutoReviewScheduler implements Job {
         case WINDOW_ELAPSED -> {
           // Keyed by the WINDOW: another round starts a new one without ever leaving
           // CI_POLLING.
-          String window = String.valueOf(task.mrCreatedAt());
-          if (!task.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_WINDOW, window)) {
+          String window = String.valueOf(task.round().mrCreatedAt());
+          if (!task.round().toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_WINDOW, window)) {
             stateService.reduce(
                 taskId, (reducer, t) -> reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
           }
         }
-        case POLL -> poll(taskId, task.alias(), task.mrCreatedAt(), fetches);
+        case POLL -> poll(taskId, task.ticket().alias(), task.round().mrCreatedAt(), fetches);
         default -> {}
       }
     });

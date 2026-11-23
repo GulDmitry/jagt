@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
 import dev.jagt.orchestrator.service.role.RoleTurnEndNote;
@@ -59,7 +60,7 @@ class TurnEndsTest {
 
   @Test
   void letsTurnEndWhoseStartIsUnknown() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
 
     String answered =
@@ -91,7 +92,7 @@ class TurnEndsTest {
   @ParameterizedTest
   @ValueSource(longs = {2_000L, 3_000L})
   void letsTurnEndThatReportedSinceItBegan(long reportedAt) {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .alias("a1")
@@ -108,7 +109,7 @@ class TurnEndsTest {
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
   void tellsTheHumanWhatTheRoleNotesWhetherOrNotTheTurnWasSentOn(boolean sentOn) {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(runtime.toldTheHuman("with the role"))
         .thenReturn("{\"systemMessage\": \"with the role\"}");
     TaskState task =
@@ -142,7 +143,7 @@ class TurnEndsTest {
 
   @Test
   void saysNothingAtHandedBackRoundNoRoleNotes() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -178,7 +179,7 @@ class TurnEndsTest {
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("task_notes.md"), "old"),
         FileTime.fromMillis(NOW - 3_600_000L));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(runtime.refusedTurnEnd(contains("rewrite task_notes.md")))
         .thenReturn("{\"decision\": \"block\"}");
     TaskState task =

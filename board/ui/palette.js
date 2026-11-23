@@ -59,10 +59,7 @@ form.onsubmit = async (event) => {
   event.preventDefault();
   await Promise.all([verbsArrived, boardArrived]);
   const { route, parsed } = routeLine(ask.value);
-  if (route === "judge") {
-    judge();
-    return;
-  }
+  if (route === "judge") return;
   if (route === "run" && parsed) {
     await tier1(parsed, { form, partFor: state.forms.partFor, clear });
     return;

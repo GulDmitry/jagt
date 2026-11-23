@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.PlanProbes;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
@@ -99,8 +99,7 @@ class HandBackTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(new ArbiterConfig(mode, null, null, null, null)));
+            ConfigFile.defaults().withArbiter(new ArbiterConfig(mode, null, null, null, null)));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     assertThat(handBack.arbiterReads()).isEqualTo(expected);

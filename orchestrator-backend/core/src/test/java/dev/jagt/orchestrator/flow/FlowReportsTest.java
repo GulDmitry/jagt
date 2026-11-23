@@ -59,6 +59,7 @@ class FlowReportsTest {
             write
                 .getValue()
                 .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.REVIEW_PENDING);
   }
@@ -99,7 +100,7 @@ class FlowReportsTest {
             "ABC-1", read, TaskStatus.IN_PROGRESS, AgentReport.PLAIN, "not ready", task -> task);
 
     assertThat(claimed).isEqualTo(FlowReports.Claimed.LANDED);
-    assertThat(written.get().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -135,8 +136,9 @@ class FlowReportsTest {
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
         .isInstanceOf(IllegalArgumentException.class);
 
-    assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    assertThat(written.get().refusals()).containsExactly(Map.entry(RefusalKind.STATUS_REPORT, 1));
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(written.get().gate().refusals())
+        .containsExactly(Map.entry(RefusalKind.STATUS_REPORT, 1));
   }
 
   @Test
@@ -150,6 +152,7 @@ class FlowReportsTest {
             write
                 .getValue()
                 .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .standing()
                 .status())
         .isEqualTo(TaskStatus.APPROVED);
   }
@@ -172,8 +175,8 @@ class FlowReportsTest {
                 TaskState.builder("proj", "/wt", held)
                     .message("deploy ABC-1: conflict in Foo.java")
                     .build());
-    assertThat(after.status()).isEqualTo(held);
-    assertThat(after.message()).isEqualTo("deploy ABC-1: conflict in Foo.java");
+    assertThat(after.standing().status()).isEqualTo(held);
+    assertThat(after.standing().message()).isEqualTo("deploy ABC-1: conflict in Foo.java");
   }
 
   @Test
@@ -192,8 +195,8 @@ class FlowReportsTest {
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                     .message("deploy ABC-1: conflict in Foo.java")
                     .build());
-    assertThat(after.message()).isEqualTo("keep both sides of Foo.java?");
-    assertThat(after.report()).isEqualTo(AgentReport.QUESTION);
+    assertThat(after.standing().message()).isEqualTo("keep both sides of Foo.java?");
+    assertThat(after.standing().report()).isEqualTo(AgentReport.QUESTION);
   }
 
   @Test
@@ -212,8 +215,8 @@ class FlowReportsTest {
                     .message("keep both sides of Foo.java?")
                     .report(AgentReport.QUESTION)
                     .build());
-    assertThat(after.message()).isNull();
-    assertThat(after.report()).isEqualTo(AgentReport.PLAIN);
+    assertThat(after.standing().message()).isNull();
+    assertThat(after.standing().report()).isEqualTo(AgentReport.PLAIN);
   }
 
   @Test
@@ -232,7 +235,7 @@ class FlowReportsTest {
         write
             .getValue()
             .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
-    assertThat(after.status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(after.standing().status()).isEqualTo(TaskStatus.CI_POLLING);
     assertThat(after.mrUrl()).isEqualTo("http://host/1");
   }
 
@@ -333,7 +336,7 @@ class FlowReportsTest {
 
     reports.report("ABC-1", TaskStatus.REVIEW_PENDING, AgentReport.QUESTION, "which one?");
 
-    assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
   }
 
   @Test
@@ -387,9 +390,9 @@ class FlowReportsTest {
 
     reports.read("ABC-1", TaskStatus.REVIEWED, "reviewed");
 
-    assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEWED);
-    assertThat(written.get().report()).isEqualTo(asked);
-    assertThat(written.get().message()).isEqualTo("squash or keep the commits?");
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(written.get().standing().report()).isEqualTo(asked);
+    assertThat(written.get().standing().message()).isEqualTo("squash or keep the commits?");
   }
 
   @Test
@@ -401,8 +404,8 @@ class FlowReportsTest {
         write
             .getValue()
             .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(handed.message()).isEqualTo("deploy pipeline red");
+    assertThat(handed.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(handed.standing().message()).isEqualTo("deploy pipeline red");
   }
 
   @Test
@@ -421,7 +424,7 @@ class FlowReportsTest {
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).deployment(recorded).build());
     assertThat(
             Objects.requireNonNull(
-                    Objects.requireNonNull(handed.deployment())
+                    Objects.requireNonNull(handed.work().deployment())
                         .conflictedTarget()
                         .get()
                         .progress()
@@ -448,8 +451,8 @@ class FlowReportsTest {
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                     .deployment(held)
                     .build());
-    assertThat(ended.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(ended.message()).isEqualTo("deployed to dev");
+    assertThat(ended.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(ended.standing().message()).isEqualTo("deployed to dev");
   }
 
   @Test
@@ -475,8 +478,8 @@ class FlowReportsTest {
         write
             .getValue()
             .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    assertThat(said.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(said.message()).isEqualTo("waiting on its pipeline");
+    assertThat(said.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(said.standing().message()).isEqualTo("waiting on its pipeline");
   }
 
   @Test

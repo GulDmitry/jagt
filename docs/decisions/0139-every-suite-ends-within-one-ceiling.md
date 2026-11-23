@@ -37,13 +37,13 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   `MasterModeFlowTest`: 92 s at load 2 on 2026-11-08, its 115 s at load 9, the same 32 tests.
 - Every `Test` task runs jqwik at 50 tries, 200 at the release gate (`-PjqwikTries=200`); `JobsTellOnceProperties` took 154 s at 200 (2026-11-19).
 - `TaskChart.ranTargets` is computed once: each call took 2 s and `FlowCheckTest` made about 15, 31 s to 0.3 s.
+- `pitestDiff` runs only tests named after a changed class: 274 s to 53 s and 300 s to 64 s, survivors equal (2026-11-22).
 - Left: `AgentSessionsTest` `after(n).never()` and `ReplaySessionsTest`'s 500 ms tick need a test-only seam.
 
 ## Rejected
 
 - A constant per task, or no ceiling on investigations: a run nobody bounded ran 27 minutes.
-- `pitest`'s incremental history: 1.30 refuses it without arcmutate's paid history plugin.
-- `threads` split across the concurrent `pitest` tasks: `:usecase` alone is the critical path.
+- `pitest` history (1.30 needs arcmutate's paid plugin, 2026-11-22); a `threads` split: coverage is 95 % of the seconds.
 
 ## Reopen when
 

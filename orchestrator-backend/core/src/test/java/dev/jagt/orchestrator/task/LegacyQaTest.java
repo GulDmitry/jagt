@@ -21,9 +21,9 @@ class LegacyQaTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("acceptance"))
+    assertThat(task.work().roleOrNone("acceptance"))
         .isEqualTo(new RoleRecord("", "proj@abc", "d1", "- row", ""));
-    assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
+    assertThat(task.work().turnOrNone().marks()).containsOnlyKeys("press:ship");
   }
 
   @Test
@@ -36,7 +36,7 @@ class LegacyQaTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("acceptance").reading()).isEqualTo("accept");
+    assertThat(task.work().roleOrNone("acceptance").reading()).isEqualTo("accept");
   }
 
   @Test
@@ -49,7 +49,7 @@ class LegacyQaTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
+    assertThat(task.work().roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
   }
 
   @Test

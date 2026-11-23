@@ -36,7 +36,7 @@ public final class FakeAssistants {
         },
         new TrackerAssistant() {
           @Override
-          public Answer<dev.jagt.orchestrator.task.launch.TicketFacts> readTicket(
+          public Answer<dev.jagt.orchestrator.task.ticket.TicketFacts> readTicket(
               String ticketRef, List<String> corrections) {
             return Answer.unavailable();
           }

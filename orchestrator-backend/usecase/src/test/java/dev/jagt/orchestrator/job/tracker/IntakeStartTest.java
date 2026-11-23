@@ -15,7 +15,7 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.launch.ProjectRouting;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;

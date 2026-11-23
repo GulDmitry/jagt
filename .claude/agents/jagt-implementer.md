@@ -12,7 +12,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
 3. Before touching a test file, load the unit-testing skill your setup provides, if any; before a comment, the commenting skill.
 4. As AGENTS.md says in "Read before you change" and "Tests": a behaviour change carries its spec delta, a fixed bug
    its regression test and trailer.
-5. The inner loop is `orchestrator-backend/scripts/tests-for.sh` on the files you changed (no arguments: the branch):
+5. The inner loop is `./gradlew -q testsFor --paths=<a,b>` from `orchestrator-backend` on the files you changed (no `--paths`: the branch):
    run its lines in order, each in the background into a log, each under its `timeout`, stop at the first red.
    A review round or a one-line fix re-runs it only on the files it touched.
    `./gradlew pitestDiff -PpitestDiff=release` runs once, at the done step; the brief's done command runs once, after the last round.

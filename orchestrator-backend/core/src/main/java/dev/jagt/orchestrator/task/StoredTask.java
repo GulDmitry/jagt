@@ -2,16 +2,22 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import dev.jagt.orchestrator.task.deploy.Checks;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
 import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.plan.Holds;
+import dev.jagt.orchestrator.task.review.Round;
 import dev.jagt.orchestrator.task.review.RoundTrail;
 import dev.jagt.orchestrator.task.session.Session;
+import dev.jagt.orchestrator.task.session.Work;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.ticket.Ticket;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.HumanWait;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
+import dev.jagt.orchestrator.task.turn.Standing;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
@@ -27,10 +33,10 @@ import org.jspecify.annotations.Nullable;
 record StoredTask(
     @JsonUnwrapped Placement placement,
     @JsonUnwrapped ReadStanding standing,
-    @JsonUnwrapped TaskState.Ticket ticket,
-    @JsonUnwrapped TaskState.Round round,
+    @JsonUnwrapped Ticket ticket,
+    @JsonUnwrapped Round round,
     @JsonUnwrapped ReadChecks checks,
-    @JsonUnwrapped TaskState.Gate gate,
+    @JsonUnwrapped Holds gate,
     @JsonUnwrapped ReadWork work,
     @JsonUnwrapped Unmigrated unmigrated) {
 
@@ -128,10 +134,10 @@ record StoredTask(
         : read.toBuilder().deployment(migrated).build();
   }
 
-  private TaskState.Standing migratedStanding() {
+  private Standing migratedStanding() {
     AgentReport stored = standing.report();
     List<StatusChange> history = standing.history();
-    return new TaskState.Standing(
+    return new Standing(
         standing.status(),
         standing.lastActiveTimestamp(),
         stored == null ? ReportMarkerMigration.lineOf(standing.message()) : standing.message(),
@@ -139,8 +145,8 @@ record StoredTask(
         history == null ? List.of() : history);
   }
 
-  private TaskState.Round migratedRound() {
-    return new TaskState.Round(
+  private Round migratedRound() {
+    return new Round(
         round.mrCreatedAt(),
         round.requestOpenedAt(),
         round.lastPolledAt(),
@@ -150,9 +156,9 @@ record StoredTask(
         Loop.trail(round.trail(), unmigrated.loop()));
   }
 
-  private TaskState.Checks migratedChecks() {
+  private Checks migratedChecks() {
     List<InfraRetry> infraRetries = checks.infraRetries();
-    return new TaskState.Checks(
+    return new Checks(
         checks.pipelineStatus(),
         unreadOf(checks.checksUnread(), unmigrated.pipelineUnread()),
         checks.checksTip(),
@@ -161,9 +167,9 @@ record StoredTask(
         checks.pipelineUrl());
   }
 
-  private TaskState.Work migratedWork() {
+  private Work migratedWork() {
     List<HumanWait> waits = work.waits();
-    return new TaskState.Work(
+    return new Work(
         Session.migrated(work.session(), unmigrated.silentSince()),
         LegacyTold.withoutMarks(LegacyMaster.withoutMarks(LegacyQa.withoutMarks(work.turn()))),
         waits == null ? List.of() : waits,

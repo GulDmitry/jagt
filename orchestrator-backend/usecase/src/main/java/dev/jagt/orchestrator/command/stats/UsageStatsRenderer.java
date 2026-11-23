@@ -54,14 +54,14 @@ public class UsageStatsRenderer {
     TokenUsage tasksTotal = TokenUsage.NONE;
     var billed =
         tasks.entrySet().stream()
-            .filter(e -> !e.getValue().usageOrNone().isNone())
+            .filter(e -> !e.getValue().gate().usageOrNone().isNone())
             .sorted(
-                Comparator.comparingLong(
-                        (Map.Entry<String, TaskState> e) -> e.getValue().usageOrNone().total())
+                Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
+                        e.getValue().gate().usageOrNone().total())
                     .reversed())
             .toList();
     for (var entry : billed) {
-      TokenUsage usage = entry.getValue().usageOrNone();
+      TokenUsage usage = entry.getValue().gate().usageOrNone();
       tasksTotal = tasksTotal.plus(usage);
       out.append(row(entry.getKey(), usage));
     }
@@ -73,10 +73,10 @@ public class UsageStatsRenderer {
 
     var agents =
         tasks.entrySet().stream()
-            .filter(e -> !e.getValue().agentSpendOrNone().usageOrNone().isNone())
+            .filter(e -> !e.getValue().gate().agentSpendOrNone().usageOrNone().isNone())
             .sorted(
                 Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
-                        e.getValue().agentSpendOrNone().usageOrNone().total())
+                        e.getValue().gate().agentSpendOrNone().usageOrNone().total())
                     .reversed())
             .toList();
     if (!agents.isEmpty()) {
@@ -86,7 +86,7 @@ public class UsageStatsRenderer {
                   ROW, "AGENT SESSION", "TURNS", "IN", "CACHED", "OUT", "TOTAL", "USD", "COLD"));
       TokenUsage agentTotal = TokenUsage.NONE;
       for (var entry : agents) {
-        TokenUsage usage = entry.getValue().agentSpendOrNone().usageOrNone();
+        TokenUsage usage = entry.getValue().gate().agentSpendOrNone().usageOrNone();
         agentTotal = agentTotal.plus(usage);
         out.append(row(entry.getKey(), usage));
       }

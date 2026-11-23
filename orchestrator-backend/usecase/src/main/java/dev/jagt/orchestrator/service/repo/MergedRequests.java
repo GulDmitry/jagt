@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.repo;
 
 import dev.jagt.orchestrator.port.MergedRefresh;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.WorktreeInspection;
@@ -106,7 +107,7 @@ public class MergedRequests implements MergedRefresh {
    * code host is owed none.
    */
   public List<String> owingRequest(List<TaskRepo> repos) {
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     return repos.stream()
         .filter(repo ->
             !repo.hasReviewRequest()

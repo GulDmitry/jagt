@@ -258,12 +258,10 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheInstallCheckScriptOnTheBuiltBootJar() {
+  void runsTheInstallSuiteOnEveryRunner() {
     String install = Objects.requireNonNull(CiWorkflow.jobs().get("install")).toString();
 
-    assertThat(install)
-        .contains("bootJar")
-        .contains("scripts/install-check.sh build/libs/jagt.jar");
+    assertThat(install).contains("./gradlew --no-daemon installTest");
   }
 
   @Test

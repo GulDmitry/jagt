@@ -73,4 +73,54 @@ class ThreatModelTest {
 
     assertThat(missing).isEmpty();
   }
+
+  @Test
+  void everyAssetSessionsReachIsInTheAssetsTable() {
+    String assets = MODEL.substring(MODEL.indexOf("\n## Assets\n"), MODEL.indexOf("\n## Actors\n"));
+    String reached =
+        MODEL.substring(
+            MODEL.indexOf("\n### What a session reaches\n"),
+            MODEL.indexOf("\n### What a session forges\n"));
+
+    List<String> unlisted =
+        reached
+            .lines()
+            .filter(line -> line.startsWith("| ") && !line.startsWith("| asset "))
+            .map(line -> line.substring(2, line.indexOf(" |")))
+            .filter(asset -> !assets.contains("| " + asset + " |"))
+            .toList();
+
+    assertThat(unlisted).isEmpty();
+  }
+
+  @Test
+  void everyInScopeLlmRiskIsListed() {
+    List<String> risks =
+        MODEL
+            .lines()
+            .filter(line -> line.startsWith("| LLM"))
+            .map(line -> line.substring(2, 7))
+            .toList();
+
+    assertThat(risks).containsExactly("LLM01", "LLM02", "LLM06", "LLM07");
+  }
+
+  @Test
+  void everyLlmRiskNamesItsDefenceOrGap() {
+    List<String> undefended =
+        MODEL
+            .lines()
+            .filter(line -> line.startsWith("| LLM"))
+            .filter(line -> !line.matches(".*\\| [^|]*(`[A-Z][A-Za-z]+`|Gaps)[^|]* \\|"))
+            .toList();
+
+    assertThat(undefended).isEmpty();
+  }
+
+  @Test
+  void theServerGuideLinksTheGapOfPodSessions() {
+    String server = DocFiles.read(Path.of("../docs/server.md"));
+
+    assertThat(server).contains("(threat-model.md#gaps)");
+  }
 }

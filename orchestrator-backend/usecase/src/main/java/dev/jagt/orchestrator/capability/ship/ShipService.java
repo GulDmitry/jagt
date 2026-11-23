@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.capability.ship;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.RepliesInstruction;
@@ -50,10 +51,10 @@ public class ShipService {
 
   private Outcome shipExclusively(String taskId) {
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     String title =
         ReviewRequestTitle.expand(
-            config.codeReview().mrTitlePatternOrDefault(), taskId, task.title());
+            config.codeReview().mrTitlePatternOrDefault(), taskId, task.ticket().title());
 
     List<Target> targets = targets(task, config);
     List<Target> carrying = targets.stream().filter(this::carries).toList();
@@ -72,7 +73,7 @@ public class ShipService {
           "ship "
               + taskId
               + ": no case sends ship at "
-              + task.status()
+              + task.standing().status()
               + ", so the session was not told; see misses.jsonl");
     }
     boolean requests = carrying.stream().anyMatch(Target::hosted);
@@ -109,7 +110,7 @@ public class ShipService {
       boolean hosted,
       boolean pushes) {}
 
-  private List<Target> targets(TaskState task, ConfigService.ConfigFile config) {
+  private List<Target> targets(TaskState task, ConfigFile config) {
     return task.repos().stream()
         .map(repo ->
             new Target(
@@ -123,11 +124,11 @@ public class ShipService {
         .toList();
   }
 
-  private String repliesStep(String taskId, ConfigService.ConfigFile config) {
+  private String repliesStep(String taskId, ConfigFile config) {
     return repliesInstruction.repliesStep(taskId, config).orElseGet(() -> repliesStep(config));
   }
 
-  static String repliesStep(ConfigService.ConfigFile config) {
+  static String repliesStep(ConfigFile config) {
     if (!config.codeReview().postReviewRepliesOrDefault()) {
       return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
     }

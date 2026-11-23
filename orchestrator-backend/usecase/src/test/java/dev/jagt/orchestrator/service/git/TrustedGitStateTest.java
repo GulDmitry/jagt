@@ -65,7 +65,7 @@ class TrustedGitStateTest {
     Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust).isEmpty();
-    assertThat(state.task("ABC-42").orElseThrow().gitTrust())
+    assertThat(state.task("ABC-42").orElseThrow().gate().gitTrust())
         .isEqualTo(GitTrust.of(Map.of("core.editor in /r/.git/config", "a1")));
   }
 
@@ -80,7 +80,7 @@ class TrustedGitStateTest {
     assertThat(distrust)
         .hasValueSatisfying(
             why -> assertThat(why).contains("core.fsmonitor in /r/.git/config added"));
-    assertThat(state.task("ABC-42").orElseThrow().gitStateChanged()).isTrue();
+    assertThat(state.task("ABC-42").orElseThrow().gate().gitStateChanged()).isTrue();
   }
 
   @Test
@@ -186,7 +186,7 @@ class TrustedGitStateTest {
 
     trusted.trust("ABC-42");
 
-    assertThat(state.task("ABC-42").orElseThrow().gitTrust())
+    assertThat(state.task("ABC-42").orElseThrow().gate().gitTrust())
         .isEqualTo(GitTrust.of(Map.of("core.editor in /r/.git/config", "a1")));
   }
 
@@ -210,7 +210,7 @@ class TrustedGitStateTest {
 
     trusted.distrust("ABC-42");
 
-    assertThat(state.task("ABC-42").orElseThrow().refusals())
+    assertThat(state.task("ABC-42").orElseThrow().gate().refusals())
         .containsEntry(RefusalKind.GIT_STATE, 1);
   }
 
@@ -264,7 +264,7 @@ class TrustedGitStateTest {
 
     assertThat(distrust)
         .contains("git state of ABC-42 could not be read: git rev-parse in /wt failed");
-    assertThat(state.task("ABC-42").orElseThrow().gitStateChanged()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().gate().gitStateChanged()).isFalse();
   }
 
   @Test
@@ -279,7 +279,7 @@ class TrustedGitStateTest {
 
     trusted.trust("ABC-42");
 
-    assertThat(state.task("ABC-42").orElseThrow().gitTrust())
+    assertThat(state.task("ABC-42").orElseThrow().gate().gitTrust())
         .isEqualTo(GitTrust.of(Map.of("core.fsmonitor in /r/.git/config", "a1")));
   }
 }

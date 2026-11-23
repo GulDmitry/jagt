@@ -61,11 +61,11 @@ class NewTaskWorktreesTest {
   private final WorktreeSetup setup = mock(WorktreeSetup.class);
   private StateService state;
   private NewTaskWorktrees worktrees;
-  private ConfigService.ConfigFile oneProject;
-  private ConfigService.ConfigFile registryMain;
-  private ConfigService.ConfigFile registryRelease;
-  private ConfigService.ConfigFile apiWeb;
-  private ConfigService.ConfigFile apiWebDev;
+  private ConfigFile oneProject;
+  private ConfigFile registryMain;
+  private ConfigFile registryRelease;
+  private ConfigFile apiWeb;
+  private ConfigFile apiWebDev;
   private TaskState attaching;
   private final NewRepo apiRepo =
       new NewRepo(
@@ -89,14 +89,14 @@ class NewTaskWorktreesTest {
     state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     worktrees = new NewTaskWorktrees(config, state, git, setup, paths);
     oneProject =
-        ConfigService.ConfigFile.defaults()
+        ConfigFile.defaults()
             .withProjects(
                 Map.of(
                     "proj",
                     new ProjectConfig(
                         root.resolve("repo").toString(), "origin/main", null, List.of())));
     registryMain =
-        ConfigService.ConfigFile.defaults()
+        ConfigFile.defaults()
             .withProjects(
                 new LinkedHashMap<>(
                     Map.of(
@@ -110,7 +110,7 @@ class NewTaskWorktreesTest {
                             null,
                             List.of()))));
     registryRelease =
-        ConfigService.ConfigFile.defaults()
+        ConfigFile.defaults()
             .withProjects(
                 new LinkedHashMap<>(
                     Map.of(
@@ -124,7 +124,7 @@ class NewTaskWorktreesTest {
                             null,
                             List.of()))));
     apiWeb =
-        ConfigService.ConfigFile.defaults()
+        ConfigFile.defaults()
             .withProjects(
                 new LinkedHashMap<>(
                     Map.of(
@@ -138,7 +138,7 @@ class NewTaskWorktreesTest {
                             null,
                             List.of()))));
     apiWebDev =
-        ConfigService.ConfigFile.defaults()
+        ConfigFile.defaults()
             .withProjects(
                 new LinkedHashMap<>(
                     Map.of(
@@ -156,7 +156,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void stepsOverWrittenNameLiveTaskAlreadyTookRatherThanRefusingIt() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     state.putTask(
         "split-the-mailer",
         TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -171,7 +171,7 @@ class NewTaskWorktreesTest {
       boolean exists, boolean holdsWork, BranchStrategy expected) {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
     when(git.branchExists(Path.of("/api"), "ABC-1")).thenReturn(exists);
@@ -186,7 +186,7 @@ class NewTaskWorktreesTest {
     assertThatThrownBy(() ->
             worktrees.cut(
                 NewTask.builder(unsafeTaskId, "proj").build(),
-                ConfigService.ConfigFile.defaults(),
+                ConfigFile.defaults(),
                 BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("is not a branch name");
@@ -196,8 +196,8 @@ class NewTaskWorktreesTest {
   @ParameterizedTest
   @CsvSource({"main,", "Main,", "origin/main,", "dev,", "release,release"})
   void refusesTaskWhoseBranchIsSharedOneBeforeTouchingGit(String taskId, String baseBranch) {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
+    ConfigFile configured =
+        ConfigFile.defaults()
             .withProjects(
                 Map.of(
                     "proj",
@@ -254,7 +254,7 @@ class NewTaskWorktreesTest {
     assertThatThrownBy(() ->
             worktrees.cut(
                 NewTask.builder("feature-ABC-42", "proj").build(),
-                ConfigService.ConfigFile.defaults(),
+                ConfigFile.defaults(),
                 BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("both become the directory feature-ABC-42");
@@ -277,7 +277,7 @@ class NewTaskWorktreesTest {
     assertThatThrownBy(() ->
             worktrees.cut(
                 NewTask.builder("ABC-99", "proj").build(),
-                ConfigService.ConfigFile.defaults(),
+                ConfigFile.defaults(),
                 BranchStrategy.FRESH))
         .isInstanceOfSatisfying(
             Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
@@ -291,9 +291,8 @@ class NewTaskWorktreesTest {
     assertThatThrownBy(() ->
             worktrees.cut(
                 NewTask.builder("ABC-99", "proj").build(),
-                ConfigService.ConfigFile.defaults()
-                    .withSessions(
-                        new ConfigService.ConfigFile.Sessions(null, null, null, null, null, 2)),
+                ConfigFile.defaults()
+                    .withSessions(new ConfigFile.Sessions(null, null, null, null, null, 2)),
                 BranchStrategy.FRESH))
         .isInstanceOfSatisfying(
             Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
@@ -403,8 +402,8 @@ class NewTaskWorktreesTest {
 
   @Test
   void refusesTheWholeTaskWhenOneOfItsProjectsIsUnknown() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
+    ConfigFile configured =
+        ConfigFile.defaults()
             .withProjects(
                 Map.of(
                     "api",
@@ -442,8 +441,8 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsTheWorktreeFromTheBranchNamedUnderTheProjectsOwnRemote() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
+    ConfigFile configured =
+        ConfigFile.defaults()
             .withProjects(
                 Map.of(
                     "proj",
@@ -521,7 +520,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void stepsOverNineteenTakenNamesToTheTwentiethBeforeGivingUp() throws Exception {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.writeString(
         root.resolve("state.json"),
         """
@@ -536,7 +535,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void refusesToStepOverTwentyTakenNames() throws Exception {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     Files.writeString(
         root.resolve("state.json"),
         """
@@ -553,8 +552,8 @@ class NewTaskWorktreesTest {
 
   @Test
   void refusesProjectKeyThatIsNotPlainBeforeTouchingGit() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
+    ConfigFile configured =
+        ConfigFile.defaults()
             .withProjects(
                 Map.of(
                     "bad key",
@@ -630,7 +629,7 @@ class NewTaskWorktreesTest {
 
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api", "registry");
-    assertThat(task.repoRequest()).isNull();
+    assertThat(task.work().repoRequest()).isNull();
   }
 
   @Test
@@ -666,7 +665,7 @@ class NewTaskWorktreesTest {
             "ABC-7");
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api");
-    assertThat(task.repoRequest()).isEqualTo("registry");
+    assertThat(task.work().repoRequest()).isEqualTo("registry");
   }
 
   @Test
@@ -742,14 +741,15 @@ class NewTaskWorktreesTest {
 
     worktrees.attach("ABC-7", "registry", registryMain);
 
-    assertThat(Objects.requireNonNull(state.task("ABC-7").orElseThrow().gitTrust()).recorded())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-7").orElseThrow().gate().gitTrust()).recorded())
         .isEqualTo(Map.of("core.bare in api", "d1", "core.bare in registry", "d2"));
   }
 
   @Test
   void refusesProjectTheTaskAlreadyWorksInBeforeCuttingAnything() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
+    ConfigFile configured =
+        ConfigFile.defaults()
             .withProjects(
                 Map.of(
                     "api",
@@ -778,7 +778,7 @@ class NewTaskWorktreesTest {
     NewTask request = NewTask.unplacedBuilder("ABC-9").build();
     when(setup.scratch(request)).thenReturn(root.resolve("scratch/ABC-9"));
 
-    Path folder = worktrees.scratch(request, ConfigService.ConfigFile.defaults());
+    Path folder = worktrees.scratch(request, ConfigFile.defaults());
 
     assertThat(folder).isEqualTo(root.resolve("scratch/ABC-9"));
   }
@@ -788,8 +788,7 @@ class NewTaskWorktreesTest {
     state.putTask("ABC-9", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).build());
 
     assertThatThrownBy(() ->
-            worktrees.scratch(
-                NewTask.unplacedBuilder("ABC-9").build(), ConfigService.ConfigFile.defaults()))
+            worktrees.scratch(NewTask.unplacedBuilder("ABC-9").build(), ConfigFile.defaults()))
         .isInstanceOf(Refusal.class);
     verifyNoInteractions(setup);
   }
@@ -900,8 +899,8 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsNothingWhereProjectIsNotConfigured() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
+    ConfigFile configured =
+        ConfigFile.defaults()
             .withProjects(
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of())));
     when(config.load()).thenReturn(configured);

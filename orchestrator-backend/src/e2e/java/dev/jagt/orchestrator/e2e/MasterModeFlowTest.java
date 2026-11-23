@@ -17,7 +17,6 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -86,7 +85,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
     flow.agentReports("PLAN_PENDING", "plan written", "");
 
-    assertThat(flow.settled(master).status()).isEqualTo(master.expected());
+    assertThat(flow.settled(master).standing().status()).isEqualTo(master.expected());
     assertThat(flow.asked()).isEqualTo(master.read());
     assertThat(flow.taskContext()).contains(master.told());
   }
@@ -104,7 +103,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
     flow.agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
 
-    assertThat(flow.settled(master).status()).isEqualTo(master.expected());
+    assertThat(flow.settled(master).standing().status()).isEqualTo(master.expected());
     assertThat(flow.asked()).isEqualTo(master.read());
     assertThat(flow.taskContext()).contains(master.told());
   }
@@ -124,7 +123,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
     flow.awaitRun("master-answer");
     assertThat(flow.asked()).isFalse();
-    assertThat(flow.task().report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(flow.task().standing().report()).isEqualTo(AgentReport.PERMISSION);
     assertThat(flow.taskContext()).isEqualTo("Fix the widget");
   }
 
@@ -148,7 +147,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");
 
-      assertThat(flow.settled(master).status()).isEqualTo(master.expected());
+      assertThat(flow.settled(master).standing().status()).isEqualTo(master.expected());
       assertThat(flow.asked()).isEqualTo(master.read());
       assertThat(flow.taskContext()).contains(master.told());
     }
@@ -159,7 +158,10 @@ class MasterModeFlowTest extends FlowHarness.World {
 
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");
 
-      assertThat(flow.awaitTask(task -> task.status() == TaskStatus.SHIPPING).history())
+      assertThat(
+              flow.awaitTask(task -> task.standing().status() == TaskStatus.SHIPPING)
+                  .standing()
+                  .history())
           .filteredOn(change -> change.status() == TaskStatus.SHIPPING)
           .extracting(StatusChange::origin)
           .containsExactly(ActionOrigin.MASTER);
@@ -175,7 +177,7 @@ class MasterModeFlowTest extends FlowHarness.World {
         flow.judges(judgement().build());
         flow.agentReports("REVIEW_PENDING", "widget fixed", "");
         flow.awaitRun("master-review");
-        flow.awaitTask(reached -> reached.status() == TaskStatus.SHIPPING);
+        flow.awaitTask(reached -> reached.standing().status() == TaskStatus.SHIPPING);
         flow.pushesTheRoundAndReportsItsRequest();
       }
 
@@ -187,7 +189,10 @@ class MasterModeFlowTest extends FlowHarness.World {
         flow.act("sweep");
         flow.awaitRun("master-deploy");
 
-        assertThat(flow.awaitTask(task -> task.status() == master.expected()).status())
+        assertThat(
+                flow.awaitTask(task -> task.standing().status() == master.expected())
+                    .standing()
+                    .status())
             .isEqualTo(master.expected());
       }
 
@@ -195,7 +200,7 @@ class MasterModeFlowTest extends FlowHarness.World {
       void asksTheSessionToCheckTheDeployOnceItsPipelineIsGreen() throws Exception {
         flow.act("sweep");
         flow.awaitRun("master-deploy");
-        flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
+        flow.awaitTask(task -> task.standing().status() == TaskStatus.DEPLOYED);
         String deployed = E2eWorkspace.git(flow.origin(), "rev-parse", "dev").substring(0, 8);
 
         flow.awaitRun("deploy-check");
@@ -213,7 +218,7 @@ class MasterModeFlowTest extends FlowHarness.World {
           E2eWorkspace.commitOnDeployBranch(flow.repo(), "widget.txt", "someone else's line\n");
           flow.act("sweep");
           flow.awaitRun("master-deploy");
-          flow.awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+          flow.awaitTask(task -> task.standing().status() == TaskStatus.DEPLOY_CONFLICT);
           flow.awaitRun("deploy-conflict");
           flow.awaitTold("did not deploy");
         }
@@ -230,7 +235,10 @@ class MasterModeFlowTest extends FlowHarness.World {
           E2eWorkspace.git(resolveIn, "add", "widget.txt");
           flow.awaitRun("deploy-conflict");
 
-          assertThat(flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status())
+          assertThat(
+                  flow.awaitTask(task -> task.standing().status() == TaskStatus.DEPLOYED)
+                      .standing()
+                      .status())
               .isEqualTo(TaskStatus.DEPLOYED);
           assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
               .contains("Merge branch '" + TASK + "' into dev");
@@ -255,7 +263,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
           flow.awaitTold("keep both lines");
           assertThat(flow.taskContext()).contains("did not deploy");
-          assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+          assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         }
 
         @Nested
@@ -285,7 +293,7 @@ class MasterModeFlowTest extends FlowHarness.World {
             assertThat(flow.task().currentConflict().filter(Conflict::askedTheArbiter)).isPresent();
             assertThat(flow.task().currentConflict().map(Conflict::told).isPresent()).isFalse();
             verify(userNotifier, never()).notify(contains("deploy conflict stalled"), any(), any());
-            assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+            assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
           }
 
           @Test
@@ -297,11 +305,11 @@ class MasterModeFlowTest extends FlowHarness.World {
 
             flow.awaitRun("master-answer");
 
-            flow.awaitTask(task -> !task.arbiterOrNone().unanswered().isEmpty());
-            assertThat(flow.task().arbiterOrNone().unanswered())
-                .isEqualTo(flow.task().askedDigest());
-            assertThat(flow.task().message()).startsWith("The deploy conflict stalled");
-            assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+            flow.awaitTask(task -> !task.work().arbiterOrNone().unanswered().isEmpty());
+            assertThat(flow.task().work().arbiterOrNone().unanswered())
+                .isEqualTo(flow.task().standing().askedDigest());
+            assertThat(flow.task().standing().message()).startsWith("The deploy conflict stalled");
+            assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
           }
 
           @Test
@@ -324,7 +332,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
             verify(userNotifier, timeout(10_000).times(1))
                 .notify(contains("deploy conflict stalled"), any(), any());
-            assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+            assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
             assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
                 .contains("Someone else changed widget.txt");
           }
@@ -353,7 +361,10 @@ class MasterModeFlowTest extends FlowHarness.World {
       flow.awaitRun("verify");
 
       flow.awaitTold("jagt ran this project's verification command and it failed");
-      assertThat(flow.awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).history())
+      assertThat(
+              flow.awaitTask(task -> task.standing().status() == TaskStatus.IN_PROGRESS)
+                  .standing()
+                  .history())
           .extracting(StatusChange::status)
           .contains(TaskStatus.VERIFYING)
           .doesNotContain(TaskStatus.REVIEW_PENDING);
@@ -372,10 +383,13 @@ class MasterModeFlowTest extends FlowHarness.World {
       flow.agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
       flow.awaitRun("verify");
 
-      assertThat(Objects.requireNonNull(flow.awaitTask(TaskState::stopped).stop()).trigger())
+      assertThat(
+              Objects.requireNonNull(
+                      flow.awaitTask(taskState -> taskState.work().stopped()).work().stop())
+                  .trigger())
           .isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
       flow.awaitMasterStop();
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.VERIFYING);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.VERIFYING);
       assertThat(flow.reviewerPrompts())
           .singleElement()
           .asString()
@@ -394,10 +408,13 @@ class MasterModeFlowTest extends FlowHarness.World {
       flow.agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed another way", "");
       flow.awaitRun("verify");
 
-      assertThat(Objects.requireNonNull(flow.awaitTask(TaskState::stopped).stop()).trigger())
+      assertThat(
+              Objects.requireNonNull(
+                      flow.awaitTask(taskState -> taskState.work().stopped()).work().stop())
+                  .trigger())
           .isEqualTo(TaskStop.Trigger.ROUNDS);
       flow.awaitMasterStop();
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.VERIFYING);
+      assertThat(flow.task().standing().status()).isEqualTo(TaskStatus.VERIFYING);
       assertThat(flow.reviewerPrompts())
           .singleElement()
           .asString()

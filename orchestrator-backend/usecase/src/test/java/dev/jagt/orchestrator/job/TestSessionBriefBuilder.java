@@ -4,7 +4,7 @@ import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchest
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
@@ -27,8 +27,8 @@ public record TestSessionBriefBuilder(Path root, String task, String project) {
             NewTask.builder(task, project).build(),
             primary,
             repos,
-            ConfigService.ConfigFile.AutoplanConfig.defaults(),
-            ConfigService.ConfigFile.VisualizeConfig.defaults(),
-            ConfigService.ConfigFile.DiagnoseConfig.defaults());
+            ConfigFile.AutoplanConfig.defaults(),
+            ConfigFile.VisualizeConfig.defaults(),
+            ConfigFile.DiagnoseConfig.defaults());
   }
 }

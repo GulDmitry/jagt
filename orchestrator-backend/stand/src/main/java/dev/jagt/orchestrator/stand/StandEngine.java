@@ -82,6 +82,15 @@ public final class StandEngine {
     return image() ? IMAGE_PORT : port;
   }
 
+  /** The host port jagt is reached on; 0 where the container engine lets Docker choose it. */
+  public int hostPort() {
+    return COMPOSE.equals(engine) ? 0 : JagtProcess.freePort();
+  }
+
+  public int publicPort(int port) {
+    return port > 0 ? port : IMAGE_PORT;
+  }
+
   public StandMarker mark(StandMarker marker, Path root) {
     String name = root.getFileName().toString();
     return switch (engine) {
@@ -128,7 +137,9 @@ public final class StandEngine {
   public JagtEngine start(Path root, int port, String password) {
     ready();
     Map<String, String> env = new HashMap<>();
-    env.put("JAGT_PORT", Integer.toString(port));
+    if (port > 0) {
+      env.put("JAGT_PORT", Integer.toString(port));
+    }
     env.put("JAGT_STAND_ROOT", root.toString());
     for (String key : CREDENTIALS) {
       Optional.ofNullable(environment.apply(key)).ifPresent(value -> env.put(key, value));

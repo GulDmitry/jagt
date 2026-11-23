@@ -16,3 +16,5 @@ gradle.projectsEvaluated {
         sbom = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
     }
 }
+
+dev.jagt.gradle.checkscope.CheckScope.registerOn(project)

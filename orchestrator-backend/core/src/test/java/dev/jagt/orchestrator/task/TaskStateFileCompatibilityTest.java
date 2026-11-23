@@ -26,9 +26,9 @@ class TaskStateFileCompatibilityTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
-    assertThat(task.arbiterOrNone()).isEqualTo(new Master("", "", "", "abc", 3, "", 0));
-    assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
+    assertThat(task.work().roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
+    assertThat(task.work().arbiterOrNone()).isEqualTo(new Master("", "", "", "abc", 3, "", 0));
+    assertThat(task.work().turnOrNone().marks()).containsOnlyKeys("press:ship");
   }
 
   @Test
@@ -43,9 +43,9 @@ class TaskStateFileCompatibilityTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.toldOrNone().said(ToldOnce.Kind.SILENCE, "77")).isTrue();
-    assertThat(task.toldOrNone().said(ToldOnce.Kind.VERIFY_FAILED, "tree1")).isTrue();
-    assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
+    assertThat(task.round().toldOrNone().said(ToldOnce.Kind.SILENCE, "77")).isTrue();
+    assertThat(task.round().toldOrNone().said(ToldOnce.Kind.VERIFY_FAILED, "tree1")).isTrue();
+    assertThat(task.work().turnOrNone().marks()).containsOnlyKeys("press:ship");
   }
 
   @Test
@@ -58,7 +58,7 @@ class TaskStateFileCompatibilityTest {
 
     TaskState read = mapper.readValue(mapper.writeValueAsString(task), TaskState.class);
 
-    assertThat(read.toldOrNone().saidPoint("deployed", "abc")).isTrue();
+    assertThat(read.round().toldOrNone().saidPoint("deployed", "abc")).isTrue();
   }
 
   @Test
@@ -221,7 +221,7 @@ class TaskStateFileCompatibilityTest {
 
     TaskState task = new JsonMapper().readValue(old, TaskState.class);
 
-    assertThat(task.session().hasStampedAsk()).isTrue();
+    assertThat(task.work().session().hasStampedAsk()).isTrue();
   }
 
   @Test
@@ -239,11 +239,11 @@ class TaskStateFileCompatibilityTest {
 
     TaskState task = mapper.readValue(json, TaskState.class);
 
-    assertThat(task.history().getFirst().origin()).isEqualTo(ActionOrigin.ACCEPTANCE);
-    assertThat(Objects.requireNonNull(task.stop()).trigger())
+    assertThat(task.standing().history().getFirst().origin()).isEqualTo(ActionOrigin.ACCEPTANCE);
+    assertThat(Objects.requireNonNull(task.work().stop()).trigger())
         .isEqualTo(TaskStop.Trigger.ACCEPTANCE_FAILED);
-    assertThat(task.turnOrNone().step()).isEqualTo("acceptance-round");
-    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
+    assertThat(task.work().turnOrNone().step()).isEqualTo("acceptance-round");
+    assertThat(task.work().roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
     assertThat(mapper.writeValueAsString(task))
         .contains("\"ACCEPTANCE\"", "\"ACCEPTANCE_FAILED\"")
         .doesNotContain("\"QA\"", "QA_FAILED");
@@ -261,7 +261,7 @@ class TaskStateFileCompatibilityTest {
 
     TaskState task = mapper.readValue(json, TaskState.class);
 
-    assertThat(task.history().getFirst().role()).isNull();
+    assertThat(task.standing().history().getFirst().role()).isNull();
     assertThat(mapper.writeValueAsString(task)).doesNotContain("\"role\"");
   }
 }

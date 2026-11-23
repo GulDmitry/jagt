@@ -6,9 +6,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import org.junit.jupiter.api.Test;
 
 class TrackerCheckTest {

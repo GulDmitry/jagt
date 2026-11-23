@@ -36,7 +36,7 @@ class MasterStopMoves {
     try {
       return stateService
           .task(taskId)
-          .filter(task -> !task.stopped())
+          .filter(task -> !task.work().stopped())
           .map(task -> verdicts.stopReturned(taskId, task, instruction))
           .orElse(false);
     } catch (TaskMovedOn moved) {

@@ -51,13 +51,14 @@ public class TicketPrefetchJob implements TaskJob {
   @Override
   public void run(String taskId, TaskState task) {
     if (configService.load().arbiter().running() && due(taskId, task)) {
-      tickets.read(taskId, Objects.requireNonNull(task.ticketUrl()), task.statusSince());
+      tickets.read(
+          taskId, Objects.requireNonNull(task.ticket().ticketUrl()), task.standing().statusSince());
     }
   }
 
   private boolean due(String taskId, TaskState task) {
-    return task.ticketUrl() != null
-        && !task.ticketUrl().isBlank()
-        && !tickets.readSince(taskId, task.statusSince());
+    return task.ticket().ticketUrl() != null
+        && !task.ticket().ticketUrl().isBlank()
+        && !tickets.readSince(taskId, task.standing().statusSince());
   }
 }

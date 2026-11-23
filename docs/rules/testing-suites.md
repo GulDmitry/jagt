@@ -8,7 +8,7 @@
 | **Heavy** | `boardTest`, `e2eTest`, `linuxDriverTest` | CI | the `nightly` workflow (03:17 UTC schedule, calls `ci.yml`), a pull or merge request |
 | **Stand** | `standTest -Pmodelfree -Pengine=host\|compose\|kind`, a live `standTest`, `promptEval`, `roleEval -Prole=master` | locally: docker, an agent login, tokens; CI runs `standTest -Pmodelfree` in its `stand` job | before a minor release; CI per push (compose), nightly (kind) |
 
-CI's `stand` job runs `standTest -Pmodelfree -Pbudgets=false` (absolute time budgets hold on the reference machine)
+CI's `stand` job runs `standTest -Pmodelfree`; absolute time budgets need `-Pbudgets=true` on the idle reference machine,
 per `strategy.matrix.engine`: compose per push and pull request, kind nightly and per pull request;
 GitLab runs compose alone, since kind needs a privileged runner.
 CI sees only what is pushed: a heavy break in new code shows on the pull request, which waits for it.
@@ -16,7 +16,8 @@ A `schedule` run starts late under GitHub load, worst at the top of the hour,
 and runs the default branch's latest commit
 ([events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows),
 checked 2026-11-19): the old `0 4` cron started 08:20-08:40 late on 2026-11-16..18, so the cron sits off the hour
-and `nightly` logs its delay. Times are wall clock, dated in `measurements.md`.
+and `nightly` logs its delay. Under heavy load GitHub drops a scheduled run (none on 2026-11-23):
+`gh workflow run nightly.yml --ref main` starts it on demand. Times are wall clock, dated in `measurements.md`.
 
 ## What each suite proves
 
@@ -26,6 +27,7 @@ and `nightly` logs its delay. Times are wall clock, dated in `measurements.md`.
 | `boardTest` | the board in Chromium: cards, verbs, tabs, reports | Playwright | ~1.5 min |
 | `e2eTest` | a task's flow through real git, tmux and a scripted agent | git, tmux | ~2 min |
 | `linuxDriverTest` | the Linux terminal and desktop drivers | a Linux display | unknown |
+| `guardsTest` | each contributor guard refuses what it names and passes what it must | shellcheck, bats, jq | unknown |
 | `standTest -Pmodelfree` | recorded task flows replayed in jagt's container, and the server scenarios (start, login, a task to review, MCP door, `/state` p95) on `-Pengine=host`, `compose` or `kind`; JVM kill, container or pod replacement and an image upgrade on the old volume | docker, kind, kubectl | see `measurements.md` |
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |

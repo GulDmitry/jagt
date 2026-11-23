@@ -78,6 +78,26 @@ class StandEngineLaunchTest {
   }
 
   @Test
+  void composeEngineLeavesTheHostPortToDockerSoNoParallelRunCanTakeIt(@TempDir Path root) {
+    List<Map<String, String>> environments = new ArrayList<>();
+    StandEngine engine =
+        new StandEngine(
+            StandEngine.COMPOSE,
+            tool -> true,
+            name -> null,
+            Map.of(
+                StandEngine.COMPOSE,
+                (dir, port, password, env) -> {
+                  environments.add(env);
+                  return mock(JagtEngine.class);
+                }));
+
+    engine.start(root, engine.hostPort(), "pw");
+
+    assertThat(environments.get(0)).doesNotContainKey("JAGT_PORT");
+  }
+
+  @Test
   void kindEngineLaunchesJagtInTheCluster(@TempDir Path root) {
     JagtEngine pod = mock(JagtEngine.class);
     StandEngine engine =

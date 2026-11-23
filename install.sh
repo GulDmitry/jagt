@@ -80,7 +80,7 @@ staging=$(mktemp -d "$ROOT/.staging.XXXXXX")
 cleanup() {
   rm -rf "$staging"
   if [ "$root_was_new" = true ]; then
-    rmdir "$ROOT" 2>/dev/null || true
+    rmdir "$ROOT" 2>/dev/null || true # a root holding files is kept
   fi
 }
 trap cleanup EXIT
@@ -91,7 +91,7 @@ jar="jagt-$version.jar"
 fetch --output "$staging/$jar" "$release/$jar" || fail "cannot download $jar from $release"
 fetch --output "$staging/jagt-$version.sha256" "$release/jagt-$version.sha256" ||
   fail "cannot download the checksum of $jar"
-verify "$staging/$jar" "$(grep " $jar\$" "$staging/jagt-$version.sha256" || true)"
+verify "$staging/$jar" "$(grep " $jar\$" "$staging/jagt-$version.sha256" || true)" # no line: verify fails it
 attest "$staging/$jar" "$staging/jagt-$version.sha256"
 
 java_of() {

@@ -89,21 +89,28 @@ public record FinishedTask(
   public static FinishedTask of(
       String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
     return new FinishedTask(
-        new Identity(id, task.alias(), task.title(), task.projects(), task.ticketUrl()),
+        new Identity(
+            id,
+            task.ticket().alias(),
+            task.ticket().title(),
+            task.projects(),
+            task.ticket().ticketUrl()),
         finishedAt,
         new Spend(
-            task.totalUsage().total(),
-            task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd(),
-            countedOrNull(task.usageOrNone()),
-            countedOrNull(task.agentSpendOrNone().usageOrNone())),
+            task.gate().totalUsage().total(),
+            task.gate().agentSpendOrNone().usageOrNone().isNone()
+                ? null
+                : task.gate().totalUsage().costUsd(),
+            countedOrNull(task.gate().usageOrNone()),
+            countedOrNull(task.gate().agentSpendOrNone().usageOrNone())),
         new Course(
-            task.history(),
-            task.rounds(),
-            task.checksRead(),
-            task.refusals(),
-            HumanWait.endedAt(task.waits(), finishedAt),
+            task.standing().history(),
+            task.standing().rounds(),
+            task.checks().read(),
+            task.gate().refusals(),
+            HumanWait.endedAt(task.work().waits(), finishedAt),
             masterVerdict),
-        List.copyOf(task.agentSpendOrNone().marks().keySet()));
+        List.copyOf(task.gate().agentSpendOrNone().marks().keySet()));
   }
 
   private static @Nullable TokenUsage countedOrNull(TokenUsage usage) {

@@ -73,7 +73,7 @@ public class VerifyJob implements TaskJob {
 
   private void verify(String taskId, TaskState task) {
     Optional<String> key = verification.key(task);
-    if (key.filter(failing -> task.toldOrNone().said(ToldOnce.Kind.VERIFY_FAILED, failing))
+    if (key.filter(failing -> task.round().toldOrNone().said(ToldOnce.Kind.VERIFY_FAILED, failing))
         .isPresent()) {
       stops.stop(
           taskId,
@@ -115,27 +115,28 @@ public class VerifyJob implements TaskJob {
     Optional<TaskState> now = stateService.task(taskId);
     boolean same =
         now.filter(task ->
-                task.status() == taken.status() && task.statusSince() == taken.statusSince())
+                task.standing().status() == taken.standing().status()
+                    && task.standing().statusSince() == taken.standing().statusSince())
             .isPresent();
     if (!same) {
       log.atInfo()
           .setMessage("verification outdated")
           .addKeyValue("task", taskId)
           .addKeyValue("step", step.id())
-          .addKeyValue("status", now.map(task -> task.status().name()).orElse("gone"))
+          .addKeyValue("status", now.map(task -> task.standing().status().name()).orElse("gone"))
           .log();
     }
     return same;
   }
 
   private static String failedOutput(TaskState task) {
-    String output = task.toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
+    String output = task.round().toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
     return output.isEmpty() ? "" : "\n" + output;
   }
 
   private static String standing(TaskState task) {
     String probes =
-        task.probes().stream()
+        task.gate().probes().stream()
             .filter(Probe::failed)
             .map(Probe::toString)
             .collect(Collectors.joining("; "));
@@ -162,7 +163,10 @@ public class VerifyJob implements TaskJob {
                       reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing),
                       ToldOnce.Kind.VERIFY_OUTPUT,
                       facts.substring(0, Math.min(facts.length(), TaskStops.MAX_EVIDENCE + 1)))));
-    } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
+    } else if (stateService
+        .task(taskId)
+        .filter(taskState -> taskState.work().stopped())
+        .isPresent()) {
       return;
     }
     statusReports.verified(false, said, taskId);

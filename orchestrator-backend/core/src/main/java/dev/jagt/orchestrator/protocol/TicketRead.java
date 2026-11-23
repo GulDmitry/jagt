@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.protocol;
 
 import static dev.jagt.orchestrator.protocol.Wire.blank;
 
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;

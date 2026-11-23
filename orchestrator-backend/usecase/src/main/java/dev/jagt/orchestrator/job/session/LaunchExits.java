@@ -59,7 +59,7 @@ public class LaunchExits implements TaskJob {
             () ->
                 sessions
                     .unansweredPrompt(taskId)
-                    .filter(cause -> !task.report().asks())
+                    .filter(cause -> !task.standing().report().asks())
                     .ifPresent(cause -> {
                       ledger.sign(
                           taskId, new SessionSign.Asked(cause, SessionSign.Asked.Channel.SCREEN));

@@ -117,7 +117,7 @@ class CheckerOutcomesTest {
     outcomes.apply(
         "ABC-42", task, acceptanceVerdict().withRows(rows).withQuestion(question).build());
 
-    assertThat(state.task("ABC-42").orElseThrow().message()).endsWith(asked);
+    assertThat(state.task("ABC-42").orElseThrow().standing().message()).endsWith(asked);
   }
 
   static Stream<Arguments> whatTheHumanIsAsked() {

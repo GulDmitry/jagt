@@ -8,6 +8,7 @@ import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.service.StateService;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,5 +45,25 @@ class BoardAccessibilityTest extends BoardPageContext {
                 .toList())
         .as("serious or critical violations on %s after %s", path, key)
         .isEmpty();
+  }
+
+  @Test
+  void settingsDialogHasNoSeriousOrCriticalViolation() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+    page.locator("#settings-dialog").waitFor();
+
+    List<String> serious =
+        new AxeBuilder(page)
+            .analyze().getViolations().stream()
+                .filter(rule -> Set.of("serious", "critical").contains(rule.getImpact()))
+                .map(rule ->
+                    rule.getId()
+                        + " on "
+                        + rule.getNodes().stream().map(n -> n.getTarget()).toList())
+                .toList();
+
+    assertThat(serious).as("serious or critical violations in settings").isEmpty();
   }
 }

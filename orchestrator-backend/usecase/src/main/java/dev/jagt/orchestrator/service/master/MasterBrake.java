@@ -41,7 +41,7 @@ public class MasterBrake {
 
     static Seen of(TaskState task) {
       return new Seen(
-          task.history().isEmpty() ? 0 : task.history().getLast().at(),
+          task.standing().history().isEmpty() ? 0 : task.standing().history().getLast().at(),
           SessionPhase.silentSince(task));
     }
   }
@@ -86,11 +86,12 @@ public class MasterBrake {
   }
 
   private static boolean movedByTheMaster(TaskState task) {
-    return task.history().stream().anyMatch(step -> step.origin() == ActionOrigin.MASTER);
+    return task.standing().history().stream()
+        .anyMatch(step -> step.origin() == ActionOrigin.MASTER);
   }
 
   private static boolean silenceFollowsTheMaster(TaskState task) {
-    return task.history().stream()
+    return task.standing().history().stream()
             .filter(step -> step.at() <= SessionPhase.silentSince(task))
             .reduce((first, second) -> second)
             .map(StatusChange::origin)
@@ -100,7 +101,7 @@ public class MasterBrake {
 
   private static List<Ending> endings(String id, TaskState task, Seen was) {
     List<Ending> endings = new ArrayList<>();
-    for (StatusChange step : task.history()) {
+    for (StatusChange step : task.standing().history()) {
       if (step.at() <= was.step()) {
         continue;
       }

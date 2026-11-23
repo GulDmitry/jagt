@@ -42,7 +42,7 @@ public class CarriedBlock {
             .append(changes.history(task, MAX_GIT_LINES))
             .append('\n');
     runtime
-        .conversationTail(worktree, MAX_CONVERSATION_CHARS, Set.of(AgentSessions.NUDGE))
+        .conversationTail(worktree, MAX_CONVERSATION_CHARS, Set.of(AgentWindows.NUDGE))
         .ifPresent(tail ->
             carried.append("### Its last words, newest last\n").append(tail).append("\n\n"));
     runtime

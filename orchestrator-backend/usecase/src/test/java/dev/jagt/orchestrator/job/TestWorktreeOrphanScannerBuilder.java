@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.GitCommands;
@@ -20,11 +21,11 @@ public record TestWorktreeOrphanScannerBuilder(Path repo, List<String> copyGlobs
     return new TestWorktreeOrphanScannerBuilder(Path.of("/demo-repo"), List.of("**/.env"));
   }
 
-  public ConfigService.ConfigFile config() {
-    return ConfigService.ConfigFile.defaults()
+  public ConfigFile config() {
+    return ConfigFile.defaults()
         .withProjects(
             Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-        .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(copyGlobs));
+        .withWorktree(ConfigFile.WorktreeConfig.defaults().withCopyGlobs(copyGlobs));
   }
 
   public WorktreeOrphanScanner build(

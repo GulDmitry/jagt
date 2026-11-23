@@ -125,6 +125,71 @@ class JagtProcessLaunchTest {
   }
 
   @Test
+  void restartRelaunchesOnTheSamePortWhenAnotherRunTookItInBetween(@TempDir Path root) {
+    when(board.ready()).thenReturn(true, false, true);
+    Process[] launches = {first, dead, second};
+    int[] count = {0};
+    JagtProcess jagt =
+        new JagtProcess(
+            root,
+            8123,
+            board,
+            (dir, port) -> {
+              Files.writeString(dir.resolve("jagt.out"), "Address already in use");
+              return launches[count[0]++];
+            },
+            Duration.ofMinutes(5));
+    jagt.begin();
+
+    JagtEngine restarted = jagt.restart(Restart.JVM);
+
+    assertThat(restarted.pid()).isEqualTo(2);
+    assertThat(restarted.port()).isEqualTo(8123);
+  }
+
+  @Test
+  void jagtThatDiesOfAnotherCauseIsNotRelaunched(@TempDir Path root) {
+    int[] launches = {0};
+    JagtProcess jagt =
+        new JagtProcess(
+            root,
+            8123,
+            board,
+            (dir, port) -> {
+              launches[0]++;
+              Files.writeString(dir.resolve("jagt.out"), "Out of memory");
+              return dead;
+            },
+            Duration.ofMinutes(5));
+
+    assertThatThrownBy(jagt::begin)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not come up on port 8123");
+    assertThat(launches[0]).isEqualTo(1);
+  }
+
+  @Test
+  void jagtThatKeepsFindingThePortTakenIsRelaunchedThreeTimesThenFailsTheStart(@TempDir Path root) {
+    int[] launches = {0};
+    JagtProcess jagt =
+        new JagtProcess(
+            root,
+            8123,
+            board,
+            (dir, port) -> {
+              launches[0]++;
+              Files.writeString(dir.resolve("jagt.out"), "Address already in use");
+              return dead;
+            },
+            Duration.ofMinutes(5));
+
+    assertThatThrownBy(jagt::begin)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("did not come up on port 8123");
+    assertThat(launches[0]).isEqualTo(4);
+  }
+
+  @Test
   void theCommandRunsTheStagedJarOnThePortUnderTheRootWithoutTheHumansTmux(@TempDir Path root) {
     ProcessBuilder command = JagtProcess.command(root, 8123);
 

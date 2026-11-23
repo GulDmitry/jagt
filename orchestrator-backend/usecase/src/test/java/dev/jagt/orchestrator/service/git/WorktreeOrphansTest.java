@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.task.ArchivedTaskFolder;
@@ -65,14 +66,13 @@ class WorktreeOrphansTest {
             new Processes.Result(0, "worktree " + repo + "\n\nworktree " + registered + "\n", ""));
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "demo",
                         new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
                 .withWorktree(
-                    ConfigService.ConfigFile.WorktreeConfig.defaults()
-                        .withCopyGlobs(List.of("**/.env"))));
+                    ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
   }
 
   @Test
@@ -83,13 +83,13 @@ class WorktreeOrphansTest {
     Files.writeString(orphan.resolve("app").resolve("key.pem"), "-----BEGIN KEY-----");
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "demo",
                         new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
                 .withWorktree(
-                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                    ConfigFile.WorktreeConfig.defaults()
                         .withCopyGlobs(List.of("**/.env", "**/*.pem"))));
 
     var listed = orphans.scan();

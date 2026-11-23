@@ -6,11 +6,11 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.notify.Routes.Routed;
 import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig;
+import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.ChannelDef;
+import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.RouteDef;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig.ChannelDef;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig.RouteDef;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

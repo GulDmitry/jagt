@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.tracker;
 
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

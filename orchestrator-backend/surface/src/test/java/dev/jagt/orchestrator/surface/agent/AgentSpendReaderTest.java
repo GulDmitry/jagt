@@ -48,7 +48,7 @@ class AgentSpendReaderTest {
     reader.charge("ABC-42", log);
 
     verify(stateService).updateTask(eq("ABC-42"), update.capture());
-    AgentSpend booked = update.getValue().apply(task).agentSpendOrNone();
+    AgentSpend booked = update.getValue().apply(task).gate().agentSpendOrNone();
     assertThat(booked.usageOrNone()).isEqualTo(new TokenUsage(2, 12, 200, 21, 0));
     assertThat(booked.markFor(log.toString())).isEqualTo(500);
   }
@@ -67,7 +67,7 @@ class AgentSpendReaderTest {
     reader.charge("ABC-42", log);
 
     verify(stateService).updateTask(eq("ABC-42"), update.capture());
-    assertThat(update.getValue().apply(bookedMeanwhile).agentSpendOrNone().usageOrNone())
+    assertThat(update.getValue().apply(bookedMeanwhile).gate().agentSpendOrNone().usageOrNone())
         .isEqualTo(new TokenUsage(1, 7, 0, 20, 0));
   }
 
@@ -84,7 +84,7 @@ class AgentSpendReaderTest {
     reader.charge("ABC-42", log);
 
     verify(stateService).updateTask(eq("ABC-42"), update.capture());
-    AgentSpend booked = update.getValue().apply(task).agentSpendOrNone();
+    AgentSpend booked = update.getValue().apply(task).gate().agentSpendOrNone();
     assertThat(booked.usageOrNone()).isEqualTo(new TokenUsage(1, 9, 0, 3, 0));
     assertThat(booked.markFor(log.toString())).isEqualTo(50);
     verifyNoInteractions(sessionLog);
@@ -105,7 +105,7 @@ class AgentSpendReaderTest {
     reader.charge("ABC-42", second);
 
     verify(stateService).updateTask(eq("ABC-42"), update.capture());
-    AgentSpend booked = update.getValue().apply(afterFirst).agentSpendOrNone();
+    AgentSpend booked = update.getValue().apply(afterFirst).gate().agentSpendOrNone();
     assertThat(booked.markFor(dir.resolve("first.jsonl").toString())).isEqualTo(700);
     assertThat(booked.markFor(second.toString())).isEqualTo(120);
     assertThat(booked.usageOrNone().calls()).isEqualTo(2);

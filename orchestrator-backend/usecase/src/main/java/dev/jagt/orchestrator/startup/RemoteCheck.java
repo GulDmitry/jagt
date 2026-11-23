@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.Remote;
@@ -29,7 +30,7 @@ public class RemoteCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    ConfigService.ConfigFile config;
+    ConfigFile config;
     try {
       config = configService.load();
     } catch (RuntimeException unreadable) {
@@ -42,8 +43,7 @@ public class RemoteCheck implements StartupCheck {
     return problems;
   }
 
-  private List<Problem> problemsOf(
-      ConfigService.ConfigFile config, String key, ProjectConfig project) {
+  private List<Problem> problemsOf(ConfigFile config, String key, ProjectConfig project) {
     String remoteKey = ROOT + ".projects." + key + ".remote";
     Remote remote = project.gitRemote();
     if (remote.local()) {

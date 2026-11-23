@@ -102,3 +102,7 @@ test("aMoveIsPlain whenItIsNeitherAProblemNorYours", () => {
     "detail",
   );
 });
+
+test("noActionRows whenTheTaskHasNoActions", () => {
+  assert.deepEqual(actionRows(task({})), []);
+});

@@ -35,16 +35,16 @@ class VerificationTest {
           processes,
           new PlanProbing(processes, new ToolGate(List.of()), 8290),
           mock(WorktreeChanges.class));
-  private final ConfigService.ConfigFile gradleProject =
-      ConfigService.ConfigFile.defaults()
+  private final ConfigFile gradleProject =
+      ConfigFile.defaults()
           .withProjects(
               Map.of(
                   "proj",
                   TestProjectConfigBuilder.projectConfig()
                       .withVerifyCommand(List.of("./gradlew", "test"))
                       .build()));
-  private final ConfigService.ConfigFile npmProject =
-      ConfigService.ConfigFile.defaults()
+  private final ConfigFile npmProject =
+      ConfigFile.defaults()
           .withProjects(
               Map.of(
                   "proj",
@@ -54,7 +54,7 @@ class VerificationTest {
 
   @Test
   void runsNothingForProjectTheConfigurationNoLongerNames() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of()));
 
     Optional<String> failure =
         verification.failure(TaskState.builder("gone", "/wt", TaskStatus.VERIFYING).build());
@@ -67,7 +67,7 @@ class VerificationTest {
   void stopsTheVerifyCommandAfterTheMinutesTheProjectConfigures() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "proj",
@@ -157,7 +157,7 @@ class VerificationTest {
   void reportsOnlyTheFirstOfTwoFailingRepositories() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "proj",
@@ -195,7 +195,7 @@ class VerificationTest {
 
   @Test
   void runsTheProbesThePlanDeclaredAndReturnsTheirResults() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(processes.run(any(), any(), anyMap(), eq(List.of("./scripts/check"))))
         .thenReturn(new Processes.Result(0, "", ""));
 
@@ -213,7 +213,7 @@ class VerificationTest {
   void namesTheProjectsOwnRemoteWhereProbeIsRefusedForPushThatCouldSkipItsCheck() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "proj",
@@ -243,7 +243,7 @@ class VerificationTest {
 
   @Test
   void runsProbeNamingTheSecondRepositoryInThatWorktreeAndOthersInThePrimaryOne() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(processes.run(eq(Path.of("/wt-front")), any(), anyMap(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(0, "", ""));
     when(processes.run(eq(Path.of("/wt")), any(), anyMap(), eq(List.of("./scripts/check"))))
@@ -268,7 +268,7 @@ class VerificationTest {
   void namesTheNamedRepositorysOwnRemoteWhereItsProbeIsRefused() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "front",

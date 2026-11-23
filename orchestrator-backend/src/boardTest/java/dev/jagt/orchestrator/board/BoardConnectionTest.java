@@ -246,8 +246,15 @@ class BoardConnectionTest extends BoardPageContext {
   void boardWhosePushConnectionFellSilentSaysItIsStaleAndConnectsAgain() {
     Page page = session.newPage();
     page.clock().install();
+    page.addInitScript(
+        "const listen = EventSource.prototype.addEventListener;"
+            + " EventSource.prototype.addEventListener = function (name, handler, options) {"
+            + " if (name === 'beat') {"
+            + " listen.call(this, name, () => {"
+            + " document.documentElement.dataset.beaten = 'yes'; }); }"
+            + " return listen.call(this, name, handler, options); };");
     page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    assertThat(page.locator("html")).hasAttribute("data-beaten", "yes");
 
     page.clock().runFor(50_500);
     assertThat(page.locator("#offline")).isVisible();

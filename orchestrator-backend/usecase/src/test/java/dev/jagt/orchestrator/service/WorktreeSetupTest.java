@@ -95,7 +95,7 @@ class WorktreeSetupTest {
             "origin/main",
             "u",
             false);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
     when(runtime.systemKnowledgeFile(registryWorktree))
         .thenReturn(registryWorktree.resolve("AGENTS.md"));

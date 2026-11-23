@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -123,7 +123,7 @@ class RoundFactsTest {
     AgentRuntime runtime = mock(AgentRuntime.class);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
-    when(runtime.humanSaid(worktree, Set.of(AgentSessions.NUDGE)))
+    when(runtime.humanSaid(worktree, Set.of(AgentWindows.NUDGE)))
         .thenReturn(Optional.of(List.of("keep v2")));
 
     Optional<List<String>> said =

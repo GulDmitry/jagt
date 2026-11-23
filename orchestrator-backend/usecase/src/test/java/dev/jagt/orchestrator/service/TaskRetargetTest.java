@@ -57,7 +57,7 @@ class TaskRetargetTest {
 
     retarget.retarget("ABC-42", "origin/ABC-41");
 
-    assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isEqualTo("ABC-41");
+    assertThat(state.task("ABC-42").orElseThrow().ticket().baseBranch()).isEqualTo("ABC-41");
   }
 
   @Test
@@ -65,7 +65,7 @@ class TaskRetargetTest {
     when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
     assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41")).isInstanceOf(Refusal.class);
-    assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isNull();
+    assertThat(state.task("ABC-42").orElseThrow().ticket().baseBranch()).isNull();
   }
 
   @Test
@@ -73,7 +73,7 @@ class TaskRetargetTest {
     when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
     assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41")).isInstanceOf(Refusal.class);
-    assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isNull();
+    assertThat(state.task("ABC-42").orElseThrow().ticket().baseBranch()).isNull();
   }
 
   @Test
@@ -89,6 +89,6 @@ class TaskRetargetTest {
 
     retarget.retarget("ABC-42", "upstream/ABC-41");
 
-    assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isEqualTo("ABC-41");
+    assertThat(state.task("ABC-42").orElseThrow().ticket().baseBranch()).isEqualTo("ABC-41");
   }
 }

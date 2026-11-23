@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.worktree.FileStamps;
@@ -42,11 +43,11 @@ public class SessionProbe {
    * the job rather than skipping a run, and the file is unreadable for exactly as long as a human
    * takes to save it.
    */
-  private ConfigService.ConfigFile config() {
+  private ConfigFile config() {
     try {
       return configService.load();
     } catch (RuntimeException e) {
-      return ConfigService.ConfigFile.defaults();
+      return ConfigFile.defaults();
     }
   }
 
@@ -59,18 +60,23 @@ public class SessionProbe {
     SessionHost.WindowState process = sessions.windowState(taskId);
     if (process != SessionHost.WindowState.AGENT_RUNNING) {
       return new SessionSign.Read(
-          gone(process), 0, log, task.lastActiveTimestamp(), staleMs, exitTail(taskId));
+          gone(process), 0, log, task.standing().lastActiveTimestamp(), staleMs, exitTail(taskId));
     }
-    Session session = task.session();
+    Session session = task.work().session();
     Session.Halt halt = session.halt();
     long lastSign =
         Math.max(
-            Math.max(task.lastActiveTimestamp(), log),
+            Math.max(task.standing().lastActiveTimestamp(), log),
             Math.max(session.movedAt(), halt == null ? 0 : halt.at()));
     boolean verdictStands = halt != null && halt.kind() != Session.Halt.Kind.IDLE;
     long printed = verdictStands || now - lastSign < staleMs ? 0 : sessions.printedAt(taskId);
     return new SessionSign.Read(
-        Session.Window.State.RUNNING, printed, log, task.lastActiveTimestamp(), staleMs, null);
+        Session.Window.State.RUNNING,
+        printed,
+        log,
+        task.standing().lastActiveTimestamp(),
+        staleMs,
+        null);
   }
 
   private static Session.Window.State gone(SessionHost.WindowState process) {
@@ -100,7 +106,7 @@ public class SessionProbe {
    * file.
    */
   private long ownLog(TaskState task) {
-    String named = task.session().log();
+    String named = task.work().session().log();
     String worktree = task.worktreePath();
     long derived =
         worktree == null || worktree.isBlank()

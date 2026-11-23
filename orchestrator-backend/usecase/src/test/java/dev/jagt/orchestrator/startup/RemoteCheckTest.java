@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.time.Duration;
 import java.util.Map;
@@ -27,7 +28,7 @@ class RemoteCheckTest {
         .thenReturn(new Processes.Result(0, "origin\nupstream\n", ""));
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(Map.of("shop", remoteProject().withRemote("upstream").build())));
 
     assertThat(check.problems()).isEmpty();
@@ -37,7 +38,7 @@ class RemoteCheckTest {
   void refusesRemoteTheRepositoryDoesNotListNamingTheKey() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(Map.of("shop", remoteProject().withRemote("upstream").build())));
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "origin\n", ""));
@@ -50,9 +51,7 @@ class RemoteCheckTest {
   @Test
   void refusesTheDefaultOriginOfRepositoryWithNoRemote() {
     when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("shop", remoteProject().build())));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", remoteProject().build())));
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
@@ -65,7 +64,7 @@ class RemoteCheckTest {
   void refusesNoRemoteBesideCodeHostNamingBothKeys() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",
@@ -84,7 +83,7 @@ class RemoteCheckTest {
   void refusesNoRemoteBesideTheOrchestratorsCodeHostNamingThatKey() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withCodeHost("github")
                 .withProjects(Map.of("shop", remoteProject().withRemote("none").build())));
 
@@ -97,7 +96,7 @@ class RemoteCheckTest {
   void acceptsNoRemoteWithNoCodeHostOrNone() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "shop",

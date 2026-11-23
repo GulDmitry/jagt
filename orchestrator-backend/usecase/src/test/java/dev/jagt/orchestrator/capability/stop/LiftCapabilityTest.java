@@ -30,7 +30,7 @@ class LiftCapabilityTest {
     var outcome = lift.run("ABC-1");
 
     assertThat(lift.action()).isEqualTo(TaskAction.LIFT);
-    assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow().work().stopped()).isFalse();
     assertThat(outcome.message())
         .isEqualTo(
             "lift ABC-1: auto-review and the arbiter may move it again; its rounds count anew");

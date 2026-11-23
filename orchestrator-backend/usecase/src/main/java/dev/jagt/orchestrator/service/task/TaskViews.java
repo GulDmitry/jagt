@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.task;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.view.TaskView;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.AutoReviewCadence;
@@ -46,7 +47,7 @@ public class TaskViews {
   }
 
   private Snapshot snapshot(Map<String, TaskState> tasks) {
-    ConfigService.ConfigFile config = readableConfig();
+    ConfigFile config = readableConfig();
     AutoReviewCadence cadence = AutoReviewCadence.from(config.autoReview());
     long now = clock.millis();
     Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
@@ -83,11 +84,13 @@ public class TaskViews {
     String tail =
         Optional.ofNullable(task)
             .map(t ->
-                (t.title() == null ? "" : " " + t.title())
-                    + (t.message() == null || t.message().isBlank() ? "" : " — " + t.message())
-                    + (t.report() == AgentReport.PLAIN
+                (t.ticket().title() == null ? "" : " " + t.ticket().title())
+                    + (t.standing().message() == null || t.standing().message().isBlank()
                         ? ""
-                        : " report=" + t.report().name().toLowerCase(Locale.ROOT))
+                        : " — " + t.standing().message())
+                    + (t.standing().report() == AgentReport.PLAIN
+                        ? ""
+                        : " report=" + t.standing().report().name().toLowerCase(Locale.ROOT))
                     + t.repos().stream()
                         .map(repo ->
                             " | "
@@ -111,7 +114,7 @@ public class TaskViews {
    * hand-edited while jagt runs, and a half-saved file would throw out of a render loop. The
    * failure is logged, never swallowed.
    */
-  private ConfigService.ConfigFile readableConfig() {
+  private ConfigFile readableConfig() {
     try {
       return configService.load();
     } catch (RuntimeException e) {
@@ -120,7 +123,7 @@ public class TaskViews {
           .addKeyValue("scope", "render")
           .addKeyValue("cause", e.toString())
           .log();
-      return ConfigService.ConfigFile.defaults();
+      return ConfigFile.defaults();
     }
   }
 }

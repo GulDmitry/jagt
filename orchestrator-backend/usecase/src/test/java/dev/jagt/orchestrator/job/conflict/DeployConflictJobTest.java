@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
 import dev.jagt.orchestrator.job.deploy.DeployPipelines;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -78,7 +79,7 @@ class DeployConflictJobTest {
                             target.withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1)))));
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     when(pipelines.redConflictDisproved(any())).thenReturn(true);
@@ -98,8 +99,8 @@ class DeployConflictJobTest {
         .runOn(state.tasks());
 
     TaskState read = state.task("ABC-42").orElseThrow();
-    assertThat(read.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(Objects.requireNonNull(read.deployment()).conflictedTarget()).isEmpty();
+    assertThat(read.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(Objects.requireNonNull(read.work().deployment()).conflictedTarget()).isEmpty();
   }
 
   @Test

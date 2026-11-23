@@ -21,7 +21,7 @@ public class DiffBases {
 
   public Base of(String taskId, TaskState task, TaskRepo repo) {
     ProjectConfig project = configService.project(Objects.requireNonNull(repo.project()));
-    String configured = task.baseBranchOr(project.baseBranch());
+    String configured = task.ticket().baseBranchOr(project.baseBranch());
     if (configured == null || configured.isBlank()) {
       throw new IllegalStateException(
           "Project "

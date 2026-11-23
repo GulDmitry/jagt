@@ -63,9 +63,9 @@ class StateServiceCompatibilityTest {
     TaskState inProgress =
         Objects.requireNonNull(stateService().withRoot(root).build().tasks().get("ABC-3"));
 
-    assertThat(inProgress.alias()).isEqualTo("alias");
-    assertThat(inProgress.title()).isEqualTo("title");
-    assertThat(inProgress.ticketUrl()).isEqualTo("ticketUrl");
+    assertThat(inProgress.ticket().alias()).isEqualTo("alias");
+    assertThat(inProgress.ticket().title()).isEqualTo("title");
+    assertThat(inProgress.ticket().ticketUrl()).isEqualTo("ticketUrl");
     assertThat(inProgress.repos().get(0).project()).isEqualTo("project");
   }
 
@@ -97,12 +97,14 @@ class StateServiceCompatibilityTest {
     Map<String, TaskState> tasks = stateService().withRoot(root).build().tasks();
     TaskState inProgress = Objects.requireNonNull(tasks.get("ABC-3"));
 
-    assertThat(tasks.values()).extracting(TaskState::status).containsExactly(TaskStatus.values());
-    assertThat(inProgress.status()).isEqualTo(TaskStatus.IN_PROGRESS);
-    assertThat(inProgress.alias()).isEqualTo("alias");
-    assertThat(inProgress.title()).isEqualTo("title");
-    assertThat(inProgress.repoRequest()).isEqualTo("repoRequest");
-    assertThat(inProgress.stop()).extracting(TaskStop::evidence).isEqualTo("evidence");
-    assertThat(inProgress.probes()).hasSize(1);
+    assertThat(tasks.values())
+        .extracting(taskState -> taskState.standing().status())
+        .containsExactly(TaskStatus.values());
+    assertThat(inProgress.standing().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    assertThat(inProgress.ticket().alias()).isEqualTo("alias");
+    assertThat(inProgress.ticket().title()).isEqualTo("title");
+    assertThat(inProgress.work().repoRequest()).isEqualTo("repoRequest");
+    assertThat(inProgress.work().stop()).extracting(TaskStop::evidence).isEqualTo("evidence");
+    assertThat(inProgress.gate().probes()).hasSize(1);
   }
 }

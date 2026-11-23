@@ -156,7 +156,7 @@ public class WorktreeChanges {
    * configured base.
    */
   public static String targetBranch(TaskState task, ProjectConfig project) {
-    return project.gitRemote().branchOf(task.baseBranchOr(project.baseBranch()));
+    return project.gitRemote().branchOf(task.ticket().baseBranchOr(project.baseBranch()));
   }
 
   /**
@@ -169,8 +169,9 @@ public class WorktreeChanges {
       diff.append("# ").append(repo.project()).append('\n');
       try {
         String base =
-            task.baseBranchOr(
-                configService.project(Objects.requireNonNull(repo.project())).baseBranch());
+            task.ticket()
+                .baseBranchOr(
+                    configService.project(Objects.requireNonNull(repo.project())).baseBranch());
         diff.append(
             inspection.changesSince(
                 projectPath(Objects.requireNonNull(repo.project())),
@@ -194,7 +195,7 @@ public class WorktreeChanges {
       history.append("# ").append(repo.project()).append('\n');
       try {
         String project = Objects.requireNonNull(repo.project());
-        String base = task.baseBranchOr(configService.project(project).baseBranch());
+        String base = task.ticket().baseBranchOr(configService.project(project).baseBranch());
         Path worktree = Path.of(repo.worktreePath());
         history
             .append("commits:\n")
@@ -227,7 +228,7 @@ public class WorktreeChanges {
     for (TaskRepo repo : placed(task)) {
       String project = Objects.requireNonNull(repo.project());
       try {
-        String base = task.baseBranchOr(configService.project(project).baseBranch());
+        String base = task.ticket().baseBranchOr(configService.project(project).baseBranch());
         paths.put(
             project,
             inspection.changedPaths(projectPath(project), Path.of(repo.worktreePath()), base));
@@ -245,7 +246,7 @@ public class WorktreeChanges {
     for (TaskRepo repo : placed(task)) {
       String project = Objects.requireNonNull(repo.project());
       try {
-        String base = task.baseBranchOr(configService.project(project).baseBranch());
+        String base = task.ticket().baseBranchOr(configService.project(project).baseBranch());
         Optional<String> own =
             inspection.ownDiffId(projectPath(project), Path.of(repo.worktreePath()), base);
         if (own.isEmpty()) {
@@ -269,8 +270,9 @@ public class WorktreeChanges {
     for (TaskRepo repo : placed(task)) {
       try {
         String base =
-            task.baseBranchOr(
-                configService.project(Objects.requireNonNull(repo.project())).baseBranch());
+            task.ticket()
+                .baseBranchOr(
+                    configService.project(Objects.requireNonNull(repo.project())).baseBranch());
         added +=
             inspection.agentFileLinesAdded(
                 projectPath(Objects.requireNonNull(repo.project())),

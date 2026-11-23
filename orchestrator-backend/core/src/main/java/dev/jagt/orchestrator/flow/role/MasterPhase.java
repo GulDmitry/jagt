@@ -14,11 +14,12 @@ public enum MasterPhase {
   LEFT;
 
   public static MasterPhase of(TaskState task) {
-    Master master = task.arbiterOrNone();
+    Master master = task.work().arbiterOrNone();
     if (!master.left().isEmpty()
-        || (task.report().asks() && master.unanswered().equals(task.askedDigest()))
-        || (FlowRules.deployedByTheArbiter(task.status())
-            && master.pressedDeploy().equals(String.valueOf(task.statusSince())))) {
+        || (task.standing().report().asks()
+            && master.unanswered().equals(task.standing().askedDigest()))
+        || (FlowRules.deployedByTheArbiter(task.standing().status())
+            && master.pressedDeploy().equals(String.valueOf(task.standing().statusSince())))) {
       return LEFT;
     }
     return readTheRoundInFront(task) ? READ : STANDS_IN;
@@ -29,9 +30,9 @@ public enum MasterPhase {
    * the Master reads.
    */
   public static boolean readTheRoundInFront(TaskState task) {
-    Master master = task.arbiterOrNone();
+    Master master = task.work().arbiterOrNone();
     return !master.seal().isEmpty()
-        && master.sealedRound() == task.turnOrNone().id()
-        && FlowRules.readByTheArbiter(task.status());
+        && master.sealedRound() == task.work().turnOrNone().id()
+        && FlowRules.readByTheArbiter(task.standing().status());
   }
 }

@@ -20,11 +20,12 @@ plugins {
     id 'jagt.suite-stats' apply false
     id 'jagt.sbom' apply false
     id 'jagt.fitness' apply false
+    id 'jagt.tests-for' apply false
     id 'fitness' apply false
 }
 
 group = 'dev.jagt'
-version = '0.25.0'
+version = '0.26.0'
 description = 'Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees'
 
 dependencies {
@@ -56,6 +57,9 @@ apply plugin: 'jagt.uncached-suites'
 apply plugin: 'jagt.suite-stats'
 apply plugin: 'jagt.sbom'
 apply plugin: 'jagt.fitness'
+apply plugin: 'jagt.tests-for'
 
-tasks.named('test') { dependsOn gradle.includedBuild('fitness').task(':test') }
-tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check'), 'fitness' }
+tasks.named('test') {
+    dependsOn gradle.includedBuild('fitness').task(':test'), gradle.includedBuild('build-logic').task(':test')
+}
+tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check'), 'fitness', 'checkScope' }

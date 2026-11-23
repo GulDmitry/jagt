@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.git.GitWorktrees;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -25,7 +26,7 @@ class ProjectCardsTest {
   void carriesTheEntryAndTheAddressOfItsRepository() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api",
@@ -44,7 +45,7 @@ class ProjectCardsTest {
   void servesTheFlatKeysTheBoardReads() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api",
@@ -64,7 +65,7 @@ class ProjectCardsTest {
   void leavesTheAddressBlankWhereTheRepositoryHasNoRemote() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("local", new ProjectConfig("/srv/local", "main", "dev", List.of()))));
     when(worktrees.remoteUrl(Path.of("/srv/local")))
@@ -75,7 +76,7 @@ class ProjectCardsTest {
 
   @Test
   void refusesProjectJagtYmlDoesNotHold() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
+    when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of()));
 
     assertThatThrownBy(() -> cards.of("nope")).isInstanceOf(IllegalArgumentException.class);
   }

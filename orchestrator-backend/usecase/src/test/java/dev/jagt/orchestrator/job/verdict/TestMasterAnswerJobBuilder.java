@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.verdict;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -21,9 +22,9 @@ public record TestMasterAnswerJobBuilder(@Nullable List<String> mine) {
     return new TestMasterAnswerJobBuilder(null);
   }
 
-  public ConfigService.ConfigFile config() {
-    return ConfigService.ConfigFile.defaults()
-        .withArbiter(new ConfigService.ConfigFile.ArbiterConfig("act", null, null, mine, null));
+  public ConfigFile config() {
+    return ConfigFile.defaults()
+        .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, mine, null));
   }
 
   public MasterAnswerJob build(

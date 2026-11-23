@@ -28,7 +28,7 @@ class CodeProject {
       return "Opened " + taskId + " in the board's code viewer";
     }
     // A DEPLOY_CONFLICT lives on the DEPLOY side; the task's own worktrees are clean.
-    if (FlowRules.conflictedInTheDeployWorktree(task.status())) {
+    if (FlowRules.conflictedInTheDeployWorktree(task.standing().status())) {
       Optional<String> conflict = openConflict(taskId, task);
       if (conflict.isPresent()) {
         return conflict.get();

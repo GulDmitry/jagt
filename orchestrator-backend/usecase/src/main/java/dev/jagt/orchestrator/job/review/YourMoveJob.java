@@ -79,12 +79,12 @@ public class YourMoveJob implements Job {
     Move move =
         Move.forTask(
             rules,
-            task.status(),
+            task.standing().status(),
             projected.withDelivery(
                 projected.delivery().withShippedWithoutRequest(round.requestless())),
             round,
             false);
-    String title = title(task.status(), round);
+    String title = title(task.standing().status(), round);
     String banner = banner(move.hint(), round);
     Optional<String> yours =
         move.owner() == Owner.YOU ? Optional.of(title + "\n" + banner) : Optional.empty();

@@ -109,7 +109,7 @@ public class StateService implements ReducingStore {
       return idOrAlias;
     }
     return tasks().entrySet().stream()
-        .filter(e -> idOrAlias.equalsIgnoreCase(e.getValue().alias()))
+        .filter(e -> idOrAlias.equalsIgnoreCase(e.getValue().ticket().alias()))
         .map(Map.Entry::getKey)
         .findFirst()
         .orElse(idOrAlias);
@@ -210,7 +210,7 @@ public class StateService implements ReducingStore {
    * {@link OriginContext}.
    */
   private static TaskState stamped(@Nullable TaskState before, TaskState after) {
-    if (after.history().isEmpty() || !tookStep(before, after)) {
+    if (after.standing().history().isEmpty() || !tookStep(before, after)) {
       return after;
     }
     ActionOrigin origin = OriginContext.current();
@@ -225,13 +225,13 @@ public class StateService implements ReducingStore {
     if (before == null) {
       return true;
     }
-    if (before.history().isEmpty()) {
+    if (before.standing().history().isEmpty()) {
       // A task written before history existed has its status reconstructed on the next write. That
       // is not
       // a step anyone just took, so a keep-alive must not sign it.
-      return after.history().size() > 1;
+      return after.standing().history().size() > 1;
     }
-    return !before.history().getLast().equals(after.history().getLast());
+    return !before.standing().history().getLast().equals(after.standing().history().getLast());
   }
 
   private void mutate(UnaryOperator<StateFile> mutation) {

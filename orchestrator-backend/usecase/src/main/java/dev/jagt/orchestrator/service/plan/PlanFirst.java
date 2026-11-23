@@ -21,7 +21,7 @@ public final class PlanFirst {
 
   /** Why a write to {@code file} is refused, or empty when it is allowed. */
   public static Optional<String> refusal(TaskState task, @Nullable String file) {
-    if (!task.planGate().closed() || file == null || task.worktreePath() == null) {
+    if (!task.gate().planGate().closed() || file == null || task.worktreePath() == null) {
       return Optional.empty();
     }
     Path root = Path.of(task.worktreePath()).normalize();

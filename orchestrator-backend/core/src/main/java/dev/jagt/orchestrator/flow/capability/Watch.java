@@ -79,10 +79,10 @@ public record Watch(
   }
 
   public boolean admits(TaskState task) {
-    return statuses.contains(task.status())
-        && stops.contains(StopKind.of(task.stop()))
-        && reports.contains(task.report())
-        && turns.contains(TurnKind.of(task.turnOrNone()))
-        && plans.contains(task.planGate());
+    return statuses.contains(task.standing().status())
+        && stops.contains(StopKind.of(task.work().stop()))
+        && reports.contains(task.standing().report())
+        && turns.contains(TurnKind.of(task.work().turnOrNone()))
+        && plans.contains(task.gate().planGate());
   }
 }

@@ -35,36 +35,36 @@ final class PointCatalogue {
       if (task.requestsMerged()) {
         standing.add(new Standing(Point.MERGED, requests));
       }
-      if (Boolean.TRUE.equals(task.approved())) {
-        standing.add(new Standing(Point.APPROVED, requests + "@" + task.checksTip()));
+      if (Boolean.TRUE.equals(task.round().approved())) {
+        standing.add(new Standing(Point.APPROVED, requests + "@" + task.checks().checksTip()));
       }
     }
-    Deployment deployment = task.deployment();
+    Deployment deployment = task.work().deployment();
     String pressed = deployment == null ? "" : String.valueOf(deployment.pressedAt());
     if (deployment != null && deployment.pressedAt() > 0) {
       standing.add(new Standing(Point.DEPLOY_PRESSED, pressed));
     }
-    if (task.status() == TaskStatus.DEPLOYED) {
+    if (task.standing().status() == TaskStatus.DEPLOYED) {
       standing.add(new Standing(Point.DEPLOYED, pressed));
     }
-    if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
+    if (task.standing().status() == TaskStatus.DEPLOY_CONFLICT) {
       standing.add(new Standing(Point.DEPLOY_CONFLICT, pressed));
     }
-    if (task.status() == TaskStatus.DONE) {
+    if (task.standing().status() == TaskStatus.DONE) {
       standing.add(new Standing(Point.DONE, "done"));
     }
     return standing;
   }
 
   private static void stopped(TaskState task, StopHold hold, List<Standing> standing) {
-    TaskStop stop = task.stop();
+    TaskStop stop = task.work().stop();
     if (stop != null
         && stop.trigger().ends() != TaskStop.Trigger.Ends.PAUSE
         && hold != StopHold.ARBITER) {
       standing.add(new Standing(Point.STOPPED, stop.key()));
       return;
     }
-    long asked = task.session().askedAt();
+    long asked = task.work().session().askedAt();
     if (asked > 0) {
       standing.add(new Standing(Point.STOPPED, "ask@" + asked));
       return;
@@ -76,7 +76,7 @@ final class PointCatalogue {
   }
 
   private static void autoReview(TaskState task, List<Standing> standing) {
-    ToldOnce told = task.toldOrNone();
+    ToldOnce told = task.round().toldOrNone();
     String key =
         Stream.of(
                 ToldOnce.Kind.AUTO_REVIEW_WINDOW,
@@ -100,7 +100,8 @@ final class PointCatalogue {
   private static void rolePoints(TaskState task, List<Point> declared, List<Standing> standing) {
     Map<String, Point> byId = new HashMap<>();
     declared.forEach(point -> byId.put(point.id(), point));
-    task.roles()
+    task.work()
+        .roles()
         .forEach((role, record) -> {
           roleStanding(byId, role + "-passed", record.passed(), standing);
           roleStanding(byId, role + "-round-sent", record.roundDigest(), standing);

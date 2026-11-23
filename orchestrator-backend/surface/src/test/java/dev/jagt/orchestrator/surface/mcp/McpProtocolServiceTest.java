@@ -485,7 +485,8 @@ class McpProtocolServiceTest {
         root.toString(),
         false);
 
-    assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isGreaterThan(1000);
+    assertThat(state.task("ABC-1").orElseThrow().standing().lastActiveTimestamp())
+        .isGreaterThan(1000);
   }
 
   @ParameterizedTest
@@ -508,7 +509,7 @@ class McpProtocolServiceTest {
         root.toString(),
         false);
 
-    assertThat(state.task("ABC-1").orElseThrow().session().movedAt()).isEqualTo(signedAt);
+    assertThat(state.task("ABC-1").orElseThrow().work().session().movedAt()).isEqualTo(signedAt);
   }
 
   @Test
@@ -528,7 +529,8 @@ class McpProtocolServiceTest {
         root.toString(),
         false);
 
-    assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(freshTimestamp);
+    assertThat(state.task("ABC-1").orElseThrow().standing().lastActiveTimestamp())
+        .isEqualTo(freshTimestamp);
   }
 
   @Test
@@ -549,7 +551,8 @@ class McpProtocolServiceTest {
         root.toString(),
         false);
 
-    assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(85_000);
+    assertThat(state.task("ABC-1").orElseThrow().standing().lastActiveTimestamp())
+        .isEqualTo(85_000);
   }
 
   @Test

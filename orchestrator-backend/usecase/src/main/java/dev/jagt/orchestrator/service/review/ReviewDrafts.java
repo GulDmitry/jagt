@@ -70,7 +70,7 @@ public class ReviewDrafts {
       return false;
     }
     try {
-      return Files.getLastModifiedTime(file).toMillis() < task.mrCreatedAt();
+      return Files.getLastModifiedTime(file).toMillis() < task.round().mrCreatedAt();
     } catch (IOException e) {
       return false;
     }

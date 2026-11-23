@@ -302,11 +302,11 @@ class StateServiceTest {
 
     var task = state.task("ABC-1").orElseThrow();
 
-    assertThat(task.status()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(task.standing().status()).isEqualTo(TaskStatus.CI_POLLING);
     assertThat(task.mrUrl()).isEqualTo("http://mr/1");
-    assertThat(task.mrCreatedAt()).isZero();
-    assertThat(task.lastPolledAt()).isZero();
-    assertThat(task.autoReview()).isNull();
+    assertThat(task.round().mrCreatedAt()).isZero();
+    assertThat(task.round().lastPolledAt()).isZero();
+    assertThat(task.round().autoReview()).isNull();
   }
 
   @Test
@@ -333,7 +333,7 @@ class StateServiceTest {
             state.updateTask(
                 "ABC-1", task -> task.withStatus(TaskStatus.SHIPPING, "shipping", 2_000)));
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .extracting(StatusChange::status, StatusChange::origin)
         .containsExactly(
             tuple(TaskStatus.NEW, null), tuple(TaskStatus.SHIPPING, ActionOrigin.BOARD));
@@ -350,7 +350,7 @@ class StateServiceTest {
             state.updateTask(
                 "ABC-1", task -> task.withStatus(TaskStatus.SHIPPING, "shipping", 2_000)));
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .extracting(StatusChange::origin, StatusChange::role)
         .containsExactly(tuple(null, null), tuple(ActionOrigin.ACCEPTANCE, "security"));
   }
@@ -367,7 +367,7 @@ class StateServiceTest {
             state.updateTask(
                 "ABC-1", task -> task.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000)));
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .extracting(StatusChange::status, StatusChange::why)
         .containsExactly(
             tuple(TaskStatus.IN_PROGRESS, null),
@@ -383,7 +383,7 @@ class StateServiceTest {
     OriginContext.because(
         "still on the parser", () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .extracting(StatusChange::why)
         .containsOnlyNulls();
   }
@@ -399,7 +399,7 @@ class StateServiceTest {
         """);
     StateService state = stateService().withRoot(root).build();
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD));
   }
 
@@ -415,7 +415,7 @@ class StateServiceTest {
     OriginContext.as(
         ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .extracting(StatusChange::origin)
         .containsExactly(ActionOrigin.BOARD);
   }
@@ -435,7 +435,7 @@ class StateServiceTest {
     OriginContext.as(
         ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
 
-    assertThat(state.task("ABC-1").orElseThrow().history())
+    assertThat(state.task("ABC-1").orElseThrow().standing().history())
         .extracting(StatusChange::status, StatusChange::origin)
         .containsExactly(tuple(TaskStatus.APPROVED, null));
   }
@@ -449,7 +449,7 @@ class StateServiceTest {
         state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished", 2_000));
 
     assertThat(updated).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DONE);
+    assertThat(state.task("ABC-1").orElseThrow().standing().status()).isEqualTo(TaskStatus.DONE);
   }
 
   @Test

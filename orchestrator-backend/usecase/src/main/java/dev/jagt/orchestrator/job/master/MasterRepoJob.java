@@ -50,8 +50,8 @@ public class MasterRepoJob implements Job {
     stateService
         .tasks()
         .forEach((taskId, task) -> {
-          String request = task.repoRequest();
-          String pressed = task.turnOrNone().mark(PRESSED);
+          String request = task.work().repoRequest();
+          String pressed = task.work().turnOrNone().mark(PRESSED);
           if (request == null) {
             if (pressed != null) {
               turns.unmark(taskId, PRESSED);
@@ -60,7 +60,9 @@ public class MasterRepoJob implements Job {
           }
           // Once per request, kept on the task: a refused press is not repeated, nor after a
           // restart.
-          if (task.status() == TaskStatus.DONE || task.stopped() || request.equals(pressed)) {
+          if (task.standing().status() == TaskStatus.DONE
+              || task.work().stopped()
+              || request.equals(pressed)) {
             return;
           }
           turns.mark(taskId, PRESSED, request);

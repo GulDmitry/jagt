@@ -11,9 +11,9 @@ public enum ApprovalPhase {
   WITHHELD;
 
   public static ApprovalPhase of(TaskState task) {
-    if (task.approved() == null) {
+    if (task.round().approved() == null) {
       return UNREAD;
     }
-    return task.approved() ? APPROVED : WITHHELD;
+    return task.round().approved() ? APPROVED : WITHHELD;
   }
 }

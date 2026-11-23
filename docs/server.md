@@ -58,14 +58,14 @@ A first start copies a mounted `/app/jagt.yml`, else `jagt.server.yml.dist`, the
   Each key is described in `jagt.desktop.yml.dist` under the same name, and nowhere else.
 - One file per environment: keep `jagt.stage.yml` and `jagt.prod.yml` and set `ORCHESTRATOR_CONFIG_FILE=/etc/jagt/jagt.prod.yml`;
   jagt reads that file alone, no profile or overlay involved.
-- `agent.sandbox.enabled` stays `false` in a pod: the container is the fence.
+- `agent.sandbox.enabled` stays `false` in a pod: the container is the fence. A session still reaches the Master token
+  and the code-host credential, because the pod runs one OS user ([threat model](threat-model.md#gaps)).
 - `usageLimits.enabled` stays `false` with an API key: the limits are read from an agent CLI's own login, which a key lacks.
 - Verify runs go one task at a time: size the pod's limits for one `verifyCommand` beside the sessions.
 - A `verifyCommand`, `setupCommand` or acceptance flows program the image lacks shows in the board's head: extend the image
   (`examples/agent-image.Dockerfile` has the Node and Chromium layers).
 - The host of `JAGT_PUBLIC_URL` is the one the ingress must forward; any other `Host` or `Origin` is refused with 403.
-- The ingress ends TLS (the manifest's `tls` Secret); the starter reads `X-Forwarded-*`, sets the cookie Secure
-  and ends an idle login after 30 minutes.
+- The ingress ends TLS (the manifest's `tls` Secret); the starter reads `X-Forwarded-*`, sets the cookie Secure and ends an idle login after 30 min.
 - `X-Forwarded-For` counts only from a private-range proxy; an ingress on a public address is named in
   `server.tomcat.remoteip.internal-proxies`, else the login backoff keys on the ingress, not the client.
 

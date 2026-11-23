@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TestProjectConfigBuilder;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -32,9 +33,7 @@ class HostlessShipsTest {
                 TaskStatus.REVIEW_PENDING)
             .build();
     when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("api", hostless, "web", hostless)));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("api", hostless, "web", hostless)));
     when(changes.anythingNewToShip(task)).thenReturn(false);
 
     assertThat(ships.stands(task)).isTrue();
@@ -44,7 +43,7 @@ class HostlessShipsTest {
   void doesNotStandWhereWorkIsLeftUnpublished() {
     TaskState task = TaskState.builder("api", "/wt-api", TaskStatus.REVIEW_PENDING).build();
     when(configService.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", hostless)));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("api", hostless)));
     when(changes.anythingNewToShip(task)).thenReturn(true);
 
     assertThat(ships.stands(task)).isFalse();
@@ -58,9 +57,7 @@ class HostlessShipsTest {
                 TaskStatus.REVIEW_PENDING)
             .build();
     when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("api", hosted, "web", hostless)));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("api", hosted, "web", hostless)));
     when(changes.anythingNewToShip(task)).thenReturn(false);
 
     assertThat(ships.stands(task)).isFalse();
@@ -70,7 +67,7 @@ class HostlessShipsTest {
   void doesNotStandOnceTheAgentWorksOnTheTaskAgain() {
     TaskState task = TaskState.builder("api", "/wt-api", TaskStatus.IN_PROGRESS).build();
     when(configService.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", hostless)));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("api", hostless)));
     when(changes.anythingNewToShip(task)).thenReturn(false);
 
     assertThat(ships.stands(task)).isFalse();
@@ -80,7 +77,7 @@ class HostlessShipsTest {
   void doesNotStandWhereTheConfigurationNowGivesTheRepositoryCodeHost() {
     TaskState task = TaskState.builder("api", "/wt-api", TaskStatus.REVIEW_PENDING).build();
     when(configService.load())
-        .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", hosted)));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("api", hosted)));
     when(changes.anythingNewToShip(task)).thenReturn(false);
 
     assertThat(ships.stands(task)).isFalse();

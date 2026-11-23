@@ -17,10 +17,12 @@ public final class JagtContainer implements UnitEngine {
   private static final String IMAGE = "jagt-stand";
   private static final String NEXT = "jagt-stand-next";
   private static final Duration STARTUP = Duration.ofMinutes(5);
+  private static final int BOARD_PORT = 8290;
 
   private final Path root;
-  private final int port;
-  private final StandBoard board;
+  private final boolean dynamicPort;
+  private int port;
+  private StandBoard board;
   private final StandShell.Runner shell;
   private final Map<String, String> env;
   private final Duration startup;
@@ -34,6 +36,7 @@ public final class JagtContainer implements UnitEngine {
       Map<String, String> env,
       Duration startup) {
     this.root = root;
+    this.dynamicPort = port == 0;
     this.port = port;
     this.board = board;
     this.shell = shell;
@@ -171,12 +174,34 @@ public final class JagtContainer implements UnitEngine {
   }
 
   private JagtContainer awaitReady() {
+    adoptPublishedPort();
     if (!BoardWait.up(board, startup, () -> {})) {
       close();
       throw new StandFailure(
           "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));
     }
     return this;
+  }
+
+  private void adoptPublishedPort() {
+    if (!dynamicPort) {
+      return;
+    }
+    StandShell.Result published = compose("port", "jagt", Integer.toString(BOARD_PORT));
+    int chosen = publishedPort(published.output());
+    if (published.exit() != 0 || chosen == 0) {
+      close();
+      throw new StandFailure(
+          "jagt's container published no host port under " + root + ": " + published.output());
+    }
+    port = chosen;
+    board = board.at(chosen);
+  }
+
+  static int publishedPort(String output) {
+    String line = output.lines().map(String::strip).findFirst().orElse("");
+    String digits = line.substring(line.lastIndexOf(':') + 1);
+    return digits.matches("\\d{1,5}") ? Integer.parseInt(digits) : 0;
   }
 
   @Override

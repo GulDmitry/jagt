@@ -30,7 +30,7 @@ class MasterPress {
   /** False where the press was left to the human or refused. */
   boolean press(String taskId, TaskState task, TaskAction action) {
     Optional<String> touched = humanPaths.touched(task);
-    String left = task.arbiterOrNone().left();
+    String left = task.work().arbiterOrNone().left();
     if (touched.isPresent()) {
       // A step left waiting is offered again every tick.
       String step = action.id() + " " + touched.get();

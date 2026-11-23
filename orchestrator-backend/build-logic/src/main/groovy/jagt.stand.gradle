@@ -38,8 +38,9 @@ tasks.register('standTest', Test) {
     systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
     systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '8'
     systemProperty 'stand.parallelism', standParallelism
-    // Absolute time budgets hold on the reference machine only; a shared runner sets -Pbudgets=false.
-    systemProperty 'stand.budgets', project.findProperty('budgets') ?: 'true'
+    // Absolute time budgets are judged only with -Pbudgets=true, on the idle reference machine; any other run
+    // records its timings and the trend gate judges them.
+    systemProperty 'stand.budgets', project.findProperty('budgets') ?: 'false'
     systemProperty 'stand.base', standBase
     systemProperty 'stand.jar', standJar
     systemProperty 'stand.repo', standRepo
@@ -53,6 +54,11 @@ tasks.register('standTest', Test) {
     systemProperty 'stand.report', standReport.absolutePath
     // A run starts the staged jar, so a replay checks the frame as built now.
     dependsOn ':stageJar', 'standImage'
+    // kind clusters import this one archive instead of each saving the image again.
+    if (standEngine == 'kind') {
+        dependsOn 'standImageArchive'
+        systemProperty 'stand.imageArchive', layout.buildDirectory.file('stand/image.tar').get().asFile.absolutePath
+    }
     doFirst { standReport.delete() }
     testLogging { showStandardStreams = true; exceptionFormat = 'full' }
     outputs.upToDateWhen { false }
@@ -62,17 +68,15 @@ tasks.register('standTest', Test) {
 def standDocker = providers.exec { commandLine 'sh', '-c', 'docker info >/dev/null 2>&1'; ignoreExitValue = true }
     .result.get().exitValue == 0
 def standHost = (project.findProperty('engine') ?: 'compose') == 'host'
-def standCompose = layout.projectDirectory.dir('src/stand/compose').asFile.absolutePath
 
-// jagt's own image, then a test image FROM it that adds the agent CLI.
+// jagt's own image on the published stand base (OS layer plus the agent CLI), pinned by digest.
 tasks.register('standImage', Exec) {
-    description = 'Builds the images the container stand runs: jagt-stand-base (jagt as shipped) and jagt-stand (plus the agent CLI).'
+    description = 'Builds jagt-stand: jagt as shipped on the published stand base image.'
     group = 'verification'
     dependsOn ':bootJar'
     commandLine 'sh', '-c',
-        'docker build --build-context "jar=$2" -t jagt-stand-base "$0" && ' +
-            'docker build -f "$1/Dockerfile" --build-arg BASE=jagt-stand-base -t jagt-stand "$1"',
-        standRepo, standCompose, rootProject.layout.buildDirectory.dir('libs').get().asFile.absolutePath
+        'docker build --build-context "jar=$1" --build-arg BASE=ghcr.io/guldmitry/jagt-stand-base:base@sha256:dde63c13e93be962909a0ff2f1034729a00136e6c0b49acbb3a84014891ced0e -t jagt-stand "$0"',
+        standRepo, rootProject.layout.buildDirectory.dir('libs').get().asFile.absolutePath
     onlyIf { // no Docker means no stand image
         if (!standHost && !standDocker) {
             System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Pengine=host runs it on the host')
@@ -81,9 +85,22 @@ tasks.register('standImage', Exec) {
     }
 }
 
+tasks.register('standImageArchive', Exec) {
+    description = 'Saves jagt-stand:run once, for every kind cluster to import.'
+    group = 'verification'
+    dependsOn 'standImage'
+    def archive = layout.buildDirectory.file('stand/image.tar').get().asFile
+    outputs.file archive
+    outputs.upToDateWhen { false }
+    doFirst { archive.parentFile.mkdirs() }
+    commandLine 'sh', '-c', 'docker tag jagt-stand jagt-stand:run && docker save -o "$0" jagt-stand:run', archive.absolutePath
+    onlyIf { !standHost && standDocker }
+}
+
 tasks.register('standImageRemove', Exec) {
     description = 'Removes the jagt-stand* image tags.'
-    commandLine 'sh', '-c', 'docker image rm -f jagt-stand jagt-stand-base jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true'
+    commandLine 'sh', '-c',
+        'docker image rm -f jagt-stand jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true' // absent is removed
     onlyIf { standDocker }  // nothing to remove without Docker
 }
 

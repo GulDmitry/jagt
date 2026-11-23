@@ -46,7 +46,7 @@ public class CycleTimeRenderer {
   String render(Map<String, TaskState> tasks, long now) {
     List<Clock> clocks =
         tasks.entrySet().stream()
-            .filter(e -> !e.getValue().history().isEmpty())
+            .filter(e -> !e.getValue().standing().history().isEmpty())
             .map(e -> clockOf(e.getKey(), e.getValue(), now))
             .sorted(Comparator.comparingLong(Clock::onYou).reversed())
             .toList();
@@ -138,15 +138,15 @@ public class CycleTimeRenderer {
   }
 
   private static Clock clockOf(String taskId, TaskState task, long now) {
-    Map<Owner, Long> byOwner = HeldTime.byOwner(task.history(), now);
+    Map<Owner, Long> byOwner = HeldTime.byOwner(task.standing().history(), now);
     return new Clock(
         taskId,
-        Math.max(0, now - task.history().getFirst().at()),
+        Math.max(0, now - task.standing().history().getFirst().at()),
         byOwner.getOrDefault(Owner.YOU, 0L),
         byOwner.getOrDefault(Owner.AGENT, 0L),
         byOwner.getOrDefault(Owner.CI, 0L),
-        byYou(task.history()),
-        task.rounds(),
-        task.historyAtCap());
+        byYou(task.standing().history()),
+        task.standing().rounds(),
+        task.standing().historyAtCap());
   }
 }

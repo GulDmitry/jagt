@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
@@ -38,7 +39,7 @@ class DeployConflictsTest {
     state = stateService().withRoot(root).build();
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     service = new DeployConflicts(new DeployTargets(config), git);
@@ -62,7 +63,7 @@ class DeployConflictsTest {
             .build());
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api",

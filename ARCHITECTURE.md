@@ -34,14 +34,16 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
 | `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/channel/Notification` + `port/channel/ChannelDriver` | twelve-factor IV, a channel a backing service chosen in `jagt.yml` · `RoutesTest` |
-| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `NotThePageTest`, `LoopbackOrRootTokenTest`; the board's `ui/`: `boardTest`, `node --test` under c8 |
+| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `NotThePageTest`, `LoopbackOrRootTokenTest`; the board's `ui/`: `boardTest` (V8 coverage per file, `board/coverage-floors/floors.json`, a branch floor of a file whose count moves with async timing: the lowest seen minus 3 points, rounded down), `node --test` under c8 |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb | command pattern, one class per verb · `KindsTest` |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks | ASVS V2 input validation against a JSON Schema · `SchemaTest`; the board's `core/grammar`: `node --test` under c8 |
-| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `cognitive-complexity`, `duplication`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
+| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; `checkScope` fails a source set with sources that lacks one; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) | ISO/IEC 25010 maintainability · Checkstyle, Error Prone, NullAway, `cognitive-complexity`, `duplication`; the board's JS, `cd board`: `npm run lint` (Prettier, ESLint, tsc strict, jscpd at 75 tokens), `npm test` (c8), `npm run mutate` (Stryker), in CI's `test` job |
 | fitness function | one automated fitness function with a measured number, a threshold and a direction, in one place in the reserved tree | built — `fitness.yml` read by the included build `fitness/`; a coded fitness function a `Fitness` class found by id ([0209](docs/decisions/0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md)); its own boundary [0210](docs/decisions/0210-fitness-is-an-included-build-with-its-own-boundary.md) | Building Evolutionary Architectures, ch. 2; ISO/IEC 25010 and 25012 section names · `FitnessTest` |
 | `startup/` | why the assembly must not start | built — `port/host/StartupCheck`, `StartupValidation` and every check | fail-fast configuration validation · `StartupValidationTest` |
 | deployment example | a file a user copies and edits to run jagt somewhere, in `examples/`; `.dist` stays for a file whose copy is ignored | built — `Dockerfile` and `docker-compose.yml` (jagt's own image), `examples/agent-image.Dockerfile`, `examples/kubernetes.yml`, `examples/server.env`; one walk-through, [`docs/server.md`](docs/server.md), [0171](docs/decisions/0171-the-image-is-a-base-without-agent-clis.md) | twelve-factor app, Kubernetes restricted Pod Security Standard · `KubernetesManifestsTest` |
 | `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesFitness` | use cases as WHEN/THEN before code · `RoleNamesFitness` |
+| script | a program the repository stores to run from a shell or a CI step | built — **logic is Java**: a `build-logic` task (`testsFor`) or a JUnit suite in its own source set (`installTest`), under the build's floor (Checkstyle, complexity, duplication, JUnit, pitest). **Shell only** where no JVM runs yet (`install.sh`, `install.ps1`, the container `entrypoint.sh`), where a JVM is wrong (a fake CLI a suite spawns), or as a one-call wrapper of a tool (scans, publish, the container and Linux suites); `mcp_client.js` stays a per-session Node bridge, one JVM per session being the cost. **Speed decides the edge**: a script stays shell when Java's start breaks its latency budget for how often it runs; measured 2026-11-22 on a laptop, a JVM starts in 0.05 s, a warm Gradle task in 0.7 s, a cold one in 7 s. **Done**: Java — its tests and `fitness` green; shell — one bats case per promise and a run on a real setup | Google Shell Style Guide, "When to use Shell": past 100 lines or with non-straightforward control flow, a structured language · `scripts-are-java` ([0227](docs/decisions/0227-a-script-with-logic-is-java.md)) |
+| contributor guard | a hook script that refuses one mistake of a contributor's agent session, shared by every contributor | built — `scripts/guards/*.sh`: the bare command on stdin, exit 2 blocks, any other exit allows; wired by a `jq` pipe in the tracked `.claude/settings.json`; `orchestrator-backend/scripts/ci-local.sh` records the green tree `push-after-local-ci.sh` reads; the loop, the backlog and the owner's limits stay private ([0230](docs/decisions/0230-contributor-guards-are-tracked-shell-the-loop-the-backlog-and-the-owners-limits-stay-private.md)) | Google Shell Style Guide, "When to use Shell": a hook runs per tool call, `jq` 0.02 s against a JVM 0.9 s, measured 2026-11-22 · `guardsTest`: shellcheck, one bats case per promise |
 
 **A new kind names its sphere's standard and the check pinning it before its first code.** The gates of testing, QA,
 operations and supply chain have one inventory, `openspec/specs/engineering/spec.md`; [`docs/practices.md`](docs/practices.md) copies them.
@@ -107,19 +109,14 @@ answer. Every type in `flow/`, one question each:
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
 | `TaskView` | what the board renders, built by `service/task/TaskViews` |
 
-- The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md);
-  the stop's way out, in [`docs/task-stop-chart.md`](docs/task-stop-chart.md); the plan gate,
-  in [`docs/task-plan-chart.md`](docs/task-plan-chart.md); the report, in
-  [`docs/task-report-chart.md`](docs/task-report-chart.md); the turn, in
-  [`docs/task-turn-chart.md`](docs/task-turn-chart.md); the session's signs, in
-  [`docs/task-session-chart.md`](docs/task-session-chart.md); the deploy, in
-  [`docs/task-deploy-chart.md`](docs/task-deploy-chart.md); the git trust, in
-  [`docs/task-git-chart.md`](docs/task-git-chart.md); the repository request, in
-  [`docs/task-repo-chart.md`](docs/task-repo-chart.md); the review requests, in
-  [`docs/task-request-chart.md`](docs/task-request-chart.md); the checks and the approval a read
-  said, in [`docs/task-checks-chart.md`](docs/task-checks-chart.md) and
-  [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
-  [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
+- The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md); the stop's way out, in
+  [`docs/task-stop-chart.md`](docs/task-stop-chart.md); the plan gate, in [`docs/task-plan-chart.md`](docs/task-plan-chart.md); the report, in
+  [`docs/task-report-chart.md`](docs/task-report-chart.md); the turn, in [`docs/task-turn-chart.md`](docs/task-turn-chart.md); the session's signs,
+  in [`docs/task-session-chart.md`](docs/task-session-chart.md); the deploy, in [`docs/task-deploy-chart.md`](docs/task-deploy-chart.md); the git
+  trust, in [`docs/task-git-chart.md`](docs/task-git-chart.md); the repository request, in [`docs/task-repo-chart.md`](docs/task-repo-chart.md); the
+  review requests, in [`docs/task-request-chart.md`](docs/task-request-chart.md); the checks and the approval a read said, in
+  [`docs/task-checks-chart.md`](docs/task-checks-chart.md) and [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure
+  re-runs, in [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
   [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
   [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the reducer alone
   ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other marks are bookkeeping, written by `withMark`.
@@ -232,13 +229,14 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `task` | core | the task record, its status and the migrations of old records |
 | `task/acceptance` | core | what the acceptance role leaves on a task: verdict, decline, question, ending |
 | `task/deploy` | core | the deployment record, its conflicts, failed jobs and infra retries |
-| `task/launch` | core | what a task is born from: request, name, routing question, tracker facts |
+| `task/launch` | core | what a task is born from: request, name, routing question |
 | `task/master` | core | what the Master leaves on a task: mode, rights, the record |
 | `task/plan` | core | the plan gate, its artifacts and probes |
 | `task/repo` | core | a task's repositories: remotes, branch strategy, trust, project config |
 | `task/review` | core | review rounds, loop breaker and the merge-request facts |
 | `task/session` | core | the session record, its wake and the ask stamp |
 | `task/stop` | core | a stop on a task, its guard and triage |
+| `task/ticket` | core | the tracker ticket a task carries and the facts read from the tracker |
 | `task/text` | core | text and file helpers of the record: ANSI, atomic files, UTC time |
 | `task/turn` | core | the turn on a task: steps, reports, human waits, what was told once |
 | `task/usage` | core | spend of a task: tokens, model tier, cost per accepted task |

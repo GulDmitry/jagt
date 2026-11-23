@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.master;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterStopAnswer;
@@ -40,9 +41,9 @@ public record TestMasterStopJobBuilder(
         "each round answered a new report");
   }
 
-  public ConfigService.ConfigFile config() {
-    return ConfigService.ConfigFile.defaults()
-        .withArbiter(new ConfigService.ConfigFile.ArbiterConfig(mode, null, null, mine, null));
+  public ConfigFile config() {
+    return ConfigFile.defaults()
+        .withArbiter(new ConfigFile.ArbiterConfig(mode, null, null, mine, null));
   }
 
   public TaskState task() {

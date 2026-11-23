@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -87,7 +88,7 @@ class SessionProbeTest {
   @Test
   void takesTerminalOutputIntoTheReadOnceEverythingCheaperReadsStale() {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.windowState(anyString())).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(sessions.printedAt(anyString())).thenReturn(9_990_000L);
@@ -154,7 +155,7 @@ class SessionProbeTest {
   @Test
   void readsNothingFromWindowListThatCannotBeRead() {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.windowState(anyString())).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(sessions.windowState(anyString()))

@@ -36,11 +36,11 @@ public class HandBackDue {
   }
 
   private Optional<String> repliesOwed(TaskState task) {
-    return task.trailOrNone().rounds().stream()
+    return task.round().trailOrNone().rounds().stream()
         .reduce((first, second) -> second)
         .filter(round -> round.threads() > 0)
         .filter(round ->
-            task.history().stream()
+            task.standing().history().stream()
                 .noneMatch(step -> step.status() == TaskStatus.SHIPPING && step.at() > round.at()))
         .filter(round ->
             olderThan(

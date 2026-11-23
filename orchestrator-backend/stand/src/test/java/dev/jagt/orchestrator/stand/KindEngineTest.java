@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -115,6 +116,32 @@ class KindEngineTest {
   }
 
   @Test
+  void requestComesFromThePodsOwnAddressNotFromTheLoopbackPortForward() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, command.contains("get") ? "10.244.0.7" : "401");
+        };
+    KindEngine kind =
+        new KindEngine(
+            root,
+            9000,
+            board,
+            shell,
+            (where, local) -> forwarding,
+            manifest,
+            Duration.ofMinutes(5));
+
+    int status = kind.fromOutside("/mcp", Map.of("X-Probe", "1"), "{}");
+
+    assertThat(status).isEqualTo(401);
+    assertThat(seen.getLast())
+        .containsSubsequence("kubectl", "exec", "deployment/jagt", "--", "curl")
+        .contains("Origin: http://10.244.0.7:8290", "X-Probe: 1", "--data", "{}")
+        .endsWith("http://10.244.0.7:8290/mcp");
+  }
+
+  @Test
   void clusterIsDeletedAndTheFailureNamesTheStepWhenTheClusterCannotBeCreated() {
     StandShell.Runner shell =
         (cwd, command, env) -> {
@@ -192,9 +219,44 @@ class KindEngineTest {
   }
 
   @Test
+  void closeDeletesTheClusterAgainWhenDockerHasNotYetKilledItsContainer() {
+    int[] deletes = {0};
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          boolean delete = command.contains("delete");
+          if (delete) {
+            deletes[0]++;
+          }
+          return new StandShell.Result(delete && deletes[0] == 1 ? 1 : 0, "");
+        };
+
+    new KindEngine(
+            root, 9000, board, shell, (where, local) -> forwarding, manifest, Duration.ofMinutes(5))
+        .close();
+
+    assertThat(deletes[0]).isEqualTo(2);
+  }
+
+  @Test
+  void closeSucceedsWhenTheDeleteFailedButTheClusterIsGone() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> new StandShell.Result(command.contains("delete") ? 1 : 0, "");
+
+    new KindEngine(
+            root, 9000, board, shell, (where, local) -> forwarding, manifest, Duration.ofMinutes(5))
+        .close();
+
+    assertThat(root.resolve("jagt.out")).exists();
+  }
+
+  @Test
   void closeFailsNamingTheClusterAndTheExitWhenTheClusterCannotBeDeleted() {
     StandShell.Runner shell =
-        (cwd, command, env) -> new StandShell.Result(command.contains("delete") ? -1 : 0, "");
+        (cwd, command, env) ->
+            new StandShell.Result(
+                command.contains("delete") ? -1 : 0,
+                command.contains("get") ? "jagt-stand-41-1" : "");
     KindEngine kind =
         new KindEngine(
             root,
@@ -216,7 +278,8 @@ class KindEngineTest {
     StandShell.Runner shell =
         (cwd, command, env) ->
             new StandShell.Result(
-                command.contains("create") || command.contains("delete") ? 1 : 0, "");
+                command.contains("create") || command.contains("delete") ? 1 : 0,
+                command.contains("get") ? "jagt-stand-41-1" : "");
     KindEngine kind =
         new KindEngine(
             root,

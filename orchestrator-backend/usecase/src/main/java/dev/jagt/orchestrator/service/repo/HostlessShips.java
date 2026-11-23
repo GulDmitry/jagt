@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.repo;
 
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -22,10 +23,10 @@ public class HostlessShips implements RequestlessShip {
 
   @Override
   public boolean stands(TaskState task) {
-    if (task.status() != TaskStatus.REVIEW_PENDING || task.repos().isEmpty()) {
+    if (task.standing().status() != TaskStatus.REVIEW_PENDING || task.repos().isEmpty()) {
       return false;
     }
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     return task.repos().stream()
             .allMatch(repo -> config.hasNoCodeHost(Objects.requireNonNull(repo.project())))
         && !changes.anythingNewToShip(task);

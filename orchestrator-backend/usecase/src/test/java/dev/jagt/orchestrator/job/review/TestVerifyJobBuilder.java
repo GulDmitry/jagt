@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.role.Arbiter;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.Verification;
 import dev.jagt.orchestrator.service.log.StopLog;
@@ -48,7 +48,7 @@ public record TestVerifyJobBuilder(Path root) {
         new TaskStops(
             new StopPolicy(
                 ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
             state,
             Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),

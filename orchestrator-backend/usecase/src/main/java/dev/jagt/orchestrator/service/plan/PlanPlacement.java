@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.plan;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.protocol.plan.PlanRepositories;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
@@ -48,13 +49,13 @@ public class PlanPlacement {
           "plan.md names no `- [changed] <key>` under `## Repositories`, so no repository can be"
               + " cut.");
     }
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     NewTask request =
         NewTask.builder(taskId, keys.getFirst())
             .alsoIn(keys.subList(1, keys.size()))
-            .baseBranch(task.baseBranch())
-            .title(task.title())
-            .ticketUrl(task.ticketUrl())
+            .baseBranch(task.ticket().baseBranch())
+            .title(task.ticket().title())
+            .ticketUrl(task.ticket().ticketUrl())
             .build();
     Path scratch = Path.of(task.worktreePath());
     worktrees.place(request, config, repos -> register(taskId, task, scratch, repos));
@@ -70,7 +71,7 @@ public class PlanPlacement {
   private void register(String taskId, TaskState task, Path scratch, List<NewRepo> repos) {
     WorktreeFiles.copyFiles(scratch, repos.getFirst().worktreePath(), Artifact.fileNames());
     String override =
-        task.baseBranch() == null || task.baseBranch().isBlank()
+        task.ticket().baseBranch() == null || task.ticket().baseBranch().isBlank()
             ? null
             : repos.getFirst().baseBranch();
     List<TaskRepo> placed = repos.stream().map(NewRepo::registered).toList();

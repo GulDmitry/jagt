@@ -89,7 +89,7 @@ public class CheckerCheckJob implements TaskJob {
    */
   private Optional<Deployment> openFor(TaskState task, RoleOptions config) {
     List<String> trigger = settings.role().trigger().trigger();
-    return Optional.ofNullable(task.deployment())
+    return Optional.ofNullable(task.work().deployment())
         .filter(deployment ->
             config.enabled()
                 && deployment.askedDigest() != null

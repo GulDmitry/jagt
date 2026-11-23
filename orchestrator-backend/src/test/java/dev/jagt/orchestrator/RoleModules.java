@@ -80,12 +80,14 @@ public final class RoleModules {
   public static final List<String> STAND_IN_KIND =
       Stream.of(
               "task.TaskState",
+              "task.session.Work",
               "task.StoredTask",
               "task.FinishedTask",
               "task.plan.Artifact",
               "port.host.Layout",
               "protocol.debug.RecordTail",
               "service.ConfigService",
+              "service.ConfigFile",
               "config.source.ConfigSource",
               "flow.Move",
               "flow.Turns",

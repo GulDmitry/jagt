@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.session.ColdPrompts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -37,7 +38,7 @@ class PromptGateTest {
                   .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null)));
 
   PromptGateTest() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
   }
 
   @Test

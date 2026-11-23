@@ -111,6 +111,21 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
+  void boardStillListsTasksWhenTheBrowserBlocksItsStorage() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    Page page = session.newPage();
+    page.addInitScript(
+        "Storage.prototype.getItem = () => { throw new Error('blocked'); };"
+            + " Storage.prototype.setItem = () => { throw new Error('blocked'); };");
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("#tasks .row")).hasCount(1);
+
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+
+    assertThat(page.locator("#tasks .row")).hasCount(2);
+  }
+
+  @Test
   void rowThatMovedWhileThePageWasClosedIsBoldWhenItOpensAgain() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
     state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());

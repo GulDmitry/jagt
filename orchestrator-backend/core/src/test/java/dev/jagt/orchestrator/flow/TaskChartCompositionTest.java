@@ -191,13 +191,13 @@ class TaskChartCompositionTest {
 
   @Test
   void taskWaitsOnTheHostWhilePollingChecksOrAwaitingItsDeploy() {
-    assertThat(TaskChart.waitsOnTheHost(TaskStatus.CI_POLLING)).isTrue();
-    assertThat(TaskChart.waitsOnTheHost(TaskStatus.IN_PROGRESS)).isFalse();
+    assertThat(StatusSets.waitsOnTheHost(TaskStatus.CI_POLLING)).isTrue();
+    assertThat(StatusSets.waitsOnTheHost(TaskStatus.IN_PROGRESS)).isFalse();
   }
 
   @Test
   void reportStandsThroughReadOnlyWhenItWaitsOnAnAnswer() {
-    assertThat(TaskChart.standsThroughRead(AgentReport.QUESTION)).isTrue();
-    assertThat(TaskChart.standsThroughRead(AgentReport.WAIT)).isFalse();
+    assertThat(StatusSets.standsThroughRead(AgentReport.QUESTION)).isTrue();
+    assertThat(StatusSets.standsThroughRead(AgentReport.WAIT)).isFalse();
   }
 }

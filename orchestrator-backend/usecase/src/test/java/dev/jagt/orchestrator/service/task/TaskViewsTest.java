@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -38,7 +39,7 @@ class TaskViewsTest {
             Map.of(
                 "ABC-1",
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
   }
 
   @Test
@@ -77,9 +78,8 @@ class TaskViewsTest {
   void showsRoundTheMasterHasYetToReadAsItsReview() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("judge", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("judge", null, null, null, null)));
 
     assertThat(views.all()).singleElement().extracting("statusLabel").isEqualTo("master review");
   }
@@ -157,7 +157,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", "/wt/ABC-1", TaskStatus.REVIEW_PENDING).build()));
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 

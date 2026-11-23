@@ -116,7 +116,7 @@ class VerifyJobTest {
       verify(relay, times(1))
           .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
       verify(statusReports, never()).verified(eq(true), any(), any());
-      TaskStop stop = state.task("ABC-1").orElseThrow().stop();
+      TaskStop stop = state.task("ABC-1").orElseThrow().work().stop();
       assertThat(Objects.requireNonNull(stop).trigger())
           .isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
       assertThat(stop.evidence()).endsWith("[proj] `./gradlew test` exited 1\nBUILD FAILED");
@@ -166,7 +166,7 @@ class VerifyJobTest {
     job.runOn(state.tasks());
 
     String stored =
-        state.task("ABC-1").orElseThrow().toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
+        state.task("ABC-1").orElseThrow().round().toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
     assertThat(stored).isEqualTo("a".repeat(4_001));
   }
 
@@ -198,7 +198,7 @@ class VerifyJobTest {
             eq("artifact docs/guide.md — FAILED\nno such file"),
             any(Standing.class));
     verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-1");
-    assertThat(state.task("ABC-1").orElseThrow().probes()).containsExactly(passed, failed);
+    assertThat(state.task("ABC-1").orElseThrow().gate().probes()).containsExactly(passed, failed);
   }
 
   @Nested
@@ -228,8 +228,8 @@ class VerifyJobTest {
       verify(relay, never())
           .relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
       verify(statusReports, never()).verified(anyBoolean(), any(), any());
-      assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
-      assertThat(state.task("ABC-42").orElseThrow().probes()).isEmpty();
+      assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
+      assertThat(state.task("ABC-42").orElseThrow().gate().probes()).isEmpty();
     }
 
     @Test

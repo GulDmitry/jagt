@@ -68,7 +68,7 @@ class SessionPresenceTest {
         new SessionPresence(state, probe, properties, new FakeClock()).agentLive("ABC-1");
 
     assertThat(live).isFalse();
-    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.GONE);
   }
 

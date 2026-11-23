@@ -48,9 +48,9 @@ class ShutdownEndingsTest {
     new ShutdownEndings(state, ledger, sessions).stop();
 
     StateService restarted = stateService().withRoot(root).build();
-    assertThat(SessionPhase.of(restarted.task("ABC-1").orElseThrow().session()))
+    assertThat(SessionPhase.of(restarted.task("ABC-1").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.GONE);
-    assertThat(SessionPhase.of(restarted.task("ABC-2").orElseThrow().session()))
+    assertThat(SessionPhase.of(restarted.task("ABC-2").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.GONE);
     verify(sessions).killWindows("ABC-1");
     verify(sessions).killWindows("ABC-2");
@@ -62,7 +62,7 @@ class ShutdownEndingsTest {
 
     new ShutdownEndings(state, ledger, sessions).stop();
 
-    assertThat(SessionPhase.of(state.task("ABC-3").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-3").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.NONE);
     verify(sessions, never()).killWindows("ABC-3");
   }
@@ -75,7 +75,7 @@ class ShutdownEndingsTest {
 
     new ShutdownEndings(state, ledger, sessions).stop();
 
-    assertThat(SessionPhase.of(state.task("ABC-2").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-2").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.GONE);
     verify(sessions).killWindows("ABC-2");
   }
@@ -103,7 +103,7 @@ class ShutdownEndingsTest {
     runner.run(context -> {});
 
     verify(sessions, never()).killWindows("ABC-1");
-    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.WORKING);
   }
 
@@ -142,7 +142,7 @@ class ShutdownEndingsTest {
 
     runner.run(context -> {});
 
-    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
         .isEqualTo(SessionPhase.GONE);
     verify(sessions).killWindows("ABC-1");
   }

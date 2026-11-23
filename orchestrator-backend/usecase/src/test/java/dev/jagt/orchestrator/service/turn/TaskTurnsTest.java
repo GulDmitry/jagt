@@ -104,7 +104,7 @@ class TaskTurnsTest {
 
     turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
 
-    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark("deploy:answers"))
+    assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().mark("deploy:answers"))
         .isEqualTo(Turn.digestOf(""));
   }
 
@@ -171,7 +171,7 @@ class TaskTurnsTest {
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED).lastActiveTimestamp(7).build();
     TaskState pressed =
         deployed.withMaster(
-            Master.defaults().withPressedDeploy(String.valueOf(deployed.statusSince())));
+            Master.defaults().withPressedDeploy(String.valueOf(deployed.standing().statusSince())));
 
     assertThat(MasterPhase.of(pressed)).isEqualTo(MasterPhase.LEFT);
     assertThat(MasterPhase.of(deployed)).isEqualTo(MasterPhase.STANDS_IN);
@@ -187,7 +187,7 @@ class TaskTurnsTest {
 
     turns.shippedOn("ABC-42", "tree-1;");
 
-    assertThat(state.task("ABC-42").orElseThrow().history().getLast().tree())
+    assertThat(state.task("ABC-42").orElseThrow().standing().history().getLast().tree())
         .isEqualTo("23189593ac33d3bc37d365b9805c4c248103ce3d9980acdee9801672208b9a44");
   }
 
@@ -198,12 +198,12 @@ class TaskTurnsTest {
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
     turns.left("ABC-42", "deploy src/Login.java");
     turns.unanswered("ABC-42");
-    String left = state.task("ABC-42").orElseThrow().arbiterOrNone().left();
+    String left = state.task("ABC-42").orElseThrow().work().arbiterOrNone().left();
     turns.took("ABC-42");
 
     assertThat(left).isEqualTo("deploy src/Login.java");
-    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().left()).isEmpty();
-    assertThat(state.task("ABC-42").orElseThrow().arbiterOrNone().unanswered())
+    assertThat(state.task("ABC-42").orElseThrow().work().arbiterOrNone().left()).isEmpty();
+    assertThat(state.task("ABC-42").orElseThrow().work().arbiterOrNone().unanswered())
         .isEqualTo("28e31f5a9bb2534351673c735fe222a1");
   }
 }

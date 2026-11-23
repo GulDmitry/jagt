@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.turn;
 
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile;
 import java.util.Optional;
 
 @FunctionalInterface

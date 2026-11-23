@@ -275,7 +275,7 @@ class OwnStatusReportsTest {
 
     assertThatThrownBy(() -> doorReports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).trigger())
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().stop()).trigger())
         .isEqualTo(TaskStop.Trigger.MISS);
   }
 }

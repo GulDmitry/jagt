@@ -99,8 +99,9 @@ class TaskFlowMatrixTest {
     assertThat(worktree.resolve(".claude")).doesNotExist();
     assertThat(E2eWorkspace.tmuxSessions(Objects.requireNonNull(properties.tmuxCommand())))
         .containsExactly(flowCase.agentSession());
-    assertThat(stateService.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.NEW);
-    assertThat(stateService.task("ABC-1").orElseThrow().autoReview())
+    assertThat(stateService.task("ABC-1").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.NEW);
+    assertThat(stateService.task("ABC-1").orElseThrow().round().autoReview())
         .isEqualTo(flowCase.autoReview());
     assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1"))
         .contains("ABC-1");

@@ -22,7 +22,8 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
   Dockerfiles of their own, published to ghcr.io and named by digest, never a floating tag.
 - Base images are built amd64 and arm64 with signed provenance, an SBOM and the osv-scanner scan the app image carries.
 - The OS layer is `base/Dockerfile`, built by `.github/workflows/base-images.yml` (push to `base/**`, weekly, manual).
-- The stand layer is `base/Dockerfile.stand`, published as `<repository>-stand-base` after the OS base, `FROM` it by tag.
+- The stand layer is `base/Dockerfile.stand`, published as `<repository>-stand-base` after the OS base,
+  `FROM` it by digest, its tag beside the digest for Renovate.
 - They rebuild in their own workflow on a change to a base Dockerfile and weekly for OS security fixes.
 - Renovate bumps the temurin digest in a base Dockerfile and the base digest in an app Dockerfile, as a request passing full CI.
 - After each publish the workflow keeps the newest 10 untagged base images with their per-arch and attestation children
@@ -35,6 +36,7 @@ Accepted 2026-11-18 by the owner's order (JAGT-127): a base image, published and
 ## Rejected
 
 - Jib and `bootBuildImage`: no `RUN` step, so no OS packages and no 0171 Dockerfile contract.
+- The base image's owner as a jagt.yml seam: it is jagt's own published artifact, not a third party (0130); a fork passes --build-arg BASE.
 - buildx `type=gha` layer cache: experimental, and a builder only CI has.
 
 ## Reopens when

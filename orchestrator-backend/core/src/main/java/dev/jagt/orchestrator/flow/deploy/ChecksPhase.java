@@ -13,12 +13,12 @@ public enum ChecksPhase {
   UNREAD;
 
   public static ChecksPhase of(TaskState task) {
-    if (task.pipelineUnread()) {
+    if (task.checks().unread()) {
       return UNREAD;
     }
-    if (task.pipelineStatus() == null) {
+    if (task.checks().pipelineStatus() == null) {
       return NONE;
     }
-    return task.checksRead() == null ? STALE : READ;
+    return task.checks().read() == null ? STALE : READ;
   }
 }

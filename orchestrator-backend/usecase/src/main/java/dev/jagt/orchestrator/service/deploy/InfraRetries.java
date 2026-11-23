@@ -41,13 +41,14 @@ public class InfraRetries {
         taskId,
         (reducer, task) -> {
           Optional<InfraRetry> pending =
-              InfraRetry.pending(task.infraRetries())
+              InfraRetry.pending(task.checks().infraRetries())
                   .filter(retry -> retry.pipelineUrl().equals(pipelineUrl));
           if (pending.isPresent()) {
             armed.set(pending);
             return task;
           }
-          List<InfraRetry> sent = InfraRetry.sentSince(task.infraRetries(), task.trailOrNone());
+          List<InfraRetry> sent =
+              InfraRetry.sentSince(task.checks().infraRetries(), task.round().trailOrNone());
           Optional<InfraRetry> next =
               properties
                   .before(sent.size())
@@ -88,7 +89,7 @@ public class InfraRetries {
     stateService.tasks().entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
         .forEach(task ->
-            InfraRetry.pending(task.getValue().infraRetries())
+            InfraRetry.pending(task.getValue().checks().infraRetries())
                 .filter(retry -> retry.at() <= now)
                 .ifPresent(retry -> due.put(task.getKey(), retry)));
     return due;
@@ -101,7 +102,7 @@ public class InfraRetries {
   public boolean applies(String taskId) {
     return stateService
         .task(taskId)
-        .filter(task -> FlowRules.waitsOnTheHost(task.status()))
+        .filter(task -> FlowRules.waitsOnTheHost(task.standing().status()))
         .isPresent();
   }
 
@@ -113,10 +114,10 @@ public class InfraRetries {
     return stateService
         .task(taskId)
         .filter(task ->
-            !task.stopped()
-                && (FlowRules.checkedWhereItLanded(task.status())
-                    || (FlowRules.waitsOnTheHost(task.status())
-                        && Pipeline.of(task.checksRead()) == Pipeline.RED)))
+            !task.work().stopped()
+                && (FlowRules.checkedWhereItLanded(task.standing().status())
+                    || (FlowRules.waitsOnTheHost(task.standing().status())
+                        && Pipeline.of(task.checks().read()) == Pipeline.RED)))
         .isPresent();
   }
 
@@ -126,8 +127,8 @@ public class InfraRetries {
         taskId,
         task ->
             InfraRetry.stop(
-                task.infraRetries(),
-                task.trailOrNone(),
+                task.checks().infraRetries(),
+                task.round().trailOrNone(),
                 properties.backoff().size(),
                 clock.millis()));
   }
@@ -143,7 +144,7 @@ public class InfraRetries {
   public String reading(String taskId) {
     return stateService
         .task(taskId)
-        .flatMap(task -> InfraRetry.pending(task.infraRetries()))
+        .flatMap(task -> InfraRetry.pending(task.checks().infraRetries()))
         .map(InfraRetry::reading)
         .orElse("");
   }

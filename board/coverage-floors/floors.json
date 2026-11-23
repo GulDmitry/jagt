@@ -1,0 +1,374 @@
+{
+  "components/Card.js": {
+    "lines": 100,
+    "branches": 95
+  },
+  "components/History.js": {
+    "lines": 100,
+    "branches": 80
+  },
+  "components/JobsTable.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/Meta.js": {
+    "lines": 100,
+    "branches": 96
+  },
+  "components/Pane.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/Panel.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/ProjectChecks.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/Reading.js": {
+    "lines": 100,
+    "branches": 85
+  },
+  "components/Report.js": {
+    "lines": 100,
+    "branches": 91
+  },
+  "components/Session.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/TaskList.js": {
+    "lines": 100,
+    "branches": 89
+  },
+  "components/cardfacts.js": {
+    "lines": 100,
+    "branches": 96
+  },
+  "components/facts.js": {
+    "lines": 100,
+    "branches": 97
+  },
+  "components/html.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/jobfacts.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/panefacts.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "components/rows.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/act.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/addproject.js": {
+    "lines": 100,
+    "branches": 90
+  },
+  "ui/aliasorder.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/bindings.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/body.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/chips.js": {
+    "lines": 100,
+    "branches": 78
+  },
+  "ui/chrome.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/clicks.js": {
+    "lines": 100,
+    "branches": 90
+  },
+  "ui/connection.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/controls.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/cursor.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/dialogs.js": {
+    "lines": 92,
+    "branches": 93
+  },
+  "ui/events.js": {
+    "lines": 90,
+    "branches": 91
+  },
+  "ui/execute.js": {
+    "lines": 100,
+    "branches": 83
+  },
+  "ui/filters.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/flags.js": {
+    "lines": 84,
+    "branches": 60
+  },
+  "ui/followup.js": {
+    "lines": 91,
+    "branches": 77
+  },
+  "ui/glance.js": {
+    "lines": 100,
+    "branches": 87
+  },
+  "ui/header.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/inflight.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/inflightrules.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/intent.js": {
+    "lines": 84,
+    "branches": 69
+  },
+  "ui/interactions.js": {
+    "lines": 100,
+    "branches": 96
+  },
+  "ui/interpret.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/jobs.js": {
+    "lines": 95,
+    "branches": 55
+  },
+  "ui/keyclose.js": {
+    "lines": 100,
+    "branches": 90
+  },
+  "ui/keyhint.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/keyletter.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/keys.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/keyverb.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/launch.js": {
+    "lines": 97,
+    "branches": 94
+  },
+  "ui/legend.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/legend/card.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/legend/page.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/links.js": {
+    "lines": 100,
+    "branches": 75
+  },
+  "ui/list.js": {
+    "lines": 100,
+    "branches": 80
+  },
+  "ui/load.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/log.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/menu.js": {
+    "lines": 100,
+    "branches": 75
+  },
+  "ui/mermaid.js": {
+    "lines": 90,
+    "branches": 92
+  },
+  "ui/noted.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/offers.js": {
+    "lines": 100,
+    "branches": 90
+  },
+  "ui/order.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/outbound.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/palette.js": {
+    "lines": 100,
+    "branches": 94
+  },
+  "ui/pane.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/parts.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/phasebar.js": {
+    "lines": 98,
+    "branches": 86
+  },
+  "ui/phasefacts.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/projectcheck.js": {
+    "lines": 88,
+    "branches": 69
+  },
+  "ui/projects.js": {
+    "lines": 100,
+    "branches": 95
+  },
+  "ui/projectsave.js": {
+    "lines": 100,
+    "branches": 69
+  },
+  "ui/refresh.js": {
+    "lines": 92,
+    "branches": 54
+  },
+  "ui/render.js": {
+    "lines": 100,
+    "branches": 83
+  },
+  "ui/repliesOpened.js": {
+    "lines": 84,
+    "branches": 72
+  },
+  "ui/reportdialog.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/reports.js": {
+    "lines": 100,
+    "branches": 85
+  },
+  "ui/route.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/say.js": {
+    "lines": 89,
+    "branches": 66
+  },
+  "ui/seen.js": {
+    "lines": 90,
+    "branches": 88
+  },
+  "ui/selection.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/sends.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/settings.js": {
+    "lines": 96,
+    "branches": 82
+  },
+  "ui/shown.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/status.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/submit.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/tabs.js": {
+    "lines": 95,
+    "branches": 85
+  },
+  "ui/taskfilter.js": {
+    "lines": 100,
+    "branches": 90
+  },
+  "ui/theme.js": {
+    "lines": 79,
+    "branches": 63
+  },
+  "ui/tier1.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/tips.js": {
+    "lines": 100,
+    "branches": 89
+  },
+  "ui/toast.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/translate.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/verbs.js": {
+    "lines": 97,
+    "branches": 83
+  },
+  "ui/verdict.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/view.js": {
+    "lines": 100,
+    "branches": 100
+  }
+}

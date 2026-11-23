@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup.role;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.task.master.MasterMode;
@@ -31,8 +32,8 @@ public class MasterCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    ConfigService.ConfigFile config = configService.load();
-    ConfigService.ConfigFile.ArbiterConfig master = config.arbiter();
+    ConfigFile config = configService.load();
+    ConfigFile.ArbiterConfig master = config.arbiter();
     List<Problem> problems = new ArrayList<>();
     boolean written = master.mode() != null && !master.mode().isBlank();
     if (written && MasterMode.of(master.mode()).isEmpty()) {
@@ -85,9 +86,7 @@ public class MasterCheck implements StartupCheck {
    * than half-run.
    */
   private static void refuseHalfAutomatedLoop(
-      ConfigService.ConfigFile config,
-      ConfigService.ConfigFile.ArbiterConfig master,
-      List<Problem> problems) {
+      ConfigFile config, ConfigFile.ArbiterConfig master, List<Problem> problems) {
     if (master.may(MasterRight.REPLY) && !config.codeReview().postReviewRepliesOrDefault()) {
       problems.add(
           new Problem(

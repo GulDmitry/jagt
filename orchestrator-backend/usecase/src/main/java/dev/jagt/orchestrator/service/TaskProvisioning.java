@@ -43,7 +43,7 @@ public class TaskProvisioning {
       return initializeUnplaced(request);
     }
     String taskId = request.taskId();
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     boolean plan = AgentSessions.planMode(request.mode());
     BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
     List<NewRepo> repos;
@@ -95,7 +95,7 @@ public class TaskProvisioning {
 
   private String initializeUnplaced(NewTask request) {
     String taskId = request.taskId();
-    ConfigService.ConfigFile config = configService.load();
+    ConfigFile config = configService.load();
     boolean plan = AgentSessions.planMode(request.mode());
     Path folder;
     String alias;
@@ -128,7 +128,7 @@ public class TaskProvisioning {
 
   private void register(
       NewTask request,
-      ConfigService.ConfigFile config,
+      ConfigFile config,
       List<TaskRepo> repos,
       String alias,
       @Nullable String baseBranch,
@@ -172,7 +172,7 @@ public class TaskProvisioning {
     return result + (plan ? " Plan mode: read plan.md, then approve-plan " + alias + "." : "");
   }
 
-  private static boolean autoplan(ConfigService.ConfigFile config) {
+  private static boolean autoplan(ConfigFile config) {
     return config.agent().autoplanOrDefault().enabledOrDefault();
   }
 
@@ -187,7 +187,7 @@ public class TaskProvisioning {
     String letter = taskId.substring(0, 1).toLowerCase(Locale.ROOT);
     var used =
         stateService.tasks().values().stream()
-            .map(TaskState::alias)
+            .map(taskState -> taskState.ticket().alias())
             .filter(a -> a != null)
             .collect(Collectors.toSet());
     for (int i = 1; ; i++) {

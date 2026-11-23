@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.service.CaseDoor;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.turn.RepliesInstruction;
 import dev.jagt.orchestrator.task.master.MasterRight;

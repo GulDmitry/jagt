@@ -99,7 +99,7 @@ class MasterPressTest {
 
     press.press("ABC-1", task, TaskAction.DEPLOY);
 
-    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().left())
+    assertThat(state.task("ABC-1").orElseThrow().work().arbiterOrNone().left())
         .isEqualTo("deploy demo/src/auth/Login.java");
   }
 
@@ -114,8 +114,9 @@ class MasterPressTest {
 
     press.press("ABC-1", task, TaskAction.DEPLOY);
 
-    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().left())
-        .isEqualTo("deploy demo/src/auth/Login.java");
+    var left = state.task("ABC-1").orElseThrow().work().arbiterOrNone().left();
+
+    assertThat(left).isEqualTo("deploy demo/src/auth/Login.java");
   }
 
   @Test
@@ -130,7 +131,7 @@ class MasterPressTest {
 
     press.press("ABC-1", task, TaskAction.DEPLOY);
 
-    assertThat(state.task("ABC-1").orElseThrow().arbiterOrNone().left()).isEmpty();
+    assertThat(state.task("ABC-1").orElseThrow().work().arbiterOrNone().left()).isEmpty();
   }
 
   @Test

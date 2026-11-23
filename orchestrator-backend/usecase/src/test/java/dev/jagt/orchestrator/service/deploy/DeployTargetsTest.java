@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.util.List;
@@ -19,7 +20,7 @@ class DeployTargetsTest {
   void namesTheDeployBranchProjectIsConfiguredWith() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
 
@@ -30,7 +31,7 @@ class DeployTargetsTest {
   void namesNoDeployBranchForProjectConfiguredWithBlankOne() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     Map.of("api", new ProjectConfig("/srv/api", "origin/main", " ", List.of()))));
 
@@ -39,7 +40,7 @@ class DeployTargetsTest {
 
   @Test
   void namesNoDeployBranchForProjectThatIsNoLongerConfigured() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(targets.deployBranch("gone")).isEmpty();
   }

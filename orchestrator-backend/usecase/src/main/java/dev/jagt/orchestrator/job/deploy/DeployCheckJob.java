@@ -77,7 +77,7 @@ public class DeployCheckJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    if (task.stopped()) {
+    if (task.work().stopped()) {
       readStopped(taskId, task);
       return;
     }
@@ -122,7 +122,7 @@ public class DeployCheckJob implements TaskJob {
       return 0;
     }
     int running = reports.deployReadOn(taskId, unread ? reading.project() : null);
-    if (running >= ChecksUnread.CEILING && !task.stopped()) {
+    if (running >= ChecksUnread.CEILING && !task.work().stopped()) {
       stops.stop(
           taskId,
           TaskStop.Trigger.DEPLOY_UNREAD,
@@ -132,9 +132,9 @@ public class DeployCheckJob implements TaskJob {
   }
 
   private static int unreadOf(TaskState task) {
-    return task.deployment() == null
+    return task.work().deployment() == null
         ? 0
-        : task.deployment().targets().stream()
+        : task.work().deployment().targets().stream()
             .mapToInt(Deployment.Target::unreadReads)
             .max()
             .orElse(0);
@@ -162,9 +162,9 @@ public class DeployCheckJob implements TaskJob {
   }
 
   private static Set<String> bareOf(TaskState task) {
-    return task.deployment() == null
+    return task.work().deployment() == null
         ? Set.of()
-        : task.deployment().targets().stream()
+        : task.work().deployment().targets().stream()
             .filter(Deployment.Target::isBare)
             .map(Deployment.Target::project)
             .collect(Collectors.toSet());
@@ -192,7 +192,8 @@ public class DeployCheckJob implements TaskJob {
   }
 
   private static boolean asked(TaskState task, String digest) {
-    return task.deployment() != null && digest.equals(task.deployment().askedDigest());
+    return task.work().deployment() != null
+        && digest.equals(task.work().deployment().askedDigest());
   }
 
   private String deployBranches(TaskState task) {
@@ -202,7 +203,9 @@ public class DeployCheckJob implements TaskJob {
   private Optional<String> landed(String taskId, TaskState task) {
     Map<String, ProjectConfig> projects = configService.load().projects();
     String landed =
-        (task.deployment() == null ? List.<Deployment.Target>of() : task.deployment().targets())
+        (task.work().deployment() == null
+                ? List.<Deployment.Target>of()
+                : task.work().deployment().targets())
             .stream()
                 .filter(Deployment.Target::landed)
                 .map(target -> landed(target, projects.get(target.project())))

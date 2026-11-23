@@ -14,7 +14,7 @@ public final class KeepAlive {
 
   public static void beat(
       StateService stateService, Map.Entry<String, TaskState> task, SessionSign sign, long now) {
-    if (now - task.getValue().lastActiveTimestamp() > THROTTLE_MS) {
+    if (now - task.getValue().standing().lastActiveTimestamp() > THROTTLE_MS) {
       stateService.reduce(
           task.getKey(), (reducer, held) -> reducer.signed(held.touched(now), sign, now));
     }

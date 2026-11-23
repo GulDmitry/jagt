@@ -54,7 +54,7 @@ public class NudgeResubmitJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    Turn turn = task.turnOrNone();
+    Turn turn = task.work().turnOrNone();
     int pressed = pressed(turn);
     if (pressed >= CEILING || !sessions.resubmitUnsentNudge(taskId)) {
       return;
@@ -63,7 +63,7 @@ public class NudgeResubmitJob implements TaskJob {
     log.atInfo()
         .setMessage("nudge resubmitted")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("turn", turn.id())
         .addKeyValue("pressed", pressed + 1)
         .addKeyValue("cause", "it sat unsent in an idle input")

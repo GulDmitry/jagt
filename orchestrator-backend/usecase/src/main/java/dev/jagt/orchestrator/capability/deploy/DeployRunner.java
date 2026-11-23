@@ -50,7 +50,7 @@ public class DeployRunner {
   public Outcome advance(String taskId) {
     TaskState task = requireTask(taskId);
     List<Target> targets = deployTargets.all(task);
-    int from = Objects.requireNonNull(task.deployment()).at();
+    int from = Objects.requireNonNull(task.work().deployment()).at();
     Landing landing = new Landing();
     for (int i = from; i < targets.size(); i++) {
       Outcome stopped = land(taskId, targets, i, landing);
@@ -82,7 +82,7 @@ public class DeployRunner {
   }
 
   private static List<String> blocked(TaskState task, int from) {
-    List<Deployment.Target> recorded = Objects.requireNonNull(task.deployment()).targets();
+    List<Deployment.Target> recorded = Objects.requireNonNull(task.work().deployment()).targets();
     return recorded.subList(Math.min(from, recorded.size()), recorded.size()).stream()
         .filter(Deployment.Target::isBlocked)
         .map(Deployment.Target::project)
@@ -238,14 +238,17 @@ public class DeployRunner {
                     + ")")
             .toList();
     // A resumed sequence merged only its tail; the whole picture is what the human is owed.
-    List<Deployment.Target> recorded = Objects.requireNonNull(task.deployment()).targets();
+    List<Deployment.Target> recorded = Objects.requireNonNull(task.work().deployment()).targets();
     List<String> earlier =
         targets.subList(0, from).stream()
             .map(target ->
                 target.project()
                     + " ("
                     + GitDeploy.shortSha(
-                        recorded.get(task.deployment().indexOf(target.project())).landing().merge())
+                        recorded
+                            .get(task.work().deployment().indexOf(target.project()))
+                            .landing()
+                            .merge())
                     + ")")
             .toList();
     String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);

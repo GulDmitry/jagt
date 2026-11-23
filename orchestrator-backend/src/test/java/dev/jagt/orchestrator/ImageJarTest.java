@@ -28,6 +28,6 @@ class ImageJarTest {
   @Test
   void standImageBuildsJagtImageWithJarContext() {
     assertThat(SourceRoots.read(Path.of("build-logic/src/main/groovy/jagt.stand.gradle")))
-        .contains("--build-context \"jar=$2\"");
+        .contains("--build-context \"jar=$1\"");
   }
 }

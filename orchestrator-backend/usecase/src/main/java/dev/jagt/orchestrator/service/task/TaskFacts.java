@@ -13,13 +13,15 @@ public final class TaskFacts {
       return "";
     }
     String asked =
-        task.report().asks()
-            ? "; your open question: " + task.message()
-            : present(task.message()) ? "; your last report: " + task.message() : "";
-    return (present(task.title()) ? " — " + task.title() : "")
-        + (present(task.ticketUrl()) ? " (" + task.ticketUrl() + ")" : "")
+        task.standing().report().asks()
+            ? "; your open question: " + task.standing().message()
+            : present(task.standing().message())
+                ? "; your last report: " + task.standing().message()
+                : "";
+    return (present(task.ticket().title()) ? " — " + task.ticket().title() : "")
+        + (present(task.ticket().ticketUrl()) ? " (" + task.ticket().ticketUrl() + ")" : "")
         + ". On the board: "
-        + task.status()
+        + task.standing().status()
         + asked;
   }
 

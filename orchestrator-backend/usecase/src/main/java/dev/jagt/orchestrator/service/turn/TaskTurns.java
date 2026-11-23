@@ -39,13 +39,18 @@ public class TaskTurns {
   private final Checkers checkers;
 
   public Turn.Holder next(TaskState task, Arbiter.Profile profile) {
-    return Turns.next(task.status(), task.report(), task.stopped(), checkers.of(task), profile);
+    return Turns.next(
+        task.standing().status(),
+        task.standing().report(),
+        task.work().stopped(),
+        checkers.of(task),
+        profile);
   }
 
   public Turn of(String taskId) {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
-        .map(TaskState::turnOrNone)
+        .map(taskState -> taskState.work().turnOrNone())
         .orElse(Turn.none());
   }
 
@@ -67,7 +72,7 @@ public class TaskTurns {
     stateService.reduce(
         stateService.canonicalTaskId(taskId),
         (reducer, task) -> {
-          restored[0] = task.turnOrNone().sameTurnAs(opened);
+          restored[0] = task.work().turnOrNone().sameTurnAs(opened);
           return restored[0] ? reducer.turnRestored(task, before) : task;
         });
     return restored[0];
@@ -81,7 +86,7 @@ public class TaskTurns {
 
   private static String answeredBy(TaskState task) {
     return Turn.digestOf(
-        task.history().reversed().stream()
+        task.standing().history().reversed().stream()
             .filter(move -> move.origin() == ActionOrigin.MCP)
             .findFirst()
             .map(move -> move.status() + "\n" + (move.why() == null ? "" : move.why()))
@@ -110,12 +115,13 @@ public class TaskTurns {
     stateService.reduce(
         stateService.canonicalTaskId(taskId),
         (reducer, task) ->
-            reducer.checkerReadEnded(task, role, step, digest, task.lastActiveTimestamp()));
+            reducer.checkerReadEnded(
+                task, role, step, digest, task.standing().lastActiveTimestamp()));
   }
 
   /** The turn the task's last report answered, passed to whoever holds it now. */
   public static TaskState closed(TaskReducer reducer, TaskState task) {
-    return reducer.turnClosed(task, task.lastActiveTimestamp());
+    return reducer.turnClosed(task, task.standing().lastActiveTimestamp());
   }
 
   /**
@@ -139,7 +145,7 @@ public class TaskTurns {
   public void unanswered(String taskId) {
     stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        (reducer, task) -> reducer.arbiterUnanswered(task, task.askedDigest()));
+        (reducer, task) -> reducer.arbiterUnanswered(task, task.standing().askedDigest()));
   }
 
   public void askedStop(String taskId, String key) {
@@ -180,6 +186,6 @@ public class TaskTurns {
 
   /** The question standing on the task, as the Master's {@code unanswered} mark records it. */
   public static String asked(TaskState task) {
-    return task.askedDigest();
+    return task.standing().askedDigest();
   }
 }

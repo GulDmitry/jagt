@@ -62,6 +62,10 @@ heavy:
     - sh scripts/linux-test-deps.sh
     - apt-get install -y --no-install-recommends docker.io docker-compose-v2 curl
     - scripts/vulnerability-scan.sh
+    - curl -fsSLo /tmp/node.tar.xz https://nodejs.org/dist/v22.23.5/node-v22.23.5-linux-x64.tar.xz
+    - echo "cdeb8670a0c81f51b4dc4ac61919f9b1ad917b304bf8221eb939570663d240f8  /tmp/node.tar.xz" | sha256sum -c -
+    - tar -xJf /tmp/node.tar.xz -C /opt && export PATH="/opt/node-v22.23.5-linux-x64/bin:$PATH"
+    - (cd ../board && npm ci)
     - git config --global user.email "ci@example.com"
     - git config --global user.name "jagt ci"
     - scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest boardTest
@@ -87,7 +91,7 @@ stand:
     - apt-get install -y --no-install-recommends docker.io docker-compose-v2 curl
     - git config --global user.email "ci@example.com"
     - git config --global user.name "jagt ci"
-    - ./gradlew --no-daemon standTest -Pmodelfree -Pengine=compose -Pbudgets=false
+    - ./gradlew --no-daemon standTest -Pmodelfree -Pengine=compose
   artifacts:
     when: on_failure
     expire_in: 1 week

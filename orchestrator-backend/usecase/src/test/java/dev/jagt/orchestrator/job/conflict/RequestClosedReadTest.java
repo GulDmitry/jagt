@@ -106,6 +106,7 @@ class RequestClosedReadTest {
             state
                 .task("ABC-42")
                 .orElseThrow()
+                .round()
                 .toldOrNone()
                 .said(ToldOnce.Kind.CONFLICT_REQUEST_GONE, "http://mr/alpha"))
         .isTrue();

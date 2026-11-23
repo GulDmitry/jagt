@@ -103,6 +103,7 @@ class AgentToolGateControllerTest {
             write
                 .getValue()
                 .apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+                .gate()
                 .refusals())
         .containsExactly(Map.entry(RefusalKind.SESSION_LINE, 1));
   }
@@ -176,12 +177,13 @@ class AgentToolGateControllerTest {
     assertThat(answered.getBody()).extractingByKey("denied").asString().contains("plan first");
     ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).updateTask(eq("ABC-1"), write.capture());
-    assertThat(
-            write
-                .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
-                .refusals())
-        .containsExactly(Map.entry(RefusalKind.PLAN_FIRST, 1));
+    var refusals =
+        write
+            .getValue()
+            .apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+            .gate()
+            .refusals();
+    assertThat(refusals).containsExactly(Map.entry(RefusalKind.PLAN_FIRST, 1));
   }
 
   @ParameterizedTest
@@ -274,7 +276,7 @@ class AgentToolGateControllerTest {
 
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
-    assertThat(write.getValue().apply(reducer, held).session().movedAt()).isEqualTo(100_000);
+    assertThat(write.getValue().apply(reducer, held).work().session().movedAt()).isEqualTo(100_000);
   }
 
   @Test

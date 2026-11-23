@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.Assistants;
@@ -59,9 +60,8 @@ class TicketPrefetchJobTest {
     when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, null, null)));
     when(assistants.tracker().readTicketText("https://tracker.example/ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
 
@@ -81,9 +81,8 @@ class TicketPrefetchJobTest {
     when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, null, null)));
     when(assistants.tracker().readTicketText("https://tracker.example/ABC-43"))
         .thenReturn(Answer.unavailable());
 
@@ -104,9 +103,8 @@ class TicketPrefetchJobTest {
     when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("off", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("off", null, null, null, null)));
 
     job.runOn(tasks);
 
@@ -123,9 +121,8 @@ class TicketPrefetchJobTest {
     when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withArbiter(
-                    new ConfigService.ConfigFile.ArbiterConfig("act", null, null, null, null)));
+            ConfigFile.defaults()
+                .withArbiter(new ConfigFile.ArbiterConfig("act", null, null, null, null)));
     when(assistants.tracker().readTicketText("https://tracker.example/ABC-45"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
     job.runOn(tasks);

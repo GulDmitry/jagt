@@ -104,10 +104,10 @@ class RepoCapabilityTest {
           .isInstanceOf(IllegalStateException.class);
 
       TaskState task = state.task("ABC-7").orElseThrow();
-      assertThat(task.repoRequest()).isEqualTo("registry");
-      assertThat(task.status()).isEqualTo(TaskStatus.IN_PROGRESS);
-      assertThat(task.message()).isEqualTo("add-repo failed: git: fetch failed");
-      assertThat(task.report()).isEqualTo(AgentReport.QUESTION);
+      assertThat(task.work().repoRequest()).isEqualTo("registry");
+      assertThat(task.standing().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+      assertThat(task.standing().message()).isEqualTo("add-repo failed: git: fetch failed");
+      assertThat(task.standing().report()).isEqualTo(AgentReport.QUESTION);
     }
 
     @Test
@@ -125,7 +125,8 @@ class RepoCapabilityTest {
 
       engine.run("ABC-7", TaskAction.ADD_REPO);
 
-      assertThat(state.task("ABC-7").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+      assertThat(state.task("ABC-7").orElseThrow().standing().status())
+          .isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
     @Test
@@ -137,7 +138,8 @@ class RepoCapabilityTest {
 
       engine.run("ABC-7", TaskAction.ADD_REPO, "registry");
 
-      assertThat(state.task("ABC-7").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+      assertThat(state.task("ABC-7").orElseThrow().standing().status())
+          .isEqualTo(TaskStatus.IN_PROGRESS);
       verify(attachment).vet("registry");
     }
 
@@ -151,8 +153,8 @@ class RepoCapabilityTest {
           .isInstanceOf(Refusal.class);
 
       TaskState task = state.task("ABC-7").orElseThrow();
-      assertThat(task.repoRequest()).isNull();
-      assertThat(task.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+      assertThat(task.work().repoRequest()).isNull();
+      assertThat(task.standing().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
       verify(attachment, never()).attach("ABC-7");
     }
   }

@@ -21,8 +21,9 @@ class LegacyMasterTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.arbiterOrNone()).isEqualTo(new Master("deploy x", "u1", "5", "abc", 0, "", 0));
-    assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
+    assertThat(task.work().arbiterOrNone())
+        .isEqualTo(new Master("deploy x", "u1", "5", "abc", 0, "", 0));
+    assertThat(task.work().turnOrNone().marks()).containsOnlyKeys("press:ship");
   }
 
   @Test
@@ -36,6 +37,6 @@ class LegacyMasterTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.arbiterOrNone()).isEqualTo(new Master("deploy x", "", "", "", 4, "", 0));
+    assertThat(task.work().arbiterOrNone()).isEqualTo(new Master("deploy x", "", "", "", 4, "", 0));
   }
 }

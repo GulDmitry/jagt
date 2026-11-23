@@ -71,6 +71,16 @@ sourceSets {
     }
 }
 
+// Runs the real installers against a fake release feed, so it needs the network and the machine's own shell.
+// NOT in `check`.
+sourceSets {
+    installTest {
+        java.srcDirs = ['src/installTest/java']
+        compileClasspath += configurations.testCompileClasspath
+        runtimeClasspath += configurations.testRuntimeClasspath
+    }
+}
+
 dependencies {
     // Playwright brings its OWN Chromium, downloaded on first run: the suite asks the host for no browser, so
     // a Mac and a runner execute the same thing. The shared libraries it links against come from
@@ -101,8 +111,39 @@ tasks.register('boardTest', Test) {
     dependsOn tasks.named('playwrightChromium')
     // Left to itself the client installs every browser it supports — a quarter of a gigabyte for a suite that
     // drives one.
-    environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
+    environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1' // playwrightChromium installs the one browser
+    def coverageDump = layout.settingsDirectory.dir('../board/coverage/browser').asFile
+    systemProperty 'board.coverage.dir', coverageDump.absolutePath
+    doFirst { coverageDump.deleteDir() }
+    finalizedBy 'boardCoverage'
     shouldRunAfter tasks.named('test')
+    if (System.getenv('JAGT_BOARD_URL')) { // the container run must not overwrite the board run's reports
+        reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/boardTestContainer')
+        reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/boardTestContainer')
+    }
+}
+
+tasks.register('boardCoverage', Exec) {
+    description = 'Merges the browser coverage boardTest wrote with the board unit tests; fails a file under its floor.'
+    group = 'verification'
+    def board = layout.settingsDirectory.dir('../board').asFile
+    workingDir = board
+    commandLine 'npm', 'run', '--silent', 'coverage:browser'
+    def filteredRun = gradle.startParameter.taskNames.contains('--tests')
+    onlyIf { task ->
+        List<String> missing = []
+        if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                .any { dir -> dir && new File(dir, 'npm').canExecute() }) {
+            missing << 'npm'
+        }
+        if (!new File(board, 'node_modules').directory) {
+            missing << 'board/node_modules (run npm ci in board/)'
+        }
+        if (missing) { // skip, naming what is missing, as the container run has no Node
+            task.logger.lifecycle("Skipping boardCoverage — missing: ${missing.join(', ')}.")
+        }
+        !filteredRun && missing.isEmpty() && new File(board, 'coverage/browser').directory // a `--tests` run proves no ratio
+    }
 }
 
 tasks.register('linuxDriverTest', Test) {
@@ -135,6 +176,22 @@ tasks.register('linuxDriverTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+tasks.register('guardsTest', dev.jagt.gradle.guards.GuardsGateTask) {
+    description = 'Gates every script in scripts/guards/test/scripts.list: shellcheck, a case file and the contract tags, then the bats cases.'
+    group = 'verification'
+    repository = layout.settingsDirectory.dir('..')
+    onlyIf { task ->
+        List<String> missing = ['shellcheck', 'bats', 'jq'].findAll { binary ->
+            !(System.getenv('PATH') ?: '').split(File.pathSeparator).any { dir -> dir && new File(dir, binary).canExecute() }
+        }
+        if (missing) {
+            task.logger.lifecycle("Skipping guardsTest — missing: ${missing.join(', ')}.")
+        }
+        missing.isEmpty()
+    }
+    shouldRunAfter tasks.named('test')
+}
+
 tasks.register('e2eTest', Test) {
     description = 'Runs the end-to-end task-flow matrix (needs git + tmux; creates and removes throwaway worktrees).'
     group = 'verification'
@@ -150,5 +207,19 @@ tasks.register('e2eTest', Test) {
         scratch.deleteDir()
         scratch.mkdirs()
     }
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.register('installTest', Test) {
+    description = 'Installs, upgrades and stops jagt through the real installers against a fake release feed.'
+    group = 'verification'
+    testClassesDirs = sourceSets.installTest.output.classesDirs
+    classpath = sourceSets.installTest.runtimeClasspath
+    useJUnitPlatform()
+    dependsOn tasks.named('bootJar')
+    def jar = tasks.named('bootJar').flatMap { it.archiveFile }
+    systemProperty 'install.repo', layout.settingsDirectory.dir('..').asFile.absolutePath
+    doFirst { systemProperty 'install.jar', jar.get().asFile.absolutePath }
+    timeout = java.time.Duration.ofMinutes(20)
     shouldRunAfter tasks.named('test')
 }

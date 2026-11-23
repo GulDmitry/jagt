@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
@@ -49,7 +50,7 @@ class RevertServiceTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final GitDeploy git = mock(GitDeploy.class);
-  private ConfigService.ConfigFile projects = deployProjects().build();
+  private ConfigFile projects = deployProjects().build();
   private final GitCaseFacts facts = mock(GitCaseFacts.class);
   private final GitCaseFacts.Candidate listed =
       new GitCaseFacts.Candidate("aaaaaaaa1111", "2026-11-01", "Merge ABC-1");
@@ -106,7 +107,7 @@ class RevertServiceTest {
     Outcome outcome = service.revert("a1");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
-    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).live())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment()).live())
         .isFalse();
     verify(git)
         .revertMergeAndPush(
@@ -240,7 +241,7 @@ class RevertServiceTest {
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
       assertThat(outcome.message()).contains("/ABC-1-revert", "dev");
       Deployment.Target stopped =
-          Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+          Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
               .conflictedTarget()
               .orElseThrow();
       assertThat(Objects.requireNonNull(stopped.progress().conflict()).cause())
@@ -267,7 +268,8 @@ class RevertServiceTest {
           .hasMessageNotContaining("by hand");
       verify(git, never())
           .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
-      assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+      assertThat(state.task("ABC-1").orElseThrow().standing().status())
+          .isEqualTo(TaskStatus.DEPLOYED);
     }
 
     @Test
@@ -365,7 +367,9 @@ class RevertServiceTest {
           .revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of());
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
       assertThat(outcome.message()).contains("reverted web on dev", "api on dev", "REVERTED");
-      assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).targets())
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
+                  .targets())
           .extracting(target -> target.landing().merge())
           .containsOnlyNulls();
     }
@@ -385,7 +389,9 @@ class RevertServiceTest {
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
       assertThat(outcome.message()).contains("reverted web on dev", "api still live on dev");
       assertThat(outcome.stamp()).contains("reverted web on dev", "api still live on dev");
-      assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).targets())
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
+                  .targets())
           .extracting(target -> target.landing().merge())
           .containsExactly("cafebabe1234", null);
     }
@@ -393,7 +399,7 @@ class RevertServiceTest {
     @Test
     void doesNotRevertAgainTheRepositoryThatWasRevertedBeforeAnotherConflicted() {
       state.updateTask(
-          "ABC-1", t -> t.withDeployment(Objects.requireNonNull(t.deployment()).withAt(2)));
+          "ABC-1", t -> t.withDeployment(Objects.requireNonNull(t.work().deployment()).withAt(2)));
       when(git.revertMergeAndPush(
               eq(Path.of("/repo/web")), eq("ABC-1"), eq("dev"), eq("f00dfeed5678"), anyList()))
           .thenReturn("beef00991122");
@@ -414,7 +420,8 @@ class RevertServiceTest {
       verify(git, times(1))
           .revertMergeAndPush(
               eq(Path.of("/repo/web")), anyString(), anyString(), anyString(), anyList());
-      assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).live())
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment()).live())
           .isFalse();
     }
   }
@@ -544,7 +551,7 @@ class RevertServiceTest {
       verify(git, never())
           .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
       assertThat(
-              Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
                   .conflictedTarget())
           .isPresent();
     }

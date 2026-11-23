@@ -79,7 +79,9 @@ class AutoReviewPolls {
           && stateService
               .task(taskId)
               .filter(t ->
-                  !t.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)))
+                  !t.round()
+                      .toldOrNone()
+                      .said(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)))
               .isPresent()) {
         stateService.reduce(
             taskId,

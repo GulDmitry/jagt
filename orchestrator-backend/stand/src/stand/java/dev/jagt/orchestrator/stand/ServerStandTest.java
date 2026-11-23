@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 class ServerStandTest {
 
   private static final String OFF_REFERENCE =
-      "budgets hold on the reference machine; -Pbudgets=false skips them";
+      "budgets are judged on the idle reference machine; -Pbudgets=true enables them";
   private static final String JSON = "application/json";
   private static final String TOOLS = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}";
   private static final String SCREEN = "/api/tasks/screen?task=fix-the-widget";
@@ -195,8 +195,8 @@ class ServerStandTest {
             () -> {
               int status =
                   server
-                      .board()
-                      .anonymously(
+                      .engine()
+                      .fromOutside(
                           "/mcp",
                           Map.of(
                               "Content-Type",
@@ -219,8 +219,8 @@ class ServerStandTest {
 
               int status =
                   server
-                      .board()
-                      .anonymously(
+                      .engine()
+                      .fromOutside(
                           "/mcp", Map.of("Content-Type", JSON, "X-Jagt-Master", token), TOOLS);
 
               assertThat(status).isEqualTo(200);

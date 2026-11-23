@@ -35,7 +35,7 @@ class SessionLedgerTest {
 
     new SessionLedger(state, clock).record("ABC-1", null, new SessionSign.WorkStarted());
 
-    assertThat(state.task("ABC-1").orElseThrow().session().workStartedAt()).isEqualTo(7_000);
+    assertThat(state.task("ABC-1").orElseThrow().work().session().workStartedAt()).isEqualTo(7_000);
   }
 
   @Test
@@ -44,7 +44,8 @@ class SessionLedgerTest {
     new SessionLedger(state, new FakeClock())
         .record("ABC-1", Path.of("/logs/session.jsonl"), new SessionSign.WorkStarted());
 
-    assertThat(state.task("ABC-1").orElseThrow().session().log()).isEqualTo("/logs/session.jsonl");
+    assertThat(state.task("ABC-1").orElseThrow().work().session().log())
+        .isEqualTo("/logs/session.jsonl");
   }
 
   @Test
@@ -55,7 +56,8 @@ class SessionLedgerTest {
             "ABC-1",
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK));
 
-    assertThat(state.task("ABC-1").orElseThrow().report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(state.task("ABC-1").orElseThrow().standing().report())
+        .isEqualTo(AgentReport.PERMISSION);
   }
 
   @Test
@@ -68,6 +70,6 @@ class SessionLedgerTest {
     new SessionLedger(state, Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
         .sign("ABC-1", ask);
 
-    assertThat(state.task("ABC-1").orElseThrow().session().askedAt()).isEqualTo(7_000);
+    assertThat(state.task("ABC-1").orElseThrow().work().session().askedAt()).isEqualTo(7_000);
   }
 }

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.agent.Sandbox;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.SandboxConfig;
+import dev.jagt.orchestrator.service.ConfigFile.SandboxConfig;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.io.IOException;
 import java.nio.file.Path;

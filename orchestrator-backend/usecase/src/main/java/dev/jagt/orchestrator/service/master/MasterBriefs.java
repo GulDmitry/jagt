@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service.master;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.config.role.SessionBrief;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,7 +22,7 @@ public class MasterBriefs {
   private final OrchestratorPaths paths;
   private final SessionBrief sessionBrief;
 
-  public Optional<String> master(String taskId, ConfigService.ConfigFile.ArbiterConfig config) {
+  public Optional<String> master(String taskId, ConfigFile.ArbiterConfig config) {
     try {
       return Optional.of(Files.readString(file(config)));
     } catch (IOException unreadable) {
@@ -40,7 +40,7 @@ public class MasterBriefs {
    * Where none was named, the first copy that exists, the shipped one last: judging by default asks
    * for no setup.
    */
-  public Path file(ConfigService.ConfigFile.ArbiterConfig config) {
+  public Path file(ConfigFile.ArbiterConfig config) {
     boolean unnamed = config.brief() == null || config.brief().isBlank();
     Path named = paths.root().resolve(config.briefOrDefault());
     return unnamed ? new RoleFiles(paths, "master").briefFile().orElse(named) : named;

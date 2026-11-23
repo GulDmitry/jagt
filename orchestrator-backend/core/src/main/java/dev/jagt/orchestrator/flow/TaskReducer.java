@@ -58,7 +58,7 @@ public final class TaskReducer {
 
   /** A line or a step written on the status the task already has, no move taken. */
   TaskState stayed(TaskState task, @Nullable String message, boolean event, long now) {
-    return task.withStatus(task.status(), message, event, now);
+    return task.withStatus(task.standing().status(), message, event, now);
   }
 
   /** {@code task} stopped by {@code stop}; where a stop already stands, it stands alone. */
@@ -68,16 +68,18 @@ public final class TaskReducer {
 
   /** {@code task} with {@code read} on its stop, where that stop is the one keyed {@code key}. */
   public TaskState triaged(TaskState task, String key, StopTriage read) {
-    TaskStop stop = task.stop();
-    return stop != null && stop.key().equals(key) ? task.withStop(stop.withTriage(read)) : task;
+    TaskStop stop = task.work().stop();
+    return stop != null && stop.triage() == null && stop.key().equals(key)
+        ? task.withStop(stop.withTriage(read))
+        : task;
   }
 
   private static @Nullable ModelTier lowered(TaskState task) {
-    return task.tier() == null ? null : task.tier().lower();
+    return task.work().tier() == null ? null : task.work().tier().lower();
   }
 
   private static @Nullable ModelTier raised(TaskState task) {
-    return task.tier() == null ? null : task.tier().raise();
+    return task.work().tier() == null ? null : task.work().tier().raise();
   }
 
   /** {@code task} with its stop lifted and its session due on the next model tier. */
@@ -95,7 +97,7 @@ public final class TaskReducer {
    * request} or none.
    */
   public TaskState ended(TaskState task, TaskStop.Trigger.Ends ends, String request, long now) {
-    TaskStop standing = task.stop();
+    TaskStop standing = task.work().stop();
     return standing == null || !standing.countedOnOrNone(request)
         ? task
         : step(task, new TaskMove.StopEnded(ends), now);
@@ -106,7 +108,7 @@ public final class TaskReducer {
    * cleared.
    */
   public TaskState relinked(TaskState task, long now) {
-    TaskStop standing = task.stop();
+    TaskStop standing = task.work().stop();
     return standing == null || !standing.voidedBy(task.requests())
         ? task
         : step(task, new TaskMove.RequestReplaced(), now);
@@ -114,17 +116,17 @@ public final class TaskReducer {
 
   /** {@code task} with {@code kind} told for {@code key}. */
   public TaskState told(TaskState task, ToldOnce.Kind kind, String key) {
-    return task.withTold(task.toldOrNone().with(kind, key));
+    return task.withTold(task.round().toldOrNone().with(kind, key));
   }
 
   /** {@code task} with {@code point} told for {@code key}. */
   public TaskState told(TaskState task, Point point, String key) {
-    return task.withTold(task.toldOrNone().withPoint(point.id(), key));
+    return task.withTold(task.round().toldOrNone().withPoint(point.id(), key));
   }
 
   /** {@code task} with each of {@code kinds} told no more. */
   public TaskState untold(TaskState task, ToldOnce.Kind... kinds) {
-    return task.withTold(task.toldOrNone().without(kinds));
+    return task.withTold(task.round().toldOrNone().without(kinds));
   }
 
   /**
@@ -181,7 +183,9 @@ public final class TaskReducer {
   public TaskState checkerReadEnded(
       TaskState task, String role, String step, String digest, long now) {
     return step(
-        task, new TaskMove.Checked.ReadEnded(role, task.turnOrNone().holds(step, digest)), now);
+        task,
+        new TaskMove.Checked.ReadEnded(role, task.work().turnOrNone().holds(step, digest)),
+        now);
   }
 
   /** {@code task} whose Master offered the human {@code step} instead of pressing it. */
@@ -353,7 +357,7 @@ public final class TaskReducer {
   /** {@code task} without {@code project}, and without the trusted git entries only it held. */
   public TaskState repoLeft(TaskState task, String project, Set<String> trustedOnlyByIt) {
     TaskState left = repoLeft(task, project);
-    GitTrust trust = left.gitTrust();
+    GitTrust trust = left.gate().gitTrust();
     return trust == null || left.repos().size() == task.repos().size()
         ? left
         : left.withGitTrust(trust.excluding(trustedOnlyByIt));
@@ -439,8 +443,8 @@ public final class TaskReducer {
       case TaskMove.HeadSeen seen ->
           new TaskMove.HeadSeen(
               seen.tip(),
-              !seen.tip().isBlank() && !seen.tip().equals(task.headTip()),
-              task.withHead(seen.tip()).readsStaleOn(task.checksTip()),
+              !seen.tip().isBlank() && !seen.tip().equals(task.checks().headTip()),
+              task.withHead(seen.tip()).checks().readsStaleOn(task.checks().checksTip()),
               unarmed(task));
       case TaskMove.RequestLinked links -> {
         TaskState after =
@@ -473,14 +477,15 @@ public final class TaskReducer {
       case TaskMove.MasterNoted noted ->
           new TaskMove.MasterNoted(
               noted.note(),
-              MasterPhase.of(task.withMaster(noted.note().applyTo(task.arbiterOrNone()))));
+              MasterPhase.of(task.withMaster(noted.note().applyTo(task.work().arbiterOrNone()))));
       case TaskMove.Checked.Passed passed ->
           new TaskMove.Checked.Passed(
               passed.role(),
               passed.sha(),
               CheckerPhase.of(
                       task.withRole(
-                          passed.role(), task.roleOrNone(passed.role()).withPassed(passed.sha())),
+                          passed.role(),
+                          task.work().roleOrNone(passed.role()).withPassed(passed.sha())),
                       passed.role())
                   == CheckerPhase.PASSED);
       case TaskMove.Checked.RoundSent sent ->
@@ -491,12 +496,15 @@ public final class TaskReducer {
               CheckerPhase.of(
                       task.withRole(
                           sent.role(),
-                          task.roleOrNone(sent.role()).withRound(sent.digest(), sent.rows())),
+                          task.work()
+                              .roleOrNone(sent.role())
+                              .withRound(sent.digest(), sent.rows())),
                       sent.role())
                   == CheckerPhase.ROUND_OPEN);
       case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
       case TaskMove.ChecksRead read ->
-          new TaskMove.ChecksRead(read.hostStatus(), read.tip(), !task.readsStaleOn(read.tip()));
+          new TaskMove.ChecksRead(
+              read.hostStatus(), read.tip(), !task.checks().readsStaleOn(read.tip()));
       default -> move;
     };
   }
@@ -506,12 +514,12 @@ public final class TaskReducer {
    * whatever its words.
    */
   private static TaskState reported(TaskState task, AgentReport report) {
-    return task.withReport(report).withMaster(task.arbiterOrNone().withUnanswered(""));
+    return task.withReport(report).withMaster(task.work().arbiterOrNone().withUnanswered(""));
   }
 
   private static TaskMove.ConflictDrop dropOf(TaskState task, String project) {
-    Deployment deployment = task.deployment();
-    if (task.status() != TaskStatus.DEPLOY_CONFLICT
+    Deployment deployment = task.work().deployment();
+    if (task.standing().status() != TaskStatus.DEPLOY_CONFLICT
         || !task.canLose(project)
         || deployment == null) {
       return TaskMove.ConflictDrop.NONE;
@@ -553,7 +561,7 @@ public final class TaskReducer {
   }
 
   private static List<InfraRetry> sent(TaskState task) {
-    return task.infraRetries().stream().filter(InfraRetry::sent).toList();
+    return task.checks().infraRetries().stream().filter(InfraRetry::sent).toList();
   }
 
   private static List<InfraRetry> joined(List<InfraRetry> kept, InfraRetry retry) {
@@ -576,7 +584,7 @@ public final class TaskReducer {
   private static TaskState declined(
       TaskState task, String role, @Nullable String message, boolean event, long now) {
     TaskState landed = task.withStatus(TaskStatus.DEPLOYED, message, event, now);
-    RoleRecord record = landed.roleOrNone(role);
+    RoleRecord record = landed.work().roleOrNone(role);
     return landed.withRole(role, record.withDeclined(record.roundDigest()));
   }
 
@@ -592,21 +600,29 @@ public final class TaskReducer {
       case TaskEffect.Reports reports -> reported(task, reports.report());
       case TaskEffect.OpensTurn opens ->
           task.withTurn(
-              task.turnOrNone().relayed(opens.step(), opens.digest(), opens.answered(), now));
-      case TaskEffect.ClosesTurn _ -> task.withTurn(task.turnOrNone().closed(now));
+              task.work()
+                  .turnOrNone()
+                  .relayed(opens.step(), opens.digest(), opens.answered(), now));
+      case TaskEffect.ClosesTurn _ -> task.withTurn(task.work().turnOrNone().closed(now));
       case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
       case TaskEffect.Deploys deploys ->
           task.withDeployment(
               deploys
                   .step()
                   .applyTo(
-                      task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
-      case TaskEffect.RestartsSession _ -> task.withSession(Session.startedOver(task.session()));
+                      task.work().deployment() == null
+                          ? Deployment.defaults()
+                          : task.work().deployment(),
+                      now));
+      case TaskEffect.RestartsSession _ ->
+          task.withSession(Session.startedOver(task.work().session()));
       case TaskEffect.TrustsGit trusts -> task.withGitTrust(trusts.trust());
       case TaskEffect.ParksGit parks ->
-          task.withGitTrust(Objects.requireNonNull(task.gitTrust()).withChanged(parks.changed()));
+          task.withGitTrust(
+              Objects.requireNonNull(task.gate().gitTrust()).withChanged(parks.changed()));
       case TaskEffect.JoinsGit joins ->
-          task.withGitTrust(Objects.requireNonNull(task.gitTrust()).including(joins.added()));
+          task.withGitTrust(
+              Objects.requireNonNull(task.gate().gitTrust()).including(joins.added()));
       case TaskEffect.AsksRepo asks -> task.withRepoRequest(asks.project());
       case TaskEffect.DropsRepoRequest _ -> task.withRepoRequest(null);
       case TaskEffect.AttachesRepo attaches -> task.withRepo(attaches.repo());
@@ -619,16 +635,19 @@ public final class TaskReducer {
       case TaskEffect.ResetsApproval _ -> task.withApproved(null);
       case TaskEffect.ResetsInfra _ -> task.withInfraRetries(List.of());
       case TaskEffect.NotesMaster notes ->
-          task.withMaster(notes.note().applyTo(task.arbiterOrNone()));
+          task.withMaster(notes.note().applyTo(task.work().arbiterOrNone()));
       case TaskEffect.OpensCheckerRead opens ->
-          task.withRole(opens.role(), task.roleOrNone(opens.role()).withReading(opens.step()));
+          task.withRole(
+              opens.role(), task.work().roleOrNone(opens.role()).withReading(opens.step()));
       case TaskEffect.ClosesCheckerRead closes ->
-          task.withRole(closes.role(), task.roleOrNone(closes.role()).withReading(""));
+          task.withRole(closes.role(), task.work().roleOrNone(closes.role()).withReading(""));
       case TaskEffect.PassesChecker passes ->
-          task.withRole(passes.role(), task.roleOrNone(passes.role()).withPassed(passes.sha()));
+          task.withRole(
+              passes.role(), task.work().roleOrNone(passes.role()).withPassed(passes.sha()));
       case TaskEffect.SendsCheckerRound sends ->
           task.withRole(
-              sends.role(), task.roleOrNone(sends.role()).withRound(sends.digest(), sends.rows()));
+              sends.role(),
+              task.work().roleOrNone(sends.role()).withRound(sends.digest(), sends.rows()));
       case TaskEffect.DeclinesRound declines ->
           declined(task, declines.role(), message, event, now);
       case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
@@ -637,13 +656,16 @@ public final class TaskReducer {
       case TaskEffect.ReadsApproval reads -> task.withApproved(reads.approved());
       case TaskEffect.ArmsInfra arms ->
           task.withInfraRetries(
-              joined(InfraRetry.sentSince(task.infraRetries(), task.trailOrNone()), arms.retry()));
+              joined(
+                  InfraRetry.sentSince(task.checks().infraRetries(), task.round().trailOrNone()),
+                  arms.retry()));
       case TaskEffect.ClearsInfra clears ->
           task.withInfraRetries(clears.all() ? List.of() : sent(task));
       case TaskEffect.SendsInfra sends ->
           task.withInfraRetries(joined(sent(task), sends.retry().sentAt(now)));
       case TaskEffect.DisarmsInfra _ -> task.withInfraRetries(sent(task));
-      case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
+      case TaskEffect.Signs signs ->
+          task.withSession(signs.sign().applyTo(task.work().session(), now));
     };
   }
 }

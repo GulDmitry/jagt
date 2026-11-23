@@ -26,7 +26,7 @@ public class NotesDue {
    * {@code every} is zero.
    */
   public Optional<String> reminder(TaskState task, Duration every) {
-    if (every.isZero() || task.status() != TaskStatus.IN_PROGRESS) {
+    if (every.isZero() || task.standing().status() != TaskStatus.IN_PROGRESS) {
       return Optional.empty();
     }
     Path worktree = Path.of(task.worktreePath());

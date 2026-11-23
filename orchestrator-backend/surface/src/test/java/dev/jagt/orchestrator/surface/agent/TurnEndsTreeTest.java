@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
 import dev.jagt.orchestrator.service.turn.TurnTree;
@@ -47,7 +48,7 @@ class TurnEndsTreeTest {
   @Test
   void reportedTurnEndRecordsTheTreeTheNextTurnIsMeasuredFrom() {
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     TaskState reported =
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .alias("a1")
@@ -72,7 +73,7 @@ class TurnEndsTreeTest {
   void deployCheckThatChangedNothingEndsItsTurn() {
     AgentRuntime runtime = mock(AgentRuntime.class);
     ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(config.load()).thenReturn(ConfigFile.defaults());
     when(turnTree.changedSinceLastEnd("ABC-1", task)).thenReturn(false);
 
     String answered =

@@ -33,16 +33,16 @@ public final class DashboardLine {
   private DashboardLine() {}
 
   public static Line forTask(TaskState task, @Nullable String usableRequestLink) {
-    if (task.gitStateChanged()) {
+    if (task.gate().gitStateChanged()) {
       return new Line(
-          Kind.YOURS, "NEEDS YOU: " + Objects.requireNonNull(task.gitTrust()).changed());
+          Kind.YOURS, "NEEDS YOU: " + Objects.requireNonNull(task.gate().gitTrust()).changed());
     }
-    String message = task.message();
-    AgentReport report = task.report();
+    String message = task.standing().message();
+    AgentReport report = task.standing().report();
     // A question OUTRANKS every other line and is reachable from every status — an agent may ask
     // without
     // moving its task.
-    if (report.asks() && task.status() != TaskStatus.DONE) {
+    if (report.asks() && task.standing().status() != TaskStatus.DONE) {
       return needsInput(report, message);
     }
     Optional<Conflict> conflict = task.currentConflict().filter(Conflict::stalled);
@@ -54,7 +54,7 @@ public final class DashboardLine {
               + " conflict stopped moving: "
               + Objects.requireNonNull(conflict.get().told()).reason());
     }
-    return switch (task.status()) {
+    return switch (task.standing().status()) {
       case CI_FAILED -> problem(orDefault(message, "checks failed"));
       case DEPLOY_CONFLICT ->
           new Line(
@@ -109,7 +109,7 @@ public final class DashboardLine {
     String because = SessionPhase.silentBecause(task);
     if (because == null || because.isBlank()) {
       because =
-          task.status() == TaskStatus.NEW
+          task.standing().status() == TaskStatus.NEW
               ? "the agent never reported — check that the CLI started"
               : "nothing has moved in its session";
     }

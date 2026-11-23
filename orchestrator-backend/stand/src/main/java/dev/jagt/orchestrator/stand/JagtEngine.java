@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.stand;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface JagtEngine extends AutoCloseable {
 
@@ -11,6 +13,11 @@ public interface JagtEngine extends AutoCloseable {
   int port();
 
   StandBoard board();
+
+  /** The status of a request from a peer that is not loopback to jagt, however jagt is reached. */
+  default int fromOutside(String path, Map<String, String> headers, @Nullable String body) {
+    return board().anonymously(path, headers, body);
+  }
 
   String windows();
 

@@ -110,10 +110,14 @@ public class AgentStatusReports {
     // An agent that stops to ask usually keeps its status, so the message is the only thing that
     // changed.
     boolean askedNow =
-        means.asks() && !current.map(TaskState::report).orElse(AgentReport.PLAIN).asks();
+        means.asks()
+            && !current
+                .map(taskState -> taskState.standing().report())
+                .orElse(AgentReport.PLAIN)
+                .asks();
     logChange(
         taskId,
-        current.map(TaskState::alias).orElse(null),
+        current.map(taskState -> taskState.ticket().alias()).orElse(null),
         previous,
         landed,
         shortMessage,
@@ -129,7 +133,8 @@ public class AgentStatusReports {
     TaskStatus verdict = flow.verified(passed);
     AgentStatusMessage said = new AgentStatusMessage(verdict.name(), message, null, null, Map.of());
     String answer = report(accepted(said, taskId), taskId, task -> false, false);
-    TaskStatus landed = stateService.task(taskId).map(TaskState::status).orElse(null);
+    TaskStatus landed =
+        stateService.task(taskId).map(taskState -> taskState.standing().status()).orElse(null);
     // A measured verdict the flow turns aside leaves the task held, and the run repeats with
     // nothing to say why.
     if (landed != verdict) {
@@ -156,7 +161,10 @@ public class AgentStatusReports {
   public MessageContext contextFor(String taskId) {
     return new MessageContext(
         known(taskId),
-        stateService.task(taskId).filter(task -> task.planGate() == PlanGate.REQUIRED).isPresent(),
+        stateService
+            .task(taskId)
+            .filter(task -> task.gate().planGate() == PlanGate.REQUIRED)
+            .isPresent(),
         List.copyOf(configService.load().projects().keySet()));
   }
 
@@ -173,7 +181,7 @@ public class AgentStatusReports {
             .orElse(false);
     return contextFor(taskId)
         .withSwitchesOn(configService.load().agent().switchesOn())
-        .withFirstReport(task.filter(one -> one.status() == TaskStatus.NEW).isPresent())
+        .withFirstReport(task.filter(one -> one.standing().status() == TaskStatus.NEW).isPresent())
         .withVisualMissing(visualMissing);
   }
 
@@ -194,16 +202,16 @@ public class AgentStatusReports {
       return said;
     }
     boolean missedShip = judged.refusedAll() && said.status() == TaskStatus.CI_POLLING;
-    if (missedShip && !flow.reportable(task.status(), task.status())) {
+    if (missedShip && !flow.reportable(task.standing().status(), task.standing().status())) {
       throw Refusal.byState(
           "jagt refuses this report: "
               + judged.foreign().getFirst().url()
               + " is not under the repository's remote, so no request was linked and the task stays"
               + " "
-              + task.status()
+              + task.standing().status()
               + ".");
     }
-    TaskStatus stays = missedShip ? task.status() : said.status();
+    TaskStatus stays = missedShip ? task.standing().status() : said.status();
     return new Reported(
         stays,
         said.claimed(),
@@ -216,8 +224,9 @@ public class AgentStatusReports {
   }
 
   private void logReplacedStop(String taskId, Optional<TaskState> before) {
-    TaskStop standing = before.map(TaskState::stop).orElse(null);
-    if (standing != null && stateService.task(taskId).filter(TaskState::stopped).isEmpty()) {
+    TaskStop standing = before.map(taskState -> taskState.work().stop()).orElse(null);
+    if (standing != null
+        && stateService.task(taskId).filter(taskState -> taskState.work().stopped()).isEmpty()) {
       log.atInfo()
           .setMessage("stop lifted")
           .addKeyValue("task", taskId)
@@ -292,7 +301,7 @@ public class AgentStatusReports {
   private TaskState signed(TaskState next) {
     return stateService
         .reducer()
-        .signed(next, new SessionSign.Reported(), next.lastActiveTimestamp());
+        .signed(next, new SessionSign.Reported(), next.standing().lastActiveTimestamp());
   }
 
   private TaskState closed(TaskState next, boolean closesTurn) {
@@ -317,8 +326,8 @@ public class AgentStatusReports {
                         next.reviewRequestOf(request.getKey())
                             .filter(request.getValue()::equals)
                             .isPresent()));
-    boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
-    long now = next.lastActiveTimestamp();
+    boolean newRound = FlowRules.outForReview(next.standing().status()) && !sameRound;
+    long now = next.standing().lastActiveTimestamp();
     return stateService
         .reducer()
         .relinked(
@@ -327,7 +336,7 @@ public class AgentStatusReports {
 
   /** Read as the plan is put up, not after: what VERIFYING runs is what was ratified. */
   private TaskState planned(TaskStatus was, TaskState next) {
-    if (FlowRules.holdsPlan(was) || !FlowRules.holdsPlan(next.status())) {
+    if (FlowRules.holdsPlan(was) || !FlowRules.holdsPlan(next.standing().status())) {
       return next;
     }
     PlanProbes.Read read = handBack.planProbes(next);
@@ -367,7 +376,7 @@ public class AgentStatusReports {
       log.atInfo()
           .setMessage("report overruled")
           .addKeyValue("task", taskId)
-          .addKeyValue("alias", task.get().alias())
+          .addKeyValue("alias", task.get().ticket().alias())
           .addKeyValue("cause", "uncommitted changes")
           .addKeyValue("effect", "round recorded with a diff")
           .log();

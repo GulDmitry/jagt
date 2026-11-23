@@ -29,6 +29,7 @@ class SessionTransitionLogTest {
       TaskState missing =
           running.withSession(
               running
+                  .work()
                   .session()
                   .withWindow(new Session.Window(Session.Window.State.MISSING, 2_000, 0)));
 

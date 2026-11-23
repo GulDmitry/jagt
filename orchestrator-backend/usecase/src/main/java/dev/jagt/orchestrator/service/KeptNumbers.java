@@ -25,7 +25,7 @@ public class KeptNumbers {
   private final Map<String, Integer> valid = new ConcurrentHashMap<>();
 
   /** The section with each refused number put back to its last valid value or removed. */
-  Optional<Object> of(Object section, ConfigService.ConfigFile parsed) {
+  Optional<Object> of(Object section, ConfigFile parsed) {
     List<ConfigRanges.Refusal> refusals = ConfigRanges.refusals(parsed);
     ConfigRanges.keys().forEach(key -> settle(key, parsed, refusals));
     Object kept = section;
@@ -36,7 +36,7 @@ public class KeptNumbers {
     return refusals.isEmpty() ? Optional.empty() : Optional.of(kept);
   }
 
-  private void settle(String key, ConfigService.ConfigFile parsed, List<ConfigRanges.Refusal> out) {
+  private void settle(String key, ConfigFile parsed, List<ConfigRanges.Refusal> out) {
     boolean refused = out.stream().anyMatch(refusal -> refusal.key().equals(key));
     Integer written = ConfigRanges.written(key, parsed);
     if (!refused) {

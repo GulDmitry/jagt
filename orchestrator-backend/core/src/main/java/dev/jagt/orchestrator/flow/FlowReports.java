@@ -101,7 +101,7 @@ public class FlowReports {
           if (!standing.test(task)) {
             return task;
           }
-          Optional<String> why = rules.refusedReport(task.status(), status, means);
+          Optional<String> why = rules.refusedReport(task.standing().status(), status, means);
           if (why.isPresent()) {
             refused.set(why.get());
             return task.refused(RefusalKind.STATUS_REPORT);
@@ -116,8 +116,8 @@ public class FlowReports {
                   false,
                   clock.millis());
           said = declined(reducer, said, means, status);
-          landed.set(new Landed(task.status(), said.status()));
-          return alsoRecord.apply(task.status(), said);
+          landed.set(new Landed(task.standing().status(), said.standing().status()));
+          return alsoRecord.apply(task.standing().status(), said);
         });
     Optional<String> why =
         Optional.ofNullable(refused.get())
@@ -207,7 +207,7 @@ public class FlowReports {
     tasks.reduce(
         taskId,
         (reducer, task) -> {
-          if (!task.turnOrNone().sameTurnAs(claimed)) {
+          if (!task.work().turnOrNone().sameTurnAs(claimed)) {
             return task;
           }
           undone.set(true);
@@ -238,10 +238,10 @@ public class FlowReports {
    */
   private static @Nullable String lineOf(
       TaskState task, AgentReport means, @Nullable String message) {
-    if (!FlowRules.holdsItsLine(task.status()) || means.asks()) {
+    if (!FlowRules.holdsItsLine(task.standing().status()) || means.asks()) {
       return message;
     }
-    return task.report().asks() ? null : task.message();
+    return task.standing().report().asks() ? null : task.standing().message();
   }
 
   /**
@@ -253,15 +253,17 @@ public class FlowReports {
     tasks.reduce(
         taskId,
         (reducer, task) -> {
-          TaskStatus now = rules.readLands(task.status(), concluded);
-          landed.set(new Landed(task.status(), now));
-          if (now == task.status()) {
+          TaskStatus now = rules.readLands(task.standing().status(), concluded);
+          landed.set(new Landed(task.standing().status(), now));
+          if (now == task.standing().status()) {
             return task;
           }
           return reducer.reduce(
               task,
               new TaskMove.Read(concluded),
-              FlowRules.standsThroughRead(task.report()) ? task.message() : message,
+              FlowRules.standsThroughRead(task.standing().report())
+                  ? task.standing().message()
+                  : message,
               false,
               clock.millis());
         });
@@ -281,11 +283,11 @@ public class FlowReports {
     tasks.reduce(
         taskId,
         (reducer, task) -> {
-          if (!FlowRules.checkedWhereItLanded(task.status())) {
+          if (!FlowRules.checkedWhereItLanded(task.standing().status())) {
             return task;
           }
-          TaskStatus now = rules.deployReadLands(task.status(), redOnTheCode);
-          if (now == task.status() && message.equals(task.message())) {
+          TaskStatus now = rules.deployReadLands(task.standing().status(), redOnTheCode);
+          if (now == task.standing().status() && message.equals(task.standing().message())) {
             return task;
           }
           written.set(true);
@@ -294,7 +296,7 @@ public class FlowReports {
                   task,
                   new TaskMove.DeployRead(redOnTheCode),
                   message,
-                  now != task.status(),
+                  now != task.standing().status(),
                   clock.millis());
           return redProject == null
               ? read
@@ -315,9 +317,9 @@ public class FlowReports {
     tasks.reduce(
         taskId,
         (reducer, task) -> {
-          if (!FlowRules.deployConflicted(task.status())
-              || task.deployment() == null
-              || !task.deployment().heldByRedPipeline()) {
+          if (!FlowRules.deployConflicted(task.standing().status())
+              || task.work().deployment() == null
+              || !task.work().deployment().heldByRedPipeline()) {
             return task;
           }
           return reducer.reduce(
@@ -346,7 +348,7 @@ public class FlowReports {
             reducer.deployStepped(task, new DeployStep.ReadOn(unread), clock.millis()));
     return tasks
         .task(taskId)
-        .map(TaskState::deployment)
+        .map(taskState -> taskState.work().deployment())
         .map(deployment ->
             deployment.targets().stream().mapToInt(Deployment.Target::unreadReads).max().orElse(0))
         .orElse(0);

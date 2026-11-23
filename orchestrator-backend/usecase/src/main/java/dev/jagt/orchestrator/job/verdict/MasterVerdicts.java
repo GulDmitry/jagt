@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.job.verdict;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.job.master.MasterShip;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -46,7 +46,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     return OriginContext.as(ActionOrigin.MASTER, () -> judged(taskId, task, verdict, config));
   }
 
@@ -54,8 +54,8 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
-    boolean plan = FlowRules.holdsPlan(task.status());
+      ConfigFile.ArbiterConfig config) {
+    boolean plan = FlowRules.holdsPlan(task.standing().status());
     return switch (verdict.kind()) {
       case NOT_READY -> returned(taskId, task, verdict, plan);
       case QUESTION -> {
@@ -73,7 +73,7 @@ public class MasterVerdicts {
       String taskId,
       TaskState task,
       MasterReview.Verdict verdict,
-      ConfigService.ConfigFile.ArbiterConfig config) {
+      ConfigFile.ArbiterConfig config) {
     decisions.returned(task, verdict.round(), List.of());
     return config.may(MasterRight.SHIP) && ship.ship(taskId, task);
   }
@@ -107,7 +107,7 @@ public class MasterVerdicts {
     log.atInfo()
         .setMessage("master returns the round")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("findings", verdict.findings().size())
         .log();
     return true;
@@ -130,7 +130,7 @@ public class MasterVerdicts {
     log.atInfo()
         .setMessage("master asks")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("question", OneLine.clipped(question))
         .log();
     return true;
@@ -162,7 +162,7 @@ public class MasterVerdicts {
     log.atInfo()
         .setMessage("master answered")
         .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.alias())
+        .addKeyValue("alias", task.ticket().alias())
         .addKeyValue("question", OneLine.clipped(question))
         .addKeyValue("decision", OneLine.clipped(decision))
         .log();
@@ -192,7 +192,7 @@ public class MasterVerdicts {
             log.atInfo()
                 .setMessage("master returns the task")
                 .addKeyValue("task", taskId)
-                .addKeyValue("alias", task.alias())
+                .addKeyValue("alias", task.ticket().alias())
                 .addKeyValue("instruction", OneLine.clipped(instruction))
                 .log();
           }
@@ -201,7 +201,7 @@ public class MasterVerdicts {
   }
 
   private boolean tell(String taskId, TaskState task, String text, StepRelay.Claim claim) {
-    if (FlowRules.awaitsItsInstruction(task.status())) {
+    if (FlowRules.awaitsItsInstruction(task.standing().status())) {
       return relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.step(), text, false, claim);
     }
     return relay.relay(taskId, MasterMove.ANSWERED.step(), text, claim);

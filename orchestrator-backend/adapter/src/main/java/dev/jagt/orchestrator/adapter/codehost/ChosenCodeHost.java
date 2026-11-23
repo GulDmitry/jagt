@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
@@ -94,7 +95,7 @@ public class ChosenCodeHost implements CodeHost {
       String project, BiFunction<CodeHostDriver, HostSettings, Answer<T>> question) {
     CodeHostChoice choice;
     try {
-      ConfigService.ConfigFile config = configService.load();
+      ConfigFile config = configService.load();
       ProjectConfig declared = config.projects().get(project);
       if (declared == null) {
         return Answer.failed(TokenUsage.NONE, "no project '" + project + "' in jagt.yml");

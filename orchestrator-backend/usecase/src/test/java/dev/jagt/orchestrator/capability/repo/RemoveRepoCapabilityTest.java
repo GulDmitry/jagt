@@ -108,7 +108,8 @@ class RemoveRepoCapabilityTest {
     String said = engine.run("ABC-7", TaskAction.REMOVE_REPO, "web");
 
     assertThat(said).isEqualTo("remove-repo ABC-7: web left the task");
-    assertThat(state.task("ABC-7").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(state.task("ABC-7").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEWED);
   }
 
   @Test

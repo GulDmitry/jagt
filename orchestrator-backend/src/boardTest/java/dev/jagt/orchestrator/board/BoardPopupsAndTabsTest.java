@@ -305,6 +305,34 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
+  void theOpenTasksPeekReadsItsScreenAgainEveryFiveSeconds() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
+    Page page = session.newPage();
+    page.clock().install();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("#pane .dock .peek")).hasText("compiling");
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("tests green"));
+
+    page.clock().runFor(5_000);
+
+    assertThat(page.locator("#pane .dock .peek")).hasText("tests green");
+  }
+
+  @Test
+  void theSessionTabReadsItsWindowsAgainEveryFiveSeconds() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"));
+    Page page = session.newPage();
+    page.clock().install();
+    page.navigate("http://localhost:" + port + "/");
+    page.locator("#pane .tabs button[data-tab=session]").click();
+    assertThat(page.locator("#pane .session")).isVisible();
+
+    page.waitForRequest("**/api/windows", () -> page.clock().runFor(5_000));
+  }
+
+  @Test
   void theMessageLineIsDisabledAndSaysWhyWhenNoWindowHoldsTheSession() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1")).thenReturn(Optional.empty());

@@ -24,7 +24,7 @@ public final class HumanWaits {
    * human.
    */
   public static TaskState noted(TaskState task, Holder holder, boolean judged, long now) {
-    List<HumanWait> waits = new ArrayList<>(task.waits());
+    List<HumanWait> waits = new ArrayList<>(task.work().waits());
     Optional<HumanWait> open =
         waits.isEmpty() || !waits.getLast().open()
             ? Optional.empty()
@@ -41,23 +41,23 @@ public final class HumanWaits {
 
   /** The interval {@code after} ended that {@code before} still held open. */
   public static Optional<HumanWait> ended(TaskState before, TaskState after) {
-    return before.waits().stream()
+    return before.work().waits().stream()
         .filter(HumanWait::open)
         .findFirst()
         .flatMap(open ->
-            after.waits().stream()
+            after.work().waits().stream()
                 .filter(wait -> wait.since() == open.since() && !wait.open())
                 .findFirst());
   }
 
   private static Why whyOf(TaskState task, boolean judged) {
-    if (task.stopped()) {
+    if (task.work().stopped()) {
       return Why.STOP;
     }
-    if (task.report() == AgentReport.PERMISSION) {
+    if (task.standing().report() == AgentReport.PERMISSION) {
       return Why.PERMISSION;
     }
-    if (task.report() == AgentReport.QUESTION) {
+    if (task.standing().report() == AgentReport.QUESTION) {
       return Why.QUESTION;
     }
     return judged ? Why.VERDICT : Why.STATUS;

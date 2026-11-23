@@ -101,8 +101,8 @@ public class DeployService {
   }
 
   private static int unpushedFrom(TaskState task) {
-    Deployment deployment = task.deployment();
-    return FlowRules.deployConflicted(task.status())
+    Deployment deployment = task.work().deployment();
+    return FlowRules.deployConflicted(task.standing().status())
             && deployment != null
             && deployment.conflictedTarget().isEmpty()
             && deployment.at() < deployment.targets().size()

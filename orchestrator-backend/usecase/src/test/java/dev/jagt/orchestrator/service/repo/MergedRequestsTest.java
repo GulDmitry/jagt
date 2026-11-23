@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TestProjectConfigBuilder;
@@ -104,7 +105,7 @@ class MergedRequestsTest {
   void owesRequestToHostedRepositoryWithNoneAndNotToOneWithNoCodeHost() {
     when(config.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults()
+            ConfigFile.defaults()
                 .withProjects(
                     java.util.Map.of(
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),

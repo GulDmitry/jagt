@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.TrackerAssistant;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.launch.TicketFacts;
+import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.file.Files;

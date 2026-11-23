@@ -38,7 +38,7 @@ public class CheckerOutcomes {
   private boolean stands(String taskId, String sha) {
     return state
         .task(taskId)
-        .map(TaskState::deployment)
+        .map(taskState -> taskState.work().deployment())
         .filter(deployment -> deployment.live() && deployment.tips().equals(sha))
         .isPresent();
   }
@@ -128,7 +128,7 @@ public class CheckerOutcomes {
             role.id(), () -> relay.relayRound(taskId, Step.ACCEPTANCE_ROUND, facts, claim));
     if (sent) {
       String digest =
-          Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());
+          Objects.requireNonNull(Objects.requireNonNull(task.work().deployment()).askedDigest());
       state.reduce(
           taskId,
           (reducer, current) -> reducer.checkerRoundSent(current, role.id(), digest, facts));

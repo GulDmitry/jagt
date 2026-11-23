@@ -353,7 +353,11 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   @Test
   void answersTasklessVerbItselfInsteadOfSendingItToTheModel() {
     Page page = openLiveBoard();
-    ask(page, "ship");
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("ship");
+    page.evaluate(
+        "() => document.getElementById('palette')"
+            + ".onsubmit(new SubmitEvent('submit', {cancelable: true}))");
 
     assertThat(page.locator("#palette-state")).containsText("ship needs a task");
     verifyNoInteractions(naturalLanguage);
