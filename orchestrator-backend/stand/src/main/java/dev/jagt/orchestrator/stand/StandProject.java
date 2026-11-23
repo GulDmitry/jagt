@@ -65,6 +65,48 @@ public final class StandProject {
     return repo;
   }
 
+  public Path origin() {
+    return origin;
+  }
+
+  public String pushedBranch() {
+    return StandShell.git(origin, "for-each-ref", "--format=%(refname:short)", "refs/heads/")
+        .lines()
+        .map(String::strip)
+        .filter(branch -> !branch.equals("main") && !branch.equals("dev"))
+        .findFirst()
+        .orElse("");
+  }
+
+  public String diff(String sha) {
+    return StandShell.git(origin, "diff", "refs/heads/main", sha);
+  }
+
+  public String commitOnBranch(
+      Path scratch, String branch, String file, String content, String message) {
+    if (!Files.isDirectory(scratch)) {
+      StandShell.git(
+          Objects.requireNonNull(origin.getParent()),
+          "clone",
+          "--branch",
+          "main",
+          "file://" + origin,
+          scratch.toString());
+      StandShell.git(scratch, "config", "user.email", "outsider@example.com");
+      StandShell.git(scratch, "config", "user.name", "someone else");
+    }
+    StandShell.git(scratch, "checkout", "-B", branch, "origin/main");
+    try {
+      Files.writeString(scratch.resolve(file), content);
+    } catch (IOException e) {
+      throw new StandFailure("cannot write " + file + " under " + scratch, e);
+    }
+    StandShell.git(scratch, "add", file);
+    StandShell.git(scratch, "commit", "-m", message);
+    StandShell.git(scratch, "push", "origin", "HEAD:refs/heads/" + branch);
+    return StandShell.git(scratch, "rev-parse", "HEAD").strip();
+  }
+
   public boolean onDeployBranch(String branch) {
     return StandShell.gitSucceeds(
         origin, "merge-base", "--is-ancestor", "refs/heads/" + branch, "refs/heads/dev");

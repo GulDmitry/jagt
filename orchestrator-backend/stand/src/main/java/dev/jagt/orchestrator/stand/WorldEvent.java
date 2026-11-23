@@ -21,6 +21,19 @@ public interface WorldEvent {
             .orElse(false);
   }
 
+  static WorldEvent ownRequestListed(int number, String title) {
+    return world -> {
+      String branch = world.project().pushedBranch();
+      if (branch.isBlank()) {
+        return false;
+      }
+      String head = world.project().head(branch);
+      world.store().seedPull(number, title, "", StandStore.ACTOR, head, world.project().diff(head));
+      world.note("request " + number + " of " + branch + " listed on the host");
+      return true;
+    };
+  }
+
   static WorldEvent deployBranchCommit(String file, String content, String message) {
     return world ->
         world

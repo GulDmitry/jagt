@@ -125,6 +125,15 @@ class JagtProcessLaunchTest {
   }
 
   @Test
+  void theRootsBinDirectoryComesFirstOnThePathWhenItExists(@TempDir Path root) throws Exception {
+    Files.createDirectory(root.resolve("bin"));
+
+    ProcessBuilder command = JagtProcess.command(root, 8123);
+
+    assertThat(command.environment().get("PATH")).startsWith(root.resolve("bin") + ":");
+  }
+
+  @Test
   void restartRelaunchesOnTheSamePortWhenAnotherRunTookItInBetween(@TempDir Path root) {
     when(board.ready()).thenReturn(true, false, true);
     Process[] launches = {first, dead, second};

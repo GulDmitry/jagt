@@ -16,7 +16,10 @@ public final class InvariantChecker {
             new NoForcePush(ancestry),
             new LegalTransitions(moves),
             new StepsWithinCases(book),
-            new MissStopsTheMaster());
+            new MissStopsTheMaster(),
+            new NotesOpenWithTheAiLine(),
+            new NoNoteTwice(),
+            new NoApprovalByJagt());
   }
 
   public List<Violation> check(RunRecord run) {

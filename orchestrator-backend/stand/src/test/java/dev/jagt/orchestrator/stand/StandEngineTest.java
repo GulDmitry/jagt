@@ -169,4 +169,20 @@ class StandEngineTest {
     assertThat(kind.container()).isEmpty();
     assertThat(host).isEqualTo(marker);
   }
+
+  @Test
+  void runWithFakeGhBesideJagtSkipsOnAnyEngineButHost() {
+    StandEngine compose =
+        new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launchers);
+
+    assertThatThrownBy(() -> compose.needsHost("code-review-own"))
+        .isInstanceOf(TestAbortedException.class);
+  }
+
+  @Test
+  void runWithFakeGhBesideJagtRunsOnTheHostEngine() {
+    StandEngine host = new StandEngine(StandEngine.HOST, tool -> true, name -> null, launchers);
+
+    assertThatCode(() -> host.needsHost("code-review-own")).doesNotThrowAnyException();
+  }
 }

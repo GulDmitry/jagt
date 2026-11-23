@@ -75,7 +75,7 @@ final class ServerFixtures {
     return text.replace(from, to);
   }
 
-  private static String resource(String name) throws IOException {
+  static String resource(String name) throws IOException {
     try (InputStream in = ServerFixtures.class.getResourceAsStream(name)) {
       if (in == null) {
         throw new StandFailure("the stand lacks " + name);

@@ -12,7 +12,8 @@ public record RunRecord(
     Map<String, List<Step>> histories,
     List<Miss> misses,
     Timeline timeline,
-    Map<String, List<RefUpdate>> origin) {
+    Map<String, List<RefUpdate>> origin,
+    Reviews reviews) {
 
   public static final String BASE = "main";
   public static final String DEPLOY = "dev";
@@ -33,6 +34,20 @@ public record RunRecord(
     }
   }
 
+  public record Note(int id, int pull, String kind, String body, Instant at) {
+
+    public boolean byActor() {
+      return kind.equals("actor");
+    }
+  }
+
+  public record Approval(Instant at, String attempt) {}
+
+  public record Reviews(List<Note> notes, List<Approval> approvals) {
+
+    public static final Reviews NONE = new Reviews(List.of(), List.of());
+  }
+
   public record Timeline(List<Sample> samples, List<Relay> relays, Set<String> standWrites) {}
 
   public static RunRecord read(Path root) {
@@ -50,7 +65,8 @@ public record RunRecord(
             BASE,
             Reflog.read(root.resolve("origin.git"), BASE),
             DEPLOY,
-            Reflog.read(root.resolve("origin.git"), DEPLOY)));
+            Reflog.read(root.resolve("origin.git"), DEPLOY)),
+        ReviewFiles.read(root.resolve("host")));
   }
 
   public List<Step> history(String task) {

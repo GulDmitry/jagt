@@ -58,6 +58,25 @@ class StandHostTest {
   }
 
   @Test
+  void answersTheFakeGhWithItsOutputAndRefusesAnUnknownCommandWith400() throws Exception {
+    HttpRequest known =
+        HttpRequest.newBuilder(URI.create(host.baseUrl() + "/gh"))
+            .POST(BodyPublishers.ofString("auth\0status\0"))
+            .build();
+    HttpRequest unknown =
+        HttpRequest.newBuilder(URI.create(host.baseUrl() + "/gh"))
+            .POST(BodyPublishers.ofString("gist\0create\0"))
+            .build();
+
+    HttpResponse<String> answered = client.send(known, BodyHandlers.ofString());
+    HttpResponse<String> refused = client.send(unknown, BodyHandlers.ofString());
+
+    assertThat(answered.statusCode()).isEqualTo(200);
+    assertThat(answered.body()).contains("Logged in");
+    assertThat(refused.statusCode()).isEqualTo(400);
+  }
+
+  @Test
   void acceptsTheInitializedNotificationWithoutBody() throws Exception {
     HttpResponse<String> response =
         client.send(

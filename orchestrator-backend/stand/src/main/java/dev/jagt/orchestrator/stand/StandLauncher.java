@@ -48,20 +48,25 @@ final class StandLauncher {
         poll);
   }
 
-  StandRun start(String scenario, StandMode mode, @Nullable Path replayed) throws IOException {
+  StandRun start(String scenario, StandMode mode, @Nullable Path replayed, StandConfig.Posts posts)
+      throws IOException {
     teardown.take();
     try {
-      return begin(scenario, mode, replayed);
+      return begin(scenario, mode, replayed, posts);
     } catch (IOException | RuntimeException e) {
       teardown.release();
       throw e;
     }
   }
 
-  private StandRun begin(String scenario, StandMode mode, @Nullable Path replayed)
+  private StandRun begin(
+      String scenario, StandMode mode, @Nullable Path replayed, StandConfig.Posts posts)
       throws IOException {
     engine.ready();
     engine.needsRoot(scenario);
+    if (posts != StandConfig.Posts.NONE) {
+      engine.needsHost(scenario);
+    }
     if (replayed == null) {
       engine.needsCredential();
     }
@@ -95,7 +100,11 @@ final class StandLauncher {
           replayed == null
               ? null
               : new StandConfig.Replay(
-                  placed(root, replayed, host.appUrl(reach)), host.appUrl(reach)));
+                  placed(root, replayed, host.appUrl(reach)),
+                  host.appUrl(reach),
+                  posts == StandConfig.Posts.NONE
+                      ? null
+                      : new StandConfig.Reviews(host.baseUrl(), project.origin(), posts)));
       if (container) {
         Files.writeString(
             root.resolve("password-hash"), new BCryptPasswordEncoder().encode(password));

@@ -74,7 +74,7 @@ class StandLauncherTest {
     StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {
+    try (StandRun run = launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE)) {
       assertThat(run.root().getParent()).isEqualTo(dir.resolve("base").toRealPath());
       assertThat(StandRoots.named(run.root())).isTrue();
       assertThat(StandMarker.read(run.root(), 0).jagtPid()).isEqualTo(99);
@@ -89,8 +89,8 @@ class StandLauncherTest {
     StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    try (StandRun first = launcher.start("happy", StandMode.JUDGE, null);
-        StandRun second = launcher.start("happy", StandMode.JUDGE, null)) {
+    try (StandRun first = launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE);
+        StandRun second = launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE)) {
       assertThat(first.root()).isNotEqualTo(second.root());
     }
   }
@@ -100,11 +100,11 @@ class StandLauncherTest {
     StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
     Path gone;
-    try (StandRun first = launcher.start("happy", StandMode.JUDGE, null)) {
+    try (StandRun first = launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE)) {
       gone = first.root();
     }
 
-    try (StandRun second = launcher.start("happy", StandMode.JUDGE, null)) {
+    try (StandRun second = launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE)) {
       assertThat(second.root().getFileName()).isNotEqualTo(gone.getFileName());
     }
   }
@@ -115,7 +115,8 @@ class StandLauncherTest {
     StandEngine engine = new StandEngine(StandEngine.HOST, tool -> false, name -> null, launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    try (StandRun run = launcher.start("happy", StandMode.JUDGE, recording)) {
+    try (StandRun run =
+        launcher.start("happy", StandMode.JUDGE, recording, StandConfig.Posts.NONE)) {
       assertThat(Files.readString(run.root().resolve("recording.jsonl")))
           .startsWith("{\"url\":\"http://127.0.0.1:")
           .endsWith("/app\"}");
@@ -128,7 +129,7 @@ class StandLauncherTest {
         new StandEngine(StandEngine.COMPOSE, tool -> true, name -> "set", launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    try (StandRun run = launcher.start("happy", StandMode.JUDGE, null)) {
+    try (StandRun run = launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE)) {
       assertThat(run.root().resolve("password-hash")).content().startsWith("$2");
       assertThat(passwords).singleElement().asString().isNotEmpty();
       assertThat(StandMarker.read(run.root(), 0).container())
@@ -150,7 +151,7 @@ class StandLauncherTest {
                 }));
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
+    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE))
         .isInstanceOf(StandFailure.class)
         .hasMessageContaining("stand run happy did not start; kept ")
         .hasMessageContaining(", evidence in ")
@@ -173,7 +174,7 @@ class StandLauncherTest {
         new StandEngine(StandEngine.COMPOSE, tool -> false, name -> null, launches);
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
+    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE))
         .isInstanceOf(TestAbortedException.class);
     assertTimeoutPreemptively(
         Duration.ofSeconds(5),
@@ -254,7 +255,7 @@ class StandLauncherTest {
             Map.of(StandEngine.KIND, containerLaunch));
     StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
 
-    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null))
+    assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE))
         .isInstanceOf(TestAbortedException.class)
         .hasMessageContaining("happy reads the run's root");
     assertTimeoutPreemptively(

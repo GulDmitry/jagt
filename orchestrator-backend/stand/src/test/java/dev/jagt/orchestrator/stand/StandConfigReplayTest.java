@@ -23,13 +23,41 @@ class StandConfigReplayTest {
         StandConfig.Target.local(repo, "http://127.0.0.1:1/mcp"),
         "stand-tmux",
         StandMode.ACT,
-        new StandConfig.Replay(recording, "http://127.0.0.1:2/app"));
+        new StandConfig.Replay(recording, "http://127.0.0.1:2/app", null));
 
     assertThat(Files.readString(stand.resolve("jagt.yml")))
         .contains("cli: replay")
         .contains("codeHost: replay")
         .contains("replay: { file: \"" + recording + "\" }")
         .doesNotContain("flows:");
+  }
+
+  @Test
+  void reviewedRunChoosesGithubOnTheProjectInstallsTheFakeGhAndAllowsOthersWhenAsked()
+      throws Exception {
+    Path repo = Files.createDirectory(root.resolve("repo"));
+    Path stand = Files.createDirectory(root.resolve("stand"));
+    Path recording = Files.writeString(root.resolve("review.jsonl"), "[]\n");
+
+    StandConfig.write(
+        Path.of(System.getProperty("stand.repo", "../..")),
+        stand,
+        StandConfig.Target.local(repo, "http://127.0.0.1:3/mcp"),
+        "reviewed-tmux",
+        StandMode.JUDGE,
+        new StandConfig.Replay(
+            recording,
+            "http://127.0.0.1:2/app",
+            new StandConfig.Reviews(
+                "http://127.0.0.1:2", root.resolve("origin.git"), StandConfig.Posts.OTHERS)));
+
+    assertThat(Files.readString(stand.resolve("jagt.yml")))
+        .contains("codeHost: github, codeHostName: \"stand.example\"")
+        .contains("url: \"file://" + root.resolve("origin.git") + "\"");
+    assertThat(Files.readString(stand.resolve("bin/gh"))).contains("http://127.0.0.1:2/gh");
+    assertThat(stand.resolve("bin/gh")).isExecutable();
+    assertThat(Files.readString(stand.resolve("roles/code-reviewer/review.yml")))
+        .contains("others: true");
   }
 
   @Test
@@ -45,7 +73,7 @@ class StandConfigReplayTest {
         StandConfig.Target.local(repo, "http://127.0.0.1:1/mcp"),
         "stand-tmux",
         StandMode.JUDGE,
-        new StandConfig.Replay(recording, "http://127.0.0.1:2/app"));
+        new StandConfig.Replay(recording, "http://127.0.0.1:2/app", null));
 
     assertThat(Files.readString(stand.resolve("jagt.yml")))
         .contains("roles: { acceptance: { enabled: true } }");
