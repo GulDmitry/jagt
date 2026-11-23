@@ -37,10 +37,11 @@ EOF
   grep -q -- '--cpus 2 ' "$DOCKER_LOG"
 }
 
-@test "a host with less memory than the runner is warned, not refused" {
+@test "a host with less memory than the runner caps the container below the host, warned, not refused" {
   FAKE_MEM=6442450944 run "$script" test
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Docker has 6 GB, a runner 16 GB"* ]]
+  [[ "$output" == *"Docker has 6 GB, a runner 16 GB; the suite is capped at 5 GB"* ]]
+  grep -q -- '--memory 5g --memory-swap 5g' "$DOCKER_LOG"
 }
 
 @test "a job's live steps run in the warm-up and are left out offline" {

@@ -87,11 +87,13 @@ trap 'docker volume rm -f "$RUN_VOLUME" >/dev/null 2>&1 || true' EXIT # absent i
 
 host_cpus=$(docker info --format '{{.NCPU}}' 2>/dev/null || echo "$RUNNER_CPUS")
 cpus=$(( host_cpus < RUNNER_CPUS ? host_cpus : RUNNER_CPUS ))
-RUNNER_MEMORY="${RUNNER_MEMORY_GB}g"
+memory_gb=$RUNNER_MEMORY_GB
 host_gb=$(( $(docker info --format '{{.MemTotal}}' 2>/dev/null || echo 0) / 1073741824 ))
-if (( host_gb > 0 && host_gb < RUNNER_MEMORY_GB )); then
-    echo "==> warning: Docker has ${host_gb} GB, a runner ${RUNNER_MEMORY_GB} GB; the suite may be killed for memory" >&2
+if (( host_gb > 1 && host_gb <= RUNNER_MEMORY_GB )); then
+    memory_gb=$(( host_gb - 1 ))
+    echo "==> warning: Docker has ${host_gb} GB, a runner ${RUNNER_MEMORY_GB} GB; the suite is capped at ${memory_gb} GB" >&2
 fi
+RUNNER_MEMORY="${memory_gb}g"
 SIZE=(--cpus "$cpus" --memory "$RUNNER_MEMORY" --memory-swap "$RUNNER_MEMORY")
 
 # Gradle's project state records absolute paths, so the container's own lives in anonymous volumes, never on the host;
