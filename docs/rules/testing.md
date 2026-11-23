@@ -59,7 +59,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### The board is tested in a browser
 
-- `boardTest` drives `board/` on the real backend in headless Chromium (libraries: `scripts/linux-test-deps.sh`): grid, buttons, repaint.
+- `boardTest` drives `board/` on the real backend in headless Chromium: grid, buttons, repaint; `boardCoverage` never skips on CI.
 - Its own track in `board/`: `npm run lint`, `npm test` in CI's `test` job, `npm run mutate` nightly; [gates](../decisions/0229-board-test-floor.md).
 - Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its `@MockitoBean`s stub
   whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`,

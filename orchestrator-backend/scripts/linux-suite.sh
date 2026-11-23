@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # Runs CI's Linux jobs on a REAL Linux, from a Mac, each in its own container: the line its ci.yml job runs, in an image
-# carrying what a runner carries (docker/linux-suite.Dockerfile), with a Docker engine of its own as a runner has.
+# in the CI image ci.yml pins (base/Dockerfile.ci), with a Docker engine of its own as a runner has.
+# While the pinned digest is not pullable, the image is built from base/Dockerfile.ci instead.
 #
-# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install)
+# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install boardTest)
 # Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume and the image.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BACKEND_DIR="$REPO_ROOT/orchestrator-backend"
-IMAGE=jagt-linux-suite
+IMAGE="$(grep -m1 -oE 'ghcr\.io/[^ ]+-ci:base@sha256:[0-9a-f]{64}' "$REPO_ROOT/.github/workflows/ci.yml" || true)"
+LOCAL_IMAGE=jagt-ci:local
 CACHE_VOLUME=jagt-gradle-home
 ENGINE_VOLUME=jagt-ci-docker
 
@@ -18,7 +20,8 @@ gate() {
         heavy) echo 'scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy' ;;
         stand) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose' ;;
         install) echo './gradlew --no-daemon gateInstall' ;;
-        *) echo "linux-suite: no job $1; jobs: test heavy stand install" >&2; return 2 ;;
+        boardTest) echo './gradlew --no-daemon boardInstall boardTest' ;;
+        *) echo "linux-suite: no job $1; jobs: test heavy stand install boardTest" >&2; return 2 ;;
     esac
 }
 
@@ -26,8 +29,14 @@ gate() {
 for job in "$@"; do gate "$job" >/dev/null || exit 2; done
 command -v docker >/dev/null || { echo "docker is required"; exit 2; }
 
-echo "==> building $IMAGE"
-docker build -q -f "$BACKEND_DIR/docker/linux-suite.Dockerfile" -t "$IMAGE" "$BACKEND_DIR" >/dev/null
+if [[ -n "$IMAGE" ]] && docker pull -q "$IMAGE" >/dev/null 2>&1; then
+    echo "==> using $IMAGE"
+else
+    echo "==> the pinned CI image is absent or not pullable; building $LOCAL_IMAGE from base/Dockerfile.ci"
+    docker build -q --build-context "scripts=$BACKEND_DIR/scripts" -f "$REPO_ROOT/base/Dockerfile.ci" \
+        -t "$LOCAL_IMAGE" "$REPO_ROOT/base" >/dev/null
+    IMAGE="$LOCAL_IMAGE"
+fi
 docker volume create "$CACHE_VOLUME" >/dev/null
 docker volume create "$ENGINE_VOLUME" >/dev/null
 
@@ -68,6 +77,8 @@ for job in "$@"; do
     # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
     # shellcheck disable=SC2086 # the gate is a command line
     docker run --rm --init --privileged -e CI=true -e ORG_GRADLE_PROJECT_timed=false \
+        -e GRADLE_USER_HOME=/gradle-home -e PLAYWRIGHT_BROWSERS_PATH=/gradle-home/ms-playwright \
+        -w /jagt/orchestrator-backend \
         -v "$REPO_ROOT:/jagt" \
         "${STATE_MOUNTS[@]}" \
         ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"} \

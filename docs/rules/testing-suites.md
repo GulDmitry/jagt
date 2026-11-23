@@ -61,7 +61,7 @@ and no other Gradle line (`workflow-gradle-lines`); `scripts/ci-local.sh` runs t
 
 | job | local twin |
 |---|---|
-| `test`, `heavy`, `stand` (compose), `install` (ubuntu) | `ci-local.sh <job>`: in `docker/linux-suite.Dockerfile` with a Docker engine of its own, `-Ptimed=false` |
+| `test`, `heavy`, `stand` (compose), `install` (ubuntu) | `ci-local.sh <job>`: in the pinned CI image (`base/Dockerfile.ci`, built locally while its digest is not pullable) with a Docker engine of its own, `-Ptimed=false` |
 | `install` (macOS) | `ci-local.sh install-macos`: natively, on a Mac |
 | `install` (Windows) | none: a Mac cannot run it; the pull request's CI run reproduces it |
 | `stand` (kind), `release`, CodeQL, the nightly's mutation | none yet |

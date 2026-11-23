@@ -25,7 +25,7 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 2. **One `./gradlew` line or script per CI job**, the one the local gate runs. `CiWorkflowTest`.
 3. **Every CI and nightly job has a local twin**, selectable by name. Windows install is the one exception, run by a manual dispatch. none yet.
 4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`. none yet.
-5. **The CI image is one, pinned by digest**, used by CI and the local gate. none yet.
+5. **The CI image is one, pinned by digest**, used by CI and the local gate. `CiWorkflowTest`; the `ci.yml` switch to it: none yet.
 6. **The local gate is runner-sized and offline**; parallelism comes from the machine, never fixed. none yet.
 7. **A per-push check reads no live data**: a scan or feed read that needs the network runs nightly, or per push on a dependency diff. none yet.
 8. **A wait is a hang guard** from one shared constant, never a speed assert. `sleep-in-tests`, `ci-no-sleep`; a literal wait: none yet.

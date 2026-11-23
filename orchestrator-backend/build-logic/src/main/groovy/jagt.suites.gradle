@@ -143,7 +143,10 @@ tasks.register('boardCoverage', Exec) {
         if (!new File(board, 'node_modules').directory) {
             missing << 'board/node_modules (run npm ci in board/)'
         }
-        if (missing) { // skip, naming what is missing, as the container run has no Node
+        if (missing && System.getenv('CI')) {
+            throw new GradleException("boardCoverage cannot run on CI — missing: ${missing.join(', ')}.")
+        }
+        if (missing) {
             task.logger.lifecycle("Skipping boardCoverage — missing: ${missing.join(', ')}.")
         }
         !filteredRun && missing.isEmpty() && new File(board, 'coverage/browser').directory // a `--tests` run proves no ratio

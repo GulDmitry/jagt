@@ -3,7 +3,7 @@ name: base-images
 on:
   push:
     branches: [main]
-    paths: ['base/**']
+    paths: ['base/**', 'orchestrator-backend/scripts/linux-test-deps.sh']
   schedule:
     - cron: '41 4 * * 1'
   workflow_dispatch:
@@ -40,3 +40,14 @@ jobs:
       name: stand-base
       dockerfile: Dockerfile.stand
       from: base
+  ci:
+    name: ci image
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/base-image.yml
+    with:
+      name: ci
+      dockerfile: Dockerfile.ci

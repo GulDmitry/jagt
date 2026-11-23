@@ -22,7 +22,7 @@ printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password
 docker run --privileged --rm tonistiigi/binfmt --install arm64 >/dev/null
 docker buildx create --use >/dev/null
 docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=mode=max --tag "$image" --push \
-  --metadata-file "$metadata" --file "$REPO_ROOT/base/$dockerfile" "${build_args[@]}" "$REPO_ROOT/base"
+  --metadata-file "$metadata" --build-context "scripts=$REPO_ROOT/orchestrator-backend/scripts" --file "$REPO_ROOT/base/$dockerfile" "${build_args[@]}" "$REPO_ROOT/base"
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   echo "name=${image%:*}" >> "$GITHUB_OUTPUT"
