@@ -1,0 +1,12 @@
+case: a typo fixed in a readme
+description: |
+  Fix a typo in the install section.
+diff: |
+  diff --git a/README.md b/README.md
+  --- a/README.md
+  +++ b/README.md
+  @@ -10,3 +10,3 @@ ## Install
+  -Run `make instal` to build the tool.
+  +Run `make install` to build the tool.
+expect:
+  verdict: ready

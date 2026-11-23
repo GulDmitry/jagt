@@ -36,7 +36,7 @@ technical:
     analysability:
       ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
-      source-sets: { fitness: SourceSetsFitness, governs: count, max: 27, decision: "0176" }
+      source-sets: { fitness: SourceSetsFitness, governs: count, max: 28, decision: "0176" }
       start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
       task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
       public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 85, decision: "0176" }

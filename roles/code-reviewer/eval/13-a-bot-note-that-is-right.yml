@@ -1,0 +1,29 @@
+case: a bot note pointing at a real null dereference
+description: |
+  Show the owner's name on the asset card.
+botNote: "static-analysis-bot: AssetCard.java ownerLine may throw a NullPointerException when findOrNull returns null."
+diff: |
+  diff --git a/src/main/java/app/asset/AssetCard.java b/src/main/java/app/asset/AssetCard.java
+  --- a/src/main/java/app/asset/AssetCard.java
+  +++ b/src/main/java/app/asset/AssetCard.java
+  @@ -11,4 +11,4 @@ public class AssetCard {
+     String ownerLine(Asset asset) {
+  -    return "Owner: " + owners.find(asset.ownerId()).map(Owner::name).orElse("none");
+  +    return "Owner: " + owners.findOrNull(asset.ownerId()).name();
+     }
+   }
+  diff --git a/src/main/java/app/asset/OwnerDirectory.java b/src/main/java/app/asset/OwnerDirectory.java
+  --- a/src/main/java/app/asset/OwnerDirectory.java
+  +++ b/src/main/java/app/asset/OwnerDirectory.java
+  @@ -9,3 +9,6 @@ public class OwnerDirectory {
+  +  /** Returns null when the owner is unknown. */
+  +  Owner findOrNull(String id) {
+  +    return byId.get(id);
+  +  }
+   }
+expect:
+  verdict: findings
+  findings:
+    - file: AssetCard.java
+      pattern: "null|NullPointer|NPE|unknown owner|missing owner"
+      severity: [blocking, wrong]

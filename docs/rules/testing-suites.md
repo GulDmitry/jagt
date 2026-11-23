@@ -31,6 +31,7 @@ and `nightly` logs its delay. Under heavy load GitHub drops a scheduled run (non
 | `standTest -Pmodelfree` | recorded task flows replayed in jagt's container, and the server scenarios (start, login, a task to review, MCP door, `/state` p95) on `-Pengine=host`, `compose` or `kind`; JVM kill, container or pod replacement and an image upgrade on the old volume | docker, kind, kubectl | see `measurements.md` |
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |
+| `roleEval -Prole=code-reviewer` | the reviewer's brief finds a case's file and pattern, and no finding on a clean diff; a rating becomes a case: `code-reviewer-lesson` | claude, tokens | unknown |
 
 ## A change runs the heavy suites it reaches
 

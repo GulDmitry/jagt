@@ -16,6 +16,10 @@ dev.jagt.orchestrator.eval.AcceptanceRoleYml
 dev.jagt.orchestrator.eval.AcceptanceScore
 dev.jagt.orchestrator.eval.AcceptanceScoreboard
 dev.jagt.orchestrator.eval.AcceptanceWorkspaceFiles
+dev.jagt.orchestrator.eval.CodeReviewAnswer
+dev.jagt.orchestrator.eval.CodeReviewCase
+dev.jagt.orchestrator.eval.CodeReviewCases
+dev.jagt.orchestrator.eval.CodeReviewReader
 dev.jagt.orchestrator.eval.EvalEndpoints
 dev.jagt.orchestrator.eval.EvalGit
 dev.jagt.orchestrator.eval.EvalPorts

@@ -56,6 +56,14 @@ sourceSets {
 }
 
 sourceSets {
+    codeReviewEval {
+        java.srcDirs = ['src/codeReviewEval/java']
+        compileClasspath += sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
     triageEval {
         java.srcDirs = ['src/triageEval/java']
         compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath

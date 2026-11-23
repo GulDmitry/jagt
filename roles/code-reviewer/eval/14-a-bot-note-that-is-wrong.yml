@@ -1,0 +1,25 @@
+case: a bot note the change already answers
+description: |
+  Look up an invoice by number.
+botNote: "security-bot: InvoiceRepository.byNumber is open to SQL injection through the number."
+diff: |
+  diff --git a/src/main/java/app/invoice/InvoiceRepository.java b/src/main/java/app/invoice/InvoiceRepository.java
+  --- a/src/main/java/app/invoice/InvoiceRepository.java
+  +++ b/src/main/java/app/invoice/InvoiceRepository.java
+  @@ -15,3 +15,8 @@ public class InvoiceRepository {
+  +  public Optional<Invoice> byNumber(String number) {
+  +    return jdbc.query("SELECT * FROM invoice WHERE number = ?", invoiceMapper, number).stream()
+  +        .findFirst();
+  +  }
+   }
+  diff --git a/src/test/java/app/invoice/InvoiceRepositoryTest.java b/src/test/java/app/invoice/InvoiceRepositoryTest.java
+  --- a/src/test/java/app/invoice/InvoiceRepositoryTest.java
+  +++ b/src/test/java/app/invoice/InvoiceRepositoryTest.java
+  @@ -8,3 +8,8 @@ class InvoiceRepositoryTest {
+  +  @Test
+  +  void findsAnInvoiceByItsNumber() {
+  +    assertThat(repository.byNumber("INV-7")).isPresent();
+  +  }
+   }
+expect:
+  verdict: ready

@@ -1,0 +1,38 @@
+case: a retry that differs from what the description says
+description: |
+  The upload client retries a failed upload up to three times before it gives up.
+diff: |
+  diff --git a/src/main/java/app/upload/UploadClient.java b/src/main/java/app/upload/UploadClient.java
+  --- a/src/main/java/app/upload/UploadClient.java
+  +++ b/src/main/java/app/upload/UploadClient.java
+  @@ -18,3 +18,14 @@ public class UploadClient {
+  +  public void upload(Path file) throws IOException {
+  +    int attempts = 0;
+  +    while (true) {
+  +      try {
+  +        transport.send(file);
+  +        return;
+  +      } catch (IOException failed) {
+  +        if (++attempts >= 1) {
+  +          throw failed;
+  +        }
+  +      }
+  +    }
+  +  }
+   }
+  diff --git a/src/test/java/app/upload/UploadClientTest.java b/src/test/java/app/upload/UploadClientTest.java
+  --- a/src/test/java/app/upload/UploadClientTest.java
+  +++ b/src/test/java/app/upload/UploadClientTest.java
+  @@ -8,3 +8,8 @@ class UploadClientTest {
+  +  @Test
+  +  void sendsAFileOnce() throws IOException {
+  +    client.upload(Path.of("a.bin"));
+  +    verify(transport).send(Path.of("a.bin"));
+  +  }
+   }
+expect:
+  verdict: findings
+  findings:
+    - file: UploadClient.java
+      pattern: "retr|three|3|attempt"
+      severity: [wrong, blocking]

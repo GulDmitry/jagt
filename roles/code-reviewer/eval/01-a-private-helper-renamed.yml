@@ -1,0 +1,20 @@
+case: a private helper renamed with its callers
+description: |
+  Rename the private helper `trim` to `trimLabel` in LabelFormatter; no behaviour change.
+diff: |
+  diff --git a/src/main/java/app/label/LabelFormatter.java b/src/main/java/app/label/LabelFormatter.java
+  --- a/src/main/java/app/label/LabelFormatter.java
+  +++ b/src/main/java/app/label/LabelFormatter.java
+  @@ -8,11 +8,11 @@ public final class LabelFormatter {
+     public String format(String raw) {
+  -    return trim(raw).toUpperCase(Locale.ROOT);
+  +    return trimLabel(raw).toUpperCase(Locale.ROOT);
+     }
+
+  -  private String trim(String raw) {
+  +  private String trimLabel(String raw) {
+       return raw == null ? "" : raw.strip();
+     }
+   }
+expect:
+  verdict: ready

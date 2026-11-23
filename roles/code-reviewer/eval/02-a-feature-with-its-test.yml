@@ -1,0 +1,30 @@
+case: a small feature with the test that fails without it
+description: |
+  Add `Invoice.isOverdue(today)`: true when the due date is before today. Tested.
+diff: |
+  diff --git a/src/main/java/app/billing/Invoice.java b/src/main/java/app/billing/Invoice.java
+  --- a/src/main/java/app/billing/Invoice.java
+  +++ b/src/main/java/app/billing/Invoice.java
+  @@ -12,3 +12,7 @@ public record Invoice(String number, LocalDate due) {
+  +  public boolean isOverdue(LocalDate today) {
+  +    return due.isBefore(today);
+  +  }
+   }
+  diff --git a/src/test/java/app/billing/InvoiceTest.java b/src/test/java/app/billing/InvoiceTest.java
+  --- a/src/test/java/app/billing/InvoiceTest.java
+  +++ b/src/test/java/app/billing/InvoiceTest.java
+  @@ -5,3 +5,16 @@ class InvoiceTest {
+  +  @Test
+  +  void isOverdueOnceTheDueDateHasPassed() {
+  +    Invoice invoice = new Invoice("INV-1", LocalDate.of(2026, 1, 10));
+  +    assertThat(invoice.isOverdue(LocalDate.of(2026, 1, 11))).isTrue();
+  +  }
+  +
+  +  @Test
+  +  void isNotOverdueOnTheDueDate() {
+  +    Invoice invoice = new Invoice("INV-1", LocalDate.of(2026, 1, 10));
+  +    assertThat(invoice.isOverdue(LocalDate.of(2026, 1, 10))).isFalse();
+  +  }
+   }
+expect:
+  verdict: ready
