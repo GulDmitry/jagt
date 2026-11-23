@@ -34,6 +34,9 @@ The rest are asked for by name, each needing something a hermetic run must not d
 directory nobody has trusted: run `claude` there once and accept. The suite checks that and refuses with the
 path rather than sitting at a prompt nobody sees.
 
+`orchestrator-backend/scripts/gradle-slot.sh <command>` caps concurrent Gradle runs on one machine
+(`GRADLE_SLOTS`, default 2).
+
 ## Testing Linux from a Mac
 
 `orchestrator-backend/scripts/linux-suite.sh` runs five tasks on a real Linux in a container: the unit suite on

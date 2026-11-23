@@ -177,7 +177,7 @@ tasks.register('guardsTest', Exec) {
     group = 'verification'
     def repo = layout.settingsDirectory.dir('..').asFile
     workingDir = repo
-    commandLine 'sh', '-c', 'shellcheck scripts/guards/*.sh orchestrator-backend/scripts/ci-local.sh && bats scripts/guards/test'
+    commandLine 'sh', '-c', 'shellcheck scripts/guards/*.sh orchestrator-backend/scripts/ci-local.sh orchestrator-backend/scripts/gradle-slot.sh && bats scripts/guards/test'
     onlyIf { task ->
         List<String> missing = ['shellcheck', 'bats', 'jq'].findAll { binary ->
             !(System.getenv('PATH') ?: '').split(File.pathSeparator).any { dir -> dir && new File(dir, binary).canExecute() }
