@@ -33,7 +33,7 @@ class SuiteStatsTest {
         GradleRunner.create()
             .withProjectDir(project.toFile())
             .withPluginClasspath()
-            .withArguments("slow", "--rerun-tasks")
+            .withArguments("slow", "--rerun-tasks", "-Ptimed=true")
             .build()
             .getOutput();
 
