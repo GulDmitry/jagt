@@ -14,7 +14,7 @@ if ! printf '%s' "$cmd" | grep -Eq '(^|[;&|([:space:]])((ba|z)?sh[[:space:]]+-[a
     }
     { print }' | perl -0pe 's/"[^"]*"//g; s/\x27[^\x27]*\x27//g')
 fi
-lead='(^|[;&|(]|\n)[[:space:]]*'
+lead='(^|[;&|(])[[:space:]]*'
 loop=$(printf '%s\n' "$scan" | perl -0ne 'print "loop" if /(?:^|[;&|("\x27\s])(?:until|while|for)\s(?:(?!(?:^|[;&|\s])done(?:[;&|)"\x27\s]|$)).)*?(?:^|[;&|("\x27\s])sleep\s/s')
 if [ -n "$loop" ] || printf '%s' "$scan" | grep -Eq "${lead}((sudo|exec|nohup)[[:space:]]+)?([^[:space:]]*/)?watch([[:space:]]|\$)"; then
   echo "Refused: this waits by polling (a loop with sleep, or watch). A background job notifies when it exits: end the turn and its notification wakes you; for a CI run use one gh run watch --exit-status." >&2
