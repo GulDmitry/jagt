@@ -4,9 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,6 +21,10 @@ import org.yaml.snakeyaml.Yaml;
 class CiWorkflowTest {
 
   private static final Path CODEQL = Path.of("../.github/workflows/codeql.yml");
+
+  private static final Path SETTINGS = Path.of("settings.gradle");
+
+  private static final Path PITEST = Path.of("build-logic/src/main/groovy/jagt.pitest.gradle");
 
   private static final Path GATES = Path.of("build-logic/src/main/groovy/jagt.suites.gradle");
 
@@ -250,6 +258,34 @@ class CiWorkflowTest {
     assertThat(CiWorkflow.nightlyJobs().keySet())
         .containsExactlyInAnyOrder(
             "stand", "e2e", "properties", "pitest", "stryker", "scan", "install", "report");
+  }
+
+  @Test
+  void mutatesEachProjectWithMutationTaskInItsOwnNightlyShard() {
+    Map<?, ?> strategy =
+        (Map<?, ?>)
+            Objects.requireNonNull(
+                Objects.requireNonNull(CiWorkflow.nightlyJobs().get("pitest")).get("strategy"));
+    Map<?, ?> matrix = (Map<?, ?>) Objects.requireNonNull(strategy.get("matrix"));
+    List<?> shards = (List<?>) Objects.requireNonNull(matrix.get("include"));
+    Set<String> projects = new HashSet<>(List.of(":pitest"));
+    Matcher included =
+        Pattern.compile("(?m)^include '([^']+)'").matcher(SourceRoots.read(SETTINGS));
+    while (included.find()) {
+      projects.add(":" + included.group(1) + ":pitest");
+    }
+
+    Set<String> tasks =
+        shards.stream()
+            .map(shard -> String.valueOf(((Map<?, ?>) shard).get("task")))
+            .collect(Collectors.toSet());
+
+    assertThat(SourceRoots.read(PITEST))
+        .contains("allprojects {")
+        .contains("apply plugin: 'info.solidsoft.pitest'");
+    assertThat(strategy.get("fail-fast")).isEqualTo(false);
+    assertThat(shards).hasSameSizeAs(tasks);
+    assertThat(tasks).isEqualTo(projects);
   }
 
   @Test
