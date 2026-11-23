@@ -76,11 +76,11 @@ Nothing else is published — jagt is on no package manager.
 ## The board's icon
 
 Two sources: `icon-512.png`, the app icon (transparent rounded corners), and `docs/brand/glyph.png`, the tab glyph:
-the `j` with its arrow, transparent. From `board/`, regenerate the committed sizes after changing either:
+the flat arrow knot on its own dark tile, rounded corners transparent. From `board/`, regenerate the committed sizes after changing either:
 
 ```sh
 magick icon-512.png -resize 192x192 icon-192.png
-magick icon-512.png -background 'srgb(10,7,48)' -flatten -resize 180x180 apple-touch-icon.png
+magick icon-512.png -background 'srgb(20,30,72)' -flatten -resize 180x180 apple-touch-icon.png
 for s in 16 32 48 64; do magick ../docs/brand/glyph.png -resize ${s}x$s /tmp/g$s.png; done
 magick /tmp/g16.png /tmp/g32.png /tmp/g48.png favicon.ico
 printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">\n<image width="32" height="32" href="data:image/png;base64,%s"/>\n</svg>\n' \
