@@ -179,7 +179,7 @@ class FitnessTaskTest {
   }
 
   @Test
-  void aGateStoppedForItsLimitNamesTheFitnessFunctionTheRunItsMinutesAndTheLimit() throws IOException {
+  void aGateThatMakesNoProgressPastItsHangGuardIsStoppedAndNamedHung() throws IOException {
     Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
     Files.writeString(
         project.resolve("fitness.yml"),
@@ -207,6 +207,6 @@ class FitnessTaskTest {
             .buildAndFail()
             .getOutput();
 
-    assertThat(output).contains("fitness: gate-minutes: :slow ran past its limit of 1 minutes");
+    assertThat(output).contains("fitness: gate-minutes: :slow hung: no end within 3x its ceiling of 1 minutes");
   }
 }

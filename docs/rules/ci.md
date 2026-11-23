@@ -20,7 +20,8 @@ A local green predicts a CI green. CI adds no check the local gate lacks and tak
 Each rule names its check. `none yet` is a gap, open until the check lands.
 
 1. **CI has no time ceiling, measurement or stop**; only the job's `timeout-minutes` bounds a hang. `ci-jobs-without-timeout`,
-   `ci-no-time-flags`; the ceilings are local, on by default.
+   `ci-no-time-flags`; the ceilings are local, on by default, and soft: an overrun finishes and warns, a hang guard of 3x stops
+   ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 2. **One `./gradlew` line or script per CI job**, the one the local gate runs. `CiWorkflowTest`.
 3. **Every CI and nightly job has a local twin**, selectable by name. Windows install is the one exception, run by a manual dispatch. none yet.
 4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`. none yet.

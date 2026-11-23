@@ -16,6 +16,9 @@ public abstract class FitnessExtension {
   /** False drops every time row: no task gets a time limit and no run is timed. */
   public abstract Property<Boolean> getTimed();
 
+  /** Each time-limited task's path to "function id|ceiling in minutes"; the task's own timeout is the hang guard. */
+  public abstract MapProperty<String, String> getLimits();
+
   /** System properties set on each suite a contexts row measures, so that the suite logs its context cache. */
   public abstract MapProperty<String, String> getContextsSystemProperties();
 

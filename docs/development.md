@@ -30,7 +30,8 @@ Timed 2026-11-01, `--rerun-tasks`, 10 CPUs: `test` 80 s, `e2eTest` 309 s, `board
 `roleEval -Prole=acceptance` 4–7 min, `-Prole=master` about 5 min; the next refresh compares against these.
 
 Only `test` is in `check`, with its jqwik properties in `:core:propertyTest` after it; every executed suite appends
-its seconds to `suite-stats.jsonl`, and the build's end names one slower than its trend.
+its seconds, load and power state to `suite-stats.jsonl`;
+the build's end names an overrun of the ceiling, and a fresh run (`--rerun-tasks`) slower than its fresh trend.
 The rest are asked for by name, each needing something a hermetic run must not depend on.
 `roleEval -Prole=master` starts a real session in `.master-eval/root`, and an agent CLI will not work in a
 directory nobody has trusted: run `claude` there once and accept. The suite checks that and refuses with the

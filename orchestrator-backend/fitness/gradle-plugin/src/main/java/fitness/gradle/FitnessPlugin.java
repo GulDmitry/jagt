@@ -14,14 +14,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
-import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -90,8 +88,8 @@ public final class FitnessPlugin implements Plugin<Project> {
                                     source.getParameters().getDirectory().set(root.getProjectDir())))
                     .withPropertyName("trackedFiles")
                     .withPathSensitivity(PathSensitivity.RELATIVE));
-    MapProperty<String, String> overruns = overruns(root);
-    Limits.minutes(root, extension.getMinutesProperty(), minutes, overruns);
+    overruns(extension);
+    Limits.minutes(root, extension.getMinutesProperty(), minutes, extension.getLimits());
     registerFitness(root, extension, block, measured, minutes, requirements);
   }
 
@@ -159,15 +157,13 @@ public final class FitnessPlugin implements Plugin<Project> {
     }
   }
 
-  private MapProperty<String, String> overruns(Project root) {
-    AtomicReference<MapProperty<String, String>> limits = new AtomicReference<>();
+  private void overruns(FitnessExtension extension) {
     flow.always(
         Overruns.class,
         spec -> {
           spec.getParameters().getResult().set(providers.getBuildWorkResult());
-          limits.set(spec.getParameters().getLimits());
+          spec.getParameters().getLimits().set(extension.getLimits());
         });
-    return limits.get();
   }
 
   private static List<Object> classesOfEverySourceSet(Project root) {
@@ -205,7 +201,10 @@ public final class FitnessPlugin implements Plugin<Project> {
                       .filter(function -> Limits.tasks(function).isEmpty())
                       .findFirst()
                       .ifPresent(
-                          function -> task.getTimeout().set(Duration.ofMinutes(function.threshold().limit())));
+                          function -> {
+                            task.getTimeout().set(Duration.ofMinutes(function.threshold().limit() * Overruns.HANG_FACTOR));
+                            extension.getLimits().put(task.getPath(), function.id() + "|" + function.threshold().limit());
+                          });
                   task.dependsOn(requirements);
                   task.dependsOn(classesOfEverySourceSet(root));
                 });

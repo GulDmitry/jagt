@@ -14,7 +14,7 @@ class FitnessPluginTest {
   @TempDir Path project;
 
   @Test
-  void handsTheSuiteAndCheckstyleTheNumbersOfTheirRows() throws IOException {
+  void handsTheSuiteItsHangGuardAtThreeTimesItsCeilingAndCheckstyleItsNumber() throws IOException {
     Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
     Files.writeString(
         project.resolve("fitness.yml"),
@@ -47,7 +47,7 @@ class FitnessPluginTest {
             .build()
             .getOutput();
 
-    assertThat(output).contains("limits=PT7M 3");
+    assertThat(output).contains("limits=PT21M 3");
   }
 
   @Test
