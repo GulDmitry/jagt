@@ -1,6 +1,6 @@
 # Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` on a pull request,
 # `stand` per engine (compose on every run, kind on a pull request: the runner ships kind and kubectl),
-# `install` on three systems per push and pull request, `release` on a push to main after all, only when the version's
+# `audit` the live scans only when the dependency set changed, `install` on three systems per push and pull request, `release` on a push to main after all, only when the version's
 # tag is new. Each job's work is one `gate<Job>` Gradle task, which `scripts/ci-local.sh` runs too; no run is timed here.
 name: ci
 
@@ -177,6 +177,39 @@ jobs:
           path: |
             orchestrator-backend/stand/build/stand/failed
             orchestrator-backend/stand/build/test-results/standTest
+
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      AUDIT_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          java-version: '25'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: board/package-lock.json
+      - run: ./gradlew --no-daemon gateScan -Paudit.base="$AUDIT_BASE"
 
   install:
     name: install (${{ matrix.os }})

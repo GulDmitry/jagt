@@ -91,6 +91,8 @@ class InstallTest {
           exchange.getResponseBody().write(body);
           exchange.close();
         });
+    boolean windows = System.getProperty("os.name").startsWith("Windows");
+    new FakeRuntimeFeed(feed, work, windows).serve();
     feed.start();
     feedUrl = "http://127.0.0.1:" + feed.getAddress().getPort();
 
@@ -103,7 +105,6 @@ class InstallTest {
     stubs.resolve("gh").toFile().setExecutable(true);
     path = stubs + File.pathSeparator + System.getenv("PATH");
     Path repo = Path.of(System.getProperty("install.repo"));
-    boolean windows = System.getProperty("os.name").startsWith("Windows");
     List<String> installer =
         windows
             ? List.of("pwsh", "-NoProfile", "-File", repo.resolve("install.ps1").toString())
@@ -118,6 +119,7 @@ class InstallTest {
     install = new ProcessBuilder(installer);
     install.environment().put("JAGT_VERSION", "0.0.1");
     install.environment().put("JAGT_INSTALL_FEED", feedUrl);
+    install.environment().put("JAGT_INSTALL_JRE_FEED", feedUrl + "/jre");
     install.environment().put("JAGT_HOME", home.toString());
     install.environment().put("JAGT_BIN", bin.toString());
     install.environment().put("PATH", path);
@@ -255,10 +257,7 @@ class InstallTest {
   @Order(3)
   @DisabledOnOs(OS.WINDOWS) // Windows has no SIGTERM
   void endsTheJvmAndFreesThePortWhenTheLauncherGetsTerm() throws Exception {
-    List<ProcessHandle> jvms =
-        ProcessHandle.allProcesses()
-            .filter(each -> each.info().commandLine().orElse("").contains(home + "/runtime"))
-            .toList();
+    List<ProcessHandle> jvms = launcher.get().descendants().toList();
     assertThat(jvms).isNotEmpty();
 
     launcher.get().destroy();

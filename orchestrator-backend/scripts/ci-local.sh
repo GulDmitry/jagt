@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: ci-local.sh [job...]   (from the checkout; jobs: test heavy stand install install-macos; default: all of them)
+# Usage: ci-local.sh [job...]   (from the checkout; jobs: test heavy stand install install-macos audit; default: all of them)
 # Runs a pull request's CI jobs over the tree as it stands: each Linux job's gate in a container (linux-suite.sh),
 # install-macos's natively. Only the argument-free run, green, records the tree's hash in the git dir;
 # ci-local.greens keeps every one, which `./gradlew divergenceRegister` reads against CI's red runs.
@@ -18,7 +18,7 @@ if [ -n "$untracked" ]; then
 fi
 wip=$(git stash create)
 tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
-jobs=${*:-test heavy stand install install-macos}
+jobs=${*:-test heavy stand install install-macos audit}
 linux=; macos=
 for each in $jobs; do if [ "$each" = install-macos ]; then macos=1; else linux="$linux $each"; fi; done
 rc=0

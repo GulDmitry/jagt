@@ -35,7 +35,7 @@ technical:
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
       dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 98, decision: "0176" }
     analysability:
-      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
+      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 11, decision: "0176" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 2, decision: "0176" }
       source-sets: { fitness: SourceSetsFitness, governs: count, max: 28, decision: "0176" }
       start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
@@ -70,6 +70,7 @@ technical:
       release-runs-only-when-tag-new: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "needs\\.test\\.outputs\\.new == 'true'", governs: count, min: 1, hint: "release publishes only when the version's tag does not exist yet" }
       pages-deployments-pruned-by-age: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "jq -r '\\.\\[1:\\]\\[\\] \\| \\.id'", governs: count, min: 1, hint: "a Pages deployment carries ref main, so all but the newest go, never matched by tag name" }
       ci-no-retry: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "continue-on-error|retry|rerun-failed|re-run-failed", governs: count, max: 0, decision: "0233", hint: "a CI red is never rerun or tolerated: fix the local run (docs/rules/ci.md)" }
+      ci-per-push-reads-no-live-scan: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suites.gradle", per: file, regex: "gate(Test|Heavy): \\[[^\\]]*'(vulnerabilityScan|boardAudit)'|npm ci && npm audit[^']*&& npm run", governs: count, max: 0, decision: "0233", hint: "npm audit and the osv scan run in gateScan, nightly or on a dependency diff, never in the per-push test or heavy gate (docs/rules/ci.md)" }
       ci-no-time-flags: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "-Pbudgets|-PrunMinutes", governs: count, max: 0, decision: "0233", hint: "CI has no time ceiling, measurement or stop; only a job timeout (docs/rules/ci.md)" }
       ci-no-sleep: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "\\bsleep\\b", governs: count, max: 0, decision: "0233", hint: "a wait in CI is a hang guard, never a shell sleep (docs/rules/ci.md)" }
       nightly-calls-no-pull-request-job: { engine: scan, glob: "../.github/workflows/nightly.yml", per: file, regex: "uses:\\s*\\./\\.github/workflows/ci\\.yml", governs: count, max: 0, decision: "0233", hint: "the nightly runs only what the local gate cannot: it never calls ci.yml (docs/rules/ci.md rule 10)" }

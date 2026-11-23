@@ -25,9 +25,9 @@ class QualityGatesTest {
         "Error Prone" + CONVENTIONS + "apply plugin: 'net.ltgt.errorprone'",
         "Error Prone as errors" + CONVENTIONS + "'-Werror'",
         "ArchUnit|build.gradle|testImplementation 'com.tngtech.archunit:archunit",
-        "dependency vulnerability scan in the test gate"
+        "dependency vulnerability scan in the scan gate"
             + SUITES
-            + "gateTest: \\[.*'vulnerabilityScan'",
+            + "gateScan: \\[.*'vulnerabilityScan'",
         "dependency licence check in the test gate" + SUITES + "gateTest: \\[.*'checkLicences'",
         "test gate on GitHub|../.github/workflows/ci.yml|gradlew --no-daemon gateTest",
         "test gate on GitLab|../.gitlab-ci.yml|gradlew --no-daemon gateTest",

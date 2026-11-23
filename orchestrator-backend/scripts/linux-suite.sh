@@ -6,7 +6,7 @@
 # into a shared cache, then runs with no network: that cache is mounted read-only (GRADLE_RO_DEP_CACHE) under a Gradle
 # home of the run's own, so two suites at once never meet on one lock.
 #
-# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install boardTest)
+# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install audit boardTest)
 # Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume and the image.
 # exits: 0 2
 set -euo pipefail
@@ -27,16 +27,17 @@ gate() {
         heavy) echo 'scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy' ;;
         stand) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose' ;;
         install) echo './gradlew --no-daemon gateInstall' ;;
+        audit) echo './gradlew --no-daemon gateScan -Paudit.base=origin/main' ;;
         boardTest) echo './gradlew --no-daemon boardInstall boardTest' ;;
-        *) echo "linux-suite: no job $1; jobs: test heavy stand install boardTest" >&2; return 2 ;;
+        *) echo "linux-suite: no job $1; jobs: test heavy stand install audit boardTest" >&2; return 2 ;;
     esac
 }
 
 # The steps of a job that read live data or install a tool: they run in the warm-up, online, and are left out offline.
 live() {
     case "$1" in
-        test) echo 'secretScan vulnerabilityScan boardCheck' ;;
-        heavy) echo 'vulnerabilityScan playwrightChromium' ;;
+        test) echo 'secretScan boardCheck' ;;
+        heavy) echo 'playwrightChromium' ;;
         *) echo '' ;;
     esac
 }
@@ -52,10 +53,10 @@ warm() {
     esac
 }
 
-# The installer downloads the Java runtime from its public feed, which nothing here can cache.
+# The installer downloads the Java runtime from its public feed, which nothing here can cache; the audit is the live scan.
 network() {
     case "$1" in
-        install) echo '' ;;
+        install | audit) echo '' ;;
         *) echo '--network none --hostname runner --add-host runner:127.0.0.1' ;;
     esac
 }

@@ -45,8 +45,21 @@ EOF
 
 @test "a job's live steps run in the warm-up and are left out offline" {
   run "$script" test
-  grep -- 'resolveAll' "$DOCKER_LOG" | grep -q vulnerabilityScan
-  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-x vulnerabilityScan'
+  grep -- 'resolveAll' "$DOCKER_LOG" | grep -q secretScan
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-x secretScan'
+}
+
+# bats test_tags=exit:0
+@test "the audit job runs the live scans online against the main branch" {
+  run "$script" audit
+  [ "$status" -eq 0 ]
+  [ "$(grep -c -- '--network none' "$DOCKER_LOG")" -eq 0 ]
+  [ "$(grep -c -- 'gateScan -Paudit.base=origin/main' "$DOCKER_LOG")" -eq 1 ]
+}
+
+@test "the test job no longer carries the live vulnerability scan" {
+  run "$script" test
+  [ "$(grep -c vulnerabilityScan "$DOCKER_LOG")" -eq 0 ]
 }
 
 @test "two suites at once each get a Gradle home of their own" {

@@ -256,10 +256,10 @@ tasks.register('secretScan', Exec) {
 }
 
 tasks.register('boardCheck', Exec) {
-    description = 'Installs the board, audits its dependencies, lints it and runs its node tests.'
+    description = 'Installs the board, lints it and runs its node tests.'
     group = 'verification'
     workingDir = board
-    commandLine 'sh', '-c', 'npm ci && npm audit --audit-level=high && npm run lint && npm test'
+    commandLine 'sh', '-c', 'npm ci && npm run lint && npm test'
 }
 
 tasks.register('boardInstall', Exec) {
@@ -268,9 +268,24 @@ tasks.register('boardInstall', Exec) {
     commandLine 'npm', 'ci'
 }
 
+// Live data: a scan runs where the dependency set changed against -Paudit.base, and always without it.
+def auditScan = dev.jagt.gradle.audit.DependencySet.scanNeeded(providers.gradleProperty('audit.base').orNull) { ref ->
+    providers.exec { workingDir repository; commandLine 'git', 'diff', '--name-only', "${ref}...HEAD" }
+        .standardOutput.asText.get().readLines()
+}
+
+tasks.register('boardAudit', Exec) {
+    description = "Audits the board's dependencies for known vulnerabilities."
+    group = 'verification'
+    workingDir = board
+    onlyIf { auditScan }
+    commandLine 'sh', '-c', 'npm ci && npm audit --audit-level=high'
+}
+
 tasks.register('vulnerabilityScan', Exec) {
     description = 'Scans the release SBOM for known vulnerabilities.'
     group = 'verification'
+    onlyIf { auditScan }
     dependsOn tasks.named('cyclonedxBom')
     commandLine file('scripts/vulnerability-scan.sh').absolutePath, 'scan', 'source', '-L'
     argumentProviders.add({ [sbom.get().asFile.absolutePath] } as CommandLineArgumentProvider)
@@ -306,15 +321,15 @@ tasks.named('containerDown') { mustRunAfter 'boardContainerTest' }
 tasks.named('boardTest') { mustRunAfter 'boardInstall', 'boardCheck' }
 
 [
-    gateTest: ['secretScan', 'boardCheck', 'test', 'guardsTest', 'vulnerabilityScan', 'checkLicences'],
-    gateHeavy: ['vulnerabilityScan', 'boardInstall', 'e2eTest', 'linuxDriverTest', 'boardTest', 'boardContainerTest'],
+    gateTest: ['secretScan', 'boardCheck', 'test', 'guardsTest', 'checkLicences'],
+    gateHeavy: ['boardInstall', 'e2eTest', 'linuxDriverTest', 'boardTest', 'boardContainerTest'],
     gateStand: [':stand:standTest'],
     gateInstall: ['installTest'],
     gateRelease: ['bootJar', 'cyclonedxBom'],
     gateCodeql: ['classes', 'testClasses'],
     gateRepeat: ['e2eTest'],
     gateProperties: ['test'],
-    gateScan: ['vulnerabilityScan'],
+    gateScan: ['boardAudit', 'vulnerabilityScan'],
 ].each { gate, steps ->
     tasks.register(gate) {
         description = "Runs the work of the CI job ${gate}."

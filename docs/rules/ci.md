@@ -30,7 +30,8 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
    capped by `scripts/runner.env`, the run has `--network none` after an online warm-up, each run has its own Gradle home;
    `standParallelism` and `e2eForks` read the available processors. `install` keeps its network until the Java runtime feed has a
    loopback twin (rule 7).
-7. **A per-push check reads no live data**: a scan or feed read that needs the network runs nightly, or per push on a dependency diff. none yet.
+7. **A per-push check reads no live data**: a scan or feed read needing the network runs nightly, or per push on a dependency diff
+   (`gateScan -Paudit.base`; `installTest` serves the runtime from loopback). `ci-per-push-reads-no-live-scan`, `CiWorkflowTest`.
 8. **A wait is a hang guard** from one shared constant, never a speed assert. `sleep-in-tests`, `ci-no-sleep`, `wait-literal-in-tests`.
 9. **A rerun or retry never turns a CI red green.** `ci-no-retry`.
 10. **The nightly runs only what T1 does not**; no nightly job repeats a pull request job unchanged.
