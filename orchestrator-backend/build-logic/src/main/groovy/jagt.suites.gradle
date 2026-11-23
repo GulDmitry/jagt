@@ -291,6 +291,18 @@ tasks.register('vulnerabilityScan', Exec) {
     argumentProviders.add({ [sbom.get().asFile.absolutePath] } as CommandLineArgumentProvider)
 }
 
+tasks.register('baseImageScan', dev.jagt.gradle.audit.BaseImageScanTask) {
+    description = 'Builds each base image for amd64 and scans it, as the registry workflow does.'
+    group = 'verification'
+    it.repository = layout.settingsDirectory.dir('..')
+    needed = providers.provider {
+        dev.jagt.gradle.audit.BaseImages.scanNeeded(providers.gradleProperty('audit.base').orNull) { ref ->
+            providers.exec { workingDir repository; commandLine 'git', 'diff', '--name-only', "${ref}...HEAD" }
+                .standardOutput.asText.get().readLines()
+        }
+    }
+}
+
 tasks.register('containerUp', Exec) {
     description = "Starts jagt's image under compose with a stub project."
     dependsOn tasks.named('bootJar')

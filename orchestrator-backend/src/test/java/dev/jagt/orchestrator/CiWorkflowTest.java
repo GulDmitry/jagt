@@ -463,6 +463,23 @@ class CiWorkflowTest {
         .contains("linux-test-deps.sh");
   }
 
+  @ParameterizedTest
+  @CsvSource({"base, Dockerfile", "stand-base, Dockerfile.stand", "ci, Dockerfile.ci"})
+  void scansEachBaseImageTheRegistryWorkflowPublishesInTheLocalAudit(
+      String name, String dockerfile) {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/base-images.yml")))
+        .contains("name: " + name + "\n      dockerfile: " + dockerfile);
+    assertThat(
+            SourceRoots.read(
+                Path.of("build-logic/src/main/java/dev/jagt/gradle/audit/BaseImages.java")))
+        .contains("new Image(\"" + name + "\", \"" + dockerfile + "\"");
+    assertThat(SourceRoots.read(Path.of("scripts/ci-local.sh")))
+        .contains("audit) images=1")
+        .contains("./gradlew --no-daemon baseImageScan -Paudit.base=origin/main");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/base-image.yml")))
+        .contains("scripts/vulnerability-scan.sh scan image");
+  }
+
   @Test
   void runsTheLocalGateInTheImageCiPinsAndBuildsItWhenItsDigestIsNotPullable() {
     assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))

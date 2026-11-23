@@ -7,7 +7,7 @@
 | T0 edit loop | targeted tests, mutants on the diff | `./gradlew -q testsFor`, `pitestDiff` | fix before the commit |
 | T1 local gate = T2 pull request | `test` (rules, ArchUnit, budgets, jqwik 50 tries, 0.80 line coverage per module), `boardTest`, `e2eTest`, `linuxDriverTest`, `guardsTest`, `standTest -Pmodelfree` on compose, `installTest` | `ci-local.sh`, jobs by name | local: fix before the push; CI: a divergence |
 | T3 main | none: publish what T2 proved | `release` job | a publish failure |
-| T4 nightly | `standTest -Pmodelfree -Pengine=kind`, repeated and cold runs, full `pitest`, Stryker, jqwik at high tries, install on the real feed, live scans (per push only on a dependency diff) | `nightly.yml`: `gateStand` x3 on compose and kind, `gateRepeat` (`e2eTest` x5), `gateProperties` (1000 tries), `gateMutation`, Stryker, `gateScan`, install on the real feed | an issue opens |
+| T4 nightly | `standTest -Pmodelfree -Pengine=kind`, repeated and cold runs, full `pitest`, Stryker, jqwik at high tries, install on the real feed, live scans (per push only on a dependency diff; locally also each base image, when `base/` changed) | `nightly.yml`: `gateStand` x3 on compose and kind, `gateRepeat` (`e2eTest` x5), `gateProperties` (1000 tries), `gateMutation`, Stryker, `gateScan`, install on the real feed | an issue opens |
 | T5 weekly and release gate | `standTest` live, `promptEval`, `roleEval -Prole=master`, base images, Scorecard; jqwik at 200 tries (`-PjqwikTries`) | locally: docker, an agent login, tokens | before a minor release |
 
 Windows and macOS install run in T2 only: the one job without a local twin.

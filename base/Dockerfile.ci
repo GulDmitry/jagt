@@ -4,8 +4,8 @@ COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-RUN --mount=type=bind,from=scripts,target=/scripts sh /scripts/linux-test-deps.sh
-RUN apt-get update && apt-get install -y --no-install-recommends git docker.io docker-buildx docker-compose-v2 iptables \
+RUN --mount=type=bind,from=scripts,target=/scripts bash /scripts/linux-test-deps.sh
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && apt-get install -y --no-install-recommends git docker.io docker-buildx docker-compose-v2 iptables \
  && rm -rf /var/lib/apt/lists/*
 RUN git config --system user.email "ci@example.com" \
  && git config --system user.name "jagt ci" \

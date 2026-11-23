@@ -4,6 +4,7 @@
 # install-macos's natively. Only the argument-free run, green, records the tree's hash in the git dir;
 # ci-local.greens keeps every one, which `./gradlew divergenceRegister` reads against CI's red runs.
 # guards/push-after-local-ci.sh lets a push through only when HEAD's tree is the recorded one.
+# audit also builds and scans the base images on the host's Docker (`baseImageScan`), base-images.yml's per-image step.
 # JAGT_CI_LOCAL_SUITE replaces both runners, given every job.
 # exits: 0 1 2
 # options: -h
@@ -19,8 +20,10 @@ fi
 wip=$(git stash create)
 tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
 jobs=${*:-test heavy stand install install-macos audit}
-linux=; macos=
-for each in $jobs; do if [ "$each" = install-macos ]; then macos=1; else linux="$linux $each"; fi; done
+linux=; macos=; images=
+for each in $jobs; do
+  case "$each" in install-macos) macos=1 ;; audit) images=1; linux="$linux $each" ;; *) linux="$linux $each" ;; esac
+done
 rc=0
 if [ -n "${JAGT_CI_LOCAL_SUITE:-}" ]; then
   # shellcheck disable=SC2086 # the suite is a command line and the jobs are words
@@ -29,6 +32,7 @@ else
   # shellcheck disable=SC2086 # the jobs are words
   [ -z "$linux" ] || orchestrator-backend/scripts/linux-suite.sh $linux || rc=$?
   [ -z "$macos" ] || (cd orchestrator-backend && ./gradlew --no-daemon gateInstall) || rc=$?
+  [ -z "$images" ] || (cd orchestrator-backend && ./gradlew --no-daemon baseImageScan -Paudit.base=origin/main) || rc=$?
 fi
 if [ "$rc" -ne 0 ]; then
   echo "ci-local: red (exit $rc), nothing recorded" >&2
