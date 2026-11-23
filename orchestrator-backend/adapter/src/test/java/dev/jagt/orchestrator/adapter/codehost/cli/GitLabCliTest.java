@@ -80,7 +80,8 @@ class GitLabCliTest {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of()));
+                List.of(),
+                dev.jagt.orchestrator.task.repo.ProjectConfig.Review.NONE));
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[]", ""));
 

@@ -47,6 +47,10 @@ orchestrator:
   #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure
   #   closeCommand: ["ci-close", "{request}"]   # optional: closes the open request at {request}, for `remove-repo`
   #   notesCommand: ["ci-notes", "{request}"]   # optional: prints the ids of the request's unresolved review notes, one per line; unset = none, so a round is never read as a repeat
+  #   awaitingCommand: ["ci-awaiting", "{remote}"]   # optional: JSON array of {url,title,author,headSha} awaiting review; unset = none
+  #   changeCommand: ["ci-change", "{request}"]      # optional: JSON {title,description,baseBranch,headSha,diff}
+  #   postCommand: ["ci-post", "{request}", "{replyTo}"]   # optional: posts the note, its text the last argument, prints its id
+  #   reviewBots: ["ci-helper"]                      # optional: accounts that are bots, beside the host's own word
   #   loginCommand: ["ci-login", "--web"]       # optional: what the board's `login` opens when pipelineCommand exits 77 (signed out)
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────

@@ -1,23 +1,22 @@
-package dev.jagt.orchestrator.adapter.codehost;
+package dev.jagt.orchestrator.adapter.codehost.command;
 
 import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.codehost.CodeHostDriver;
+import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
-import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,18 +24,18 @@ import org.springframework.stereotype.Component;
  * whatever credential it needs.
  */
 @Component
-@RequiredArgsConstructor
 public class CommandPipeline implements CodeHostDriver {
 
-  static final String ID = "command";
-  private static final int SIGNED_OUT = 77;
-  private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  public static final String ID = "command";
   private static final String VOCABULARY = "success | failed | running | none | unknown";
   private static final Set<String> STATES =
       Set.of("success", "failed", "running", "none", "unknown");
 
-  private final Processes processes;
-  private final Reach reach;
+  private final CommandRun run;
+
+  public CommandPipeline(Processes processes, Reach reach) {
+    this.run = new CommandRun(processes, reach, ID);
+  }
 
   @Override
   public String id() {
@@ -53,7 +52,8 @@ public class CommandPipeline implements CodeHostDriver {
     if (host.host().retryCommand().isEmpty()) {
       return Answer.failed(TokenUsage.NONE, host.key("retryCommand") + " is not set");
     }
-    return run(host, "retryCommand", host.host().retryCommand(), "{pipeline}", pipelineUrl);
+    return run.run(
+        host, "retryCommand", host.host().retryCommand(), Map.of("{pipeline}", pipelineUrl));
   }
 
   @Override
@@ -61,7 +61,8 @@ public class CommandPipeline implements CodeHostDriver {
     if (host.host().closeCommand().isEmpty()) {
       return Answer.failed(TokenUsage.NONE, host.key("closeCommand") + " is not set");
     }
-    return run(host, "closeCommand", host.host().closeCommand(), "{request}", requestUrl);
+    return run.run(
+        host, "closeCommand", host.host().closeCommand(), Map.of("{request}", requestUrl));
   }
 
   @Override
@@ -80,7 +81,7 @@ public class CommandPipeline implements CodeHostDriver {
       return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
     }
     Answer<String> printed =
-        run(host, "notesCommand", host.host().notesCommand(), "{request}", requestUrl);
+        run.run(host, "notesCommand", host.host().notesCommand(), Map.of("{request}", requestUrl));
     if (printed.facts().isEmpty()) {
       return new Answer<>(
           Optional.empty(), TokenUsage.NONE, printed.failure(), false, printed.reach());
@@ -102,7 +103,7 @@ public class CommandPipeline implements CodeHostDriver {
       return Answer.failed(TokenUsage.NONE, host.key("pipelineCommand") + " is not set");
     }
     Answer<String> printed =
-        run(host, "pipelineCommand", host.host().pipelineCommand(), "{sha}", sha);
+        run.run(host, "pipelineCommand", host.host().pipelineCommand(), Map.of("{sha}", sha));
     if (printed.facts().isEmpty()) {
       return new Answer<>(
           Optional.empty(), TokenUsage.NONE, printed.failure(), false, printed.reach());
@@ -144,43 +145,5 @@ public class CommandPipeline implements CodeHostDriver {
                     + host.host().pipelineCommand().getFirst()
                     + "' is not on PATH nor in the usual install directories."))
         : List.of();
-  }
-
-  private Answer<String> run(
-      HostSettings host, String name, List<String> template, String placeholder, String value) {
-    List<String> command = template.stream().map(part -> part.replace(placeholder, value)).toList();
-    List<String> resolved = new ArrayList<>(command);
-    resolved.set(0, Executables.resolve(command.getFirst()));
-    try {
-      Processes.Result result = processes.run(host.dir(), TIMEOUT, resolved);
-      if (result.exitCode() == 0) {
-        reach.reached(ID, host.project());
-        return new Answer<>(Optional.of(result.stdout()), TokenUsage.NONE);
-      }
-      if (result.exitCode() == SIGNED_OUT) {
-        return unreached(
-            host, host.host().loginCommand(), host.key(name) + " says it is signed out");
-      }
-      String said = OneLine.clipped(result.stderr().isBlank() ? result.stdout() : result.stderr());
-      return Answer.failed(
-          TokenUsage.NONE,
-          host.key(name)
-              + " exited "
-              + result.exitCode()
-              + (said == null || said.isEmpty() ? "" : ": " + said));
-    } catch (IllegalStateException e) {
-      if (Executables.unresolved(resolved.getFirst())) {
-        return unreached(
-            host, List.of(), host.key(name) + ": '" + command.getFirst() + "' is not installed");
-      }
-      return Answer.failed(
-          TokenUsage.NONE, host.key(name) + " did not run: " + OneLine.clipped(e.getMessage()));
-    }
-  }
-
-  private Answer<String> unreached(HostSettings host, List<String> fix, String said) {
-    ReachLost lost = new ReachLost(ID, host.project(), fix, said);
-    reach.lost(lost);
-    return Answer.unreached(lost);
   }
 }

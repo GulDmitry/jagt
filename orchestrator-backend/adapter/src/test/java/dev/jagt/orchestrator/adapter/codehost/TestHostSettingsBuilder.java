@@ -13,7 +13,8 @@ public record TestHostSettingsBuilder(
     List<String> retryCommand,
     List<String> loginCommand,
     List<String> closeCommand,
-    List<String> notesCommand) {
+    List<String> notesCommand,
+    ProjectConfig.Review review) {
 
   public static TestHostSettingsBuilder hostSettings() {
     return new TestHostSettingsBuilder(
@@ -23,7 +24,8 @@ public record TestHostSettingsBuilder(
         List.of(),
         List.of(),
         List.of(),
-        List.of());
+        List.of(),
+        ProjectConfig.Review.NONE);
   }
 
   public HostSettings build() {
@@ -32,6 +34,13 @@ public record TestHostSettingsBuilder(
         key,
         repository,
         new ProjectConfig.CodeHost(
-            null, null, pipelineCommand, retryCommand, loginCommand, closeCommand, notesCommand));
+            null,
+            null,
+            pipelineCommand,
+            retryCommand,
+            loginCommand,
+            closeCommand,
+            notesCommand,
+            review));
   }
 }

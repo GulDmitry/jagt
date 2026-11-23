@@ -24,8 +24,7 @@ class ProjectConfigTest {
                 null,
                 null),
             new ProjectConfig.Branches("origin/main", "release", null),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
             new ProjectConfig.Setup(List.of(), null));
 
@@ -80,8 +79,7 @@ class ProjectConfigTest {
             new ProjectConfig.Repository(
                 "/repos/parser", List.of(), null, List.of("db/migration/**"), null, null),
             new ProjectConfig.Branches("main", "dev", null),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
             new ProjectConfig.Setup(List.of(), null));
     var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
@@ -96,8 +94,7 @@ class ProjectConfigTest {
         new ProjectConfig(
             new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
             new ProjectConfig.Setup(List.of(), null));
 
@@ -110,8 +107,7 @@ class ProjectConfigTest {
         new ProjectConfig(
             new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
             new ProjectConfig.Branches("main", "main", "none"),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
             new ProjectConfig.Setup(List.of(), null));
 
@@ -125,8 +121,7 @@ class ProjectConfigTest {
         new ProjectConfig(
             new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
             new ProjectConfig.Branches("main", "dev", null),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), written),
             new ProjectConfig.Setup(List.of(), null));
 

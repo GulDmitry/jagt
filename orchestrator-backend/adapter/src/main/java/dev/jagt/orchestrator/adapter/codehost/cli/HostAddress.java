@@ -9,10 +9,10 @@ import org.jspecify.annotations.Nullable;
  * Where a pipeline or a repository lives on its host; the kind of host is the caller's, never read
  * from here.
  */
-record HostAddress(String hostname, String project, String id) {
+public record HostAddress(String hostname, String project, String id) {
 
   /** The pipeline an address names, its id the segment after {@code marker}. */
-  static Optional<HostAddress> ofPipeline(String url, String marker, boolean keepsPort) {
+  public static Optional<HostAddress> ofPipeline(String url, String marker, boolean keepsPort) {
     URI uri;
     try {
       uri = URI.create(url.strip());
@@ -36,7 +36,7 @@ record HostAddress(String hostname, String project, String id) {
    * A repository's remote in either shape, on {@code configuredHost} where one is set, else on the
    * host the remote names.
    */
-  static Optional<HostAddress> ofRemote(
+  public static Optional<HostAddress> ofRemote(
       String remoteUrl, String commit, @Nullable String configuredHost, boolean keepsPort) {
     String project = GitRemote.projectPath(remoteUrl);
     if (project == null || commit.isBlank()) {

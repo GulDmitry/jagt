@@ -29,8 +29,7 @@ class ProjectsControllerTest {
             "code.example:acme/demo",
             new ProjectConfig.Repository("/work/demo", List.of("web"), null, List.of(), null, null),
             new ProjectConfig.Branches("origin/main", "staging", null),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null));
     when(cards.of("demo")).thenReturn(card);
 

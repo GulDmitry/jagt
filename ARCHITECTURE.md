@@ -165,7 +165,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/worktree/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/agent/{codex/Codex,opencode/OpenCode}AgentRuntime`, `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `reach/ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
-| `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline, closing a request and opening the acceptance workspace's request are jagt's code-host writes |
+| `CodeHost`, `RequestNotes` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`, `adapter/codehost/notes/ChosenRequestNotes` a `NotesDriver` the same way; re-running a pipeline, closing a request and opening the acceptance workspace's request are jagt's code-host writes |
 | `CodeHostCommands` | `adapter/codehost/cli/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/gate/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
@@ -217,6 +217,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/assistant` | core | the headless assistants and readers, their answers |
 | `port/channel` | core | the channel driver port and what it carries |
 | `port/codehost` | core | the code host port and its commands |
+| `port/codehost/review` | core | the request notes port: requests awaiting review, a change, notes, a posted note, reactions |
 | `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout, the release feed |
 | `port/reach` | core | what jagt's reach loss is told in |
 | `port/terminal` | core | terminal, editor and session-host ports |
@@ -312,6 +313,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/channel` | adapter | notification channel drivers |
 | `adapter/codehost` | adapter | code host drivers: choice, pipeline, replay, none |
 | `adapter/codehost/cli` | adapter | the GitHub and GitLab CLIs and their commands |
+| `adapter/codehost/notes` | adapter | the request notes drivers: GitHub, GitLab, command, offline |
 | `adapter/flows` | adapter | the scripted-flows runner and its Playwright driver |
 | `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter.codehost;
+package dev.jagt.orchestrator.adapter.codehost.command;
 
 import static dev.jagt.orchestrator.adapter.codehost.TestHostSettingsBuilder.hostSettings;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;

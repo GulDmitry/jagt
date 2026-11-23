@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.codehost.cli.GitHubCli;
 import dev.jagt.orchestrator.adapter.codehost.cli.GitLabCli;
+import dev.jagt.orchestrator.adapter.codehost.command.CommandPipeline;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;
@@ -125,8 +126,7 @@ class ChosenCodeHostTest {
                             new ProjectConfig.Repository(
                                 "/repo/shop", List.of(), null, List.of(), null, null),
                             new ProjectConfig.Branches("main", "dev", "none"),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                            ProjectConfig.CodeHost.defaults(),
                             new ProjectConfig.Verify(List.of(), null),
                             new ProjectConfig.Setup(List.of(), null)))));
 

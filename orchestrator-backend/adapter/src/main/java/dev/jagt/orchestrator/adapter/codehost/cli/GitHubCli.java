@@ -28,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class GitHubCli implements CodeHostDriver {
 
-  static final String ID = "github";
+  public static final String ID = "github";
   private static final String MARKER = "/actions/runs/";
   private static final String REQUEST_MARKER = "/pull/";
   private static final Set<String> RAN_FINE = Set.of("success", "skipped", "neutral");
@@ -54,21 +54,18 @@ public class GitHubCli implements CodeHostDriver {
   private final HostCli cli;
 
   public GitHubCli(Processes processes, Reach reach) {
-    this.cli =
-        new HostCli(
-            processes,
-            reach,
-            "gh",
-            hostname ->
-                List.of(
-                    "env",
-                    "GH_BROWSER=true",
-                    "gh",
-                    "auth",
-                    "login",
-                    "--hostname",
-                    hostname,
-                    "--web"));
+    this.cli = cli(processes, reach);
+  }
+
+  /** The {@code gh} every driver of this host asks through. */
+  public static HostCli cli(Processes processes, Reach reach) {
+    return new HostCli(
+        processes,
+        reach,
+        "gh",
+        hostname ->
+            List.of(
+                "env", "GH_BROWSER=true", "gh", "auth", "login", "--hostname", hostname, "--web"));
   }
 
   @Override

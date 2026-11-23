@@ -53,14 +53,44 @@ public record ProjectConfig(
       List<String> retryCommand,
       List<String> loginCommand,
       List<String> closeCommand,
-      List<String> notesCommand) {
+      List<String> notesCommand,
+      @JsonUnwrapped Review review) {
+
+    public static CodeHost defaults() {
+      return new CodeHost(
+          null, null, List.of(), List.of(), List.of(), List.of(), List.of(), Review.NONE);
+    }
 
     public CodeHost {
+      review = review == null ? Review.NONE : review;
       notesCommand = notesCommand == null ? List.of() : notesCommand;
       pipelineCommand = pipelineCommand == null ? List.of() : pipelineCommand;
       retryCommand = retryCommand == null ? List.of() : retryCommand;
       loginCommand = loginCommand == null ? List.of() : loginCommand;
       closeCommand = closeCommand == null ? List.of() : closeCommand;
+    }
+  }
+
+  /**
+   * {@code codeHost: command} only: three commands printing what the port reads of a request,
+   * {@code awaitingCommand} the open requests awaiting review as JSON, {@code changeCommand} a
+   * request's change as JSON, {@code postCommand} posting a note; {@code reviewBots} the accounts
+   * of the project that are bots, beside the host's own word.
+   */
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  public record Review(
+      List<String> awaitingCommand,
+      List<String> changeCommand,
+      List<String> postCommand,
+      List<String> reviewBots) {
+
+    public static final Review NONE = new Review(List.of(), List.of(), List.of(), List.of());
+
+    public Review {
+      awaitingCommand = awaitingCommand == null ? List.of() : awaitingCommand;
+      changeCommand = changeCommand == null ? List.of() : changeCommand;
+      postCommand = postCommand == null ? List.of() : postCommand;
+      reviewBots = reviewBots == null ? List.of() : reviewBots;
     }
   }
 
@@ -106,7 +136,7 @@ public record ProjectConfig(
     this(
         new Repository(path, labels, null, List.of(), null, null),
         new Branches(baseBranch, deployBranch, null),
-        new CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+        CodeHost.defaults(),
         new Verify(List.of(), null),
         Setup.NONE);
   }

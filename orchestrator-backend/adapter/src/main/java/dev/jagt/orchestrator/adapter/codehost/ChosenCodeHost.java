@@ -4,13 +4,11 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;
-import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
-import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,28 +91,7 @@ public class ChosenCodeHost implements CodeHost {
 
   private <T> Answer<T> ask(
       String project, BiFunction<CodeHostDriver, HostSettings, Answer<T>> question) {
-    CodeHostChoice choice;
-    try {
-      ConfigFile config = configService.load();
-      ProjectConfig declared = config.projects().get(project);
-      if (declared == null) {
-        return Answer.failed(TokenUsage.NONE, "no project '" + project + "' in jagt.yml");
-      }
-      choice = CodeHostChoice.of(config, project, declared);
-    } catch (RuntimeException unreadable) {
-      return Answer.failed(
-          TokenUsage.NONE, "jagt.yml not read: " + OneLine.clipped(unreadable.getMessage()));
-    }
-    return drivers.stream()
-        .filter(driver -> driver.id().equals(choice.kind()))
-        .findFirst()
-        .map(driver -> question.apply(driver, choice.host()))
-        .orElseGet(() ->
-            Answer.failed(
-                TokenUsage.NONE,
-                choice.host().selectedBy()
-                    + ": '"
-                    + choice.kind()
-                    + "' is not a code host jagt knows"));
+    return CodeHostChoice.ask(
+        configService, project, drivers, driver -> Set.of(driver.id()), question);
   }
 }

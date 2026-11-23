@@ -29,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class GitLabCli implements CodeHostDriver {
 
-  static final String ID = "gitlab";
+  public static final String ID = "gitlab";
   private static final String MARKER = "/pipelines/";
   private static final String REQUEST_MARKER = "/merge_requests/";
   private static final Set<String> FAILED = Set.of("failed", "canceled", "canceling");
@@ -48,7 +48,12 @@ public class GitLabCli implements CodeHostDriver {
   private final HostCli cli;
 
   public GitLabCli(Processes processes, Reach reach) {
-    this.cli = new HostCli(processes, reach, "glab", GitLabCli::login);
+    this.cli = cli(processes, reach);
+  }
+
+  /** The {@code glab} every driver of this host asks through. */
+  public static HostCli cli(Processes processes, Reach reach) {
+    return new HostCli(processes, reach, "glab", GitLabCli::login);
   }
 
   private static List<String> login(String hostname) {

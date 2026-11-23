@@ -26,7 +26,14 @@ public record TestProjectConfigBuilder(
         new ProjectConfig.Repository(path, List.of(), null, List.of(), null, null),
         new ProjectConfig.Branches(baseBranch, deployBranch, remote),
         new ProjectConfig.CodeHost(
-            codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            codeHost,
+            null,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            ProjectConfig.Review.NONE),
         new ProjectConfig.Verify(verifyCommand, verifyMinutes),
         setup);
   }
