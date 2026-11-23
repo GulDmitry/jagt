@@ -21,7 +21,6 @@ async function dot(colour) {
   state.svg ??= await fetch(source)
     .then((response) => response.text())
     .catch(() => null);
-  // A later paint may have changed the colour while the icon was being read.
   if (!state.svg || colour !== state.drawn) return;
   const marked = state.svg.replace(
     "</svg>",
@@ -30,7 +29,6 @@ async function dot(colour) {
   icon.href = `data:image/svg+xml,${encodeURIComponent(marked)}`;
 }
 
-// Broken outranks waiting: a red dot is what stopped, an amber one is what only waits on the human.
 /** @param {{ waiting: number, broken: boolean }} counts */
 export function render({ waiting, broken }) {
   document.title = waiting ? `(${waiting}) jagt` : "jagt";

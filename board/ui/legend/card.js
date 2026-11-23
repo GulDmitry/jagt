@@ -12,7 +12,6 @@ const edge = (owner) => span(`legend-edge ${owner}`, "");
 const aged = (className, text, age) =>
   make("span", className, text, " ", span("age", age));
 
-// The board draws this one as an anchor, and the dotted underline is half of what it says.
 /**
  * @param {string} className
  * @param {string} text

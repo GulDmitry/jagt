@@ -1,5 +1,3 @@
-// `title` shows only after a wait, and a push rebuilds the element it was waiting on — so a tip is delegated.
-
 const tip = Object.assign(document.createElement("div"), {
   id: "tip",
   hidden: true,
@@ -11,7 +9,6 @@ const state = {
   shownFor: null,
 };
 
-// Text the stylesheet cuts with an ellipsis is its own tip, whole, wherever it is cut.
 /** @param {EventTarget | null} node */
 const clipped = (node) => {
   for (let at = node; at instanceof Element; at = at.parentElement) {
@@ -30,7 +27,6 @@ export function hideTip() {
   tip.hidden = true;
 }
 
-// A repaint keeps an open tip, in its node's new words, on the node or on the one rebuilt in its place.
 /** @param {Element | null | undefined} [rebuilt] */
 export function hideStaleTip(rebuilt) {
   if (!state.shownFor?.isConnected && rebuilt) state.shownFor = rebuilt;
@@ -41,13 +37,11 @@ export function hideStaleTip(rebuilt) {
 
 /** @param {Element} target */
 function showTip(target) {
-  // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
   (target.closest("dialog[open]") || document.body).append(tip);
   state.shownFor = target;
   tip.textContent = said(target);
   tip.hidden = false;
   tip.scrollTop = 0;
-  // Past its cap a tip is READ, not glanced at: it takes the pointer to scroll, and leaves no gap to cross.
   const scrolls = tip.scrollHeight > tip.clientHeight;
   tip.classList.toggle("scrolls", scrolls);
   const gap = scrolls ? 0 : 8;

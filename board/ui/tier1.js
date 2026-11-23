@@ -4,7 +4,6 @@ import { refresh } from "./refresh.js";
 import { toast } from "./toast.js";
 import { judge } from "./verdict.js";
 
-// Tier 1 answers for itself, so there is no one message to show and nothing to say while it happens.
 /**
  * @param {import("./execute.js").Parsed} parsed
  * @param {{ form: HTMLFormElement, partFor: (part?: string) => import("./execute.js").Part, clear: () => void }} wiring

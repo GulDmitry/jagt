@@ -7,7 +7,6 @@ const roleLogs = /** @type {HTMLElement} */ (
   document.getElementById("role-logs")
 );
 
-// One chip per running model role; pressed, its log stands in the pane.
 /** @param {string} role */
 const logChip = (role) => {
   const on = rolelog.open() === role;

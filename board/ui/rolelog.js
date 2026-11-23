@@ -23,7 +23,6 @@ export async function follow(role) {
   state.repaint();
 }
 
-// A second press on the open role hides it.
 /** @param {string} role */
 export function toggle(role) {
   if (state.role === role) {

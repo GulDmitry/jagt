@@ -4,7 +4,6 @@ import { toast } from "./toast.js";
 
 /** @typedef {{ waiting: string, send: () => Promise<{ message: string }>, done?: (result: { message: string }) => void, problem?: () => string | null }} Sending */
 
-// The board is read again after every form.
 /** @type {{ afterwards: () => Promise<void> }} */
 const held = {
   afterwards: async () => {},

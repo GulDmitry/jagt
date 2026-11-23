@@ -1,5 +1,3 @@
-// One repaint of everything: a row changing in place keeps its position.
-
 import { body } from "./body.js";
 import { chrome } from "./chrome.js";
 import * as rolelog from "./rolelog.js";
@@ -25,7 +23,6 @@ const buttonOf = ({ task, action }) => {
   return found instanceof HTMLElement ? found : null;
 };
 
-// A press disables its button, dropping focus to the page; nobody else took it.
 /** @param {{ task: string, action: string }} pressed */
 export function refocus(pressed) {
   if (document.activeElement === document.body) buttonOf(pressed)?.focus();

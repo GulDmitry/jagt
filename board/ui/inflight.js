@@ -5,7 +5,6 @@ import * as rules from "./inflightrules.js";
 
 const state = rules.create();
 
-// What DISABLES a button also refuses the click: a typed line reaches `run` with no button in between.
 /**
  * @param {Task} task
  * @param {Action} action

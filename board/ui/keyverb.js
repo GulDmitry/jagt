@@ -3,7 +3,6 @@ import { note } from "./interactions.js";
 import * as selection from "./selection.js";
 import { ordered } from "./view.js";
 
-// A verb key acts only on a task whose verbs are on screen; the server still decides whether it may run.
 /**
  * @param {KeyboardEvent} event
  * @param {boolean} plain

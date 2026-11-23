@@ -11,5 +11,4 @@ export async function loadVerbs() {
   render();
 }
 
-// A line typed while the board was still being read is judged again against what arrived.
 export const readBoard = () => refresh().then(judge);

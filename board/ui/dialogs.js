@@ -3,8 +3,6 @@ import { follow, stopWaiting } from "./followup.js";
 import * as dialog from "./reportdialog.js";
 import { toast } from "./toast.js";
 
-// Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
-// A poll and the board's own event overlap: the read sent last paints.
 /** @typedef {{ path: string | null, about: string | null, body: string, extra: HTMLElement | null }} Showing */
 
 /** @type {{ showing: Showing, asked: number, reread: number }} */
@@ -59,7 +57,6 @@ export async function repaintReport() {
   if (!dialog.isOpen() || !state.showing.path) {
     return;
   }
-  // What an extra shows may change with no word of the report changing.
   state.showing.extra?.dispatchEvent(new Event("reread"));
   const read = state.showing.path;
   const mine = ++state.reread;
@@ -70,7 +67,6 @@ export async function repaintReport() {
   } catch {
     return; // a read that failed is not an empty report: leave what is on screen
   }
-  // The answer to a report nobody is reading any more belongs to no dialog on screen.
   if (
     mine !== state.reread ||
     !dialog.isOpen() ||

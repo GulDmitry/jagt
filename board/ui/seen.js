@@ -18,8 +18,6 @@ const save = () => {
   }
 };
 
-// A task met for the first time counts as seen: a fresh browser must not mark every row as changed. An empty
-// board forgets nothing, since the page paints one before the tasks arrive.
 /**
  * @param {import("../core/store.js").Task[]} tasks
  * @param {import("../core/store.js").Task | null} open

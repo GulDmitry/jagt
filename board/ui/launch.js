@@ -23,7 +23,6 @@ export const open = () => {
 /** @type {HTMLElement} */ (document.getElementById("close-launch")).onclick =
   () => dialog.close();
 
-// ⌘↵ starts from any field.
 form.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
     event.preventDefault();

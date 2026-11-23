@@ -53,7 +53,6 @@ export function paint(title, said, { extra, about }) {
   reportTitle.textContent = title;
   drawn(said);
   reportSection.replaceChildren(...(extra ? [extra] : []));
-  // Only a report about ONE task has a session to talk to, and a line typed at one round is not the next one's.
   reportLine.hidden = !about;
   sayInput.value = "";
   if (!report.open) report.showModal();
@@ -67,7 +66,6 @@ export function redraw(said) {
   reportScroll.scrollTop = where;
 }
 
-// Which element the press STARTED on decides: selecting text inside and releasing outside asks for nothing.
 /** @param {HTMLDialogElement} dialog */
 function closeOnBackdrop(dialog) {
   let pressedBackdrop = false;

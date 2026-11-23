@@ -1,6 +1,5 @@
 import { current, t } from "../core/i18n.js";
 
-// `data-t` is an element's text, `data-t-X` its attribute X (`tip` is data-tip).
 document.documentElement.lang = current();
 document.querySelectorAll("*").forEach((node) =>
   [...node.attributes].forEach(({ name, value }) => {

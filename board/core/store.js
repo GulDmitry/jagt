@@ -63,7 +63,6 @@ export const verbs = () => data.verbs;
 /** @param {Task} task */
 export const offersOn = (task) => data.offers[task.id] || [];
 
-// The verb a task's card offers for a tab: the server's verb says which tab it feeds, by its part.
 /**
  * @param {Task} task
  * @param {string} part

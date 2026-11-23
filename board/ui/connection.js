@@ -1,4 +1,3 @@
-// Cut off from the backend, the board is a picture of the past: nothing on it may act.
 const STALE = [
   "board",
   "phases",

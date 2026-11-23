@@ -34,7 +34,6 @@ export const rowClass = (task, selected) =>
     .filter(Boolean)
     .join(" ");
 
-// The row's name is its visible text; only what the row does not print goes in its description.
 /**
  * @param {CardTask} task
  * @param {boolean} changed
@@ -56,8 +55,6 @@ export const manyProjects = (tasks) =>
     tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project)),
   ).size > 1;
 
-// The rows in the order the keyboard walks them: the human's band first, then each project by name;
-// a flagged row leads its group.
 /**
  * @param {CardTask[]} shown
  * @param {boolean} many

@@ -35,7 +35,6 @@ const artifacts = async (task) => {
   return { names, name, html: rendered ? rendered.html : "" };
 };
 
-// The task's session, or a window jagt opened that is no task's; its terminal streams, so only the names are read.
 async function sessionOf() {
   const names = await api("/api/windows").catch(() => []);
   const name = names.includes(state.windowName) ? state.windowName : null;
@@ -52,7 +51,6 @@ async function sessionOf() {
   }
 }
 
-// The Session tab streams its own screen; the other tabs peek at its last line.
 /**
  * @param {Task} task
  * @param {() => void} repaint
@@ -108,7 +106,6 @@ export const forget = () => {
   state.read = { ...state.read, stale: true };
 };
 
-// A screen changes with no event, so it is read again while open.
 const EVERY = 5000;
 
 setInterval(() => state.again(), EVERY);
@@ -148,7 +145,6 @@ export function shown(task, repaint) {
   if (state.tab === "round" && !offer) return null;
   const key = `${state.tab}:${task.id}:${task.statusSince}`;
   if (state.read.key === key && !state.read.stale) return state.read.shown;
-  // A re-read keeps the last screen up, never another task's or tab's.
   const kept = state.read.key === key ? state.read.shown : null;
   const mine = ++state.asked;
   state.read = { key, shown: kept, stale: false };

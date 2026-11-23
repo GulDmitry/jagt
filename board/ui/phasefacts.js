@@ -30,7 +30,6 @@ export const segments = (phases, perPhase, holds) =>
     };
   });
 
-// Names the order the board is in; the hover, the one a press takes it to.
 /** @param {boolean} byAlias */
 export const orderFacts = (byAlias) => ({
   label: t(byAlias ? "header.order.alias" : "header.order.added"),

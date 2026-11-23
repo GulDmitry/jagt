@@ -1,6 +1,5 @@
 import { parse } from "../core/grammar.js";
 
-// A verb typed ALONE is answered in place; one whose argument named no task is prose and stays the model's job.
 /** @param {string} line */
 export const routeLine = (line) => {
   const parsed = parse(line);

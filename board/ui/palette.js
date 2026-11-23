@@ -13,7 +13,6 @@ const opener = /** @type {HTMLElement} */ (
 
 /** @typedef {{ partFor: (part?: string) => import("./execute.js").Part }} Forms */
 
-// Asked here, decided at wiring time, so this module knows no form and no verb by name.
 /** @type {{ forms: Forms }} */
 const state = {
   forms: { partFor: () => ({}) },

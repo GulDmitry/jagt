@@ -11,7 +11,6 @@ export const flagTexts = () => ({
   tip: t("card.flag.tip"),
 });
 
-// A verb drawn apart stays muted at the row's end even where the move names it.
 /** @param {Action} action */
 export const verbClass = (action) =>
   [
@@ -22,7 +21,6 @@ export const verbClass = (action) =>
     .filter(Boolean)
     .join(" ") || undefined;
 
-// Which groups exist, and which comes first, stays the projection's answer; a verb drawn apart ends its row.
 /** @param {CardTask} task */
 export const actionRows = (task) => {
   /** @type {{ group?: string, items: { action: Action }[] }[]} */
@@ -45,7 +43,6 @@ export const actionRows = (task) => {
   return grouped;
 };
 
-// A problem is broken whatever the tier says; a move of theirs drops its colour with the tier.
 /** @param {CardTask} task */
 export const detailClass = (task) => {
   if (task.detailKind === "PROBLEM") return "detail problem";

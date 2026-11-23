@@ -53,7 +53,6 @@ export const requestLines = (task, openedAt, watch) => {
     (step) => step.status === "SHIPPING",
   ).length;
   if (ships > 1) lines.push(t("meta.shipped", { n: ships }));
-  // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
   if (!marked(task))
     lines.push(
       t("meta.checks", { said: task.pipelineSaid || t("meta.checks.unread") }),
@@ -75,7 +74,6 @@ const joined = (tip, next) => (tip ? `${tip}\n\n${next}` : next);
 export const statusTip = (task, stalled) => {
   let tip = stalled ? stalled.line : "";
   if (task.waiting) tip = joined(tip, task.waiting);
-  // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   const live =
     task.deployed && !(task.actions || []).some((action) => action.again);
   if (live) tip = joined(tip, t("meta.live"));

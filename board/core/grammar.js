@@ -1,7 +1,6 @@
 import { t } from "./i18n.js";
 import * as store from "./store.js";
 
-// A retired spelling is accepted and never offered: two spellings on screen are two answers to one question.
 /** @param {string} word */
 function verbFor(word) {
   const typed = word.toLowerCase();
@@ -31,7 +30,6 @@ export function parse(line) {
   };
 }
 
-// A typo must be visible before Run, not after a model has been paid to guess at it.
 /**
  * @param {string} line
  * @returns {{ kind?: string, text: string }}

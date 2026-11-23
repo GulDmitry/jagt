@@ -7,7 +7,6 @@ import * as rolelog from "./rolelog.js";
 
 export const showing = () => rolelog.open() !== null;
 
-// An open role's log stands in the pane's place.
 /**
  * @param {View} view
  * @param {() => void} repaint

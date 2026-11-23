@@ -6,8 +6,6 @@ export const box = /** @type {HTMLInputElement} */ (
   document.getElementById("filter")
 );
 
-// Every phase clicked stays selected until clicked again: "what is not finished yet" is two of them, and a
-// single-choice control cannot ask it.
 /** @type {Set<string>} */
 const phases = new Set();
 
