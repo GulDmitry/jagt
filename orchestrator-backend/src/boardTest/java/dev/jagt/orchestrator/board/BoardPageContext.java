@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
-import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -135,8 +134,6 @@ abstract class BoardPageContext {
 
   BrowserContext session;
 
-  private BoardBrowser.Coverage coverage;
-
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
     registry.add("orchestrator.root", () -> root.toString());
@@ -252,15 +249,14 @@ abstract class BoardPageContext {
   }
 
   @BeforeEach
-  void emptyTheBoard(Browser browser) throws IOException {
+  void emptyTheBoard(BrowserContext context) throws IOException {
     try (var entries = Files.newDirectoryStream(root)) {
       for (Path entry : entries) {
         removeTestAddedFiles(entry);
       }
     }
     nameTheProjectsTheBoardOffers(root);
-    session = browser.newContext();
-    coverage = new BoardBrowser.Coverage(session, port);
+    session = context;
   }
 
   @AfterEach
@@ -268,7 +264,5 @@ abstract class BoardPageContext {
     if (breakable.repair()) {
       session.newPage().waitForCondition(() -> !breakable.failing());
     }
-    coverage.write();
-    session.close();
   }
 }

@@ -10,16 +10,18 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
-final class BoardBrowser implements ParameterResolver {
+final class BoardBrowser implements ParameterResolver, AfterEachCallback {
 
   private static final ExtensionContext.Namespace BROWSERS =
       ExtensionContext.Namespace.create(BoardBrowser.class);
@@ -36,30 +38,16 @@ final class BoardBrowser implements ParameterResolver {
     }
   }
 
-  @Override
-  public boolean supportsParameter(ParameterContext parameter, ExtensionContext context) {
-    return parameter.getParameter().getType() == Browser.class;
-  }
-
-  @Override
-  public Object resolveParameter(ParameterContext parameter, ExtensionContext context) {
-    return context
-        .getRoot()
-        .getStore(BROWSERS)
-        .computeIfAbsent(Launched.class, key -> new Launched(), Launched.class)
-        .browser;
-  }
-
-  static final class Coverage {
+  private static final class Covered implements AutoCloseable {
 
     private static final String DIRECTORY_PROPERTY = "board.coverage.dir";
 
     private final Map<Page, CDPSession> sessions = new ConcurrentHashMap<>();
-    private final String origin;
     private final Path boardRoot = Path.of("..", "board").toAbsolutePath().normalize();
+    private final BrowserContext context;
 
-    Coverage(BrowserContext context, int port) {
-      this.origin = "http://localhost:" + port + "/";
+    Covered(Browser browser) {
+      this.context = browser.newContext();
       context.onPage(this::start);
     }
 
@@ -73,11 +61,16 @@ final class BoardBrowser implements ParameterResolver {
       sessions.put(page, cdp);
     }
 
-    void write() {
+    @Override
+    public void close() {
       String directory = System.getProperty(DIRECTORY_PROPERTY);
-      if (directory == null) {
-        return;
+      if (directory != null) {
+        write(Path.of(directory));
       }
+      context.close();
+    }
+
+    private void write(Path folder) {
       JsonArray scripts = new JsonArray();
       sessions.forEach((page, cdp) -> {
         if (!page.isClosed()) {
@@ -93,7 +86,7 @@ final class BoardBrowser implements ParameterResolver {
       JsonObject dump = new JsonObject();
       dump.add("result", scripts);
       try {
-        Path folder = Files.createDirectories(Path.of(directory));
+        Files.createDirectories(folder);
         Files.writeString(
             folder.resolve("coverage-" + UUID.randomUUID() + ".json"), dump.toString());
       } catch (IOException e) {
@@ -102,12 +95,45 @@ final class BoardBrowser implements ParameterResolver {
     }
 
     private void keepBoardScript(JsonObject script, JsonArray into) {
-      String url = script.get("url").getAsString();
-      if (url.startsWith(origin) && url.endsWith(".js") && !url.contains("/vendor/")) {
-        String relative = url.substring(origin.length());
-        script.addProperty("url", boardRoot.resolve(relative).toUri().toString());
+      String raw = script.get("url").getAsString();
+      URI url = URI.create(raw);
+      if ("localhost".equals(url.getHost())
+          && raw.endsWith(".js")
+          && !url.getPath().startsWith("/vendor/")) {
+        script.addProperty("url", boardRoot.resolve(url.getPath().substring(1)).toUri().toString());
         into.add(script);
       }
     }
+  }
+
+  @Override
+  public void afterEach(ExtensionContext context) {
+    Covered covered = context.getStore(BROWSERS).remove(Covered.class, Covered.class);
+    if (covered != null) {
+      covered.close();
+    }
+  }
+
+  @Override
+  public boolean supportsParameter(ParameterContext parameter, ExtensionContext context) {
+    Class<?> type = parameter.getParameter().getType();
+    return type == Browser.class || type == BrowserContext.class;
+  }
+
+  @Override
+  public Object resolveParameter(ParameterContext parameter, ExtensionContext context) {
+    Browser browser =
+        context
+            .getRoot()
+            .getStore(BROWSERS)
+            .computeIfAbsent(Launched.class, key -> new Launched(), Launched.class)
+            .browser;
+    if (parameter.getParameter().getType() == Browser.class) {
+      return browser;
+    }
+    return context
+        .getStore(BROWSERS)
+        .computeIfAbsent(Covered.class, key -> new Covered(browser), Covered.class)
+        .context;
   }
 }
