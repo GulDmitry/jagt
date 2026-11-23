@@ -303,7 +303,8 @@ public final class FakeJobWorld implements AutoCloseable {
                     new TicketTexts(models, usage, new KeptTicketTexts(paths)), changes, runtime),
                 new MasterDecisions(changes),
                 stored),
-            stored);
+            stored,
+            config);
     MasterReviewJob master = new MasterReviewJob(state, config, panel, stored, ruling);
     StepRelay relay = stepRelay().withRoot(root).build(state, sessions, clock);
     AliveStamp alive = new AliveStamp(paths, clock);

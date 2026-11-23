@@ -29,8 +29,11 @@ final class MasterVerdictFile {
     skipped.forEach(role ->
         file.append("# skipped [")
             .append(role.name())
-            .append("] no changed path matches ")
-            .append(String.join(", ", role.applies()))
+            .append("] ")
+            .append(
+                role.applies().isEmpty()
+                    ? "the " + role.unless() + " role reads it"
+                    : "no changed path matches " + String.join(", ", role.applies()))
             .append('\n'));
     verdict
         .advice()

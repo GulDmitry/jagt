@@ -366,6 +366,33 @@ class GitLabCliTest {
   }
 
   @Test
+  void discussionWhoseNewestNoteOpensWithTheAiLineAwaitsAnAnswerEvenFromTheActingAccount() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "{\"username\":\"agent\"}", ""))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                [{"individual_note":false,"notes":[
+                  {"id":301,"resolvable":true,"resolved":false,"author":{"username":"mia"},"body":"Why?"},
+                  {"id":302,"resolvable":true,"resolved":false,"author":{"username":"agent"},
+                   "body":"AI review note: react with a thumbs up if it helps, a thumbs down if it does not.\\n\\nUnbounded loop."}]},
+                 {"individual_note":false,"notes":[
+                  {"id":303,"resolvable":true,"resolved":false,"author":{"username":"agent"},
+                   "body":"Fixed, see Paging."}]},
+                 {"individual_note":false,"notes":[
+                  {"id":304,"resolvable":true,"resolved":true,"author":{"username":"agent"},
+                   "body":"AI review note: react with a thumbs up if it helps, a thumbs down if it does not."}]}]
+                """,
+                ""));
+
+    Answer<List<String>> answer =
+        gitlab.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/merge_requests/9");
+
+    assertThat(answer.facts()).contains(List.of("302"));
+  }
+
+  @Test
   void requestsFingerprintChangesWithItsHeadPipelineAndApprovals() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(

@@ -1,0 +1,104 @@
+package dev.jagt.orchestrator.service.master;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+class MasterPanelRolesTest {
+
+  private static final String BRIEF =
+      """
+      | role | the question it asks | unless |
+      |------|----------------------|--------|
+      | architect | is the architecture held | |
+      | developer | is the code right | code-reviewer |
+      """;
+
+  private static final String WORKTREE = "/wt/ABC-1-proj";
+
+  private final ChargedReviews reviews = mock(ChargedReviews.class);
+  private final MasterBriefs briefs = mock(MasterBriefs.class);
+  private final RoundQuotes quotes = mock(RoundQuotes.class);
+  private final ConfigService configService = mock(ConfigService.class);
+  private final ConfigFile.ArbiterConfig judge =
+      new ConfigFile.ArbiterConfig("judge", null, null, null, null);
+
+  private final MasterReview stored = mock(MasterReview.class);
+
+  private MasterPanel panel;
+  private TaskState task;
+
+  @BeforeEach
+  void wirePanel() {
+    panel = new MasterPanel(reviews, briefs, quotes, stored, configService);
+    task = TaskState.builder("proj", WORKTREE, TaskStatus.REVIEW_PENDING).build();
+    when(briefs.author()).thenReturn("");
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(BRIEF));
+    when(quotes.round("ABC-1", task))
+        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+    when(reviews.review(eq("ABC-1"), any()))
+        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+  }
+
+  @Test
+  void readsTheUnlessColumnOfEachRow() {
+    assertThat(MasterPanel.roles(BRIEF, ""))
+        .extracting(MasterPanel.Role::name, MasterPanel.Role::unless)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("architect", ""),
+            org.assertj.core.groups.Tuple.tuple("developer", "code-reviewer"));
+  }
+
+  @Test
+  void skipsRowWhileTheRoleItYieldsToIsOnAndTheProjectHasCodeHost() {
+    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("github"));
+
+    panel.review("ABC-1", task, judge);
+
+    verify(reviews, never())
+        .review(eq("ABC-1"), argThat(round -> round.prompt().contains("developer")));
+    ArgumentCaptor<String> markdown = ArgumentCaptor.captor();
+    verify(stored).write(eq("ABC-1"), eq(task), any(), markdown.capture());
+    assertThat(markdown.getValue())
+        .contains("# skipped [developer] the code-reviewer role reads it\n");
+  }
+
+  @Test
+  void readsEveryRowWhereTheRoleItYieldsToIsOff() {
+    ConfigFile.RoleConfig off = ConfigFile.RoleConfig.defaults().withEnabled(false);
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults().withCodeHost("github").withRoles(Map.of("code-reviewer", off)));
+
+    panel.review("ABC-1", task, judge);
+
+    verify(reviews, times(2)).review(eq("ABC-1"), any());
+  }
+
+  @Test
+  void readsEveryRowWhereTheProjectHasNoCodeHost() {
+    when(configService.load()).thenReturn(ConfigFile.defaults().withCodeHost("none"));
+
+    panel.review("ABC-1", task, judge);
+
+    verify(reviews, times(2)).review(eq("ABC-1"), any());
+  }
+}

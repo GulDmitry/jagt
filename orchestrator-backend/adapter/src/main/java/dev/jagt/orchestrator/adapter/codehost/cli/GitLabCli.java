@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
+import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -282,7 +283,8 @@ public class GitLabCli implements CodeHostDriver {
           }
           JsonNode newest = notes.path(notes.size() - 1);
           String author = newest.path("author").path("username").asString("");
-          if (open && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+          boolean mine = author.equalsIgnoreCase(me) && !me.isBlank();
+          if (open && (AiLine.opens(newest.path("body").asString("")) || !mine)) {
             ids.add(newest.path("id").asString(""));
           }
         });

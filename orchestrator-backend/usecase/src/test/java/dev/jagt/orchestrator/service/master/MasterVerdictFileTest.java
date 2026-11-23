@@ -14,8 +14,8 @@ class MasterVerdictFileTest {
 
   private static final List<MasterPanel.Role> TWO =
       List.of(
-          new MasterPanel.Role("chaplain", "should it exist", "", List.of()),
-          new MasterPanel.Role("developer", "is the code right", "", List.of()));
+          new MasterPanel.Role("chaplain", "should it exist", "", List.of(), ""),
+          new MasterPanel.Role("developer", "is the code right", "", List.of(), ""));
 
   @Test
   void asksTheSessionForEvidenceWhereRoleCouldNotProveItsFinding() {

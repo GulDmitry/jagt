@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterReview.Review;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -39,6 +41,7 @@ public class MasterPanel {
   private final MasterBriefs briefs;
   private final RoundQuotes quotes;
   private final MasterReview stored;
+  private final ConfigService configService;
 
   static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
 
@@ -46,9 +49,11 @@ public class MasterPanel {
   record RoundRead(String ticket, String diff, String decided, List<String> said, String notes) {}
 
   /**
-   * {@code model} blank reads with the Master's own model; {@code applies} empty reads every round.
+   * {@code model} blank reads with the Master's own model; {@code applies} empty reads every round;
+   * {@code unless} names a role whose reading this one yields to, blank where none.
    */
-  public record Role(String name, String question, String model, List<String> applies) {
+  public record Role(
+      String name, String question, String model, List<String> applies, String unless) {
 
     String modelOr(String masters) {
       return model.isBlank() ? masters : model;
@@ -73,6 +78,18 @@ public class MasterPanel {
               .toList();
       return only.isEmpty() ? !left.isEmpty() : WorktreeFiles.firstMatching(only, left).isPresent();
     }
+  }
+
+  /**
+   * A role yields to the one it names while that one is not turned off and every repository of the
+   * task has a code host to post on.
+   */
+  private static boolean yieldsTo(Role role, TaskState task, ConfigFile file) {
+    return !role.unless().isBlank()
+        && !task.repos().isEmpty()
+        && !Boolean.FALSE.equals(file.role(role.unless()).enabled())
+        && task.repos().stream()
+            .noneMatch(repo -> file.hasNoCodeHost(Objects.requireNonNull(repo.project())));
   }
 
   /**
@@ -101,7 +118,9 @@ public class MasterPanel {
         named.stream().allMatch(role -> role.applies().isEmpty())
             ? Optional.empty()
             : quotes.paths(task);
-    List<Role> applying = named.stream().filter(role -> role.reads(changed)).toList();
+    ConfigFile file = configService.load();
+    List<Role> applying =
+        named.stream().filter(role -> role.reads(changed) && !yieldsTo(role, task, file)).toList();
     // A round no role reads would pass unread.
     List<Role> roles = applying.isEmpty() ? named : applying;
     String shared =
@@ -196,7 +215,7 @@ public class MasterPanel {
   }
 
   private static final Role PLANNER =
-      new Role("planner", "whether the plan does what the ticket asks", "", List.of());
+      new Role("planner", "whether the plan does what the ticket asks", "", List.of(), "");
 
   /** What a question came back with: a decision, or why none came. */
   public sealed interface Answer permits Decision, Undecided {}
@@ -270,7 +289,7 @@ public class MasterPanel {
     List<Role> own = table(brief);
     List<Role> roles = own.isEmpty() ? table(authorBrief) : own;
     return roles.isEmpty()
-        ? List.of(new Role("reviewer", "every question your brief asks", "", List.of()))
+        ? List.of(new Role("reviewer", "every question your brief asks", "", List.of(), ""))
         : roles;
   }
 
@@ -296,7 +315,8 @@ public class MasterPanel {
                 GLOBS
                     .splitAsStream(cell(cells, header, "applies").replace("`", ""))
                     .filter(glob -> !glob.isEmpty())
-                    .toList()));
+                    .toList(),
+                cell(cells, header, "unless")));
       }
     }
     return roles;

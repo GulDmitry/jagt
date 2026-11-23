@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
+import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.ArrayList;
 import java.util.List;
@@ -302,7 +303,8 @@ public class GitHubCli implements CodeHostDriver {
           String author = newest.path("author").path("login").asString("");
           if (!thread.path("isResolved").asBoolean(false)
               && !newest.isMissingNode()
-              && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+              && (AiLine.opens(newest.path("body").asString(""))
+                  || !(author.equalsIgnoreCase(me) && !me.isBlank()))) {
             ids.add(newest.path("databaseId").asString(""));
           }
         });
