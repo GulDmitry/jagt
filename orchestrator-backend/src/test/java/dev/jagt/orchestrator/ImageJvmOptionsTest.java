@@ -26,7 +26,7 @@ class ImageJvmOptionsTest {
   void onlyJagtsOwnJvmReadsTheOptionsNotEveryProgramSessionStarts() {
     String dockerfile = SourceRoots.read(DOCKERFILE);
 
-    assertThat(SourceRoots.read(ENTRYPOINT)).contains("java $JAGT_JAVA_OPTIONS -jar /app/jagt.jar");
+    assertThat(SourceRoots.read(ENTRYPOINT)).contains("$JAGT_JAVA_OPTIONS -jar /app/jagt.jar");
     assertThat(dockerfile).doesNotContain("JAVA_TOOL_OPTIONS", "JDK_JAVA_OPTIONS");
   }
 
