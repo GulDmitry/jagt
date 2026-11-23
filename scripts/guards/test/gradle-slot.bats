@@ -10,6 +10,7 @@ teardown() {
   rm -rf "$dir"
 }
 
+# bats test_tags=exit:0
 @test "a free slot runs the command and returns its exit code" {
   run "$script" sh -c 'exit 7'
   [ "$status" -eq 7 ]
@@ -33,6 +34,7 @@ teardown() {
   [ ! -d "$dir/1" ]
 }
 
+# bats test_tags=exit:75
 @test "a full cap makes the next call wait, then exit 75 when none frees" {
   mkdir "$dir/1"
   echo $$ > "$dir/1/pid"

@@ -4,6 +4,7 @@
 # Usage: gradle-slot.sh <command...>
 # Env:   GRADLE_SLOTS=2, GRADLE_SLOT_WAIT=1800 (seconds), GRADLE_SLOT_POLL=5 (seconds), GRADLE_SLOT_DIR=/tmp/gradle-slots
 # Exit:  the command's own, or 75 when no slot freed within the wait.
+# exits: 0 75
 set -u
 [ -n "${GRADLE_SLOT_HELD:-}" ] && exec "$@"
 slots=${GRADLE_SLOTS:-2}

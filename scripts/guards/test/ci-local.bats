@@ -13,6 +13,7 @@ teardown() {
   rm -rf "$repo"
 }
 
+# bats test_tags=exit:0
 @test "a green suite records the tree it ran on, uncommitted changes included" {
   echo b > f
   JAGT_CI_LOCAL_SUITE=true run "$script"
@@ -21,6 +22,7 @@ teardown() {
   [ "$(cat .git/ci-local.ok)" = "$(git rev-parse 'HEAD^{tree}')" ]
 }
 
+# bats test_tags=exit:1
 @test "a red suite records nothing" {
   JAGT_CI_LOCAL_SUITE=false run "$script"
   [ "$status" -eq 1 ]
@@ -34,12 +36,14 @@ teardown() {
   [ ! -f .git/ci-local.ok ]
 }
 
+# bats test_tags=exit:2
 @test "an option is refused before any run, so it never records a green" {
   JAGT_CI_LOCAL_SUITE=true run "$script" --info
   [ "$status" -eq 2 ]
   [ ! -f .git/ci-local.ok ]
 }
 
+# bats test_tags=opt:-h
 @test "help prints the usage and runs nothing" {
   JAGT_CI_LOCAL_SUITE=false run "$script" --help
   [ "$status" -eq 0 ]

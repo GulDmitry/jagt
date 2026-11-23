@@ -1,5 +1,6 @@
 #!/bin/sh
-# reads: the shell command as text on stdin; exits: 0 2; arguments: names of environment variables holding a pid to protect
+# reads: the shell command as text on stdin; arguments: names of environment variables holding a pid to protect
+# exits: 0 2
 # Blocks (exit 2) a call that stops every Gradle daemon or kills java/gradle by name: parallel runs in other worktrees share them.
 # Also blocks kill/pkill/killall aimed at $PPID or at a variable named in an argument.
 # A numeric pid or one's own background job stays allowed. Quoted text and heredoc bodies are not the command.

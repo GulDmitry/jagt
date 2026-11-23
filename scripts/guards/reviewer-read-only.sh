@@ -1,5 +1,6 @@
 #!/bin/sh
-# reads: the shell command as text on stdin; exits: 0 2
+# reads: the shell command as text on stdin
+# exits: 0 2
 # Blocks (exit 2) a write: git commit/push/reset/checkout/..., rm, mv, a > redirect, sed -i, tee. For a session that only reads.
 cmd=$(cat)
 scan=$(printf '%s' "$cmd" | sed -E 's#[0-9]*>&[0-9-]#  #g; s#[0-9]*>[[:space:]]*/dev/null# #g')

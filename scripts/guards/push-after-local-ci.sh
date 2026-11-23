@@ -1,5 +1,6 @@
 #!/bin/sh
-# reads: the shell command as text on stdin; exits: 0 2
+# reads: the shell command as text on stdin
+# exits: 0 2
 # Blocks (exit 2) a git push from release or a hotfix branch whose HEAD tree orchestrator-backend/scripts/ci-local.sh has not
 # run green: each push re-runs every CI job and each red costs a round.
 cmd=$(cat)

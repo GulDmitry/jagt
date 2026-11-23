@@ -1,5 +1,6 @@
 #!/bin/sh
-# reads: the shell command as text on stdin; exits: 0 2
+# reads: the shell command as text on stdin
+# exits: 0 2
 # Blocks (exit 2) a Bash call that waits by polling: an until/while/for loop whose body sleeps, or `watch`.
 # A background job notifies on exit, so a poll only burns turns. A single sleep, a loop without sleep,
 # quoted text and heredoc bodies are not a poll.

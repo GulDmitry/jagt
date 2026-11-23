@@ -53,17 +53,20 @@ for cmd in \
   bats_test_function --description "no-shared-kill passes: ${cmd//[\$\`]/#}" -- passes "$cmd"
 done
 
+# bats test_tags=exit:2
 @test "a kill of a variable named as an argument is denied" {
   denies 'kill $SESSION_PID' SESSION_PID
   denies 'kill -TERM "$SESSION_PID"' SESSION_PID
   denies 'kill ${OTHER_PID}' SESSION_PID OTHER_PID
 }
 
+# bats test_tags=exit:0
 @test "a kill of a variable not named as an argument passes" {
   passes 'kill $SESSION_PID'
   passes 'kill $SESSION_PID_X' SESSION_PID
 }
 
+# bats test_tags=exit:0
 @test "empty input passes" {
   run bash -c "echo -n '' | $hook"
   [ "$status" -eq 0 ]

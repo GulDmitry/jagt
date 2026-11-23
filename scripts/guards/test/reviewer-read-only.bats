@@ -63,8 +63,14 @@ for cmd in \
   bats_test_function --description "reviewer-read-only passes: $cmd" -- passes "$cmd"
 done
 
+# bats test_tags=exit:0
 @test "empty input passes" {
   run bash -c "echo -n '' | $hook"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
+}
+
+# bats test_tags=exit:2
+@test "a commit is denied" {
+  denies "git commit -m x"
 }

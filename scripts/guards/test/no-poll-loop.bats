@@ -50,12 +50,14 @@ for cmd in \
   bats_test_function --description "no-poll-loop passes: ${cmd//[;\$\`]/,}" -- passes "$cmd"
 done
 
+# bats test_tags=exit:0
 @test "empty input passes" {
   run bash -c "echo -n '' | $hook"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
 
+# bats test_tags=exit:2
 @test "a multi-line until loop with sleep on its own line is denied" {
   run run_cmd $'until [ -f done.flag ]\ndo\n  sleep 5\ndone'
   [ "$status" -eq 2 ]

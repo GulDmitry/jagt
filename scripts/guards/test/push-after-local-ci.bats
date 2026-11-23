@@ -15,12 +15,14 @@ run_cmd() {
   printf '%s' "$1" | "$hook"
 }
 
+# bats test_tags=exit:2
 @test "a push from release without a local green is refused" {
   run run_cmd "git push origin release"
   [ "$status" -eq 2 ]
   [[ "$output" == Refused:* ]]
 }
 
+# bats test_tags=exit:0
 @test "a push from release whose tree ran green passes" {
   git rev-parse 'HEAD^{tree}' > .git/ci-local.ok
   run run_cmd "git push"
