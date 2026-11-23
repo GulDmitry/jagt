@@ -53,6 +53,11 @@ GIT_MOUNTS=()
 GIT_COMMON_DIR="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir)"
 if [[ "$GIT_COMMON_DIR" != "$REPO_ROOT/.git" ]]; then GIT_MOUNTS=(-v "$GIT_COMMON_DIR:$GIT_COMMON_DIR"); fi
 
+# Docker Desktop's VM can serve a file changed minutes ago from a stale page cache: git then fails to hash it.
+if [[ $(uname -s) == Darwin ]]; then
+    docker run --rm --privileged "$IMAGE" sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches' >/dev/null
+fi
+
 echo "==> running: ${TASKS[*]}"
 # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
 docker run --rm --init \
