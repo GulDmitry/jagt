@@ -75,15 +75,20 @@ Nothing else is published — jagt is on no package manager.
 
 ## The board's icon
 
-`favicon.svg` is the source; the `.ico` and `.png` fallbacks are committed, so regenerate them after editing it:
+Two sources: `icon-512.png`, the app icon (transparent rounded corners), and `docs/brand/glyph.png`, the tab glyph:
+the `j` with its arrow, transparent. From `board/`, regenerate the committed sizes after changing either:
 
 ```sh
-for s in 16 32 48; do rsvg-convert -w $s -h $s favicon.svg -o /tmp/f$s.png; done
-magick /tmp/f16.png /tmp/f32.png /tmp/f48.png favicon.ico
-sed 's/ rx="7"//' favicon.svg | rsvg-convert -w 180 -h 180 -o apple-touch-icon.png
+magick icon-512.png -resize 192x192 icon-192.png
+magick icon-512.png -background 'srgb(10,7,48)' -flatten -resize 180x180 apple-touch-icon.png
+for s in 16 32 48 64; do magick ../docs/brand/glyph.png -resize ${s}x$s /tmp/g$s.png; done
+magick /tmp/g16.png /tmp/g32.png /tmp/g48.png favicon.ico
+printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">\n<image width="32" height="32" href="data:image/png;base64,%s"/>\n</svg>\n' \
+  "$(base64 -i /tmp/g64.png | tr -d '\n')" > favicon.svg && cp favicon.svg ../site/favicon.svg
 ```
 
-Strokes stay at 3 units or more: thinner turns to mush at 16px. The apple icon drops `rx` because iOS masks its own corners.
+The apple icon is flattened on the app icon's own dark blue because iOS masks its own corners; `favicon.svg` keeps a
+32-unit viewBox, since the board draws its waiting dot into it.
 
 ## Where things go
 
