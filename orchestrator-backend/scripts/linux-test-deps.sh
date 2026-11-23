@@ -29,7 +29,6 @@ apt-get install -y --no-install-recommends \
     procps \
     lsof \
     jq \
-    bats \
     shellcheck \
     ca-certificates \
     fonts-liberation \
@@ -56,6 +55,15 @@ apt-get install -y --no-install-recommends \
     libxtst6
 rm -rf /var/lib/apt/lists/*
 
+bats_version=1.14.0
+bats_sha256=bb537b70b15b732f6d8827dd6578e3d8ce166636ce1f18ea9a074184fcce9177
+bats_dir="$(mktemp -d)"
+curl -fsSL -o "$bats_dir/bats.tgz" "https://github.com/bats-core/bats-core/archive/refs/tags/v$bats_version.tar.gz"
+echo "$bats_sha256  $bats_dir/bats.tgz" | sha256sum -c -
+tar xzf "$bats_dir/bats.tgz" -C "$bats_dir"
+"$bats_dir/bats-core-$bats_version/install.sh" /usr/local
+rm -rf "$bats_dir"
+
 # Why each one is here, so nobody trims the list by guessing:
 #   git, tmux  — the task flow itself runs them (worktrees, agent windows)
 #   nodejs     — the MCP proxy every worktree symlinks
@@ -67,7 +75,8 @@ rm -rf /var/lib/apt/lists/*
 #   dunst      — a notification daemon: notify-send exits non-zero when nothing owns the bus name
 #   libnotify-bin — notify-send itself, what LibNotifyNotifier runs
 #   procps, lsof  — agent liveness probing and language-server reaping read the process table
-#   jq, bats, shellcheck — the contributor guards in scripts/guards and the guardsTest task that proves them
+#   jq, bats, shellcheck — the contributor guards in scripts/guards and the guardsTest task that proves them;
+#     bats pinned from its release, as the guards' bats_test_function --description needs 1.11 and noble ships 1.10
 #   libxtst6   — on a display the JDK loads its X toolkit, which links against it; ImageIO reads the board's icons
 #   fonts-liberation … libxrandr2 — the shared libraries the board suite's Chromium links against. The BROWSER
 #     comes from Playwright's own cache (the `playwrightChromium` task), which cannot install system packages.
