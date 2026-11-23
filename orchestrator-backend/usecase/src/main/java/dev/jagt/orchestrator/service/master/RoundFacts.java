@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
@@ -74,6 +74,6 @@ public class RoundFacts {
 
   /** Empty where the session's record could not be read. */
   public Optional<List<String>> humanSaid(TaskState task) {
-    return agentRuntime.humanSaid(Path.of(task.worktreePath()), Set.of(AgentSessions.NUDGE));
+    return agentRuntime.humanSaid(Path.of(task.worktreePath()), Set.of(AgentWindows.NUDGE));
   }
 }

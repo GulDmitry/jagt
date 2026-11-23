@@ -35,9 +35,11 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.notify.PointWatch;
 import dev.jagt.orchestrator.notify.Routes;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.CarriedBlock;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.FreshStarts;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.StateService;
@@ -284,12 +286,10 @@ public final class FakeJobWorld implements AutoCloseable {
             new Messages(new BoardUrl("8290", ""), new NextMove(handBack, rules)),
             new ChannelPosts(List.of(driver), new FakeReach(), Runnable::run, retries),
             state);
+    SessionHosting hosting = new SessionHosting(host, runtime, new CarriedBlock(changes, runtime));
+    AgentWindows windows = new AgentWindows(config, state, hosting);
     AgentSessions sessions =
-        new AgentSessions(
-            config,
-            state,
-            new SessionHosting(host, runtime, new CarriedBlock(changes, runtime)),
-            rules);
+        new AgentSessions(state, hosting, rules, windows, new FreshStarts(windows, state, hosting));
     UsageTracker usage = new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, clock));
     Assistants models = assistants.assistants();
     MasterReview stored = new MasterReview(state);
