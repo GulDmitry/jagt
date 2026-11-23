@@ -8,6 +8,8 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.CDPSession;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.PlaywrightException;
+import com.microsoft.playwright.Request;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -16,6 +18,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -42,7 +46,13 @@ final class BoardBrowser implements ParameterResolver, AfterEachCallback {
 
     private static final String DIRECTORY_PROPERTY = "board.coverage.dir";
 
-    private final Map<Page, CDPSession> sessions = new ConcurrentHashMap<>();
+    private static final String SETTLED =
+        "() => new Promise(done => {"
+            + " const channel = new MessageChannel();"
+            + " channel.port1.onmessage = () => done();"
+            + " channel.port2.postMessage(0); })";
+
+    private final Map<Page, Supplier<JsonArray>> takes = new ConcurrentHashMap<>();
     private final Path boardRoot = Path.of("..", "board").toAbsolutePath().normalize();
     private final BrowserContext context;
 
@@ -58,7 +68,32 @@ final class BoardBrowser implements ParameterResolver, AfterEachCallback {
       options.addProperty("callCount", true);
       options.addProperty("detailed", true);
       cdp.send("Profiler.startPreciseCoverage", options);
-      sessions.put(page, cdp);
+      AtomicInteger inFlight = new AtomicInteger();
+      page.onRequest(request -> count(request, inFlight, 1));
+      page.onRequestFinished(request -> count(request, inFlight, -1));
+      page.onRequestFailed(request -> count(request, inFlight, -1));
+      takes.put(
+          page,
+          () -> {
+            settle(page, inFlight);
+            return cdp.send("Profiler.takePreciseCoverage").getAsJsonArray("result");
+          });
+    }
+
+    private static void count(Request request, AtomicInteger inFlight, int by) {
+      if (!"eventsource".equals(request.resourceType())) {
+        inFlight.addAndGet(by);
+      }
+    }
+
+    private static void settle(Page page, AtomicInteger inFlight) {
+      try {
+        page.waitForCondition(
+            () -> inFlight.get() <= 0, new Page.WaitForConditionOptions().setTimeout(2000));
+        page.evaluate(SETTLED);
+      } catch (PlaywrightException unsettled) {
+        // a held route or a closing page: take what ran
+      }
     }
 
     @Override
@@ -72,10 +107,9 @@ final class BoardBrowser implements ParameterResolver, AfterEachCallback {
 
     private void write(Path folder) {
       JsonArray scripts = new JsonArray();
-      sessions.forEach((page, cdp) -> {
+      takes.forEach((page, take) -> {
         if (!page.isClosed()) {
-          for (JsonElement script :
-              cdp.send("Profiler.takePreciseCoverage").getAsJsonArray("result")) {
+          for (JsonElement script : take.get()) {
             keepBoardScript(script.getAsJsonObject(), scripts);
           }
         }

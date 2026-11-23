@@ -7,6 +7,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Route;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
@@ -376,6 +377,36 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     page.locator("#role-chips button.chip").click();
 
     assertThat(page.locator("#role-chips button.chip")).isHidden();
+  }
+
+  @Test
+  void theTabIconKeepsTheLatestColourWhenAnEarlierIconReadFinishesLast() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.DEPLOY_CONFLICT).build());
+    List<Route> iconReads = new java.util.ArrayList<>();
+    Page page = session.newPage();
+    page.route(
+        "**/favicon.svg",
+        route -> {
+          if ("fetch".equals(route.request().resourceType())) {
+            iconReads.add(route);
+          } else {
+            route.resume();
+          }
+        });
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page).hasTitle("(1) jagt");
+    page.waitForCondition(() -> iconReads.size() == 1);
+
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.CI_FAILED).build());
+    page.waitForCondition(() -> iconReads.size() == 2);
+    iconReads.get(1).resume();
+    assertThat(page.locator("link[rel=icon][type='image/svg+xml']"))
+        .hasAttribute("href", Pattern.compile("b42318"));
+    iconReads.get(0).resume();
+    page.waitForTimeout(300);
+
+    assertThat(page.locator("link[rel=icon][type='image/svg+xml']"))
+        .hasAttribute("href", Pattern.compile("b42318"));
   }
 
   @Test
