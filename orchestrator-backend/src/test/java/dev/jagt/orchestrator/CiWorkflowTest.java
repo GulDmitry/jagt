@@ -572,7 +572,7 @@ class CiWorkflowTest {
   void passesAnImageScanWhenTheOnlyFixNeedsUbuntuPro() {
     String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
 
-    assertThat(scan).contains("grep -Fvq '~esm'");
+    assertThat(scan).contains("grep -Evq '[~+]esm'");
   }
 
   @Test
