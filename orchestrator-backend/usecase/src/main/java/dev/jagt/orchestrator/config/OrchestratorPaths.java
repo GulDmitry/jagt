@@ -239,6 +239,18 @@ public class OrchestratorPaths {
     return layout.stopsReviewed();
   }
 
+  public Path codeReviewLedger() {
+    return layout.codeReviewLedger();
+  }
+
+  public Path codeReviewCheckouts() {
+    return layout.codeReviewCheckouts();
+  }
+
+  public Path codeReviewStats() {
+    return layout.codeReviewStats();
+  }
+
   private Path resolve(@Nullable String override, String defaultName) {
     return override != null && !override.isBlank()
         ? Path.of(override).toAbsolutePath().normalize()

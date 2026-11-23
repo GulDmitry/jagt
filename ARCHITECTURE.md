@@ -267,6 +267,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/host` | usecase | jobs about the install: keep-awake, the running-jar watch and the newer-release check |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
+| `job/codereview` | usecase | the code reviewer's jobs: read a request, answer a bot, record the ratings |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
 | `job/stop` | usecase | stop reads |
@@ -290,6 +291,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/release` | usecase | the kept newer release and the switch of `current` to it |
 | `service/repo` | usecase | repositories: remotes, departures, hostless ships, merged requests |
 | `service/report` | usecase | status reports and their effects |
+| `service/codereview` | usecase | the code reviewer: ledger, settings, subjects, checkout, panel, note poster |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |
 | `service/role` | usecase | installed roles, their beans, settings and config origins |
 | `service/scenario` | usecase | scenario sessions and windows |
@@ -311,8 +313,9 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/assistant` | adapter | the headless assistants, readers and replays |
 | `adapter/assistant/reach` | adapter | MCP and local-model reach probes |
 | `adapter/channel` | adapter | notification channel drivers |
-| `adapter/codehost` | adapter | code host drivers: choice, pipeline, replay, none |
+| `adapter/codehost` | adapter | code host drivers: choice, replay, none |
 | `adapter/codehost/cli` | adapter | the GitHub and GitLab CLIs and their commands |
+| `adapter/codehost/command` | adapter | the command driver: a project's own commands |
 | `adapter/codehost/notes` | adapter | the request notes drivers: GitHub, GitLab, command, offline |
 | `adapter/flows` | adapter | the scripted-flows runner and its Playwright driver |
 | `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
@@ -347,6 +350,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 ### Over ten classes
 
 A package-private partner that cannot move without widening keeps its package whole, until its partners move; never by raising the number.
+A package of one class folds into its parent.
 
 | package | why |
 |---------|-----|
@@ -359,10 +363,6 @@ A package-private partner that cannot move without widening keeps its package wh
 | `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |
 | `stand/invariant` | seventeen checks of one feature, no sub-kind of three; `StateFiles` is package-private to them |
 | `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
-
-### A single class
-
-None today; a package of one class folds into its parent.
 
 ## Where a new thing goes
 

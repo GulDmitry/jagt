@@ -15,7 +15,7 @@ technical:
   maintainability:
     modularity:
       collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
-      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 57, decision: "0176" }
+      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 58, decision: "0176" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 24, decision: "0176" }
       scripts-are-java: { engine: scan, set: tracked, glob: "../**/*.{sh,ps1,bash,py,js}", except: "../install.sh,../install.ps1,../scripts/guards/*.sh,../entrypoint.sh,../mcp_client.js,../board/**,adapter/src/main/resources/opencode/jagt-gate/index.js,gradle/stop-test-tmux.sh,scripts/container-suite.sh,scripts/container-suite/stub-agent.sh,scripts/ci-local.sh,scripts/gradle-slot.sh,scripts/linux-suite.sh,scripts/linux-test-deps.sh,scripts/publish-base-image.sh,scripts/publish-image.sh,scripts/secret-scan.sh,scripts/vulnerability-scan.sh,scripts/with-linux-desktop.sh,stand/src/main/resources/server/fake-claude.sh,stand/src/stand/resources/flows/flows.sh", per: file, governs: count, max: 0, decision: "0227", hint: "a script with logic is Java: a build-logic task or a JUnit suite; shell only on this allow-list (ARCHITECTURE.md, the kind script)" }
@@ -37,11 +37,11 @@ technical:
       ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
       source-sets: { fitness: SourceSetsFitness, governs: count, max: 27, decision: "0176" }
-      start-triggers: { fitness: StartTriggersFitness, governs: count, max: 57, decision: "0176" }
+      start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
       task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
       public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 84, decision: "0176" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
-      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 33, decision: "0176" }
+      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 34, decision: "0176" }
       roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }
       spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 53, decision: "0231" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
