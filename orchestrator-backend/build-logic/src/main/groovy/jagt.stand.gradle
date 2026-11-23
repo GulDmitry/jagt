@@ -30,9 +30,11 @@ tasks.register('standTest', Test) {
         }
     }
     // Each run owns its root, port and tmux server, so runs go side by side: StandSlots caps the live runs at
-    // -PstandParallelism=N (6), since 37 processes at once broke startup; the JUnit pool is wide so containers never starve runs.
+    // -PstandParallelism=N (the available processors, half of them under kind), since 37 processes at once broke startup;
+    // the JUnit pool is wide so containers never starve runs.
     def standEngine = (project.findProperty('engine') ?: 'compose').toString()
-    def standParallelism = (project.findProperty('standParallelism') ?: (standEngine == 'kind' ? '2' : '6')).toString()
+    def processors = Runtime.runtime.availableProcessors()
+    def standParallelism = (project.findProperty('standParallelism') ?: Math.max(1, standEngine == 'kind' ? processors.intdiv(2) : processors)).toString()
     systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
     systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
     systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'

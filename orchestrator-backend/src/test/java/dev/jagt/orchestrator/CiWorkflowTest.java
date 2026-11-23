@@ -187,7 +187,8 @@ class CiWorkflowTest {
   @Test
   void runsEveryLinuxJobLocallyWithItsOwnDockerEngineAndUntimedAsOnCi() {
     assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
-        .contains("--privileged -e CI=true -e ORG_GRADLE_PROJECT_timed=false")
+        .contains("--privileged")
+        .contains("-e CI=true -e ORG_GRADLE_PROJECT_timed=false")
         .contains("dockerd");
   }
 

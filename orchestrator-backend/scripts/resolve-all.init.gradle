@@ -1,0 +1,10 @@
+allprojects {
+    tasks.register('resolveAll') {
+        notCompatibleWithConfigurationCache('resolves every configuration of the live project')
+        doLast {
+            configurations.matching { it.canBeResolved }.each { configuration ->
+                configuration.incoming.artifactView { view -> view.lenient(true) }.files.files
+            }
+        }
+    }
+}

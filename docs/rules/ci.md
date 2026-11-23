@@ -26,7 +26,10 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 3. **Every CI and nightly job has a local twin**, selectable by name. Windows install is the one exception, run by a manual dispatch. none yet.
 4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`. none yet.
 5. **The CI image is one, pinned by digest**, used by CI and the local gate. `CiWorkflowTest`; the `ci.yml` switch to it: none yet.
-6. **The local gate is runner-sized and offline**; parallelism comes from the machine, never fixed. none yet.
+6. **The local gate is runner-sized and offline**; parallelism comes from the machine, never fixed. `linux-suite.bats`: the container is
+   capped by `scripts/runner.env`, the run has `--network none` after an online warm-up, each run has its own Gradle home;
+   `standParallelism` and `e2eForks` read the available processors. `install` keeps its network until the Java runtime feed has a
+   loopback twin (rule 7).
 7. **A per-push check reads no live data**: a scan or feed read that needs the network runs nightly, or per push on a dependency diff. none yet.
 8. **A wait is a hang guard** from one shared constant, never a speed assert. `sleep-in-tests`, `ci-no-sleep`; a literal wait: none yet.
 9. **A rerun or retry never turns a CI red green.** `ci-no-retry`.
