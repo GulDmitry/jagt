@@ -92,3 +92,26 @@ run_cmd() {
   git worktree remove --force "$repo-wt"
   [ "$status" -eq 0 ]
 }
+
+@test "a push naming an older commit whose tree ran green passes, though HEAD moved on" {
+  git rev-parse 'HEAD^{tree}' > .git/ci-local.ok
+  green=$(git rev-parse HEAD)
+  echo x > f && git add f && git -c user.name=t -c user.email=t@t commit -q -m two
+  run run_cmd "git push origin $green:release"
+  [ "$status" -eq 0 ]
+}
+
+@test "a push naming a commit the local run did not see is refused, though HEAD ran green" {
+  echo x > f && git add f && git -c user.name=t -c user.email=t@t commit -q -m two
+  git rev-parse 'HEAD^{tree}' > .git/ci-local.ok
+  run run_cmd "git push origin HEAD~1:release"
+  [ "$status" -eq 2 ]
+}
+
+@test "a push from another worktree checks that worktree's tree" {
+  git rev-parse 'HEAD^{tree}' > .git/ci-local.ok
+  git worktree add -q --detach "$repo/wt" HEAD
+  echo x > f && git add f && git -c user.name=t -c user.email=t@t commit -q -m two
+  run run_cmd "git -C $repo/wt push origin HEAD:release"
+  [ "$status" -eq 0 ]
+}
