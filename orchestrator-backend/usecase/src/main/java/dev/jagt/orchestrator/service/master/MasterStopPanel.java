@@ -43,7 +43,7 @@ public class MasterStopPanel {
   }
 
   static String prompt(String taskId, TaskState task, TaskStop stop, String brief) {
-    return MasterPanel.GOAL
+    return MasterPrompts.GOAL
         + "<role>You stand in for the human on task "
         + taskId
         + ", which jagt stopped because it"
