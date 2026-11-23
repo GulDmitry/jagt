@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
-import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
+import dev.jagt.orchestrator.service.CodeReviewSettings;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

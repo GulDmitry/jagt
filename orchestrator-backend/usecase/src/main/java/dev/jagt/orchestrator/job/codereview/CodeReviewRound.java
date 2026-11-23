@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
-import dev.jagt.orchestrator.service.codereview.CodeReviewSettings.Settings;
+import dev.jagt.orchestrator.service.CodeReviewSettings.Settings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

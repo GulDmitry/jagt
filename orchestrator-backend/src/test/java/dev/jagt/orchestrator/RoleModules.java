@@ -49,7 +49,7 @@ public final class RoleModules {
           "code-reviewer",
           Stream.of(
                   "job.codereview.",
-                  "service.codereview.",
+                  "service.CodeReviewSettings",
                   "port.codehost.review.",
                   "startup.role.CodeReviewer")
               .map(prefix -> ROOT + prefix)

@@ -11,7 +11,7 @@ import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
-import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
+import dev.jagt.orchestrator.service.CodeReviewSettings;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -1,8 +1,7 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.service.ConfigService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -266,7 +266,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/host` | usecase | jobs about the install: keep-awake, the running-jar watch and the newer-release check |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
-| `job/codereview` | usecase | the code reviewer: jobs, ledger, subjects, checkout, panel, note poster |
+| `job/codereview` | usecase | the code reviewer: jobs, subjects, checkout, panel |
+| `job/codereview/request` | usecase | one request's read: ledger, resolutions, subject, diff anchors, note poster |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
 | `job/stop` | usecase | stop reads |
@@ -290,7 +291,6 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/release` | usecase | the kept newer release and the switch of `current` to it |
 | `service/repo` | usecase | repositories: remotes, departures, hostless ships, merged requests |
 | `service/report` | usecase | status reports and their effects |
-| `service/codereview` | usecase | the code reviewer's settings |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |
 | `service/role` | usecase | installed roles, their beans, settings and config origins |
 | `service/role/model` | usecase | the model roles a role module declares and which of them run |

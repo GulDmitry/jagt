@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.codereview;
+package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -6,8 +6,6 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.service.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

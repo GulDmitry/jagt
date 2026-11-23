@@ -15,6 +15,6 @@ dir=$(printf '%s' "$scan" | sed -nE 's/.*git[[:space:]]+-C[[:space:]]+([^[:space
 src=$(printf '%s' "$scan" | sed -nE 's/.*[[:space:]]\+?([^[:space:]:+]+):(refs\/heads\/)?(release|hotfix\/[^[:space:]]+)([[:space:]].*)?$/\1/p')
 ok=$(cat "$(git -C "${dir:-.}" rev-parse --git-common-dir)/ci-local.ok" 2>/dev/null)
 tree=$(git -C "${dir:-.}" rev-parse "${src:-HEAD}^{tree}" 2>/dev/null)
-[ "$ok" = "$tree" ] && exit 0
+[ -n "$tree" ] && [ "$ok" = "$tree" ] && exit 0
 echo "Refused: HEAD's tree has no local CI green. Fix every red job of the last run, run orchestrator-backend/scripts/ci-local.sh (in the background), commit exactly what it tested, then push once." >&2
 exit 2

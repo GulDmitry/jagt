@@ -9,4 +9,4 @@
 - **Bots answered, bounded** — A review bot's note gets one answer, at most three per thread.
   [spec](../../openspec/specs/code-review/spec.md#requirement-review-bots-are-answered-bounded-per-thread)
 - **Ratings recorded** — Likes, dislikes and resolutions are appended as dated statistics.
-  [spec](../../openspec/specs/code-review/spec.md#requirement-likes-dislikes-and-resolutions-are-recorded-as-dated-statistics)
+  [spec](../../openspec/specs/code-review/spec.md#requirement-likes-dislikes-and-resolutions-are-recorded-as-dated-statistics-per-change)

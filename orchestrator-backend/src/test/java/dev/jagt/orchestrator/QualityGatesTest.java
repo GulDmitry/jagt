@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class QualityGatesTest {
 
   private static final String CONVENTIONS = "|build-logic/src/main/groovy/jagt.conventions.gradle|";
+  private static final String SUITES = "|build-logic/src/main/groovy/jagt.suites.gradle|";
   private static final String PITEST = "|build-logic/src/main/groovy/jagt.pitest.gradle|";
 
   @ParameterizedTest(name = "{0}")
@@ -24,11 +25,12 @@ class QualityGatesTest {
         "Error Prone" + CONVENTIONS + "apply plugin: 'net.ltgt.errorprone'",
         "Error Prone as errors" + CONVENTIONS + "'-Werror'",
         "ArchUnit|build.gradle|testImplementation 'com.tngtech.archunit:archunit",
-        "dependency vulnerability scan on GitHub|../.github/workflows/ci.yml"
-            + "|scripts/vulnerability-scan.sh",
-        "dependency vulnerability scan on GitLab|../.gitlab-ci.yml|scripts/vulnerability-scan.sh",
-        "dependency licence check on GitHub|../.github/workflows/ci.yml"
-            + "|gradlew --no-daemon checkLicences",
+        "dependency vulnerability scan in the test gate"
+            + SUITES
+            + "gateTest: \\[.*'vulnerabilityScan'",
+        "dependency licence check in the test gate" + SUITES + "gateTest: \\[.*'checkLicences'",
+        "test gate on GitHub|../.github/workflows/ci.yml|gradlew --no-daemon gateTest",
+        "test gate on GitLab|../.gitlab-ci.yml|gradlew --no-daemon gateTest",
         "dependency licence check|build-logic/src/main/groovy/jagt.sbom.gradle"
             + "|tasks.register\\('checkLicences'\\)",
         "reproducible archives" + CONVENTIONS + "reproducibleFileOrder = true",

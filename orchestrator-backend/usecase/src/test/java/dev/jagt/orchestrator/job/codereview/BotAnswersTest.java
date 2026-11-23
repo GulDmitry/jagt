@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
-import dev.jagt.orchestrator.service.codereview.CodeReviewSettings;
+import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Map;
