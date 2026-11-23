@@ -26,8 +26,7 @@ jagt-master.log*
 orchestrator-backend/*.log*
 
 # Eclipse/VS Code Java output (not used by Gradle)
-orchestrator-backend/bin/
-orchestrator-backend/*/bin/
+orchestrator-backend/**/bin/
 CLAUDE.local.md
 
 # Secrets a compose run reads

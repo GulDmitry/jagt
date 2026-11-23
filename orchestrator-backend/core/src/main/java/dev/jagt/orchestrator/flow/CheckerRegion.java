@@ -60,7 +60,7 @@ record CheckerRegion(CheckerRole role) implements Role {
               move ->
                   move instanceof TaskMove.Relayed relayed
                       && role.readSteps().contains(relayed.step()))
-          .when((active, move) -> active.state(TaskChart.LIFECYCLE) == DEPLOYED)
+          .when((active, move) -> active.state(ChartRegions.LIFECYCLE) == DEPLOYED)
           .emitFor(move -> new TaskEffect.OpensCheckerRead(id(), ((TaskMove.Relayed) move).step()))
           .to(CheckerPhase.READING);
     }
@@ -83,7 +83,7 @@ record CheckerRegion(CheckerRole role) implements Role {
               move -> !endsTurn(move))
           .when((active, move) ->
               active.datum(beneath()) == under
-                  && active.state(TaskChart.LIFECYCLE) == DEPLOYED
+                  && active.state(ChartRegions.LIFECYCLE) == DEPLOYED
                   && landing.land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
           .emit(new TaskEffect.ClosesCheckerRead(id()))
           .to(under);
@@ -94,7 +94,7 @@ record CheckerRegion(CheckerRole role) implements Role {
   private void declareVerdicts(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     for (CheckerPhase from : CheckerPhase.values()) {
       boolean reading = from == CheckerPhase.READING;
-      TaskChart.regionEdge(
+      ChartRegions.regionEdge(
           chart,
           region(),
           from,
@@ -104,7 +104,7 @@ record CheckerRegion(CheckerRole role) implements Role {
                   && ownsAndStands(passed.role(), passed.standing()),
           CheckerRegion::passes,
           reading ? from : CheckerPhase.PASSED);
-      TaskChart.regionEdge(
+      ChartRegions.regionEdge(
           chart,
           region(),
           from,
@@ -114,7 +114,7 @@ record CheckerRegion(CheckerRole role) implements Role {
                   && ownsAndStands(passed.role(), !passed.standing()),
           CheckerRegion::passes,
           from);
-      TaskChart.regionEdge(
+      ChartRegions.regionEdge(
           chart,
           region(),
           from,
@@ -124,7 +124,7 @@ record CheckerRegion(CheckerRole role) implements Role {
                   && ownsAndStands(sent.role(), sent.opens()),
           CheckerRegion::sendsRound,
           reading ? from : CheckerPhase.ROUND_OPEN);
-      TaskChart.regionEdge(
+      ChartRegions.regionEdge(
           chart,
           region(),
           from,
@@ -142,7 +142,7 @@ record CheckerRegion(CheckerRole role) implements Role {
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {
     chart
         .onMatching(
-            TaskChart.TURN,
+            ChartRegions.TURN,
             from,
             id() + " read ended on its turn",
             move ->
@@ -156,10 +156,11 @@ record CheckerRegion(CheckerRole role) implements Role {
   @Override
   public void declareLifecycleEdge(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart
-        .onMatching(TaskChart.LIFECYCLE, IN_PROGRESS, id() + " round declined", this::declinesRound)
+        .onMatching(
+            ChartRegions.LIFECYCLE, IN_PROGRESS, id() + " round declined", this::declinesRound)
         .when((active, move) ->
             active.state(region()) == CheckerPhase.ROUND_OPEN
-                && active.state(TaskChart.TURN) == TurnKind.OPEN)
+                && active.state(ChartRegions.TURN) == TurnKind.OPEN)
         .emit(new TaskEffect.DeclinesRound(id()))
         .to(DEPLOYED);
   }

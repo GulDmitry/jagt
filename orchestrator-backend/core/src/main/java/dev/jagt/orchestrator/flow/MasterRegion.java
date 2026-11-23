@@ -26,7 +26,7 @@ record MasterRegion() implements Role {
     chart.region(REGION, MasterPhase.STANDS_IN);
     for (MasterPhase from : MasterPhase.values()) {
       for (MasterPhase to : MasterPhase.values()) {
-        TaskChart.regionEdge(
+        ChartRegions.regionEdge(
             chart,
             REGION,
             from,

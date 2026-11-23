@@ -88,7 +88,7 @@ public final class FlowRules {
 
   /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */
   public static boolean reportable(TaskStatus status) {
-    return TaskChart.reportable(status);
+    return StatusSets.reportable(status);
   }
 
   /** The same question with the status the task is IN. */
@@ -163,14 +163,14 @@ public final class FlowRules {
    * human's.
    */
   public static boolean holdsItsLine(TaskStatus status) {
-    return TaskChart.holds(status);
+    return StatusSets.holds(status);
   }
 
   /**
    * Whether the task's next step waits on the host's checks, so a red or green read can move it.
    */
   public static boolean waitsOnTheHost(TaskStatus status) {
-    return TaskChart.waitsOnTheHost(status);
+    return StatusSets.waitsOnTheHost(status);
   }
 
   /**
@@ -178,12 +178,12 @@ public final class FlowRules {
    * answers it.
    */
   public static boolean standsThroughRead(AgentReport report) {
-    return TaskChart.standsThroughRead(report);
+    return StatusSets.standsThroughRead(report);
   }
 
   /** What a read of the review round can conclude, which only the host's round read may land. */
   public static Set<TaskStatus> reads() {
-    return TaskChart.reads();
+    return StatusSets.reads();
   }
 
   /**
@@ -191,7 +191,7 @@ public final class FlowRules {
    * it.
    */
   public TaskStatus readLands(TaskStatus from, TaskStatus read) {
-    if (!TaskChart.reads().contains(read)) {
+    if (!StatusSets.reads().contains(read)) {
       throw new IllegalArgumentException(
           read + " is not what a read of the review round concludes");
     }
@@ -241,7 +241,7 @@ public final class FlowRules {
    * reporting.
    */
   public static boolean watched(TaskStatus status) {
-    return TaskChart.watched(status);
+    return StatusSets.watched(status);
   }
 
   /**
@@ -249,12 +249,12 @@ public final class FlowRules {
    * wait.
    */
   public static boolean handsBack(TaskStatus status) {
-    return TaskChart.handedBack(status);
+    return StatusSets.handedBack(status);
   }
 
   /** A plan or a round handed back, which the Master reads before the human where it runs. */
   public static boolean readByTheArbiter(TaskStatus status) {
-    return TaskChart.readByTheArbiter(status);
+    return StatusSets.readByTheArbiter(status);
   }
 
   /** A hand-back the Master reads next, once verification has passed where one runs. */
@@ -264,14 +264,14 @@ public final class FlowRules {
 
   /** Read and green, with only the approval or the deploy still to come. */
   public static boolean awaitsApproval(TaskStatus status) {
-    return TaskChart.waitsForDeploy(status);
+    return StatusSets.waitsForDeploy(status);
   }
 
   /**
    * A request green with every thread closed, which in act the Master deploys as the human would.
    */
   public static boolean deployedByTheArbiter(TaskStatus status) {
-    return TaskChart.waitsForDeploy(status);
+    return StatusSets.waitsForDeploy(status);
   }
 
   /**
@@ -279,12 +279,12 @@ public final class FlowRules {
    * poll watches, which is an open request whatever the status.
    */
   public static boolean outForReview(TaskStatus status) {
-    return TaskChart.outForReview(status);
+    return StatusSets.outForReview(status);
   }
 
   /** Green with nothing left for its session, so only a reviewer's word can move the request on. */
   public static boolean movedOnByReviewerAlone(TaskStatus status) {
-    return TaskChart.handedOver(status);
+    return StatusSets.handedOver(status);
   }
 
   /**
@@ -327,7 +327,7 @@ public final class FlowRules {
    * Waiting on an instruction jagt relayed, which nothing else written to the session may replace.
    */
   public static boolean awaitsItsInstruction(TaskStatus status) {
-    return TaskChart.awaitsItsInstruction(status);
+    return StatusSets.awaitsItsInstruction(status);
   }
 
   /** A round read that found the request approved. */
@@ -345,7 +345,7 @@ public final class FlowRules {
    * task.
    */
   public static boolean handedOver(TaskStatus status) {
-    return TaskChart.handedOver(status);
+    return StatusSets.handedOver(status);
   }
 
   /**
