@@ -16,7 +16,8 @@ A `schedule` run starts late under GitHub load, worst at the top of the hour,
 and runs the default branch's latest commit
 ([events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows),
 checked 2026-11-19): the old `0 4` cron started 08:20-08:40 late on 2026-11-16..18, so the cron sits off the hour
-and `nightly` logs its delay. Times are wall clock, dated in `measurements.md`.
+and `nightly` logs its delay. Under heavy load GitHub drops a scheduled run (none on 2026-11-23):
+`gh workflow run nightly.yml --ref main` starts it on demand. Times are wall clock, dated in `measurements.md`.
 
 ## What each suite proves
 
