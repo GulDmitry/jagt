@@ -1,7 +1,7 @@
 <h1 align="center">jagt</h1>
 
 <p align="center">
-  <b>One ticket → one agent session → one Git worktree.<br>You decide each step, or let an agent decide it.</b>
+  <b>AI coding-agent session orchestrator</b>
 </p>
 
 <p align="center">
@@ -12,8 +12,8 @@
   <a href="LICENSE"><img alt="Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 </p>
 
-jagt orchestrates AI coding-agent sessions on a desktop and on a server. Each ticket gets one session in its own
-isolated Git worktree, so two agents cannot see or break each other's work. You drive all of them from one board in your browser.
+Each session works in its own Git worktree. Run it on a desktop or a server, and drive it from one board.
+Each ticket gets one session, so two agents cannot see or break each other's work. You decide each step, or let an agent decide it.
 
 ## Install
 
