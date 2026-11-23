@@ -62,4 +62,4 @@ apply plugin: 'jagt.tests-for'
 tasks.named('test') {
     dependsOn gradle.includedBuild('fitness').task(':test'), gradle.includedBuild('build-logic').task(':test')
 }
-tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check'), 'fitness' }
+tasks.named('check') { dependsOn gradle.includedBuild('fitness').task(':check'), 'fitness', 'checkScope' }
