@@ -21,15 +21,26 @@ class CiWorkflowTest {
   private static final Path GATES = Path.of("build-logic/src/main/groovy/jagt.suites.gradle");
 
   @Test
-  void publishesReleaseOnlyOnceEveryJobOnTheMainPushIsGreen() {
+  void publishesReleaseOnceTheMainPushsUnitSuiteIsGreen() {
     Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
-    Set<String> others =
-        jobs.keySet().stream()
-            .filter(job -> !job.equals("release") && !job.equals("heavy"))
-            .collect(Collectors.toSet());
     assertThat(Objects.requireNonNull(jobs.get("release")).get("needs"))
         .asInstanceOf(list(String.class))
-        .containsExactlyInAnyOrderElementsOf(others);
+        .containsExactly("test");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "install"})
+  void reRunsNoSlowJobOnTheMainPush(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("if")))
+        .contains("github.event_name != 'push'");
+  }
+
+  @Test
+  void publishesOnlyAfterTheTreeCheckOfTheMergeCommit() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("release")).get("steps"));
+
+    assertThat(steps.indexOf("provenTree")).isPositive().isLessThan(steps.indexOf("gateRelease"));
   }
 
   @Test

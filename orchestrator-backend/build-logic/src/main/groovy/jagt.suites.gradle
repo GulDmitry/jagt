@@ -189,6 +189,13 @@ tasks.register('divergenceRegister', dev.jagt.gradle.divergence.DivergenceRegist
     repository = layout.settingsDirectory
 }
 
+tasks.register('provenTree', dev.jagt.gradle.provenance.ProvenTreeTask) {
+    description = 'Fails unless -Pcommit is a merge whose tree equals its request head tree, green in CI.'
+    group = 'verification'
+    repository = layout.settingsDirectory
+    commit = providers.gradleProperty('commit')
+}
+
 tasks.register('guardsTest',dev.jagt.gradle.guards.GuardsGateTask) {
     description = 'Gates every script in scripts/guards/test/scripts.list: shellcheck, a case file and the contract tags, then the bats cases.'
     group = 'verification'

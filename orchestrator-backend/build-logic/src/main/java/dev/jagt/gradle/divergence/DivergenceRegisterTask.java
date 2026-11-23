@@ -1,8 +1,7 @@
 package dev.jagt.gradle.divergence;
 
-import java.io.ByteArrayOutputStream;
+import dev.jagt.gradle.exec.Commands;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -64,21 +63,7 @@ public abstract class DivergenceRegisterTask extends DefaultTask {
   }
 
   private String run(Path directory, String... command) {
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
-    int exit =
-        getExecOperations()
-            .exec(
-                spec -> {
-                  spec.setWorkingDir(directory.toFile());
-                  spec.commandLine(List.of(command));
-                  spec.setIgnoreExitValue(true);
-                  spec.setStandardOutput(output);
-                  spec.setErrorOutput(new ByteArrayOutputStream());
-                })
-            .getExitValue();
-    if (exit != 0) {
-      throw new GradleException("failed, exit " + exit + ": " + String.join(" ", command));
-    }
-    return output.toString(StandardCharsets.UTF_8);
+    return Commands.output(getExecOperations(), directory, command)
+        .orElseThrow(() -> new GradleException("failed: " + String.join(" ", command)));
   }
 }
