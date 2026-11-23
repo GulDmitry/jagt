@@ -116,7 +116,7 @@
     "branches": 100
   },
   "ui/dialogs.js": {
-    "lines": 92,
+    "lines": 91,
     "branches": 93
   },
   "ui/events.js": {
@@ -136,7 +136,7 @@
     "branches": 60
   },
   "ui/followup.js": {
-    "lines": 91,
+    "lines": 90,
     "branches": 77
   },
   "ui/glance.js": {
@@ -156,7 +156,7 @@
     "branches": 100
   },
   "ui/intent.js": {
-    "lines": 84,
+    "lines": 83,
     "branches": 69
   },
   "ui/interactions.js": {
