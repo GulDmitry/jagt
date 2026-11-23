@@ -38,6 +38,41 @@ class JagtContainerLifecycleTest {
   }
 
   @Test
+  void containerWithNoPortReadsTheHostPortDockerChoseAndReachesTheBoardThere() {
+    StandShell.Runner shell =
+        (cwd, command, env) ->
+            new StandShell.Result(0, command.contains("port") ? "127.0.0.1:37113\n" : "");
+    StandBoard board = mock(StandBoard.class);
+    StandBoard chosen = mock(StandBoard.class);
+    when(board.at(37113)).thenReturn(chosen);
+    when(chosen.ready()).thenReturn(true);
+
+    JagtContainer container =
+        new JagtContainer(dir, 0, board, shell, Map.of(), Duration.ofMinutes(5)).up();
+
+    assertThat(container.port()).isEqualTo(37113);
+    assertThat(container.board()).isSameAs(chosen);
+  }
+
+  @Test
+  void containerWhoseComposePublishesNoPortIsTakenDownAndFailsTheStartWithComposesOutput() {
+    List<List<String>> seen = new ArrayList<>();
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(command.contains("port") ? 1 : 0, "no port published");
+        };
+    JagtContainer container =
+        new JagtContainer(dir, 0, mock(StandBoard.class), shell, Map.of(), Duration.ofMinutes(5));
+
+    assertThatThrownBy(container::up)
+        .isInstanceOf(StandFailure.class)
+        .hasMessageContaining("published no host port")
+        .hasMessageContaining("no port published");
+    assertThat(seen).anyMatch(command -> command.contains("down"));
+  }
+
+  @Test
   void containerThatComposeCannotStartIsTakenDownAndTheStartFailsWithComposesOutput() {
     List<List<String>> seen = new ArrayList<>();
     StandShell.Runner shell =

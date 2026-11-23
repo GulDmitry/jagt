@@ -20,6 +20,25 @@ class StandEngineTest {
       Map.of(StandEngine.HOST, launch, StandEngine.COMPOSE, launch, StandEngine.KIND, launch);
 
   @Test
+  void composeEngineAsksDockerForTheHostPortAndHostEngineProbesOne() {
+    StandEngine compose =
+        new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launchers);
+    StandEngine host = new StandEngine(StandEngine.HOST, tool -> true, name -> null, launchers);
+
+    assertThat(compose.hostPort()).isZero();
+    assertThat(host.hostPort()).isGreaterThan(1023);
+  }
+
+  @Test
+  void publicBoardPortIsTheProbedOneElseTheImagesOwn() {
+    StandEngine engine =
+        new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launchers);
+
+    assertThat(engine.publicPort(8123)).isEqualTo(8123);
+    assertThat(engine.publicPort(0)).isEqualTo(8290);
+  }
+
+  @Test
   void skipsWithOneSentenceWhenDockerIsAbsent(@TempDir Path root) {
     StandEngine engine =
         new StandEngine(StandEngine.COMPOSE, tool -> false, name -> null, launchers);
