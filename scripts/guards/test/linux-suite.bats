@@ -29,12 +29,17 @@ EOF
 
 @test "the container is capped to the runner's size" {
   run "$script" test
-  grep -q -- '--cpus 4 --memory 16g --memory-swap 16g' "$DOCKER_LOG"
+  grep -q -- '--cpus 0.8 --memory 16g --memory-swap 16g' "$DOCKER_LOG"
 }
 
-@test "a host with fewer CPUs than the runner caps the container to the host" {
-  FAKE_CPUS=2 run "$script" test
-  grep -q -- '--cpus 2 ' "$DOCKER_LOG"
+@test "a host with fewer CPUs than the quota caps the container to the host" {
+  FAKE_CPUS=0.5 run "$script" test
+  grep -q -- '--cpus 0.5 ' "$DOCKER_LOG"
+}
+
+@test "the gate keeps the runner's concurrency whatever the container's CPU quota" {
+  run "$script" stand
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--max-workers=4 -PstandParallelism=4 -Pe2eForks=2 -PpitestThreads=2'
 }
 
 @test "a host with less memory than the runner caps the container below the host, warned, not refused" {
