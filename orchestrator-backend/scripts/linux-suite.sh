@@ -10,11 +10,12 @@
 #   3. `boardTest`       — the web board in a headless Chromium (Playwright's own, downloaded on first run)
 #   4. `linuxDriverTest` — the Linux DRIVERS against real binaries: notify-send over a session D-Bus with a
 #                          notification daemon, and kitty on an Xvfb display answering remote control
+#   5. `guardsTest`      — shellcheck and bats over the contributor guards in scripts/guards
 #
 # What it CANNOT answer, and therefore does not pretend to: a code viewer, the macOS AppleScript raise,
 # the real agent CLI, a live code host or tracker.
 #
-# Usage: scripts/linux-suite.sh [gradle-task…]      (default: all four above)
+# Usage: scripts/linux-suite.sh [gradle-task…]      (default: all five above)
 # Requires: Docker. Leaves nothing on the host but a Gradle cache volume and the image.
 set -euo pipefail
 
@@ -23,7 +24,7 @@ BACKEND_DIR="$REPO_ROOT/orchestrator-backend"
 IMAGE=jagt-linux-suite
 CACHE_VOLUME=jagt-gradle-home
 TASKS=("$@")
-if [[ ${#TASKS[@]} -eq 0 ]]; then TASKS=(test e2eTest boardTest linuxDriverTest); fi
+if [[ ${#TASKS[@]} -eq 0 ]]; then TASKS=(test e2eTest boardTest linuxDriverTest guardsTest); fi
 
 command -v docker >/dev/null || { echo "docker is required"; exit 2; }
 

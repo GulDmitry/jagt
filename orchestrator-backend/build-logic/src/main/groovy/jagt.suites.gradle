@@ -172,6 +172,24 @@ tasks.register('linuxDriverTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+tasks.register('guardsTest', Exec) {
+    description = 'Runs shellcheck and the bats cases over the contributor guards in scripts/guards.'
+    group = 'verification'
+    def repo = layout.settingsDirectory.dir('..').asFile
+    workingDir = repo
+    commandLine 'sh', '-c', 'shellcheck scripts/guards/*.sh orchestrator-backend/scripts/ci-local.sh && bats scripts/guards/test'
+    onlyIf { task ->
+        List<String> missing = ['shellcheck', 'bats', 'jq'].findAll { binary ->
+            !(System.getenv('PATH') ?: '').split(File.pathSeparator).any { dir -> dir && new File(dir, binary).canExecute() }
+        }
+        if (missing) {
+            task.logger.lifecycle("Skipping guardsTest — missing: ${missing.join(', ')}.")
+        }
+        missing.isEmpty()
+    }
+    shouldRunAfter tasks.named('test')
+}
+
 tasks.register('e2eTest', Test) {
     description = 'Runs the end-to-end task-flow matrix (needs git + tmux; creates and removes throwaway worktrees).'
     group = 'verification'

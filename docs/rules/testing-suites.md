@@ -26,6 +26,7 @@ and `nightly` logs its delay. Times are wall clock, dated in `measurements.md`.
 | `boardTest` | the board in Chromium: cards, verbs, tabs, reports | Playwright | ~1.5 min |
 | `e2eTest` | a task's flow through real git, tmux and a scripted agent | git, tmux | ~2 min |
 | `linuxDriverTest` | the Linux terminal and desktop drivers | a Linux display | unknown |
+| `guardsTest` | each contributor guard refuses what it names and passes what it must | shellcheck, bats, jq | unknown |
 | `standTest -Pmodelfree` | recorded task flows replayed in jagt's container, and the server scenarios (start, login, a task to review, MCP door, `/state` p95) on `-Pengine=host`, `compose` or `kind`; JVM kill, container or pod replacement and an image upgrade on the old volume | docker, kind, kubectl | see `measurements.md` |
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |
