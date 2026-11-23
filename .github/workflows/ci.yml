@@ -204,7 +204,9 @@ jobs:
         with:
           name: stand-${{ matrix.engine }}-evidence
           retention-days: 14
-          path: orchestrator-backend/stand/build/stand/failed
+          path: |
+            orchestrator-backend/stand/build/stand/failed
+            orchestrator-backend/stand/build/test-results/standTest
 
   install:
     name: install (${{ matrix.os }})

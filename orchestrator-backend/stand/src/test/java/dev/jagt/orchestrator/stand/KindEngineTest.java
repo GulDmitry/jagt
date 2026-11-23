@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -112,6 +113,32 @@ class KindEngineTest {
     assertThat(seen).anyMatch(command -> command.contains("pod/seed"));
     assertThat(Files.readString(root.resolve("seed.yml")))
         .contains("terminationGracePeriodSeconds: 0");
+  }
+
+  @Test
+  void requestComesFromThePodsOwnAddressNotFromTheLoopbackPortForward() {
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          return new StandShell.Result(0, command.contains("get") ? "10.244.0.7" : "401");
+        };
+    KindEngine kind =
+        new KindEngine(
+            root,
+            9000,
+            board,
+            shell,
+            (where, local) -> forwarding,
+            manifest,
+            Duration.ofMinutes(5));
+
+    int status = kind.fromOutside("/mcp", Map.of("X-Probe", "1"), "{}");
+
+    assertThat(status).isEqualTo(401);
+    assertThat(seen.getLast())
+        .containsSubsequence("kubectl", "exec", "deployment/jagt", "--", "curl")
+        .contains("Origin: http://10.244.0.7:8290", "X-Probe: 1", "--data", "{}")
+        .endsWith("http://10.244.0.7:8290/mcp");
   }
 
   @Test

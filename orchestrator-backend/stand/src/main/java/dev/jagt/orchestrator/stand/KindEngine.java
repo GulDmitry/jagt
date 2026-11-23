@@ -14,6 +14,8 @@ public final class KindEngine implements UnitEngine {
 
   private static final Path MANIFEST =
       Path.of(System.getProperty("stand.repo", "../..")).resolve("examples/kubernetes.yml");
+  private static final @Nullable String ARCHIVE = System.getProperty("stand.imageArchive");
+  private static final int JAGT_PORT = 8290;
   private static final String BUILT = "jagt-stand";
   private static final String RUN = "jagt-stand:run";
   private static final String NEXT = "jagt-stand:next";
@@ -47,7 +49,12 @@ public final class KindEngine implements UnitEngine {
     public Process open(Path dir, int local) throws IOException {
       ProcessBuilder builder =
           new ProcessBuilder(
-                  "kubectl", "port-forward", "--address", "127.0.0.1", "svc/jagt", local + ":8290")
+                  "kubectl",
+                  "port-forward",
+                  "--address",
+                  "127.0.0.1",
+                  "svc/jagt",
+                  local + ":" + JAGT_PORT)
               .directory(dir.toFile())
               .redirectErrorStream(true)
               .redirectOutput(dir.resolve("forward.log").toFile());
@@ -98,7 +105,7 @@ public final class KindEngine implements UnitEngine {
     try {
       ok("create the cluster", "kind", "create", "cluster", "--name", cluster(), "--wait", "180s");
       ok("tag the image", "docker", "tag", BUILT, RUN);
-      load(RUN);
+      loadRun();
       Files.writeString(root.resolve("kubernetes.yml"), applied(Files.readString(manifest)));
       Files.writeString(root.resolve("seed.yml"), seedPod());
       ok("apply the manifest", "kubectl", "apply", "-f", root.resolve("kubernetes.yml").toString());
@@ -125,6 +132,24 @@ public final class KindEngine implements UnitEngine {
   @Override
   public Path data() {
     return Path.of("/data");
+  }
+
+  @Override
+  public int fromOutside(String path, Map<String, String> headers, @Nullable String body) {
+    String ip =
+        run("kubectl", "get", "pod", "-l", "app=jagt", "-o", "jsonpath={.items[0].status.podIP}")
+            .output()
+            .strip();
+    String base = "http://" + ip + ":" + JAGT_PORT;
+    List<String> curl =
+        new ArrayList<>(List.of("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "-H"));
+    curl.add("Origin: " + base);
+    headers.forEach((name, value) -> curl.addAll(List.of("-H", name + ": " + value)));
+    if (body != null) {
+      curl.addAll(List.of("--data", body));
+    }
+    curl.add(base + path);
+    return Integer.parseInt(exec(curl.toArray(String[]::new)).output().strip());
   }
 
   @Override
@@ -347,6 +372,14 @@ public final class KindEngine implements UnitEngine {
       throw new StandFailure(manifest + " no longer holds " + from);
     }
     return text.replace(from, to);
+  }
+
+  private void loadRun() {
+    if (ARCHIVE != null && Files.exists(Path.of(ARCHIVE))) {
+      ok("load " + RUN, "kind", "load", "image-archive", ARCHIVE, "--name", cluster());
+    } else {
+      load(RUN);
+    }
   }
 
   private void load(String image) {

@@ -195,8 +195,8 @@ class ServerStandTest {
             () -> {
               int status =
                   server
-                      .board()
-                      .anonymously(
+                      .engine()
+                      .fromOutside(
                           "/mcp",
                           Map.of(
                               "Content-Type",
@@ -219,8 +219,8 @@ class ServerStandTest {
 
               int status =
                   server
-                      .board()
-                      .anonymously(
+                      .engine()
+                      .fromOutside(
                           "/mcp", Map.of("Content-Type", JSON, "X-Jagt-Master", token), TOOLS);
 
               assertThat(status).isEqualTo(200);

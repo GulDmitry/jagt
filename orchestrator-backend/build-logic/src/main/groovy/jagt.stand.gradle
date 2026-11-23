@@ -54,6 +54,11 @@ tasks.register('standTest', Test) {
     systemProperty 'stand.report', standReport.absolutePath
     // A run starts the staged jar, so a replay checks the frame as built now.
     dependsOn ':stageJar', 'standImage'
+    // kind clusters import this one archive instead of each saving the image again.
+    if (standEngine == 'kind') {
+        dependsOn 'standImageArchive'
+        systemProperty 'stand.imageArchive', layout.buildDirectory.file('stand/image.tar').get().asFile.absolutePath
+    }
     doFirst { standReport.delete() }
     testLogging { showStandardStreams = true; exceptionFormat = 'full' }
     outputs.upToDateWhen { false }
@@ -78,6 +83,18 @@ tasks.register('standImage', Exec) {
         }
         !standHost && standDocker
     }
+}
+
+tasks.register('standImageArchive', Exec) {
+    description = 'Saves jagt-stand:run once, for every kind cluster to import.'
+    group = 'verification'
+    dependsOn 'standImage'
+    def archive = layout.buildDirectory.file('stand/image.tar').get().asFile
+    outputs.file archive
+    outputs.upToDateWhen { false }
+    doFirst { archive.parentFile.mkdirs() }
+    commandLine 'sh', '-c', 'docker tag jagt-stand jagt-stand:run && docker save -o "$0" jagt-stand:run', archive.absolutePath
+    onlyIf { !standHost && standDocker }
 }
 
 tasks.register('standImageRemove', Exec) {
