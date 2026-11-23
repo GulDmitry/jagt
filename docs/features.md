@@ -113,7 +113,7 @@
 - **Says why** — A session's report and a new task each give one sentence why, read in the step's hover.
   [spec](../openspec/specs/protocol/spec.md#requirement-a-request-says-why)
 
-## Review · [spec](../openspec/specs/review/spec.md)
+## Review · [spec](../openspec/specs/review/spec.md) · [code review](features/code-review.md)
 - **Review threads** — Each is fixed, declined with a why, or asked. [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
 - **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
   [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)

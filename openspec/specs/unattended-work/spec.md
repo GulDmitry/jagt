@@ -16,9 +16,9 @@ Rounds: [review](../review/spec.md).
 - **THEN** it runs the sweep
 - **AND** a round that answered every comment and changed no code is not your move: the open threads are the reviewer's
 
-### Requirement: Detection is deterministic and the one host write is a re-run
+### Requirement: Detection is deterministic and a host write is named
 Detection SHALL be deterministic (a cadence, a status, an open request), a new trigger's too.
-The one write to a code host is the re-run of a pipeline the host says died on infrastructure: [infra-wait](../infra-wait/spec.md).
+A host write is a re-run after an infrastructure death ([infra-wait](../infra-wait/spec.md)) or a note ([code-review](../code-review/spec.md)).
 
 #### Scenario: A new trigger
 - **WHEN** a trigger is added to the poll

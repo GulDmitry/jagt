@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class RoleWords {
@@ -63,8 +64,14 @@ public final class RoleWords {
     String words =
         CAMEL.matcher(code).replaceAll("$1 $2").replace('_', ' ').toLowerCase(Locale.ROOT);
     return ids.stream()
-        .filter(id -> Pattern.compile("\\b" + Pattern.quote(id) + "\\b").matcher(words).find())
+        .filter(id -> wordsOf(id).matcher(words).find())
         .map(id -> file.toString().replaceFirst("^\\.\\./", "") + " " + id);
+  }
+
+  private static Pattern wordsOf(String id) {
+    String joined =
+        Stream.of(id.split("-")).map(Pattern::quote).collect(Collectors.joining("[- ]"));
+    return Pattern.compile("\\b" + joined + "\\b");
   }
 
   private static Stream<Path> files(Path root, String... endings) {

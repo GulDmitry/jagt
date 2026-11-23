@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-25, recorded retroactively (what commit `2784fe9f` proves).
+Amended by [0231](0231-a-code-reviewer-role-posts-notes-on-requests.md): the brief gains an `unless` column.
 
 ## Context
 

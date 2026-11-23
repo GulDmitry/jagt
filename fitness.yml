@@ -42,8 +42,8 @@ technical:
       public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 84, decision: "0176" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
       startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 33, decision: "0176" }
-      roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 4, decision: "0176" }
-      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 52, decision: "0216" }
+      roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }
+      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 53, decision: "0231" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
       rule-lines: { engine: scan, glob: "../docs/rules/*.md", per: file, measure: lines, governs: size, max: 100 }
       # each exception ends when its class is cut to 1000 lines or less, at a cut of its own

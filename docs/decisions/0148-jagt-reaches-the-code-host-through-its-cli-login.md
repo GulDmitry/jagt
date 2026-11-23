@@ -6,6 +6,7 @@
 
 Accepted 2026-11-07. Supersedes in part [0003](0003-tracker-and-code-host-are-read-through-the-agents-own-mcp.md)
 and [0020](0020-jagt-holds-no-token-of-its-own.md) for code-host reads and writes.
+Amended by [0231](0231-a-code-reviewer-role-posts-notes-on-requests.md): a note is the seventh write.
 
 ## Context
 

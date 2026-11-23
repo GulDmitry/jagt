@@ -45,7 +45,9 @@ public final class RoleModules {
               .map(prefix -> ROOT + prefix)
               .toList(),
           "triage",
-          List.of(ROOT + "job.triage."));
+          List.of(ROOT + "job.triage."),
+          "code-reviewer",
+          List.of());
 
   public static final List<String> STOP_KIND =
       Stream.of(
