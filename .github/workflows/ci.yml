@@ -140,6 +140,11 @@ jobs:
             orchestrator-backend/build/reports/tests/e2eTest
             orchestrator-backend/build/reports/tests/linuxDriverTest
             orchestrator-backend/build/reports/tests/boardTest
+            orchestrator-backend/build/reports/tests/boardTestContainer
+            orchestrator-backend/build/test-results/e2eTest
+            orchestrator-backend/build/test-results/linuxDriverTest
+            orchestrator-backend/build/test-results/boardTest
+            orchestrator-backend/build/test-results/boardTestContainer
             /tmp/jagt-xvfb.log
             /tmp/jagt-dunst.log
 

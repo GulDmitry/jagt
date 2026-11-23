@@ -117,6 +117,10 @@ tasks.register('boardTest', Test) {
     doFirst { coverageDump.deleteDir() }
     finalizedBy 'boardCoverage'
     shouldRunAfter tasks.named('test')
+    if (System.getenv('JAGT_BOARD_URL')) { // the container run must not overwrite the board run's reports
+        reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/boardTestContainer')
+        reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/boardTestContainer')
+    }
 }
 
 tasks.register('boardCoverage', Exec) {

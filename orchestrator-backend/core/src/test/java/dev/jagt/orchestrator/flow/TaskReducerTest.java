@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.review.RoundTrail;
+import dev.jagt.orchestrator.task.stop.StopTriage;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
@@ -402,5 +403,25 @@ class TaskReducerTest {
     TaskState reopened = reducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
     assertThat(reopened.work().stopped()).isFalse();
+  }
+
+  @Test
+  void keepsTheFirstReadWhenLaterReadOfTheSameStopArrives() {
+    StopTriage first =
+        new StopTriage(
+            StopTriage.Who.JAGT,
+            "ships counted past a merge",
+            "H",
+            StopTriage.Lift.SAFE,
+            "merged",
+            "");
+    TaskState triaged =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships").withTriage(first));
+
+    TaskState later = reducer.triaged(triaged, "SHIPS@2", StopTriage.failed("the read timed out"));
+
+    assertThat(later.work().stop()).isEqualTo(triaged.work().stop());
   }
 }

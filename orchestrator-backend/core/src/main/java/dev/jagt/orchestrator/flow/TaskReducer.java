@@ -69,7 +69,9 @@ public final class TaskReducer {
   /** {@code task} with {@code read} on its stop, where that stop is the one keyed {@code key}. */
   public TaskState triaged(TaskState task, String key, StopTriage read) {
     TaskStop stop = task.work().stop();
-    return stop != null && stop.key().equals(key) ? task.withStop(stop.withTriage(read)) : task;
+    return stop != null && stop.triage() == null && stop.key().equals(key)
+        ? task.withStop(stop.withTriage(read))
+        : task;
   }
 
   private static @Nullable ModelTier lowered(TaskState task) {
