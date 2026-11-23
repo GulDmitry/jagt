@@ -38,3 +38,14 @@ test("resized sends the screen's columns and rows", () => {
     rows: 40,
   });
 });
+
+test("streamUrl asks for an empty task when the target names neither", () => {
+  assert.equal(
+    streamUrl(
+      { protocol: "http:", host: "localhost:8290" },
+      {},
+      { cols: 80, rows: 24 },
+    ),
+    "ws://localhost:8290/api/windows/stream?task=&cols=80&rows=24",
+  );
+});

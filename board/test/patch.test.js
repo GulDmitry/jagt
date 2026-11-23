@@ -98,3 +98,50 @@ test("textBeforeHasTheDeletedLine whenAHunkOnlyDeletes", () => {
 
   assert.equal(original("a\nb", hunks), "a\ny\nb");
 });
+
+const WITH_LITERAL_MARKERS = [
+  "diff --git a/n.txt b/n.txt",
+  "--- a/n.txt",
+  "+++ b/n.txt",
+  "@@ -10,20 +30,40 @@",
+  " keep",
+  "+@@ -1 +1 @@",
+  "+diff --git a/x b/x",
+  "\\ No newline at end of file",
+].join("\n");
+
+test("markerLookingContentIsContent whenAnAddedLineQuotesAHunkOrFileHeader", () => {
+  const [one, ...others] = files(WITH_LITERAL_MARKERS);
+
+  assert.equal(others.length, 0);
+  assert.equal(one.added, 2);
+  assert.deepEqual(
+    one.hunks.map(({ start, count, lines }) => [start, count, lines.length]),
+    [[30, 40, 3]],
+  );
+});
+
+test("aFileIsNotGone whenItsPatchHasNoTargetLine", () => {
+  const [one] = files("diff --git a/img.png b/img.png\nBinary files differ");
+
+  assert.deepEqual(one, {
+    path: "img.png",
+    added: 0,
+    removed: 0,
+    hunks: [],
+    gone: false,
+  });
+});
+
+test("theTargetLineNamesThePath whenTheDiffLineHoldsASpaceBeforeASlash", () => {
+  const [one] = files(
+    "diff --git a/dir b/x.txt b/dir b/x.txt\n--- a/dir b/x.txt\n+++ b/dir b/x.txt",
+  );
+
+  assert.equal(one.path, "dir b/x.txt");
+  assert.equal(one.gone, false);
+});
+
+test("textBeforeTheFirstFileIsIgnored whenAPreambleLooksLikeATarget", () => {
+  assert.deepEqual(files("+++ b/preamble.txt\n"), []);
+});

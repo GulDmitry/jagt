@@ -196,3 +196,14 @@ test("historyLabelKeepsTheOrigin whenAnotherOriginCarriesARole", () => {
     "auto-review",
   );
 });
+
+test("onlyAHeaderIsMuted whenALineMerelyContainsDiffWords", async () => {
+  const { diffLineClass } = await import("../core/format.js");
+
+  assert.deepEqual(
+    ["x diff here", "  index of", "a @@ b", "--- a/f", "@@ -1 +1 @@"].map(
+      diffLineClass,
+    ),
+    ["", "", "", "muted", "muted"],
+  );
+});

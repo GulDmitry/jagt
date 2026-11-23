@@ -63,3 +63,12 @@ test("nextRequiredSkipsTheCursor whenWaitingTasksLieOnBothSides", () => {
 test("noRequiredTarget whenTheListIsEmpty", () => {
   assert.equal(nextRequiredTarget([], undefined), undefined);
 });
+
+test("firstWaitingTaskIsCurrent whenNothingIsLinkedAndATaskHasANullAlias", () => {
+  const list = /** @type {never[]} */ ([
+    { id: "a", alias: null, attention: "NONE" },
+    { id: "b", alias: "p2", attention: "REQUIRED" },
+  ]);
+
+  assert.equal(current(list, null, null)?.id, "b");
+});

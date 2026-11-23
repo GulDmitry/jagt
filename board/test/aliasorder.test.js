@@ -36,3 +36,12 @@ test("inputIsLeftUntouched whenTasksAreSortedByAlias", () => {
     ["a", "b"],
   );
 });
+
+test("orderIsKept whenTwoTasksHaveNoAlias", () => {
+  const tasks = [{ id: "a" }, { id: "b" }];
+
+  assert.deepEqual(
+    byAlias(/** @type {never} */ (tasks)).map((task) => task.id),
+    ["a", "b"],
+  );
+});
