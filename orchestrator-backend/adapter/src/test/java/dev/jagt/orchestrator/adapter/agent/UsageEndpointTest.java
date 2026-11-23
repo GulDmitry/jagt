@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
@@ -136,12 +137,15 @@ class UsageEndpointTest {
 
   @Test
   void refusesWithoutSendingWhenNothingListens() throws Exception {
-    int closedPort;
-    try (var socket = new java.net.ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
-      closedPort = socket.getLocalPort();
-    }
+    UsageEndpoint.Reply reply;
+    try (var boundNotListening = new Socket()) {
+      boundNotListening.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
 
-    var reply = endpoint.get(URI.create("http://127.0.0.1:" + closedPort + "/usage"), Map.of());
+      reply =
+          endpoint.get(
+              URI.create("http://127.0.0.1:" + boundNotListening.getLocalPort() + "/usage"),
+              Map.of());
+    }
 
     assertThat(reply)
         .isInstanceOfSatisfying(
