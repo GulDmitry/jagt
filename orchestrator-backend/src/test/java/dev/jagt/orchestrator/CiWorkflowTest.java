@@ -268,16 +268,16 @@ class CiWorkflowTest {
                 Objects.requireNonNull(CiWorkflow.nightlyJobs().get("pitest")).get("strategy"));
     Map<?, ?> matrix = (Map<?, ?>) Objects.requireNonNull(strategy.get("matrix"));
     List<?> shards = (List<?>) Objects.requireNonNull(matrix.get("include"));
-    Set<String> projects = new HashSet<>(List.of(":pitest"));
+    Set<String> projects = new HashSet<>(List.of(":"));
     Matcher included =
         Pattern.compile("(?m)^include '([^']+)'").matcher(SourceRoots.read(SETTINGS));
     while (included.find()) {
-      projects.add(":" + included.group(1) + ":pitest");
+      projects.add(":" + included.group(1));
     }
 
     Set<String> tasks =
         shards.stream()
-            .map(shard -> String.valueOf(((Map<?, ?>) shard).get("task")))
+            .map(shard -> String.valueOf(((Map<?, ?>) shard).get("path")))
             .collect(Collectors.toSet());
 
     assertThat(SourceRoots.read(PITEST))
@@ -286,6 +286,8 @@ class CiWorkflowTest {
     assertThat(strategy.get("fail-fast")).isEqualTo(false);
     assertThat(shards).hasSameSizeAs(tasks);
     assertThat(tasks).isEqualTo(projects);
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
+        .contains("./gradlew --no-daemon gateMutation -PmutationProject=${{ matrix.path }}");
   }
 
   @Test

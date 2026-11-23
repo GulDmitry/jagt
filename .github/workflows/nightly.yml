@@ -120,14 +120,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {project: root, task: ':pitest', minutes: 150}
-          - {project: adapter, task: ':adapter:pitest', minutes: 150}
-          - {project: core, task: ':core:pitest', minutes: 120}
-          - {project: usecase, task: ':usecase:pitest', minutes: 150}
-          - {project: surface, task: ':surface:pitest', minutes: 90}
-          - {project: stand, task: ':stand:pitest', minutes: 60}
-          - {project: statechart, task: ':statechart:pitest', minutes: 60}
-          - {project: mutation-scope, task: ':mutation-scope:pitest', minutes: 60}
+          - {project: root, path: ':', minutes: 150}
+          - {project: adapter, path: ':adapter', minutes: 150}
+          - {project: core, path: ':core', minutes: 120}
+          - {project: usecase, path: ':usecase', minutes: 150}
+          - {project: surface, path: ':surface', minutes: 90}
+          - {project: stand, path: ':stand', minutes: 60}
+          - {project: statechart, path: ':statechart', minutes: 60}
+          - {project: mutation-scope, path: ':mutation-scope', minutes: 60}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -138,7 +138,7 @@ jobs:
         with:
           cache-provider: external
       - run: sudo scripts/linux-test-deps.sh
-      - run: ./gradlew --no-daemon ${{ matrix.task }}
+      - run: ./gradlew --no-daemon gateMutation -PmutationProject=${{ matrix.path }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: nightly-pitest-${{ matrix.project }}-reports
