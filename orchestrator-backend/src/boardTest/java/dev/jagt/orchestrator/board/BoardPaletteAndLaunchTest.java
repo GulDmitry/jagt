@@ -224,7 +224,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void keepsEverythingTypedWhenTheLaunchCreatedNoTask() {
+  void showsTheRefusalBesideStartAndKeepsEverythingTypedWhenTheLaunchCreatedNoTask() {
     when(launcher.launch(any()))
         .thenReturn(
             Launched.refused("error: read failed: ABC-9 (cause in the log) — no task created"));
@@ -237,10 +237,36 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     page.locator("#notes").fill("start with the failing test");
     page.locator("#launch button[type=submit]").click();
 
-    assertThat(page.locator("#toasts .toast")).containsText("no task created");
+    assertThat(page.locator("#launch-state")).containsText("no task created");
+    assertThat(page.locator("#launch-state")).hasClass(Pattern.compile("\\bbad\\b"));
+    assertThat(page.locator("#launch-dialog")).hasAttribute("open", "");
+    assertThat(page.locator("#launch-choices")).isHidden();
     assertThat(page.locator("#ref")).hasValue("ABC-9");
     assertThat(page.locator("#base-branch")).hasValue("feature/parent");
     assertThat(page.locator("#notes")).hasValue("start with the failing test");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"recreate", "resume"})
+  void offersToRecreateOrResumeWhenTheBranchExistsAndEachOneStartsTheTask(String strategy) {
+    when(launcher.launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy("fresh")))
+        .thenReturn(
+            Launched.refused(
+                Launched.Reason.BRANCH_EXISTS, "branch 'ABC-9' already exists in alpha"));
+    when(launcher.launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy(strategy)))
+        .thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+
+    Page page = openLiveBoard();
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
+    page.locator("#launch button[type=submit]").click();
+
+    assertThat(page.locator("#launch-state")).containsText("already exists in alpha");
+    page.locator("#launch-" + strategy).click();
+
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    assertThat(page.locator("#launch-dialog")).not().hasAttribute("open", "");
   }
 
   @Test

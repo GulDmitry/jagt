@@ -14,7 +14,11 @@ public class Refusal extends IllegalArgumentException {
      * What jagt already holds refuses it — a ceiling, a taken name, a status; resending will not
      * pass.
      */
-    STATE
+    STATE,
+    /**
+     * A start named a branch that a previous run left; the caller may choose what to do with it.
+     */
+    BRANCH_EXISTS
   }
 
   private final Code code;

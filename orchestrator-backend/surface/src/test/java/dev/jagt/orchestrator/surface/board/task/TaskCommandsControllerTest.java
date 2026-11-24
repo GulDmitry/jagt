@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Level;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
@@ -16,6 +17,7 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.surface.board.filter.RefusedRequests;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import org.junit.jupiter.api.Test;
 
 class TaskCommandsControllerTest {
@@ -91,6 +93,37 @@ class TaskCommandsControllerTest {
         .isInstanceOfSatisfying(
             Refusal.class, refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
         .hasMessage("error: read failed: ABC-42");
+  }
+
+  @Test
+  void namesBranchExistsRefusalSoThePopUpCanOfferRecreateAndResume() {
+    LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo");
+    when(launcher.launch(posted))
+        .thenReturn(
+            Launched.refused(Launched.Reason.BRANCH_EXISTS, "branch 'ABC-42' already exists"));
+
+    assertThatThrownBy(() -> api.launch(posted))
+        .isInstanceOfSatisfying(
+            Refusal.class,
+            refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.BRANCH_EXISTS));
+  }
+
+  @Test
+  void logsEveryRefusedStartOnceAsWarningWithItsReason() {
+    LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo");
+    when(launcher.launch(posted))
+        .thenReturn(
+            Launched.refused(Launched.Reason.BRANCH_EXISTS, "branch 'ABC-42' already exists"));
+
+    try (FakeLogCapture log = new FakeLogCapture(TaskCommandsController.class)) {
+      assertThatThrownBy(() -> api.launch(posted)).isInstanceOf(Refusal.class);
+
+      assertThat(log.events()).hasSize(1);
+      assertThat(log.events().getFirst().getLevel()).isEqualTo(Level.WARN);
+      assertThat(log.events().getFirst().getKeyValuePairs())
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("ref=ABC-42", "project=demo", "cause=branch_exists");
+    }
   }
 
   @Test
