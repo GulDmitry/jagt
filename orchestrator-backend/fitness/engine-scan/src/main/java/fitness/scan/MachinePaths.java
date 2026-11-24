@@ -18,7 +18,8 @@ final class MachinePaths {
 
   static Pattern of(String home, String... temporaries) {
     List<String> paths =
-        Stream.concat(Stream.of(home), Stream.of(temporaries).filter(MachinePaths::deep))
+        Stream.concat(Stream.of(home), Stream.of(temporaries))
+            .filter(MachinePaths::deep)
             .map(path -> path.replaceAll("[/\\\\]+$", ""))
             .filter(path -> !path.isEmpty())
             .distinct()
@@ -35,11 +36,11 @@ final class MachinePaths {
             .distinct()
             .map(Pattern::quote)
             .reduce((left, right) -> left + "|" + right)
-            .orElseThrow());
+            .orElse("(?!)"));
   }
 
   private static boolean deep(String path) {
-    return Path.of(path).getNameCount() > 1;
+    return Stream.of(path.split("[/\\\\]+")).filter(name -> !name.isEmpty()).count() > 1;
   }
 
   private static String real(String path) {
