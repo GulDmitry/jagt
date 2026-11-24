@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: ci-local.sh [job...]   (jobs: test heavy stand install install-macos audit nightly-*; nightly = every nightly-*; default: the PR jobs)
+# Usage: ci-local.sh [job...]   (jobs: test heavy stand stand-kind install install-macos audit nightly-*; nightly = every nightly-*; default: the PR jobs)
 # Runs a pull request's CI jobs over the tree as it stands: each Linux job's gate in a container (linux-suite.sh),
 # install-macos's natively. Only the argument-free run, green, records the tree's hash in the git dir;
 # ci-local.greens keeps every one, which `./gradlew divergenceRegister` reads against CI's red runs.
@@ -20,7 +20,7 @@ if [ -n "$untracked" ]; then
 fi
 wip=$(git stash create)
 tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
-jobs=${*:-test heavy stand install install-macos audit}
+jobs=${*:-test heavy stand stand-kind install install-macos audit}
 linux=; macos=; images=
 nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" "$(dirname "$0")/linux-suite.sh")
 expanded=
