@@ -23,7 +23,7 @@ class RuntimeThreadsTest {
 
   @Test
   void autoReviewSweepsRunOnTheirOwnDaemonThread() throws Exception {
-    ExecutorService sweeps = (ExecutorService) wiring.autoReviewSweeps();
+    ExecutorService sweeps = (ExecutorService) wiring.autoReviewSweeps(); // allowed: 0237
 
     Thread thread = sweeps.submit(Thread::currentThread).get();
 
@@ -34,7 +34,7 @@ class RuntimeThreadsTest {
 
   @Test
   void boardBroadcastsOnItsOwnDaemonThread() throws Exception {
-    ExecutorService broadcaster = wiring.boardBroadcaster();
+    ExecutorService broadcaster = wiring.boardBroadcaster(); // allowed: 0237
 
     Thread thread = broadcaster.submit(Thread::currentThread).get();
 

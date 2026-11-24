@@ -345,7 +345,7 @@ class PasswordLoginRefusalOnTomcatTest {
         cookies.getCookieStore().getCookies().stream()
             .map(HttpCookie::toString)
             .collect(Collectors.joining("; "));
-    CompletableFuture<Integer> closed = new CompletableFuture<>();
+    CompletableFuture<Integer> closed = new CompletableFuture<>(); // allowed: 0237
 
     client
         .newWebSocketBuilder()

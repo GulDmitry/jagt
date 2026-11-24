@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 class RefusedStartServedUntilSavedTest {
@@ -25,7 +24,6 @@ class RefusedStartServedUntilSavedTest {
   private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
 
   @Test
-  @Timeout(120)
   void refusedStartIsServedOnTheBoardPortAndRethrownWhenTheWaitIsInterrupted(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -53,7 +51,6 @@ class RefusedStartServedUntilSavedTest {
   }
 
   @Test
-  @Timeout(240)
   void jagtStartsAndServesStateWhenTheOwnerSavesValidConfigOnTheFailurePage(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");

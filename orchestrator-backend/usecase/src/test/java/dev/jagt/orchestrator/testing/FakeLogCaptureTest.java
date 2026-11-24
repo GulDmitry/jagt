@@ -24,7 +24,7 @@ class FakeLogCaptureTest {
   void twoTestsLoggingThroughOneLoggerAtOnceEachSeeOnlyTheirOwnEvents() throws Exception {
     CyclicBarrier bothCapturing = new CyclicBarrier(2);
     CyclicBarrier bothLogged = new CyclicBarrier(2);
-    ExecutorService threads = Executors.newFixedThreadPool(2);
+    ExecutorService threads = Executors.newFixedThreadPool(2); // allowed: 0237
     try {
       Future<List<String>> seenByFirst =
           threads.submit(() -> {

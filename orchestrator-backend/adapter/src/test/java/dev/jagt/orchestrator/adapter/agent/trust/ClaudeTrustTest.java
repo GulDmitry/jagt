@@ -7,6 +7,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -74,9 +75,9 @@ class ClaudeTrustTest {
             .start();
     assertThat(otherJagt.inputReader().readLine()).isEqualTo("held");
 
+    Path worktree = Path.of("/wt/ABC-42");
     var writing =
-        java.util.concurrent.CompletableFuture.runAsync(
-            () -> ClaudeTrust.accept(configFile, Path.of("/wt/ABC-42")));
+        CompletableFuture.runAsync(() -> ClaudeTrust.accept(configFile, worktree)); // allowed: 0237
 
     assertThatThrownBy(() -> writing.get(1, java.util.concurrent.TimeUnit.SECONDS))
         .isInstanceOf(java.util.concurrent.TimeoutException.class);

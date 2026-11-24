@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 final class FakeSink implements WindowStream.Sink {
 
   private final BlockingQueue<byte[]> outputs = new LinkedBlockingQueue<>();
-  private final CompletableFuture<String> ended = new CompletableFuture<>();
+  private final CompletableFuture<String> ended = new CompletableFuture<>(); // allowed: 0237
 
   @Override
   public void output(byte[] bytes) {
@@ -27,7 +27,7 @@ final class FakeSink implements WindowStream.Sink {
     return bytes == null ? "nothing arrived" : new String(bytes, StandardCharsets.UTF_8);
   }
 
-  CompletableFuture<String> endedWith() {
+  CompletableFuture<String> endedWith() { // allowed: 0237
     return ended;
   }
 }

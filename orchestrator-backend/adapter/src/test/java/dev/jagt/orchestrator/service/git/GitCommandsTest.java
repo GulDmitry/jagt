@@ -60,10 +60,10 @@ class GitCommandsTest {
             mock(WorktreeProcesses.class),
             path -> java.util.Optional.empty(),
             new NoWorktreeContainers());
-    CompletableFuture<String> first = new CompletableFuture<>();
+    CompletableFuture<String> first = new CompletableFuture<>(); // allowed: 0237
     Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
     first.get(5, TimeUnit.SECONDS);
-    CompletableFuture<String> second = new CompletableFuture<>();
+    CompletableFuture<String> second = new CompletableFuture<>(); // allowed: 0237
     Thread.startVirtualThread(() -> second.complete(git.locked(repo, () -> "second")));
 
     String answered = second.get(5, TimeUnit.SECONDS);

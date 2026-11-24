@@ -47,8 +47,8 @@ final class FlowHarness {
     private static Path createWorld() {
       try {
         Path created = Files.createTempDirectory("flow-world");
-        Runtime.getRuntime()
-            .addShutdownHook(new Thread(() -> FileSystemUtils.deleteRecursively(created.toFile())));
+        Runnable cleanup = () -> FileSystemUtils.deleteRecursively(created.toFile());
+        Runtime.getRuntime().addShutdownHook(new Thread(cleanup)); // allowed: 0237
         createThrowawayWorld(created, true);
         E2eWorkspace.createRepositoryWithOrigin(
             created.resolve("web-origin.git"), created.resolve("web"));

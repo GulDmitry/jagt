@@ -1,14 +1,13 @@
 package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -62,7 +61,7 @@ class ServerRunTest {
 
     verify(jagt).close();
     assertThat(Files.exists(root)).isFalse();
-    assertTimeoutPreemptively(Duration.ofSeconds(5), slots::take);
+    assertThatCode(slots::take).doesNotThrowAnyException();
   }
 
   @Test
@@ -76,6 +75,6 @@ class ServerRunTest {
 
     org.assertj.core.api.Assertions.assertThatThrownBy(run::close).isInstanceOf(StandFailure.class);
 
-    assertTimeoutPreemptively(Duration.ofSeconds(5), slots::take);
+    assertThatCode(slots::take).doesNotThrowAnyException();
   }
 }

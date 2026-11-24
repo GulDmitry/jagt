@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -342,11 +343,11 @@ class MasterVerdictsTest {
     state.putTask("ABC-1", reviewPending);
     state.putTask("ABC-2", reviewPending);
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
-        .thenAnswer(told ->
-            CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other))
-                    .get(2, TimeUnit.SECONDS)
-                ? "told"
-                : "not told");
+        .thenAnswer(told -> {
+          Supplier<Boolean> otherUpdate = () -> state.updateTask("ABC-2", other -> other);
+          var running = CompletableFuture.supplyAsync(otherUpdate); // allowed: 0237
+          return running.get(2, TimeUnit.SECONDS) ? "told" : "not told";
+        });
 
     boolean moved = verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting);
 

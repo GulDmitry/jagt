@@ -195,7 +195,7 @@ class FitnessTaskTest {
         """
         plugins { id 'java'; id 'fitness' }
         fitness { file = layout.projectDirectory.file('fitness.yml') }
-        tasks.register('slow') { doLast { Thread.sleep(60000) } }
+        tasks.register('slow') { doLast { Thread.sleep(60000) } } // allowed: 0237
         gradle.taskGraph.whenReady { tasks.slow.timeout = java.time.Duration.ofMillis(300) }
         """);
 

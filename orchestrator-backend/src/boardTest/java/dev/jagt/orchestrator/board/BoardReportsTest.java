@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -264,8 +265,7 @@ class BoardReportsTest extends BoardPageContext {
     Page page = openLiveBoard();
     ask(page, "replies a19");
     assertThat(page.locator("#report-body")).containsText("Renamed it.");
-    java.util.concurrent.CompletableFuture<Runnable> heldOlderAnswer =
-        new java.util.concurrent.CompletableFuture<>();
+    AtomicReference<Runnable> heldOlderAnswer = new AtomicReference<>();
     page.route(
         "**/api/commands/replies**",
         route -> {
@@ -277,7 +277,9 @@ class BoardReportsTest extends BoardPageContext {
             throw new UncheckedIOException(e);
           }
           Runnable answer = () -> route.fulfill(new Route.FulfillOptions().setBody(read));
-          if (!read.contains("The older read.") || !heldOlderAnswer.complete(answer)) {
+          if (read.contains("The older read.") && heldOlderAnswer.get() == null) {
+            heldOlderAnswer.set(answer);
+          } else {
             answer.run();
           }
         });
@@ -288,7 +290,7 @@ class BoardReportsTest extends BoardPageContext {
             .task("ABC-19")
             .orElseThrow()
             .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis()));
-    page.waitForCondition(heldOlderAnswer::isDone);
+    page.waitForCondition(() -> heldOlderAnswer.get() != null);
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The newer read.\n").build();
     state.putTask(
         "ABC-19",
@@ -298,7 +300,7 @@ class BoardReportsTest extends BoardPageContext {
             .withStatus(TaskStatus.REVIEW_PENDING, "newer", System.currentTimeMillis()));
     assertThat(page.locator("#report-body")).containsText("The newer read.");
 
-    page.waitForRequestFinished(() -> heldOlderAnswer.join().run());
+    page.waitForRequestFinished(() -> heldOlderAnswer.get().run());
     page.evaluate("() => new Promise(done => requestAnimationFrame(() => done()))");
 
     org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())

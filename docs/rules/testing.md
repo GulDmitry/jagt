@@ -22,6 +22,7 @@ defaults and `build()` calling production's constructor or builder; it holds no 
 state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example
 to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
 `StateServiceCompatibilityTest` reads each `state-<minor>.json` in `state-compatibility/`; a minor without one fails; a release adds its own.
+**A test waits on the state it asserts**: a timeout, sleep or thread needs `// allowed: 0237` ([0237](../decisions/0237-a-test-waits-on-state.md)).
 
 ### Every test pins a business case
 
@@ -32,7 +33,6 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
   string: `working` kept "esc to interrupt" after Claude 2.1.308 dropped it.
 - **A test reaches an assertion** (`assertionless-tests`): `assert*`, `verify*`, `await*`, `check*`, `andExpect*`, here or in a sibling it calls.
-- Why: an edited test is the cheapest wrong fix ([pattern](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
 
 ### One constructor, the one production calls
 

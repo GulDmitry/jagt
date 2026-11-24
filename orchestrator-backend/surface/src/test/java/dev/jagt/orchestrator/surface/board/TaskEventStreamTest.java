@@ -56,14 +56,16 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 class TaskEventStreamTest {
 
   private final TaskScheduler scheduler = mock(TaskScheduler.class);
-  private final ExecutorService broadcaster = mock(ExecutorService.class);
+  private final ExecutorService broadcaster = mock(ExecutorService.class); // allowed: 0237
   private final ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
   private final ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
   private final TaskEventStream stream =
       new TaskEventStream(new FakeClock(), scheduler, broadcaster);
   private final TaskEventStream spiedStream = spy(stream);
   private final TaskEventStream beatingStream =
-      spy(new TaskEventStream(new FakeClock(), scheduler, Executors.newSingleThreadExecutor()));
+      spy(
+          new TaskEventStream(
+              new FakeClock(), scheduler, Executors.newSingleThreadExecutor())); // allowed: 0237
 
   @Test
   void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
@@ -278,7 +280,7 @@ class TaskEventStreamTest {
         new TaskEventStream(
             Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
             scheduler,
-            Executors.newSingleThreadExecutor());
+            Executors.newSingleThreadExecutor()); // allowed: 0237
 
     stream.open();
 

@@ -129,19 +129,18 @@ class ReviewSweepServiceTest {
               new ReviewSweepService.SweepResult(
                   ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
         });
-    Thread contender =
-        new Thread(
-            () -> {
-              try {
-                firstSweepIsInside.await(5, TimeUnit.SECONDS);
-                fromOtherThread.set(sweep.sweep("ABC-1"));
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              } finally {
-                secondSweepReturned.countDown();
-              }
-            },
-            "contending-sweep");
+    Runnable contending =
+        () -> {
+          try {
+            firstSweepIsInside.await(5, TimeUnit.SECONDS);
+            fromOtherThread.set(sweep.sweep("ABC-1"));
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          } finally {
+            secondSweepReturned.countDown();
+          }
+        };
+    Thread contender = new Thread(contending, "contending-sweep"); // allowed: 0237
 
     contender.start();
     sweep.sweep("ABC-1");

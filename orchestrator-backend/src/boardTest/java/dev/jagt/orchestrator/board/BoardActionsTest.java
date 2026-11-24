@@ -17,9 +17,9 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,10 +39,11 @@ class BoardActionsTest extends BoardPageContext {
         alphaTask("ABC-1", TaskStatus.DEPLOYED).mrUrl("https://host.example/mr/7").build());
 
     Page page = openLiveBoard();
-    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    AtomicReference<String> asked = dismissedDialogMessage(page);
     button(page, "Revert").click();
+    page.waitForCondition(() -> asked.get() != null);
 
-    org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
+    org.assertj.core.api.Assertions.assertThat(asked.get())
         .startsWith("Revert ABC-1?")
         .contains("This pushes a revert commit to:")
         .contains("alpha → dev")
@@ -68,11 +69,11 @@ class BoardActionsTest extends BoardPageContext {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
     Page page = openLiveBoard();
-    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    AtomicReference<String> asked = dismissedDialogMessage(page);
     button(page, "Done").click();
+    page.waitForCondition(() -> asked.get() != null);
 
-    org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
-        .startsWith("Done ABC-1?");
+    org.assertj.core.api.Assertions.assertThat(asked.get()).startsWith("Done ABC-1?");
     verifyNoInteractions(commands);
   }
 
@@ -95,10 +96,11 @@ class BoardActionsTest extends BoardPageContext {
             .build());
 
     Page page = openLiveBoard();
-    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    AtomicReference<String> asked = dismissedDialogMessage(page);
     button(page, "Deploy").click();
+    page.waitForCondition(() -> asked.get() != null);
 
-    String question = asked.get(5, TimeUnit.SECONDS);
+    String question = asked.get();
     org.assertj.core.api.Assertions.assertThat(question)
         .startsWith("Deploy ABC-1?")
         .contains("This merges and pushes:")
@@ -119,10 +121,11 @@ class BoardActionsTest extends BoardPageContext {
 
     Page page = openLiveBoard();
     assertThat(button(page, "Deploy")).isVisible();
-    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    AtomicReference<String> asked = dismissedDialogMessage(page);
     button(page, "Deploy").click();
+    page.waitForCondition(() -> asked.get() != null);
 
-    org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
+    org.assertj.core.api.Assertions.assertThat(asked.get())
         .isEqualTo("Deploy ABC-1?\n\nThis merges and pushes:\nalpha → dev");
     verifyNoInteractions(commands);
   }

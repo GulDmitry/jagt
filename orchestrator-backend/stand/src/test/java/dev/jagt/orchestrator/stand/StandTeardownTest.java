@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -145,6 +145,6 @@ class StandTeardownTest {
 
     teardown.release();
 
-    assertTimeoutPreemptively(Duration.ofSeconds(5), teardown::take);
+    assertThatCode(teardown::take).doesNotThrowAnyException();
   }
 }

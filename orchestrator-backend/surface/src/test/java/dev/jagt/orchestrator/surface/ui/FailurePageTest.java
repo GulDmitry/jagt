@@ -61,7 +61,7 @@ class FailurePageTest {
     Path config = Files.writeString(dir.resolve("jagt.yml"), "old: 1\n");
 
     try (FailurePage page = FailurePage.listen(0, config, "problem").get();
-        ExecutorService start = Executors.newVirtualThreadPerTaskExecutor()) {
+        ExecutorService start = Executors.newVirtualThreadPerTaskExecutor()) { // allowed: 0237
       var _ =
           start.submit(() -> {
             page.awaitSave();

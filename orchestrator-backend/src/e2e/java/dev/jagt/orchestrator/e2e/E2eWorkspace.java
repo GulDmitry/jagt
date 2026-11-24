@@ -273,7 +273,7 @@ final class E2eWorkspace {
     full.addAll(List.of(args));
     try {
       Process process = new ProcessBuilder(full).redirectErrorStream(true).start();
-      var output = new CompletableFuture<String>();
+      var output = new CompletableFuture<String>(); // allowed: 0237
       Thread.startVirtualThread(() -> {
         try {
           output.complete(new String(process.getInputStream().readAllBytes(), UTF_8));

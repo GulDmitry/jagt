@@ -184,10 +184,10 @@ public class ProcessRunnerTest {
         .hasMessageContaining("timed out");
 
     long child = Long.parseLong(Files.readString(childPid).strip());
-    CompletableFuture<?> exited =
+    CompletableFuture<?> exited = // allowed: 0237
         ProcessHandle.of(child)
             .map(ProcessHandle::onExit)
-            .map(future -> (CompletableFuture<?>) future)
+            .map(future -> (CompletableFuture<?>) future) // allowed: 0237
             .orElse(CompletableFuture.completedFuture(null));
     try {
       exited.get(60, TimeUnit.SECONDS);

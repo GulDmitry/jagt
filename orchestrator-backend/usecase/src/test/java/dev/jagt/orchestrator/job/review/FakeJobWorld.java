@@ -167,7 +167,8 @@ public final class FakeJobWorld implements AutoCloseable {
   private final CommandService commands;
   private int reviewed;
   private int edits;
-  private final ScheduledExecutorService retries = Executors.newSingleThreadScheduledExecutor();
+  private final ScheduledExecutorService retries =
+      Executors.newSingleThreadScheduledExecutor(); // allowed: 0237
   private final List<Told> sent = new ArrayList<>();
   private final List<Said> said = new ArrayList<>();
   private Jobs jobs;

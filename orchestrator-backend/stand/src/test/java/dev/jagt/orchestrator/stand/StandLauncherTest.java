@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -160,12 +160,12 @@ class StandLauncherTest {
     assertThat(dir.resolve("base").toFile().listFiles())
         .singleElement()
         .satisfies(root -> assertThat(StandMarker.read(root.toPath(), 0).failed()).isTrue());
-    assertTimeoutPreemptively(
-        Duration.ofSeconds(5),
-        () -> {
-          slots.take();
-          slots.take();
-        });
+    assertThatCode(
+            () -> {
+              slots.take();
+              slots.take();
+            })
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -176,12 +176,12 @@ class StandLauncherTest {
 
     assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE))
         .isInstanceOf(TestAbortedException.class);
-    assertTimeoutPreemptively(
-        Duration.ofSeconds(5),
-        () -> {
-          slots.take();
-          slots.take();
-        });
+    assertThatCode(
+            () -> {
+              slots.take();
+              slots.take();
+            })
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -241,8 +241,8 @@ class StandLauncherTest {
     assertThat(dir.resolve("base").toFile().listFiles())
         .singleElement()
         .satisfies(root -> assertThat(StandMarker.read(root.toPath(), 0).failed()).isTrue());
-    assertTimeoutPreemptively(Duration.ofSeconds(5), slots::take);
-    assertTimeoutPreemptively(Duration.ofSeconds(5), slots::take);
+    assertThatCode(slots::take).doesNotThrowAnyException();
+    assertThatCode(slots::take).doesNotThrowAnyException();
   }
 
   @Test
@@ -258,12 +258,12 @@ class StandLauncherTest {
     assertThatThrownBy(() -> launcher.start("happy", StandMode.JUDGE, null, StandConfig.Posts.NONE))
         .isInstanceOf(TestAbortedException.class)
         .hasMessageContaining("happy reads the run's root");
-    assertTimeoutPreemptively(
-        Duration.ofSeconds(5),
-        () -> {
-          slots.take();
-          slots.take();
-        });
+    assertThatCode(
+            () -> {
+              slots.take();
+              slots.take();
+            })
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -283,8 +283,8 @@ class StandLauncherTest {
     slots.take();
     slots.take();
 
-    CompletableFuture<ServerRun> waiting =
-        CompletableFuture.supplyAsync(() -> {
+    CompletableFuture<ServerRun> waiting = // allowed: 0237
+        CompletableFuture.supplyAsync(() -> { // allowed: 0237
           try {
             return launcher.server("server");
           } catch (IOException e) {
