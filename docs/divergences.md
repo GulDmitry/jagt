@@ -7,6 +7,7 @@ A CI red on a tree the local gate recorded green is a defect in the local run. E
 
 | date | run | tree | class | fix |
 |------|-----|------|-------|-----|
+| 2026-11-24 | 45322490446 | 4bf02ab22 | network: the CI image lacked zstd, so the test job missed every cached Gradle home and hit Maven Central's 429; local resolves from its warm cache | 1427c09e6 |
 | 2026-11-24 | 45309806524 | c675335ec | state: the local engine volume kept the PowerShell image across runs; a runner's engine starts empty and the stand runs offline | c3b4744e9 |
 | 2026-11-24 | 45309806524 | c675335ec | user: the runner's uid 1001 has no account in the image, so the session bus failed; locally uid 1000 had one | c3b4744e9 |
 | 2026-11-24 | 45309806524 | c675335ec | host: actions/cache hashed the workspace again after the root container's run and failed; no local twin of the cache step | c3b4744e9 |

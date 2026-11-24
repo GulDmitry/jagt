@@ -8,7 +8,7 @@ set -euo pipefail
 
 if ! command -v apt-get >/dev/null; then
     echo "linux-test-deps: no apt-get here — install the equivalents by hand:"
-    echo "  curl git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof jq bats shellcheck"
+    echo "  curl git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof jq bats shellcheck zstd"
     echo "  plus the shared libraries a headless Chromium links against (see the list below)"
     exit 0
 fi
@@ -30,6 +30,7 @@ apt-get install -y --no-install-recommends \
     lsof \
     jq \
     shellcheck \
+    zstd \
     ca-certificates \
     fonts-liberation \
     libasound2t64 \
@@ -77,6 +78,7 @@ rm -rf "$bats_dir"
 #   procps, lsof  — agent liveness probing and language-server reaping read the process table
 #   jq, bats, shellcheck — the contributor guards in scripts/guards and the guardsTest task that proves them;
 #     bats pinned from its release, as the guards' bats_test_function --description needs 1.11 and noble ships 1.10
+#   zstd       — actions/cache compresses with it; without it a container job's cache is another version and always misses
 #   libxtst6   — on a display the JDK loads its X toolkit, which links against it; ImageIO reads the board's icons
 #   fonts-liberation … libxrandr2 — the shared libraries the board suite's Chromium links against. The BROWSER
 #     comes from Playwright's own cache (the `playwrightChromium` task), which cannot install system packages.
