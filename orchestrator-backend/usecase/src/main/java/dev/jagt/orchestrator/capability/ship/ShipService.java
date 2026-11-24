@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.turn.RepliesInstruction;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.review.ReviewRequestTitle;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.util.List;
@@ -129,6 +130,14 @@ public class ShipService {
   }
 
   static String repliesStep(ConfigFile config) {
+    String step = postingStep(config);
+    return config.codeReview().repliesToPeopleUnaskedOrDefault()
+            && config.codeReview().postReviewRepliesOrDefault()
+        ? step.replace(THREADS, AI_LINE + THREADS)
+        : step;
+  }
+
+  private static String postingStep(ConfigFile config) {
     if (!config.codeReview().postReviewRepliesOrDefault()) {
       return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
     }
@@ -142,6 +151,9 @@ public class ShipService {
         + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones."
         + THREADS;
   }
+
+  private static final String AI_LINE =
+      " Open each posted reply with this line, verbatim, then a blank line: " + AiLine.TEXT;
 
   private static final String THREADS =
       " Resolve threads exactly as your `<review_replies>` rules say.\n";

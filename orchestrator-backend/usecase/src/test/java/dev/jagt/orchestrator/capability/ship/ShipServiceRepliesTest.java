@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,5 +51,23 @@ class ShipServiceRepliesTest {
         .contains(
             "post a drafted reply ONLY where the note its block answers is by an author"
                 + " matching (case-insensitive) any of: jdoe, bot");
+  }
+
+  @Test
+  void opensEachPostedReplyWithTheAiLineWhereTheMasterMayPostToPeople() {
+    ConfigFile config =
+        ConfigFile.defaults()
+            .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, true));
+
+    String step = ShipService.repliesStep(config);
+
+    assertThat(step).contains(AiLine.TEXT);
+  }
+
+  @Test
+  void asksForNoAiLineWhereTheMasterMayNotPostToPeople() {
+    String step = ShipService.repliesStep(ConfigFile.defaults());
+
+    assertThat(step).doesNotContain(AiLine.TEXT);
   }
 }

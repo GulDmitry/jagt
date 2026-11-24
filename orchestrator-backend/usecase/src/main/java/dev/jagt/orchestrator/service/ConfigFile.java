@@ -161,10 +161,16 @@ public record ConfigFile(
   public record CodeReviewConfig(
       @Nullable String mrTitlePattern,
       @Nullable Boolean postReviewReplies,
-      @Nullable List<String> reviewReplyAuthors) {
+      @Nullable List<String> reviewReplyAuthors,
+      @With(AccessLevel.NONE) @Nullable Boolean repliesToPeopleUnasked) {
 
     public static CodeReviewConfig defaults() {
-      return new CodeReviewConfig(null, null, null);
+      return new CodeReviewConfig(null, null, null, null);
+    }
+
+    /** False: replies to people wait for the human to post. */
+    public boolean repliesToPeopleUnaskedOrDefault() {
+      return repliesToPeopleUnasked != null && repliesToPeopleUnasked;
     }
 
     public String mrTitlePatternOrDefault() {

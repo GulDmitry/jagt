@@ -254,6 +254,15 @@ class ConfigFileTest {
   }
 
   @Test
+  void repliesToPeopleWaitForTheHumanUnlessWhereTheHumanSwitchedItOn() {
+    assertThat(ConfigFile.CodeReviewConfig.defaults().repliesToPeopleUnaskedOrDefault()).isFalse();
+    assertThat(
+            new ConfigFile.CodeReviewConfig(null, null, null, true)
+                .repliesToPeopleUnaskedOrDefault())
+        .isTrue();
+  }
+
+  @Test
   void repliesToEveryThreadAuthorWhereNoFilterIsWritten() {
     assertThat(ConfigFile.CodeReviewConfig.defaults().reviewReplyAuthorsOrEmpty()).isEmpty();
     assertThat(

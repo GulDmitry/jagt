@@ -10,7 +10,6 @@ The Master: a headless reader judging each handed-back round; in `act` it stands
 One headless run per brief role SHALL read each round in the worktrees and present `agent.sandbox.allowWrite` dirs, loading no worktree setting.
 jagt SHALL store each answer with the hand-back it asked about (`MasterReview`), `master-review.md` only its rendering;
 a round SHALL cost one heavy read per role it applies to, charged as `master`, later roles reading the cached round.
-
 #### Scenario: What a role may call
 - **WHEN** a role reads
 - **THEN** read-only git, `-C` naming a worktree, plain words, option by option, `--no-ext-diff --no-textconv`
@@ -35,7 +34,6 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 ### Requirement: The Master judges by a brief
 The Master SHALL judge by `roles.master.brief`, else the first that exists of `roles/master/brief.md` and
 `roles/master/brief.md.dist` (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
-
 #### Scenario: No brief copied
 - **WHEN** no brief is copied
 - **THEN** the shipped one judges
@@ -59,7 +57,9 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **WHEN** the press is refused, as a deploy of ABC-42 with no commit beyond dev
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
 - **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
-- **THEN** it presses nothing, and the task waits for you; an unpushed commit, uncommitted work or replies drafted since the last ship make it due
+- **THEN** it presses nothing, and the task waits for you; an unpushed commit or uncommitted work makes it due
+- **WHEN** drafted replies wait that a ship will not post, or any wait unless `codeReview.repliesToPeopleUnasked` is `true` (default `false`)
+- **THEN** it ships nothing and the move stays yours; where `true`, each reply a ship posts opens with the AI line of the code reviewer's notes
 
 ### Requirement: The human keeps what mine and humanPaths name
 `roles.master.mine` SHALL name the steps (`task/master/MasterRight`) and verbs the human keeps, any `TaskAction` or `GlobalCommand` id.

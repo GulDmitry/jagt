@@ -30,7 +30,6 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 #### Scenario: A marker typed into the message
 - **WHEN** a session reports `outcome=question: which branch?` as its message and no `outcome`
 - **THEN** the line reads as written, and nobody is asked
-#### Scenario: A question from before the field
 - **WHEN** jagt starts on a `state.json` whose line reads `awaiting: which database`
 - **THEN** the card reads `NEEDS INPUT: which database`
 #### Scenario: A round comes back clean or approved
@@ -38,7 +37,6 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 - **THEN** REVIEWED, nothing asked of you
 - **WHEN** an approval arrives
 - **THEN** you are tapped, the one time: it is yours to deploy
-#### Scenario: Claimed no change, files changed
 - **WHEN** the agent says it changed nothing but files changed
 - **THEN** not believed: the round has a diff
 
@@ -50,19 +48,21 @@ replaced, one id per line; unset, it gives none.
 - **THEN** the round is the same and is relayed once
 
 ### Requirement: The unit of a round is a thread
-`ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest.
+`ReviewFacts.threads` SHALL carry every note since your answer, oldest first with its author; the agent answers the newest.
 Threads SHALL be relayed while unresolved, the round telling how many notes are new or unchanged since the last round
 (`RoundTrail.sinceLast`). The checks SHALL never decide whether a thread is answered. After a round with threads,
 a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
 #### Scenario: Red checks outside the code and a reviewer's answer
 - **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread
 - **THEN** refused, told how many threads await their block
-#### Scenario: A resolved thread
+#### Scenario: A resolved thread, a review in the body
 - **WHEN** a reviewer resolves a thread on ABC-42's request
 - **THEN** no later round reads it again
-#### Scenario: GitHub review in the body
 - **WHEN** a GitHub review is written in the body, not a thread
 - **THEN** relayed all the same
+#### Scenario: Answered by hand
+- **WHEN** you answer ABC-42's thread by hand or post a draft, and the reviewer writes again
+- **THEN** the next round relays the thread's link and the reviewer's new note, not the notes before your answer
 #### Scenario: The agent answered last
 - **WHEN** two polls read a thread whose newest note is by the account the host's tools act as, unless it opens with the AI line
 - **THEN** neither relays it, as it waits on the reviewer; only a new note starts a round, and one with the AI line awaits an answer
@@ -81,7 +81,6 @@ SHALL stop the task, its evidence the reads' words for why; a listing counts ane
 #### Scenario: No checks dot while the host shows a failed run
 - **WHEN** no checks dot shows while the host shows a failed run
 - **THEN** nobody read one yet; `none` means the host listed none
-#### Scenario: Checks nobody can list
 - **WHEN** a third poll running cannot list ABC-42's pipelines, `list_pipelines: 403 Forbidden`
 - **THEN** jagt stops it, and the hover says `3 reads running could not list the checks: list_pipelines: 403 Forbidden`
 
@@ -91,10 +90,8 @@ same, or every poll re-briefs. A red the host calls infrastructure is not relaye
 #### Scenario: Pipeline goes red
 - **WHEN** the pipeline goes red
 - **THEN** `checks failed` on the card, one notification; the session finds and fixes the cause
-#### Scenario: Red, no comments
 - **WHEN** checks are red, no comments
 - **THEN** the agent fixes the build and hands back
-#### Scenario: Red the session cannot reproduce
 - **WHEN** the red is not in the code, or nothing here reads it, and the host does not call it infrastructure
 - **THEN** the session changes nothing and asks you, naming the job
 
@@ -109,13 +106,17 @@ newest note, `FIXED | NO CHANGE | QUESTION`, reply.
 `TaskViews` SHALL stat `review_replies.md` for presence, never a count; `ReviewDrafts.pending` SHALL want it newer than
 `mrCreatedAt`. jagt SHALL never delete the file; the agent is asked to.
 `CodeReviewConfig.shipPostsEveryDraft` SHALL decide when drafts are spent: under `postReviewReplies=false` or a partial
-`reviewReplyAuthors` filter none is, and the announcement stands until the human ends it.
+`reviewReplyAuthors` filter none is. The announcement stands, whatever the status, until you post or end them.
+Your-move SHALL say drafted replies wait, whatever the round reported.
 #### Scenario: Stale reply file
 - **WHEN** the file predates `mrCreatedAt`
 - **THEN** nothing is pending
-#### Scenario: Posting off
-- **WHEN** you `ship` under `postReviewReplies=false`
-- **THEN** the announcement stands
+#### Scenario: Drafts a ship left
+- **WHEN** you `ship` under `postReviewReplies=false`, or a ship leaves drafts to a person's note unposted and the task leaves the hand-back
+- **THEN** the announcement stands: the card still shows them pending
+#### Scenario: No code changed
+- **WHEN** a round reports `NO_CHANGES` and drafted replies wait
+- **THEN** the your-move notification says drafted replies wait
 
 ### Requirement: The replies report reads the file
 `replies [task]` (`command/ReviewRepliesReport`) SHALL print every block off the file, never the badge, unrecognised shape
@@ -177,7 +178,6 @@ be relayed again, whatever the brief's wording, unless the task reported `PLAN_P
 Where the repository cannot name the tip, or a job or note id is unknown, the brief SHALL be digested.
 A failed host read SHALL leave the ids unknown, with a warning naming the cause.
 Neither SHALL open threads with the last notes while the checks are red in neither.
-
 #### Scenario: A tip or an id is unknown
 - **WHEN** the pushed tip cannot be named from the repository, or the host read failed, while the checks are red
 - **THEN** the brief is digested, and a failed host read logs a warning naming the cause

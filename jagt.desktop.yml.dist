@@ -249,6 +249,7 @@ orchestrator:
     mrTitlePattern: "{ticket} {title}"
     postReviewReplies: true    # false leaves every reply a draft that you post yourself
     reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
+    repliesToPeopleUnasked: false # true lets the Master in act ship and post replies to people; each opens with the AI line asking for a rating
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.
   # The one exception is `infraWait`: jagt re-runs a pipeline the host says died on infrastructure.

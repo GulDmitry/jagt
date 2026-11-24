@@ -29,6 +29,37 @@ class ReviewFactsTest {
   }
 
   @Test
+  void relaysOnlyTheNotesNewerThanTheAnswerPostedByHand() {
+    ReviewFacts facts =
+        new ReviewFacts(
+            new ReviewFacts.Request(true, false, false, false, 7),
+            new ReviewFacts.Pipeline("success", "", ""),
+            new ReviewFacts.Discussion(
+                List.of("https://host/mr/9#note_1\nrev: fix this\nbot: answered\nrev: still wrong"),
+                List.of(),
+                List.of()));
+
+    ReviewFacts answered = facts.answeredBy("bot");
+
+    assertThat(answered.discussion().threads())
+        .containsExactly("https://host/mr/9#note_1\nrev: still wrong");
+  }
+
+  @Test
+  void relaysOnlyTheReviewersNoteWhereTheAnswerOpensTheThread() {
+    ReviewFacts facts =
+        new ReviewFacts(
+            new ReviewFacts.Request(true, false, false, false, 7),
+            new ReviewFacts.Pipeline("success", "", ""),
+            new ReviewFacts.Discussion(
+                List.of("bot: answered\nrev: still wrong"), List.of(), List.of()));
+
+    ReviewFacts answered = facts.answeredBy("bot");
+
+    assertThat(answered.discussion().threads()).containsExactly("rev: still wrong");
+  }
+
+  @Test
   void keepsThreadWhoseNewestNoteOpensWithTheAiLineAwaitingTheAnswerWhoeverPostedIt() {
     ReviewFacts facts =
         new ReviewFacts(

@@ -71,6 +71,24 @@ class ReviewDraftsTest {
   }
 
   @Test
+  void keepsAnnouncingRepliesNoShipWillPostAfterTheTaskLeftHandBack(@TempDir Path worktree)
+      throws IOException {
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
+        FileTime.fromMillis(3_000));
+
+    boolean pending =
+        ReviewDrafts.pending(
+            TaskState.builder("api", worktree.toString(), TaskStatus.CI_POLLING)
+                .mrCreatedAt(2_000)
+                .build(),
+            TaskStatus.CI_POLLING,
+            false);
+
+    assertThat(pending).isTrue();
+  }
+
+  @Test
   void announcesRepliesDraftedInTheInstantTheRoundOpened(@TempDir Path worktree)
       throws IOException {
     Files.setLastModifiedTime(
@@ -273,5 +291,38 @@ class ReviewDraftsTest {
                         .mrCreatedAt(0)
                         .build()))
         .isPresent();
+  }
+
+  @Test
+  void holdsDraftsForTheHumanWhereTheMasterMayNotPostToPeople(@TempDir Path worktree)
+      throws IOException {
+    Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n");
+    ConfigService configService = mock(ConfigService.class);
+    when(configService.load()).thenReturn(ConfigFile.defaults());
+
+    boolean held =
+        new ReviewDrafts(configService)
+            .heldForHuman(
+                TaskState.builder("api", worktree.toString(), TaskStatus.REVIEW_PENDING).build());
+
+    assertThat(held).isTrue();
+  }
+
+  @Test
+  void holdsNoDraftsWhereTheMasterMayPostToPeopleAndEveryDraftIsPosted(@TempDir Path worktree)
+      throws IOException {
+    Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n");
+    ConfigService configService = mock(ConfigService.class);
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, true)));
+
+    boolean held =
+        new ReviewDrafts(configService)
+            .heldForHuman(
+                TaskState.builder("api", worktree.toString(), TaskStatus.REVIEW_PENDING).build());
+
+    assertThat(held).isFalse();
   }
 }

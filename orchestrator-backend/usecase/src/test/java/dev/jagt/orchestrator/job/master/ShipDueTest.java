@@ -56,6 +56,20 @@ class ShipDueTest {
   }
 
   @Test
+  void isNotDueWhileDraftsWaitThatNoShipWillPost() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(changes.anythingNewToShip(task)).thenReturn(true);
+    when(drafts.drafted(task)).thenReturn(true);
+    when(drafts.heldForHuman(task)).thenReturn(true);
+    when(stops.mayShip("ABC-42")).thenReturn(true);
+
+    assertThat(
+            new ShipDue(changes, drafts, stops, new ShipContent(changes, drafts))
+                .due("ABC-42", task))
+        .isFalse();
+  }
+
+  @Test
   void isNotDueWhereTheLoopStopForbidsAnotherShip() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(changes.anythingNewToShip(task)).thenReturn(true);

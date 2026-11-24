@@ -27,11 +27,12 @@ public class ReviewDrafts {
   private final ConfigService configService;
 
   /**
-   * Announced only where it is actionable, and only while a ship would still send it. {@code
-   * status} is the one the task is being MOVED to, which is not always the one it still carries.
+   * Announced where a ship would still send it, and wherever no ship ever will, whatever the
+   * status. {@code status} is the one the task is being MOVED to, which is not always the one it
+   * still carries.
    */
   public static boolean pending(TaskState task, TaskStatus status, boolean shipPostsEveryDraft) {
-    if (!FlowRules.handsBack(status)) {
+    if (shipPostsEveryDraft && !FlowRules.handsBack(status)) {
       return false;
     }
     Path file = draftsIn(task.worktreePath());
@@ -74,6 +75,16 @@ public class ReviewDrafts {
     } catch (IOException e) {
       return false;
     }
+  }
+
+  /**
+   * Drafts the human reads, posts or ends: no ship posts them, or replies to people wait for the
+   * human.
+   */
+  public boolean heldForHuman(TaskState task) {
+    return drafted(task)
+        && (!postsEveryDraft()
+            || !configService.load().codeReview().repliesToPeopleUnaskedOrDefault());
   }
 
   /** Replies written and not yet spent by a ship; a blank file holds none. */

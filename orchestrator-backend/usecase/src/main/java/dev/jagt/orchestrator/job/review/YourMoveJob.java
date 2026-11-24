@@ -13,7 +13,6 @@ import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -106,8 +105,6 @@ public class YourMoveJob implements Job {
   }
 
   private static String banner(String hint, RoundState round) {
-    return round.draftedReplies() && round.report() != AgentReport.NO_CHANGES
-        ? hint + " — drafted replies wait in review_replies.md"
-        : hint;
+    return round.draftedReplies() ? hint + " — drafted replies wait in review_replies.md" : hint;
   }
 }
