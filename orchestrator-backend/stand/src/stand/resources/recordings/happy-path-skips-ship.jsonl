@@ -10,3 +10,4 @@
 {"type": "verdict", "round": 1, "role": "QA", "judgement": {"failure": "", "verdict": "ready", "findings": [], "question": "", "premises": [{"claim": "./check.sh covers the no-argument greeting", "provenBy": "./check.sh: all checks passed"}], "newTask": ""}}
 {"type": "verdict", "round": 1, "role": "developer", "judgement": {"failure": "", "verdict": "ready", "findings": [], "question": "", "premises": [{"claim": "./check.sh covers the no-argument greeting", "provenBy": "./check.sh: all checks passed"}], "newTask": ""}}
 {"type": "verdict", "round": 1, "role": "designer", "judgement": {"failure": "", "verdict": "ready", "findings": [], "question": "", "premises": [{"claim": "./check.sh covers the no-argument greeting", "provenBy": "./check.sh: all checks passed"}], "newTask": ""}}
+{"type":"verdict","round":1,"role":"code-reviewer","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
