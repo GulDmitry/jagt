@@ -109,8 +109,9 @@ class CiWorkflowTest {
   }
 
   @Test
-  void startsOnGithubOnlyOnPushAndPullRequest() {
-    assertThat(CiWorkflow.githubTriggers()).containsExactlyInAnyOrder("push", "pull_request");
+  void startsOnGithubOnlyOnPushPullRequestAndDispatch() {
+    assertThat(CiWorkflow.githubTriggers())
+        .containsExactlyInAnyOrder("push", "pull_request", "workflow_dispatch");
   }
 
   @Test
@@ -124,9 +125,18 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheHeavyJobOnPullRequestsOnly() {
-    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
-        .isEqualTo("github.event_name == 'pull_request'");
+  void runsTheHeavyJobOnPullRequestsAndDispatchesButNeverOnPushes() {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if")))
+        .startsWith("github.event_name != 'push' && ");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"test", "heavy", "stand", "audit", "install"})
+  void runsOneJobAloneWhenTheDispatchNamesIt(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("if")))
+        .contains("(!inputs.job || inputs.job == '" + job + "')");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .contains("  workflow_dispatch:\n    inputs:\n      job:");
   }
 
   @Test
@@ -168,7 +178,7 @@ class CiWorkflowTest {
   void runsTheStandOnEveryEngineForPullRequests() {
     assertThat(
             String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("strategy")))
-        .contains("github.event_name == 'pull_request' && fromJSON('[\"compose\",\"kind\"]')");
+        .contains("github.event_name != 'push' && fromJSON('[\"compose\",\"kind\"]')");
   }
 
   @ParameterizedTest

@@ -8,6 +8,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'The one job to run, as on a pull request (empty: every job)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -27,6 +33,7 @@ defaults:
 jobs:
   test:
     name: unit + functional
+    if: (!inputs.job || inputs.job == 'test')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     container:
@@ -83,7 +90,7 @@ jobs:
 
   heavy:
     name: heavy suites
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'heavy')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -120,13 +127,13 @@ jobs:
 
   stand:
     name: stand (${{ matrix.engine }})
-    if: github.event_name != 'push'
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'stand')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        engine: ${{ github.event_name == 'pull_request' && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
+        engine: ${{ github.event_name != 'push' && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -178,6 +185,7 @@ jobs:
 
   audit:
     name: dependency audit
+    if: (!inputs.job || inputs.job == 'audit')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -211,7 +219,7 @@ jobs:
 
   install:
     name: install (${{ matrix.os }})
-    if: github.event_name != 'push'
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'install')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     strategy:

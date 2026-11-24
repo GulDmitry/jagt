@@ -41,6 +41,8 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
     `nightly-calls-no-pull-request-job`; the rest: none yet.
 11. **Main publishes the tree the pull request proved**; the stand and install do not re-run there.
     `release-needs-no-stand-or-install`, `CiWorkflowTest`, `ProvenTree`.
+12. **A change to CI or the local twin runs first as one job alone on a throwaway branch**: a dispatch with input `job`,
+    never first on the release request. `CiWorkflowTest`.
 
 ## The divergence rule
 
