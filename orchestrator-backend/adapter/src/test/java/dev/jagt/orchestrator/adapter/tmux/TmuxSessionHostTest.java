@@ -14,6 +14,8 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
+import dev.jagt.orchestrator.adapter.worktree.DockerComposeContainers;
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
@@ -635,13 +637,39 @@ class TmuxSessionHostTest {
   }
 
   @Test
+  void startsTaskSessionUnderItsOwnComposeProject() {
+    FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
+    TmuxSessionHost host =
+        new TmuxSessionHost(
+            processes,
+            new TmuxReads(processes, ToolchainProperties.defaults()),
+            new SessionEnvironment(
+                new OrchestratorPaths(OrchestratorProperties.defaults()),
+                new DockerComposeContainers(processes)),
+            terminal,
+            agent);
+
+    host.openTaskWindow(
+        "jagt", "agents", "ABC-1", null, Path.of("/data/tasks/ABC-1/worktrees/Shop"), false, "");
+
+    assertThat(processes.issuedContaining("new-window"))
+        .singleElement()
+        .satisfies(command ->
+            assertThat(command.getLast()).startsWith("COMPOSE_PROJECT_NAME='shop-abc-1' "));
+  }
+
+  @Test
   void stopsGitClimbingOutOfScratchFolderWhereTheSessionRuns() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
     ToolchainProperties properties = ToolchainProperties.defaults();
     OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
-            processes, new TmuxReads(processes, properties), paths, terminal, agent);
+            processes,
+            new TmuxReads(processes, properties),
+            new SessionEnvironment(paths, new NoWorktreeContainers()),
+            terminal,
+            agent);
 
     host.openTaskWindow("jagt", "agents", "ABC-1", null, paths.scratch("ABC-1"), true, "");
 

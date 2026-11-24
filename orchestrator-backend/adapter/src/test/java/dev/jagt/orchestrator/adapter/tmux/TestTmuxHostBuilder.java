@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
@@ -19,7 +20,8 @@ public record TestTmuxHostBuilder(ToolchainProperties toolchain) {
     return new TmuxSessionHost(
         processes,
         new TmuxReads(processes, toolchain),
-        new OrchestratorPaths(OrchestratorProperties.defaults()),
+        new SessionEnvironment(
+            new OrchestratorPaths(OrchestratorProperties.defaults()), new NoWorktreeContainers()),
         terminal,
         agent);
   }
@@ -29,7 +31,8 @@ public record TestTmuxHostBuilder(ToolchainProperties toolchain) {
     return new TmuxSessionHost(
         processes,
         reads,
-        new OrchestratorPaths(OrchestratorProperties.defaults()),
+        new SessionEnvironment(
+            new OrchestratorPaths(OrchestratorProperties.defaults()), new NoWorktreeContainers()),
         terminal,
         agent);
   }

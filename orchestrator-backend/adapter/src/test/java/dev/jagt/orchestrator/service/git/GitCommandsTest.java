@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
 import java.nio.file.Files;
@@ -40,7 +41,10 @@ class GitCommandsTest {
     WorktreeProcesses reaper = mock(WorktreeProcesses.class);
     GitCommands git =
         new GitCommands(
-            mock(Processes.class), reaper, path -> java.util.Optional.empty(), stopped -> {});
+            mock(Processes.class),
+            reaper,
+            path -> java.util.Optional.empty(),
+            new NoWorktreeContainers());
 
     git.forceDeleteDir(dir);
 
@@ -55,7 +59,7 @@ class GitCommandsTest {
             mock(Processes.class),
             mock(WorktreeProcesses.class),
             path -> java.util.Optional.empty(),
-            stopped -> {});
+            new NoWorktreeContainers());
     CompletableFuture<String> first = new CompletableFuture<>();
     Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
     first.get(5, TimeUnit.SECONDS);

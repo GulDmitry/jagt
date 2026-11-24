@@ -36,6 +36,7 @@ import dev.jagt.orchestrator.notify.NextMove;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.notify.PointWatch;
 import dev.jagt.orchestrator.notify.Routes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.CarriedBlock;
@@ -273,7 +274,7 @@ public final class FakeJobWorld implements AutoCloseable {
             new FakeProcesses(root.resolve(".fake")),
             worktree -> {},
             repository -> Optional.empty(),
-            worktree -> {});
+            mock(WorktreeContainers.class));
     WorktreeChanges changes = new WorktreeChanges(config, new WorktreeInspection(git, runtime));
     HandBack handBack =
         new HandBack(

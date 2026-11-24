@@ -1,13 +1,11 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.adapter.Executables;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
-import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,7 +46,7 @@ public class TmuxSessionHost implements SessionHost {
 
   private final Processes processRunner;
   private final TmuxReads reads;
-  private final OrchestratorPaths paths;
+  private final SessionEnvironment environment;
   private final TerminalDriver terminalDriver;
   private final AgentRuntime agentRuntime;
   private final Object lock = new Object();
@@ -93,16 +91,6 @@ public class TmuxSessionHost implements SessionHost {
             : agentRuntime.launchCommand(worktreePath, planMode, model));
   }
 
-  /**
-   * A data folder may lie inside a repository: git must not climb out of a scratch folder to it.
-   */
-  private String outsideGit(Path worktreePath) {
-    Path ceiling = paths.scratchCeiling(worktreePath);
-    return ceiling != null
-        ? "GIT_CEILING_DIRECTORIES='" + ceiling.toString().replace("'", "'\\''") + "' "
-        : "";
-  }
-
   @Override
   public void reviveTaskWindow(
       String session,
@@ -132,11 +120,7 @@ public class TmuxSessionHost implements SessionHost {
       // One task = one window: respawns must never accumulate duplicates.
       killTaskWindows(session, taskId);
       String windowId =
-          newWindow(
-              session,
-              taskId,
-              worktreePath,
-              WorktreeHooks.gitEnv(worktreePath) + outsideGit(worktreePath) + command);
+          newWindow(session, taskId, worktreePath, environment.prefix(worktreePath) + command);
       log.atInfo()
           .setMessage("task window opened")
           .addKeyValue("task", taskId)
@@ -433,7 +417,7 @@ public class TmuxSessionHost implements SessionHost {
           .run(
               null,
               TIMEOUT,
-              tmux("new-session", "-d", "-s", session, "-c", paths.root().toString()))
+              tmux("new-session", "-d", "-s", session, "-c", environment.root().toString()))
           .expectSuccess("tmux new-session " + session);
     }
     // One invocation: this runs every few seconds under the lock every other window call waits on.

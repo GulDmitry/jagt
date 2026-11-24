@@ -13,6 +13,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
@@ -852,7 +853,7 @@ class GitWorktreesTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                stopped -> {}));
+                new NoWorktreeContainers()));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
 
@@ -875,7 +876,7 @@ class GitWorktreesTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> Optional.of(new dev.jagt.orchestrator.task.repo.Remote("upstream")),
-                stopped -> {}));
+                new NoWorktreeContainers()));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "upstream/main", BranchStrategy.FRESH);
 
