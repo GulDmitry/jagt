@@ -14,7 +14,8 @@ Accepted 2026-11-08 by the owner's order; supersedes [0129](0129-ci-reports-the-
 
 - CI runs `test` alone; its clean tree gives `pitestDiff` no changed line.
 - The writer judges survivors before each commit, as 0127 holds.
-- A diff mutates once (JAGT-244, 2026-11-24): `pitestDiffSurvivors` declares the changed-lines file, the target classes and the reports as inputs, so Gradle's up-to-date check serves the stored survivors.
+- A diff mutates once (2026-11-24): `pitestDiffSurvivors` takes the changed lines, target classes and reports as inputs,
+  so Gradle's up-to-date check serves the stored survivors.
 
 ## Reopen when
 
