@@ -17,7 +17,8 @@ IMAGE="$(grep -m1 -oE 'ghcr\.io/[^ ]+-ci:base@sha256:[0-9a-f]{64}' "$REPO_ROOT/.
 LOCAL_IMAGE=jagt-ci:local
 # A path in JAGT_GRADLE_CACHE puts the shared cache on the host, where a CI cache action saves and restores it.
 CACHE_VOLUME=${JAGT_GRADLE_CACHE:-jagt-gradle-home}
-ENGINE_VOLUME=jagt-ci-docker
+# A runner starts with an empty engine, so each run gets its own.
+ENGINE_VOLUME="jagt-ci-docker-$$"
 RUN_VOLUME="jagt-gradle-run-$$"
 # shellcheck source=runner.env
 . "$BACKEND_DIR/scripts/runner.env"
@@ -48,7 +49,7 @@ warm() {
     case "$1" in
         test) echo "$(live test) boardInstall" ;;
         heavy) echo "$(live heavy) boardInstall containerUp containerDown" ;;
-        stand) echo ':stand:standImage' ;;
+        stand) echo ':stand:standImage :stand:standPull' ;;
         boardTest) echo 'playwrightChromium' ;;
         *) echo '' ;;
     esac
@@ -84,7 +85,7 @@ fi
 if [[ $CACHE_VOLUME == /* ]]; then mkdir -p "$CACHE_VOLUME"; else docker volume create "$CACHE_VOLUME" >/dev/null; fi
 docker volume create "$ENGINE_VOLUME" >/dev/null
 docker volume create "$RUN_VOLUME" >/dev/null
-trap 'docker volume rm -f "$RUN_VOLUME" >/dev/null 2>&1 || true' EXIT # absent is removed
+trap 'docker volume rm -f "$RUN_VOLUME" "$ENGINE_VOLUME" >/dev/null 2>&1 || true' EXIT # absent is removed
 
 host_cpus=$(docker info --format '{{.NCPU}}' 2>/dev/null || echo "$RUNNER_CPUS")
 cpus=$CONTAINER_CPUS
@@ -114,7 +115,7 @@ done
 
 # The engine starts as root; a job runs as RUN_UID, as on a CI runner, since root ignores file
 # modes. Only the volumes it writes are handed to it first; a read-only cache seeds the run's own home with what Gradle
-# and npm cannot read from a read-only one. One engine volume holds one engine, so a second suite waits on its lock.
+# and npm cannot read from a read-only one. One engine volume holds one engine, so a second container of the run waits on its lock.
 # shellcheck disable=SC2016 # the container's shell expands it
 AS_RUNNER='exec 9>/var/lib/docker/.engine.lock
 flock 9
@@ -127,13 +128,11 @@ fi
 [[ $(stat -c %u /gradle-home) == "$RUN_UID" ]] || chown -R "$RUN_UID:$RUN_UID" /gradle-home
 chown "$RUN_UID:$RUN_UID" /jagt/board/node_modules /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle \
     /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
-home=$(getent passwd "$RUN_UID" | cut -d: -f6)
-groups=--init-groups
-if [[ -z $home ]]; then home=/tmp/runner-home; groups=--clear-groups; install -d -o "$RUN_UID" -g "$RUN_UID" "$home"; fi
-exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" "$groups" env HOME="$home" "$@"'
+getent passwd "$RUN_UID" >/dev/null || useradd -u "$RUN_UID" -U -m jagt-runner
+exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" --init-groups env HOME="$(getent passwd "$RUN_UID" | cut -d: -f6)" "$@"'
 
 # On Linux a bind mount keeps the host's owner, so the job runs as the checkout's; Docker on a Mac maps it to anyone.
-RUN_UID=1000
+RUN_UID=1001 # a hosted runner's, unknown to the image
 if [[ $(uname -s) == Linux ]]; then RUN_UID=$(stat -c %u "$REPO_ROOT"); fi
 # ci.yml's test job runs in its container as root, so its twin does too.
 job_uid() { if [[ $1 == test ]]; then echo 0; else echo "$RUN_UID"; fi; }

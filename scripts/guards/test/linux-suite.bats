@@ -30,6 +30,11 @@ EOF
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-x playwrightChromium'
 }
 
+@test "the stand job pulls the images it runs in its online warm-up" {
+  run "$script" stand
+  grep resolveAll "$DOCKER_LOG" | grep -q ':stand:standPull'
+}
+
 @test "the offline container still resolves its own hostname" {
   run "$script" test
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--hostname runner --add-host runner:127.0.0.1'
@@ -64,11 +69,11 @@ EOF
   grep -- '--network none' "$DOCKER_LOG" | grep gateHeavy | grep -vq -- '-e RUN_UID=0 '
 }
 
-@test "on a Mac the job runs as the image's user" {
+@test "on a Mac the job runs as a hosted runner's uid" {
   printf '#!/bin/sh\necho Darwin\n' > "$BATS_TEST_TMPDIR/bin/uname"
   chmod +x "$BATS_TEST_TMPDIR/bin/uname"
   run "$script" stand
-  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1000 '
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1001 '
 }
 
 @test "a hosted runner keeps every CPU it has" {
@@ -120,6 +125,12 @@ EOF
   wait "$first" "$second"
   homes=$(grep -- '--network none' "$DOCKER_LOG" | grep -oE 'jagt-gradle-run-[0-9]+:/gradle-home' | sort -u)
   [ "$(echo "$homes" | wc -l)" -eq 2 ]
+}
+
+@test "a run starts and removes an engine of its own" {
+  run "$script" test
+  grep -q 'volume create jagt-ci-docker-[0-9]' "$DOCKER_LOG"
+  grep -q 'volume rm -f jagt-gradle-run-[0-9]* jagt-ci-docker-[0-9]' "$DOCKER_LOG"
 }
 
 @test "a run removes the Gradle home it made" {

@@ -15,10 +15,6 @@ import java.util.zip.ZipOutputStream;
 
 final class FakeInstallFeed implements AutoCloseable {
 
-  private static final String POWERSHELL_IMAGE =
-      "mcr.microsoft.com/powershell:7.5-ubuntu-24.04@sha256:"
-          + "042240d57ec9e47e511033b92625a8d95875ee5860af3015992c248b58a8be81";
-
   private final Path root;
   private final HttpServer server;
 
@@ -81,7 +77,7 @@ final class FakeInstallFeed implements AutoCloseable {
             "JAGT_INSTALL_FEED=" + host + "/feed",
             "-e",
             "JAGT_INSTALL_JRE_FEED=" + host + "/jre",
-            POWERSHELL_IMAGE,
+            System.getProperty("stand.powershell"),
             "pwsh",
             "-NoProfile",
             "-File",

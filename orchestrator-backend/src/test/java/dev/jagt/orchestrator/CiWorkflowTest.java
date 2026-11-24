@@ -448,9 +448,20 @@ class CiWorkflowTest {
 
     assertThat(steps)
         .containsPattern(
-            "actions/cache@[0-9a-f]{40}, with=\\{path=~/.gradle/caches\\n~/.gradle/wrapper")
+            "actions/cache(/restore)?@[0-9a-f]{40}, "
+                + "with=\\{path=~/.gradle/caches\\n~/.gradle/wrapper")
         .contains("key=gradle-${{ runner.os }}-${{ github.job }}-")
         .contains("restore-keys=gradle-${{ runner.os }}-${{ github.job }}-");
+  }
+
+  @Test
+  void savesTheTestJobsGradleCacheUnderTheKeyItsRestoreComputed() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("steps"));
+
+    assertThat(steps)
+        .containsPattern("actions/cache/save@[0-9a-f]{40}")
+        .contains("key=${{ steps.gradle-cache.outputs.cache-primary-key }}");
   }
 
   @Test

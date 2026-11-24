@@ -18,6 +18,7 @@ tasks.named('test') {
 // tmux binds a socket under the run's root, and a macOS tmpdir is too long for a socket path (104 bytes).
 def standBase = new File('/tmp').isDirectory() ? '/tmp' : System.getProperty('java.io.tmpdir')
 def standReport = layout.buildDirectory.file('stand/report.txt').get().asFile
+def standPowershell = 'mcr.microsoft.com/powershell:7.5-ubuntu-24.04@sha256:042240d57ec9e47e511033b92625a8d95875ee5860af3015992c248b58a8be81'
 
 tasks.register('standTest', Test) {
     description = 'Blood Games: real sessions and the Master try to break into jagt on a local stand (spends tokens).'
@@ -45,6 +46,7 @@ tasks.register('standTest', Test) {
     // records its timings and the trend gate judges them.
     systemProperty 'stand.budgets', project.findProperty('budgets') ?: 'false'
     systemProperty 'stand.base', standBase
+    systemProperty 'stand.powershell', standPowershell
     systemProperty 'stand.jar', standJar
     systemProperty 'stand.repo', standRepo
     systemProperty 'stand.engine', standEngine
@@ -73,6 +75,13 @@ def standDocker = providers.exec { commandLine 'sh', '-c', 'docker info >/dev/nu
 def standHost = (project.findProperty('engine') ?: 'compose') == 'host'
 
 // jagt's own image on the published stand base (OS layer plus the agent CLI), pinned by digest.
+tasks.register('standPull', Exec) {
+    description = 'Pulls the images the stand runs besides its own, so an offline run finds them.'
+    group = 'verification'
+    commandLine 'docker', 'pull', '-q', standPowershell
+    onlyIf { !standHost && standDocker }
+}
+
 tasks.register('standImage', Exec) {
     description = 'Builds jagt-stand: jagt as shipped on the published stand base image.'
     group = 'verification'
