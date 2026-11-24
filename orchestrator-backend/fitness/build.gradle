@@ -23,6 +23,7 @@ subprojects {
     group = 'fitness'
 
     repositories {
+        maven { name = 'CentralMirror'; url = 'https://maven-central.storage-download.googleapis.com/maven2/' } // 0235
         mavenCentral()
     }
 

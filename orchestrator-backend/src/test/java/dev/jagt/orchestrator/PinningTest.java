@@ -173,4 +173,21 @@ class PinningTest {
   void pinMovesByReviewedUpdateRequest() {
     assertThat(SourceRoots.read(Path.of("../renovate.json"))).contains("config:recommended");
   }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "settings.gradle",
+        "build-logic/build.gradle",
+        "build-logic/src/main/groovy/jagt.conventions.gradle",
+        "fitness/build.gradle"
+      })
+  void resolvesFromTheCentralMirrorBeforeAnyOtherRepository(String file) throws IOException {
+    String build = Files.readString(Path.of(file));
+
+    assertThat(build.indexOf("maven-central.storage-download.googleapis.com/maven2/"))
+        .isNotNegative()
+        .isLessThan(
+            build.replace("gradlePluginPortal()", "mavenCentral()").indexOf("mavenCentral()"));
+  }
 }
