@@ -17,7 +17,6 @@ import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.port.codehost.review.Resolution;
-import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +52,9 @@ class NotePosterTest {
     ArgumentCaptor<NoteDraft> draft = ArgumentCaptor.forClass(NoteDraft.class);
     verify(notes).post(any(), any(), draft.capture());
     assertThat(outcome).isEqualTo(NotePoster.Outcome.POSTED);
-    assertThat(draft.getValue().body()).startsWith(AiLine.TEXT).contains("<!-- jagt-review:k1 -->");
+    assertThat(draft.getValue().body())
+        .startsWith("AI note: 👍 helps, 👎 does not; reply with what is wrong.")
+        .contains("<!-- jagt-review:k1 -->");
   }
 
   @Test

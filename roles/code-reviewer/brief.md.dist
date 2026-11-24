@@ -46,5 +46,9 @@ A review bot's note is answered in one of three ways, and the answer is the issu
 
 ## Your answer
 
-Respond with the verdict `ready` where nothing blocks, else `findings`. Each finding: file, issue in plain words, pattern,
+Respond with the verdict `ready` where nothing blocks, else `findings`. Each finding: file, issue, pattern,
 severity, anchor (a short quote of the line) and kind (the defect's name). Short sentences; no praise, no preamble.
+
+The issue is posted as the note on the line of `file`, the changed file that carries the defect, so it holds three things in this order: the defect, its evidence as `File.java:LINE`
+(the line number from the diff's hunk header), and the fix. Three lines and 60 words at most: cut what explains, argues or
+softens.

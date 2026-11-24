@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.task.review.AiLine;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +26,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * Reads the likes, dislikes and resolutions of the notes the code reviewer posted and of the
- * replies jagt posted under the AI line, on every request a task holds or a ledger row names, and
- * records a line only where one changed. A request that is no longer listed, or that the host says
- * is merged or closed, is read once more and ends.
+ * replies jagt posted under the AI line, and the human replies under them, on every request a task
+ * holds or a ledger row names, and records a line only where one changed. A request that is no
+ * longer listed, or that the host says is merged or closed, is read once more and ends.
  */
 @Service
 @RequiredArgsConstructor
@@ -101,13 +102,26 @@ public class ReviewSignalsJob implements Job {
     if (ours.isEmpty()) {
       return true;
     }
-    Answer<Map<String, Reaction>> reactions =
-        notes.reactions(row.project(), row.url(), List.copyOf(ours.keySet()));
+    Map<String, RequestNote> replies = humanReplies(read.facts().get(), ours.values());
+    List<String> rated = new ArrayList<>(ours.keySet());
+    rated.addAll(replies.keySet());
+    Answer<Map<String, Reaction>> reactions = notes.reactions(row.project(), row.url(), rated);
     if (reactions.facts().isEmpty()) {
       return reactions.failure().isBlank() || warn(row, reactions.failure());
     }
-    recorder.record(row, ours, reactions.facts().get());
+    recorder.record(row, ours, replies, reactions.facts().get());
     return true;
+  }
+
+  private static Map<String, RequestNote> humanReplies(
+      List<RequestNote> all, Collection<RequestNote> ours) {
+    Set<String> threads = ours.stream().map(RequestNote::thread).collect(Collectors.toSet());
+    return all.stream()
+        .filter(note -> note.kind() == AuthorKind.PERSON)
+        .filter(note -> !note.thread().isBlank() && threads.contains(note.thread()))
+        .collect(
+            Collectors.toMap(
+                RequestNote::id, note -> note, (first, later) -> first, LinkedHashMap::new));
   }
 
   private boolean over(LedgerRow row) {

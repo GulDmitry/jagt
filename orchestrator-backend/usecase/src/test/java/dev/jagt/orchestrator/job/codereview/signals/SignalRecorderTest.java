@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job.codereview.signals;
 
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -38,9 +38,15 @@ class SignalRecorderTest {
     when(panel.brief()).thenReturn("brief");
     when(resolutions.answered(row)).thenReturn(Map.of("21", "no-change"));
 
-    recorder.record(row, Map.of("21", ours), Map.of("21", new Reaction(1, 2)));
+    recorder.record(row, Map.of("21", ours), Map.of(), Map.of("21", new Reaction(1, 2)));
 
-    verify(stats).append(row.url(), "21", "note", 1, 2, "no-change", NotePoster.digest("brief"));
+    verify(stats)
+        .append(
+            row.url(),
+            "21",
+            "note",
+            new ReviewStats.Rating(1, 2, "no-change", "unknown"),
+            NotePoster.digest("brief"));
   }
 
   @Test
@@ -51,9 +57,16 @@ class SignalRecorderTest {
     recorder.record(
         row,
         Map.of("21", ours.withResolution(Resolution.RESOLVED)),
+        Map.of(),
         Map.of("21", new Reaction(0, 0)));
 
-    verify(stats).append(row.url(), "21", "note", 0, 0, "fixed", NotePoster.digest("brief"));
+    verify(stats)
+        .append(
+            row.url(),
+            "21",
+            "note",
+            new ReviewStats.Rating(0, 0, "fixed", ""),
+            NotePoster.digest("brief"));
   }
 
   @Test
@@ -64,11 +77,24 @@ class SignalRecorderTest {
     recorder.record(
         row.withCounts(Map.of("21", "2/1/unknown")),
         Map.of("21", ours),
+        Map.of(),
         Map.of("21", new Reaction(2, 1)));
 
-    verify(stats, never())
-        .append(
-            anyString(), anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
+    verify(stats, never()).append(anyString(), anyString(), anyString(), any(), anyString());
+  }
+
+  @Test
+  void unchangedCountsWithNoReasonWriteNoLine() {
+    when(panel.brief()).thenReturn("brief");
+    when(resolutions.answered(row)).thenReturn(Map.of());
+
+    recorder.record(
+        row.withCounts(Map.of("21", "1/0/unknown")),
+        Map.of("21", ours),
+        Map.of(),
+        Map.of("21", new Reaction(1, 0)));
+
+    verify(stats, never()).append(anyString(), anyString(), anyString(), any(), anyString());
   }
 
   @Test
@@ -79,9 +105,10 @@ class SignalRecorderTest {
     recorder.record(
         row,
         Map.of("21", ours.withBody("AI review note: rate it")),
+        Map.of(),
         Map.of("21", new Reaction(1, 0)));
 
-    verify(stats).append(row.url(), "21", "reply", 1, 0, "unknown", "");
+    verify(stats).append(row.url(), "21", "reply", new ReviewStats.Rating(1, 0, "unknown", ""), "");
   }
 
   @Test
@@ -92,8 +119,80 @@ class SignalRecorderTest {
     recorder.record(
         row,
         Map.of("21", ours.withBody("AI review note: rate it <!-- jagt-review:k1 -->")),
+        Map.of(),
         Map.of("21", new Reaction(1, 0)));
 
-    verify(stats).append(row.url(), "21", "note", 1, 0, "unknown", NotePoster.digest("brief"));
+    verify(stats)
+        .append(
+            row.url(),
+            "21",
+            "note",
+            new ReviewStats.Rating(1, 0, "unknown", ""),
+            NotePoster.digest("brief"));
+  }
+
+  @Test
+  void humanReplyUnderNoteIsRecordedBesideItsRatingWithItsReactionsAsTheReason() {
+    when(panel.brief()).thenReturn("brief");
+    when(resolutions.answered(row)).thenReturn(Map.of());
+    RequestNote reply =
+        RequestNote.defaults()
+            .withId("22")
+            .withThread("th1")
+            .withKind(AuthorKind.PERSON)
+            .withBody("  the lock\nis held   already ");
+
+    recorder.record(
+        row,
+        Map.of("21", ours.withThread("th1")),
+        Map.of("22", reply),
+        Map.of("21", new Reaction(0, 1), "22", new Reaction(2, 0)));
+
+    verify(stats)
+        .append(
+            row.url(),
+            "21",
+            "note",
+            new ReviewStats.Rating(0, 1, "unknown", "the lock is held already (+2/-0)"),
+            NotePoster.digest("brief"));
+  }
+
+  @Test
+  void thumbsDownWithNoReplyIsRecordedAsReasonUnknown() {
+    when(panel.brief()).thenReturn("brief");
+    when(resolutions.answered(row)).thenReturn(Map.of());
+
+    recorder.record(
+        row, Map.of("21", ours.withThread("th1")), Map.of(), Map.of("21", new Reaction(0, 1)));
+
+    verify(stats)
+        .append(
+            row.url(),
+            "21",
+            "note",
+            new ReviewStats.Rating(0, 1, "unknown", "unknown"),
+            NotePoster.digest("brief"));
+  }
+
+  @Test
+  void replyUnderAnotherThreadIsNotTheReason() {
+    when(panel.brief()).thenReturn("brief");
+    when(resolutions.answered(row)).thenReturn(Map.of());
+    RequestNote elsewhere =
+        RequestNote.defaults().withId("22").withThread("th2").withBody("unrelated");
+
+    recorder.record(
+        row,
+        Map.of("21", ours.withThread("th1")),
+        Map.of("22", elsewhere),
+        Map.of("21", new Reaction(1, 0)));
+
+    verify(stats)
+        .append(
+            row.url(),
+            "21",
+            "note",
+            new ReviewStats.Rating(1, 0, "unknown", ""),
+            NotePoster.digest("brief"));
   }
 }

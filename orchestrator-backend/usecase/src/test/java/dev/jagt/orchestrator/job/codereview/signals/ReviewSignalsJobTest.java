@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
 import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
+import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
@@ -69,7 +70,7 @@ class ReviewSignalsJobTest {
 
     job.run();
 
-    verify(recorder, never()).record(any(), any(), any());
+    verify(recorder, never()).record(any(), any(), any(), any());
     verify(ledger, never()).update(any(), any(), any(), any());
   }
 
@@ -115,6 +116,7 @@ class ReviewSignalsJobTest {
   @ParameterizedTest
   @CsvSource({
     "'AI review note: react with a thumbs up if it helps, a thumbs down if it does not.', 1",
+    "'AI note: 👍 helps, 👎 does not; reply with what is wrong.', 1",
     "'AI <!-- jagt-review:k1 -->', 1",
     "'looks good to me', 0"
   })
@@ -138,6 +140,26 @@ class ReviewSignalsJobTest {
     job.run();
 
     verify(notes, times(rated)).reactions("shop", subject.url(), List.of("8"));
+  }
+
+  @Test
+  void humanReplyUnderOurNoteIsReadWithItsReactionsAndHandedToTheRecorder() {
+    RequestNote threaded = ours.withThread("th1");
+    RequestNote reply =
+        RequestNote.defaults().withId("6").withThread("th1").withBody("the lock is held");
+    RequestNote stranger =
+        RequestNote.defaults().withId("7").withThread("th9").withBody("unrelated");
+    when(ledger.rows()).thenReturn(List.of(row));
+    when(subjects.list()).thenReturn(nothingListed);
+    when(notes.notes("shop", row.url()))
+        .thenReturn(new Answer<>(Optional.of(List.of(threaded, reply, stranger)), TokenUsage.NONE));
+    Answer<Map<String, Reaction>> none = new Answer<>(Optional.of(Map.of()), TokenUsage.NONE);
+    when(notes.reactions(anyString(), anyString(), anyList())).thenReturn(none);
+
+    job.run();
+
+    verify(notes).reactions("shop", row.url(), List.of("5", "6"));
+    verify(recorder).record(row, Map.of("5", threaded), Map.of("6", reply), Map.of());
   }
 
   @ParameterizedTest
