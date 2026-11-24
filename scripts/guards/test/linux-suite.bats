@@ -169,6 +169,11 @@ EOF
   grep -q -- 'gateScan' "$DOCKER_LOG"
 }
 
+@test "the runner moves its processes into an init cgroup before dockerd starts" {
+  run "$script" nightly-stand-kind
+  grep -q 'cgroup.procs >/sys/fs/cgroup/init/cgroup.procs.*dockerd >/tmp/dockerd.log' "$DOCKER_LOG"
+}
+
 # bats test_tags=exit:2
 @test "an unknown job is refused before Docker is touched" {
   run "$script" nonsense

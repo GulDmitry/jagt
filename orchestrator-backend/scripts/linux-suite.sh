@@ -107,6 +107,11 @@ done
 AS_RUNNER='[[ ${KIND_TOOLS:-} != 1 ]] || bash /jagt/orchestrator-backend/scripts/linux-test-deps.sh --kind >/dev/null
 exec 9>/var/lib/docker/.engine.lock
 flock 9
+if [[ -f /sys/fs/cgroup/cgroup.controllers ]]; then
+    mkdir -p /sys/fs/cgroup/init
+    xargs -rn1 </sys/fs/cgroup/cgroup.procs >/sys/fs/cgroup/init/cgroup.procs || true
+    sed -e "s/ / +/g" -e "s/^/+/" </sys/fs/cgroup/cgroup.controllers >/sys/fs/cgroup/cgroup.subtree_control
+fi
 dockerd >/tmp/dockerd.log 2>&1 &
 timeout 60 sh -c "until docker info >/dev/null 2>&1; do sleep 1; done" || { cat /tmp/dockerd.log; exit 1; }
 chmod 666 /var/run/docker.sock
