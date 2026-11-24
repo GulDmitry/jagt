@@ -42,7 +42,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | about to touch | read first |
 |----------------|------------|
 | `flow/`, a status, a capability, an outcome, a task's start | [`task-flow`](openspec/specs/task-flow/spec.md), [`task-start`](openspec/specs/task-start/spec.md) |
-| the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md), [`board-verbs`](openspec/specs/board-verbs/spec.md), [`board-workspace`](openspec/specs/board-workspace/spec.md) |
+| the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md), [`board-verbs`](openspec/specs/board-verbs/spec.md), [`board-workspace`](openspec/specs/board-workspace/spec.md), [`board-settings`](openspec/specs/board-settings/spec.md) |
 | a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
 | whose move it is, a badge, an owner, a clock | [`attention`](openspec/specs/attention/spec.md) |
 | a notification, a point, a channel, a route | [`notification-routing`](openspec/specs/notification-routing/spec.md) |

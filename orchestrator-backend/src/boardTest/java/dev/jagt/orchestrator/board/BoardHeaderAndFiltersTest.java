@@ -60,7 +60,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Page page = openBoard();
 
     page.click("#gear");
-    page.click("#gear-menu button[value=dark]");
+    page.check("#gear-dialog input[name=theme][value=dark]");
     page.reload();
 
     assertThat(page.locator("html")).hasAttribute("data-theme", "dark");
@@ -72,8 +72,50 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     page.click("#gear");
 
-    assertThat(page.locator("#gear-menu button[value=dark]")).isVisible();
+    assertThat(page.locator("#gear-dialog")).isVisible();
     assertThat(page.locator("#gear-logout")).isHidden();
+  }
+
+  @Test
+  void theGearOpensTheDialogWithAppearanceLanguageAndConfigurationEachUnderItsHeading() {
+    Page page = openBoard();
+
+    page.click("#gear");
+
+    assertThat(page.locator("#gear-dialog")).isVisible();
+    assertThat(page.locator("#gear-dialog h3"))
+        .hasText(new String[] {"Appearance", "Language", "Configuration"});
+  }
+
+  @Test
+  void darkAndPolishChosenOnTheGearReadAsChosenAfterReloadAndShowTheirChoiceChecked() {
+    Page page = openBoard();
+    page.click("#gear");
+    page.check("#gear-dialog input[name=theme][value=dark]");
+    page.check("#gear-dialog input[name=lang][value=pl]");
+    assertThat(page.locator("#reports-toggle")).hasText("Raporty ▾");
+
+    page.reload();
+
+    assertThat(page.locator("html")).hasAttribute("data-theme", "dark");
+    assertThat(page.locator("html")).hasAttribute("lang", "pl");
+    page.click("#gear");
+    assertThat(page.locator("#gear-dialog input[name=theme][value=dark]")).isChecked();
+    assertThat(page.locator("#gear-dialog input[name=lang][value=pl]")).isChecked();
+    assertThat(page.locator("#gear-dialog input[name=theme][value=dark]"))
+        .hasAttribute("aria-checked", "true");
+  }
+
+  @Test
+  void escapeClosesTheGearDialogAndFocusReturnsToTheGear() {
+    Page page = openBoard();
+    page.click("#gear");
+    assertThat(page.locator("#gear-dialog")).isVisible();
+
+    page.keyboard().press("Escape");
+
+    assertThat(page.locator("#gear-dialog")).isHidden();
+    assertThat(page.locator("#gear")).isFocused();
   }
 
   @Test
@@ -81,7 +123,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Page page = openBoard();
 
     page.click("#gear");
-    page.click("#gear-menu button[data-lang=pl]");
+    page.check("#gear-dialog input[name=lang][value=pl]");
     assertThat(page.locator("#reports-toggle")).hasText("Raporty ▾");
     page.reload();
 
@@ -99,7 +141,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Page page = openBoard();
 
     page.click("#gear");
-    page.click("#gear-menu button[data-lang=xx]");
+    page.check("#gear-dialog input[name=lang][value=xx]");
 
     assertThat(page.locator("#reports-toggle")).hasText("Reports-xx");
     assertThat(page.locator("#new-task span")).hasText("New task");
@@ -112,7 +154,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Page page = openBoard();
 
     page.click("#gear");
-    page.click("#gear-menu button[data-lang=pl]");
+    page.check("#gear-dialog input[name=lang][value=pl]");
 
     assertThat(page.locator("#reports-toggle")).hasText("Zestawienia");
     assertThat(page.locator("#new-task span")).hasText("Nowe zadanie");

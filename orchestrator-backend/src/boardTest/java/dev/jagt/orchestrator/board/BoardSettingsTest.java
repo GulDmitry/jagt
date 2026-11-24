@@ -25,14 +25,25 @@ class BoardSettingsTest extends BoardPageContext {
 
     assertThat(page.locator("#settings-dialog")).isVisible();
     assertThat(page.locator("#settings-body section")).hasCount(5);
+    assertThat(page.locator("#settings-body [role=tab]")).hasCount(5);
     assertThat(page.locator("#settings-body section[data-section=projects]")).isVisible();
-    assertThat(page.locator("#settings-body section[data-section=review]")).isVisible();
-    assertThat(page.locator("#settings-body section[data-section=tracker]")).isVisible();
-    assertThat(page.locator("#settings-body section[data-section=master]")).isVisible();
-    assertThat(page.locator("#settings-body section[data-section=notifications]")).isVisible();
+    assertThat(page.locator("#settings-body section[data-section=review]")).isHidden();
     assertThat(page.locator("#settings-body [data-key*=model]")).hasCount(0);
     assertThat(page.locator("#settings-body [data-key^=agent]")).hasCount(0);
     assertThat(page.locator("#settings-body [data-key^='roles.']")).hasCount(1);
+  }
+
+  @Test
+  void projectEditButtonNamesItsProjectAndMasterModeIsChosenByRadios() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+
+    assertThat(page.locator("#settings-body [data-project=alpha] button"))
+        .hasAttribute("aria-label", "Edit alpha");
+    page.locator("#settings-tab-master").click();
+    assertThat(page.locator("#settings-body [data-key='roles.master.mode'] input[type=radio]"))
+        .hasCount(3);
   }
 
   @Test
@@ -78,6 +89,7 @@ class BoardSettingsTest extends BoardPageContext {
     page.locator("#gear").click();
     page.locator("#gear-settings").click();
 
+    page.locator("#settings-tab-review").click();
     page.locator("#settings-body [data-key='autoReview.enabled'] input").uncheck();
 
     assertThat(page.locator("#toasts .toast")).containsText("Changed autoReview.enabled");
@@ -92,6 +104,7 @@ class BoardSettingsTest extends BoardPageContext {
     page.locator("#gear-settings").click();
     assertThat(page.locator("#settings-restart")).isHidden();
 
+    page.locator("#settings-tab-review").click();
     page.locator("#settings-body [data-key='infraWait.backoff'] input").fill("1m, 2m");
     page.locator("#settings-body [data-key='infraWait.backoff'] input").blur();
 
@@ -113,6 +126,7 @@ class BoardSettingsTest extends BoardPageContext {
     String before = Files.readString(file);
     file.toFile().setWritable(false);
     try {
+      page.locator("#settings-tab-review").click();
       page.locator("#settings-body [data-key='autoReview.enabled'] input").uncheck();
 
       assertThat(page.locator("#toasts .toast.error")).containsText("not writable");

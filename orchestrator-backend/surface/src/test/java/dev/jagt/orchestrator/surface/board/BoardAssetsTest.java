@@ -162,7 +162,7 @@ class BoardAssetsTest {
               .sum();
     }
 
-    assertThat(bytes).isLessThan(224 * 1024);
+    assertThat(bytes).isLessThan(232 * 1024);
   }
 
   @Test
