@@ -502,9 +502,13 @@ public record TaskState(
     return toBuilder().repos(placed).repoRequest(null).baseBranch(baseBranch).build();
   }
 
-  /** The primary repository stays, so the last one does. */
+  /** The task's last repository stays, whatever it holds. */
   public boolean canLose(String project) {
-    return !project.equals(project());
+    return repos.size() > 1 && repo(project).isPresent();
+  }
+
+  public boolean isPrimary(String project) {
+    return project.equals(project());
   }
 
   public TaskState withoutRepo(String project) {

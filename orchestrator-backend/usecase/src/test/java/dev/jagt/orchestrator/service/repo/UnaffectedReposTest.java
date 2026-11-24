@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.service.repo;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -73,19 +71,25 @@ class UnaffectedReposTest {
 
     new UnaffectedRepos(state, new TaskArtifacts(state), config, git, departure).leave("ABC-42");
 
-    verify(departure).leave("ABC-42", web, "the approved plan marks it unaffected");
+    verify(departure).leaveWorkless("ABC-42", web, "the approved plan marks it unaffected");
   }
 
   @Test
-  void thePrimaryRepositoryStaysOnTheTaskWhenThePlanMarksItUnaffected() throws IOException {
+  void thePrimaryRepositoryLeavesTheTaskWhenThePlanMarksItUnaffected() throws IOException {
     Files.writeString(
         root.resolve("plan.md"),
         "## Repositories\n- [unaffected: only the web changes] api\n- [changed] web\n");
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/srv/api", "origin/main", "dev", List.of()));
+    when(git.holdsOwnCommits(Path.of("/srv/api"), "ABC-42", "origin/main")).thenReturn(false);
 
     new UnaffectedRepos(state, new TaskArtifacts(state), config, git, departure).leave("ABC-42");
 
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
-    verifyNoInteractions(departure);
+    verify(departure)
+        .leaveWorkless(
+            "ABC-42",
+            new TaskRepo("api", root.toString(), "git@host:g/api.git", null),
+            "the approved plan marks it unaffected");
   }
 
   @Test
@@ -112,19 +116,6 @@ class UnaffectedReposTest {
 
     assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
     verifyNoInteractions(departure, git);
-  }
-
-  @Test
-  void thePrimaryRepositoryAloneStaysWhereThePlanMarksEveryOneUnaffected() throws IOException {
-    Files.writeString(
-        root.resolve("plan.md"),
-        "## Repositories\n- [unaffected: nothing moves] api\n- [unaffected: nothing moves] web\n");
-    when(config.project(any()))
-        .thenReturn(new ProjectConfig("/srv/any", "origin/main", "dev", List.of()));
-
-    new UnaffectedRepos(state, new TaskArtifacts(state), config, git, departure).leave("ABC-42");
-
-    verify(departure).leave(eq("ABC-42"), any(), any());
   }
 
   @Test

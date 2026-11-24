@@ -74,6 +74,6 @@ public class UnaffectedRepos {
           .log();
       return;
     }
-    departure.leave(taskId, repo, "the approved plan marks it unaffected");
+    departure.leaveWorkless(taskId, repo, "the approved plan marks it unaffected");
   }
 }
