@@ -98,7 +98,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -165,8 +164,7 @@ public final class FakeJobWorld implements AutoCloseable {
   private final CommandService commands;
   private int reviewed;
   private int edits;
-  private final ScheduledExecutorService retries =
-      Executors.newSingleThreadScheduledExecutor(); // allowed: 0237
+  private final ScheduledExecutorService retries = mock(ScheduledExecutorService.class);
   private final List<Told> sent = new ArrayList<>();
   private final List<Said> said = new ArrayList<>();
   private Jobs jobs;
@@ -476,7 +474,6 @@ public final class FakeJobWorld implements AutoCloseable {
 
   @Override
   public void close() {
-    retries.shutdownNow();
     try (Stream<Path> files = Files.walk(root)) {
       files.sorted(Comparator.reverseOrder()).forEach(file -> file.toFile().delete());
     } catch (IOException e) {

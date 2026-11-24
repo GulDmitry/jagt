@@ -147,8 +147,6 @@ abstract class BoardPageContext {
     try {
       Path created = Files.createTempDirectory("board-root");
       nameTheProjectsTheBoardOffers(created);
-      Runnable cleanup = () -> FileSystemUtils.deleteRecursively(created.toFile());
-      Runtime.getRuntime().addShutdownHook(new Thread(cleanup)); // allowed: 0237
       return created;
     } catch (IOException e) {
       throw new UncheckedIOException(e);

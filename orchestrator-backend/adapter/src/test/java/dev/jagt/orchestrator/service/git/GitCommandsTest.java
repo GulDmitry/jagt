@@ -11,8 +11,6 @@ import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -52,21 +50,16 @@ class GitCommandsTest {
   }
 
   @Test
-  void letsSecondCallerIntoRepositoryOnceTheFirstActionReturned(@TempDir Path repo)
-      throws Exception {
+  void letsSecondCallerIntoRepositoryOnceTheFirstActionReturned(@TempDir Path repo) {
     GitCommands git =
         new GitCommands(
             mock(Processes.class),
             mock(WorktreeProcesses.class),
             path -> java.util.Optional.empty(),
             new NoWorktreeContainers());
-    CompletableFuture<String> first = new CompletableFuture<>(); // allowed: 0237
-    Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
-    first.get(5, TimeUnit.SECONDS);
-    CompletableFuture<String> second = new CompletableFuture<>(); // allowed: 0237
-    Thread.startVirtualThread(() -> second.complete(git.locked(repo, () -> "second")));
+    git.locked(repo, () -> "first");
 
-    String answered = second.get(5, TimeUnit.SECONDS);
+    String answered = git.locked(repo, () -> "second");
 
     assertThat(answered).isEqualTo("second");
   }

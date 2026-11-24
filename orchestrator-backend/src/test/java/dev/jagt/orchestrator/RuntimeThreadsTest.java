@@ -2,7 +2,7 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
@@ -23,18 +23,18 @@ class RuntimeThreadsTest {
 
   @Test
   void autoReviewSweepsRunOnTheirOwnDaemonThread() throws Exception {
-    ExecutorService sweeps = (ExecutorService) wiring.autoReviewSweeps(); // allowed: 0237
+    FutureTask<Thread> running = new FutureTask<>(Thread::currentThread);
 
-    Thread thread = sweeps.submit(Thread::currentThread).get();
+    wiring.autoReviewSweeps().execute(running);
 
+    Thread thread = running.get();
     assertThat(thread.getName()).isEqualTo("auto-review");
     assertThat(thread.isDaemon()).isTrue();
-    sweeps.shutdownNow();
   }
 
   @Test
   void boardBroadcastsOnItsOwnDaemonThread() throws Exception {
-    ExecutorService broadcaster = wiring.boardBroadcaster(); // allowed: 0237
+    var broadcaster = wiring.boardBroadcaster();
 
     Thread thread = broadcaster.submit(Thread::currentThread).get();
 

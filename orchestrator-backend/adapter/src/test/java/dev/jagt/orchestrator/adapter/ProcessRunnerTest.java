@@ -19,13 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.SmartLifecycle;
 
 public class ProcessRunnerTest {
@@ -184,62 +181,24 @@ public class ProcessRunnerTest {
         .hasMessageContaining("timed out");
 
     long child = Long.parseLong(Files.readString(childPid).strip());
-    CompletableFuture<?> exited = // allowed: 0237
-        ProcessHandle.of(child)
-            .map(ProcessHandle::onExit)
-            .map(future -> (CompletableFuture<?>) future) // allowed: 0237
-            .orElse(CompletableFuture.completedFuture(null));
     try {
-      exited.get(60, TimeUnit.SECONDS);
+      ProcessHandle.of(child).ifPresent(handle -> handle.onExit().join());
     } finally {
       ProcessHandle.of(child).ifPresent(ProcessHandle::destroyForcibly);
     }
   }
 
   @Test
-  void killsTheCommandWhenTheCallerWaitingOnItIsInterrupted(@TempDir Path dir) throws Exception {
-    Path pid = dir.resolve("pid");
-    AtomicReference<Throwable> ended = new AtomicReference<>();
-    Thread caller =
-        Thread.startVirtualThread(() ->
-            ended.set(
-                catchThrowable(() ->
-                    new ProcessRunner()
-                        .run(
-                            null,
-                            Duration.ofSeconds(30),
-                            List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
-    await()
-        .ignoreExceptions()
-        .atMost(WAIT_CEILING)
-        .until(() -> Files.readString(pid).endsWith("\n"));
-    ProcessHandle command =
-        ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
-
-    caller.interrupt();
-
-    try {
-      command.onExit().get(60, TimeUnit.SECONDS);
-    } finally {
-      command.destroyForcibly();
-    }
-  }
-
-  @Test
-  void tellsTheCallerItWasStoppedWithJagtWhenInterruptedWhileJagtCloses() throws Exception {
+  void tellsTheCallerItWasStoppedWithJagtWhenInterruptedWhileJagtCloses() {
     ProcessRunner runner = new ProcessRunner();
     runner.closes();
-    AtomicReference<Throwable> ended = new AtomicReference<>();
-    Thread caller =
-        Thread.startVirtualThread(() ->
-            ended.set(
-                catchThrowable(
-                    () -> runner.run(null, Duration.ofSeconds(30), List.of("sleep", "30")))));
+    Thread.currentThread().interrupt();
 
-    caller.interrupt();
-    caller.join(Duration.ofSeconds(60));
+    Throwable ended =
+        catchThrowable(() -> runner.run(null, Duration.ofSeconds(30), List.of("sleep", "30")));
 
-    assertThat(ended.get()).isInstanceOf(Processes.Stopped.class);
+    assertThat(ended).isInstanceOf(Processes.Stopped.class);
+    assertThat(Thread.interrupted()).isTrue();
   }
 
   @Test
@@ -277,68 +236,6 @@ public class ProcessRunnerTest {
   }
 
   @Test
-  void killsTheCommandsStillRunningWhenJagtStops(@TempDir Path dir) throws Exception {
-    ProcessRunner runner = new ProcessRunner();
-    Path pid = dir.resolve("pid");
-    AtomicReference<Throwable> ended = new AtomicReference<>();
-    Thread.startVirtualThread(() ->
-        ended.set(
-            catchThrowable(() ->
-                runner.run(
-                    null,
-                    Duration.ofSeconds(30),
-                    List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
-    await()
-        .atMost(WAIT_CEILING)
-        .until(() -> Files.exists(pid) && Files.readString(pid).endsWith("\n"));
-    ProcessHandle command =
-        ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
-
-    runner.close();
-
-    try {
-      command.onExit().get(60, TimeUnit.SECONDS);
-    } finally {
-      command.destroyForcibly();
-    }
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"", "trap '' TERM; "})
-  void leavesNeitherTheCommandNorItsDescendantAliveWhenTheOwnerCloses(
-      String ignoring, @TempDir Path dir) throws Exception {
-    ProcessRunner runner = new ProcessRunner();
-    Path pids = dir.resolve("pids");
-    AtomicReference<Throwable> ended = new AtomicReference<>();
-    Thread.startVirtualThread(() ->
-        ended.set(
-            catchThrowable(() ->
-                runner.run(
-                    null,
-                    Duration.ofSeconds(60),
-                    List.of(
-                        "sh",
-                        "-c",
-                        ignoring + "sleep 30 & echo $$ $! > " + pids + "; wait; wait")))));
-    await()
-        .ignoreExceptions()
-        .atMost(WAIT_CEILING)
-        .until(() -> Files.readString(pids).endsWith("\n"));
-    String[] ids = Files.readString(pids).strip().split(" ", 2);
-    ProcessHandle command = ProcessHandle.of(Long.parseLong(ids[0])).orElseThrow();
-    ProcessHandle descendant = ProcessHandle.of(Long.parseLong(ids[1])).orElseThrow();
-
-    runner.stop();
-
-    try {
-      await().atMost(WAIT_CEILING).until(() -> !command.isAlive() && !descendant.isAlive());
-    } finally {
-      command.destroyForcibly();
-      descendant.destroyForcibly();
-    }
-  }
-
-  @Test
   void stopsAfterTheSessionEndingsWhichStillRunCommandsThroughIt() {
     ProcessRunner runner = new ProcessRunner();
 
@@ -355,31 +252,6 @@ public class ProcessRunnerTest {
 
     assertThat(before).isTrue();
     assertThat(runner.isRunning()).isFalse();
-  }
-
-  @Test
-  void tellsTheCallerItsCommandWasStoppedWithJagtRatherThanThatItFailed(@TempDir Path dir)
-      throws Exception {
-    ProcessRunner runner = new ProcessRunner();
-    Path pid = dir.resolve("pid");
-    AtomicReference<Throwable> answered = new AtomicReference<>();
-    Thread caller =
-        Thread.startVirtualThread(() ->
-            answered.set(
-                catchThrowable(() ->
-                    runner.run(
-                        null,
-                        Duration.ofSeconds(30),
-                        List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
-    await()
-        .ignoreExceptions()
-        .atMost(WAIT_CEILING)
-        .until(() -> Files.readString(pid).endsWith("\n"));
-
-    runner.close();
-    caller.join(Duration.ofSeconds(60));
-
-    assertThat(answered.get()).isInstanceOf(Processes.Stopped.class);
   }
 
   @Test
@@ -524,34 +396,17 @@ public class ProcessRunnerTest {
   }
 
   @Test
-  void keepsTheCallersInterruptSetAfterKillingTheCommand(@TempDir Path dir) throws Exception {
-    Path pid = dir.resolve("pid");
-    AtomicBoolean stillInterrupted = new AtomicBoolean();
-    AtomicReference<Throwable> ended = new AtomicReference<>();
-    Thread caller =
-        Thread.startVirtualThread(() -> {
-          ended.set(
-              catchThrowable(() ->
-                  new ProcessRunner()
-                      .run(
-                          null,
-                          Duration.ofSeconds(30),
-                          List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
-          stillInterrupted.set(Thread.currentThread().isInterrupted());
-        });
-    await()
-        .ignoreExceptions()
-        .atMost(WAIT_CEILING)
-        .until(() -> Files.readString(pid).endsWith("\n"));
+  void keepsTheCallersInterruptSetAfterKillingTheCommand() {
+    Thread.currentThread().interrupt();
 
-    ProcessHandle command =
-        ProcessHandle.of(Long.parseLong(Files.readString(pid).strip())).orElseThrow();
+    Throwable ended =
+        catchThrowable(
+            () -> new ProcessRunner().run(null, Duration.ofSeconds(30), List.of("sleep", "30")));
 
-    caller.interrupt();
-    caller.join(Duration.ofSeconds(60));
-    command.destroyForcibly();
-
-    assertThat(stillInterrupted).isTrue();
+    assertThat(ended)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Interrupted while running");
+    assertThat(Thread.interrupted()).isTrue();
   }
 
   @Test

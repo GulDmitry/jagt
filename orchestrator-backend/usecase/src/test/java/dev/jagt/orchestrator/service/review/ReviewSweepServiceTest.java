@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service.review;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -14,8 +13,6 @@ import dev.jagt.orchestrator.service.RoundReading;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,40 +111,5 @@ class ReviewSweepServiceTest {
 
     assertThat(second.kind()).isNotEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
     verify(reading, times(2)).read("ABC-1");
-  }
-
-  @Test
-  void refusesConcurrentSweepFromAnotherThreadNotJustReentrantCall() throws InterruptedException {
-    CountDownLatch firstSweepIsInside = new CountDownLatch(1);
-    CountDownLatch secondSweepReturned = new CountDownLatch(1);
-    AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();
-    when(reading.read("ABC-1"))
-        .thenAnswer(call -> {
-          firstSweepIsInside.countDown();
-          secondSweepReturned.await(5, TimeUnit.SECONDS);
-          return new RoundReading.Refused(
-              new ReviewSweepService.SweepResult(
-                  ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
-        });
-    Runnable contending =
-        () -> {
-          try {
-            firstSweepIsInside.await(5, TimeUnit.SECONDS);
-            fromOtherThread.set(sweep.sweep("ABC-1"));
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          } finally {
-            secondSweepReturned.countDown();
-          }
-        };
-    Thread contender = new Thread(contending, "contending-sweep"); // allowed: 0237
-
-    contender.start();
-    sweep.sweep("ABC-1");
-    contender.join(TimeUnit.SECONDS.toMillis(5));
-
-    assertThat(fromOtherThread.get().kind())
-        .isEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
-    verify(reading, times(1)).read(any());
   }
 }

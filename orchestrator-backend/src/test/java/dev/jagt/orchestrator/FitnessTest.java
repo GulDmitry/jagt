@@ -19,6 +19,8 @@ import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class FitnessTest {
 
@@ -89,5 +91,48 @@ class FitnessTest {
 
     assertThat(new Report(function, evaluation.measure(function)).failure())
         .hasValueSatisfying(failure -> assertThat(failure).contains("sleep-in-main", "value 5"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "Thread, .sleep(1)",
+    "new Thread, (task)",
+    "Thread, .ofPlatform()",
+    "Thread, .ofVirtual()",
+    "Thread.start, VirtualThread(task)",
+    "@Time, out(5)",
+    "assertTime, out(limit)",
+    "Executor, Service pool",
+    "Executors, .newFixedThreadPool(2)",
+    "Completable, Future.runAsync(task)"
+  })
+  void testWithTimerOrOwnThreadFailsNamingItsFile(String head, String tail, @TempDir Path root)
+      throws IOException {
+    String row =
+        Files.readAllLines(Path.of("../fitness.yml")).stream()
+            .filter(line -> line.contains("timing-in-tests:"))
+            .findFirst()
+            .orElseThrow()
+            .strip();
+    Path source = root.resolve("backend/src/test/java/p/WaitsTest.java");
+    Files.createDirectories(source.getParent());
+    Files.writeString(source, "class WaitsTest {\n  Object waits = " + head + tail + ";\n}\n");
+    Path config = root.resolve("fitness.yml");
+    Files.writeString(
+        config,
+        """
+        schema: 1
+        project: { root: backend, basePackage: p, sourceSets: all }
+        technical: { maintainability: { testability: { %s } } }
+        """
+            .formatted(row));
+
+    var loaded = Evaluation.load(config);
+    var timing = loaded.config().functions().getFirst();
+    var report = new Report(timing, loaded.measure(timing));
+
+    assertThat(report.failure())
+        .hasValueSatisfying(
+            failure -> assertThat(failure).contains("timing-in-tests", "WaitsTest.java"));
   }
 }

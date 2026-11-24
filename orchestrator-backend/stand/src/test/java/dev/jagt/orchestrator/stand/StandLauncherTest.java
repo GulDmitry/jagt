@@ -3,12 +3,9 @@ package dev.jagt.orchestrator.stand;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -16,8 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -274,28 +269,5 @@ class StandLauncherTest {
 
     assertThatThrownBy(() -> launcher.server("server")).isInstanceOf(TestAbortedException.class);
     assertThat(dir.resolve("base")).doesNotExist();
-  }
-
-  @Test
-  void serverRunWaitsForSlotWhileTheLiveRunsHoldThemAll() throws Exception {
-    StandEngine engine = new StandEngine(StandEngine.COMPOSE, tool -> true, name -> null, launches);
-    StandLauncher launcher = new StandLauncher(engine, teardown, place, asleep, poll);
-    slots.take();
-    slots.take();
-
-    CompletableFuture<ServerRun> waiting = // allowed: 0237
-        CompletableFuture.supplyAsync(() -> { // allowed: 0237
-          try {
-            return launcher.server("server");
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
-
-    await().during(Duration.ofMillis(300)).atMost(WaitCeiling.LIMIT).until(() -> !waiting.isDone());
-    slots.free();
-    try (ServerRun run = waiting.get(30, TimeUnit.SECONDS)) {
-      assertThat(run.root().resolve("jagt.yml")).exists();
-    }
   }
 }

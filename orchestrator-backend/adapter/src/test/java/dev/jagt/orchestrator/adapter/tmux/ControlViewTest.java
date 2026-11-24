@@ -2,11 +2,12 @@ package dev.jagt.orchestrator.adapter.tmux;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
+import dev.jagt.orchestrator.adapter.ProcessRunnerTest;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -90,7 +91,8 @@ class ControlViewTest {
 
     client.exit();
 
-    assertThat(sink.endedWith().get(5, TimeUnit.SECONDS)).contains("ended");
+    await().atMost(ProcessRunnerTest.WAIT_CEILING).until(() -> sink.endedWith() != null);
+    assertThat(sink.endedWith()).contains("ended");
   }
 
   @Test
@@ -102,7 +104,7 @@ class ControlViewTest {
     view.close();
 
     assertThat(client.destroyed()).isTrue();
-    assertThat(sink.endedWith()).isNotDone();
+    assertThat(sink.endedWith()).isNull();
   }
 
   @Test

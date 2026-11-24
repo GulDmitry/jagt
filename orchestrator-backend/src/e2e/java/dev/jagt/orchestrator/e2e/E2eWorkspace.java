@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -274,23 +273,22 @@ final class E2eWorkspace {
     List<String> full = new java.util.ArrayList<>(List.of(Executables.resolve(command)));
     full.addAll(List.of(args));
     try {
-      Process process = new ProcessBuilder(full).redirectErrorStream(true).start();
-      var output = new CompletableFuture<String>(); // allowed: 0237
-      Thread.startVirtualThread(() -> {
-        try {
-          output.complete(new String(process.getInputStream().readAllBytes(), UTF_8));
-        } catch (IOException unreadable) {
-          output.complete("");
+      Path output = Files.createTempFile("tmux-output", ".txt");
+      try {
+        Process process =
+            new ProcessBuilder(full)
+                .redirectErrorStream(true)
+                .redirectOutput(output.toFile())
+                .start();
+        if (!process.waitFor(10, TimeUnit.SECONDS)) {
+          process.descendants().forEach(ProcessHandle::destroyForcibly);
+          process.destroyForcibly();
+          return null;
         }
-      });
-      if (!process.waitFor(10, TimeUnit.SECONDS)) {
-        process.descendants().forEach(ProcessHandle::destroyForcibly);
-        process.destroyForcibly();
-        return null;
+        return process.exitValue() == 0 ? Files.readString(output) : null;
+      } finally {
+        Files.deleteIfExists(output);
       }
-      return process.exitValue() == 0
-          ? output.completeOnTimeout("", 2, TimeUnit.SECONDS).join()
-          : null;
     } catch (IOException e) {
       return null;
     } catch (InterruptedException e) {
