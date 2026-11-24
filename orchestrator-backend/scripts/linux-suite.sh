@@ -133,7 +133,8 @@ done
 # modes. Only the volumes it writes are handed to it first; a read-only cache seeds the run's own home with what Gradle
 # and npm cannot read from a read-only one. One engine volume holds one engine, so a second container of the run waits on its lock.
 # shellcheck disable=SC2016 # the container's shell expands it
-AS_RUNNER='exec 9>/var/lib/docker/.engine.lock
+AS_RUNNER='[[ ${KIND_TOOLS:-} != 1 ]] || bash /jagt/orchestrator-backend/scripts/linux-test-deps.sh --kind >/dev/null
+exec 9>/var/lib/docker/.engine.lock
 flock 9
 dockerd >/tmp/dockerd.log 2>&1 &
 timeout 60 sh -c "until docker info >/dev/null 2>&1; do sleep 1; done" || { cat /tmp/dockerd.log; exit 1; }
@@ -151,6 +152,8 @@ exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" --init-groups env HOME="$(get
 RUN_UID=1001 # a hosted runner's, unknown to the image
 if [[ $(uname -s) == Linux ]]; then RUN_UID=$(stat -c %u "$REPO_ROOT"); fi
 # ci.yml's test job runs in its container as root, so its twin does too.
+# The kind engine's tools are installed in its own run alone, never baked into the scanned image.
+kind_tools() { if [[ $1 == nightly-stand-kind ]]; then echo 1; else echo 0; fi; }
 job_uid() { if [[ $1 == test ]]; then echo 0; else echo "$RUN_UID"; fi; }
 
 # A linked worktree's .git points at its main checkout's git dir by absolute path, so that dir is mounted there too.
@@ -186,7 +189,7 @@ for job in "$@"; do
     warm_up "$job" || { status=$?; echo "==> $job warm-up red (exit $status)"; continue; }
     echo "==> $job ($cpus CPUs, $RUNNER_MEMORY): $line"
     # shellcheck disable=SC2086,SC2046 # the gate is a command line, the network a few options
-    docker run "${COMMON[@]}" $(network "$job") -e RUN_UID="$(job_uid "$job")" -e GRADLE_USER_HOME=/gradle-home -e GRADLE_RO_DEP_CACHE=/gradle-ro/caches \
+    docker run "${COMMON[@]}" $(network "$job") -e RUN_UID="$(job_uid "$job")" -e KIND_TOOLS="$(kind_tools "$job")" -e GRADLE_USER_HOME=/gradle-home -e GRADLE_RO_DEP_CACHE=/gradle-ro/caches \
         -e PLAYWRIGHT_BROWSERS_PATH=/gradle-ro/ms-playwright -e npm_config_cache=/gradle-home/npm-cache \
         -e npm_config_offline=true -v "$RUN_VOLUME:/gradle-home" -v "$CACHE_VOLUME:/gradle-ro:ro" \
         "$IMAGE" bash -c "$AS_RUNNER" - $line "${CONCURRENCY[@]}" || { status=$?; echo "==> $job red (exit $status)"; }

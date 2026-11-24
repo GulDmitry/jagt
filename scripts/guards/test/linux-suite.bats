@@ -35,6 +35,12 @@ EOF
   grep resolveAll "$DOCKER_LOG" | grep -q ':stand:standPull'
 }
 
+@test "only the kind stand installs the kind tools, in its own run" {
+  run "$script" nightly-stand-kind stand
+  grep gateStand "$DOCKER_LOG" | grep -- '-Pengine=kind' | grep -q -- '-e KIND_TOOLS=1 '
+  grep gateStand "$DOCKER_LOG" | grep -- '-Pengine=compose' | grep -q -- '-e KIND_TOOLS=0 '
+}
+
 @test "the offline container still resolves its own hostname" {
   run "$script" test
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--hostname runner --add-host runner:127.0.0.1'
