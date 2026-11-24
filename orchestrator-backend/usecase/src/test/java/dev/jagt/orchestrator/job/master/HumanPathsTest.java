@@ -36,7 +36,7 @@ class HumanPathsTest {
                   new ProjectConfig.Branches("origin/main", "dev", null),
                   ProjectConfig.CodeHost.defaults(),
                   new ProjectConfig.Verify(List.of(), null),
-                  new ProjectConfig.Setup(List.of(), null)));
+                  new ProjectConfig.Setup(List.of(), null, List.of())));
     }
 
     @Test

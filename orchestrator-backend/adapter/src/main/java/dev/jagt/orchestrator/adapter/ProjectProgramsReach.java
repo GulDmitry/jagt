@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.adapter.flows.FlowsRunner;
+import dev.jagt.orchestrator.adapter.worktree.CredentialChecks;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.reach.Reach;
@@ -13,7 +14,10 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
-/** A verify, setup or flows program the image lacks is jagt's own reach failing, never a card's. */
+/**
+ * A verify, setup or flows program the image lacks, or a project credential that fails its check,
+ * is jagt's own reach failing.
+ */
 @Component
 @RequiredArgsConstructor
 public class ProjectProgramsReach implements Job {
@@ -21,6 +25,7 @@ public class ProjectProgramsReach implements Job {
   private final ConfigService configService;
   private final RoleKits kits;
   private final Reach reach;
+  private final CredentialChecks credentials;
 
   @Override
   public String id() {
@@ -29,7 +34,8 @@ public class ProjectProgramsReach implements Job {
 
   @Override
   public String describe() {
-    return "reads whether each verify, setup and flows program is installed";
+    return "reads whether each verify, setup and flows program is installed, and each credential"
+        + " check passes";
   }
 
   @Override
@@ -46,6 +52,7 @@ public class ProjectProgramsReach implements Job {
           read("verifyCommand", name, project.verifyCommand());
           read("setupCommand", name, project.setupCommand());
         });
+    credentials.runDue();
     kits.all().forEach(kit -> flows(kit.settings().role().id(), kit.settings().load()));
   }
 

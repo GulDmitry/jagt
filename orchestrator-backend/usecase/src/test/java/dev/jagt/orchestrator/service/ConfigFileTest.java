@@ -431,7 +431,8 @@ class ConfigFileTest {
                             List.of(),
                             dev.jagt.orchestrator.task.repo.ProjectConfig.Review.NONE),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Verify(List.of(), null),
-                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Setup(List.of(), null))));
+                        new dev.jagt.orchestrator.task.repo.ProjectConfig.Setup(
+                            List.of(), null, List.of()))));
 
     assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
   }

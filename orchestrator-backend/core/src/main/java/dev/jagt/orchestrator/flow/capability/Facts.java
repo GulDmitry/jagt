@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import lombok.With;
+import org.jspecify.annotations.Nullable;
 
 /** What a rule may ask about a task besides its status. */
 @With
@@ -68,12 +69,15 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
     }
   }
 
-  /** What the configuration lets jagt offer, whatever the task is. */
+  /**
+   * What the configuration lets jagt offer, whatever the task is; {@code sessionHeld} is why the
+   * task's session cannot start, null where nothing holds it.
+   */
   @With
-  public record Reach(boolean scenarios, boolean shellEscape) {
+  public record Reach(boolean scenarios, boolean shellEscape, @Nullable String sessionHeld) {
 
     public static Reach defaults() {
-      return new Reach(false, false);
+      return new Reach(false, false, null);
     }
   }
 

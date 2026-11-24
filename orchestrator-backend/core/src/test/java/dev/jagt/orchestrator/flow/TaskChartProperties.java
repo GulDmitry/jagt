@@ -625,7 +625,7 @@ class TaskChartProperties {
               new Facts.Delivery(true, true, true, true, true, () -> true),
               new Facts.Hold(true, true, true, true, () -> true),
               new Facts.Workspace(true, true, true, Optional::empty, Optional::empty),
-              new Facts.Reach(true, true));
+              new Facts.Reach(true, true, null));
       List<Facts> variants =
           List.of(
               none,

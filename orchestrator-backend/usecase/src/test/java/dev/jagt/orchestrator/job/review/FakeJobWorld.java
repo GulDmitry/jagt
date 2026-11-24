@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
@@ -279,8 +280,8 @@ public final class FakeJobWorld implements AutoCloseable {
             new Rounds(
                 config,
                 ignored -> false,
-                () -> false,
-                () -> false,
+                () -> Facts.Reach.defaults(),
+                unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             config);
     Notifications notifications =
@@ -290,7 +291,7 @@ public final class FakeJobWorld implements AutoCloseable {
             new ChannelPosts(List.of(driver), new FakeReach(), Runnable::run, retries),
             state);
     SessionHosting hosting = new SessionHosting(host, runtime, new CarriedBlock(changes, runtime));
-    AgentWindows windows = new AgentWindows(config, state, hosting);
+    AgentWindows windows = new AgentWindows(config, state, hosting, unvetted -> null);
     AgentSessions sessions =
         new AgentSessions(state, hosting, rules, windows, new FreshStarts(windows, state, hosting));
     UsageTracker usage = new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, clock));

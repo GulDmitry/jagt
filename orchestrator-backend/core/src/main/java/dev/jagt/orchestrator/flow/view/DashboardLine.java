@@ -32,7 +32,8 @@ public final class DashboardLine {
 
   private DashboardLine() {}
 
-  public static Line forTask(TaskState task, @Nullable String usableRequestLink) {
+  public static Line forTask(
+      TaskState task, @Nullable String usableRequestLink, @Nullable String held) {
     if (task.gate().gitStateChanged()) {
       return new Line(
           Kind.YOURS, "NEEDS YOU: " + Objects.requireNonNull(task.gate().gitTrust()).changed());
@@ -79,7 +80,7 @@ public final class DashboardLine {
                         + " — the open threads are the reviewer's to close");
             case QUESTION, PERMISSION, PLAIN, WAIT -> requestProblem(task, usableRequestLink);
           };
-      case NEW, IN_PROGRESS, SHIPPING -> silence(task);
+      case NEW, IN_PROGRESS, SHIPPING -> heldOrSilent(task, held);
       case PLAN_PENDING, VERIFYING, DONE -> Line.NONE;
     };
   }
@@ -114,6 +115,10 @@ public final class DashboardLine {
               : "nothing has moved in its session";
     }
     return new Line(Kind.YOURS, "NEEDS YOU: agent stopped: " + because);
+  }
+
+  private static Line heldOrSilent(TaskState task, @Nullable String held) {
+    return held == null ? silence(task) : new Line(Kind.NOTE, "NO SESSION STARTS: " + held);
   }
 
   private static Line needsInput(AgentReport report, @Nullable String message) {

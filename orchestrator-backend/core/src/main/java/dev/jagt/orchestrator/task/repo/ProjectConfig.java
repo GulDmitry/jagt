@@ -110,17 +110,33 @@ public record ProjectConfig(
 
   /**
    * {@code command}: run once in every new worktree of the project before its session starts, empty
-   * = nothing; {@code minutes}: null, zero or negative = 20.
+   * = nothing; {@code minutes}: null, zero or negative = 20. {@code credentialChecks}: read before
+   * a session of the project starts.
    */
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record Setup(
       @JsonProperty("setupCommand") List<String> command,
-      @JsonProperty("setupMinutes") @Nullable Integer minutes) {
+      @JsonProperty("setupMinutes") @Nullable Integer minutes,
+      List<CredentialCheck> credentialChecks) {
 
-    public static final Setup NONE = new Setup(List.of(), null);
+    public static final Setup NONE = new Setup(List.of(), null, List.of());
 
     public Setup {
       command = command == null ? List.of() : command;
+      credentialChecks = credentialChecks == null ? List.of() : credentialChecks;
+    }
+  }
+
+  /**
+   * A read-only {@code command} whose exit code says whether a credential works; {@code renewedBy}
+   * says what renews it.
+   */
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  public record CredentialCheck(String name, List<String> command, String renewedBy) {
+
+    public CredentialCheck {
+      command = command == null ? List.of() : command;
+      renewedBy = renewedBy == null ? "" : renewedBy;
     }
   }
 
@@ -220,6 +236,10 @@ public record ProjectConfig(
 
   public List<String> setupCommand() {
     return setup.command();
+  }
+
+  public List<CredentialCheck> credentialChecks() {
+    return setup.credentialChecks();
   }
 
   public Duration setupTimeoutOrDefault() {

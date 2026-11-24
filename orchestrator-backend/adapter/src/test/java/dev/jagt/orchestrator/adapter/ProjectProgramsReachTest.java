@@ -2,16 +2,22 @@ package dev.jagt.orchestrator.adapter;
 
 import static dev.jagt.orchestrator.adapter.codehost.TestShopProjectBuilder.shopProject;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.flows.TestAcceptanceRoleSettingsBuilder;
+import dev.jagt.orchestrator.adapter.worktree.CredentialChecks;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.RoleKits;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -25,6 +31,8 @@ class ProjectProgramsReachTest {
 
   private final ConfigService configService = mock(ConfigService.class);
   private final ReachLedger reach = new ReachLedger();
+  private final CredentialChecks credentials =
+      new CredentialChecks(configService, mock(Processes.class), reach, new FakeClock());
 
   @Test
   void headNamesProjectAndProgramWhereVerifyCommandNamesOneTheImageLacks() {
@@ -38,7 +46,7 @@ class ProjectProgramsReachTest {
                             .withVerifyCommand(List.of("no-such-build-tool", "test"))
                             .build())));
 
-    new ProjectProgramsReach(configService, new RoleKits(List.of()), reach).run();
+    new ProjectProgramsReach(configService, new RoleKits(List.of()), reach, credentials).run();
 
     assertThat(reach.standing())
         .singleElement()
@@ -59,7 +67,7 @@ class ProjectProgramsReachTest {
                         "shop",
                         shopProject().withSetupCommand(List.of("no-such-installer")).build())));
 
-    new ProjectProgramsReach(configService, new RoleKits(List.of()), reach).run();
+    new ProjectProgramsReach(configService, new RoleKits(List.of()), reach, credentials).run();
 
     assertThat(reach.standing())
         .singleElement()
@@ -83,7 +91,7 @@ class ProjectProgramsReachTest {
                         "shop",
                         shopProject().withVerifyCommand(List.of("git", "status")).build())));
     ProjectProgramsReach programs =
-        new ProjectProgramsReach(configService, new RoleKits(List.of()), reach);
+        new ProjectProgramsReach(configService, new RoleKits(List.of()), reach, credentials);
     programs.run();
 
     programs.run();
@@ -105,7 +113,7 @@ class ProjectProgramsReachTest {
                         "bare",
                         shopProject().build())));
 
-    new ProjectProgramsReach(configService, new RoleKits(List.of()), reach).run();
+    new ProjectProgramsReach(configService, new RoleKits(List.of()), reach, credentials).run();
 
     assertThat(reach.standing()).isEmpty();
   }
@@ -122,7 +130,7 @@ class ProjectProgramsReachTest {
         "flows: {driver: playwright, path: /f, command: [no-such-npx, playwright, test]}\n");
     when(configService.load()).thenReturn(ConfigFile.defaults());
 
-    new ProjectProgramsReach(configService, kits, reach).run();
+    new ProjectProgramsReach(configService, kits, reach, credentials).run();
 
     assertThat(reach.standing())
         .singleElement()
@@ -144,8 +152,39 @@ class ProjectProgramsReachTest {
     Files.writeString(root.resolve("roles/acceptance/role.yml"), written + "\n");
     when(configService.load()).thenReturn(ConfigFile.defaults());
 
-    new ProjectProgramsReach(configService, kits, reach).run();
+    new ProjectProgramsReach(configService, kits, reach, credentials).run();
 
     assertThat(reach.standing()).isEmpty();
+  }
+
+  @Test
+  void headNamesTheCheckWhereProjectCredentialCheckFails() {
+    Processes processes = mock(Processes.class);
+    when(processes.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "shop",
+                        shopProject()
+                            .withCredentialChecks(
+                                List.of(
+                                    new ProjectConfig.CredentialCheck(
+                                        "npm registry",
+                                        List.of("npm", "view", "@abc/lib"),
+                                        "npm login")))
+                            .build())));
+
+    new ProjectProgramsReach(
+            configService,
+            new RoleKits(List.of()),
+            reach,
+            new CredentialChecks(configService, processes, reach, new FakeClock()))
+        .run();
+
+    assertThat(reach.standing())
+        .singleElement()
+        .satisfies(lost -> assertThat(lost.said()).contains("shop", "npm registry", "npm login"));
   }
 }

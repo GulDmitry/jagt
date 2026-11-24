@@ -11,6 +11,6 @@ public record TestAgentWindowsBuilder() {
   }
 
   public AgentWindows build(ConfigService config, StateService state, SessionHosting hosting) {
-    return new AgentWindows(config, state, hosting);
+    return new AgentWindows(config, state, hosting, unvetted -> null);
   }
 }

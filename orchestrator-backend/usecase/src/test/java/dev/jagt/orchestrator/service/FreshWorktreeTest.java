@@ -28,7 +28,9 @@ class FreshWorktreeTest {
       new NewRepo(
           "api",
           TestProjectConfigBuilder.projectConfig()
-              .withSetup(new ProjectConfig.Setup(List.of("seed", "{branch}", "{worktree}"), null))
+              .withSetup(
+                  new ProjectConfig.Setup(
+                      List.of("seed", "{branch}", "{worktree}"), null, List.of()))
               .build(),
           Path.of("/repo"),
           Path.of("/wt/ABC-42"),
@@ -54,7 +56,7 @@ class FreshWorktreeTest {
         new NewRepo(
             "api",
             TestProjectConfigBuilder.projectConfig()
-                .withSetup(new ProjectConfig.Setup(List.of("seed"), 3))
+                .withSetup(new ProjectConfig.Setup(List.of("seed"), 3, List.of()))
                 .build(),
             Path.of("/repo"),
             Path.of("/wt/ABC-42"),

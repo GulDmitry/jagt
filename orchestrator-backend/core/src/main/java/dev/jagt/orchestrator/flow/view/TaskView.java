@@ -331,7 +331,8 @@ public record TaskView(
             SessionPhase.silent(task),
             watch);
     boolean deployed = Facts.deployLive(task);
-    DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
+    DashboardLine.Line line =
+        DashboardLine.forTask(task, webLink(task.mrUrl()), round.reach().sessionHeld());
     List<ActionView> actions =
         move.actions().stream()
             .filter(action -> !action.typed())

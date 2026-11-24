@@ -37,7 +37,7 @@ class DashboardLineTest {
   void showsNoDetailWhileThereIsNothingForHumanToActOn(TaskStatus status, String message) {
     TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
 
-    assertThat(DashboardLine.forTask(task, null).text()).isEmpty();
+    assertThat(DashboardLine.forTask(task, null, null).text()).isEmpty();
   }
 
   @ParameterizedTest
@@ -48,7 +48,8 @@ class DashboardLineTest {
     TaskState task =
         TaskState.builder("p", "/wt", status).mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
-    assertThat(DashboardLine.forTask(task, "https://gitlab/x/-/merge_requests/9").text()).isEmpty();
+    assertThat(DashboardLine.forTask(task, "https://gitlab/x/-/merge_requests/9", null).text())
+        .isEmpty();
   }
 
   @Test
@@ -56,7 +57,7 @@ class DashboardLineTest {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.REVIEWED).mrUrl("javascript:alert(1)").build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo("PROBLEM: review request link unusable: javascript:alert(1)");
   }
 
@@ -64,7 +65,7 @@ class DashboardLineTest {
   void saysNothingAboutRequestReviewedTaskDoesNotHaveYet() {
     TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED).build();
 
-    assertThat(DashboardLine.forTask(task, null).text()).isEmpty();
+    assertThat(DashboardLine.forTask(task, null, null).text()).isEmpty();
   }
 
   @ParameterizedTest
@@ -81,7 +82,7 @@ class DashboardLineTest {
       TaskStatus status, String message, AgentReport report, DashboardLine.Kind kind) {
     TaskState task = TaskState.builder("p", "/wt", status).message(message).report(report).build();
 
-    assertThat(DashboardLine.forTask(task, null).kind()).isEqualTo(kind);
+    assertThat(DashboardLine.forTask(task, null, null).kind()).isEqualTo(kind);
   }
 
   @Test
@@ -92,7 +93,7 @@ class DashboardLineTest {
             .mrUrl("https://mr")
             .build();
 
-    assertThat(DashboardLine.forTask(task, "https://mr").text())
+    assertThat(DashboardLine.forTask(task, "https://mr", null).text())
         .startsWith("PROBLEM: ")
         .contains("trigger_commons");
   }
@@ -104,7 +105,7 @@ class DashboardLineTest {
             .message("resolve conflict in /repos/ABC-1-deploy")
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .startsWith("NEEDS YOU: ")
         .contains("ABC-1-deploy");
   }
@@ -133,7 +134,7 @@ class DashboardLineTest {
                     + "/src/ABC-42-deploy, unchanged since 1970-01-01T00:00:00Z"),
             1_201_000);
 
-    assertThat(DashboardLine.forTask(stalled, null).text())
+    assertThat(DashboardLine.forTask(stalled, null, null).text())
         .isEqualTo(
             "NEEDS YOU: the deploy conflict stopped moving: 7 paths unmerged, 0 staged in"
                 + " /src/ABC-42-deploy, unchanged since 1970-01-01T00:00:00Z");
@@ -166,11 +167,11 @@ class DashboardLineTest {
     TaskState seen =
         reducer.deployStepped(red, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
     TaskState stalled = reducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
-    assertThat(DashboardLine.forTask(stalled, null).text()).contains("stopped moving");
+    assertThat(DashboardLine.forTask(stalled, null, null).text()).contains("stopped moving");
 
     TaskState left = reducer.repoLeft(stalled, "beta");
 
-    assertThat(DashboardLine.forTask(left, null).text()).doesNotContain("stopped moving");
+    assertThat(DashboardLine.forTask(left, null, null).text()).doesNotContain("stopped moving");
   }
 
   @Test
@@ -181,7 +182,7 @@ class DashboardLineTest {
             .report(AgentReport.QUESTION)
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo("NEEDS INPUT: FE or BE decision");
   }
 
@@ -198,7 +199,7 @@ class DashboardLineTest {
                     .withHalt(new Session.Halt(Session.Halt.Kind.GONE, 1_000, "waiting for input")))
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo("NEEDS YOU: agent stopped: the session ended: waiting for input");
   }
 
@@ -209,7 +210,7 @@ class DashboardLineTest {
             .session(Session.defaults().withQuietSince(1_000))
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo(
             "NEEDS YOU: agent stopped: the agent never reported — check that the CLI started");
   }
@@ -223,7 +224,7 @@ class DashboardLineTest {
                     .withHalt(new Session.Halt(Session.Halt.Kind.GONE, 1_000, "waiting for input")))
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo("NEEDS YOU: agent stopped: the session ended: waiting for input");
   }
 
@@ -234,7 +235,7 @@ class DashboardLineTest {
             .session(Session.defaults().withQuietSince(1_000))
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo("NEEDS YOU: agent stopped: nothing has moved in its session");
   }
 
@@ -247,7 +248,7 @@ class DashboardLineTest {
             .session(Session.defaults().withQuietSince(1_000))
             .build();
 
-    assertThat(DashboardLine.forTask(task, null).text())
+    assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo("NEEDS INPUT: FE or BE decision");
   }
 
@@ -260,7 +261,7 @@ class DashboardLineTest {
             .mrUrl("https://host/mr/425")
             .build();
 
-    assertThat(DashboardLine.forTask(task, "https://host/mr/425").text())
+    assertThat(DashboardLine.forTask(task, "https://host/mr/425", null).text())
         .isEqualTo("NEEDS INPUT: cache or index?");
   }
 
@@ -276,7 +277,7 @@ class DashboardLineTest {
             .mrUrl("https://host/mr/425")
             .build();
 
-    assertThat(DashboardLine.forTask(task, "https://host/mr/425").text())
+    assertThat(DashboardLine.forTask(task, "https://host/mr/425", null).text())
         .isEqualTo("NEEDS INPUT: cache or index?");
   }
 
@@ -288,7 +289,7 @@ class DashboardLineTest {
             .mrUrl("https://host/mr/441")
             .build();
 
-    assertThat(DashboardLine.forTask(task, "https://host/mr/441").text())
+    assertThat(DashboardLine.forTask(task, "https://host/mr/441", null).text())
         .isEqualTo("NEEDS INPUT: the agent is waiting on you");
   }
 
@@ -301,7 +302,7 @@ class DashboardLineTest {
             .mrUrl("https://host/mr/440")
             .build();
 
-    assertThat(DashboardLine.forTask(task, "https://host/mr/440").text())
+    assertThat(DashboardLine.forTask(task, "https://host/mr/440", null).text())
         .isEqualTo(
             "ANSWERED: every comment already handled"
                 + " — the open threads are the reviewer's to close");
@@ -316,7 +317,7 @@ class DashboardLineTest {
             .pipelineStatus(pipelineStatus)
             .build();
 
-    assertThat(DashboardLine.forTask(task, "https://host/mr/501").text()).isEmpty();
+    assertThat(DashboardLine.forTask(task, "https://host/mr/501", null).text()).isEmpty();
   }
 
   @Test
@@ -326,7 +327,7 @@ class DashboardLineTest {
             .gitTrust(GitTrust.of(Map.of()).withChanged("core.fsmonitor in /r/.git/config added"))
             .build();
 
-    assertThat(DashboardLine.forTask(task, null))
+    assertThat(DashboardLine.forTask(task, null, null))
         .isEqualTo(
             new DashboardLine.Line(
                 DashboardLine.Kind.YOURS, "NEEDS YOU: core.fsmonitor in /r/.git/config added"));
@@ -350,7 +351,17 @@ class DashboardLineTest {
     TaskState stalled =
         reducer.deployStepped(seen, new DeployStep.Told("7 paths unmerged"), 1_201_000);
 
-    assertThat(DashboardLine.forTask(stalled, null).text())
+    assertThat(DashboardLine.forTask(stalled, null, null).text())
         .isEqualTo("NEEDS YOU: the revert conflict stopped moving: 7 paths unmerged");
+  }
+
+  @Test
+  void notesWhyNoSessionStartsWhereCredentialFails() {
+    TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).build();
+
+    DashboardLine.Line line = DashboardLine.forTask(task, null, "credential check 'npm' fails");
+
+    assertThat(line.kind()).isEqualTo(DashboardLine.Kind.NOTE);
+    assertThat(line.text()).contains("npm");
   }
 }

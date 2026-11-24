@@ -31,6 +31,10 @@ orchestrator:
                                                # `worktree.copyGlobs` and before the session starts; {branch} and {worktree} are filled;
                                                # a non-zero exit or the limit fails the start, no session opens
       # setupMinutes: 20    # minutes the setup command may run before jagt stops it; 20 where you write none
+      # credentialChecks:   # read-only commands, run at start, daily and before a session of this project starts; only the exit
+      #   - name: npm registry   # code is read, never a credential; a failing one marks the board's head and holds the project's sessions
+      #     command: ["npm", "view", "@scope/package", "version"]   # run in the project's folder, so its own .npmrc applies
+      #     renewedBy: "npm login --scope=@scope"   # what renews the credential, shown on the mark
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
       #                             # name is shipped and deployed by you alone; the Master's log names the path
 
