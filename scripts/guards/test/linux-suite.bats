@@ -47,6 +47,22 @@ EOF
   ! grep -q 'volume create jagt-gradle-home' "$DOCKER_LOG"
 }
 
+@test "on a Linux host the job runs as the checkout's owner" {
+  printf '#!/bin/sh\necho Linux\n' > "$BATS_TEST_TMPDIR/bin/uname"
+  printf '#!/bin/sh\necho 1001\n' > "$BATS_TEST_TMPDIR/bin/stat"
+  chmod +x "$BATS_TEST_TMPDIR/bin/uname" "$BATS_TEST_TMPDIR/bin/stat"
+  run "$script" test
+  [ "$status" -eq 0 ]
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1001 '
+}
+
+@test "on a Mac the job runs as the image's user" {
+  printf '#!/bin/sh\necho Darwin\n' > "$BATS_TEST_TMPDIR/bin/uname"
+  chmod +x "$BATS_TEST_TMPDIR/bin/uname"
+  run "$script" test
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1000 '
+}
+
 @test "a hosted runner keeps every CPU it has" {
   GITHUB_ACTIONS=true FAKE_CPUS=4 run "$script" test
   grep -q -- '--cpus 4 ' "$DOCKER_LOG"

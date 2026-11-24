@@ -112,7 +112,7 @@ for project in "$BACKEND_DIR"/build.gradle "$BACKEND_DIR"/*/build.gradle; do
     STATE_MOUNTS+=(-v "$dir/build" -v "$dir/.gradle")
 done
 
-# The engine starts as root; the job runs as the image's own user, uid 1000, as on a CI runner, since root ignores file
+# The engine starts as root; the job runs as RUN_UID, never root, as on a CI runner, since root ignores file
 # modes. Only the volumes it writes are handed to it first; a read-only cache seeds the run's own home with what Gradle
 # and npm cannot read from a read-only one. One engine volume holds one engine, so a second suite waits on its lock.
 # shellcheck disable=SC2016 # the container's shell expands it
@@ -124,10 +124,16 @@ chmod 666 /var/run/docker.sock
 if [[ -d /gradle-ro ]]; then
     for seed in wrapper npm-cache; do [[ ! -d /gradle-ro/$seed ]] || cp -a /gradle-ro/$seed /gradle-home/$seed; done
 fi
-[[ $(stat -c %u /gradle-home) == 1000 ]] || chown -R 1000:1000 /gradle-home
-chown 1000:1000 /jagt/board/node_modules /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle \
+[[ $(stat -c %u /gradle-home) == "$RUN_UID" ]] || chown -R "$RUN_UID:$RUN_UID" /gradle-home
+chown "$RUN_UID:$RUN_UID" /jagt/board/node_modules /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle \
     /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
-exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME="$(getent passwd 1000 | cut -d: -f6)" "$@"'
+home=$(getent passwd "$RUN_UID" | cut -d: -f6)
+if [[ -z $home ]]; then home=/tmp/runner-home; install -d -o "$RUN_UID" -g "$RUN_UID" "$home"; fi
+exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" --clear-groups env HOME="$home" "$@"'
+
+# On Linux a bind mount keeps the host's owner, so the job runs as the checkout's; Docker on a Mac maps it to anyone.
+RUN_UID=1000
+if [[ $(uname -s) == Linux ]]; then RUN_UID=$(stat -c %u "$REPO_ROOT"); fi
 
 # A linked worktree's .git points at its main checkout's git dir by absolute path, so that dir is mounted there too.
 GIT_MOUNTS=()
@@ -140,7 +146,7 @@ if [[ $(uname -s) == Darwin ]]; then
 fi
 
 # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
-COMMON=(--rm --init --privileged "${SIZE[@]}" -e CI=true -e ORG_GRADLE_PROJECT_timed=false
+COMMON=(--rm --init --privileged "${SIZE[@]}" -e CI=true -e RUN_UID="$RUN_UID" -e ORG_GRADLE_PROJECT_timed=false
     -w /jagt/orchestrator-backend -v "$REPO_ROOT:/jagt" "${STATE_MOUNTS[@]}" ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"}
     -v "$ENGINE_VOLUME:/var/lib/docker")
 
