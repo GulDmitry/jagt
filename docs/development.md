@@ -38,7 +38,7 @@ directory nobody has trusted: run `claude` there once and accept. The suite chec
 path rather than sitting at a prompt nobody sees.
 
 `orchestrator-backend/scripts/gradle-slot.sh <command>` caps concurrent Gradle runs on one machine
-(`GRADLE_SLOTS`, default 2).
+(`GRADLE_SLOTS`, default 3).
 
 ## Testing Linux from a Mac
 

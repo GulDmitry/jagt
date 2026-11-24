@@ -2,12 +2,12 @@
 # Runs a command once one of N Gradle slots is free, so concurrent Gradle runs on one machine stay capped.
 # A slot whose holder died is reclaimed; a call nested under a held slot runs at once, so a wrapper never holds two.
 # Usage: gradle-slot.sh <command...>
-# Env:   GRADLE_SLOTS=2, GRADLE_SLOT_WAIT=1800 (seconds), GRADLE_SLOT_POLL=5 (seconds), GRADLE_SLOT_DIR=/tmp/gradle-slots
+# Env:   GRADLE_SLOTS=3, GRADLE_SLOT_WAIT=1800 (seconds), GRADLE_SLOT_POLL=5 (seconds), GRADLE_SLOT_DIR=/tmp/gradle-slots
 # Exit:  the command's own, or 75 when no slot freed within the wait.
 # exits: 0 75
 set -u
 [ -n "${GRADLE_SLOT_HELD:-}" ] && exec "$@"
-slots=${GRADLE_SLOTS:-2}
+slots=${GRADLE_SLOTS:-3}
 wait_max=${GRADLE_SLOT_WAIT:-1800}
 poll=${GRADLE_SLOT_POLL:-5}
 dir=${GRADLE_SLOT_DIR:-/tmp/gradle-slots}
