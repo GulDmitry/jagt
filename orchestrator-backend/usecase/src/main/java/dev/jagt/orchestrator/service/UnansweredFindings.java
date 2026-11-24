@@ -9,9 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Before a task holds a request, the only round relayed to its session is the pre-ship read's: its
- * findings stay open until the session writes its blocks, and the change is read before it ships. A
- * read that failed, or a reviewer that is off, holds nothing.
+ * The pre-ship read's findings stay open until the session writes its blocks, and the change is
+ * read before it ships, with or without a request. A read that failed, or a reviewer that is off,
+ * holds nothing.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,10 +24,7 @@ public class UnansweredFindings {
 
   /** Empty where none awaits an answer or a read; else the sentence a ship is declined with. */
   public Optional<String> awaiting(String taskId) {
-    return stateService
-        .task(taskId)
-        .filter(task -> !task.hasReviewRequest())
-        .flatMap(task -> answers(task).or(() -> unread(task)));
+    return stateService.task(taskId).flatMap(task -> answers(task).or(() -> unread(task)));
   }
 
   private Optional<String> answers(TaskState task) {
@@ -35,7 +32,7 @@ public class UnansweredFindings {
         .unanswered(task)
         .map(round ->
             round.threads()
-                + " finding(s) of the review before the ship await your block in "
+                + " finding(s) of the latest review round await your block in "
                 + Artifact.REPLIES.fileName()
                 + " — answer each, then ship");
   }

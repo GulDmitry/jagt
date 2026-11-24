@@ -233,9 +233,9 @@ class ShipServiceTest {
     var notPosting =
         ConfigFile.defaults().withCodeReview(posting.codeReview().withPostReviewReplies(false));
 
-    assertThat(ShipService.repliesStep(posting))
+    assertThat(ShipService.repliesStep(posting, true))
         .contains("Resolve threads exactly as your `<review_replies>` rules say");
-    assertThat(ShipService.repliesStep(notPosting)).doesNotContain("Resolve threads");
+    assertThat(ShipService.repliesStep(notPosting, true)).doesNotContain("Resolve threads");
   }
 
   @Test

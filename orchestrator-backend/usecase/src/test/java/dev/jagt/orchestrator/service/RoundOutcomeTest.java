@@ -163,7 +163,7 @@ class RoundOutcomeTest {
             new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
                 List.of("coderabbit (a.kt:3): rename x"), List.of(), List.of()));
-    when(relay.relay("ABC-1", "http://mr/1", facts, "success", ""))
+    when(relay.relay("ABC-1", RoundSource.REQUEST, "http://mr/1", facts, "success", ""))
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.RELAYED, "relayed"));
@@ -246,7 +246,7 @@ class RoundOutcomeTest {
 
     outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
 
-    verify(relay).relay("ABC-1", "http://mr/1", threadsOnly, "failed", "");
+    verify(relay).relay("ABC-1", RoundSource.REQUEST, "http://mr/1", threadsOnly, "failed", "");
     verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.CI_FAILED), any());
   }
 

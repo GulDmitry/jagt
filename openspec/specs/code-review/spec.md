@@ -65,7 +65,7 @@ jagt SHALL never approve, merge, close or push through the role.
 - **WHEN** a finding is what an open thread of the role's own already says
 - **THEN** nothing new is posted
 
-### Requirement: Notes are on for a jagt task's request and opt-in for another's
+### Requirement: A jagt task's request gets no note and another's is opt-in
 On a jagt task's request notes SHALL be on by default (`post.own`); on another person's request only with `post.others`, off by default.
 The settings SHALL live in `roles/code-reviewer/review.yml`, unset read as on, never in `jagt.yml`.
 

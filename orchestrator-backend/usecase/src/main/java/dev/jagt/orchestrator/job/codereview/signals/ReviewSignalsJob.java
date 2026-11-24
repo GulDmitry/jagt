@@ -11,7 +11,9 @@ import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
+import dev.jagt.orchestrator.task.review.AiLine;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Reads the likes, dislikes and resolutions of the notes the code reviewer posted and records a
- * line only where one changed. A request that is no longer listed, or that the host says is merged
- * or closed, is read once more and ends.
+ * Reads the likes, dislikes and resolutions of the notes the code reviewer posted and of the
+ * replies jagt posted under the AI line, on every request a task holds or a ledger row names, and
+ * records a line only where one changed. A request that is no longer listed, or that the host says
+ * is merged or closed, is read once more and ends.
  */
 @Service
 @RequiredArgsConstructor
@@ -43,7 +46,7 @@ public class ReviewSignalsJob implements Job {
 
   @Override
   public String describe() {
-    return "record the likes, dislikes and resolutions of the notes the code reviewer posted";
+    return "record the likes, dislikes and resolutions of the notes and replies jagt posted";
   }
 
   @Override
@@ -54,18 +57,33 @@ public class ReviewSignalsJob implements Job {
   @Override
   public void run() {
     ReviewSubjects.Listing listing = subjects.list();
+    Set<String> held = ledger.rows().stream().map(LedgerRow::url).collect(Collectors.toSet());
     Set<String> listed =
         listing.subjects().stream().map(subject -> subject.url()).collect(Collectors.toSet());
-    for (LedgerRow row : ledger.rows()) {
+    for (LedgerRow row : rows(listing)) {
       if (row.ended()) {
         continue;
       }
       boolean read = read(row);
+      if (read && !held.contains(row.url())) {
+        ledger.update(row.url(), row.project(), row.taskId(), standing -> standing);
+      }
       boolean unlisted = !listed.contains(row.url()) && listing.complete(row.project());
       if (read && (unlisted || over(row))) {
         ledger.update(row.url(), row.project(), row.taskId(), standing -> standing.withEnded(true));
       }
     }
+  }
+
+  private List<LedgerRow> rows(ReviewSubjects.Listing listing) {
+    List<LedgerRow> rows = new ArrayList<>(ledger.rows());
+    Set<String> held = rows.stream().map(LedgerRow::url).collect(Collectors.toSet());
+    listing.subjects().stream()
+        .filter(subject -> !held.contains(subject.url()))
+        .filter(subject -> !subject.taskId().isBlank())
+        .map(subject -> LedgerRow.of(subject.url(), subject.project(), subject.taskId()))
+        .forEach(rows::add);
+    return rows;
   }
 
   private boolean read(LedgerRow row) {
@@ -76,7 +94,7 @@ public class ReviewSignalsJob implements Job {
     Map<String, RequestNote> ours =
         read.facts().get().stream()
             .filter(note -> note.kind() == AuthorKind.ACTOR)
-            .filter(note -> note.body().contains(NotePoster.MARKER))
+            .filter(note -> note.body().contains(NotePoster.MARKER) || AiLine.opens(note.body()))
             .collect(
                 Collectors.toMap(
                     RequestNote::id, note -> note, (first, later) -> first, LinkedHashMap::new));

@@ -1,9 +1,8 @@
 # The code reviewer. It is on unless jagt.yml says `orchestrator.roles.code-reviewer.enabled: false`.
 # Copy this file to review.yml to change a value; a value that cannot be read leaves its default.
 
-# Where a note is posted: on a request jagt's own task holds, and on any other request the host names for review.
+# Whether a note is posted on a request no task holds, one the host names for review.
 post:
-  own: true
   others: false
 
 # A diff of more lines than this is skipped with one log line.

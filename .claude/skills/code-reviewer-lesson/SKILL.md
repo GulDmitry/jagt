@@ -7,8 +7,8 @@ description: Turn a pattern the code reviewer's notes are rated low on, or a def
 
 A rating never rewrites the brief by itself: it names a pattern, a case proves it, and a person reads the diff.
 
-Input: the dated lines of `<data>/records/code-review.jsonl` for one kind of note, or the exchange (the request's text, the
-note, the human's why).
+Input: the dated lines of `<data>/records/code-review.jsonl` with `kind` `note` for one kind of note (a `reply` line rates the
+session's answer and has no brief digest), or the exchange (the request's text, the note, the human's why).
 
 1. **Name the class, not the case.** The defect kind in two to four words, `unguarded retry`, never a project, class, framework
    or vendor from the case. Several dislikes on one kind mean noise to cut; a defect the reviewer passed means a kind to add.

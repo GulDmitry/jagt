@@ -23,6 +23,8 @@ import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CodeReviewRoundTest {
 
@@ -43,6 +45,16 @@ class CodeReviewRoundTest {
     verifyNoInteractions(notes, panel, checkout, poster);
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void requestOfJagtTaskIsNeverReadNorNotedWhateverTheSettings(boolean postOthers) {
+    Subject own = new Subject("shop", "https://h/a/b/8", "git@h:a/b.git", "ABC-42");
+
+    round.run(own, new Settings(true, postOthers, 5000, 2.55), "");
+
+    verifyNoInteractions(ledger, notes, panel, checkout, poster);
+  }
+
   @Test
   void newHeadOfA1200LineRequestWithFourReviewsIsNotReviewedAgain() {
     when(ledger.row(other.url())).thenReturn(Optional.of(fourReviews));
@@ -53,7 +65,7 @@ class CodeReviewRoundTest {
                     RequestChange.defaults().withHeadSha("e").withDiff("+x\n".repeat(1200))),
                 TokenUsage.NONE));
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verifyNoInteractions(checkout, panel);
   }
@@ -69,7 +81,7 @@ class CodeReviewRoundTest {
                 TokenUsage.NONE));
     when(checkout.open(any(), any())).thenReturn(Optional.empty());
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verify(checkout).open(other, "e");
   }
@@ -82,7 +94,7 @@ class CodeReviewRoundTest {
         .thenReturn(
             new Answer<>(Optional.of(RequestChange.defaults().withHeadSha("e")), TokenUsage.NONE));
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verifyNoInteractions(checkout, panel);
   }
@@ -96,7 +108,7 @@ class CodeReviewRoundTest {
                 Optional.of(RequestChange.defaults().withHeadSha("e").withDiff("+x\n+y\n+z\n")),
                 TokenUsage.NONE));
 
-    round.run(other, new Settings(true, true, true, 2, 2.55), "");
+    round.run(other, new Settings(true, true, 2, 2.55), "");
 
     verify(ledger).update(any(), any(), any(), any());
     verifyNoInteractions(checkout, panel);
@@ -113,7 +125,7 @@ class CodeReviewRoundTest {
                     RequestChange.defaults().withHeadSha("e").withState(RequestState.MERGED)),
                 TokenUsage.NONE));
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verifyNoInteractions(checkout, panel, poster);
   }
@@ -128,7 +140,7 @@ class CodeReviewRoundTest {
                     RequestChange.defaults().withHeadSha("e").withState(RequestState.CLOSED)),
                 TokenUsage.NONE));
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verifyNoInteractions(checkout, panel, poster);
   }
@@ -138,7 +150,7 @@ class CodeReviewRoundTest {
     when(ledger.row(other.url()))
         .thenReturn(Optional.of(LedgerRow.of(other.url(), "shop", "").withCostUsd(2.6)));
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verifyNoInteractions(notes, checkout, panel, poster);
   }
@@ -169,7 +181,7 @@ class CodeReviewRoundTest {
     when(poster.post(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(NotePoster.Outcome.POSTED);
 
-    round.run(other, new Settings(true, true, true, 5000, 2.55), "");
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
 
     verify(poster)
         .post(

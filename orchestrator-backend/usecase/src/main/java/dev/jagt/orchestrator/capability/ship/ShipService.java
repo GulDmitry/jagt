@@ -126,30 +126,44 @@ public class ShipService {
   }
 
   private String repliesStep(String taskId, ConfigFile config) {
-    return repliesInstruction.repliesStep(taskId, config).orElseGet(() -> repliesStep(config));
+    return repliesInstruction
+        .repliesStep(taskId, config)
+        .orElseGet(() -> repliesStep(config, repliesInstruction.postsPersonReplies(config)));
   }
 
-  static String repliesStep(ConfigFile config) {
-    String step = postingStep(config);
+  static String repliesStep(ConfigFile config, boolean personReplies) {
+    String step = postingStep(config, personReplies);
     return config.codeReview().repliesToPeopleUnaskedOrDefault()
             && config.codeReview().postReviewRepliesOrDefault()
         ? step.replace(THREADS, AI_LINE + THREADS)
         : step;
   }
 
-  private static String postingStep(ConfigFile config) {
+  private static String postingStep(ConfigFile config, boolean personReplies) {
     if (!config.codeReview().postReviewRepliesOrDefault()) {
       return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
     }
     if (config.codeReview().reviewReplyAuthorsOrEmpty().isEmpty()) {
       return "If review_replies.md exists, post each drafted reply to its thread, then delete it."
+          + kinds(personReplies)
           + THREADS;
     }
     return "If review_replies.md exists, post a drafted reply ONLY where the note its block answers"
         + " is by an author matching (case-insensitive) any of: "
         + String.join(", ", config.codeReview().reviewReplyAuthorsOrEmpty())
         + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones."
+        + kinds(personReplies)
         + THREADS;
+  }
+
+  private static String kinds(boolean people) {
+    return " Each block's `Author:` line names its kind:"
+        + " NEVER post a `reviewer` or `unknown` block,"
+        + (people
+            ? " post a `bot` or `person` block."
+            : " NEVER post a `person` block, post a `bot` block.")
+        + " What you do not post stays in the file;"
+        + " delete the file only once nothing is left in it.";
   }
 
   private static final String AI_LINE =

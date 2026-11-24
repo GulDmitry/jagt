@@ -58,8 +58,8 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
 - **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
 - **THEN** it presses nothing, and the task waits for you; an unpushed commit or uncommitted work makes it due
-- **WHEN** drafted replies wait that a ship will not post, or any wait unless `codeReview.repliesToPeopleUnasked` is `true` (default `false`)
-- **THEN** it ships nothing and the move stays yours; where `true`, each reply a ship posts opens with the AI line of the code reviewer's notes
+- **WHEN** replies are drafted
+- **THEN** it ships or holds as P1 to P5 and B1 of [review-actors](../review-actors/spec.md) say, never by a rule of its own
 
 ### Requirement: The human keeps what mine and humanPaths name
 `roles.master.mine` SHALL name the steps (`task/master/MasterRight`) and verbs the human keeps, any `TaskAction` or `GlobalCommand` id.

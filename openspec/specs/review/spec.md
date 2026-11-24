@@ -47,33 +47,6 @@ replaced, one id per line; unset, it gives none.
 - **WHEN** `codeHost: command` has a `notesCommand` printing two ids and the next poll prints the same
 - **THEN** the round is the same and is relayed once
 
-### Requirement: The unit of a round is a thread
-`ReviewFacts.threads` SHALL carry every note since your answer, oldest first with its author; the agent answers the newest.
-Threads SHALL be relayed while unresolved, the round telling how many notes are new or unchanged since the last round
-(`RoundTrail.sinceLast`). The checks SHALL never decide whether a thread is answered. After a round with threads,
-a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
-#### Scenario: Red checks outside the code and a reviewer's answer
-- **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread
-- **THEN** refused, told how many threads await their block
-#### Scenario: A resolved thread, a review in the body
-- **WHEN** a reviewer resolves a thread on ABC-42's request
-- **THEN** no later round reads it again
-- **WHEN** a GitHub review is written in the body, not a thread
-- **THEN** relayed all the same
-#### Scenario: Answered by hand
-- **WHEN** you answer ABC-42's thread by hand or post a draft, and the reviewer writes again
-- **THEN** the next round relays the thread's link and the reviewer's new note, not the notes before your answer
-#### Scenario: The agent answered last
-- **WHEN** two polls read a thread whose newest note is by the account the host's tools act as, unless it opens with the AI line
-- **THEN** neither relays it, as it waits on the reviewer; only a new note starts a round, and one with the AI line awaits an answer
-
-### Requirement: Threads are resolved at ship
-The agent SHALL resolve at ship time over its own MCP (`ShipService.repliesStep`), only threads whose code it changed. During the
-round it SHALL post nothing, and a draft SHALL go only where the answered note's author matches `reviewReplyAuthors`.
-#### Scenario: Replies are posted
-- **WHEN** you `ship`
-- **THEN** replies are posted only now; a fixed thread is resolved, a disputed one left for the reviewer
-
 ### Requirement: Pipeline status is one of jagt's five words
 `TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/deploy/Pipeline` parses it.
 A round reading no listing SHALL write nothing, the last word standing flagged. The third such round running since the `lift`
@@ -96,27 +69,12 @@ same, or every poll re-briefs. A red the host calls infrastructure is not relaye
 - **THEN** the session changes nothing and asks you, naming the job
 
 ### Requirement: The reply shape is prescribed once
-The round brief (`RoundBrief.of`), relayed every round, SHALL prescribe one block per thread: its link, the quoted
-newest note, `FIXED | NO CHANGE | QUESTION`, reply.
+The round brief (`RoundBrief.of`), relayed every round, SHALL prescribe one block per thread: its link, one author-kind line
+(`person`, `bot` or `reviewer`, given by jagt from the note's author), the quoted newest note, `FIXED | NO CHANGE | QUESTION`,
+reply. Which threads a round carries and who answers them is [review-actors](../review-actors/spec.md).
 #### Scenario: Replies too long
 - **WHEN** replies run long
 - **THEN** the agent broke its brief; a re-`sweep` re-briefs
-
-### Requirement: Drafted replies are a file
-`TaskViews` SHALL stat `review_replies.md` for presence, never a count; `ReviewDrafts.pending` SHALL want it newer than
-`mrCreatedAt`. jagt SHALL never delete the file; the agent is asked to.
-`CodeReviewConfig.shipPostsEveryDraft` SHALL decide when drafts are spent: under `postReviewReplies=false` or a partial
-`reviewReplyAuthors` filter none is. The announcement stands, whatever the status, until you post or end them.
-Your-move SHALL say drafted replies wait, whatever the round reported.
-#### Scenario: Stale reply file
-- **WHEN** the file predates `mrCreatedAt`
-- **THEN** nothing is pending
-#### Scenario: Drafts a ship left
-- **WHEN** you `ship` under `postReviewReplies=false`, or a ship leaves drafts to a person's note unposted and the task leaves the hand-back
-- **THEN** the announcement stands: the card still shows them pending
-#### Scenario: No code changed
-- **WHEN** a round reports `NO_CHANGES` and drafted replies wait
-- **THEN** the your-move notification says drafted replies wait
 
 ### Requirement: The replies report reads the file
 `replies [task]` (`command/ReviewRepliesReport`) SHALL print every block off the file, never the badge, unrecognised shape

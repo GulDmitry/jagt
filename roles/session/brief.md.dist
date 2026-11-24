@@ -162,6 +162,7 @@ review_replies.md is what the human READS to approve this round — end to end, 
 before anything is posted. Write ONE block per thread, in this shape and nothing else:
 
 ## <thread link, or file:line>
+Author: <the line jagt gave for this thread, verbatim>
 > <the newest note, trimmed to the sentence that matters>
 FIXED | NO CHANGE | QUESTION - <the reply, one or two sentences>
 

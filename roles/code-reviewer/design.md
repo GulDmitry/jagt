@@ -25,7 +25,7 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
 ## Use cases
 
 - **WHEN** a jagt task's request gets a new head
-  **THEN** the head is read once and each finding is posted as a note opening with the AI line
+  **THEN** the tree was read before its push, each finding relayed to the session, and nothing is posted
 - **WHEN** a task's session reports REVIEW_PENDING and no request exists
   **THEN** its diff against the base is read once per tree state, each finding is relayed as a review round and the ship waits for the session's block per finding
 - **WHEN** a finding the pre-ship read raised is read again on the task's request
@@ -76,8 +76,8 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
 ## Usage
 
 - On by default on both tracks; `roles/code-reviewer/review.yml` holds its settings, unset read as on:
-  `post.own` true, `post.others` false, `maxDiffLines`.
-- A note on a jagt task's request is on by default; on another person's request only with `post.others`.
+  `post.others` false, `maxDiffLines`.
+- No note on a jagt task's request, whatever the settings; on another person's request only with `post.others`.
 - Its brief is `roles/code-reviewer/brief.md`, else `brief.md.dist`; its spend is the Master review's `assistant.max-cost-usd`.
 - The ledger is `<data>/jagt/code-review.json`, one writer; the statistics `<data>/records/code-review.jsonl`, append-only, UTC.
 - Resolutions come from `review_replies.md` for a jagt task's request, from the host for another (resolved is fixed, else unknown).

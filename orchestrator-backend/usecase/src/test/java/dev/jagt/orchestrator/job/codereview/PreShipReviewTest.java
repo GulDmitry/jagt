@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.RoundRelay;
+import dev.jagt.orchestrator.service.RoundSource;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -47,15 +48,16 @@ class PreShipReviewTest {
     when(changes.diff(handedBack)).thenReturn("+line1\n");
     when(panel.review(any(), any(), any(), anyString()))
         .thenReturn(new Judgement("", "ready", List.of(leak, taste), "", List.of(), ""));
-    when(relay.relay(any(), any(), any(), any(), any()))
+    when(relay.relay(any(), any(), any(), any(), any(), any()))
         .thenReturn(new SweepResult(SweepResult.Kind.RELAYED, "relayed"));
 
     review.run("");
 
     ArgumentCaptor<ReviewFacts> round = ArgumentCaptor.captor();
-    verify(relay).relay(eq("ABC-42"), any(), round.capture(), any(), eq("t1"));
+    verify(relay)
+        .relay(eq("ABC-42"), eq(RoundSource.TREE), any(), round.capture(), any(), eq("t1"));
     assertThat(round.getValue().discussion().threads())
-        .containsExactly("code-reviewer: `A.java`: leaks");
+        .containsExactly("reviewer: `A.java`: leaks");
     verify(coverage).raise("ABC-42", List.of(leak));
   }
 
@@ -88,16 +90,20 @@ class PreShipReviewTest {
   }
 
   @Test
-  void asksNoModelOnceRequestExists() {
+  void readsTheTreeOfTaskThatHoldsRequestBeforeItsNextPush() {
     TaskState shipped =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .mrUrl("https://host/mr/9")
             .build();
     when(state.tasks()).thenReturn(Map.of("ABC-42", shipped));
+    when(changes.state(shipped)).thenReturn(Optional.of("t9"));
+    when(changes.diff(shipped)).thenReturn("+line9\n");
+    when(panel.review(any(), any(), any(), anyString()))
+        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
     review.run("");
 
-    verifyNoInteractions(panel, relay);
+    verify(panel).review(any(), any(), any(), anyString());
   }
 
   @Test
@@ -142,7 +148,7 @@ class PreShipReviewTest {
     when(changes.diff(handedBack)).thenReturn("+line7\n");
     when(panel.review(any(), any(), any(), anyString()))
         .thenReturn(new Judgement("", "ready", List.of(leak), "", List.of(), ""));
-    when(relay.relay(any(), any(), any(), any(), any()))
+    when(relay.relay(any(), any(), any(), any(), any(), any()))
         .thenReturn(new SweepResult(SweepResult.Kind.STOPPED, "stopped"));
 
     review.run("");

@@ -37,7 +37,12 @@ final class RoundBrief {
    * last round's.
    */
   static String of(
-      String mrUrl, ReviewFacts r, String said, String since, SessionBrief sessionBrief) {
+      String mrUrl,
+      ReviewFacts r,
+      String said,
+      String since,
+      List<String> authors,
+      SessionBrief sessionBrief) {
     List<Step> steps = steps(r, said);
     StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
     if (steps.contains(Step.ROUND_CHECKS)) {
@@ -53,6 +58,12 @@ final class RoundBrief {
           .append(since.isBlank() ? "" : since + "\n")
           .append(Outside.fence("threads", String.join("\n\n", r.discussion().threads())))
           .append('\n');
+      if (!authors.isEmpty()) {
+        brief
+            .append("Author lines, one per thread in the order above; copy each, verbatim,")
+            .append(" under the heading of the block that answers its thread:\n");
+        authors.forEach(line -> brief.append(line).append('\n'));
+      }
     }
     brief.append(section(sessionBrief, steps.getLast()));
     return brief.toString().stripTrailing();

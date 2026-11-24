@@ -36,7 +36,7 @@ class UnansweredFindingsTest {
   }
 
   @Test
-  void awaitsNothingOnTaskThatHoldsRequest() {
+  void namesTheFindingsAwaitingTheSessionsBlockOnTaskThatHoldsRequest() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .mrUrl("https://host/mr/9")
@@ -44,7 +44,23 @@ class UnansweredFindingsTest {
     when(state.task("ABC-42")).thenReturn(Optional.of(task));
     when(handBackDue.unanswered(task)).thenReturn(Optional.of(relayed));
 
-    assertThat(findings.awaiting("ABC-42")).isEmpty();
+    assertThat(findings.awaiting("ABC-42"))
+        .hasValueSatisfying(sentence -> assertThat(sentence).contains("2 finding(s)"));
+  }
+
+  @Test
+  void declinesTheShipOfTaskThatHoldsRequestUntilTheReviewReadItsTree() {
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+            .mrUrl("https://host/mr/9")
+            .build();
+    when(state.task("ABC-42")).thenReturn(Optional.of(task));
+    when(handBackDue.unanswered(task)).thenReturn(Optional.empty());
+    when(settings.load()).thenReturn(CodeReviewSettings.Settings.defaults());
+    when(changes.state(task)).thenReturn(Optional.of("t1"));
+
+    assertThat(findings.awaiting("ABC-42"))
+        .hasValueSatisfying(sentence -> assertThat(sentence).contains("has not read this change"));
   }
 
   @Test
@@ -78,8 +94,7 @@ class UnansweredFindingsTest {
         TaskState.builder("proj", "/wt", status).told(ToldOnce.none().with(kind, toldTree)).build();
     when(state.task("ABC-42")).thenReturn(Optional.of(task));
     when(handBackDue.unanswered(task)).thenReturn(Optional.empty());
-    when(settings.load())
-        .thenReturn(new CodeReviewSettings.Settings(enabled, true, false, 5000, 1.0));
+    when(settings.load()).thenReturn(new CodeReviewSettings.Settings(enabled, false, 5000, 1.0));
     when(changes.state(task)).thenReturn(Optional.of(currentTree));
 
     assertThat(findings.awaiting("ABC-42").isPresent()).isEqualTo(declined);

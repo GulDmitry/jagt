@@ -36,7 +36,7 @@ class CodeReviewJobTest {
 
   @Test
   void readsNothingWhenTheRoleIsOff() {
-    when(settings.load()).thenReturn(new Settings(false, true, false, 5000, 1));
+    when(settings.load()).thenReturn(new Settings(false, false, 5000, 1));
 
     job.run();
 

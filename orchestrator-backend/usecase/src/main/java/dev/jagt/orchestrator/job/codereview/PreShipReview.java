@@ -6,7 +6,9 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.service.PreShipRead;
 import dev.jagt.orchestrator.service.RoundRelay;
+import dev.jagt.orchestrator.service.RoundSource;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.ThreadAuthors;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -21,8 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * A task's diff against its base, read once per tree state while the session has handed back and no
- * request exists, each finding relayed to the session as a review round. A clean read relays
+ * A task's diff against its base, read once per tree state while the session has handed back, a
+ * request or none, each finding relayed to the session as a review round. A clean read relays
  * nothing.
  */
 @Service
@@ -30,7 +32,9 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class PreShipReview {
 
-  private static final String AUTHOR = "code-reviewer: ";
+  private static final String TREE_LABEL = "the task's change before its ship";
+
+  private static final String AUTHOR = ThreadAuthors.REVIEWER + ": ";
 
   private final StateService stateService;
   private final WorktreeChanges changes;
@@ -118,7 +122,7 @@ public class PreShipReview {
                 List.of(),
                 findings.stream().map(PreShipCoverage::key).toList()));
     SweepResult.Kind kind =
-        relay.relay(taskId, "the task's change before its ship", round, "none", tree).kind();
+        relay.relay(taskId, RoundSource.TREE, TREE_LABEL, round, "none", tree).kind();
     return kind == SweepResult.Kind.RELAYED || kind == SweepResult.Kind.UNCHANGED;
   }
 }

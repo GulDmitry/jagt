@@ -27,7 +27,11 @@ class SignalRecorderTest {
   private final ReviewResolutions resolutions = mock(ReviewResolutions.class);
   private final SignalRecorder recorder = new SignalRecorder(ledger, stats, panel, resolutions);
   private final LedgerRow row = LedgerRow.of("https://h/a/b/pull/7", "shop", "t1");
-  private final RequestNote ours = RequestNote.defaults().withId("21").withKind(AuthorKind.ACTOR);
+  private final RequestNote ours =
+      RequestNote.defaults()
+          .withId("21")
+          .withKind(AuthorKind.ACTOR)
+          .withBody("AI <!-- jagt-review:k1 -->");
 
   @Test
   void noteTheSessionAnsweredIsResolvedAsThatAnswer() {
@@ -36,7 +40,7 @@ class SignalRecorderTest {
 
     recorder.record(row, Map.of("21", ours), Map.of("21", new Reaction(1, 2)));
 
-    verify(stats).append(row.url(), "21", 1, 2, "no-change", NotePoster.digest("brief"));
+    verify(stats).append(row.url(), "21", "note", 1, 2, "no-change", NotePoster.digest("brief"));
   }
 
   @Test
@@ -49,7 +53,7 @@ class SignalRecorderTest {
         Map.of("21", ours.withResolution(Resolution.RESOLVED)),
         Map.of("21", new Reaction(0, 0)));
 
-    verify(stats).append(row.url(), "21", 0, 0, "fixed", NotePoster.digest("brief"));
+    verify(stats).append(row.url(), "21", "note", 0, 0, "fixed", NotePoster.digest("brief"));
   }
 
   @Test
@@ -63,6 +67,33 @@ class SignalRecorderTest {
         Map.of("21", new Reaction(2, 1)));
 
     verify(stats, never())
-        .append(anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
+        .append(
+            anyString(), anyString(), anyString(), anyInt(), anyInt(), anyString(), anyString());
+  }
+
+  @Test
+  void replyLineCarriesNoBriefDigestBecauseTheReviewersBriefDidNotWriteIt() {
+    when(panel.brief()).thenReturn("brief");
+    when(resolutions.answered(row)).thenReturn(Map.of());
+
+    recorder.record(
+        row,
+        Map.of("21", ours.withBody("AI review note: rate it")),
+        Map.of("21", new Reaction(1, 0)));
+
+    verify(stats).append(row.url(), "21", "reply", 1, 0, "unknown", "");
+  }
+
+  @Test
+  void noteLineCarriesTheDigestOfTheBriefItWasWrittenUnder() {
+    when(panel.brief()).thenReturn("brief");
+    when(resolutions.answered(row)).thenReturn(Map.of());
+
+    recorder.record(
+        row,
+        Map.of("21", ours.withBody("AI review note: rate it <!-- jagt-review:k1 -->")),
+        Map.of("21", new Reaction(1, 0)));
+
+    verify(stats).append(row.url(), "21", "note", 1, 0, "unknown", NotePoster.digest("brief"));
   }
 }

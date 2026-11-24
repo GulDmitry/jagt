@@ -8,7 +8,7 @@ import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** Answers what a review bot said on a request jagt may note on. */
+/** Answers a review bot on a request no task holds, where notes are on. */
 @Service
 @RequiredArgsConstructor
 public class BotAnswerJob implements Job {
@@ -46,7 +46,7 @@ public class BotAnswerJob implements Job {
     }
     String model = configService.load().role(CodeReviewSettings.ROLE).modelOrInherited();
     subjects.list().subjects().stream()
-        .filter(subject -> subject.own() ? read.postOwn() : read.postOthers())
+        .filter(subject -> !subject.own() && read.postOthers())
         .forEach(subject -> answers.answer(subject, read, model));
   }
 }

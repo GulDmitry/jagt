@@ -20,7 +20,7 @@ import org.yaml.snakeyaml.error.YAMLException;
  */
 @Component
 @RequiredArgsConstructor
-public class CodeReviewSettings implements RolePosting {
+public class CodeReviewSettings {
 
   public static final String ROLE = "code-reviewer";
 
@@ -28,11 +28,10 @@ public class CodeReviewSettings implements RolePosting {
    * {@code maxDiffLines} is an estimate: a diff past it is skipped. {@code maxCostUsd} is what the
    * third-party reads of one request may cost together, the assistant's own ceiling.
    */
-  public record Settings(
-      boolean enabled, boolean postOwn, boolean postOthers, int maxDiffLines, double maxCostUsd) {
+  public record Settings(boolean enabled, boolean postOthers, int maxDiffLines, double maxCostUsd) {
 
     public static Settings defaults() {
-      return new Settings(true, true, false, 5000, AssistantProperties.DEFAULT_MAX_COST_USD);
+      return new Settings(true, false, 5000, AssistantProperties.DEFAULT_MAX_COST_USD);
     }
   }
 
@@ -40,25 +39,11 @@ public class CodeReviewSettings implements RolePosting {
   private final OrchestratorPaths paths;
   private final AssistantProperties assistant;
 
-  @Override
-  public String role() {
-    return ROLE;
-  }
-
-  @Override
-  public boolean mayPostOnTasksOwnRequest() {
-    return load().postOwn();
-  }
-
   public Settings load() {
     Settings read = fromFiles(paths.root().resolve("roles").resolve(ROLE));
     Boolean enabled = configService.load().role(ROLE).enabled();
     return new Settings(
-        enabled == null || enabled,
-        read.postOwn(),
-        read.postOthers(),
-        read.maxDiffLines(),
-        assistant.maxCostUsd());
+        enabled == null || enabled, read.postOthers(), read.maxDiffLines(), assistant.maxCostUsd());
   }
 
   private static Settings fromFiles(Path folder) {
@@ -83,7 +68,6 @@ public class CodeReviewSettings implements RolePosting {
     Map<?, ?> post = document.get("post") instanceof Map<?, ?> named ? named : Map.of();
     return new Settings(
         below.enabled(),
-        flag(post.get("own"), below.postOwn()),
         flag(post.get("others"), below.postOthers()),
         Stream.of(document.get("maxDiffLines"))
             .filter(Integer.class::isInstance)

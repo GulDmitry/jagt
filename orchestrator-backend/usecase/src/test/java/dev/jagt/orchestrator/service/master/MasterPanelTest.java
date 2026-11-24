@@ -81,8 +81,7 @@ class MasterPanelTest {
             reducer,
             event -> {});
     stored = new MasterReview(state);
-    panel =
-        new MasterPanel(reviews, briefs, quotes, stored, new RoleYields(configService, List.of()));
+    panel = new MasterPanel(reviews, briefs, quotes, stored, new RoleYields(configService));
     reviewPending =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     planPending = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();

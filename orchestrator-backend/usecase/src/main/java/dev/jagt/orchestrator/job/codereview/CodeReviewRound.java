@@ -40,8 +40,7 @@ public class CodeReviewRound {
   private final NotePoster poster;
 
   public void run(Subject subject, Settings settings, String model) {
-    boolean may = subject.own() ? settings.postOwn() : settings.postOthers();
-    if (!may) {
+    if (subject.own() || !settings.postOthers()) {
       return;
     }
     Optional<LedgerRow> row = ledger.row(subject.url());

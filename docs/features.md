@@ -115,8 +115,8 @@
 
 ## Review · [spec](../openspec/specs/review/spec.md) · [code review](features/code-review.md)
 - **Review threads** — Each is fixed, declined with a why, or asked. [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
-- **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
-  [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
+- **Drafted replies** — Drafted into a file you read first. [spec](../openspec/specs/review-actors/spec.md#requirement-drafted-replies-are-a-file)
+- **Actors on a request** — Each actor, moment and setting has one written outcome. [spec](../openspec/specs/review-actors/spec.md)
 - **Take over** — A new task can take over an open review request. [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
 - **Infrastructure waits** — A red pipeline goes back to its session unless the host blames infrastructure; a `wait` probes on, then stops.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)

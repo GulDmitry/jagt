@@ -9,8 +9,11 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class CodeReviewSettingsTest {
 
@@ -29,7 +32,6 @@ class CodeReviewSettingsTest {
         new CodeReviewSettings(configService, paths, assistant).load();
 
     assertThat(read.maxCostUsd()).isEqualTo(1.5);
-    assertThat(read.postOwn()).isTrue();
     assertThat(read.postOthers()).isFalse();
   }
 
@@ -47,31 +49,20 @@ class CodeReviewSettingsTest {
 
     assertThat(read.postOthers()).isTrue();
     assertThat(read.maxDiffLines()).isEqualTo(100);
-    assertThat(read.postOwn()).isTrue();
   }
 
-  @Test
-  void mayPostOnTheTasksOwnRequestByDefault() {
+  @ParameterizedTest
+  @CsvSource({"false, false", "true, true"})
+  void roleIsOnOnlyWhereTheConfigDoesNotTurnItOff(boolean configured, boolean enabled) {
     when(paths.root()).thenReturn(root);
-    when(configService.load()).thenReturn(ConfigFile.defaults());
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withRoles(Map.of("code-reviewer", new ConfigFile.RoleConfig(configured, null))));
 
-    CodeReviewSettings settings =
-        new CodeReviewSettings(configService, paths, AssistantProperties.empty());
+    CodeReviewSettings.Settings read =
+        new CodeReviewSettings(configService, paths, AssistantProperties.empty()).load();
 
-    assertThat(settings.mayPostOnTasksOwnRequest()).isTrue();
-  }
-
-  @Test
-  void mayNotPostOnTheTasksOwnRequestWhereTheReviewFileForbidsIt() throws IOException {
-    Files.createDirectories(root.resolve("roles/code-reviewer"));
-    Files.writeString(root.resolve("roles/code-reviewer/review.yml"), "post:\n  own: false\n");
-    when(paths.root()).thenReturn(root);
-    when(configService.load()).thenReturn(ConfigFile.defaults());
-
-    CodeReviewSettings settings =
-        new CodeReviewSettings(configService, paths, AssistantProperties.empty());
-
-    assertThat(settings.role()).isEqualTo("code-reviewer");
-    assertThat(settings.mayPostOnTasksOwnRequest()).isFalse();
+    assertThat(read.enabled()).isEqualTo(enabled);
   }
 }

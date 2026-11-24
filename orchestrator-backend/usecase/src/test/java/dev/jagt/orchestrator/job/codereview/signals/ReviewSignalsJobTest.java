@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.codereview.signals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -21,6 +22,7 @@ import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,5 +110,60 @@ class ReviewSignalsJobTest {
     job.run();
 
     verify(ledger, times(ends)).update(any(), any(), any(), any());
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "'AI review note: react with a thumbs up if it helps, a thumbs down if it does not.', 1",
+    "'AI <!-- jagt-review:k1 -->', 1",
+    "'looks good to me', 0"
+  })
+  void ratesOnlyWhatJagtPostedOnListedRequestNoRowKnowsYet(String body, int rated) {
+    Subject subject = new Subject("shop", "https://h/a/b/9", "r", "t1");
+    when(ledger.rows()).thenReturn(List.of());
+    when(subjects.list()).thenReturn(new ReviewSubjects.Listing(List.of(subject), Set.of()));
+    when(notes.notes("shop", subject.url()))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    List.of(
+                        RequestNote.defaults()
+                            .withId("8")
+                            .withKind(AuthorKind.ACTOR)
+                            .withBody(body))),
+                TokenUsage.NONE));
+    when(notes.reactions(anyString(), anyString(), anyList()))
+        .thenReturn(new Answer<>(Optional.of(Map.of()), TokenUsage.NONE));
+
+    job.run();
+
+    verify(notes, times(rated)).reactions("shop", subject.url(), List.of("8"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({"'', 0", "t1, 1"})
+  void readsAndKeepsRowOnlyForRequestsHeldByTasks(String taskId, int reads) {
+    Subject subject = new Subject("shop", "https://h/a/b/9", "r", taskId);
+    when(ledger.rows()).thenReturn(List.of());
+    when(subjects.list()).thenReturn(new ReviewSubjects.Listing(List.of(subject), Set.of()));
+    when(notes.notes("shop", subject.url())).thenReturn(noNotes);
+
+    job.run();
+
+    verify(notes, times(reads)).notes("shop", subject.url());
+    verify(ledger, times(reads)).update(eq(subject.url()), eq("shop"), eq(taskId), any());
+  }
+
+  @Test
+  void readsRequestOnceWhereItIsListedAndHoldsRow() {
+    LedgerRow held = LedgerRow.of("https://h/a/b/9", "shop", "t1");
+    Subject subject = new Subject("shop", held.url(), "r", "t1");
+    when(ledger.rows()).thenReturn(List.of(held));
+    when(subjects.list()).thenReturn(new ReviewSubjects.Listing(List.of(subject), Set.of()));
+    when(notes.notes("shop", held.url())).thenReturn(noNotes);
+
+    job.run();
+
+    verify(notes, times(1)).notes("shop", held.url());
   }
 }

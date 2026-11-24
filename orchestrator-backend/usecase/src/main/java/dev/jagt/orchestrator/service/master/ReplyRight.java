@@ -29,4 +29,10 @@ public class ReplyRight implements RepliesInstruction {
     boolean withheld = !asked && OriginContext.current() == ActionOrigin.MASTER;
     return refusedByCase || withheld ? Optional.of(MAY_NOT_REPLY) : Optional.empty();
   }
+
+  @Override
+  public boolean postsPersonReplies(ConfigFile config) {
+    return config.codeReview().repliesToPeopleUnaskedOrDefault()
+        || OriginContext.current() != ActionOrigin.MASTER;
+  }
 }

@@ -10,7 +10,6 @@ public final class PreShipRead {
 
   public static boolean due(TaskState task) {
     return task.standing().status() == TaskStatus.REVIEW_PENDING
-        && !task.hasReviewRequest()
         && !task.work().stopped()
         && !task.standing().report().asks()
         && task.worktreePath() != null;

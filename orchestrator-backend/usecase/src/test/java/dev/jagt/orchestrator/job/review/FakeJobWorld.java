@@ -12,7 +12,6 @@ import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService
 import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
@@ -40,7 +39,6 @@ import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.CarriedBlock;
-import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.FreshStarts;
@@ -312,9 +310,7 @@ public final class FakeJobWorld implements AutoCloseable {
                 stored,
                 mock(NamedTickets.class)),
             stored,
-            new RoleYields(
-                config,
-                List.of(new CodeReviewSettings(config, paths, AssistantProperties.empty()))));
+            new RoleYields(config));
     MasterReviewJob master = new MasterReviewJob(state, config, panel, stored, ruling);
     StepRelay relay = stepRelay().withRoot(root).build(state, sessions, clock);
     AliveStamp alive = new AliveStamp(paths, clock);
