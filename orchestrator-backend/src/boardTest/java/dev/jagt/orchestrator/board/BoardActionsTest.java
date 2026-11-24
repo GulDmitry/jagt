@@ -118,6 +118,7 @@ class BoardActionsTest extends BoardPageContext {
             .build());
 
     Page page = openLiveBoard();
+    assertThat(button(page, "Deploy")).isVisible();
     CompletableFuture<String> asked = dismissedDialogMessage(page);
     button(page, "Deploy").click();
 

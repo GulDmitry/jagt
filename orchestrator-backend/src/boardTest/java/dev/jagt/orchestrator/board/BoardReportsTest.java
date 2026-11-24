@@ -264,8 +264,8 @@ class BoardReportsTest extends BoardPageContext {
     Page page = openLiveBoard();
     ask(page, "replies a19");
     assertThat(page.locator("#report-body")).containsText("Renamed it.");
-    List<Runnable> answers = new java.util.concurrent.CopyOnWriteArrayList<>();
-    List<String> bodies = new java.util.concurrent.CopyOnWriteArrayList<>();
+    java.util.concurrent.CompletableFuture<Runnable> heldOlderAnswer =
+        new java.util.concurrent.CompletableFuture<>();
     page.route(
         "**/api/commands/replies**",
         route -> {
@@ -276,8 +276,10 @@ class BoardReportsTest extends BoardPageContext {
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
-          bodies.add(read);
-          answers.add(() -> route.fulfill(new Route.FulfillOptions().setBody(read)));
+          Runnable answer = () -> route.fulfill(new Route.FulfillOptions().setBody(read));
+          if (!read.contains("The older read.") || !heldOlderAnswer.complete(answer)) {
+            answer.run();
+          }
         });
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The older read.\n").build();
     state.putTask(
@@ -286,7 +288,7 @@ class BoardReportsTest extends BoardPageContext {
             .task("ABC-19")
             .orElseThrow()
             .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis()));
-    page.waitForCondition(() -> bodies.stream().anyMatch(body -> body.contains("The older read.")));
+    page.waitForCondition(heldOlderAnswer::isDone);
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The newer read.\n").build();
     state.putTask(
         "ABC-19",
@@ -294,12 +296,9 @@ class BoardReportsTest extends BoardPageContext {
             .task("ABC-19")
             .orElseThrow()
             .withStatus(TaskStatus.REVIEW_PENDING, "newer", System.currentTimeMillis()));
-    page.waitForCondition(() -> bodies.stream().anyMatch(body -> body.contains("The newer read.")));
-    int newest = answers.size() - 1;
-    answers.get(newest).run();
     assertThat(page.locator("#report-body")).containsText("The newer read.");
 
-    page.waitForRequestFinished(() -> answers.subList(0, newest).forEach(Runnable::run));
+    page.waitForRequestFinished(() -> heldOlderAnswer.join().run());
     page.evaluate("() => new Promise(done => requestAnimationFrame(() => done()))");
 
     org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
