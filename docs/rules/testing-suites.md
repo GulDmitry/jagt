@@ -7,7 +7,7 @@
 | T0 edit loop | targeted tests, mutants on the diff | `./gradlew -q testsFor`, `pitestDiff` | fix before the commit |
 | T1 local gate = T2 pull request | `test` (rules, ArchUnit, budgets, jqwik 50 tries, 0.80 line coverage per module), `boardTest`, `e2eTest`, `linuxDriverTest`, `guardsTest`, `standTest -Pmodelfree` on compose, `installTest` | `ci-local.sh`, jobs by name | local: fix before the push; CI: a divergence |
 | T3 main | none: publish what T2 proved | `release` job | a publish failure |
-| T4 nightly | `standTest -Pmodelfree -Pengine=kind`, repeated and cold runs, full `pitest`, Stryker, jqwik at high tries, install on the real feed, live scans (per push only on a dependency diff; locally also each base image, when `base/` changed) | `ci-local.sh nightly` (or one `nightly-<job>`), which is `nightly.yml`: `gateStand` x3 on compose and kind, `gateRepeat` (`e2eTest` x5), `gateProperties` (1000 tries), `gateMutation`, Stryker, `gateScan`, install on the real feed | an issue opens |
+| T4 nightly | `standTest -Pmodelfree -Pengine=kind`, repeated and cold runs, jqwik at high tries, install on the real feed, live scans (per push only on a dependency diff; locally also each base image, when `base/` changed) | `ci-local.sh nightly` (or one `nightly-<job>`), which is `nightly.yml`: `gateStand` x3 on compose and kind, `gateRepeat` (`e2eTest` x5), `gateProperties` (1000 tries), `gateScan`, install on the real feed | an issue opens |
 | T5 weekly and release gate | `standTest` live, `promptEval`, `roleEval -Prole=master`, base images, Scorecard; jqwik at 200 tries (`-PjqwikTries`) | locally: docker, an agent login, tokens | before a minor release |
 
 Windows and macOS install run in T2 only: the one job without a local twin.
@@ -55,7 +55,7 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 ## The local CI
 
 Each CI job runs one `gate<Job>` task (`gateTest`, `gateHeavy`, `gateStand`, `gateInstall`, `gateRelease`, `gateCodeql`;
-the nightly's `gateRepeat`, `gateProperties`, `gateMutation`, `gateScan`)
+the nightly's `gateRepeat`, `gateProperties`, `gateScan`)
 and no other Gradle line (`workflow-gradle-lines`); `scripts/ci-local.sh` runs the same line. Both CI engines set
 `-Ptimed=false`: no time limit, no time record, no timing gate; a job's timeout is its only stop
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
@@ -65,7 +65,7 @@ and no other Gradle line (`workflow-gradle-lines`); `scripts/ci-local.sh` runs t
 | `test`, `heavy`, `stand` (compose), `install` (ubuntu) | `ci-local.sh <job>`: in the pinned CI image (`base/Dockerfile.ci`, built locally while its digest is not pullable) with a Docker engine of its own, `-Ptimed=false` |
 | `install` (macOS) | `ci-local.sh install-macos`: natively, on a Mac |
 | `install` (Windows) | none: a Mac cannot run it; the pull request's CI run reproduces it |
-| `stand` (kind), `release`, CodeQL, the nightly's mutation | none yet |
+| `stand` (kind), `release`, CodeQL | none yet |
 
 - Only the argument-free run, every job above green, records the tree for the push guard; the release gate runs it on the released tree.
 - A CI red after a local green is a defect ([testing](testing.md)).

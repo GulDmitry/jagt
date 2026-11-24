@@ -35,15 +35,6 @@ gate() {
         nightly-stand-kind) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind -PstandRuns=3 --rerun-tasks' ;;
         nightly-e2e) echo './gradlew --no-daemon gateRepeat --rerun-tasks' ;;
         nightly-properties) echo './gradlew --no-daemon gateProperties -PjqwikTries=1000 --rerun-tasks' ;;
-        nightly-pitest-root) echo './gradlew --no-daemon gateMutation -PmutationProject=:' ;;
-        nightly-pitest-adapter) echo './gradlew --no-daemon gateMutation -PmutationProject=:adapter' ;;
-        nightly-pitest-core) echo './gradlew --no-daemon gateMutation -PmutationProject=:core' ;;
-        nightly-pitest-usecase) echo './gradlew --no-daemon gateMutation -PmutationProject=:usecase' ;;
-        nightly-pitest-surface) echo './gradlew --no-daemon gateMutation -PmutationProject=:surface' ;;
-        nightly-pitest-stand) echo './gradlew --no-daemon gateMutation -PmutationProject=:stand' ;;
-        nightly-pitest-statechart) echo './gradlew --no-daemon gateMutation -PmutationProject=:statechart' ;;
-        nightly-pitest-mutation-scope) echo './gradlew --no-daemon gateMutation -PmutationProject=:mutation-scope' ;;
-        nightly-stryker) echo './gradlew --no-daemon boardInstall boardMutate' ;;
         nightly-scan) echo './gradlew --no-daemon gateScan' ;;
         *) echo "linux-suite: no job $1; jobs: test heavy stand install audit boardTest nightly-*" >&2; return 2 ;;
     esac
@@ -64,7 +55,6 @@ warm() {
         test) echo "$(live test) boardInstall" ;;
         heavy) echo "$(live heavy) boardInstall containerUp containerDown" ;;
         stand | nightly-stand-*) echo ':stand:standImage :stand:standPull' ;;
-        nightly-stryker) echo 'boardInstall' ;;
         boardTest) echo 'playwrightChromium' ;;
         *) echo '' ;;
     esac
@@ -109,8 +99,7 @@ cpus=$CONTAINER_CPUS
 if [[ ${GITHUB_ACTIONS:-} == true ]]; then cpus=$host_cpus; fi
 if awk -v h="$host_cpus" -v q="$CONTAINER_CPUS" 'BEGIN { exit !(h < q) }'; then cpus=$host_cpus; fi
 # Slower per CPU than a runner, never fewer things at once: concurrency follows the runner's size.
-CONCURRENCY=(--max-workers="$RUNNER_CPUS" -PstandParallelism="$RUNNER_CPUS" -Pe2eForks=$(( RUNNER_CPUS / 2 ))
-    -PpitestThreads=$(( RUNNER_CPUS / 2 )))
+CONCURRENCY=(--max-workers="$RUNNER_CPUS" -PstandParallelism="$RUNNER_CPUS" -Pe2eForks=$(( RUNNER_CPUS / 2 )))
 memory_gb=$RUNNER_MEMORY_GB
 host_gb=$(( $(docker info --format '{{.MemTotal}}' 2>/dev/null || echo 0) / 1073741824 ))
 if (( host_gb > 1 && host_gb <= RUNNER_MEMORY_GB )); then

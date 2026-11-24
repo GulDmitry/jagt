@@ -94,7 +94,7 @@ EOF
 
 @test "the gate keeps the runner's concurrency whatever the container's CPU quota" {
   run "$script" stand
-  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--max-workers=4 -PstandParallelism=4 -Pe2eForks=2 -PpitestThreads=2'
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--max-workers=4 -PstandParallelism=4 -Pe2eForks=2'
 }
 
 @test "a host with less memory than the runner caps the container below the host, warned, not refused" {
@@ -157,9 +157,14 @@ EOF
   [ "$(grep -c resolveAll "$DOCKER_LOG")" -eq 1 ]
 }
 
-@test "a nightly pitest job mutates the project its name gives" {
-  run "$script" nightly-pitest-mutation-scope
-  grep -q -- 'gateMutation -PmutationProject=:mutation-scope' "$DOCKER_LOG"
+@test "no job mutates: mutation runs only on a commit's diff, locally" {
+  run "$script" nightly-mutation
+  [ "$status" -eq 2 ]
+  run "$script" nightly-mutate-board
+  [ "$status" -eq 2 ]
+  [ ! -e "$DOCKER_LOG" ]
+  run grep -c -i 'pitest\|stryker\|gate[M]utation\|boardMutate' "$script"
+  [ "$output" -eq 0 ]
 }
 
 @test "the nightly stand job warms up the images the stand runs" {
@@ -174,12 +179,6 @@ EOF
   [ "$(grep -c -- '--network none' "$DOCKER_LOG")" -eq 0 ]
   grep -q -- '-Pengine=kind -PstandRuns=3' "$DOCKER_LOG"
   grep -q -- 'gateScan --max-workers' "$DOCKER_LOG"
-}
-
-@test "the nightly board mutation installs the board online first" {
-  run "$script" nightly-stryker
-  grep resolveAll "$DOCKER_LOG" | grep -q boardInstall
-  grep -- '--network none' "$DOCKER_LOG" | grep -q 'boardInstall boardMutate'
 }
 
 # bats test_tags=exit:2

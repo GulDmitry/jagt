@@ -118,67 +118,6 @@ jobs:
           retention-days: 14
           path: orchestrator-backend/build/reports/tests/test
 
-  pitest:
-    name: pitest ${{ matrix.project }}
-    if: (!inputs.job || inputs.job == 'pitest')
-    runs-on: ubuntu-24.04
-    timeout-minutes: ${{ matrix.minutes }}
-    strategy:
-      fail-fast: false
-      # Every job resolves cold: more shards at once and Maven Central answers 429.
-      max-parallel: 3
-      matrix:
-        include:
-          - {project: root, minutes: 150}
-          - {project: adapter, minutes: 150}
-          - {project: core, minutes: 120}
-          - {project: usecase, minutes: 150}
-          - {project: surface, minutes: 90}
-          - {project: stand, minutes: 150}
-          - {project: statechart, minutes: 60}
-          - {project: mutation-scope, minutes: 60}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: log in to the registry holding the CI image
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ${{ runner.temp }}/gradle-home
-          key: gradle-home-nightly
-          restore-keys: gradle-home-
-      - name: mutate the project
-        env:
-          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
-        run: scripts/linux-suite.sh nightly-pitest-${{ matrix.project }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: nightly-pitest-${{ matrix.project }}-reports
-          retention-days: 14
-          path: orchestrator-backend/**/build/reports/pitest
-
-  stryker:
-    name: stryker
-    if: (!inputs.job || inputs.job == 'stryker')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: log in to the registry holding the CI image
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ${{ runner.temp }}/gradle-home
-          key: gradle-home-nightly
-          restore-keys: gradle-home-
-      - name: mutate the board's covered JavaScript
-        env:
-          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
-        run: scripts/linux-suite.sh nightly-stryker
-
   scan:
     name: live vulnerability scan
     if: (!inputs.job || inputs.job == 'scan')
@@ -233,7 +172,7 @@ jobs:
   report:
     name: open an issue for a red night
     if: failure()
-    needs: [stand, e2e, properties, pitest, stryker, scan, install]
+    needs: [stand, e2e, properties, scan, install]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

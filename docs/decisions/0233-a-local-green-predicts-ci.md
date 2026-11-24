@@ -26,7 +26,8 @@ Accepted 2026-11-23, by the owner's order: a local green predicts a CI green, as
 - Six tiers: T0 edit loop, T1 local gate, T2 pull request, T3 main, T4 nightly, T5 weekly and release gate ([`ci`](../rules/ci.md)).
 - T1 runs every job T2 runs, by one command, in one pinned image, runner-sized and offline.
 - CI has no time ceiling, measurement or stop beyond a job timeout; ceilings stay local. `StandTimingGate` is deleted.
-- The nightly runs what the default local run leaves out: kind stand, repeated and cold runs, full mutation, high-tries jqwik, real feeds, live scans.
+- The nightly runs what the default local run leaves out: kind stand, repeated and cold runs, high-tries jqwik, real feeds, live scans.
+- Mutation runs on no CI or nightly job: [0151](0151-mutants-are-judged-locally-only.md) holds the rule.
 - Every nightly job keeps a local twin by name; a job moved to the nightly changes when it runs, never whether it runs locally.
 - Main publishes the tree the pull request proved: the version read and tree equality.
 - A CI red after a local green is a divergence defect: a register row, a fix in the local run, never a rerun.

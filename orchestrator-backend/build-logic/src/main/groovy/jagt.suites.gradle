@@ -356,12 +356,6 @@ tasks.named('boardTest') { mustRunAfter 'boardInstall', 'boardCheck' }
         dependsOn steps
     }
 }
-tasks.register('gateMutation') {
-    description = 'Runs the work of the nightly job pitest: the project -PmutationProject names, every project without it.'
-    group = 'verification'
-    def only = providers.gradleProperty('mutationProject')
-    dependsOn { rootProject.allprojects.findAll { !only.present || it.path == only.get() }.collect { it.tasks.named('pitest').get() } }
-}
 tasks.register('gate') {
     description = "Runs every gate a pull request's CI runs."
     group = 'verification'

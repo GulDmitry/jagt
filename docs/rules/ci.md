@@ -45,6 +45,8 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
     `release-needs-no-stand-or-install`, `CiWorkflowTest`, `ProvenTree`.
 12. **A change to CI or the local twin runs first as one job alone on a throwaway branch**: a dispatch with input `job`,
     never first on the release request. `CiWorkflowTest`.
+13. **No CI or nightly job mutates**: mutants are judged on a commit's diff, locally ([0151](../decisions/0151-mutants-are-judged-locally-only.md)).
+    `CiWorkflowTest.judgesMutantsLocallyOnlyNoCiOrNightlyJobMutates`.
 
 ## The divergence rule
 

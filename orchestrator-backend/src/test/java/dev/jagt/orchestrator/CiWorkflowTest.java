@@ -3,16 +3,16 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,10 +22,6 @@ import org.yaml.snakeyaml.Yaml;
 class CiWorkflowTest {
 
   private static final Path CODEQL = Path.of("../.github/workflows/codeql.yml");
-
-  private static final Path SETTINGS = Path.of("settings.gradle");
-
-  private static final Path PITEST = Path.of("build-logic/src/main/groovy/jagt.pitest.gradle");
 
   private static final Path GATES = Path.of("build-logic/src/main/groovy/jagt.suites.gradle");
 
@@ -170,7 +166,7 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"stand", "e2e", "properties", "pitest", "stryker", "scan", "install"})
+  @ValueSource(strings = {"stand", "e2e", "properties", "scan", "install"})
   void runsOneNightlyJobAloneWhenTheDispatchNamesIt(String job) {
     assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("if")))
         .isEqualTo("(!inputs.job || inputs.job == '" + job + "')");
@@ -308,46 +304,24 @@ class CiWorkflowTest {
   @Test
   void runsOnlyWhatTheLocalGateCannotInTheNightly() {
     assertThat(CiWorkflow.nightlyJobs().keySet())
-        .containsExactlyInAnyOrder(
-            "stand", "e2e", "properties", "pitest", "stryker", "scan", "install", "report");
+        .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install", "report");
   }
 
   @Test
-  void mutatesEachProjectWithMutationTaskInItsOwnNightlyShard() {
-    Map<?, ?> strategy =
-        (Map<?, ?>)
-            Objects.requireNonNull(
-                Objects.requireNonNull(CiWorkflow.nightlyJobs().get("pitest")).get("strategy"));
-    Map<?, ?> matrix = (Map<?, ?>) Objects.requireNonNull(strategy.get("matrix"));
-    List<?> shards = (List<?>) Objects.requireNonNull(matrix.get("include"));
-    Set<String> projects = new HashSet<>(List.of(":"));
-    Matcher included =
-        Pattern.compile("(?m)^include '([^']+)'").matcher(SourceRoots.read(SETTINGS));
-    while (included.find()) {
-      projects.add(":" + included.group(1));
+  void judgesMutantsLocallyOnlyNoCiOrNightlyJobMutates() throws IOException {
+    Pattern mutation = Pattern.compile("pitest|stryker|gate[M]utation|boardMutate");
+    List<String> mutating;
+    try (Stream<Path> files = Files.list(Path.of("../.github/workflows"))) {
+      mutating =
+          Stream.concat(
+                  files.filter(file -> file.toString().endsWith(".yml")),
+                  Stream.of(Path.of("scripts/linux-suite.sh")))
+              .filter(file -> mutation.matcher(SourceRoots.read(file)).find())
+              .map(Path::toString)
+              .toList();
     }
 
-    Set<String> shardNames =
-        shards.stream()
-            .map(shard -> String.valueOf(((Map<?, ?>) shard).get("project")))
-            .collect(Collectors.toSet());
-    List<MatchResult> gates =
-        Pattern.compile(
-                "nightly-pitest-([a-z-]+)\\) echo './gradlew --no-daemon gateMutation"
-                    + " -PmutationProject=(:[a-z-]*)'")
-            .matcher(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
-            .results()
-            .toList();
-
-    assertThat(SourceRoots.read(PITEST))
-        .contains("allprojects {")
-        .contains("apply plugin: 'info.solidsoft.pitest'");
-    assertThat(strategy.get("fail-fast")).isEqualTo(false);
-    assertThat(shards).hasSameSizeAs(shardNames);
-    assertThat(gates.stream().map(gate -> gate.group(1)))
-        .containsExactlyInAnyOrderElementsOf(shardNames);
-    assertThat(gates.stream().map(gate -> gate.group(2)))
-        .containsExactlyInAnyOrderElementsOf(projects);
+    assertThat(mutating).isEmpty();
   }
 
   @ParameterizedTest
@@ -355,8 +329,6 @@ class CiWorkflowTest {
     "stand, nightly-stand-${{ matrix.engine }}",
     "e2e, nightly-e2e",
     "properties, nightly-properties",
-    "pitest, nightly-pitest-${{ matrix.project }}",
-    "stryker, nightly-stryker",
     "scan, nightly-scan"
   })
   void runsEachNightlyJobThroughTheLocalTwinInTheCiImage(String job, String twinJob) {
@@ -377,7 +349,6 @@ class CiWorkflowTest {
         "nightly-stand-kind",
         "nightly-e2e",
         "nightly-properties",
-        "nightly-stryker",
         "nightly-scan"
       })
   void holdsEachNightlyJobsLineInTheLocalTwin(String twinJob) {
@@ -386,7 +357,7 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"stand", "e2e", "properties", "pitest", "stryker", "scan"})
+  @ValueSource(strings = {"stand", "e2e", "properties", "scan"})
   void restoresTheNightlysDependenciesReadOnlyFromTheCiCache(String job) {
     String steps =
         String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("steps"));
@@ -396,16 +367,6 @@ class CiWorkflowTest {
             "actions/cache/restore@[0-9a-f]{40}, "
                 + "with=\\{path=\\$\\{\\{ runner.temp \\}\\}/gradle-home")
         .doesNotContainPattern("actions/cache@[0-9a-f]{40}");
-  }
-
-  @Test
-  void runsAtMostThreeColdPitestShardsAtOnce() {
-    Map<?, ?> strategy =
-        (Map<?, ?>)
-            Objects.requireNonNull(
-                Objects.requireNonNull(CiWorkflow.nightlyJobs().get("pitest")).get("strategy"));
-
-    assertThat(strategy.get("max-parallel")).isEqualTo(3);
   }
 
   @Test
@@ -431,8 +392,7 @@ class CiWorkflowTest {
     assertThat(report.get("if")).isEqualTo("failure()");
     assertThat(report.get("needs"))
         .asInstanceOf(list(String.class))
-        .containsExactlyInAnyOrder(
-            "stand", "e2e", "properties", "pitest", "stryker", "scan", "install");
+        .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install");
   }
 
   @Test
