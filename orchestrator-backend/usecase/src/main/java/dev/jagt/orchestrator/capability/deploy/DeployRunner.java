@@ -49,7 +49,7 @@ public class DeployRunner {
 
   public Outcome advance(String taskId) {
     TaskState task = requireTask(taskId);
-    List<Target> targets = deployTargets.all(task);
+    List<Target> targets = deployTargets.deployable(task);
     int from = Objects.requireNonNull(task.work().deployment()).at();
     Landing landing = new Landing();
     for (int i = from; i < targets.size(); i++) {

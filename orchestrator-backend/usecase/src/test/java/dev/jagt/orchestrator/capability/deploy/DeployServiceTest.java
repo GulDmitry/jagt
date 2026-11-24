@@ -361,13 +361,41 @@ class DeployServiceTest {
     }
 
     @Test
-    void refusesTheWholeDeployWhenAnyRepositoryHasNoDeployBranch() {
+    void landsTheOtherRepositoryAndNamesTheOneSkippedWhenItHasNoDeployBranch() {
       projects = deployProjects().withWebDeployBranch(null).build();
 
+      Outcome outcome = deploys.deploy("a1");
+
+      assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+      assertThat(outcome.message())
+          .contains("into dev (cafebabe)", "Skipped, no deployBranch in jagt.yml: web.");
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
+                  .targets())
+          .extracting(Deployment.Target::project)
+          .containsExactly("api");
+      verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/web")), anyString(), anyString());
+    }
+
+    @Test
+    void refusesTheDeployWhenNoRepositoryHasDeployBranch() {
+      projects = deployProjects().withApiDeployBranch(null).withWebDeployBranch(null).build();
+
       assertThatThrownBy(() -> deploys.deploy("a1"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("web")
+          .isInstanceOf(Refusal.class)
           .hasMessageContaining("deployBranch");
+      verifyNoInteractions(git);
+    }
+
+    @Test
+    void refusesTheDeployWhenRepositoryDeploysIntoItsBaseBranchEvenWithAnotherSkipped() {
+      projects = deployProjects().withWebDeployBranch(null).build();
+      when(config.project("api"))
+          .thenReturn(new ProjectConfig("/repo/api", "origin/release", "release", List.of()));
+
+      assertThatThrownBy(() -> deploys.deploy("a1"))
+          .isInstanceOf(Refusal.class)
+          .hasMessageContaining("base branch");
       verifyNoInteractions(git);
     }
   }

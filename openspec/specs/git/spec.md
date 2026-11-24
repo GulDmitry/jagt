@@ -10,8 +10,12 @@ Shared-branch writes, commits, ships, worktree hooks and multi-repo tasks.
 `deploy` SHALL merge `origin/<task>` into `deployBranch` (`mergeIntoAndPush`), `revert` its merge commit
 (`revertMergeAndPush`); root-only (`Audience.ROOT`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves
 the cut and the request's **target**, never the merge destination (`baseBranchOr`). A `deployBranch` naming
-`baseBranch`, however spelled, MUST be refused. With `remote: none` both fast-forward the target's checkout
-(git refuses a push to it), else push within the repository.
+`baseBranch`, however spelled, MUST be refused.
+With `remote: none` both fast-forward the target's checkout (git refuses a push to it), else push within the repository.
+
+#### Scenario: One repository without a deployBranch
+- **WHEN** `web` names none **THEN** `api` deploys, `web` is skipped, named in the outcome, never recorded
+- **WHEN** no repository names one **THEN** refused
 
 #### Scenario: Diff base
 - **WHEN** `code <task> diff` shows files the task never touched
