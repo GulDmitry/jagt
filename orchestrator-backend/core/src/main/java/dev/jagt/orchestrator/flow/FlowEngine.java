@@ -41,15 +41,20 @@ public class FlowEngine {
    * cannot be taken.
    */
   public String run(String taskIdOrAlias, TaskAction action, @Nullable String project) {
+    return press(taskIdOrAlias, action, project).message();
+  }
+
+  /** As {@link #run(String, TaskAction, String)}, with how the work ended beside its sentence. */
+  public Pressed press(String taskIdOrAlias, TaskAction action, @Nullable String project) {
     return runWith(taskIdOrAlias, action, project, null);
   }
 
   /** As above, on the line a verb that takes one types; never a project. */
   public String runLine(String taskIdOrAlias, TaskAction action, String line) {
-    return runWith(taskIdOrAlias, action, null, line);
+    return runWith(taskIdOrAlias, action, null, line).message();
   }
 
-  private String runWith(
+  private Pressed runWith(
       String taskIdOrAlias, TaskAction action, @Nullable String project, @Nullable String line) {
     String taskId = tasks.canonicalTaskId(taskIdOrAlias);
     TaskState task = tasks.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
@@ -169,7 +174,7 @@ public class FlowEngine {
     return work.get();
   }
 
-  private String apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {
+  private Pressed apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {
     Optional<TaskStatus> next = rules.next(was, action, outcome.kind());
     if (next.isPresent() || outcome.stamp() != null) {
       // Recorded even when the status is unchanged: a second round onto the same request happened.
@@ -178,7 +183,7 @@ public class FlowEngine {
     if (outcome.kind().refuses()) {
       throw new IllegalStateException(outcome.message(), outcome.cause());
     }
-    return outcome.message();
+    return new Pressed(outcome.message(), outcome.kind());
   }
 
   private TaskState landed(

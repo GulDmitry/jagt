@@ -30,11 +30,11 @@ const Flag = ({ taskId, on }) => {
   </button>`;
 };
 
-/** @param {{ task: CardTask, action: Action, blocked: Set<string> }} props */
-const Button = ({ task, action, blocked }) =>
+/** @param {{ task: CardTask, action: Action, blocked: Set<string>, said?: string }} props */
+const Button = ({ task, action, blocked, said }) =>
   html`<button
-    class=${verbClass(action)}
-    data-tip=${action.hint}
+    class=${verbClass(action, said !== undefined)}
+    data-tip=${said === undefined ? action.hint : `${action.hint}\n${said}`}
     data-task=${task.id}
     data-action=${action.id}
     disabled=${blocked.has(action.id)}
@@ -44,8 +44,15 @@ const Button = ({ task, action, blocked }) =>
     ${action.label}
   </button>`;
 
-/** @param {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, now: number }} props */
-export function Card({ task, manyProjects, flagged, blocked, now }) {
+/** @param {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, quiet?: Map<string, string>, now: number }} props */
+export function Card({
+  task,
+  manyProjects,
+  flagged,
+  blocked,
+  quiet = new Map(),
+  now,
+}) {
   const owner = task.owner.toLowerCase();
   const ticket = httpOnly(task.ticketUrl);
   return html`<article
@@ -90,6 +97,7 @@ export function Card({ task, manyProjects, flagged, blocked, now }) {
                 task=${task}
                 action=${action}
                 blocked=${blocked}
+                said=${quiet.get(action.id)}
               />`,
           )}
         </div>`,

@@ -1,4 +1,5 @@
 import { api, refusal } from "../core/api.js";
+import * as quiet from "./quiet.js";
 import { refresh } from "./refresh.js";
 import * as tabs from "./tabs.js";
 import { toast } from "./toast.js";
@@ -23,6 +24,7 @@ export async function runGlobal(verbId) {
  * @param {string} project
  */
 export async function post(task, action, project) {
+  quiet.clear(task, action);
   try {
     const named = project ? `&project=${encodeURIComponent(project)}` : "";
     const result = await api(
@@ -30,6 +32,7 @@ export async function post(task, action, project) {
       { method: "POST" },
     );
     if (action.id === "code") tabs.choose("code");
+    if (result.quiet) quiet.mark(task, action, result.message);
     toast(result.message);
   } catch (e) {
     toast(refusal(e), true);

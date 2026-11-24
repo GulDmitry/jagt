@@ -10,6 +10,8 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.StateService;
@@ -38,8 +40,8 @@ class BoardReportsTest extends BoardPageContext {
   @Test
   void theLogButtonKeepsItsNameAndCarriesTheLastMessageInItsHover() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.FOCUS, null))
-        .thenReturn("Focused ABC-1 — its window is in front.");
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1 — its window is in front.", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     button(page, "Focus").click();

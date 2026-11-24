@@ -95,6 +95,10 @@
     "lines": 100,
     "branches": 78
   },
+  "ui/choice.js": {
+    "lines": 73,
+    "branches": 83
+  },
   "ui/chrome.js": {
     "lines": 100,
     "branches": 100
@@ -278,6 +282,10 @@
   "ui/projectsave.js": {
     "lines": 100,
     "branches": 69
+  },
+  "ui/quiet.js": {
+    "lines": 100,
+    "branches": 100
   },
   "ui/refresh.js": {
     "lines": 92,

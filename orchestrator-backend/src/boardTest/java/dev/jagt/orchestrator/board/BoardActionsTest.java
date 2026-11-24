@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.StateService;
@@ -54,14 +56,14 @@ class BoardActionsTest extends BoardPageContext {
   @Test
   void clickingAnActionRunsItAndShowsTheSentenceItAnswered() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.FOCUS, null))
-        .thenReturn("Focused ABC-1 — its window is in front.");
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1 — its window is in front.", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     button(page, "Focus").click();
 
     assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1 — its window is in front.");
-    verify(commands).execute("ABC-1", TaskAction.FOCUS, null);
+    verify(commands).press("ABC-1", TaskAction.FOCUS, null);
   }
 
   @Test
@@ -133,7 +135,7 @@ class BoardActionsTest extends BoardPageContext {
   @Test
   void refusedActionAlsoSaysTheBoardHasCaughtUp() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.SHIP, null))
+    when(commands.press("ABC-1", TaskAction.SHIP, null))
         .thenThrow(
             new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE,
@@ -147,6 +149,25 @@ class BoardActionsTest extends BoardPageContext {
     assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
   }
 
+  @Test
+  void checkReviewButtonWearsQuietUntilItIsPressedAgain() {
+    state.putTask(
+        "ABC-1",
+        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
+    when(commands.press("ABC-1", TaskAction.SWEEP, null))
+        .thenReturn(new Pressed("sweep ABC-1: round unchanged", Outcome.Kind.NOTHING))
+        .thenReturn(new Pressed("sweep ABC-1: relayed", Outcome.Kind.OK));
+
+    Page page = openLiveBoard();
+    button(page, "Check review").click();
+    assertThat(button(page, "Check review")).hasClass(java.util.regex.Pattern.compile("quiet"));
+
+    button(page, "Check review").click();
+    assertThat(button(page, "Check review"))
+        .not()
+        .hasClass(java.util.regex.Pattern.compile("quiet"));
+  }
+
   @Nested
   class WhileMoveIsInFlight {
 
@@ -158,10 +179,10 @@ class BoardActionsTest extends BoardPageContext {
           "ABC-1",
           alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
       sweeping = new CountDownLatch(1);
-      when(commands.execute("ABC-1", TaskAction.SWEEP, null))
+      when(commands.press("ABC-1", TaskAction.SWEEP, null))
           .thenAnswer(invocation -> {
             sweeping.await(10, TimeUnit.SECONDS);
-            return "sweep ABC-1: checks success";
+            return new Pressed("sweep ABC-1: checks success", Outcome.Kind.OK);
           });
     }
 
@@ -183,8 +204,8 @@ class BoardActionsTest extends BoardPageContext {
 
     @Test
     void lookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
-      when(commands.execute("ABC-1", TaskAction.DIFF, null))
-          .thenReturn("Opened the diff for ABC-1.");
+      when(commands.press("ABC-1", TaskAction.DIFF, null))
+          .thenReturn(new Pressed("Opened the diff for ABC-1.", Outcome.Kind.OK));
 
       Page page = openLiveBoard();
       button(page, "Check review").click();
@@ -210,7 +231,7 @@ class BoardActionsTest extends BoardPageContext {
         ask(page, "ship a1");
 
         assertThat(page.locator("#toasts .toast.error")).containsText("already running sweep");
-        verify(commands, never()).execute("ABC-1", TaskAction.SHIP, null);
+        verify(commands, never()).press("ABC-1", TaskAction.SHIP, null);
       } finally {
         sweeping.countDown();
       }
@@ -242,7 +263,8 @@ class BoardActionsTest extends BoardPageContext {
             .alias("42")
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    when(commands.execute("41", TaskAction.SHIP, null)).thenReturn("Shipped 41.");
+    when(commands.press("41", TaskAction.SHIP, null))
+        .thenReturn(new Pressed("Shipped 41.", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     page.locator(
@@ -254,13 +276,13 @@ class BoardActionsTest extends BoardPageContext {
         .click();
 
     assertThat(page.locator("#toasts .toast")).hasText("Shipped 41.");
-    verify(commands, never()).execute("4", TaskAction.SHIP, null);
+    verify(commands, never()).press("4", TaskAction.SHIP, null);
   }
 
   @Test
   void refusalIsAnnouncedAsAnAlertAndDismissedByButton() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.SHIP, null))
+    when(commands.press("ABC-1", TaskAction.SHIP, null))
         .thenThrow(new IllegalStateException("nothing to ship"));
 
     Page page = openLiveBoard();

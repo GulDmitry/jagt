@@ -1279,6 +1279,11 @@ button:not(.primary).again:hover:not(:disabled) {
 button.primary.again {
   box-shadow: 0 0 0 2px var(--ok);
 }
+button.quiet,
+button.quiet:hover:not(:disabled) {
+  border-style: dashed;
+  color: var(--muted);
+}
 #styleguide h2 {
   font-size: 15px;
   margin: 16px 16px 0;

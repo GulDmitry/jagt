@@ -180,3 +180,14 @@ A finding raised there SHALL not be posted again on the request. A failed read, 
 #### Scenario: A finding already raised
 - **WHEN** ABC-42's request is read and a finding is one the pre-ship read raised
 - **THEN** no note is posted for it
+
+### Requirement: A round with nothing new says so on its verb
+A `sweep` reading the round unchanged, or still waiting, SHALL answer as work not done.
+The board SHALL draw that verb's own button with a dashed muted edge, its hover carrying the answer.
+The mark ends when the task's status moves or the verb is pressed again.
+#### Scenario: Nothing new
+- **WHEN** the human presses Check review on ABC-42 and the round reads unchanged
+- **THEN** the button wears the dashed edge and the toast says so
+#### Scenario: The card moves
+- **WHEN** ABC-42's status changes, or the human presses Check review again
+- **THEN** the dashed edge is gone

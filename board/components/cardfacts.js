@@ -11,11 +11,15 @@ export const flagTexts = () => ({
   tip: t("card.flag.tip"),
 });
 
-/** @param {Action} action */
-export const verbClass = (action) =>
+/**
+ * @param {Action} action
+ * @param {boolean} [quiet]
+ */
+export const verbClass = (action, quiet = false) =>
   [
     action.primary && !action.apart && "primary",
     action.again && "again",
+    quiet && "quiet",
     action.apart && "apart",
   ]
     .filter(Boolean)

@@ -16,6 +16,7 @@
     "components/panefacts.js",
     "components/rows.js",
     "ui/inflightrules.js",
+    "ui/quiet.js",
     "ui/phasefacts.js",
     "terminal/stream.js",
     "viewer/patch.js",

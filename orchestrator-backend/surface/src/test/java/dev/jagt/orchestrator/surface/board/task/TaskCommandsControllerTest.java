@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CommandService;
@@ -29,16 +31,32 @@ class TaskCommandsControllerTest {
 
   @Test
   void executesAnActionByTheSameNameTheConsoleTakes() {
-    when(commands.execute("ABC-1", TaskAction.SHIP, null))
-        .thenReturn("ship ABC-1: approval relayed");
+    when(commands.press("ABC-1", TaskAction.SHIP, null))
+        .thenReturn(new Pressed("ship ABC-1: approval relayed", Outcome.Kind.OK));
 
     assertThat(api.act("ABC-1", "ship", null).message()).isEqualTo("ship ABC-1: approval relayed");
   }
 
   @Test
+  void answersQuietWhenThePressDidNothing() {
+    when(commands.press("ABC-1", TaskAction.SWEEP, null))
+        .thenReturn(new Pressed("sweep ABC-1: unchanged", Outcome.Kind.NOTHING));
+
+    assertThat(api.act("ABC-1", "sweep", null).quiet()).isTrue();
+  }
+
+  @Test
+  void answersLoudWhenThePressDidItsWork() {
+    when(commands.press("ABC-1", TaskAction.SHIP, null))
+        .thenReturn(new Pressed("ship ABC-1: relayed", Outcome.Kind.OK));
+
+    assertThat(api.act("ABC-1", "ship", null).quiet()).isFalse();
+  }
+
+  @Test
   void carriesTheProjectHumanTypedAfterTheTicketToTheSameAction() {
-    when(commands.execute("ABC-1", TaskAction.ADD_REPO, "beta"))
-        .thenReturn("add-repo ABC-1: beta is at /wt");
+    when(commands.press("ABC-1", TaskAction.ADD_REPO, "beta"))
+        .thenReturn(new Pressed("add-repo ABC-1: beta is at /wt", Outcome.Kind.OK));
 
     assertThat(api.act("ABC-1", "add-repo", "beta").message())
         .isEqualTo("add-repo ABC-1: beta is at /wt");

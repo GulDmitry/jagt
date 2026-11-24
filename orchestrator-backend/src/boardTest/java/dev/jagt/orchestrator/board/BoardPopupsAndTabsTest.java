@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.terminal.WindowStream;
@@ -519,8 +521,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void codeVerbStillOpensTheViewerWhenAnEditorIsConfigured() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.CODE, null))
-        .thenReturn("Opened /wt as a project in the editor");
+    when(commands.press("ABC-1", TaskAction.CODE, null))
+        .thenReturn(new Pressed("Opened /wt as a project in the editor", Outcome.Kind.OK));
     Page page = openBoard();
 
     page.locator("#pane button[data-action=code]").click();
@@ -593,14 +595,15 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void verbsKeyRunsItOnTheOpenTask() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1.", Outcome.Kind.OK));
     Page page = openBoard();
     assertThat(page.locator("#pane article .alias")).hasText("a1");
 
     page.keyboard().press("f");
 
     assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1.");
-    verify(commands).execute("ABC-1", TaskAction.FOCUS, null);
+    verify(commands).press("ABC-1", TaskAction.FOCUS, null);
   }
 
   @Test
@@ -658,7 +661,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void verbsKeyDoesNothingWhileNarrowWindowShowsOnlyTheList() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1.", Outcome.Kind.OK));
     Page page = session.newPage();
     page.setViewportSize(800, 900);
     page.navigate("http://localhost:" + port + "/");
@@ -669,7 +673,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     page.keyboard().press("f");
 
     assertThat(page.locator("#toasts .toast")).hasCount(1);
-    verify(commands, org.mockito.Mockito.times(1)).execute("ABC-1", TaskAction.FOCUS, null);
+    verify(commands, org.mockito.Mockito.times(1)).press("ABC-1", TaskAction.FOCUS, null);
   }
 
   @Test

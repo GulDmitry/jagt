@@ -35,6 +35,8 @@ illegible. A hex outside `:root` is a bug, but the translucent blacks (four shad
 - status chip — `.status`: the state, its age inside it. `.status.live` green: the work is on a shared branch.
 - green button — `button.again`, a ring on the primary one and a border otherwise: this verb ran and what it
   did is live, so pressing repeats it.
+- dashed muted button — `button.quiet`: this verb was pressed and changed nothing (a round unchanged or still waiting); ends when the
+  card's state moves or the verb is pressed again.
 - dotted underline — `a.id`, `a.mr-age`: the text opens something.
 - 9px dot — `.checks.red` / `.checks.green` filled: a verdict is in. `.checks.running` hollow ring, carrying
   the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too, or a retry pending. The ring says it,
