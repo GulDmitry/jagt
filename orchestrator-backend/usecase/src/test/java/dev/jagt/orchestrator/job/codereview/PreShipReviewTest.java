@@ -111,7 +111,19 @@ class PreShipReviewTest {
   }
 
   @Test
-  void readsTheTreeAgainWhenTheReviewFailed() {
+  void marksTheTreeReadWhenItsDiffIsEmpty() {
+    when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
+    when(changes.state(handedBack)).thenReturn(Optional.of("t8"));
+    when(changes.diff(handedBack)).thenReturn("");
+
+    review.run("");
+
+    verifyNoInteractions(panel, relay);
+    verify(state).reduce(eq("ABC-42"), any());
+  }
+
+  @Test
+  void recordsTheFailureSoNoShipWaitsOnItAndReadsTheTreeAgain() {
     when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
     when(changes.state(handedBack)).thenReturn(Optional.of("t6"));
     when(changes.diff(handedBack)).thenReturn("+line6\n");
@@ -120,7 +132,7 @@ class PreShipReviewTest {
     review.run("");
 
     verifyNoInteractions(relay);
-    verify(state, never()).reduce(any(), any());
+    verify(state).reduce(eq("ABC-42"), any());
   }
 
   @Test

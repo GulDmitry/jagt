@@ -4,12 +4,12 @@ import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
+import dev.jagt.orchestrator.service.PreShipRead;
 import dev.jagt.orchestrator.service.RoundRelay;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.nio.file.Path;
@@ -43,7 +43,7 @@ public class PreShipReview {
   }
 
   private void run(String taskId, TaskState task, String model) {
-    if (!due(task)) {
+    if (!PreShipRead.due(task)) {
       return;
     }
     Optional<String> tree = changes.state(task);
@@ -51,17 +51,11 @@ public class PreShipReview {
       return;
     }
     String diff = changes.diff(task);
-    if (!diff.isBlank()) {
+    if (diff.isBlank()) {
+      told(taskId, ToldOnce.Kind.PRE_SHIP_TREE, tree.get());
+    } else {
       read(taskId, task, tree.get(), diff, model);
     }
-  }
-
-  private static boolean due(TaskState task) {
-    return task.standing().status() == TaskStatus.REVIEW_PENDING
-        && !task.hasReviewRequest()
-        && !task.work().stopped()
-        && !task.standing().report().asks()
-        && task.worktreePath() != null;
   }
 
   private void read(String taskId, TaskState task, String tree, String diff, String model) {
@@ -86,17 +80,32 @@ public class PreShipReview {
           .addKeyValue("cause", judged.failure())
           .addKeyValue("effect", "the tree is read again on the next tick")
           .log();
+      told(taskId, ToldOnce.Kind.PRE_SHIP_FAILED, tree);
       return;
     }
     List<Finding> findings =
         judged.findings().stream().filter(finding -> !"noise".equals(finding.severity())).toList();
+    log.atInfo()
+        .setMessage("pre-ship review read")
+        .addKeyValue("task", taskId)
+        .addKeyValue("key", tree)
+        .addKeyValue("value", findings.size())
+        .log();
     if (findings.isEmpty() || relayed(taskId, tree, findings)) {
       if (!findings.isEmpty()) {
+        log.atInfo()
+            .setMessage("pre-ship review relayed")
+            .addKeyValue("task", taskId)
+            .addKeyValue("value", findings.size())
+            .log();
         coverage.raise(taskId, findings);
       }
-      stateService.reduce(
-          taskId, (reducer, current) -> reducer.told(current, ToldOnce.Kind.PRE_SHIP_TREE, tree));
+      told(taskId, ToldOnce.Kind.PRE_SHIP_TREE, tree);
     }
+  }
+
+  private void told(String taskId, ToldOnce.Kind kind, String tree) {
+    stateService.reduce(taskId, (reducer, current) -> reducer.told(current, kind, tree));
   }
 
   private boolean relayed(String taskId, String tree, List<Finding> findings) {

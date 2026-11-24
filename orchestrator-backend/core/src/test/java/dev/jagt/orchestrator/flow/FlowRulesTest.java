@@ -916,6 +916,19 @@ class FlowRulesTest {
   }
 
   @Test
+  void declinesShipTheMasterPressesBeforeTheReviewReadTheChange() {
+    Facts facts =
+        Facts.defaults()
+            .withWorkspace(
+                Facts.Workspace.defaults()
+                    .withFindingsOpen(() -> Optional.of("the review has not read this change")));
+
+    assertThat(rules.declined(TaskAction.SHIP, facts, ActionOrigin.MASTER))
+        .hasValueSatisfying(
+            decline -> assertThat(decline.why()).isEqualTo("the review has not read this change"));
+  }
+
+  @Test
   void doesNotDeclineShipOnTaskHoldingRequestWhateverTheFindingsSay() {
     Facts facts =
         Facts.defaults()

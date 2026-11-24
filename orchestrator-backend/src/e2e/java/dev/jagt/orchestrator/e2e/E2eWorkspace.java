@@ -147,6 +147,8 @@ final class E2eWorkspace {
             %s
           viewer: { tmuxSession: "%s", viewMode: "%s" }
           autoReview: { enabled: %s }
+          roles:
+            code-reviewer: { enabled: false }
           notifications:
             channels: { desktop: { kind: desktop } }
             points:
