@@ -132,7 +132,7 @@ class TmuxSessionHostE2eTest {
                     "display-message",
                     "-p",
                     "-t",
-                    "=" + SESSION + ":",
+                    "=" + SESSION + ":=abcservice-1234567890-xyz",
                     "#{E:window-status-current-format}"))
             .stdout()
             .strip();

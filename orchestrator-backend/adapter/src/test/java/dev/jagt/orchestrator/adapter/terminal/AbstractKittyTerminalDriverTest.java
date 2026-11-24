@@ -101,7 +101,7 @@ class AbstractKittyTerminalDriverTest {
   }
 
   @Test
-  void opensTabInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
+  void opensTabWithoutTakingFocusInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(isNull(), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "", ""));
@@ -123,7 +123,8 @@ class AbstractKittyTerminalDriverTest {
     String socket = "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-agents");
     assertThat(commands.getAllValues())
         .anySatisfy(command ->
-            assertThat(command).containsSequence("@", "--to", socket, "launch", "--type=tab"));
+            assertThat(command)
+                .containsSequence("@", "--to", socket, "launch", "--type=tab", "--keep-focus"));
   }
 
   @Test

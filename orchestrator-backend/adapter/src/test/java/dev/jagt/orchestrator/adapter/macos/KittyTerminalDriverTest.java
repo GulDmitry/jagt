@@ -115,7 +115,13 @@ class KittyTerminalDriverTest {
     assertThat(commands.getAllValues().get(1))
         .startsWith("/k/kitty", "@", "--to")
         .containsSequence(
-            "launch", "--type=tab", "--tab-title", "agents tab", "--cwd", "/work/tree")
+            "launch",
+            "--type=tab",
+            "--keep-focus",
+            "--tab-title",
+            "agents tab",
+            "--cwd",
+            "/work/tree")
         .containsSequence("--", "tmux", "attach", "-t", "agents");
   }
 

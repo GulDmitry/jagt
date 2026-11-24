@@ -179,6 +179,7 @@ public class TmuxSessionHost implements SessionHost {
                 TIMEOUT,
                 tmux(
                     "new-window",
+                    "-d",
                     "-P",
                     "-F",
                     "#{window_id}",

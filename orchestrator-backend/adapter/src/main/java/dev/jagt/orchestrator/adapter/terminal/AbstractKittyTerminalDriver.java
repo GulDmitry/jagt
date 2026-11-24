@@ -84,6 +84,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
                   socket,
                   "launch",
                   "--type=tab",
+                  "--keep-focus",
                   "--tab-title",
                   dedicatedTitle,
                   "--cwd",

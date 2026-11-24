@@ -423,9 +423,21 @@ class TmuxSessionHostTest {
     List<List<String>> commands = processes.issued();
     assertThat(commands)
         .anySatisfy(command -> {
-          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command).containsSequence("new-window", "-d", "-P");
           assertThat(command.getLast()).contains("agent-cmd").endsWith("; exec sleep 15");
         });
+  }
+
+  @Test
+  void opensTheTasksWindowWithoutSelectingItWhereTheHumanWorksInAnother() {
+    when(agent.launchCommand(Path.of("/wt/ABC-2"), false)).thenReturn("agent-cmd");
+
+    host.openTaskWindow("jagt", "agents", "ABC-2", null, Path.of("/wt/ABC-2"), false, "");
+
+    assertThat(processes.issuedContaining("new-window"))
+        .singleElement()
+        .satisfies(command -> assertThat(command).contains("-d"));
+    assertThat(processes.issuedContaining("select-window")).isEmpty();
   }
 
   @Test
@@ -532,7 +544,7 @@ class TmuxSessionHostTest {
     List<List<String>> commands = processes.issued();
     assertThat(commands)
         .anySatisfy(command -> {
-          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command).containsSequence("new-window", "-d", "-P");
           assertThat(command.getLast()).contains("agent --continue");
         });
   }
@@ -545,7 +557,7 @@ class TmuxSessionHostTest {
     List<List<String>> commands = processes.issued();
     assertThat(commands)
         .anySatisfy(command -> {
-          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command).containsSequence("new-window", "-d", "-P");
           assertThat(command.getLast()).startsWith("'no-such-cli' 'auth' 'it'\\''s';");
         });
   }
@@ -558,7 +570,7 @@ class TmuxSessionHostTest {
     List<List<String>> commands = processes.issued();
     assertThat(commands)
         .anySatisfy(command -> {
-          assertThat(command).containsSequence("new-window", "-P");
+          assertThat(command).containsSequence("new-window", "-d", "-P");
           assertThat(command).containsSequence("-n", "acceptance-alpha", "-c", "/ws");
           assertThat(command.getLast()).startsWith("agent 'p';");
         });
