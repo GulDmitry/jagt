@@ -22,7 +22,7 @@ defaults and `build()` calling production's constructor or builder; it holds no 
 state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example
 to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
 `StateServiceCompatibilityTest` reads each `state-<minor>.json` in `state-compatibility/`; a minor without one fails; a release adds its own.
-**A test waits on the state it asserts**: a timeout, sleep or thread needs `// allowed: 0237` ([0237](../decisions/0237-a-test-waits-on-state.md)).
+**A test waits on the state it asserts, and a bad practice fails the build at its first new use**: [0239](../decisions/0239-bad-practice-ratchet.md).
 
 ### Every test pins a business case
 
