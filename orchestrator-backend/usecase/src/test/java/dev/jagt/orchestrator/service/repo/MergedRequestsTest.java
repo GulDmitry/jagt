@@ -116,14 +116,39 @@ class MergedRequestsTest {
                                 .withCodeHost("none")
                                 .build(),
                         "docs", new ProjectConfig("/docs", "origin/main", "dev", List.of()))));
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/api", "origin/main", "dev", List.of()));
+    when(inspection.hasUncommittedChanges(any(), any())).thenReturn(true);
     List<String> owing =
         requests.owingRequest(
-            List.of(
-                TaskRepo.of("api", "/wt-api"),
-                TaskRepo.of("web", "/wt-web"),
-                new TaskRepo("docs", "/wt-docs", null, "http://mr/docs")));
+            TaskState.builder(
+                    List.of(
+                        TaskRepo.of("api", "/wt-api"),
+                        TaskRepo.of("web", "/wt-web"),
+                        new TaskRepo("docs", "/wt-docs", null, "http://mr/docs")),
+                    TaskStatus.CI_POLLING)
+                .build());
 
     assertThat(owing).containsExactly("api");
+  }
+
+  @Test
+  void owesNoRequestForHostedRepositoryHoldingNothingToShip() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(
+                    java.util.Map.of(
+                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/api", "origin/main", "dev", List.of()));
+
+    List<String> owing =
+        requests.owingRequest(
+            TaskState.builder(List.of(TaskRepo.of("api", "/wt-api")), TaskStatus.CI_POLLING)
+                .build());
+
+    assertThat(owing).isEmpty();
   }
 
   @Test
