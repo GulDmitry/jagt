@@ -145,35 +145,32 @@ targets.each { module, types ->
     project(module).pitest.features = ["+CHANGEDLINES(lines[${changedLinesFile.absolutePath}])".toString()]
     project(module).dependencies.add('pitest', filterJar) // a file, not a project dependency: the lock state of `pitest` stays as it is
 }
-tasks.register('pitestDiff') {
+// Gradle's own up-to-date check keys the result on the diff: the changed-lines file, the target classes and the reports.
+// The same diff prints the stored survivors without mutating; any change to it runs the mutants again.
+def survivorsFile = rootProject.layout.buildDirectory.file('pitest-diff/survivors.txt')
+def survivorsTask = tasks.register('pitestDiffSurvivors', dev.jagt.gradle.pitest.PitestDiffSurvivors) {
+    delegate.changedLines.set(changedLinesFile) // not the script's `changedLines` map
+    classes.from(targets.keySet().collect { project(it).sourceSets.main.output })
+    reports.from(targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml') })
+    reports.from(fitnessModules.collect { rootDir.toPath().resolve("fitness/${it}/build/reports/pitest/mutations.xml").toFile() })
+    survivors.set(survivorsFile)
     dependsOn targets.keySet().collect { project(it).tasks.named('pitest') }
     dependsOn fitnessModules.collect { gradle.includedBuild('fitness').task(":${it}:pitest") }
-    def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile } +
-            fitnessModules.collect { rootDir.toPath().resolve("fitness/${it}/build/reports/pitest/mutations.xml").toFile() }
-    def lines = changedLines.collectEntries { path, numbers -> [(path.replaceFirst('^.*?src/main/java/', '')): numbers] }
+}
+targets.keySet().each { module ->
+    project(module).tasks.named('pitest') { inputs.file(changedLinesFile).withPathSensitivity(PathSensitivity.NONE) }
+}
+tasks.register('pitestDiff') {
+    def lines = changedLines
+    if (lines) {
+        dependsOn survivorsTask
+    }
     doLast {
         if (!lines) {
             println "pitestDiff: no main line changed against ${base}"
             return
         }
-        def outcomes = [:].withDefault { [] as Set }
-        def mutated = [] as Set
-        reports.findAll { it.exists() }.each { report ->
-            new groovy.xml.XmlSlurper().parse(report).mutation.each {
-                def source = it.mutatedClass.text().replaceFirst('\\.[^.]+$', '').replace('.', '/') + '/' + it.sourceFile.text()
-                def number = it.lineNumber.text() as int
-                if (lines[source]?.contains(number)) {
-                    mutated << source
-                    def mutant = "${source}:${number} ${it.mutatedMethod.text()} ${it.description.text()} ${it.indexes.text()}".toString()
-                    outcomes[mutant] << it.@status.text()
-                }
-            }
-        }
-        def standing = outcomes.findAll { mutant, statuses -> statuses.every { it in ['SURVIVED', 'NO_COVERAGE'] } }.keySet()
-        println standing ? "pitestDiff: judge each before the commit\n" + standing.sort().join('\n')
-                : 'pitestDiff: no mutant survives on a changed line'
-        // A changed file with no mutant on its changed lines is unjudged, which "no mutant survives" must not read as killed.
-        (lines.keySet() - mutated).sort().each { println "pitestDiff: no mutant generated on ${it}" }
+        println survivorsFile.get().asFile.text.trim()
     }
 }
 
