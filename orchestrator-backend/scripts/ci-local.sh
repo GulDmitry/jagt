@@ -10,6 +10,7 @@
 # exits: 0 1 2
 # options: -h
 case "${1:-}" in -h|--help) sed -n '2,8p' "$0" | cut -c3-; exit 0 ;; -*) echo "ci-local: arguments are jobs, not options: $1" >&2; exit 2 ;; esac
+here=$(cd "$(dirname "$0")" && pwd) || exit 1
 root=$(git rev-parse --show-toplevel) || exit 1
 cd "$root" || exit 1
 untracked=$(git ls-files --others --exclude-standard -- orchestrator-backend .github)
@@ -22,7 +23,7 @@ wip=$(git stash create)
 tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
 jobs=${*:-test heavy stand stand-kind install install-macos audit}
 linux=; macos=; images=
-nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" orchestrator-backend/scripts/linux-suite.sh)
+nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" "$here/linux-suite.sh")
 expanded=
 for each in $jobs; do
   case "$each" in nightly) expanded="$expanded $nightly" ;; *) expanded="$expanded $each" ;; esac
