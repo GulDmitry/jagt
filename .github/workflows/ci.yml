@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     container:
-      image: ghcr.io/guldmitry/jagt-ci:base@sha256:c3ba2c3c3c7e6695241a664510a6e489be6ad47ccf81a631c15d73d6cd30295e
+      image: ghcr.io/guldmitry/jagt-ci:base@sha256:0f2ec737c1e4a1e50c0073894a377f331e38c4266229b71497497122296e46fe
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
