@@ -7,7 +7,7 @@ on [0162](0162-a-check-holds-for-all-code.md), [0180](0180-each-spheres-industry
 
 ## Status
 
-Accepted 2026-11-23, by the owner's order: a local green predicts a CI green, as in enterprise practice.
+Accepted 2026-11-23, by the owner's order: a local green predicts a CI green; amended by [0236](0236-a-local-run-is-never-capped.md).
 
 ## Context
 
@@ -24,7 +24,8 @@ Accepted 2026-11-23, by the owner's order: a local green predicts a CI green, as
 ## Decision
 
 - Six tiers: T0 edit loop, T1 local gate, T2 pull request, T3 main, T4 nightly, T5 weekly and release gate ([`ci`](../rules/ci.md)).
-- T1 runs every job T2 runs, by one command, in one pinned image, runner-sized and offline.
+- T1 runs every job T2 runs, by one command, in one pinned image, offline, never capped to a runner's size
+  ([0236](0236-a-local-run-is-never-capped.md)).
 - CI has no time ceiling, measurement or stop beyond a job timeout; ceilings stay local. `StandTimingGate` is deleted.
 - The nightly runs what the default local run leaves out: kind stand, repeated and cold runs, high-tries jqwik, real feeds, live scans.
 - Mutation runs on no CI or nightly job: [0151](0151-mutants-are-judged-locally-only.md) holds the rule.

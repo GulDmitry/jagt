@@ -5,7 +5,6 @@ setup() {
   cat > "$BATS_TEST_TMPDIR/bin/docker" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$(echo "$*" | tr '\n' ' ')" >> "$DOCKER_LOG"
-case "$*" in *NCPU*) echo "${FAKE_CPUS:-8}" ;; *MemTotal*) echo "${FAKE_MEM:-34359738368}" ;; esac
 [ "$1" = run ] && sleep 1
 exit 0
 EOF
@@ -46,9 +45,9 @@ EOF
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--hostname runner --add-host runner:127.0.0.1'
 }
 
-@test "the container is capped to the runner's size" {
+@test "the container is never capped in CPU or memory" {
   run "$script" test
-  grep -q -- '--cpus 1.25 --memory 16g --memory-swap 16g' "$DOCKER_LOG"
+  ! grep -q -- '--\(cpus\|memory\)' "$DOCKER_LOG"
 }
 
 @test "a cache path on the host holds the shared Gradle home in place of a volume" {
@@ -82,26 +81,15 @@ EOF
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1001 '
 }
 
-@test "a hosted runner keeps every CPU it has" {
-  GITHUB_ACTIONS=true FAKE_CPUS=4 run "$script" test
-  grep -q -- '--cpus 4 ' "$DOCKER_LOG"
-}
-
-@test "a host with fewer CPUs than the quota caps the container to the host" {
-  FAKE_CPUS=0.5 run "$script" test
-  grep -q -- '--cpus 0.5 ' "$DOCKER_LOG"
-}
-
-@test "the gate keeps the runner's concurrency whatever the container's CPU quota" {
+@test "the gate passes no concurrency of its own to Gradle" {
   run "$script" stand
-  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '--max-workers=4 -PstandParallelism=4 -Pe2eForks=2'
+  ! grep -q -- '--max-workers\|-PstandParallelism\|-Pe2eForks' "$DOCKER_LOG"
 }
 
-@test "a host with less memory than the runner caps the container below the host, warned, not refused" {
-  FAKE_MEM=6442450944 run "$script" test
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"Docker has 6 GB, a runner 16 GB; the suite is capped at 5 GB"* ]]
-  grep -q -- '--memory 5g --memory-swap 5g' "$DOCKER_LOG"
+@test "the job line names the job and its command, not CPUs or memory" {
+  run "$script" test
+  [[ "$output" == *"==> test: ./gradlew"* ]]
+  [[ "$output" != *"CPUs"* ]]
 }
 
 @test "a job's live steps run in the warm-up and are left out offline" {
@@ -178,7 +166,7 @@ EOF
   [ "$status" -eq 0 ]
   [ "$(grep -c -- '--network none' "$DOCKER_LOG")" -eq 0 ]
   grep -q -- '-Pengine=kind -PstandRuns=3' "$DOCKER_LOG"
-  grep -q -- 'gateScan --max-workers' "$DOCKER_LOG"
+  grep -q -- 'gateScan' "$DOCKER_LOG"
 }
 
 # bats test_tags=exit:2
