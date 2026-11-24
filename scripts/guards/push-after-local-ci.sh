@@ -4,7 +4,7 @@
 # Blocks (exit 2) a git push from release or a hotfix branch whose pushed tree (the refspec's source, else HEAD; -C honoured) orchestrator-backend/scripts/ci-local.sh has not
 # run green: each push re-runs every CI job and each red costs a round.
 cmd=$(cat)
-scan=$(printf '%s\n' "$cmd" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g")
+scan=$(printf '%s\n' "$cmd" | perl -0pe 's/"[^"]*"//g; s/\x27[^\x27]*\x27//g')
 printf '%s' "$scan" | grep -Eq '(^|[;&|(][[:space:]]*)git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push([[:space:]]|$)' || exit 0
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
 case "$branch $scan" in
