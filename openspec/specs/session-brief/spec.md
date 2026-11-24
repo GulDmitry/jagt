@@ -40,8 +40,7 @@ So is logic hard to follow from its code, such as rules that combine or rows and
 The default SHALL be off.
 
 #### Scenario: A two-line fix
-- **WHEN** ABC-42 is a two-line bug fix and visualize is on
-- **THEN** the session writes no `task_visual.md`
+- **WHEN** ABC-42 is a two-line bug fix and visualize is on **THEN** the session writes no `task_visual.md`
 
 #### Scenario: Hard-to-follow logic
 - **WHEN** ABC-42 changes how overlapping row and column ranges expand and visualize is on
@@ -63,12 +62,10 @@ a sequence diagram every call; logic as a worked example, its input and its outc
 - **THEN** the session writes `task_visual.md` with one fenced block per screen before its first edit
 
 #### Scenario: New tables
-- **WHEN** ABC-42 adds two tables, one referencing the other, and visualize is on
-- **THEN** `task_visual.md` holds an ER diagram drawing that reference
+- **WHEN** ABC-42 adds two tables, one referencing the other, and visualize is on **THEN** `task_visual.md` holds an ER diagram of that reference
 
 #### Scenario: A call between services
-- **WHEN** ABC-42 makes one service call another and visualize is on
-- **THEN** `task_visual.md` holds a sequence diagram of that call
+- **WHEN** ABC-42 makes one service call another and visualize is on **THEN** `task_visual.md` holds a sequence diagram of that call
 
 ### Requirement: Diagnose
 With `orchestrator.agent.diagnose.enabled` on, a session SHALL diagnose a bug from facts before code: gather the report's
@@ -80,8 +77,7 @@ A repro SHALL count only when it shows the report's signal. The default SHALL be
 - **THEN** the session gathers the report's facts and a control before reading code for a cause
 
 #### Scenario: A repro showing another signal
-- **WHEN** a repro of ABC-42 fails, but not with the signal the report names
-- **THEN** it does not count as the bug's repro
+- **WHEN** a repro of ABC-42 fails, but not with the signal the report names **THEN** it does not count as the bug's repro
 
 #### Scenario: Turned off
 - **WHEN** `diagnose.enabled` is `false` or unset
@@ -178,8 +174,7 @@ Its turn stays open as it was.
 
 ### Requirement: A carried task keeps its status until a change begins
 The `start` step SHALL order IN_PROGRESS only for a task new to the session.
-A task carried from a previous session SHALL keep the status the board shows while the session only answers.
-It SHALL end its turn without a report.
+A task carried from a previous session SHALL keep the status the board shows while the session only answers, ending its turn without a report.
 A session beginning a change SHALL report IN_PROGRESS and hand back as the `context` rules say.
 
 #### Scenario: A question on a reviewed task
@@ -196,8 +191,8 @@ A session beginning a change SHALL report IN_PROGRESS and hand back as the `cont
 - **THEN** the session reports IN_PROGRESS first
 
 ### Requirement: A verification command reruns clean
-The session's standing rules SHALL require a verification command to set up and reset its own state, and to pass twice in a
-row before the session reports `REVIEW_PENDING`; a manual step goes into the command.
+The session's standing rules SHALL require a verification command to set up and reset its own state.
+It SHALL pass twice in a row before the session reports `REVIEW_PENDING`; a manual step goes into the command.
 
 #### Scenario: A check passing only after a manual reset
 - **WHEN** a session's check passed only after it reset a database by hand

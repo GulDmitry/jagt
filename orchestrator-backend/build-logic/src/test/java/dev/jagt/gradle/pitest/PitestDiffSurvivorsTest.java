@@ -12,39 +12,12 @@ import org.junit.jupiter.api.io.TempDir;
 
 class PitestDiffSurvivorsTest {
 
-  private static final String BUILD =
-      """
-      buildscript { dependencies { classpath files('%s') } }
-      tasks.register('survivors', dev.jagt.gradle.pitest.PitestDiffSurvivors) {
-        changedLines.set(file('lines.txt'))
-        reports.from('mutations.xml')
-        survivors.set(file('survivors.txt'))
-      }
-      """;
-
-  private static final String TASK_CLASSES =
-      PitestDiffSurvivors.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-
-  private static final String REPORT =
-      """
-      <mutations>
-        <mutation status='SURVIVED'><sourceFile>A.java</sourceFile>\
-      <mutatedClass>a.A</mutatedClass><mutatedMethod>run</mutatedMethod>\
-      <lineNumber>7</lineNumber><description>removed call</description><indexes><index>1</index></indexes></mutation>
-      </mutations>
-      """;
+  private static final String CHANGED = "a/A.java:%d\n";
 
   @Test
   void secondRunIsUpToDateAndKeepsTheFirstSurvivorsWhenTheDiffIsTheSame(@TempDir Path project)
       throws Exception {
-    Files.writeString(project.resolve("settings.gradle"), "");
-    Files.writeString(project.resolve("build.gradle"), BUILD.formatted(TASK_CLASSES));
-    Files.writeString(project.resolve("lines.txt"), "a/A.java:7\n");
-    Files.writeString(project.resolve("mutations.xml"), REPORT);
-    GradleRunner runner =
-        GradleRunner.create()
-            .withProjectDir(project.toFile())
-            .withArguments("survivors");
+    GradleRunner runner = new TestPitestDiffProjectBuilder(project).laidOut(CHANGED.formatted(7));
     runner.build();
     String first = Files.readString(project.resolve("survivors.txt"));
 
@@ -52,21 +25,14 @@ class PitestDiffSurvivorsTest {
 
     assertThat(second.task(":survivors").getOutcome()).isEqualTo(TaskOutcome.UP_TO_DATE);
     assertThat(Files.readString(project.resolve("survivors.txt"))).isEqualTo(first);
-    assertThat(first).contains("a/A.java:7 run removed call");
+    assertThat(first).contains(CHANGED.formatted(7).strip() + " run removed call");
   }
 
   @Test
   void runsAgainWhenTheChangedLinesDiffer(@TempDir Path project) throws Exception {
-    Files.writeString(project.resolve("settings.gradle"), "");
-    Files.writeString(project.resolve("build.gradle"), BUILD.formatted(TASK_CLASSES));
-    Files.writeString(project.resolve("lines.txt"), "a/A.java:7\n");
-    Files.writeString(project.resolve("mutations.xml"), REPORT);
-    GradleRunner runner =
-        GradleRunner.create()
-            .withProjectDir(project.toFile())
-            .withArguments("survivors");
+    GradleRunner runner = new TestPitestDiffProjectBuilder(project).laidOut(CHANGED.formatted(7));
     runner.build();
-    Files.writeString(project.resolve("lines.txt"), "a/A.java:8\n");
+    Files.writeString(project.resolve("lines.txt"), CHANGED.formatted(8));
 
     BuildResult second = runner.build();
 

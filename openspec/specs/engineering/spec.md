@@ -37,8 +37,7 @@ A project SHALL pin its behaviour by unit, property, contract, integration, end-
 - **AND** `e2eTest`, `boardTest` and `standTest` run end to end
 - **AND** the stand's server scenarios fail when app start exceeds 15 s or `/state` p95 of 50 calls exceeds 100 ms
 #### Scenario: Security tests
-- **WHEN** a security requirement of this capability is met
-- **THEN** a named test pins it, such as `LoopbackOrRootTokenTest`, `NotThePageTest`, `RefusedRequestsTest`, `MasterTokenTest`
+- **WHEN** a security requirement is met **THEN** `LoopbackOrRootTokenTest`, `NotThePageTest`, `RefusedRequestsTest` and `MasterTokenTest` pin it
 #### Scenario: The board's own tests
 - **WHEN** the board's JS changes **THEN** its node tests run in `npm test`, CI's `test` job
 
@@ -125,12 +124,10 @@ Only the health probes SHALL be public, metrics and build info SHALL answer the 
 ### Requirement: Liveness, readiness and shutdown are probed
 The process SHALL answer a startup, a liveness and a readiness probe, and SHALL stop gracefully on a signal.
 #### Scenario: A pod starts and stops
-- **WHEN** the image starts or receives a signal
-- **THEN** `KubernetesManifestsTest` holds the probes; `ShutdownEndingsTest` holds each ending; `ClonesHealthTest` holds readiness
+- **WHEN** the image starts or stops **THEN** `KubernetesManifestsTest` holds probes; `ShutdownEndingsTest` each ending; `ClonesHealthTest` readiness
 
 ### Requirement: Failure is contained and state recovers
-A failing dependency SHALL trip a breaker or be waited out, and a malformed request SHALL answer its error shape.
-State SHALL be written atomically and read across a minor.
+A failed dependency SHALL trip a breaker or be waited out, a bad request answer its error shape, state be written atomically, read across minors.
 #### Scenario: A dependency fails
 - **WHEN** an assistant or a host fails on infrastructure
 - **THEN** `AssistantBreakerTest`, `InfraRetryTest` and `RetryPolicyTest` hold the wait; `AbortedConnectionFilterTest` holds an aborted request
