@@ -15,7 +15,7 @@ With `remote: none` both fast-forward the target's checkout (git refuses a push 
 
 #### Scenario: One repository without a deployBranch
 - **WHEN** `web` names none **THEN** `api` deploys, `web` is skipped, named in the outcome, never recorded
-- **WHEN** no repository names one **THEN** refused
+- **WHEN** no repository names one **THEN** refused, naming every one
 
 #### Scenario: Diff base
 - **WHEN** `code <task> diff` shows files the task never touched

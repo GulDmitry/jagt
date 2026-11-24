@@ -241,15 +241,16 @@ public class DeployRunner {
     List<Deployment.Target> recorded = Objects.requireNonNull(task.work().deployment()).targets();
     List<String> earlier =
         targets.subList(0, from).stream()
-            .map(target ->
-                target.project()
-                    + " ("
-                    + GitDeploy.shortSha(
-                        recorded
-                            .get(task.work().deployment().indexOf(target.project()))
-                            .landing()
-                            .merge())
-                    + ")")
+            .map(target -> {
+              String merge =
+                  recorded
+                      .get(task.work().deployment().indexOf(target.project()))
+                      .landing()
+                      .merge();
+              return merge == null
+                  ? target.project()
+                  : target.project() + " (" + GitDeploy.shortSha(merge) + ")";
+            })
             .toList();
     String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
     String idle = nothingToDo.isEmpty() ? "" : ", nothing to deploy in " + names(nothingToDo);
