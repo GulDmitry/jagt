@@ -24,11 +24,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: ossf/scorecard-action@23f22cd43608bae7a1f1fa2603d7314dee9538a5 # v2.6.0
-        with:
-          results_file: scorecard.sarif
-          results_format: sarif
-          publish_results: false
+      - name: scorecard
+        env:
+          GITHUB_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          docker run --rm \
+            -e GITHUB_ACTIONS=true -e GITHUB_AUTH_TOKEN -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH \
+            -e GITHUB_REF -e GITHUB_REPOSITORY -e GITHUB_WORKSPACE -e GITHUB_API_URL \
+            -e INPUT_RESULTS_FILE=scorecard.sarif -e INPUT_RESULTS_FORMAT=sarif \
+            -e INPUT_PUBLISH_RESULTS=false -e INPUT_FILE_MODE=archive \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -v "$GITHUB_EVENT_PATH:$GITHUB_EVENT_PATH:ro" \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/ossf/scorecard-action:v2.6.0@sha256:7f092e5a4a363af001cca6cdb04f111e212173ba602336104394e7febc2c6e48
       - uses: github/codeql-action/upload-sarif@f3bbb05694c2f74569081c28664c0866d64dec21 # v4.39.3
         with:
           sarif_file: scorecard.sarif
