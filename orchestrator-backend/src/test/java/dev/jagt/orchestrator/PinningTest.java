@@ -126,11 +126,12 @@ class PinningTest {
   @Test
   void everyDockerfileBaseAndNpmInstallIsPinnedUnlessBaseIsAnArgument() throws IOException {
     List<String> unpinned;
-    try (Stream<Path> files = Files.walk(Path.of(".."), 6)) {
+    Process tracked = new ProcessBuilder("git", "-C", "..", "ls-files").start();
+    try (Stream<String> files = tracked.inputReader().lines()) {
       unpinned =
           files
+              .map(file -> Path.of("..", file))
               .filter(p -> p.getFileName().toString().matches("(Dockerfile.*|.*\\.Dockerfile)"))
-              .filter(p -> !p.toString().matches(".*/(\\.claude|build|node_modules|\\.git)/.*"))
               .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
               .filter(line -> !line.matches(".*: #.*"))
               .filter(line -> line.matches(".*: FROM .*") || line.contains("npm install"))
