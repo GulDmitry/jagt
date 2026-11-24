@@ -1,14 +1,15 @@
 #!/bin/sh
-# Usage: ci-local.sh [job...]   (from the checkout; jobs: test heavy stand install install-macos audit; default: all of them)
+# Usage: ci-local.sh [job...]   (jobs: test heavy stand install install-macos audit nightly-*; nightly = every nightly-*; default: the PR jobs)
 # Runs a pull request's CI jobs over the tree as it stands: each Linux job's gate in a container (linux-suite.sh),
 # install-macos's natively. Only the argument-free run, green, records the tree's hash in the git dir;
 # ci-local.greens keeps every one, which `./gradlew divergenceRegister` reads against CI's red runs.
 # guards/push-after-local-ci.sh lets a push through only when HEAD's tree is the recorded one.
 # audit also builds and scans the base images on the host's Docker (`baseImageScan`), base-images.yml's per-image step.
+# nightly runs every job of nightly.yml, listed once in linux-suite.sh, and records nothing, as any named job.
 # JAGT_CI_LOCAL_SUITE replaces both runners, given every job.
 # exits: 0 1 2
 # options: -h
-case "${1:-}" in -h|--help) sed -n '2,7p' "$0" | cut -c3-; exit 0 ;; -*) echo "ci-local: arguments are jobs, not options: $1" >&2; exit 2 ;; esac
+case "${1:-}" in -h|--help) sed -n '2,8p' "$0" | cut -c3-; exit 0 ;; -*) echo "ci-local: arguments are jobs, not options: $1" >&2; exit 2 ;; esac
 root=$(git rev-parse --show-toplevel) || exit 1
 cd "$root" || exit 1
 untracked=$(git ls-files --others --exclude-standard -- orchestrator-backend .github)
@@ -21,6 +22,12 @@ wip=$(git stash create)
 tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
 jobs=${*:-test heavy stand install install-macos audit}
 linux=; macos=; images=
+nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" "$(dirname "$0")/linux-suite.sh")
+expanded=
+for each in $jobs; do
+  case "$each" in nightly) expanded="$expanded $nightly" ;; *) expanded="$expanded $each" ;; esac
+done
+jobs=${expanded# }
 for each in $jobs; do
   case "$each" in install-macos) macos=1 ;; audit) images=1; linux="$linux $each" ;; *) linux="$linux $each" ;; esac
 done

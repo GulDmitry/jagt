@@ -1,5 +1,6 @@
-# What a pull request's CI and the local gate leave out: repeated, cold, long, live. Every Gradle job builds with no build
-# cache; its dependencies restore read-only from CI's, as ~20 cold resolutions at once draw Maven Central's 429.
+# What a pull request's CI and the local gate leave out: repeated, cold, long, live. Every job but install runs its line through
+# scripts/linux-suite.sh <job>, the local twin; its dependencies restore read-only from CI's, as ~20 cold resolutions at once draw
+# Maven Central's 429.
 # A red opens one issue (the report job); nothing here reruns. docs/rules/ci.md, tier T4.
 name: nightly
 
@@ -29,28 +30,19 @@ jobs:
         engine: [compose, kind]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-provider: external
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-nightly
-          restore-keys: gradle-${{ runner.os }}-
-      - name: install what the stand shells out to
-        run: sudo scripts/linux-test-deps.sh
-      - name: give the runner an identity
-        run: |
-          git config --global user.email "ci@example.com"
-          git config --global user.name "jagt ci"
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
       - name: run the stand without a model three times on the engine
-        run: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=${{ matrix.engine }} -PstandRuns=3 --rerun-tasks
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-stand-${{ matrix.engine }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -70,28 +62,19 @@ jobs:
         round: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-provider: external
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-nightly
-          restore-keys: gradle-${{ runner.os }}-
-      - name: install what the suites shell out to
-        run: sudo scripts/linux-test-deps.sh
-      - name: give git an identity
-        run: |
-          git config --global user.email "ci@example.com"
-          git config --global user.name "jagt ci"
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
       - name: run the end-to-end flows from scratch
-        run: ./gradlew --no-daemon gateRepeat --rerun-tasks
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -107,26 +90,19 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-provider: external
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-nightly
-          restore-keys: gradle-${{ runner.os }}-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: board/package-lock.json
-      - run: ./gradlew --no-daemon gateProperties -PjqwikTries=1000 --rerun-tasks
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: run the properties at 1000 tries
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-properties
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -144,32 +120,29 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - {project: root, path: ':', minutes: 150}
-          - {project: adapter, path: ':adapter', minutes: 150}
-          - {project: core, path: ':core', minutes: 120}
-          - {project: usecase, path: ':usecase', minutes: 150}
-          - {project: surface, path: ':surface', minutes: 90}
-          - {project: stand, path: ':stand', minutes: 150}
-          - {project: statechart, path: ':statechart', minutes: 60}
-          - {project: mutation-scope, path: ':mutation-scope', minutes: 60}
+          - {project: root, minutes: 150}
+          - {project: adapter, minutes: 150}
+          - {project: core, minutes: 120}
+          - {project: usecase, minutes: 150}
+          - {project: surface, minutes: 90}
+          - {project: stand, minutes: 150}
+          - {project: statechart, minutes: 60}
+          - {project: mutation-scope, minutes: 60}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-provider: external
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-nightly
-          restore-keys: gradle-${{ runner.os }}-
-      - run: sudo scripts/linux-test-deps.sh
-      - run: ./gradlew --no-daemon gateMutation -PmutationProject=${{ matrix.path }}
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: mutate the project
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-pitest-${{ matrix.project }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: nightly-pitest-${{ matrix.project }}-reports
@@ -182,14 +155,19 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          node-version: '22'
-      - name: Mutate the board's covered JavaScript
-        working-directory: board
-        run: |
-          npm ci
-          npm run mutate
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: mutate the board's covered JavaScript
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-stryker
 
   scan:
     name: live vulnerability scan
@@ -197,21 +175,19 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-provider: external
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-nightly
-          restore-keys: gradle-${{ runner.os }}-
-      - run: ./gradlew --no-daemon gateScan
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: scan the dependencies against live data
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-scan
 
   install:
     name: real-feed install (${{ matrix.os }})

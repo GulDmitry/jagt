@@ -8,7 +8,7 @@ set -euo pipefail
 
 if ! command -v apt-get >/dev/null; then
     echo "linux-test-deps: no apt-get here — install the equivalents by hand:"
-    echo "  curl git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof jq bats shellcheck zstd"
+    echo "  curl git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof jq bats shellcheck zstd kind kubectl"
     echo "  plus the shared libraries a headless Chromium links against (see the list below)"
     exit 0
 fi
@@ -65,7 +65,27 @@ tar xzf "$bats_dir/bats.tgz" -C "$bats_dir"
 "$bats_dir/bats-core-$bats_version/install.sh" /usr/local
 rm -rf "$bats_dir"
 
+case "$(dpkg --print-architecture)" in
+    arm64)
+        kind_sha256=20022bee6cfcd5086cb7234d218e3454e6090022f2a8f55d1fa7fcf42c3867a2
+        kubectl_sha256=fcc16f63186659d9722014b7e02d5fdd2d4e669cb8c0ab66365d7d3b8ba03509 ;;
+    *)
+        kind_sha256=aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+        kubectl_sha256=c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4 ;;
+esac
+kind_version=0.33.0
+kubectl_version=1.37.2
+deb_arch="$(dpkg --print-architecture)"
+tool_dir="$(mktemp -d)"
+curl -fsSL -o "$tool_dir/kind" "https://kind.sigs.k8s.io/dl/v$kind_version/kind-linux-$deb_arch"
+echo "$kind_sha256  $tool_dir/kind" | sha256sum -c -
+curl -fsSL -o "$tool_dir/kubectl" "https://dl.k8s.io/release/v$kubectl_version/bin/linux/$deb_arch/kubectl"
+echo "$kubectl_sha256  $tool_dir/kubectl" | sha256sum -c -
+install -m 0755 "$tool_dir/kind" "$tool_dir/kubectl" /usr/local/bin
+rm -rf "$tool_dir"
+
 # Why each one is here, so nobody trims the list by guessing:
+#   kind, kubectl — the stand's kubernetes engine; pinned by version and checksum like bats
 #   git, tmux  — the task flow itself runs them (worktrees, agent windows)
 #   nodejs     — the MCP proxy every worktree symlinks
 #   kitty      — the Linux TerminalDriver, tested against the real binary

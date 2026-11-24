@@ -23,7 +23,9 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
    `ci-no-time-flags`; the ceilings are local, on by default, and soft: an overrun finishes and warns, a hang guard of 3x stops
    ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 2. **One `./gradlew` line or script per CI job**, the one the local gate runs. `CiWorkflowTest`.
-3. **Every CI and nightly job has a local twin**, selectable by name. Windows install is the one exception, run by a manual dispatch. none yet.
+3. **Every CI and nightly job has a local twin**, selectable by name: `ci-local.sh nightly-<job>`, or `nightly` for all.
+   Windows install and the real-feed install are the exceptions: the first by a manual dispatch, the second by `install-macos`.
+   `CiWorkflowTest`: each nightly job runs `scripts/linux-suite.sh nightly-…` and `gate()` holds its line; `linux-suite.bats`.
 4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`. none yet.
 5. **The CI image is one, pinned by digest**, used by CI and the local gate; no `ci.yml` job installs a package.
    `ci-image-pinned-by-digest`, `ci-no-package-install`, `CiWorkflowTest`.

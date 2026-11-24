@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -260,8 +261,9 @@ class CiWorkflowTest {
 
   @Test
   void runsTheNightlyScanWithNoBaseSoItAlwaysScans() {
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("nightly-scan) echo './gradlew --no-daemon gateScan'");
     assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
-        .contains("./gradlew --no-daemon gateScan")
         .doesNotContain("audit.base");
   }
 
@@ -318,30 +320,74 @@ class CiWorkflowTest {
       projects.add(":" + included.group(1));
     }
 
-    Set<String> tasks =
+    Set<String> shardNames =
         shards.stream()
-            .map(shard -> String.valueOf(((Map<?, ?>) shard).get("path")))
+            .map(shard -> String.valueOf(((Map<?, ?>) shard).get("project")))
             .collect(Collectors.toSet());
+    List<MatchResult> gates =
+        Pattern.compile(
+                "nightly-pitest-([a-z-]+)\\) echo './gradlew --no-daemon gateMutation"
+                    + " -PmutationProject=(:[a-z-]*)'")
+            .matcher(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+            .results()
+            .toList();
 
     assertThat(SourceRoots.read(PITEST))
         .contains("allprojects {")
         .contains("apply plugin: 'info.solidsoft.pitest'");
     assertThat(strategy.get("fail-fast")).isEqualTo(false);
-    assertThat(shards).hasSameSizeAs(tasks);
-    assertThat(tasks).isEqualTo(projects);
-    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
-        .contains("./gradlew --no-daemon gateMutation -PmutationProject=${{ matrix.path }}");
+    assertThat(shards).hasSameSizeAs(shardNames);
+    assertThat(gates.stream().map(gate -> gate.group(1)))
+        .containsExactlyInAnyOrderElementsOf(shardNames);
+    assertThat(gates.stream().map(gate -> gate.group(2)))
+        .containsExactlyInAnyOrderElementsOf(projects);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"stand", "e2e", "properties", "pitest", "scan"})
+  @CsvSource({
+    "stand, nightly-stand-${{ matrix.engine }}",
+    "e2e, nightly-e2e",
+    "properties, nightly-properties",
+    "pitest, nightly-pitest-${{ matrix.project }}",
+    "stryker, nightly-stryker",
+    "scan, nightly-scan"
+  })
+  void runsEachNightlyJobThroughTheLocalTwinInTheCiImage(String job, String twinJob) {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .contains("run=scripts/linux-suite.sh " + twinJob)
+        .contains("env={JAGT_GRADLE_CACHE=${{ runner.temp }}/gradle-home}")
+        .doesNotContain("setup-java")
+        .doesNotContain("run=./gradlew");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "nightly-stand-compose",
+        "nightly-stand-kind",
+        "nightly-e2e",
+        "nightly-properties",
+        "nightly-stryker",
+        "nightly-scan"
+      })
+  void holdsEachNightlyJobsLineInTheLocalTwin(String twinJob) {
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .containsPattern("\n {8}" + twinJob + "\\) echo '\\./gradlew --no-daemon ");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "e2e", "properties", "pitest", "stryker", "scan"})
   void restoresTheNightlysDependenciesReadOnlyFromTheCiCache(String job) {
     String steps =
         String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("steps"));
 
     assertThat(steps)
         .containsPattern(
-            "actions/cache/restore@[0-9a-f]{40}, with=\\{path=~/.gradle/caches/modules-2")
+            "actions/cache/restore@[0-9a-f]{40}, "
+                + "with=\\{path=\\$\\{\\{ runner.temp \\}\\}/gradle-home")
         .doesNotContainPattern("actions/cache@[0-9a-f]{40}");
   }
 
@@ -714,8 +760,9 @@ class CiWorkflowTest {
         .contains("file('scripts/vulnerability-scan.sh')");
     assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
         .doesNotContain("osv-scanner-action");
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("nightly-scan) echo './gradlew --no-daemon gateScan'");
     assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
-        .contains("./gradlew --no-daemon gateScan")
         .doesNotContain("osv-scanner-action");
     assertThat(CiWorkflow.gitlabText()).doesNotContain("osv-scanner-action");
   }

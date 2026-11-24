@@ -63,3 +63,11 @@ teardown() {
   [[ "$output" == *"Usage: ci-local.sh"* ]]
   [ ! -f .git/ci-local.ok ]
 }
+
+@test "nightly stands for every nightly job and records nothing" {
+  JAGT_CI_LOCAL_SUITE=echo run "$script" nightly
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nightly-stand-compose nightly-stand-kind nightly-e2e nightly-properties nightly-pitest-root "* ]]
+  [[ "$output" == *"nightly-stryker nightly-scan"* ]]
+  [ ! -f .git/ci-local.ok ]
+}

@@ -143,6 +143,39 @@ EOF
   [ "$(grep -c -- '--network none' "$DOCKER_LOG")" -eq 0 ]
 }
 
+@test "a nightly job runs its nightly line with no network after its warm-up" {
+  run "$script" nightly-properties
+  [ "$status" -eq 0 ]
+  [ "$(grep -c -- '--network none' "$DOCKER_LOG")" -eq 1 ]
+  grep -- '--network none' "$DOCKER_LOG" | grep -q 'gateProperties -PjqwikTries=1000 --rerun-tasks'
+  [ "$(grep -c resolveAll "$DOCKER_LOG")" -eq 1 ]
+}
+
+@test "a nightly pitest job mutates the project its name gives" {
+  run "$script" nightly-pitest-mutation-scope
+  grep -q -- 'gateMutation -PmutationProject=:mutation-scope' "$DOCKER_LOG"
+}
+
+@test "the nightly stand job warms up the images the stand runs" {
+  run "$script" nightly-stand-compose
+  grep resolveAll "$DOCKER_LOG" | grep -q ':stand:standPull'
+  grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-Pengine=compose -PstandRuns=3 --rerun-tasks'
+}
+
+@test "the nightly kind and scan jobs keep their network for the registry and the live data" {
+  run "$script" nightly-stand-kind nightly-scan
+  [ "$status" -eq 0 ]
+  [ "$(grep -c -- '--network none' "$DOCKER_LOG")" -eq 0 ]
+  grep -q -- '-Pengine=kind -PstandRuns=3' "$DOCKER_LOG"
+  grep -q -- 'gateScan --max-workers' "$DOCKER_LOG"
+}
+
+@test "the nightly board mutation installs the board online first" {
+  run "$script" nightly-stryker
+  grep resolveAll "$DOCKER_LOG" | grep -q boardInstall
+  grep -- '--network none' "$DOCKER_LOG" | grep -q 'boardInstall boardMutate'
+}
+
 # bats test_tags=exit:2
 @test "an unknown job is refused before Docker is touched" {
   run "$script" nonsense

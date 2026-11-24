@@ -6,7 +6,7 @@
 # into a shared cache, then runs with no network: that cache is mounted read-only (GRADLE_RO_DEP_CACHE) under a Gradle
 # home of the run's own, so two suites at once never meet on one lock.
 #
-# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install audit boardTest)
+# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand install audit boardTest, and one per nightly.yml job: nightly-*)
 # Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume and the image.
 # exits: 0 2
 set -euo pipefail
@@ -31,7 +31,21 @@ gate() {
         install) echo './gradlew --no-daemon gateInstall' ;;
         audit) echo './gradlew --no-daemon gateScan -Paudit.base=origin/main' ;;
         boardTest) echo './gradlew --no-daemon boardInstall boardTest' ;;
-        *) echo "linux-suite: no job $1; jobs: test heavy stand install audit boardTest" >&2; return 2 ;;
+        nightly-stand-compose) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose -PstandRuns=3 --rerun-tasks' ;;
+        nightly-stand-kind) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind -PstandRuns=3 --rerun-tasks' ;;
+        nightly-e2e) echo './gradlew --no-daemon gateRepeat --rerun-tasks' ;;
+        nightly-properties) echo './gradlew --no-daemon gateProperties -PjqwikTries=1000 --rerun-tasks' ;;
+        nightly-pitest-root) echo './gradlew --no-daemon gateMutation -PmutationProject=:' ;;
+        nightly-pitest-adapter) echo './gradlew --no-daemon gateMutation -PmutationProject=:adapter' ;;
+        nightly-pitest-core) echo './gradlew --no-daemon gateMutation -PmutationProject=:core' ;;
+        nightly-pitest-usecase) echo './gradlew --no-daemon gateMutation -PmutationProject=:usecase' ;;
+        nightly-pitest-surface) echo './gradlew --no-daemon gateMutation -PmutationProject=:surface' ;;
+        nightly-pitest-stand) echo './gradlew --no-daemon gateMutation -PmutationProject=:stand' ;;
+        nightly-pitest-statechart) echo './gradlew --no-daemon gateMutation -PmutationProject=:statechart' ;;
+        nightly-pitest-mutation-scope) echo './gradlew --no-daemon gateMutation -PmutationProject=:mutation-scope' ;;
+        nightly-stryker) echo './gradlew --no-daemon boardInstall boardMutate' ;;
+        nightly-scan) echo './gradlew --no-daemon gateScan' ;;
+        *) echo "linux-suite: no job $1; jobs: test heavy stand install audit boardTest nightly-*" >&2; return 2 ;;
     esac
 }
 
@@ -49,16 +63,18 @@ warm() {
     case "$1" in
         test) echo "$(live test) boardInstall" ;;
         heavy) echo "$(live heavy) boardInstall containerUp containerDown" ;;
-        stand) echo ':stand:standImage :stand:standPull' ;;
+        stand | nightly-stand-*) echo ':stand:standImage :stand:standPull' ;;
+        nightly-stryker) echo 'boardInstall' ;;
         boardTest) echo 'playwrightChromium' ;;
         *) echo '' ;;
     esac
 }
 
-# The installer downloads the Java runtime from its public feed, which nothing here can cache; the audit is the live scan.
+# The installer downloads the Java runtime from its public feed, which nothing here can cache; the audits are the live scans;
+# kind pulls its node image from a registry when it creates a cluster.
 network() {
     case "$1" in
-        install | audit) echo '' ;;
+        install | audit | nightly-scan | nightly-stand-kind) echo '' ;;
         *) echo '--network none --hostname runner --add-host runner:127.0.0.1' ;;
     esac
 }
