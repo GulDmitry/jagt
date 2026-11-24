@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -47,10 +48,21 @@ public final class HostCli {
   }
 
   public Answer<String> run(String hostname, List<String> arguments) {
+    return run(hostname, arguments, command -> processes.run(null, TIMEOUT, command));
+  }
+
+  /** As {@link #run(String, List)}, with {@code stdin} written to the CLI's input. */
+  public Answer<String> run(String hostname, List<String> arguments, String stdin) {
+    return run(
+        hostname, arguments, command -> processes.run(null, TIMEOUT, Map.of(), stdin, command));
+  }
+
+  private Answer<String> run(
+      String hostname, List<String> arguments, Function<List<String>, Processes.Result> execution) {
     List<String> command = new ArrayList<>(List.of(Executables.resolve(cli)));
     command.addAll(arguments);
     try {
-      Processes.Result result = processes.run(null, TIMEOUT, command);
+      Processes.Result result = execution.apply(command);
       if (result.exitCode() == 0) {
         reach.reached(cli, hostname);
         return new Answer<>(

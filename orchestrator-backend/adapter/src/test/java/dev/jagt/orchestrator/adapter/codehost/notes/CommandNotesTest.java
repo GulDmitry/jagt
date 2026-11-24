@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
@@ -91,7 +92,8 @@ class CommandNotesTest {
         .thenReturn(new Processes.Result(0, "55\n", ""));
 
     Answer<String> answer =
-        command.post(host, "https://h/a/b/7", NoteDraft.replyTo("see {request}", "21"));
+        command.post(
+            host, "https://h/a/b/7", new NoteDraft("see {request}", "21", NoteAnchor.NONE));
 
     ArgumentCaptor<List<String>> run = ArgumentCaptor.captor();
     verify(processes).run(any(Path.class), any(Duration.class), run.capture());

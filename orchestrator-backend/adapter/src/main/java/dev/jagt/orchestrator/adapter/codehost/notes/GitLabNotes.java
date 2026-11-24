@@ -152,31 +152,29 @@ public class GitLabNotes implements NotesDriver {
         refs -> {
           List<String> command =
               new ArrayList<>(api(address, MARKER + address.id() + "/discussions"));
-          command.addAll(List.of("-X", "POST", "-f", "body=" + draft.body()));
-          String file = draft.anchor().file();
-          for (Map.Entry<String, String> position :
-              Map.of(
-                      "position_type",
-                      "text",
-                      "base_sha",
-                      refs.path("base_sha").asString(""),
-                      "start_sha",
-                      refs.path("start_sha").asString(""),
-                      "head_sha",
-                      draft.anchor().headSha(),
-                      "new_path",
-                      file,
-                      "old_path",
-                      file)
-                  .entrySet()) {
-            command.addAll(
-                List.of("-f", "position[" + position.getKey() + "]=" + position.getValue()));
-          }
-          command.addAll(List.of("-F", "position[new_line]=" + draft.anchor().line()));
+          command.addAll(
+              List.of("-X", "POST", "--input", "-", "-H", "Content-Type: application/json"));
           return cli.parsed(
-              cli.run(address.hostname(), command),
+              cli.run(address.hostname(), command, positioned(draft, refs)),
               output -> JSON.readTree(output).path("notes").path(0).path("id").asString(""));
         });
+  }
+
+  private static String positioned(NoteDraft draft, JsonNode refs) {
+    String file = draft.anchor().file();
+    return JSON.writeValueAsString(
+        Map.of(
+            "body",
+            draft.body(),
+            "position",
+            Map.of(
+                "position_type", "text",
+                "base_sha", refs.path("base_sha").asString(""),
+                "start_sha", refs.path("start_sha").asString(""),
+                "head_sha", draft.anchor().headSha(),
+                "new_path", file,
+                "old_path", file,
+                "new_line", draft.anchor().line())));
   }
 
   private Answer<String> posted(HostAddress address, String path, NoteDraft draft) {

@@ -159,7 +159,8 @@ class GitHubNotesTest {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "{\"id\":99}", ""));
 
-    Answer<String> answer = github.post(host, REQUEST, NoteDraft.replyTo("Done", "21"));
+    Answer<String> answer =
+        github.post(host, REQUEST, new NoteDraft("Done", "21", NoteAnchor.NONE));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(processes).run(isNull(), any(Duration.class), command.capture());
@@ -212,7 +213,7 @@ class GitHubNotesTest {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "{\"id\":99}", ""));
 
-    github.post(host, REQUEST, NoteDraft.replyTo("Done", "issue-11"));
+    github.post(host, REQUEST, new NoteDraft("Done", "issue-11", NoteAnchor.NONE));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(processes).run(isNull(), any(Duration.class), command.capture());

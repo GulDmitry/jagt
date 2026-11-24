@@ -5,9 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -125,7 +126,8 @@ class GitLabNotesTest {
             new Processes.Result(0, "[{\"id\":\"d1\",\"notes\":[{\"id\":31}]}]", ""),
             new Processes.Result(0, "{\"id\":77}", ""));
 
-    Answer<String> answer = gitlab.post(host, REQUEST, NoteDraft.replyTo("Done", "31"));
+    Answer<String> answer =
+        gitlab.post(host, REQUEST, new NoteDraft("Done", "31", NoteAnchor.NONE));
 
     assertThat(answer.facts()).contains("77");
   }
@@ -135,7 +137,8 @@ class GitLabNotesTest {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[{\"id\":\"d1\",\"notes\":[{\"id\":31}]}]", ""));
 
-    Answer<String> answer = gitlab.post(host, REQUEST, NoteDraft.replyTo("Done", "99"));
+    Answer<String> answer =
+        gitlab.post(host, REQUEST, new NoteDraft("Done", "99", NoteAnchor.NONE));
 
     assertThat(answer.facts()).isEmpty();
     assertThat(answer.failure()).isEqualTo("no note 99 on the request");
@@ -157,12 +160,13 @@ class GitLabNotesTest {
   }
 
   @Test
-  void noteWithFileAndLineOpensDiscussionOnThatLine() {
+  void noteWithFileAndLineOpensDiscussionOnThatLineWithItsPositionAsJson() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
-                0, "{\"diff_refs\":{\"base_sha\":\"b1\",\"start_sha\":\"s1\"}}", ""),
-            new Processes.Result(0, "{\"id\":\"d9\",\"notes\":[{\"id\":88}]}", ""));
+                0, "{\"diff_refs\":{\"base_sha\":\"b1\",\"start_sha\":\"s1\"}}", ""));
+    when(processes.run(isNull(), any(Duration.class), anyMap(), anyString(), anyList()))
+        .thenReturn(new Processes.Result(0, "{\"id\":\"d9\",\"notes\":[{\"id\":88}]}", ""));
 
     Answer<String> answer =
         gitlab.post(
@@ -171,14 +175,13 @@ class GitLabNotesTest {
             new NoteDraft("Null here", "", new NoteAnchor("src/A.java", 11, "0123abc")));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
-    assertThat(command.getAllValues().getLast())
-        .contains(
-            "position[new_path]=src/A.java",
-            "position[new_line]=11",
-            "position[head_sha]=0123abc",
-            "position[base_sha]=b1",
-            "position[start_sha]=s1");
+    ArgumentCaptor<String> stdin = ArgumentCaptor.captor();
+    verify(processes)
+        .run(isNull(), any(Duration.class), anyMap(), stdin.capture(), command.capture());
+    assertThat(command.getValue()).contains("--input", "-").noneMatch(word -> word.contains("["));
+    assertThat(stdin.getValue())
+        .contains("\"new_path\":\"src/A.java\"", "\"new_line\":11", "\"head_sha\":\"0123abc\"")
+        .contains("\"base_sha\":\"b1\"", "\"start_sha\":\"s1\"", "\"body\":\"Null here\"");
     assertThat(answer.facts()).contains("88");
   }
 

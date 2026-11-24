@@ -130,10 +130,18 @@ public class CodeReviewRound {
       }
       String key =
           NotePoster.digest(subject.url(), head, finding.file(), finding.anchor(), finding.kind());
+      String threadKey =
+          NotePoster.digest(subject.url(), finding.file(), finding.anchor(), finding.kind());
       int line = DiffAnchors.lineOf(change.diff(), finding.file(), finding.anchor());
       NotePoster.Outcome outcome =
           poster.post(
-              subject, head, key, text(finding), "", new NoteAnchor(finding.file(), line, head));
+              subject,
+              head,
+              key,
+              threadKey,
+              text(finding),
+              "",
+              new NoteAnchor(finding.file(), line, head));
       if (outcome == NotePoster.Outcome.FAILED || outcome == NotePoster.Outcome.DROPPED) {
         return false;
       }

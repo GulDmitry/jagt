@@ -166,12 +166,13 @@ class CodeReviewRoundTest {
                 "",
                 List.of(),
                 ""));
-    when(poster.post(any(), any(), any(), any(), any(), any()))
+    when(poster.post(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(NotePoster.Outcome.POSTED);
 
     round.run(other, new Settings(true, true, true, 5000, 2.55), "");
 
     verify(poster)
-        .post(eq(other), eq("e"), any(), any(), eq(""), eq(new NoteAnchor("A.java", 11, "e")));
+        .post(
+            eq(other), eq("e"), any(), any(), any(), eq(""), eq(new NoteAnchor("A.java", 11, "e")));
   }
 }

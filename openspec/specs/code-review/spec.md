@@ -27,9 +27,10 @@ A request by the acting account itself SHALL be skipped. Design: [`roles/code-re
 - **THEN** nothing is listed, read or posted, and no failure is shown
 
 ### Requirement: A note is posted once and says who wrote it
-`NotePoster` SHALL be the one caller of `RequestNotes.post`. Each body SHALL open with the constant AI line asking for a thumbs up or down.
-Each note SHALL carry a hidden key, a digest of request, head, file, anchor and kind, read back from the host before every post.
-A finding naming a file and a line SHALL be posted on that line, and on the request where the host refuses the line.
+`NotePoster` SHALL be the one caller of `RequestNotes.post`. Each body SHALL open with the constant AI line asking for a thumbs rating.
+Each note SHALL carry a hidden key (digest of request, head, file, anchor, kind), read back before a post.
+A finding SHALL go on its diff line; with none, or if the host refuses it, one WARN names the cause and no note is posted.
+A finding an open thread of the role's own says SHALL post nothing.
 jagt SHALL never approve, merge, close or push through the role.
 
 #### Scenario: A restart between a post and its ledger write
@@ -50,11 +51,19 @@ jagt SHALL never approve, merge, close or push through the role.
 
 #### Scenario: A finding names a file and a line
 - **WHEN** a finding quotes a line of a file the diff changes
-- **THEN** the note is posted on that line
+- **THEN** the note is posted on that line, its position sent as JSON where the host needs it
 
 #### Scenario: The host refuses the line
 - **WHEN** the host refuses a note's line
-- **THEN** the note is posted on the request instead
+- **THEN** no note is posted and one WARN names the cause
+
+#### Scenario: A finding has no diff line
+- **WHEN** a finding names no line of the diff
+- **THEN** no note is posted and one WARN names the cause
+
+#### Scenario: A re-review after a new push
+- **WHEN** a finding is what an open thread of the role's own already says
+- **THEN** nothing new is posted
 
 ### Requirement: Notes are on for a jagt task's request and opt-in for another's
 On a jagt task's request notes SHALL be on by default (`post.own`); on another person's request only with `post.others`, off by default.
