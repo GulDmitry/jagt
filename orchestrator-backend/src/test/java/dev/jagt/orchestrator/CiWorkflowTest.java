@@ -324,6 +324,16 @@ class CiWorkflowTest {
   }
 
   @Test
+  void runsAtMostThreeColdPitestShardsAtOnce() {
+    Map<?, ?> strategy =
+        (Map<?, ?>)
+            Objects.requireNonNull(
+                Objects.requireNonNull(CiWorkflow.nightlyJobs().get("pitest")).get("strategy"));
+
+    assertThat(strategy.get("max-parallel")).isEqualTo(3);
+  }
+
+  @Test
   void letsTheNightlyWriteIssuesOnItsReportJobAndReadElsewhere() {
     Map<?, ?> nightly =
         new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")));

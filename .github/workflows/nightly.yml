@@ -118,6 +118,8 @@ jobs:
     timeout-minutes: ${{ matrix.minutes }}
     strategy:
       fail-fast: false
+      # Every job resolves cold: more shards at once and Maven Central answers 429.
+      max-parallel: 3
       matrix:
         include:
           - {project: root, path: ':', minutes: 150}
@@ -125,7 +127,7 @@ jobs:
           - {project: core, path: ':core', minutes: 120}
           - {project: usecase, path: ':usecase', minutes: 150}
           - {project: surface, path: ':surface', minutes: 90}
-          - {project: stand, path: ':stand', minutes: 60}
+          - {project: stand, path: ':stand', minutes: 150}
           - {project: statechart, path: ':statechart', minutes: 60}
           - {project: mutation-scope, path: ':mutation-scope', minutes: 60}
     steps:
