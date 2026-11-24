@@ -91,6 +91,10 @@
     "lines": 100,
     "branches": 100
   },
+  "ui/choice.js": {
+    "lines": 73,
+    "branches": 83
+  },
   "ui/chips.js": {
     "lines": 100,
     "branches": 78
@@ -338,6 +342,10 @@
   "ui/sends.js": {
     "lines": 100,
     "branches": 100
+  },
+  "ui/settings-view.js": {
+    "lines": 95,
+    "branches": 88
   },
   "ui/settings.js": {
     "lines": 96,
