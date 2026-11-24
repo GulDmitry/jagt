@@ -263,6 +263,46 @@ class WorktreeInspectionTest {
   }
 
   @Test
+  void countsNoLinesForAnAgentFileLineTheTaskOnlyEdited() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
+    Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nsee: docs/old.md\n");
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nsee: docs\n");
+
+    int added = git.agentFileLinesAdded(repo, repo, "main");
+
+    assertThat(added).isZero();
+  }
+
+  @Test
+  void countsNoLinesForAnAgentFileTheTaskOnlyShortened() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
+    Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nsee: docs/old.md\n");
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\n");
+
+    int added = git.agentFileLinesAdded(repo, repo, "main");
+
+    assertThat(added).isZero();
+  }
+
+  @Test
+  void countsOnlyTheLinesBeyondTheOnesTheTaskReplaced() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
+    Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nsee: docs/old.md\n");
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    Files.writeString(
+        repo.resolve("AGENTS.md"), "build: ./gradlew test\nsee: docs\nregistry: local\n");
+
+    int added = git.agentFileLinesAdded(repo, repo, "main");
+
+    assertThat(added).isEqualTo(1);
+  }
+
+  @Test
   void countsNoLinesForAnAgentFileThatTurnedBinary() throws Exception {
     Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\n");

@@ -337,8 +337,8 @@ public class WorktreeInspection {
   }
 
   /**
-   * Lines the worktree added to the repository's agent files since it left its base, committed and
-   * not.
+   * Net lines the worktree added to the repository's agent files since it left its base, committed
+   * and not: per file, added minus removed, never below zero, so a replaced line is an edit.
    */
   public int agentFileLinesAdded(Path projectPath, Path worktree, String baseBranch) {
     return git.locked(
@@ -357,9 +357,9 @@ public class WorktreeInspection {
               .expectSuccess("git diff --numstat in " + worktree)
               .stdout()
               .lines()
-              .map(line -> line.split("\t", 2)[0])
-              .filter(added -> added.matches("\\d+"))
-              .mapToInt(Integer::parseInt)
+              .map(line -> line.split("\t", 3))
+              .filter(cols -> cols[0].matches("\\d+") && cols[1].matches("\\d+"))
+              .mapToInt(cols -> Math.max(0, Integer.parseInt(cols[0]) - Integer.parseInt(cols[1])))
               .sum();
         });
   }
