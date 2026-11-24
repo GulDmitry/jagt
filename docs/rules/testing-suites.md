@@ -52,6 +52,12 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
   `contexts-board-test`, `contexts-e2e-test` in `fitness.yml`): past the ceiling the build fails naming the suite and count.
 - Ceilings start at the measured count and only go down ([0187](../decisions/0187-a-suite-creates-no-more-spring-contexts-than-its-ceiling.md)).
 
+## Every run's ceiling is soft
+
+Every local run (a suite, a gate, an eval, a script, an agent's command) has a ceiling from its measured time. Past it,
+the run finishes and its result counts; the overrun is reported and measured. Only a hang guard at three times the
+ceiling stops a run ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
+
 ## The local CI
 
 Each CI job runs one `gate<Job>` task (`gateTest`, `gateHeavy`, `gateStand`, `gateInstall`, `gateRelease`, `gateCodeql`;
