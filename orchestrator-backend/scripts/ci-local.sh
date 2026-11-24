@@ -22,7 +22,7 @@ wip=$(git stash create)
 tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
 jobs=${*:-test heavy stand stand-kind install install-macos audit}
 linux=; macos=; images=
-nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" "$(dirname "$0")/linux-suite.sh")
+nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" orchestrator-backend/scripts/linux-suite.sh)
 expanded=
 for each in $jobs; do
   case "$each" in nightly) expanded="$expanded $nightly" ;; *) expanded="$expanded $each" ;; esac
