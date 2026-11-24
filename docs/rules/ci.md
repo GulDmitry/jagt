@@ -42,7 +42,7 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 9. **A rerun or retry never turns a CI red green.** `ci-no-retry`.
 10. **The nightly runs only what T1 does not**; no nightly job repeats a pull request job unchanged.
     `nightly-calls-no-pull-request-job`; the rest: none yet.
-11. **Main publishes the tree the pull request proved**; the stand and install do not re-run there.
+11. **Main publishes the tree the pull request proved**; no test, stand or install job re-runs there.
     `release-needs-no-stand-or-install`, `CiWorkflowTest`, `ProvenTree`.
 12. **A change to CI or the local twin runs first as one job alone on a throwaway branch**: a dispatch with input `job`,
     never first on the release request. `CiWorkflowTest`.

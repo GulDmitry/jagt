@@ -26,11 +26,18 @@ class CiWorkflowTest {
   private static final Path GATES = Path.of("build-logic/src/main/groovy/jagt.suites.gradle");
 
   @Test
-  void publishesReleaseOnceTheMainPushsUnitSuiteIsGreen() {
-    Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
-    assertThat(Objects.requireNonNull(jobs.get("release")).get("needs"))
-        .asInstanceOf(list(String.class))
-        .containsExactly("test");
+  void waitsForNoJobBeforeReleasingOnThePushToMain() {
+    Map<String, Object> release = Objects.requireNonNull(CiWorkflow.jobs().get("release"));
+
+    assertThat(release.get("needs")).isNull();
+    assertThat(release.get("if"))
+        .isEqualTo("github.event_name == 'push' && github.ref == 'refs/heads/main'");
+  }
+
+  @Test
+  void runsNoTestJobOnThePushToMain() {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("if")))
+        .startsWith("github.event_name != 'push' && ");
   }
 
   @ParameterizedTest
@@ -146,14 +153,13 @@ class CiWorkflowTest {
   @Test
   void publishesOnThePushToMainOnlyWhenTheVersionsTagDoesNotExistYet() {
     Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
-    String test = Objects.requireNonNull(jobs.get("test")).toString();
+    String release = Objects.requireNonNull(jobs.get("release")).toString();
 
-    assertThat(test)
-        .contains("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+    assertThat(release)
         .contains("printVersion")
-        .contains("git ls-remote --exit-code --tags origin");
-    assertThat(Objects.requireNonNull(jobs.get("release")).get("if"))
-        .isEqualTo("needs.test.outputs.new == 'true'");
+        .contains("git ls-remote --exit-code --tags origin")
+        .contains("if=steps.version.outputs.new == 'true', run=./gradlew --no-daemon -q provenTree")
+        .contains("TAG=${{ steps.version.outputs.tag }}");
   }
 
   @Test

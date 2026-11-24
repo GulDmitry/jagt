@@ -1,7 +1,9 @@
-# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` on a pull request,
+# Three groups, as docs/rules/testing-suites.md: `test` on a pull request, `heavy` on a pull request,
 # `stand` per engine (compose on every run, kind on a pull request: the runner ships kind and kubectl),
-# `audit` the live scans only when the dependency set changed, `install` on three systems per push and pull request, `release` on a push to main after all, only when the version's
-# tag is new. Each job's work is one `gate<Job>` Gradle task, which `scripts/ci-local.sh` runs too; no run is timed here.
+# `audit` the live scans only when the dependency set changed, `install` on three systems per pull request,
+# `release` on a push to main with no job before it (the request proved the tree): its first step reads
+# whether the version's tag is new, every later step runs only then.
+# Each job's work is one `gate<Job>` Gradle task, which `scripts/ci-local.sh` runs too; no run is timed here.
 name: ci
 
 on:
@@ -33,7 +35,7 @@ defaults:
 jobs:
   test:
     name: unit + functional
-    if: (!inputs.job || inputs.job == 'test')
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'test')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     container:
@@ -41,9 +43,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
-      new: ${{ steps.version.outputs.new }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -70,17 +69,6 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
-      - id: version
-        name: read the version and whether its tag is new
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          tag="v$(./gradlew --no-daemon -q printVersion)"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
-            echo "new=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "new=true" >> "$GITHUB_OUTPUT"
-          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
@@ -250,8 +238,7 @@ jobs:
 
   release:
     name: release
-    if: needs.test.outputs.new == 'true'
-    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -285,12 +272,25 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
+      - id: version
+        name: read the version and whether its tag is new
+        run: |
+          tag="v$(./gradlew --no-daemon -q printVersion)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: stop unless this tree is the one the pull request proved
+        if: steps.version.outputs.new == 'true'
         run: ./gradlew --no-daemon -q provenTree -Pcommit="$GITHUB_SHA"
         env:
           GH_TOKEN: ${{ github.token }}
       - run: ./gradlew --no-daemon gateRelease
+        if: steps.version.outputs.new == 'true'
       - name: name the assets after the version they are
+        if: steps.version.outputs.new == 'true'
         run: |
           version=$(./gradlew --no-daemon -q printVersion)
           mkdir -p build/release
@@ -300,15 +300,17 @@ jobs:
           cp ../install.sh build/release/install.sh
           cp ../install.ps1 build/release/install.ps1
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        if: steps.version.outputs.new == 'true'
         with:
           subject-path: |
             orchestrator-backend/build/release/*.jar
             orchestrator-backend/build/release/*.cdx.json
             orchestrator-backend/build/release/*.sha256
       - name: attach them to the release
+        if: steps.version.outputs.new == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.test.outputs.tag }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" build/release/* --clobber
@@ -316,26 +318,30 @@ jobs:
             gh release create "$TAG" build/release/* --generate-notes --target "$GITHUB_SHA"
           fi
       - name: publish the image
+        if: steps.version.outputs.new == 'true'
         id: image
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.test.outputs.tag }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: scripts/publish-image.sh "$TAG"
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        if: steps.version.outputs.new == 'true'
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
       - name: attach the image's digest to the release
+        if: steps.version.outputs.new == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           DIGEST: ${{ steps.image.outputs.digest }}
-          TAG: ${{ needs.test.outputs.tag }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           version=$(./gradlew --no-daemon -q printVersion)
           echo "${DIGEST#sha256:}  ghcr.io image jagt:$version" > "build/release/jagt-$version.image.sha256"
           gh release upload "$TAG" "build/release/jagt-$version.image.sha256" --clobber
       - name: keep every patch of the last two minors
+        if: steps.version.outputs.new == 'true'
         id: retention
         env:
           GH_TOKEN: ${{ github.token }}
@@ -348,12 +354,13 @@ jobs:
           for tag in $tags; do gh release delete "$tag" --yes; done
           echo "image-tags=$(printf '%s\n' $tags | sed 's/^v//' | paste -sd, -)" >> "$GITHUB_OUTPUT"
       - name: delete the deleted releases' images
-        if: steps.retention.outputs.image-tags != ''
+        if: steps.version.outputs.new == 'true' && steps.retention.outputs.image-tags != ''
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
         with:
           packages: ${{ github.event.repository.name }}
           delete-tags: ${{ steps.retention.outputs.image-tags }}
       - name: delete every Pages deployment but the newest
+        if: steps.version.outputs.new == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -364,8 +371,11 @@ jobs:
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/deployments/$id"
             done
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+        if: steps.version.outputs.new == 'true'
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        if: steps.version.outputs.new == 'true'
         with:
           path: site
       - id: deployment
+        if: steps.version.outputs.new == 'true'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
