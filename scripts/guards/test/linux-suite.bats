@@ -51,15 +51,21 @@ EOF
   printf '#!/bin/sh\necho Linux\n' > "$BATS_TEST_TMPDIR/bin/uname"
   printf '#!/bin/sh\necho 1001\n' > "$BATS_TEST_TMPDIR/bin/stat"
   chmod +x "$BATS_TEST_TMPDIR/bin/uname" "$BATS_TEST_TMPDIR/bin/stat"
-  run "$script" test
+  run "$script" stand
   [ "$status" -eq 0 ]
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1001 '
+}
+
+@test "the test job runs as root, as ci.yml's test container does" {
+  run "$script" test heavy
+  grep -- '--network none' "$DOCKER_LOG" | grep gateTest | grep -q -- '-e RUN_UID=0 '
+  grep -- '--network none' "$DOCKER_LOG" | grep gateHeavy | grep -vq -- '-e RUN_UID=0 '
 }
 
 @test "on a Mac the job runs as the image's user" {
   printf '#!/bin/sh\necho Darwin\n' > "$BATS_TEST_TMPDIR/bin/uname"
   chmod +x "$BATS_TEST_TMPDIR/bin/uname"
-  run "$script" test
+  run "$script" stand
   grep -- '--network none' "$DOCKER_LOG" | grep -q -- '-e RUN_UID=1000 '
 }
 

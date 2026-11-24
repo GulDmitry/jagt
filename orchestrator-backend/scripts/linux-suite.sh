@@ -112,7 +112,7 @@ for project in "$BACKEND_DIR"/build.gradle "$BACKEND_DIR"/*/build.gradle; do
     STATE_MOUNTS+=(-v "$dir/build" -v "$dir/.gradle")
 done
 
-# The engine starts as root; the job runs as RUN_UID, never root, as on a CI runner, since root ignores file
+# The engine starts as root; a job runs as RUN_UID, as on a CI runner, since root ignores file
 # modes. Only the volumes it writes are handed to it first; a read-only cache seeds the run's own home with what Gradle
 # and npm cannot read from a read-only one. One engine volume holds one engine, so a second suite waits on its lock.
 # shellcheck disable=SC2016 # the container's shell expands it
@@ -134,6 +134,8 @@ exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" --clear-groups env HOME="$hom
 # On Linux a bind mount keeps the host's owner, so the job runs as the checkout's; Docker on a Mac maps it to anyone.
 RUN_UID=1000
 if [[ $(uname -s) == Linux ]]; then RUN_UID=$(stat -c %u "$REPO_ROOT"); fi
+# ci.yml's test job runs in its container as root, so its twin does too.
+job_uid() { if [[ $1 == test ]]; then echo 0; else echo "$RUN_UID"; fi; }
 
 # A linked worktree's .git points at its main checkout's git dir by absolute path, so that dir is mounted there too.
 GIT_MOUNTS=()
@@ -168,7 +170,7 @@ for job in "$@"; do
     warm_up "$job" || { status=$?; echo "==> $job warm-up red (exit $status)"; continue; }
     echo "==> $job ($cpus CPUs, $RUNNER_MEMORY): $line"
     # shellcheck disable=SC2086,SC2046 # the gate is a command line, the network a few options
-    docker run "${COMMON[@]}" $(network "$job") -e GRADLE_USER_HOME=/gradle-home -e GRADLE_RO_DEP_CACHE=/gradle-ro/caches \
+    docker run "${COMMON[@]}" $(network "$job") -e RUN_UID="$(job_uid "$job")" -e GRADLE_USER_HOME=/gradle-home -e GRADLE_RO_DEP_CACHE=/gradle-ro/caches \
         -e PLAYWRIGHT_BROWSERS_PATH=/gradle-ro/ms-playwright -e npm_config_cache=/gradle-home/npm-cache \
         -e npm_config_offline=true -v "$RUN_VOLUME:/gradle-home" -v "$CACHE_VOLUME:/gradle-ro:ro" \
         "$IMAGE" bash -c "$AS_RUNNER" - $line "${CONCURRENCY[@]}" || { status=$?; echo "==> $job red (exit $status)"; }
