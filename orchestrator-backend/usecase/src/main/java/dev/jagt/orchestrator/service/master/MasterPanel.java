@@ -240,6 +240,11 @@ public class MasterPanel {
     if (read.isEmpty()) {
       return new Undecided("what the human typed could not be read");
     }
+    List<NamedTickets.Fact> tracker = quotes.named(taskId, question);
+    Optional<NamedTickets.Fact> unread = tracker.stream().filter(fact -> !fact.read()).findFirst();
+    if (unread.isPresent()) {
+      return new Undecided("the tracker could not say about " + unread.get().key());
+    }
     Judgement judged =
         reviews.review(
             taskId,
@@ -249,7 +254,12 @@ public class MasterPanel {
                     taskId,
                     task,
                     new Briefs(brief.get(), briefs.author()),
-                    new Asked(question, read.get().decided(), read.get().said(), stuck),
+                    new Asked(
+                        question,
+                        read.get().decided(),
+                        read.get().said(),
+                        tracker.stream().map(NamedTickets.Fact::line).toList(),
+                        stuck),
                     reviews.loadsMcpServer()),
                 worktrees(task),
                 config.modelOrInherited()));
@@ -332,5 +342,6 @@ public class MasterPanel {
 
   record Briefs(String judgeBy, String worksTo) {}
 
-  record Asked(String question, String decided, List<String> said, boolean stuck) {}
+  record Asked(
+      String question, String decided, List<String> said, List<String> tracker, boolean stuck) {}
 }

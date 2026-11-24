@@ -17,6 +17,7 @@ public class RoundQuotes {
   private final RoundFacts facts;
   private final MasterDecisions decisions;
   private final MasterReview reviews;
+  private final NamedTickets named;
 
   Optional<MasterPanel.RoundRead> round(String taskId, TaskState task) {
     return facts
@@ -42,6 +43,10 @@ public class RoundQuotes {
     return facts
         .humanSaid(task)
         .map(said -> new MasterPanel.RoundRead("", "", decisions.of(task), said, ""));
+  }
+
+  List<NamedTickets.Fact> named(String taskId, String question) {
+    return named.of(taskId, question);
   }
 
   Optional<List<String>> paths(TaskState task) {

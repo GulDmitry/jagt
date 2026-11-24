@@ -10,6 +10,7 @@ import static dev.jagt.orchestrator.job.review.TestYourMoveJobBuilder.yourMoveJo
 import static dev.jagt.orchestrator.notify.TestPointWatchBuilder.pointWatch;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
+import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -60,6 +61,7 @@ import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.service.master.NamedTickets;
 import dev.jagt.orchestrator.service.master.RoleYields;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
@@ -305,7 +307,8 @@ public final class FakeJobWorld implements AutoCloseable {
                 new RoundFacts(
                     new TicketTexts(models, usage, new KeptTicketTexts(paths)), changes, runtime),
                 new MasterDecisions(changes),
-                stored),
+                stored,
+                mock(NamedTickets.class)),
             stored,
             new RoleYields(
                 config,

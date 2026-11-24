@@ -39,6 +39,7 @@ final class MasterPrompts {
         + round(taskId, task)
         + settled(asked.decided())
         + humanSaid(asked.said())
+        + trackerSaid(asked.tracker())
         + (asked.stuck() ? STUCK : "")
         + "<rules>\n"
         + "1. "
@@ -65,6 +66,8 @@ final class MasterPrompts {
         + " jagt presses it once the request is green with every thread closed; until then the"
         + " session waits.\n"
         + "7. Never answer question and never defer: the decision is the answer.\n"
+        + "8. Where the session asks which of the ticket's own routes to take, pick one: the one"
+        + " needing no right the session lacks, else the smaller change. Name the route and why.\n"
         + "</rules>\n"
         + "<output_format>\n"
         + "- verdict: ready.\n"
@@ -200,6 +203,15 @@ final class MasterPrompts {
             + " proof. A decision after which the task did not move is no settlement.\n"
             + decided
             + "\n";
+  }
+
+  private static String trackerSaid(List<String> tracker) {
+    return tracker.isEmpty()
+        ? ""
+        : "What jagt read from the tracker just now about the items the question names, the answer"
+            + " to whether one is closed; never ask the human:\n<tracker_facts>\n"
+            + String.join("\n", tracker)
+            + "\n</tracker_facts>\n";
   }
 
   private static String humanSaid(List<String> said) {

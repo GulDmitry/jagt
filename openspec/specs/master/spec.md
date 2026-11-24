@@ -89,6 +89,8 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours; the same words asked again are a new question
+- **AND** a ticket the question names is read from the tracker and answered by its status; unreadable, the question is yours
+- **AND** asked which of the ticket's own routes to take, it picks the one needing no right the session lacks, and says why
 
 #### Scenario: A plan in act
 - **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
@@ -142,11 +144,9 @@ until the round ceiling stops it; a finding is the same by file, anchor and kind
 - **AND** a verdict `ready` beside findings counts as not ready
 - **AND** the session fixes every instance its diff holds of a finding's pattern, not only the one cited
 
-#### Scenario: The acceptance check skipped
-- **WHEN** a round skipped it
+#### Scenario: A skipped check or an unasked removal
+- **WHEN** a round skipped the acceptance check
 - **THEN** it is not ready, or a question where it cannot be
-
-#### Scenario: An unasked removal
 - **WHEN** it removes an endpoint or version unasked
 - **THEN** it is a question, not a verdict
 
