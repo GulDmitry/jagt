@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Stands in for the board while a start is refused. */
 @Slf4j
-public final class FailurePage implements AutoCloseable {
+public final class FailurePage implements ServedFailure {
 
   private static final String HEAD =
       """
@@ -66,10 +66,12 @@ public final class FailurePage implements AutoCloseable {
     }
   }
 
+  @Override
   public int port() {
     return server.getAddress().getPort();
   }
 
+  @Override
   public void awaitSave() throws InterruptedException {
     saved.await();
   }

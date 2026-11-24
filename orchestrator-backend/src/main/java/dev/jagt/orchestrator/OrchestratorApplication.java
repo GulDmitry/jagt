@@ -2,15 +2,12 @@ package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.home.ShippedFiles;
-import dev.jagt.orchestrator.surface.ui.Console;
 import dev.jagt.orchestrator.surface.ui.FailurePage;
-import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import dev.jagt.orchestrator.surface.ui.log.LogFileRoll;
 import dev.jagt.orchestrator.surface.ui.log.LogTarget;
 import dev.jagt.orchestrator.surface.ui.log.PortCheck;
 import java.time.ZoneOffset;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.TimeZone;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,9 +17,6 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @ConfigurationPropertiesScan
 public class OrchestratorApplication {
 
-  // A NoClassDefFoundError while a startup failure renders means the jar was rewritten in place
-  // under a
-  // running JVM, not a class that needs preloading.
   public static void main(String[] args) {
     Locale.setDefault(Locale.ENGLISH);
     TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
@@ -30,46 +24,7 @@ public class OrchestratorApplication {
         .ifPresent(
             home -> ShippedFiles.placeInto(home, OrchestratorApplication.class.getClassLoader()));
     String[] launch = withConfigFile(args);
-    while (true) {
-      try {
-        application().run(launch);
-        return;
-      } catch (RuntimeException failure) {
-        String problems = StartupFailure.describe(failure);
-        Console.problem(problems);
-        if (!servedUntilSaved(launch, problems)) {
-          throw failure;
-        }
-      } catch (Error failure) {
-        Console.problem(StartupFailure.describe(failure));
-        throw failure;
-      }
-    }
-  }
-
-  private static boolean servedUntilSaved(String[] launch, String problems) {
-    Optional<FailurePage> page =
-        FailurePage.listen(
-            boardPort(launch), OrchestratorPaths.configFileOutside(launch), problems);
-    if (page.isEmpty()) {
-      return false;
-    }
-    try (FailurePage open = page.get()) {
-      Console.say("start refused: fix jagt.yml at http://localhost:" + open.port());
-      open.awaitSave();
-      return true;
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return false;
-    }
-  }
-
-  private static int boardPort(String[] launch) {
-    return java.util.Arrays.stream(launch)
-        .filter(arg -> arg.startsWith("--server.port="))
-        .findFirst()
-        .map(arg -> Integer.parseInt(arg.substring("--server.port=".length()).trim()))
-        .orElse(8290);
+    new StartRetry(given -> application().run(given), FailurePage::listen).run(launch);
   }
 
   /**
