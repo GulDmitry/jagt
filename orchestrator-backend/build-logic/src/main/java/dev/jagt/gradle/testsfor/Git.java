@@ -3,6 +3,7 @@ package dev.jagt.gradle.testsfor;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,10 +34,12 @@ final class Git {
     List<String> command = new ArrayList<>(List.of("git", "-C", directory.toString()));
     command.addAll(Arrays.asList(arguments));
     try {
-      Process process = new ProcessBuilder(command).redirectErrorStream(false).start();
-      byte[] error = process.getErrorStream().readAllBytes();
+      Path errorFile = Files.createTempFile("git-error", ".txt");
+      Process process = new ProcessBuilder(command).redirectError(errorFile.toFile()).start();
       String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
       int exit = process.waitFor();
+      byte[] error = Files.readAllBytes(errorFile);
+      Files.delete(errorFile);
       if (exit != 0) {
         throw new IllegalStateException(
             "git failed, exit "
