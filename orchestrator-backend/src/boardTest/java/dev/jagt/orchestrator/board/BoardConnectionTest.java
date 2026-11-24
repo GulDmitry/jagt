@@ -264,6 +264,18 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
+  void boardWhosePushConnectionNeverAnswersConnectsAgain() {
+    Page page = session.newPage();
+    page.clock().install();
+    page.route("**/api/events", held -> {}, new Page.RouteOptions().setTimes(1));
+    page.waitForRequest("**/api/events", () -> page.navigate("http://localhost:" + port + "/"));
+
+    page.waitForRequest("**/api/events", () -> page.clock().runFor(51_500));
+
+    assertThat(page.locator("#offline")).isHidden();
+  }
+
+  @Test
   void boardWhosePushConnectionWasRefusedTriesAgainOnItsOwn() {
     Page page = session.newPage();
     page.route("**/api/events", route -> route.fulfill(new Route.FulfillOptions().setStatus(403)));
