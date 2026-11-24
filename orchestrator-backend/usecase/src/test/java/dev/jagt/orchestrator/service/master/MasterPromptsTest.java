@@ -416,6 +416,21 @@ class MasterPromptsTest {
   }
 
   @Test
+  void namesWhereTheSessionsNotesAndContextLieInEachWorktreeToTheMasterAnsweringQuestion() {
+    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+
+    String prompt =
+        MasterPrompts.answerPrompt(
+            "ABC-1",
+            task,
+            briefsPair,
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            true);
+
+    assertThat(prompt).contains("[/wt/ABC-1-proj/task_notes.md, /wt/ABC-1-proj/task_context.md]");
+  }
+
+  @Test
   void namesTheRoundsTicketToEachReviewerWhereTheTaskHasOne() {
     TaskState task =
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING)
