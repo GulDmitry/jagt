@@ -323,6 +323,18 @@ class CiWorkflowTest {
         .contains("./gradlew --no-daemon gateMutation -PmutationProject=${{ matrix.path }}");
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "e2e", "properties", "pitest", "scan"})
+  void restoresTheNightlysDependenciesReadOnlyFromTheCiCache(String job) {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .containsPattern(
+            "actions/cache/restore@[0-9a-f]{40}, with=\\{path=~/.gradle/caches/modules-2")
+        .doesNotContainPattern("actions/cache@[0-9a-f]{40}");
+  }
+
   @Test
   void runsAtMostThreeColdPitestShardsAtOnce() {
     Map<?, ?> strategy =
