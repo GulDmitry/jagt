@@ -322,6 +322,36 @@ class TaskReducerTest {
     assertThat(reducer.planAsked(past, true).gate().planGate()).isEqualTo(PlanGate.CLOSED);
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = TaskStatus.class,
+      names = {"REVIEW_PENDING", "CI_POLLING", "REVIEWED"})
+  void opensTheGateWhenReviewRoundIsRelayedToTaskPastItsPlan(TaskStatus past) {
+    TaskState closed = TaskState.builder("api", "/wt", past).planGate(PlanGate.CLOSED).build();
+
+    assertThat(reducer.relayed(closed, "round", "d1", "", 1).gate().planGate())
+        .isEqualTo(PlanGate.OPEN);
+  }
+
+  @Test
+  void keepsTheGateClosedWhenTheTurnOfTaskPastItsPlanCloses() {
+    TaskState closed =
+        TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .build();
+
+    assertThat(reducer.turnClosed(closed, 1).gate().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
+
+  @Test
+  void keepsTheGateClosedWhenRelayReachesTaskStillInItsPlan() {
+    TaskState planning =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).planGate(PlanGate.CLOSED).build();
+
+    assertThat(reducer.relayed(planning, "answer", "d1", "", 1).gate().planGate())
+        .isEqualTo(PlanGate.CLOSED);
+  }
+
   @Test
   void keepsRequiredPlanGateWhenTheSessionDeclaresNoPlan() {
     TaskState required =

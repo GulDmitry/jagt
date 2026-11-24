@@ -24,10 +24,23 @@ import dev.jagt.statechart.Guard;
 import dev.jagt.statechart.StatechartBuilder;
 import dev.jagt.statechart.TransitionBuilder;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /** The regions of what a task has been through: stop, plan, report, turn and session. */
 final class ProgressRegions {
+
+  private static final Set<TaskStatus> ROUND_PAST_THE_PLAN =
+      EnumSet.of(
+          TaskStatus.SHIPPING,
+          TaskStatus.REVIEW_PENDING,
+          TaskStatus.CI_POLLING,
+          TaskStatus.CI_FAILED,
+          TaskStatus.REVIEWED,
+          TaskStatus.APPROVED,
+          TaskStatus.DEPLOYED,
+          TaskStatus.DEPLOY_CONFLICT,
+          TaskStatus.REVERTED);
 
   private final Composition composition;
   private final Landing land;
@@ -107,6 +120,12 @@ final class ProgressRegions {
           .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))
           .to(PlanGate.OPEN);
     }
+    chart
+        .onMatching(
+            PLAN, PlanGate.CLOSED, "round past the plan", move -> move instanceof TaskMove.Relayed)
+        .when((active, move) -> ROUND_PAST_THE_PLAN.contains(active.state(LIFECYCLE)))
+        .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))
+        .to(PlanGate.OPEN);
   }
 
   void says(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {

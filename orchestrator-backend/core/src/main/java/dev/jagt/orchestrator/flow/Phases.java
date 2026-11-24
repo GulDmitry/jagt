@@ -43,14 +43,13 @@ record Phases(Progress progress, Delivery delivery, Gates gates, Watchers watche
       boolean stampedAsk) {}
 
   static Phases at(TaskStatus lifecycle) {
+    return at(lifecycle, PlanGate.OPEN);
+  }
+
+  static Phases at(TaskStatus lifecycle, PlanGate plan) {
     return new Phases(
         new Progress(
-            lifecycle,
-            StopKind.NONE,
-            PlanGate.OPEN,
-            AgentReport.PLAIN,
-            TurnKind.CLOSED,
-            SessionPhase.NONE),
+            lifecycle, StopKind.NONE, plan, AgentReport.PLAIN, TurnKind.CLOSED, SessionPhase.NONE),
         new Delivery(DeployPhase.NONE, GitPhase.UNREAD, RepoPhase.NONE, RequestPhase.NONE),
         new Gates(ChecksPhase.NONE, ApprovalPhase.UNREAD, InfraPhase.NONE),
         new Watchers(Map.of(), Map.of(), MasterPhase.STANDS_IN, false));

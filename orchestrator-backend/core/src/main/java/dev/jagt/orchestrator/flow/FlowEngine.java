@@ -210,7 +210,8 @@ public class FlowEngine {
         Facts.Hold.defaults()
             .withAgentLive(() -> sources.agentLive(taskId))
             .withStopped(task.work().stopped())
-            .withTierAbove(Facts.tierAbove(task)),
+            .withTierAbove(Facts.tierAbove(task))
+            .withPlanClosed(task.gate().planGate().closed()),
         Facts.Workspace.defaults()
             .withGitStateChanged(task.gate().gitStateChanged())
             .withRepoRequested(task.work().asksForRepository())

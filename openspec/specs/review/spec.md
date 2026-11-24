@@ -159,7 +159,7 @@ A GitHub request with no review required SHALL count as approved once someone ap
 `TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git
 while the checks are red, and the sorted newest note ids awaiting the agent. The host's own read gives those ids
 (`CodeHost.unresolvedNotes`), never the model; they are compared without the request link. A round equal to the digest SHALL NOT
-be relayed again, whatever the brief's wording. A `lift` SHALL forget both.
+be relayed again, whatever the brief's wording, unless the task reported `PLAN_PENDING` since. A `lift` SHALL forget both.
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
 - **THEN** the sweep says the round is unchanged and no fresh session starts

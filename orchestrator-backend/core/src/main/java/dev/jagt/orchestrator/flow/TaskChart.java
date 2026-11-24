@@ -26,6 +26,7 @@ import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.deploy.RedCause;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.statechart.Configuration;
 import dev.jagt.statechart.Macrostep;
@@ -142,6 +143,14 @@ public final class TaskChart {
    */
   Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
     return effects(Phases.at(from), move).stream()
+        .filter(TaskEffect.Lands.class::isInstance)
+        .map(effect -> ((TaskEffect.Lands) effect).to())
+        .findFirst();
+  }
+
+  /** As above, for a task whose plan gate stands at {@code plan}. */
+  Optional<TaskStatus> land(TaskStatus from, PlanGate plan, TaskMove move) {
+    return effects(Phases.at(from, plan), move).stream()
         .filter(TaskEffect.Lands.class::isInstance)
         .map(effect -> ((TaskEffect.Lands) effect).to())
         .findFirst();

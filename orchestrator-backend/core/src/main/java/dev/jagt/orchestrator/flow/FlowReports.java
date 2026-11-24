@@ -101,7 +101,8 @@ public class FlowReports {
           if (!standing.test(task)) {
             return task;
           }
-          Optional<String> why = rules.refusedReport(task.standing().status(), status, means);
+          Optional<String> why =
+              rules.refusedReport(task.standing().status(), status, means, task.gate().planGate());
           if (why.isPresent()) {
             refused.set(why.get());
             return task.refused(RefusalKind.STATUS_REPORT);

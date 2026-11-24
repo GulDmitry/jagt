@@ -160,6 +160,9 @@ public class TaskStops {
     if (task.standing().report().asks() && !trail.newNotes(notes)) {
       return Relay.ASKING;
     }
+    if (trail.divertedToPlan(task.standing().history())) {
+      return Relay.RELAY;
+    }
     return trail.relayed(digest) || trail.noNewNote(notes, failing) ? Relay.UNCHANGED : Relay.RELAY;
   }
 

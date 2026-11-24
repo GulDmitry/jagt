@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.deploy.RedCause;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
@@ -127,10 +128,20 @@ public final class FlowRules {
   }
 
   /**
-   * As {@link #refusedReport(TaskStatus, TaskStatus)}, for what the report means: a question ends
-   * the round.
+   * As {@link #refusedReport(TaskStatus, TaskStatus)}, for what the report means (a question ends
+   * the round) and the plan gate: a hand-back or a ship is the code done, which a closed gate has
+   * not seen.
    */
-  public Optional<String> refusedReport(TaskStatus from, TaskStatus to, AgentReport means) {
+  public Optional<String> refusedReport(
+      TaskStatus from, TaskStatus to, AgentReport means, PlanGate plan) {
+    if (plan.closed()
+        && refusedReport(from, to).isEmpty()
+        && chart.land(from, plan, new TaskMove.Reported(to, false)).isEmpty()) {
+      return Optional.of(
+          to
+              + " cannot be reported while the plan is not approved — report PLAN_PENDING with"
+              + " the plan, or IN_PROGRESS with outcome=no_plan");
+    }
     if (from == TaskStatus.CI_POLLING && to == TaskStatus.CI_POLLING && means.asks()) {
       return Optional.of(
           "a question cannot be reported while the task stands at CI_POLLING"

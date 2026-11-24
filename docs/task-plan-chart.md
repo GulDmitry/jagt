@@ -13,5 +13,6 @@ stateDiagram-v2
         plan_CLOSED --> plan_OPEN : no plan declared
         plan_CLOSED --> plan_OPEN : plan approved
         plan_REQUIRED --> plan_OPEN : plan approved
+        plan_CLOSED --> plan_OPEN : round past the plan
     }
 ```

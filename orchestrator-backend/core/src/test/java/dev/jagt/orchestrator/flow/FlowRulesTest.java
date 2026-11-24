@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.flow.view.Attention;
 import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -291,6 +293,48 @@ class FlowRulesTest {
   void keepsTheConflictWaitingWhenRevertFromItTookOutOnlySomeOfTheDeploy() {
     assertThat(rules.next(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, Outcome.Kind.PARTIAL))
         .isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = TaskStatus.class,
+      names = {"SHIPPING", "REVIEW_PENDING", "CI_POLLING"})
+  void refusesHandBackAndShipReportWhileThePlanGateIsClosed(TaskStatus reported) {
+    assertThat(
+            rules.refusedReport(
+                TaskStatus.IN_PROGRESS, reported, AgentReport.PLAIN, PlanGate.CLOSED))
+        .get()
+        .asString()
+        .contains("plan is not approved");
+  }
+
+  @Test
+  void acceptsHandBackOnceThePlanGateIsOpen() {
+    assertThat(
+            rules.refusedReport(
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.REVIEW_PENDING,
+                AgentReport.PLAIN,
+                PlanGate.OPEN))
+        .isEmpty();
+  }
+
+  @Test
+  void acceptsThePlanReportWhileThePlanGateIsClosed() {
+    assertThat(
+            rules.refusedReport(
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.PLAN_PENDING,
+                AgentReport.PLAIN,
+                PlanGate.CLOSED))
+        .isEmpty();
+  }
+
+  @Test
+  void declinesShipWhileThePlanGateIsClosed() {
+    Facts closed = Facts.defaults().withHold(Facts.Hold.defaults().withPlanClosed(true));
+
+    assertThat(rules.allows(TaskStatus.IN_PROGRESS, TaskAction.SHIP, closed)).isFalse();
   }
 
   @Test

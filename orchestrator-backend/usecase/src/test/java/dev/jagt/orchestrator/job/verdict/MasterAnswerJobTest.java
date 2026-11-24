@@ -28,6 +28,7 @@ import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.testing.FakeClock;
@@ -122,6 +123,21 @@ class MasterAnswerJobTest {
             .withMessage("plan revised, approve?")
             .build());
     when(config.load()).thenReturn(masterAnswerJob().withMine(List.of(kept)).config());
+
+    job.run();
+
+    verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+  }
+
+  @Test
+  void leavesPlanApprovalToTheHumanWhereTheMasterDoesNotHoldThePlan() {
+    state.putTask(
+        "ABC-1",
+        askingTask()
+            .withPlanGate(PlanGate.CLOSED)
+            .withMessage("the plan is written, may I start?")
+            .build());
+    when(config.load()).thenReturn(masterAnswerJob().withMine(List.of("plan")).config());
 
     job.run();
 
