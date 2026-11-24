@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.codereview;
+package dev.jagt.orchestrator.job.codereview.signals;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import java.io.IOException;

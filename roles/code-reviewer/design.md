@@ -26,6 +26,10 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
 
 - **WHEN** a jagt task's request gets a new head
   **THEN** the head is read once and each finding is posted as a note opening with the AI line
+- **WHEN** a task's session reports REVIEW_PENDING and no request exists
+  **THEN** its diff against the base is read once per tree state, each finding is relayed as a review round and the ship waits for the session's block per finding
+- **WHEN** a finding the pre-ship read raised is read again on the task's request
+  **THEN** no note is posted for it
 - **WHEN** the host names a request no task holds and `post.others` is on
   **THEN** one ledger row is written, no task opens, the head is read in a detached checkout and its findings are posted
 - **WHEN** the host names a request no task holds and `post.others` is off

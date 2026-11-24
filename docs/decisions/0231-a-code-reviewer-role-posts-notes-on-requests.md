@@ -8,6 +8,7 @@ on [0122](0122-a-role-is-a-module-the-chart-composes.md), [0176](0176-every-kind
 
 Accepted 2026-11-23 by the owner's order. Amends [0091](0091-the-shipped-master-reads-three-roles.md)
 and [0148](0148-jagt-reaches-the-code-host-through-its-cli-login.md), both marked "amended by 0231".
+Amended 2026-11-24: the role reads a task's diff before its ship ([`code-review`](../../openspec/specs/code-review/spec.md)).
 
 ## Context
 

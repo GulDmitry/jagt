@@ -149,7 +149,7 @@ public class CodeReviewRound {
     return true;
   }
 
-  private static String text(Finding finding) {
+  static String text(Finding finding) {
     return finding.file().isBlank()
         ? finding.issue()
         : "`" + finding.file() + "`: " + finding.issue();

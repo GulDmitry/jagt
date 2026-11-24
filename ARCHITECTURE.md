@@ -198,9 +198,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 ## The package map
 
-Every package of every module as it stands on disk, one line each; `PackagesTest` fails on a package missing here, on a
-row with no package, on a package of more than ten classes and on one of a single class
-([0166](docs/decisions/0166-packages-are-architecture.md)).
+Every package of every module as it stands on disk, one line each; `PackagesTest` fails on a package missing here, on a row with no package,
+on a package of more than ten classes and on one of a single class ([0166](docs/decisions/0166-packages-are-architecture.md)).
 
 | package | module | holds |
 |---------|--------|-------|
@@ -266,7 +265,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/host` | usecase | jobs about the install: keep-awake, the running-jar watch and the newer-release check |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
-| `job/codereview` | usecase | the code reviewer: jobs, subjects, checkout, panel |
+| `job/codereview` | usecase | the code reviewer: jobs, subjects, checkout, panel, the read before a ship |
+| `job/codereview/signals` | usecase | the ratings of its notes: likes, dislikes, resolutions |
 | `job/codereview/request` | usecase | one request's read: ledger, resolutions, subject, diff anchors, note poster |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |

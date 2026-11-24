@@ -122,7 +122,10 @@ public class FlowEngine {
   /** The facts a press alone reads, each read at most once and only by the gate that asks. */
   private Facts pressed(Facts read, String taskId) {
     return read.withDelivery(read.delivery().withMergedNow(sources.mergedNow(taskId)))
-        .withWorkspace(read.workspace().withDistrust(sources.distrust(taskId)));
+        .withWorkspace(
+            read.workspace()
+                .withDistrust(sources.distrust(taskId))
+                .withFindingsOpen(sources.findingsOpen(taskId)));
   }
 
   private void named(

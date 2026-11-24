@@ -22,6 +22,8 @@ public record ToldOnce(Map<Kind, String> entries, Map<String, String> points) {
     AUTO_REVIEW_WINDOW("windowElapsed"),
     AUTO_REVIEW_UNREADABLE("unreadable"),
     CONFLICT_REQUEST_GONE("conflictRequestGone"),
+    PRE_SHIP_TREE("preShipTree"),
+    PRE_SHIP_COVERED("preShipCovered"),
     SILENCE("silence"),
     VERIFY_FAILED("verifyFailed"),
     VERIFY_OUTPUT("verifyOutput");

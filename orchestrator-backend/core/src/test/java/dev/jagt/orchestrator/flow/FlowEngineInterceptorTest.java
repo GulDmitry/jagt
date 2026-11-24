@@ -97,7 +97,12 @@ class FlowEngineInterceptorTest {
   private final AgentPresence agents = mock(AgentPresence.class);
   private final FactSources facts =
       new FactSources(
-          agents, ignored -> false, id -> Optional.empty(), id -> false, () -> ActionOrigin.BOARD);
+          agents,
+          ignored -> false,
+          id -> Optional.empty(),
+          id -> false,
+          () -> ActionOrigin.BOARD,
+          id -> Optional.empty());
   private final TaskState inProgress =
       TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build();
 

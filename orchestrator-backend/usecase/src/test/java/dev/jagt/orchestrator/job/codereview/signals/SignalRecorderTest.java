@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.job.codereview;
+package dev.jagt.orchestrator.job.codereview.signals;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.job.codereview.CodeReviewPanel;
 import dev.jagt.orchestrator.job.codereview.request.LedgerRow;
 import dev.jagt.orchestrator.job.codereview.request.NotePoster;
 import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;

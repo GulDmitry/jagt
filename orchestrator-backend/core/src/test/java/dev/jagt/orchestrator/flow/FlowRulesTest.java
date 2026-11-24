@@ -12,7 +12,9 @@ import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -897,5 +899,31 @@ class FlowRulesTest {
     assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, false)).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(rules.deployReadLands(TaskStatus.IN_PROGRESS, true))
         .isEqualTo(TaskStatus.IN_PROGRESS);
+  }
+
+  @Test
+  void declinesShipNamingTheFindingsAwaitingAnAnswerWhileNoRequestExists() {
+    Facts facts =
+        Facts.defaults()
+            .withWorkspace(
+                Facts.Workspace.defaults()
+                    .withFindingsOpen(() -> Optional.of("2 finding(s) await your block")));
+
+    assertThat(rules.declined(TaskAction.SHIP, facts, ActionOrigin.BOARD))
+        .hasValueSatisfying(
+            decline -> assertThat(decline.why()).isEqualTo("2 finding(s) await your block"));
+    assertThat(rules.allows(TaskStatus.REVIEW_PENDING, TaskAction.SHIP, facts)).isFalse();
+  }
+
+  @Test
+  void doesNotDeclineShipOnTaskHoldingRequestWhateverTheFindingsSay() {
+    Facts facts =
+        Facts.defaults()
+            .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true))
+            .withWorkspace(
+                Facts.Workspace.defaults()
+                    .withFindingsOpen(() -> Optional.of("2 finding(s) await your block")));
+
+    assertThat(rules.declined(TaskAction.SHIP, facts, ActionOrigin.BOARD)).isEmpty();
   }
 }

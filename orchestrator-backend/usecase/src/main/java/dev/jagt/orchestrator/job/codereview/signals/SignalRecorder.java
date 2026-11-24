@@ -1,5 +1,6 @@
-package dev.jagt.orchestrator.job.codereview;
+package dev.jagt.orchestrator.job.codereview.signals;
 
+import dev.jagt.orchestrator.job.codereview.CodeReviewPanel;
 import dev.jagt.orchestrator.job.codereview.request.LedgerRow;
 import dev.jagt.orchestrator.job.codereview.request.NotePoster;
 import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;

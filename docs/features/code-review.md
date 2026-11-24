@@ -4,6 +4,8 @@
 ## Code review · [spec](../../openspec/specs/code-review/spec.md)
 - **Review once per head** — A request's diff, tests and description are read once per new head, on by default, with no task and nothing on the board.
   [spec](../../openspec/specs/code-review/spec.md#requirement-the-code-reviewer-reads-a-requests-change-once-per-head)
+- **Read before the ship** — A task's diff is read at hand-back; each finding goes back as a review round and the ship waits.
+  [spec](../../openspec/specs/code-review/spec.md#requirement-the-code-reviewer-reads-a-tasks-diff-before-its-ship)
 - **Notes that say who wrote them** — Each note opens with the AI line and is posted once; on another person's request only with `post.others`.
   [spec](../../openspec/specs/code-review/spec.md#requirement-a-note-is-posted-once-and-says-who-wrote-it)
 - **Bots answered, bounded** — A review bot's note gets one answer, at most three per thread.

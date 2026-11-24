@@ -60,10 +60,11 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
       boolean gitStateChanged,
       boolean repoRequested,
       boolean severalRepos,
-      Supplier<Optional<String>> distrust) {
+      Supplier<Optional<String>> distrust,
+      Supplier<Optional<String>> findingsOpen) {
 
     public static Workspace defaults() {
-      return new Workspace(false, false, false, Optional::empty);
+      return new Workspace(false, false, false, Optional::empty, Optional::empty);
     }
   }
 

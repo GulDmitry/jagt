@@ -11,19 +11,22 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
  * What a task's facts read from outside its stored state: its agent's window, its ship, and what a
- * press alone reads: the repository's trust, the merges and who pressed.
+ * press alone reads: the repository's trust, the merges, the findings awaiting an answer and who
+ * pressed.
  */
 public record FactSources(
     AgentPresence agents,
     RequestlessShip requestless,
     GitDistrust trust,
     MergedRefresh merged,
-    CurrentOrigin origin) {
+    CurrentOrigin origin,
+    Function<String, Optional<String>> findings) {
 
   boolean agentLive(String taskId) {
     try {
@@ -41,6 +44,10 @@ public record FactSources(
   /** Read once, on the first ask: a press that does not reach the gate reads nothing. */
   Supplier<Optional<String>> distrust(String taskId) {
     return once(() -> trust.distrusted(taskId));
+  }
+
+  Supplier<Optional<String>> findingsOpen(String taskId) {
+    return once(() -> findings.apply(taskId));
   }
 
   BooleanSupplier mergedNow(String taskId) {
