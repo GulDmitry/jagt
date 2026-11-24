@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      job:
+        description: 'The one job to run, every leg of its matrix (empty: every job)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -22,6 +27,7 @@ defaults:
 jobs:
   stand:
     name: stand ${{ matrix.engine }} x3
+    if: (!inputs.job || inputs.job == 'stand')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -54,6 +60,7 @@ jobs:
 
   e2e:
     name: e2e round ${{ matrix.round }}
+    if: (!inputs.job || inputs.job == 'e2e')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -86,6 +93,7 @@ jobs:
 
   properties:
     name: properties at 1000 tries
+    if: (!inputs.job || inputs.job == 'properties')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -112,6 +120,7 @@ jobs:
 
   pitest:
     name: pitest ${{ matrix.project }}
+    if: (!inputs.job || inputs.job == 'pitest')
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ matrix.minutes }}
     strategy:
@@ -151,6 +160,7 @@ jobs:
 
   stryker:
     name: stryker
+    if: (!inputs.job || inputs.job == 'stryker')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -171,6 +181,7 @@ jobs:
 
   scan:
     name: live vulnerability scan
+    if: (!inputs.job || inputs.job == 'scan')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -191,6 +202,7 @@ jobs:
 
   install:
     name: real-feed install (${{ matrix.os }})
+    if: (!inputs.job || inputs.job == 'install')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     env:

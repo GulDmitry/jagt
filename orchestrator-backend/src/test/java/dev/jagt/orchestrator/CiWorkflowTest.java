@@ -169,6 +169,13 @@ class CiWorkflowTest {
         .contains("cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}");
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "e2e", "properties", "pitest", "stryker", "scan", "install"})
+  void runsOneNightlyJobAloneWhenTheDispatchNamesIt(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("if")))
+        .isEqualTo("(!inputs.job || inputs.job == '" + job + "')");
+  }
+
   @Test
   void letsTheNightlyBeStartedByHand() {
     assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
