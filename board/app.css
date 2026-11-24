@@ -842,6 +842,11 @@ main#board:empty {
   #pane .back {
     display: inline-block;
   }
+  #pane {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
   main#board:not(.open) #pane,
   main#board.open #tasks {
     display: none;
