@@ -1,6 +1,7 @@
 package fitness.scan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import fitness.core.Measurement;
 import fitness.core.Project;
@@ -147,6 +148,7 @@ class ScanEngineKindsTest {
   @Test
   void flagsATrackedFileHoldingTheRunningMachinesHome(@TempDir Path root)
       throws IOException, InterruptedException {
+    assumeThat(Path.of(System.getProperty("user.home")).getNameCount()).isGreaterThan(1);
     Files.writeString(root.resolve("leaky.txt"), "cd " + System.getProperty("user.home") + "/x\n");
     Files.writeString(root.resolve("clean.txt"), "cd somewhere\n");
     new ProcessBuilder("git", "-C", root.toString(), "init", "-q").start().waitFor();

@@ -57,6 +57,8 @@ EOF
 }
 
 @test "the test job runs as root, as ci.yml's test container does" {
+  printf '#!/bin/sh\necho Darwin\n' > "$BATS_TEST_TMPDIR/bin/uname"
+  chmod +x "$BATS_TEST_TMPDIR/bin/uname"
   run "$script" test heavy
   grep -- '--network none' "$DOCKER_LOG" | grep gateTest | grep -q -- '-e RUN_UID=0 '
   grep -- '--network none' "$DOCKER_LOG" | grep gateHeavy | grep -vq -- '-e RUN_UID=0 '

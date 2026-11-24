@@ -128,8 +128,9 @@ fi
 chown "$RUN_UID:$RUN_UID" /jagt/board/node_modules /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle \
     /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
 home=$(getent passwd "$RUN_UID" | cut -d: -f6)
-if [[ -z $home ]]; then home=/tmp/runner-home; install -d -o "$RUN_UID" -g "$RUN_UID" "$home"; fi
-exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" --clear-groups env HOME="$home" "$@"'
+groups=--init-groups
+if [[ -z $home ]]; then home=/tmp/runner-home; groups=--clear-groups; install -d -o "$RUN_UID" -g "$RUN_UID" "$home"; fi
+exec setpriv --reuid="$RUN_UID" --regid="$RUN_UID" "$groups" env HOME="$home" "$@"'
 
 # On Linux a bind mount keeps the host's owner, so the job runs as the checkout's; Docker on a Mac maps it to anyone.
 RUN_UID=1000
@@ -148,7 +149,7 @@ if [[ $(uname -s) == Darwin ]]; then
 fi
 
 # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
-COMMON=(--rm --init --privileged "${SIZE[@]}" -e CI=true -e RUN_UID="$RUN_UID" -e ORG_GRADLE_PROJECT_timed=false
+COMMON=(--rm --init --privileged "${SIZE[@]}" -e CI=true -e ORG_GRADLE_PROJECT_timed=false
     -w /jagt/orchestrator-backend -v "$REPO_ROOT:/jagt" "${STATE_MOUNTS[@]}" ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"}
     -v "$ENGINE_VOLUME:/var/lib/docker")
 
@@ -158,7 +159,7 @@ warm_up() {
     tasks=$(warm "$1")
     echo "==> $1 warm-up (online): resolveAll $tasks"
     # shellcheck disable=SC2086 # the tasks are words
-    docker run "${COMMON[@]}" -e GRADLE_USER_HOME=/gradle-home -e PLAYWRIGHT_BROWSERS_PATH=/gradle-home/ms-playwright \
+    docker run "${COMMON[@]}" -e RUN_UID="$RUN_UID" -e GRADLE_USER_HOME=/gradle-home -e PLAYWRIGHT_BROWSERS_PATH=/gradle-home/ms-playwright \
         -e npm_config_cache=/gradle-home/npm-cache -v "$CACHE_VOLUME:/gradle-home" \
         "$IMAGE" bash -c "$AS_RUNNER" - \
         flock /gradle-home/.warm-up.lock ./gradlew --no-daemon --no-configuration-cache -I scripts/resolve-all.init.gradle resolveAll $tasks "${CONCURRENCY[@]}"
