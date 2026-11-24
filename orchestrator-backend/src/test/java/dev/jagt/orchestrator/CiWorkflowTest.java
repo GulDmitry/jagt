@@ -487,6 +487,12 @@ class CiWorkflowTest {
     assertThat(SourceRoots.read(GATES)).contains("gateRelease: ['bootJar', 'cyclonedxBom'],");
   }
 
+  @Test
+  void startsTheComposeStackOnlyOnceTheBoardSuiteHasClosedItsBrowser() {
+    assertThat(SourceRoots.read(GATES))
+        .containsPattern("tasks.register\\('containerUp'[^}]*mustRunAfter 'boardTest'\n}");
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"install", "release"})
   void keepsGradleCachesBetweenRunsByThePinnedSetupGradleOnItsOpenSourceProvider(String job) {
