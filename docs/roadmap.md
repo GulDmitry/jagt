@@ -5,6 +5,9 @@ the local `backlog/`; this file is the sequence and the reason.
 
 ## What growing means here
 
+**Stability first** (owner 2026-11-24): short, controlled iterations, each released stable, fast and green before the
+next starts; a long, unstable run is the defect to remove, never the pace to keep.
+
 jagt is the loop from an accepted plan to a deploy. Every point in it that needs a human is already one list:
 `Move.ownerOf` → `Owner.YOU`. Growing means taking points off that list, the cheapest reading first.
 
