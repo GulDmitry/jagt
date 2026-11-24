@@ -152,24 +152,6 @@ public class TmuxSessionHost implements SessionHost {
   }
 
   @Override
-  public void keepFeedWindow(String session, String name, Path file) {
-    synchronized (lock) {
-      ensureSession(session);
-      try {
-        if (findWindowId(session, name).isEmpty()) {
-          newWindow(
-              session,
-              name,
-              VIEWER_CWD,
-              "tail -n 200 -F '" + file.toString().replace("'", "'\\''") + "'");
-        }
-      } catch (WindowsUnreadable unread) {
-        // Already logged where it was read; a window that may exist is never opened again.
-      }
-    }
-  }
-
-  @Override
   public void openCommandWindow(
       String session, String dedicatedTitle, String name, List<String> command) {
     List<String> resolved = new ArrayList<>(command);

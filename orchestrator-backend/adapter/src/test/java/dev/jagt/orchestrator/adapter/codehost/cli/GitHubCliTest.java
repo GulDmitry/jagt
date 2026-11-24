@@ -339,6 +339,26 @@ class GitHubCliTest {
   }
 
   @Test
+  void threadWhoseNewestNoteOpensWithTheAiLineAwaitsAnAnswerEvenFromTheActingAccount() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                {"data":{"viewer":{"login":"agent"},"repository":{"pullRequest":{"reviewThreads":{"nodes":[
+                {"isResolved":false,"comments":{"nodes":[{"databaseId":111,"body":"AI review note: react with a thumbs up if it helps, a thumbs down if it does not.\\n\\nUnbounded loop.","author":{"login":"agent"}}]}},
+                {"isResolved":false,"comments":{"nodes":[{"databaseId":112,"body":"Fixed, see Paging.","author":{"login":"agent"}}]}},
+                {"isResolved":true,"comments":{"nodes":[{"databaseId":113,"body":"AI review note: react with a thumbs up if it helps, a thumbs down if it does not.","author":{"login":"agent"}}]}}]}}}}}
+                """,
+                ""));
+
+    Answer<List<String>> answer =
+        github.unresolvedNotes(host, "https://ghe.corp.invalid/acme/shop/pull/7");
+
+    assertThat(answer.facts()).contains(List.of("111"));
+  }
+
+  @Test
   void requestsFingerprintIsWhatTheHostShowsOfItsStateHeadChecksAndReviews() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(

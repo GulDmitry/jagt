@@ -126,11 +126,12 @@ class PinningTest {
   @Test
   void everyDockerfileBaseAndNpmInstallIsPinnedUnlessBaseIsAnArgument() throws IOException {
     List<String> unpinned;
-    try (Stream<Path> files = Files.walk(Path.of(".."), 6)) {
+    Process tracked = new ProcessBuilder("git", "-C", "..", "ls-files").start();
+    try (Stream<String> files = tracked.inputReader().lines()) {
       unpinned =
           files
+              .map(file -> Path.of("..", file))
               .filter(p -> p.getFileName().toString().matches("(Dockerfile.*|.*\\.Dockerfile)"))
-              .filter(p -> !p.toString().matches(".*/(\\.claude|build|node_modules|\\.git)/.*"))
               .flatMap(p -> SourceRoots.read(p).lines().map(line -> p + ": " + line))
               .filter(line -> !line.matches(".*: #.*"))
               .filter(line -> line.matches(".*: FROM .*") || line.contains("npm install"))
@@ -172,5 +173,22 @@ class PinningTest {
   @Test
   void pinMovesByReviewedUpdateRequest() {
     assertThat(SourceRoots.read(Path.of("../renovate.json"))).contains("config:recommended");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "settings.gradle",
+        "build-logic/build.gradle",
+        "build-logic/src/main/groovy/jagt.conventions.gradle",
+        "fitness/build.gradle"
+      })
+  void resolvesFromTheCentralMirrorBeforeAnyOtherRepository(String file) throws IOException {
+    String build = Files.readString(Path.of(file));
+
+    assertThat(build.indexOf("maven-central.storage-download.googleapis.com/maven2/"))
+        .isNotNegative()
+        .isLessThan(
+            build.replace("gradlePluginPortal()", "mavenCentral()").indexOf("mavenCentral()"));
   }
 }

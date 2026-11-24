@@ -30,8 +30,15 @@ for cmd in \
   'bash -c "pkill java"' \
   "eval pkill java" \
   "kill \$PPID" \
-  "kill -9 \${PPID}"; do
-  bats_test_function --description "no-shared-kill denies: ${cmd//[\$\`]/#}" -- denies "$cmd"
+  "kill -9 \${PPID}" \
+  "docker ps -q | xargs -r docker kill" \
+  "docker ps -aq | xargs docker rm -f" \
+  "docker container ls -q | xargs docker container stop" \
+  "docker kill \$(docker ps -q)" \
+  "docker rm -f \"\$(docker ps -aq)\"" \
+  "docker system prune -af" \
+  "docker container prune -f"; do
+  bats_test_function --description "no-shared-kill denies: ${cmd//[\$\`()]/#}" -- denies "$cmd"
 done
 
 for cmd in \
@@ -49,8 +56,12 @@ for cmd in \
   "grep -rn 'gradlew --stop' docs" \
   "echo 'run ./gradlew --stop'" \
   "git log --grep='pkill java'" \
-  "git commit -m 'pkill java kills every build'"; do
-  bats_test_function --description "no-shared-kill passes: ${cmd//[\$\`]/#}" -- passes "$cmd"
+  "git commit -m 'pkill java kills every build'" \
+  "docker kill jagt-run-42" \
+  "docker ps -q | wc -l" \
+  "docker ps -q --filter label=run=42 | xargs -r docker kill" \
+  "docker rm -f \$(docker ps -aq --filter name=suite-42)"; do
+  bats_test_function --description "no-shared-kill passes: ${cmd//[\$\`()]/#}" -- passes "$cmd"
 done
 
 # bats test_tags=exit:2

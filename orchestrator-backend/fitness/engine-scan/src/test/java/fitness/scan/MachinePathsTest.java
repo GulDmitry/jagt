@@ -31,6 +31,14 @@ class MachinePathsTest {
   }
 
   @ParameterizedTest
+  @ValueSource(strings = {"/root/x", "repo-root", "cd \\root"})
+  void ignoresAHomeOneLevelDeep(String text) {
+    Pattern pattern = MachinePaths.of("/root", "/tmp");
+
+    assertThat(pattern.matcher(text).find()).isFalse();
+  }
+
+  @ParameterizedTest
   @ValueSource(strings = {"D:\\People\\alice\\x", "D:/People/alice/x", "D:-People-alice-x"})
   void matchesADriveHomeInEverySpelling(String text) {
     Pattern pattern = MachinePaths.of("D:\\People\\alice");

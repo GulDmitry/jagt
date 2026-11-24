@@ -123,7 +123,17 @@ A reader between the session and you, on by default.
 
 It judges by the shipped brief; to edit one, copy `roles/master/brief.md.dist` and set `roles.master.brief`.
 `roles.master.mine` keeps named steps and verbs yours in `act`, `[plan, deploy, revert]` unset; what you type to a session overrules it.
-Each step is a line in the `master` window.
+Each step is a line in the Master's log, opened from its chip on the board.
+
+## The code reviewer
+
+A second reader, on by default, that works on requests rather than tasks. It reads a request's diff, tests and
+description once per new head, posts its findings as notes that open with an AI line, and answers a review bot's note
+at most three times per thread. It never approves, merges or pushes, and it shows nothing on the board.
+It stays idle until a code host is chosen. Turn it off with `roles.code-reviewer.enabled: false`.
+It posts on requests jagt's own tasks hold; on another person's request only with `post.others: true`.
+To change that or the largest diff it reads, copy `roles/code-reviewer/review.yml.dist` to `review.yml`.
+While it is on and a code host is chosen, the Master leaves code review to it.
 
 ## Notes on the tricky ones
 

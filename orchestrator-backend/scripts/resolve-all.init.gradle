@@ -1,0 +1,20 @@
+allprojects {
+    tasks.register('resolveAll') {
+        notCompatibleWithConfigurationCache('resolves every configuration of the live project')
+        doLast {
+            configurations.matching { it.canBeResolved }.each { configuration ->
+                configuration.incoming.artifactView { view -> view.lenient(true) }.files.files
+            }
+        }
+    }
+}
+
+// The command line reaches the main build's tasks alone: its root pulls in every included build's, each root its subprojects'.
+rootProject {
+    tasks.named('resolveAll') {
+        dependsOn subprojects.collect { it.path + ':resolveAll' }
+        if (gradle.parent == null) {
+            dependsOn gradle.includedBuilds.collect { it.task(':resolveAll') }
+        }
+    }
+}

@@ -12,6 +12,7 @@ public record Launched(@Nullable String taskId, String message, Reason reason) {
   public enum Reason {
     NOTHING_TO_DO,
     NO_BRANCH_NAME,
+    BRANCH_EXISTS,
     OTHER
   }
 

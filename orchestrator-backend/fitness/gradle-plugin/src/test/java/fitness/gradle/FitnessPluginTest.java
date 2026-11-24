@@ -14,7 +14,7 @@ class FitnessPluginTest {
   @TempDir Path project;
 
   @Test
-  void handsTheSuiteAndCheckstyleTheNumbersOfTheirRows() throws IOException {
+  void handsTheSuiteItsHangGuardAtThreeTimesItsCeilingAndCheckstyleItsNumber() throws IOException {
     Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
     Files.writeString(
         project.resolve("fitness.yml"),
@@ -47,7 +47,46 @@ class FitnessPluginTest {
             .build()
             .getOutput();
 
-    assertThat(output).contains("limits=PT7M 3");
+    assertThat(output).contains("limits=PT21M 3");
+  }
+
+  @Test
+  void limitsNoTaskAndRegistersNoTimeRowWhenTheBuildIsUntimed() throws IOException {
+    Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
+    Files.writeString(
+        project.resolve("fitness.yml"),
+        """
+        schema: 1
+        operational:
+          performance-efficiency:
+            time-behaviour:
+              suite-minutes: { engine: tool, tool: gradle, per: suite, measure: minutes, governs: size, max: 7 }
+              gate-minutes: { engine: tool, tool: gradle, task: slow, per: gate, measure: minutes, governs: size, max: 5 }
+              unlimited-runs: { engine: tool, tool: gradle, measure: runs-without-time-limit, governs: count, max: 0 }
+        """);
+    Files.writeString(
+        project.resolve("build.gradle"),
+        """
+        plugins { id 'java'; id 'fitness' }
+        fitness { file = layout.projectDirectory.file('fitness.yml'); timed = false }
+        tasks.register('slow')
+        gradle.projectsEvaluated {
+            tasks.register('show') {
+                def checks = tasks.names.findAll { it.startsWith('fitness') }.sort()
+                doLast { println "limits=${tasks.test.timeout.orNull} ${tasks.slow.timeout.orNull} ${checks}" }
+            }
+        }
+        """);
+
+    String output =
+        GradleRunner.create()
+            .withProjectDir(project.toFile())
+            .withPluginClasspath()
+            .withArguments("show", "-q")
+            .build()
+            .getOutput();
+
+    assertThat(output).contains("limits=null null [fitness, fitnessFitnessFunctions, fitnessRequirements]");
   }
 
   @Test

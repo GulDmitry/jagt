@@ -1,5 +1,3 @@
-// A failure carries both: the code a caller acts on and the sentence a human reads.
-
 /**
  * @param {Response} response
  * @param {{ error?: string, code?: string }} refused
@@ -59,7 +57,6 @@ const post = (path, param, id, body) =>
     body: JSON.stringify(body),
   });
 
-// The one way a line reaches a running session, from the board's tab and from a report alike.
 /** @param {string} taskId @param {string} line */
 export const sayTo = (taskId, line) =>
   post("tasks/say", "task", taskId, { line });
@@ -73,7 +70,6 @@ export const runTo = (taskId, line) =>
 export const pressKey = (taskId, key) =>
   post("tasks/key", "task", taskId, { key });
 
-// Every action reloads the board: by the time such a refusal is read the view is right; say so.
 const STALE_VIEW = ["NO_SUCH_TASK", "ACTION_NOT_AVAILABLE"];
 
 /** @param {unknown} e */

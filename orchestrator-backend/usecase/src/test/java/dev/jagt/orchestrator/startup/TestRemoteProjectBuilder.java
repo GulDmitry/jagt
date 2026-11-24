@@ -17,7 +17,14 @@ public record TestRemoteProjectBuilder(@Nullable String codeHost, @Nullable Stri
         new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of(), null, null),
         new ProjectConfig.Branches("main", "dev", remote),
         new ProjectConfig.CodeHost(
-            codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            codeHost,
+            null,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            ProjectConfig.Review.NONE),
         new ProjectConfig.Verify(List.of(), null),
         new ProjectConfig.Setup(List.of(), null));
   }

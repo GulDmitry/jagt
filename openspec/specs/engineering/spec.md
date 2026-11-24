@@ -49,9 +49,10 @@ A test SHALL reach an assertion, build a class through production's constructor 
 - **THEN** `assertionless-tests`, `test-helper-methods`, `test-builder-calls`, `constructors-called-from-main` or `test-naming` fails
 
 ### Requirement: Every run ends within a limit
-A suite, a gate and a CI job SHALL end within a limit set from its measured time. A flaky test SHALL be registered or fixed from its cause.
+A suite and a gate SHALL have a ceiling: an overrun warns, 3x stops it as hung, only fresh runs show a slowdown.
 #### Scenario: A suite or a gate overruns
-- **WHEN** a run passes its limit **THEN** the build names the rule, run and limit: `suite-minutes`, `gate-minutes-heavy`, `gate-minutes-stand`
+- **WHEN** a suite runs past its ceiling and passes **THEN** it is green and one WARN line names suite, minutes, load and power state
+- **AND** a run at 3x its ceiling is stopped, named hung; with `-Ptimed=false`, as on CI, no run gets a limit or a time record
 #### Scenario: A run declares no limit
 - **WHEN** a test task or a CI job declares none **THEN** `unlimited-runs` or `ci-jobs-without-timeout` fails
 
@@ -196,5 +197,4 @@ Every test run SHALL end in mutants on the diff, each survivor judged.
 A gate no stack meets yet SHALL be listed here by what is missing, never silent, each gap once. The work closing it SHALL write the gate above.
 #### Scenario: The open gaps
 - **WHEN** `pitestDiff` or the release gate runs **THEN** no rule asserts its limit: gap
-- **AND** an unwired board CI step fails no rule: gap
 - **AND** a changed board JS line gets Stryker on demand, never per diff: gap

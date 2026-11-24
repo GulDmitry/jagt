@@ -363,6 +363,10 @@ class BoardCardTest extends BoardPageContext {
 
     page.locator("#tasks .row .pick").click();
     page.locator("#pane .tabs button[data-tab=session]").click();
+    assertThat(page.locator("#pane .terminal-host .xterm")).hasCount(1);
+    Object sayFits =
+        page.evaluate(
+            "document.querySelector('#pane .say').getBoundingClientRect().bottom <= innerHeight");
     Object paneSpills =
         page.evaluate(
             "document.documentElement.scrollWidth > document.documentElement.clientWidth");
@@ -375,6 +379,7 @@ class BoardCardTest extends BoardPageContext {
 
     org.assertj.core.api.Assertions.assertThat(listSpills).isEqualTo(false);
     org.assertj.core.api.Assertions.assertThat(paneSpills).isEqualTo(false);
+    org.assertj.core.api.Assertions.assertThat(sayFits).isEqualTo(true);
     org.assertj.core.api.Assertions.assertThat(pastTheEdge).isEqualTo(java.util.List.of());
     org.assertj.core.api.Assertions.assertThat(
             Objects.requireNonNull(page.locator("#pane .tabs button").first().boundingBox()).height)

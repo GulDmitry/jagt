@@ -26,6 +26,44 @@ class StandRestartTest {
   }
 
   @Test
+  void jagtKilledBetweenPostAndLedgerWritePostsNothingTwiceAfterTheRestart() throws Exception {
+    Path recording =
+        Path.of(
+            StandRestartTest.class.getResource("/recordings/code-review-outside.jsonl").toURI());
+    try (StandRun stand =
+        StandRun.replayReviewing(
+            "restart-between-post-and-ledger", recording, StandConfig.Posts.OTHERS)) {
+      String head =
+          stand
+              .project()
+              .commitOnBranch(
+                  stand.root().resolve("outsider"),
+                  "outside-feature",
+                  "app.sh",
+                  "#!/bin/sh\necho $1\n",
+                  "A script");
+      stand
+          .store()
+          .seedPull(
+              101,
+              "Add app.sh",
+              "A small script.",
+              "outside-dev",
+              head,
+              stand.project().diff(head));
+      stand.killJagtAfterFirstNote();
+      assertThat(stand.awaitActorNotes(1, Duration.ofMinutes(3))).isTrue();
+
+      stand.restartJagt();
+
+      assertThat(stand.awaitActorNotes(2, Duration.ofMinutes(3))).isTrue();
+      assertThat(stand.awaitActorNotes(3, Duration.ofSeconds(20))).isFalse();
+      assertThat(stand.violations()).isEmpty();
+      stand.passed();
+    }
+  }
+
+  @Test
   void sessionWindowIsStillListedWhenJagtRestartsMidTurn() throws Exception {
     Path recording =
         Path.of(StandRestartTest.class.getResource("/recordings/happy-path.jsonl").toURI());
@@ -43,7 +81,7 @@ class StandRestartTest {
             return true;
           };
 
-      stand.drive(Script.to("ABC-1", "DEPLOYED").within(Duration.ofMinutes(5)).with(restart));
+      stand.drive(Script.to("ABC-1", "DEPLOYED").within(WaitCeiling.LIMIT).with(restart));
 
       assertThat(before.get()).isNotBlank();
       assertThat(after.get()).isEqualTo(before.get());

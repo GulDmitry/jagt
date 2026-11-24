@@ -191,6 +191,26 @@ class HeadlessClaudeCodeHostAssistantTest {
   }
 
   @Test
+  void relaysThreadWhoseNewestNoteOpensWithTheAiLineEvenWhereTheAgentsAccountPostedIt() {
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
+            "signedInAs":"lee","threads":["https://host/mr/9#note_1\\nlee: AI review note: react with a \
+            thumbs up if it helps, a thumbs down if it does not. Unbounded loop."]}}\
+            """,
+            ""));
+
+    var facts = assistant.readReview("https://host/mr/9").facts();
+
+    assertThat(facts).isPresent();
+    assertThat(facts.get().discussion().threads()).hasSize(1);
+    assertThat(facts.get().discussion().awaitingReviewer()).isEmpty();
+  }
+
+  @Test
   void leavesTheNoteIdsModelWritesUnreadBecauseTheHostGivesThem() {
     runner.answering(
         new Processes.Result(

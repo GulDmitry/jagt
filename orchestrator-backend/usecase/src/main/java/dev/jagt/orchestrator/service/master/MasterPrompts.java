@@ -6,11 +6,13 @@ import dev.jagt.orchestrator.service.master.MasterPanel.Briefs;
 import dev.jagt.orchestrator.service.master.MasterPanel.Role;
 import dev.jagt.orchestrator.service.master.MasterPanel.RoundRead;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.plan.Artifact;
 import dev.jagt.orchestrator.task.plan.Probe;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.text.Outside;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** The words each master read is asked in. */
 final class MasterPrompts {
@@ -223,7 +225,15 @@ final class MasterPrompts {
         + ", ticket "
         + ticket
         + ". Run no build and no"
-        + " test.\n";
+        + " test.\n"
+        + "The session's own files lie in each worktree, never beside it: "
+        + task.repos().stream()
+            .map(TaskRepo::worktreePath)
+            .flatMap(worktree ->
+                Stream.of(Artifact.NOTES, Artifact.CONTEXT)
+                    .map(file -> worktree + "/" + file.fileName()))
+            .toList()
+        + ".\n";
   }
 
   /** Names no role and no task. */

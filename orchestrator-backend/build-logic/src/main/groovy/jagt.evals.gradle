@@ -1,10 +1,12 @@
 // One harness per kind of role, each over `roles/<id>/eval/*.yml`: a checker reads its brief against deploys, the
-// arbiter against rounds, triage against stops. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
+// arbiter against rounds, triage against stops, the code reviewer against diffs. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
 // model against the same cases, to compare cost. -ProleCli=opencode reads at -PopencodeEndpoint on -ProleModel.
 def evalRole = (project.findProperty('role') ?: 'acceptance').toString()
 def evalIsArbiter = evalRole == 'master'
 def evalIsTriage = evalRole == 'triage'
-def evalSet = evalIsArbiter ? sourceSets.masterEval : evalIsTriage ? sourceSets.triageEval : sourceSets.acceptanceEval
+def evalIsReviewer = evalRole == 'code-reviewer'
+def evalSet = evalIsArbiter ? sourceSets.masterEval : evalIsTriage ? sourceSets.triageEval
+        : evalIsReviewer ? sourceSets.codeReviewEval : sourceSets.acceptanceEval
 def evalCli = (project.findProperty('roleCli') ?: 'claude').toString()
 def evalOnOpenCode = evalCli == 'opencode'
 tasks.register('roleEval', Test) {
@@ -13,10 +15,10 @@ tasks.register('roleEval', Test) {
     testClassesDirs = evalSet.output.classesDirs
     classpath = evalSet.runtimeClasspath
     useJUnitPlatform()
-    String harness = evalIsArbiter ? 'master' : evalIsTriage ? 'triage' : 'acceptance'
+    String harness = evalIsArbiter ? 'master' : evalIsTriage ? 'triage' : evalIsReviewer ? 'codeReview' : 'acceptance'
     String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'AcceptanceVerdictEvalShard'
     // A review is one task per tick, so cases go in parallel only across JVMs: one per shard class, each a full context.
-    int shards = evalIsTriage ? 1 : (project.findProperty('evalShards') ?: (evalIsArbiter ? '6' : '3')) as int
+    int shards = evalIsTriage || evalIsReviewer ? 1 : (project.findProperty('evalShards') ?: (evalIsArbiter ? '6' : '3')) as int
     if (shards < 1 || shards > 6) {
         throw new GradleException("-PevalShards ${shards} must be between 1 and 6, the shard classes there are.")
     }
@@ -33,6 +35,8 @@ tasks.register('roleEval', Test) {
     filter {
         if (evalIsTriage) {
             includeTestsMatching '*TriageEvalTest'
+        } else if (evalIsReviewer) {
+            includeTestsMatching '*CodeReviewEvalTest'
         } else {
             (0..<shards).each { includeTestsMatching "*${testClass}${it}Test" }
         }
@@ -74,8 +78,8 @@ tasks.register('roleEval', Test) {
         if (!(evalCli in ['claude', 'opencode'])) {
             throw new GradleException("-ProleCli ${evalCli} must be claude or opencode.")
         }
-        if (evalOnOpenCode && evalIsArbiter) {
-            throw new GradleException('-ProleCli=opencode reads a checker or a stop: the Master\'s round has its own reader.')
+        if (evalOnOpenCode && (evalIsArbiter || evalIsReviewer)) {
+            throw new GradleException('-ProleCli=opencode reads a checker or a stop: the Master\'s round and the code reviewer\'s read have their own reader.')
         }
         if (evalOnOpenCode && !openCodeNamed) {
             throw new GradleException('-ProleCli=opencode needs -PopencodeEndpoint=<base url> and -ProleModel=<the model it serves>.')
@@ -84,7 +88,7 @@ tasks.register('roleEval', Test) {
     // Gated on CAPABILITY, and it names what is missing rather than failing every case on it.
     onlyIf { task -> // skip, naming what is missing, rather than fail every case
         List<String> missing = []
-        (evalIsArbiter ? ['claude', 'tmux', 'git'] : [evalCli, 'git']).each { binary ->
+        (evalIsArbiter ? ['claude', 'tmux', 'git'] : evalIsReviewer ? ['claude'] : [evalCli, 'git']).each { binary ->
             if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
                     .any { dir -> dir && new File(dir, binary).canExecute() }) {
                 missing << binary
@@ -170,7 +174,7 @@ tasks.named('promptEval') {
 }
 // `acceptanceEval` is a new stats key: the trend recorded as `qaEval` does not carry over.
 tasks.named('roleEval') {
-    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : evalIsTriage ? 'triageEval' : 'acceptanceEval'
+    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : evalIsTriage ? 'triageEval' : evalIsReviewer ? 'codeReviewEval' : 'acceptanceEval'
     systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
     systemProperty 'eval.model', (evalOnOpenCode ? 'opencode/' : '') + (project.findProperty('roleModel') ?: 'default')
     systemProperty 'eval.brief.file', project.findProperty('roleBrief')

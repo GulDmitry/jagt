@@ -12,7 +12,6 @@ const sayInput = /** @type {HTMLInputElement} */ (
 );
 const working = /** @type {HTMLElement} */ (document.getElementById("said"));
 
-// A worktree file fires no event and the agent's report comes at a round's END: a line just said is followed.
 const EVERY = 3000;
 const GIVE_UP = 300000;
 
@@ -26,7 +25,6 @@ export function stopWaiting() {
   state.poll = 0;
 }
 
-// A ring that just disappears reads as an answer that landed. The board's own event still repaints this.
 function giveUp() {
   stopWaiting();
   toast(t("report.silent"));

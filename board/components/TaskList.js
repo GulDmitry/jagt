@@ -1,6 +1,3 @@
-// Every task as one row, the human's own first: a row moves only when whose move it is changes. Only the open
-// row is a Tab stop; the keys walk the rest, so Tab reaches the open task past one row and not past all of them.
-
 import { duration } from "../core/format.js";
 import { t } from "../core/i18n.js";
 import { marked } from "./facts.js";

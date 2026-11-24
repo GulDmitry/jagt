@@ -1,7 +1,8 @@
 #!/bin/sh
 # reads: the shell command as text on stdin; arguments: names of environment variables holding a pid to protect
 # exits: 0 2
-# Blocks (exit 2) a call that stops every Gradle daemon or kills java/gradle by name: parallel runs in other worktrees share them.
+# Blocks (exit 2) a call that stops every Gradle daemon, kills java/gradle by name, or stops or removes every container:
+# parallel runs in other worktrees share them.
 # Also blocks kill/pkill/killall aimed at $PPID or at a variable named in an argument.
 # A numeric pid or one's own background job stays allowed. Quoted text and heredoc bodies are not the command.
 cmd=$(cat)
@@ -17,6 +18,11 @@ fi
 lead='(^|[;&|("'"'"'][[:space:]]*)((eval|sudo|exec|nohup)[[:space:]]+)?'
 if printf '%s' "$scan" | grep -Eq "${lead}([^[:space:]]*/)?(gradlew|gradle)[[:space:]][^;&|]*--stop|${lead}(pkill|killall)[[:space:]][^;&|]*(gradle|java|GradleDaemon)"; then
   echo "Refused: this stops every Gradle daemon or java process on the machine, other runs included. Stop only your own run: kill the pid of its gradlew client; the daemon then cancels that build alone." >&2
+  exit 2
+fi
+dk='docker([[:space:]]+container)?[[:space:]]+'
+if printf '%s' "$scan" | grep -Ev -- '--filter' | grep -Eq "${dk}(ps|ls)[^;&]*[|][^;&]*xargs[^;&]*${dk}(kill|stop|rm|pause)|${dk}(kill|stop|rm|pause)[^;&|]*(\\\$\\(|\`)[[:space:]]*${dk}(ps|ls)|docker[[:space:]]+(system|container)[[:space:]]+prune"; then
+  echo "Refused: this stops or removes every container on the machine, other runs included. Name your own containers, or select them with docker ps --filter." >&2
   exit 2
 fi
 names=PPID

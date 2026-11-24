@@ -1,24 +1,29 @@
-# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` nightly and on a pull request,
-# `stand` per engine (compose on every
-# run, kind nightly and on a pull request: the runner ships kind and kubectl), `release` on a push to main after all,
-# only when the version's tag is new. Nothing here is a CI-only code path: a green pipeline and a green laptop mean the same.
+# Three groups, as docs/rules/testing-suites.md: `test` on a push or pull request, `heavy` on a pull request,
+# `stand` per engine (compose on every run, kind on a pull request: the runner ships kind and kubectl),
+# `audit` the live scans only when the dependency set changed, `install` on three systems per push and pull request, `release` on a push to main after all, only when the version's
+# tag is new. Each job's work is one `gate<Job>` Gradle task, which `scripts/ci-local.sh` runs too; no run is timed here.
 name: ci
 
 on:
   push:
     branches: [main]
   pull_request:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      nightly:
-        type: boolean
-        default: false
+      job:
+        description: 'The one job to run, as on a pull request (empty: every job)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  packages: read
+
+env:
+  ORG_GRADLE_PROJECT_timed: 'false'
 
 concurrency:
-  group: ci-${{ github.ref }}-${{ inputs.nightly }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
@@ -28,9 +33,14 @@ defaults:
 jobs:
   test:
     name: unit + functional
-    if: '!inputs.nightly'
+    if: (!inputs.job || inputs.job == 'test')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    container:
+      image: ghcr.io/guldmitry/jagt-ci:base@sha256:cd26fe6946fa84b5e819c3df3b6b4c96581c7fc30badcca9d562d77fcc8a4e85
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       new: ${{ steps.version.outputs.new }}
@@ -38,16 +48,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - run: orchestrator-backend/scripts/secret-scan.sh
-        working-directory: .
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           cache-provider: external
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      # Restore and save apart: the save reuses the key, as hashing again after the root container's run fails.
+      - id: gradle-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.gradle/caches
@@ -56,16 +62,14 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - run: ./gradlew --no-daemon gateTest
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        if: steps.gradle-cache.outputs.cache-hit != 'true'
         with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: board/package-lock.json
-      - run: npm ci && npm audit --audit-level=high && npm run lint && npm test
-        working-directory: board
-      - run: ./gradlew --no-daemon test
-      - run: scripts/vulnerability-scan.sh
-      - run: ./gradlew --no-daemon checkLicences
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
       - id: version
         name: read the version and whether its tag is new
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -86,11 +90,110 @@ jobs:
 
   heavy:
     name: heavy suites
-    if: inputs.nightly || github.event_name == 'pull_request'
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'heavy')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: gradle-home-${{ github.job }}-
+      - name: run the matrix, the drivers, the board and the image under compose in the CI image
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh heavy
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: heavy-test-reports
+          retention-days: 14
+          path: |
+            orchestrator-backend/build/reports/tests/e2eTest
+            orchestrator-backend/build/reports/tests/linuxDriverTest
+            orchestrator-backend/build/reports/tests/boardTest
+            orchestrator-backend/build/reports/tests/boardContainerTest
+            orchestrator-backend/build/test-results/e2eTest
+            orchestrator-backend/build/test-results/linuxDriverTest
+            orchestrator-backend/build/test-results/boardTest
+            orchestrator-backend/build/test-results/boardContainerTest
+            /tmp/jagt-xvfb.log
+            /tmp/jagt-dunst.log
+
+  stand:
+    name: stand (${{ matrix.engine }})
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'stand')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: ${{ github.event_name != 'push' && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        if: matrix.engine == 'kind'
+        with:
+          java-version: '25'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        if: matrix.engine == 'kind'
+        with:
+          cache-provider: external
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-
+            gradle-${{ runner.os }}-${{ github.job }}-
+            gradle-${{ runner.os }}-
+      - name: log in to the registry holding the CI image
+        if: matrix.engine == 'compose'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        if: matrix.engine == 'compose'
+        with:
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
+          restore-keys: gradle-home-${{ github.job }}-
+      - name: run the stand without a model on compose in the CI image
+        if: matrix.engine == 'compose'
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh stand
+      - name: run the stand without a model on kind
+        if: matrix.engine == 'kind'
+        run: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: stand-${{ matrix.engine }}-evidence
+          retention-days: 14
+          path: |
+            orchestrator-backend/stand/build/stand/failed
+            orchestrator-backend/stand/build/test-results/standTest
+
+  audit:
+    name: dependency audit
+    if: (!inputs.job || inputs.job == 'audit')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      AUDIT_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
@@ -107,110 +210,16 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - run: scripts/vulnerability-scan.sh
-      - name: install what the suites shell out to
-        run: sudo scripts/linux-test-deps.sh
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: board/package-lock.json
-      - run: npm ci
-        working-directory: board
-      - name: give git an identity
-        run: |
-          git config --global user.email "ci@example.com"
-          git config --global user.name "jagt ci"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('orchestrator-backend/build-logic/src/main/groovy/jagt.suites.gradle') }}
-          restore-keys: playwright-
-      - name: run the matrix, the drivers and the board
-        run: scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest boardTest
-      - name: run the image under compose
-        if: '!cancelled()'
-        run: scripts/container-suite.sh
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: failure()
-        with:
-          name: heavy-test-reports
-          retention-days: 14
-          path: |
-            orchestrator-backend/build/reports/tests/e2eTest
-            orchestrator-backend/build/reports/tests/linuxDriverTest
-            orchestrator-backend/build/reports/tests/boardTest
-            orchestrator-backend/build/reports/tests/boardTestContainer
-            orchestrator-backend/build/test-results/e2eTest
-            orchestrator-backend/build/test-results/linuxDriverTest
-            orchestrator-backend/build/test-results/boardTest
-            orchestrator-backend/build/test-results/boardTestContainer
-            /tmp/jagt-xvfb.log
-            /tmp/jagt-dunst.log
-
-  stand:
-    name: stand (${{ matrix.engine }})
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        engine: ${{ (inputs.nightly || github.event_name == 'pull_request') && fromJSON('["compose","kind"]') || fromJSON('["compose"]') }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          java-version: '25'
-          distribution: temurin
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-provider: external
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', 'orchestrator-backend/gradle/verification-metadata.xml') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-${{ github.job }}-${{ matrix.engine }}-
-            gradle-${{ runner.os }}-${{ github.job }}-
-            gradle-${{ runner.os }}-
-      - name: install what the stand shells out to
-        run: sudo scripts/linux-test-deps.sh
-      - name: give the runner an identity
-        run: |
-          git config --global user.email "ci@example.com"
-          git config --global user.name "jagt ci"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: orchestrator-backend/stand/build/stand/timings-history.json
-          key: stand-timings-${{ matrix.engine }}-${{ github.run_id }}
-          restore-keys: stand-timings-${{ matrix.engine }}-
-      - name: run the stand without a model on the engine
-        run: ./gradlew --no-daemon standTest -Pmodelfree -Pengine=${{ matrix.engine }} -Prunner=ubuntu-24.04
-      - name: fail when a stand timing passes twice the median of its last ten runs
-        run: ./gradlew --no-daemon standTimingGate
-      - name: store the stand timing trend
-        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
-        with:
-          tool: customSmallerIsBetter
-          output-file-path: orchestrator-backend/stand/build/stand/timings.json
-          external-data-json-path: orchestrator-backend/stand/build/stand/timings-history.json
-          fail-on-alert: false
-          github-token: ${{ github.token }}
-          ref: ${{ github.sha }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: failure()
-        with:
-          name: stand-${{ matrix.engine }}-evidence
-          retention-days: 14
-          path: |
-            orchestrator-backend/stand/build/stand/failed
-            orchestrator-backend/stand/build/test-results/standTest
+      - run: ./gradlew --no-daemon gateScan -Paudit.base="$AUDIT_BASE"
 
   install:
     name: install (${{ matrix.os }})
-    if: '!inputs.nightly'
+    if: github.event_name != 'push' && (!inputs.job || inputs.job == 'install')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     strategy:
@@ -236,13 +245,13 @@ jobs:
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
       - name: install, upgrade and stop against a fake release feed
-        run: ./gradlew --no-daemon installTest
+        run: ./gradlew --no-daemon gateInstall
         shell: bash
 
   release:
     name: release
     if: needs.test.outputs.new == 'true'
-    needs: [test, stand, install]
+    needs: [test]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -252,11 +261,14 @@ jobs:
       deployments: write
       id-token: write
       attestations: write
+      actions: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '25'
@@ -273,7 +285,11 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-${{ github.job }}-
             gradle-${{ runner.os }}-
-      - run: ./gradlew --no-daemon bootJar cyclonedxBom
+      - name: stop unless this tree is the one the pull request proved
+        run: ./gradlew --no-daemon -q provenTree -Pcommit="$GITHUB_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: ./gradlew --no-daemon gateRelease
       - name: name the assets after the version they are
         run: |
           version=$(./gradlew --no-daemon -q printVersion)

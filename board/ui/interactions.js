@@ -30,7 +30,6 @@ const named = (node) => {
   return node.classList.length ? `class:${node.classList[0]}` : null;
 };
 
-// The server refuses a whole batch over one malformed name, so a name is made to fit before it is queued.
 /** @param {string} name */
 const fitted = (name) =>
   name
@@ -56,13 +55,11 @@ export const note = (name, taskId) => {
   else if (!state.due) state.due = setTimeout(flush, SETTLE);
 };
 
-// One board per browser logs sightings, the next open one taking over when it closes.
 navigator.locks?.request(
   "jagt-sightings",
   () => new Promise(() => (state.sighting = true)),
 );
 
-// A sighting is logged when it BEGINS: the first board seen only seeds, since when it turned required is unknown.
 /**
  * @param {import("../core/store.js").Task[]} tasks
  * @param {boolean} failing

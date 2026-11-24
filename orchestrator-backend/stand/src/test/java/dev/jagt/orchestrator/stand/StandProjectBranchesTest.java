@@ -21,6 +21,25 @@ class StandProjectBranchesTest {
   }
 
   @Test
+  void outsiderBranchIsTheOnlyPushedBranchAndItsDiffNamesItsFile() {
+    StandProject project = StandProject.create(root);
+
+    String sha =
+        project.commitOnBranch(root.resolve("outsider"), "feature", "app.sh", "echo hi\n", "App");
+
+    assertThat(project.pushedBranch()).isEqualTo("feature");
+    assertThat(project.head("feature")).isEqualTo(sha);
+    assertThat(project.diff(sha)).contains("+++ b/app.sh");
+  }
+
+  @Test
+  void noBranchBeyondMainAndDevMeansNothingWasPushed() {
+    StandProject project = StandProject.create(root);
+
+    assertThat(project.pushedBranch()).isEmpty();
+  }
+
+  @Test
   void branchThatDoesNotExistHasNoHead() {
     StandProject project = StandProject.create(root);
 

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.stand;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -16,18 +17,29 @@ import tools.jackson.databind.node.ObjectNode;
 
 public class StandStore {
 
+  public static final String ACTOR = "stand-actor";
+  public static final String OPEN = "open";
+
   private final ObjectMapper mapper = JsonMapper.builder().build();
   private final Path tickets;
   private final Path requests;
+  private final Path pulls;
+  private final Path notes;
+  private final Path approvals;
   private final String baseUrl;
 
   public StandStore(Path directory, String baseUrl) {
     this.tickets = directory.resolve("tickets");
     this.requests = directory.resolve("requests");
+    this.pulls = directory.resolve("pulls");
+    this.notes = directory.resolve("notes");
+    this.approvals = directory.resolve("approvals.log");
     this.baseUrl = baseUrl;
     try {
       Files.createDirectories(tickets);
       Files.createDirectories(requests);
+      Files.createDirectories(pulls);
+      Files.createDirectories(notes);
     } catch (IOException e) {
       throw new StandFailure("cannot create the stand directory " + directory, e);
     }
@@ -149,6 +161,94 @@ public class StandStore {
               return replies.size() > 0
                   && replies.get(replies.size() - 1).path("author").asString().equals("agent");
             });
+  }
+
+  public synchronized ObjectNode seedPull(
+      int number, String title, String description, String author, String head, String diff) {
+    ObjectNode pull = mapper.createObjectNode();
+    pull.put("number", number).put("title", title).put("description", description);
+    pull.put("author", author).put("head", head).put("diff", diff);
+    pull.put("state", OPEN).put("awaiting", !author.equals(ACTOR));
+    write(pulls.resolve(number + ".json"), pull);
+    return pull;
+  }
+
+  public synchronized ObjectNode pull(int number) {
+    Path file = pulls.resolve(number + ".json");
+    if (!Files.exists(file)) {
+      throw new StandFailure("no pull request " + number);
+    }
+    return read(file);
+  }
+
+  public synchronized List<JsonNode> awaitingPulls() {
+    List<JsonNode> awaiting = new ArrayList<>();
+    readAll(pulls)
+        .forEach(pull -> {
+          if (pull.path("awaiting").asBoolean() && pull.path("state").asString().equals(OPEN)) {
+            awaiting.add(pull);
+          }
+        });
+    return awaiting;
+  }
+
+  public synchronized ObjectNode setPullState(int number, String state) {
+    ObjectNode pull = pull(number).put("state", state);
+    write(pulls.resolve(number + ".json"), pull);
+    return pull;
+  }
+
+  public synchronized ObjectNode addNote(
+      int pull, String author, String kind, String body, String path, int parent) {
+    pull(pull);
+    int id = allNotes().size() + 1;
+    String thread = path.isBlank() ? "" : "T" + id;
+    if (parent != 0) {
+      thread = note(parent).path("thread").asString();
+    }
+    ObjectNode note = mapper.createObjectNode();
+    note.put("id", id).put("pull", pull).put("author", author).put("kind", kind);
+    note.put("body", body).put("path", path).put("at", StandClock.now().toString());
+    note.put("thread", thread).put("resolved", false).put("likes", 0).put("dislikes", 0);
+    write(notes.resolve(id + ".json"), note);
+    return note;
+  }
+
+  public synchronized ObjectNode note(int id) {
+    Path file = notes.resolve(id + ".json");
+    if (!Files.exists(file)) {
+      throw new StandFailure("no note " + id);
+    }
+    return read(file);
+  }
+
+  public synchronized List<JsonNode> allNotes() {
+    List<JsonNode> all = new ArrayList<>();
+    readAll(notes).forEach(all::add);
+    all.sort(Comparator.comparingInt(note -> note.path("id").asInt()));
+    return all;
+  }
+
+  public synchronized List<JsonNode> notes(int pull) {
+    return allNotes().stream().filter(note -> note.path("pull").asInt() == pull).toList();
+  }
+
+  public synchronized ObjectNode react(int id, int likes, int dislikes) {
+    ObjectNode note = note(id).put("likes", likes).put("dislikes", dislikes);
+    write(notes.resolve(id + ".json"), note);
+    return note;
+  }
+
+  public synchronized void recordApproval(String attempt) {
+    try {
+      Files.writeString(
+          approvals,
+          StandClock.now() + " " + attempt.replace('\n', ' ') + "\n",
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
+    } catch (IOException e) {
+      throw new StandFailure("cannot record the attempt " + attempt, e);
+    }
   }
 
   private static java.util.stream.Stream<JsonNode> stream(JsonNode threads) {

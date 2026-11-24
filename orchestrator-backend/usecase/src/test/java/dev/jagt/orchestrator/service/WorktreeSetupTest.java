@@ -169,8 +169,7 @@ class WorktreeSetupTest {
                 new ProjectConfig.Repository(
                     project.toString(), List.of(), null, List.of(), null, localFiles.toString()),
                 new ProjectConfig.Branches("origin/main", null, null),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                ProjectConfig.CodeHost.defaults(),
                 new ProjectConfig.Verify(List.of(), null),
                 ProjectConfig.Setup.NONE),
             project,

@@ -29,6 +29,23 @@ class ReviewFactsTest {
   }
 
   @Test
+  void keepsThreadWhoseNewestNoteOpensWithTheAiLineAwaitingTheAnswerWhoeverPostedIt() {
+    ReviewFacts facts =
+        new ReviewFacts(
+            new ReviewFacts.Request(true, false, false, false, 7),
+            new ReviewFacts.Pipeline("success", "", ""),
+            new ReviewFacts.Discussion(
+                List.of("https://host/mr/9#note_1\nbot: " + AiLine.TEXT + " Unbounded loop."),
+                List.of(),
+                List.of()));
+
+    ReviewFacts answered = facts.answeredBy("bot");
+
+    assertThat(answered.discussion().threads()).hasSize(1);
+    assertThat(answered.discussion().awaitingReviewer()).isEmpty();
+  }
+
+  @Test
   void keepsThePipelineAddressWhenThreadsAreMovedToTheOnesAwaitingTheReviewer() {
     ReviewFacts facts =
         new ReviewFacts(

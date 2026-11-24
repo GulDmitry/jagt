@@ -10,7 +10,6 @@ export function node() {
     "",
     span("legend-head", t("legend.head")),
     ...[...cardRows(), ...pageRows()].flatMap((samples, row) => {
-      // A sample button is a real one, and one that answers a click with nothing is worse than none.
       const key = Object.assign(make("div", "legend-key", "", ...samples), {
         inert: true,
       });

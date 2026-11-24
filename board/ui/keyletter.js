@@ -11,7 +11,6 @@ import { ordered } from "./view.js";
 const inside = (event, selector) =>
   event.target instanceof Element && event.target.closest(selector);
 
-// A letter moves the selection or opens a form.
 /** @type {Record<string, () => void>} */
 export const letters = {
   t: () => launch.open(),

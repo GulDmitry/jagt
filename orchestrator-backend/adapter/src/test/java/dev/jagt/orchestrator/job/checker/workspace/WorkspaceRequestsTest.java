@@ -287,8 +287,7 @@ class WorkspaceRequestsTest {
                             new ProjectConfig.Repository(
                                 repo.toString(), List.of(), null, List.of(), null, null),
                             new ProjectConfig.Branches("main", null, "none"),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                            ProjectConfig.CodeHost.defaults(),
                             new ProjectConfig.Verify(List.of(), null),
                             ProjectConfig.Setup.NONE))));
 

@@ -413,7 +413,14 @@ class ConfigFileTest {
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Branches(
                             "origin/main", "dev", null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
-                            own, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                            own,
+                            null,
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            dev.jagt.orchestrator.task.repo.ProjectConfig.Review.NONE),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Verify(List.of(), null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Setup(List.of(), null))));
 

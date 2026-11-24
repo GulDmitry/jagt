@@ -16,7 +16,6 @@ const boxes = (selector) =>
   );
 
 // The order they were ticked in is not kept, so the CONFIGURED order decides which repository the agent's
-// session runs in. None ticked sends nothing: naming a project skips the ticket read.
 export const chosen = () => {
   const ticked = new Set(boxes("input:checked").map((box) => box.value));
   return store
@@ -38,7 +37,6 @@ const said = (card) =>
     .map(([name, value]) => `${name}: ${[value].flat().join(", ")}`)
     .join("\n");
 
-// A remote's address is read from git, so the cards are read again whenever the form opens.
 export const cards = () =>
   Promise.all(
     [...group.querySelectorAll("label")].map(async (label) => {

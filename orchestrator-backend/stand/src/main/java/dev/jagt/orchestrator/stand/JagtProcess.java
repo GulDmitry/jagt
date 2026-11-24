@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.stand;
 
 import dev.jagt.orchestrator.adapter.process.ChildProcesses;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -91,6 +92,10 @@ public final class JagtProcess implements JagtEngine {
     env.put("ORCHESTRATOR_DATA", root.toString());
     env.put("LOG_FILE", root.resolve("jagt-backend.log").toString());
     env.put("TMUX_TMPDIR", root.resolve("tmux").toString());
+    Path bin = root.resolve("bin");
+    if (Files.isDirectory(bin)) {
+      env.put("PATH", bin + File.pathSeparator + env.getOrDefault("PATH", ""));
+    }
     return builder;
   }
 

@@ -20,7 +20,6 @@ export function render(tasks, showing) {
   const waiting = tasks.filter((task) => task.attention === "REQUIRED").length;
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = t("header.waiting", { n: waiting });
-  // Polling as it should is not news; only the poll being off is said.
   autoReviewChip.hidden = store.autoReview().enabled;
   autoReviewChip.textContent = store.autoReview().summary || "";
   chips.render();

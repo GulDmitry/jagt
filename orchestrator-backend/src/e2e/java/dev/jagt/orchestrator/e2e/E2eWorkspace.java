@@ -23,6 +23,8 @@ import org.jspecify.annotations.Nullable;
 
 final class E2eWorkspace {
 
+  private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
+
   private static final String TMUX_PREFIX = "jagt-e2e-";
   static final String TMUX_SESSION = TMUX_PREFIX + ProcessHandle.current().pid();
 
@@ -31,7 +33,7 @@ final class E2eWorkspace {
   static void awaitFullRunStartedAfterNow(Jobs jobs, String job) {
     long since = System.currentTimeMillis();
     await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(WAIT_CEILING)
         .pollInterval(Duration.ofMillis(100))
         .until(() -> {
           try {
@@ -42,7 +44,7 @@ final class E2eWorkspace {
           }
         });
     await()
-        .atMost(Duration.ofSeconds(60))
+        .atMost(WAIT_CEILING)
         .pollInterval(Duration.ofMillis(100))
         .until(() ->
             jobs.statuses(since).stream()

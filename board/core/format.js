@@ -8,7 +8,6 @@ export const duration = (millis) => {
   return `${Math.floor(minutes / 1440)}d`;
 };
 
-// Seconds matter while the wait is under a minute: a countdown is watched ticking.
 /** @param {number} millis */
 export const countdown = (millis) => {
   const seconds = Math.max(0, Math.floor(millis / 1000));
@@ -86,7 +85,6 @@ function marked(line) {
     : linked(line);
 }
 
-// A task still on the board opens from a line naming it.
 /** @param {string[]} ids */
 const named = (ids) =>
   new RegExp(

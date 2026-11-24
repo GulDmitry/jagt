@@ -29,8 +29,6 @@ export const onPick = (open) => {
   state.picked = open;
 };
 
-// A report about ONE task gets no button: the card that has something to show is where it is pressed, and a menu
-// entry would answer for all of them.
 export const render = () =>
   list.replaceChildren(
     ...store

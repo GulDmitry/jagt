@@ -32,6 +32,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 | [`docs/features.md`](docs/features.md) | what jagt does, one line each, linked to its spec |
 
+**Read the specs and decisions a change touches before proposing or building it**: one it contradicts changes first.
 **An architectural decision gets its `docs/decisions/` record in the commit taking it.** **A behaviour change carries its
 `openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
 **A new capability adds its line to `docs/features.md`** (`FeaturesTest`).
@@ -51,7 +52,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | a seam (agent, terminal, editor, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
 | a message from a session or a read, a schema, a validation | [`protocol`](openspec/specs/protocol/spec.md) |
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
-| a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
+| a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md), [`ci`](docs/rules/ci.md) |
 | a Gradle file, `build-logic/` | [`ARCHITECTURE.md`](ARCHITECTURE.md#the-build) |
 | a comment, a doc, a prompt, the shape of a class; a name a discipline already has | [`docs/rules/style.md`](docs/rules/style.md), [`glossary`](docs/rules/glossary.md) |
 | a **kind** of thing no rule covers | [`ARCHITECTURE.md`](ARCHITECTURE.md) — if it fits no kind, add a kind |
@@ -90,8 +91,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`; stop work is a `SmartLifecycle` after the web server
   (`static-state`, `post-construct-hooks`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
   [0169](docs/decisions/0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).
-- **No duplicated block of 75 tokens or more** (`duplication`): one holder in main, a builder or parameterized case
-  in tests. Never raise the number.
+- **No duplicated block of 75 tokens or more** (`duplication`): one holder in main, a builder or parameterized case in tests; never raised.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
 - **A compiler or Gradle warning fails the build**: fixed, never suppressed without its reason; only upstream's go in
@@ -136,7 +136,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - **Three groups** ([every suite](docs/rules/testing-suites.md)), run as narrow as the change. A task runs its targeted
   tests (`./gradlew -q testsFor`). A batch runs its changed modules, their dependents and the rule tests. A build change
   and a release run everything; the heavy and stand groups run before a minor release's push. A red reruns only what
-  failed. **A cached green is not a run.**
+  failed. **A cached green is not a run.** **A CI red after a local green** gets a row in the [divergence register](docs/divergences.md).
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. Its commit
   carries a `Defect-family: <A–M>` trailer ([families](docs/rules/testing.md)).
@@ -173,11 +173,11 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   (`ActionOrigin.TRACKER`), an approved request deploys itself (`ActionOrigin.CODE_HOST`, `deploy.onApproval`, on in the server starter,
   [0201](docs/decisions/0201-an-approved-request-deploys-itself-when-deploy-on-approval-is-on.md)); each off by default. The auto-review loop reads
   and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four. jagt re-runs a pipeline the host says
-  died on infrastructure, bounded by `infraWait`, and a red deploy pipeline once per pushed commit
-  ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The acceptance workspace request is sixth, off by default
-  (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`, never the base branch, opened through the code-host seam
-  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). Nothing else writes to the code host unasked. A kept release
-  switches itself only with `releaseFeed.autoUpgrade`, under the launcher (decision 0207).
+  died on infrastructure, and a red deploy pipeline once per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The
+  acceptance workspace request is sixth, off by default (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`
+  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). The code reviewer's note is seventh (decision 0231): on a task's
+  request by default, else only with `post.others`. Nothing else writes to the code host unasked. A kept release switches itself only with
+  `releaseFeed.autoUpgrade` (decision 0207).
 - **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsFitness`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A

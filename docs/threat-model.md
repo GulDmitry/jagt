@@ -48,7 +48,7 @@
 | `/api/tasks` (list, create, actions, say, run, key, screen, files, file, diff) | login, else loopback | all | V4, V8 |
 | `/api/tasks/code` (tree, file, search) | same | all | V4, V5 |
 | `/api/projects` (read, create, update, delete, card), `/api/settings` (read, change) | same | all | V4, V8 |
-| `/api/commands`, `/api/jobs`, `/api/interpret`, `/api/interactions`, `/api/windows` | same | all | V4, V8 |
+| `/api/commands`, `/api/jobs`, `/api/interpret`, `/api/interactions`, `/api/windows`, `/api/roles` | same | all | V4, V8 |
 | `/api/events` (server-sent stream) | same | all | V4, V7 |
 | `/api/session` | same | all | V7 |
 | `/api/debug` (records, transcript; read only) | same | all | V4, V8, V14 |

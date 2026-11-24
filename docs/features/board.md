@@ -11,3 +11,5 @@
   [spec](../../openspec/specs/board-verbs/spec.md#requirement-a-shell-line-is-typed-behind-the-clis-escape)
 - **Plan changes since approval** — The Artifacts tab marks plan lines new or rewritten since your last approval, and strikes removed ones.
   [spec](../../openspec/specs/board/spec.md#requirement-a-plan-shows-what-changed-since-its-last-approval)
+- **Role logs** — Every running model role has a chip in the head; pressing it shows its log in the pane, again hides it; no tmux window.
+  [spec](../../openspec/specs/board/spec.md#requirement-every-enabled-model-roles-log-opens-in-the-boards-pane)

@@ -30,22 +30,23 @@ Timed 2026-11-01, `--rerun-tasks`, 10 CPUs: `test` 80 s, `e2eTest` 309 s, `board
 `roleEval -Prole=acceptance` 4–7 min, `-Prole=master` about 5 min; the next refresh compares against these.
 
 Only `test` is in `check`, with its jqwik properties in `:core:propertyTest` after it; every executed suite appends
-its seconds to `suite-stats.jsonl`, and the build's end names one slower than its trend.
+its seconds, load and power state to `suite-stats.jsonl`;
+the build's end names an overrun of the ceiling, and a fresh run (`--rerun-tasks`) slower than its fresh trend.
 The rest are asked for by name, each needing something a hermetic run must not depend on.
 `roleEval -Prole=master` starts a real session in `.master-eval/root`, and an agent CLI will not work in a
 directory nobody has trusted: run `claude` there once and accept. The suite checks that and refuses with the
 path rather than sitting at a prompt nobody sees.
 
 `orchestrator-backend/scripts/gradle-slot.sh <command>` caps concurrent Gradle runs on one machine
-(`GRADLE_SLOTS`, default 2).
+(`GRADLE_SLOTS`, default 3).
 
 ## Testing Linux from a Mac
 
-`orchestrator-backend/scripts/linux-suite.sh` runs five tasks on a real Linux in a container: the unit suite on
-a Linux JVM, `e2eTest` with real git and tmux, `boardTest` in a headless Chromium, `guardsTest` (shellcheck and bats
-over `scripts/guards`), and `linuxDriverTest` against the real binaries
-(`notify-send` over a session D-Bus, kitty on an Xvfb display answering remote control). It
-needs Docker and nothing else, and leaves an image and a Gradle cache volume behind.
+`orchestrator-backend/scripts/ci-local.sh [job…]` runs a pull request's CI jobs, each the same `gate<Job>` task its CI
+job runs: `test`, `heavy` (with `linuxDriverTest` against the real binaries: `notify-send` over a session D-Bus, kitty on
+an Xvfb display), `stand` and `install` on a real Linux in a container with a Docker engine of its own, and
+`install-macos` natively. It needs Docker and nothing else, and leaves an image, a Gradle cache volume and a Docker
+engine volume behind.
 
 ## CI
 
@@ -75,15 +76,20 @@ Nothing else is published — jagt is on no package manager.
 
 ## The board's icon
 
-`favicon.svg` is the source; the `.ico` and `.png` fallbacks are committed, so regenerate them after editing it:
+Two sources: `icon-512.png`, the app icon (transparent rounded corners), and `docs/brand/glyph.png`, the tab glyph:
+the flat arrow knot on its own dark tile, rounded corners transparent. From `board/`, regenerate the committed sizes after changing either:
 
 ```sh
-for s in 16 32 48; do rsvg-convert -w $s -h $s favicon.svg -o /tmp/f$s.png; done
-magick /tmp/f16.png /tmp/f32.png /tmp/f48.png favicon.ico
-sed 's/ rx="7"//' favicon.svg | rsvg-convert -w 180 -h 180 -o apple-touch-icon.png
+magick icon-512.png -resize 192x192 icon-192.png
+magick icon-512.png -background 'srgb(20,30,72)' -flatten -resize 180x180 apple-touch-icon.png
+for s in 16 32 48 64; do magick ../docs/brand/glyph.png -resize ${s}x$s /tmp/g$s.png; done
+magick /tmp/g16.png /tmp/g32.png /tmp/g48.png favicon.ico
+printf '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">\n<image width="32" height="32" href="data:image/png;base64,%s"/>\n</svg>\n' \
+  "$(base64 -i /tmp/g64.png | tr -d '\n')" > favicon.svg && cp favicon.svg ../site/favicon.svg
 ```
 
-Strokes stay at 3 units or more: thinner turns to mush at 16px. The apple icon drops `rx` because iOS masks its own corners.
+The apple icon is flattened on the app icon's own dark blue because iOS masks its own corners; `favicon.svg` keeps a
+32-unit viewBox, since the board draws its waiting dot into it.
 
 ## Where things go
 

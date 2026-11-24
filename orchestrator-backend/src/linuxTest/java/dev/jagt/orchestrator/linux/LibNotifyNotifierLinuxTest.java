@@ -29,7 +29,7 @@ class LibNotifyNotifierLinuxTest {
             .redirectErrorStream(true)
             .start();
     await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(LinuxKittyTerminalDriverLinuxTest.WAIT_CEILING)
         .pollInterval(Duration.ofMillis(250))
         .until(() -> Files.readString(capture), seen -> seen.contains("NameAcquired"));
   }
@@ -47,7 +47,7 @@ class LibNotifyNotifierLinuxTest {
 
     assertThat(
             await()
-                .atMost(Duration.ofSeconds(10))
+                .atMost(LinuxKittyTerminalDriverLinuxTest.WAIT_CEILING)
                 .pollInterval(Duration.ofMillis(250))
                 .until(
                     () -> Files.readString(capture),
@@ -67,7 +67,7 @@ class LibNotifyNotifierLinuxTest {
 
     assertThat(
             await()
-                .atMost(Duration.ofSeconds(10))
+                .atMost(LinuxKittyTerminalDriverLinuxTest.WAIT_CEILING)
                 .pollInterval(Duration.ofMillis(250))
                 .until(() -> Files.readString(capture), seen -> seen.contains("looking title")))
         .contains("\"--urgency=critical looking title\"");

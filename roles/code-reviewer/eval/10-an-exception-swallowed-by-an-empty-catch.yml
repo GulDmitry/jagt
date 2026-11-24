@@ -1,0 +1,32 @@
+case: an exception swallowed by an empty catch
+description: |
+  Send the confirmation mail after a booking is saved.
+diff: |
+  diff --git a/src/main/java/app/booking/BookingService.java b/src/main/java/app/booking/BookingService.java
+  --- a/src/main/java/app/booking/BookingService.java
+  +++ b/src/main/java/app/booking/BookingService.java
+  @@ -25,3 +25,12 @@ public class BookingService {
+  +  public void confirm(Booking booking) {
+  +    repository.save(booking);
+  +    try {
+  +      mailer.send(booking.guestAddress(), "Your booking is confirmed");
+  +    } catch (MailException failed) {
+  +    }
+  +  }
+   }
+  diff --git a/src/test/java/app/booking/BookingServiceTest.java b/src/test/java/app/booking/BookingServiceTest.java
+  --- a/src/test/java/app/booking/BookingServiceTest.java
+  +++ b/src/test/java/app/booking/BookingServiceTest.java
+  @@ -9,3 +9,8 @@ class BookingServiceTest {
+  +  @Test
+  +  void savesTheBookingOnConfirm() {
+  +    service.confirm(booking);
+  +    verify(repository).save(booking);
+  +  }
+   }
+expect:
+  verdict: findings
+  findings:
+    - file: BookingService.java
+      pattern: "catch|swallow|ignor|silent|log|MailException|unguarded"
+      severity: [unguarded, wrong, blocking]

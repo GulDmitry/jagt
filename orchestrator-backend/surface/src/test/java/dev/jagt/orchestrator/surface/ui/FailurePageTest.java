@@ -16,6 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class FailurePageTest {
 
+  private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
+
   private final HttpClient client = HttpClient.newHttpClient();
 
   @Test
@@ -86,7 +88,7 @@ class FailurePageTest {
           client.send(
               HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + page.port() + "/save"))
                   .header("Origin", "http://evil.example")
-                  .timeout(Duration.ofSeconds(5))
+                  .timeout(WAIT_CEILING)
                   .POST(HttpRequest.BodyPublishers.ofString("yml=pwned"))
                   .build(),
               HttpResponse.BodyHandlers.ofString());

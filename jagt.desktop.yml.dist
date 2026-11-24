@@ -32,7 +32,7 @@ orchestrator:
                                                # a non-zero exit or the limit fails the start, no session opens
       # setupMinutes: 20    # minutes the setup command may run before jagt stops it; 20 where you write none
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
-      #                             # name is shipped and deployed by you alone; the master window names the path
+      #                             # name is shipped and deployed by you alone; the Master's log names the path
 
   # ── The code host ──────────────────────────────────────────────────────────────────────────────────────────
   # What jagt reads a deploy's pipeline through; never guessed from a host name. The CLI or command holds the credential.
@@ -47,6 +47,10 @@ orchestrator:
   #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure
   #   closeCommand: ["ci-close", "{request}"]   # optional: closes the open request at {request}, for `remove-repo`
   #   notesCommand: ["ci-notes", "{request}"]   # optional: prints the ids of the request's unresolved review notes, one per line; unset = none, so a round is never read as a repeat
+  #   awaitingCommand: ["ci-awaiting", "{remote}"]   # optional: JSON array of {url,title,author,headSha} awaiting review; unset = none
+  #   changeCommand: ["ci-change", "{request}"]      # optional: JSON {title,description,baseBranch,headSha,diff}
+  #   postCommand: ["ci-post", "{request}", "{replyTo}"]   # optional: posts the note, its text the last argument, prints its id
+  #   reviewBots: ["ci-helper"]                      # optional: accounts that are bots, beside the host's own word
   #   loginCommand: ["ci-login", "--web"]       # optional: what the board's `login` opens when pipelineCommand exits 77 (signed out)
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -198,6 +202,10 @@ orchestrator:
       enabled: false        # off: the session checks its own deploy
                             # everything else, environments, model and runner, lives in roles/acceptance/role.yml,
                             # described in role.yml.dist there; written here, it refuses the start
+
+    code-reviewer:          # reads each request's change once per head and posts notes on it; answers review bots; learns from likes
+      enabled: true         # on by default, idle while no code host is chosen (`codeHost`); false turns it off.
+                            # Where it posts and the largest diff it reads: copy roles/code-reviewer/review.yml.dist to review.yml
 
     triage:                 # reads each stop once, read-only: who looped, its defect family, whether a lift looks safe
       enabled: false        # off: a stop carries no triage line on its hover; on: one read per stop, charged as the Master's

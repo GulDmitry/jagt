@@ -624,7 +624,6 @@ button[aria-pressed="true"] {
   gap: 10px;
   align-items: center;
 }
-/* A sample is only the page's own element if it is the SIZE the page draws it. */
 .legend-key button {
   font-size: 12px;
   padding: 3px 8px;
@@ -632,7 +631,6 @@ button[aria-pressed="true"] {
 .legend-says {
   color: var(--muted);
 }
-/* Outside a card the edge is a bar of the same colour. */
 .legend-edge {
   width: 4px;
   height: 18px;
@@ -761,7 +759,6 @@ main#board {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Shape, not colour, says it changed while nobody had it open: every colour already means something. */
 .row-title.changed {
   font-weight: 700;
 }
@@ -845,6 +842,11 @@ main#board:empty {
   #pane .back {
     display: inline-block;
   }
+  #pane {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
   main#board:not(.open) #pane,
   main#board.open #tasks {
     display: none;
@@ -883,7 +885,6 @@ article {
 article.you {
   border-left-color: var(--you);
 }
-/* A move nothing waits on keeps the plain edge: the colour is for stuck cards. */
 .row.you.optional,
 article.you.optional {
   border-left-color: var(--line);
@@ -896,7 +897,6 @@ article.agent {
 article.ci {
   border-left-color: var(--ci);
 }
-/* Wraps: the badge is a phrase, and on one line it would break inside its own pill. */
 .card-top {
   display: flex;
   gap: 8px;
@@ -984,7 +984,6 @@ button.flag:hover:not(:disabled) {
 .status.live {
   color: var(--ok);
 }
-/* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
 a.id,
 a.mr-age,
 a.task-link {
@@ -1007,6 +1006,25 @@ a.mr-age.approved,
 }
 .chip.stalled {
   border-color: var(--you);
+}
+button.chip.log {
+  background: none;
+  cursor: pointer;
+}
+.chip.log.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.role-log pre {
+  margin: 0;
+  overflow: auto;
+  max-height: calc(100vh - 80px);
+  font:
+    12px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
 }
 .tick {
   font-size: 11px;
@@ -1045,7 +1063,6 @@ a {
   font-size: 12px;
   padding: 3px 8px;
 }
-/* Recedes: nothing here writes a branch or ends a session. `:not(.primary)` keeps the agent-working `focus` full size. */
 .actions.tool {
   margin-top: 4px;
   gap: 4px;

@@ -17,8 +17,7 @@ class NoCodeHostTest {
           "shop",
           "orchestrator.codeHost",
           Path.of("/repo"),
-          new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
-              null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
+          dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost.defaults());
 
   @Test
   void noPipelineIsReadAndTheDeploySettlesOnTheAddressNoHostHas() {

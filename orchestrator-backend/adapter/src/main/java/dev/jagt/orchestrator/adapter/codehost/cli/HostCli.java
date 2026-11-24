@@ -18,7 +18,7 @@ import java.util.function.Function;
 import tools.jackson.core.JacksonException;
 
 /** A host's own CLI, signed in as whoever runs jagt. */
-final class HostCli {
+public final class HostCli {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
   private static final Set<String> NOT_SIGNED_IN =
@@ -38,14 +38,15 @@ final class HostCli {
   private final Function<String, List<String>> login;
 
   /** {@code login} gives the whole command of the CLI's own interactive login on a host. */
-  HostCli(Processes processes, Reach reach, String cli, Function<String, List<String>> login) {
+  public HostCli(
+      Processes processes, Reach reach, String cli, Function<String, List<String>> login) {
     this.processes = processes;
     this.reach = reach;
     this.cli = cli;
     this.login = login;
   }
 
-  Answer<String> run(String hostname, List<String> arguments) {
+  public Answer<String> run(String hostname, List<String> arguments) {
     List<String> command = new ArrayList<>(List.of(Executables.resolve(cli)));
     command.addAll(arguments);
     try {
@@ -69,7 +70,7 @@ final class HostCli {
     }
   }
 
-  <T> Answer<T> parsed(Answer<String> output, Function<String, T> reader) {
+  public <T> Answer<T> parsed(Answer<String> output, Function<String, T> reader) {
     if (output.facts().isEmpty()) {
       return new Answer<>(
           Optional.empty(), TokenUsage.NONE, output.failure(), false, output.reach());
@@ -85,13 +86,17 @@ final class HostCli {
    * {@code next} asked of what {@code first} read; a first that read nothing ends it with its own
    * failure.
    */
-  static <T, R> Answer<R> then(Answer<T> first, Function<T, Answer<R>> next) {
-    return first.facts().isEmpty()
-        ? new Answer<>(Optional.empty(), TokenUsage.NONE, first.failure(), false, first.reach())
-        : next.apply(first.facts().get());
+  public static <T, R> Answer<R> then(Answer<T> first, Function<T, Answer<R>> next) {
+    return first.facts().isEmpty() ? failureOf(first) : next.apply(first.facts().get());
   }
 
-  List<Problem> missing(String key) {
+  /** What {@code stopped} read nothing of, carried on as the failure of another read. */
+  public static <T, R> Answer<R> failureOf(Answer<T> stopped) {
+    return new Answer<>(
+        Optional.empty(), TokenUsage.NONE, stopped.failure(), false, stopped.reach());
+  }
+
+  public List<Problem> missing(String key) {
     return Executables.unresolved(Executables.resolve(cli))
         ? List.of(
             new Problem(
@@ -108,11 +113,11 @@ final class HostCli {
     return Answer.failed(TokenUsage.NONE, "not the address of a pipeline: " + OneLine.clipped(url));
   }
 
-  static <T> Answer<T> notRequest(String url) {
+  public static <T> Answer<T> notRequest(String url) {
     return Answer.failed(TokenUsage.NONE, "not the address of a request: " + OneLine.clipped(url));
   }
 
-  static <T> Answer<T> notRemote(String url) {
+  public static <T> Answer<T> notRemote(String url) {
     return Answer.failed(
         TokenUsage.NONE, "not the address of a repository: " + OneLine.clipped(url));
   }

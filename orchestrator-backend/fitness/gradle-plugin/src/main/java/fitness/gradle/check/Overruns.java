@@ -13,14 +13,17 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 
-/** Names the function, the run and its limit when the build ends because a task the time rows limit ran past it. */
+/** Names the function, the run and its ceiling when the build ends because a task the time rows limit hung past its guard. */
 public abstract class Overruns implements FlowAction<Overruns.Parameters> {
 
   private static final Logger LOGGER = Logging.getLogger(Overruns.class);
+  /** The multiple of its ceiling after which a run that has not ended is stopped as hung. */
+  public static final int HANG_FACTOR = 3;
+
   private static final String TIMEOUT = "Timeout has been exceeded";
   private static final Pattern STOPPED = Pattern.compile("Execution failed for task '([^']+)'");
 
-  /** The build's result, and the task path to "function id|limit in minutes". */
+  /** The build's result, and the task path to "function id|ceiling in minutes". */
   public interface Parameters extends FlowParameters {
     @Input
     Property<BuildWorkResult> getResult();
@@ -30,7 +33,7 @@ public abstract class Overruns implements FlowAction<Overruns.Parameters> {
   }
 
   static String message(String function, String path, String minutes) {
-    return "fitness: %s: %s ran past its limit of %s minutes".formatted(function, path, minutes);
+    return "fitness: %s: %s hung: no end within %dx its ceiling of %s minutes".formatted(function, path, HANG_FACTOR, minutes);
   }
 
   @Override

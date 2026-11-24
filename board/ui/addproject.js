@@ -67,7 +67,6 @@ export async function argued(argument) {
   return !!named;
 }
 
-// A field typed into is the human's; the reading fills only the rest.
 form.addEventListener("input", (event) => {
   if (event.target instanceof HTMLElement && event.target !== path)
     event.target.dataset.typed = "true";

@@ -188,6 +188,18 @@ public class Layout {
     return record("stops-reviewed.jsonl");
   }
 
+  public Path codeReviewLedger() {
+    return data.resolve("jagt").resolve("code-review.json");
+  }
+
+  public Path codeReviewCheckouts() {
+    return data.resolve("jagt").resolve("code-review").resolve("checkouts");
+  }
+
+  public Path codeReviewStats() {
+    return record("code-review.jsonl");
+  }
+
   /**
    * What an older version kept flat beside its state, by that name, with where it belongs now.
    * {@code master-token} is absent: it is drawn anew at each start.

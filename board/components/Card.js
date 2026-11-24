@@ -44,12 +44,10 @@ const Button = ({ task, action, blocked }) =>
     ${action.label}
   </button>`;
 
-// `blocked` holds the ids of the verbs a press in flight refuses; `now` the clock every age on it is read against.
 /** @param {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, now: number }} props */
 export function Card({ task, manyProjects, flagged, blocked, now }) {
   const owner = task.owner.toLowerCase();
   const ticket = httpOnly(task.ticketUrl);
-  // The badge's words name the ACT and the tier only colours it, both the server's, so badge, count and filter agree.
   return html`<article
     class=${task.attention === "OPTIONAL" ? `${owner} optional` : owner}
     aria-label=${bothNames(task)}

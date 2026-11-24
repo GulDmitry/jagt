@@ -1,6 +1,5 @@
 /** @typedef {import("../core/store.js").Task} Task */
 
-// A choice that left the view falls back to the first task waiting on the human, so the pane is never empty.
 /**
  * @param {Task[]} shown
  * @param {string | null} chosen
@@ -25,7 +24,6 @@ export const stepTarget = (ordered, at, by) => {
   return ordered[Math.min(ordered.length - 1, Math.max(0, from + by))]?.id;
 };
 
-// Wraps past the end: a waiting task before the cursor is found when none lies after it.
 /**
  * @param {Task[]} ordered
  * @param {string | undefined} at

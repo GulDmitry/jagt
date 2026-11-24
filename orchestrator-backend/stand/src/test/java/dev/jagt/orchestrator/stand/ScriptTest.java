@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.stand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class ScriptTest {
@@ -27,9 +26,9 @@ class ScriptTest {
 
   @Test
   void withinReplacesTheTimeoutAndKeepsTheRest() {
-    Script script = Script.to("ABC-42", "DONE").within(Duration.ofSeconds(5));
+    Script script = Script.to("ABC-42", "DONE").within(WaitCeiling.LIMIT);
 
-    assertThat(script.timeout()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(script.timeout()).isEqualTo(WaitCeiling.LIMIT);
     assertThat(script.until()).isEqualTo("DONE");
   }
 

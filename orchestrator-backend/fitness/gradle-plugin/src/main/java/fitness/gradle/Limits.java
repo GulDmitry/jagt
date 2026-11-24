@@ -1,6 +1,7 @@
 package fitness.gradle;
 
 import fitness.core.FitnessFunction;
+import fitness.gradle.check.Overruns;
 import fitness.gradle.tool.LastValues;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -112,7 +113,7 @@ final class Limits {
       MapProperty<String, String> overruns,
       FitnessFunction function) {
     Provider<Long> minutes = override.orElse(function.threshold().limit());
-    task.getTimeout().set(minutes.map(Duration::ofMinutes));
+    task.getTimeout().set(minutes.map(value -> Duration.ofMinutes(value * Overruns.HANG_FACTOR)));
     overruns.put(task.getPath(), minutes.map(value -> function.id() + "|" + value));
     LastValues lastValues =
         new LastValues(task.getProject().getLayout().getBuildDirectory().dir("fitness/last-values").get().getAsFile().toPath());

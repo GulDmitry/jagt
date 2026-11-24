@@ -64,7 +64,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 
 | practice | rule home | Java | JS | copy |
 |---|---|---|---|---|
-| Three groups: unit+functional every commit, heavy nightly and on a tag, stand before a release | [testing-suites](rules/testing-suites.md) | `ci.yml`, `CiWorkflowTest` | `boardTest` in the heavy group | `ci.yml` |
+| Three groups: unit+functional every commit, heavy nightly and on a tag, stand before a release | [testing-suites](rules/testing-suites.md), [ci](rules/ci.md), 0233 | `ci.yml`, `CiWorkflowTest` | `boardTest` in the heavy group | `ci.yml` |
 | A release builds on a hosted runner from the tag (12F V, SLSA L2 build) | [testing-suites](rules/testing-suites.md) | `ci.yml` release job, `CiWorkflowTest` | n.a. | `ci.yml` release job |
 | Every gate of the inventory stays wired into the commit suite or CI | [engineering](../openspec/specs/engineering/spec.md) | `QualityGatesTest` | gap, [listed](../openspec/specs/engineering/spec.md): no test pins the board's CI step | `QualityGatesTest` |
 | One gate per stack; a check holds for all code; no hook in the repository | [AGENTS.md](../AGENTS.md#git-and-committing), 0162 | `./gradlew test --rerun-tasks` | `npm run lint && npm test` in CI's `test` job | `jagt.conventions.gradle` |

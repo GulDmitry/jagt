@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class LogbackLoggersTest {
 
   @Test
-  void everyLoggerTheLogConfigRoutesNamesClassThatExists() throws IOException {
+  void everyLoggerTheLogConfigRoutesNamesClassOrPackageThatExists() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
 
     var named =
@@ -25,12 +24,18 @@ class LogbackLoggersTest {
 
     assertThat(named)
         .isNotEmpty()
-        .allSatisfy(
-            name -> assertThatCode(() -> Class.forName(name)).as(name).doesNotThrowAnyException());
+        .allSatisfy(name ->
+            assertThat(
+                    SourceRoots.mainJavaFiles()
+                        .anyMatch(source ->
+                            source.toString().endsWith("/" + name.replace('.', '/') + ".java")
+                                || source.toString().contains("/" + name.replace('.', '/') + "/")))
+                .as(name)
+                .isTrue());
   }
 
   @Test
-  void everyClassLoggingMasterStepIsRoutedToTheMasterWindow() throws IOException {
+  void everyClassLoggingMasterStepIsRoutedToTheMasterFeed() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
     List<String> logging =
         SourceRoots.mainJavaFiles()
@@ -52,8 +57,7 @@ class LogbackLoggersTest {
   }
 
   @Test
-  void theMasterWindowsTimestampIsWrittenInTheTerminalsOwnColourSoDarkThemeShowsIt()
-      throws IOException {
+  void theFeedsTimestampIsWrittenWithoutTerminalColourCodes() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
 
     assertThat(config).contains("<pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} ");
@@ -72,6 +76,14 @@ class LogbackLoggersTest {
             .toList();
 
     assertThat(appenders)
-        .containsExactlyInAnyOrder("CONSOLE", "CONSOLE", "FILE", "MASTER", "RECENT");
+        .containsExactlyInAnyOrder(
+            "CONSOLE",
+            "CONSOLE",
+            "FILE",
+            "MASTER",
+            "RECENT",
+            "ROLE_master",
+            "ROLE_acceptance",
+            "ROLE_triage");
   }
 }

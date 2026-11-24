@@ -25,9 +25,10 @@ if [ -n "$ORCHESTRATOR_CONFIG_FILE" ] && [ ! -e "$ORCHESTRATOR_CONFIG_FILE" ]; t
   cp "$seed" "$ORCHESTRATOR_CONFIG_FILE"
 fi
 while true; do
+  # The JVM takes its home from passwd, not HOME: a UID the image knows (1000) would read another folder than the agent writes.
   # Unquoted: the variable holds several options.
   # shellcheck disable=SC2086
-  java $JAGT_JAVA_OPTIONS -jar /app/jagt.jar &
+  java -Duser.home="$HOME" $JAGT_JAVA_OPTIONS -jar /app/jagt.jar &
   child=$!
   wait "$child"
   code=$?

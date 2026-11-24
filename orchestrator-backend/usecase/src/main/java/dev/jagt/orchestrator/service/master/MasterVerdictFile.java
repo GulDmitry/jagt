@@ -13,6 +13,9 @@ final class MasterVerdictFile {
 
   private MasterVerdictFile() {}
 
+  /** A role left unread and the one sentence saying why. */
+  record Skipped(String role, String reason) {}
+
   static List<MasterReview.Read> reads(List<Role> roles, List<Judgement> judgements) {
     return IntStream.range(0, roles.size())
         .mapToObj(i -> new MasterReview.Read(roles.get(i).name(), judgements.get(i)))
@@ -23,14 +26,14 @@ final class MasterVerdictFile {
    * For a human: what the verdict rests on, advice and skipped roles included; nothing reads it
    * back.
    */
-  static String of(String taskId, List<MasterReview.Read> reads, List<Role> skipped) {
+  static String of(String taskId, List<MasterReview.Read> reads, List<Skipped> skipped) {
     Verdict verdict = Verdict.of(new Review(0, "", "", "", reads));
     StringBuilder file = new StringBuilder("# " + taskId + " — master review\n\n");
     skipped.forEach(role ->
         file.append("# skipped [")
-            .append(role.name())
-            .append("] no changed path matches ")
-            .append(String.join(", ", role.applies()))
+            .append(role.role())
+            .append("] ")
+            .append(role.reason())
             .append('\n'));
     verdict
         .advice()

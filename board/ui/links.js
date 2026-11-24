@@ -15,7 +15,6 @@ import * as selection from "./selection.js";
   render();
 });
 
-// A linked task lands in the FILTER, not a selection: that control is visible and clearing it is on the page.
 const deepLink = new URLSearchParams(window.location.search).get("task");
 if (deepLink) {
   filters.box.value = deepLink;

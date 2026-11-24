@@ -54,7 +54,8 @@ class StepsWithinCasesTest {
                     history,
                     List.of(),
                     new RunRecord.Timeline(List.of(), BackendLog.relays(log), Set.of()),
-                    Map.of()));
+                    Map.of(),
+                    RunRecord.Reviews.NONE));
 
     assertThat(violations).isEmpty();
   }
@@ -75,7 +76,8 @@ class StepsWithinCasesTest {
                     history,
                     List.of(),
                     new RunRecord.Timeline(List.of(), BackendLog.relays(log), Set.of()),
-                    Map.of()));
+                    Map.of(),
+                    RunRecord.Reviews.NONE));
 
     assertThat(violations)
         .singleElement()
@@ -99,7 +101,8 @@ class StepsWithinCasesTest {
                     history,
                     List.of(),
                     new RunRecord.Timeline(List.of(), BackendLog.relays(log), Set.of()),
-                    Map.of()));
+                    Map.of(),
+                    RunRecord.Reviews.NONE));
 
     assertThat(violations)
         .singleElement()

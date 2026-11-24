@@ -45,8 +45,9 @@ public interface CodeHost {
 
   /**
    * The host's id of the newest note of each unresolved thread of the request at {@code requestUrl}
-   * whose newest note is not by the account the host's CLI acts as; none unresolved is an empty
-   * list, a host that reads no notes the same.
+   * whose newest note is not by the account the host's CLI acts as, or opens with the AI line
+   * ({@code AiLine}) whoever posted it; none unresolved is an empty list, a host that reads no
+   * notes the same.
    */
   Answer<List<String>> unresolvedNotes(String project, String requestUrl);
 

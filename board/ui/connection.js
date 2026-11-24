@@ -1,4 +1,3 @@
-// Cut off from the backend, the board is a picture of the past: nothing on it may act.
 const STALE = [
   "board",
   "phases",
@@ -9,6 +8,7 @@ const STALE = [
   "reports-toggle",
   "report-line",
   "role-chips",
+  "role-logs",
   "jobs-pulse",
   "launch",
   "project-form",

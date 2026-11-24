@@ -1,0 +1,19 @@
+case: a behaviour change no test fails without
+description: |
+  Orders over 500 now get free shipping (was 1000).
+diff: |
+  diff --git a/src/main/java/app/order/ShippingPolicy.java b/src/main/java/app/order/ShippingPolicy.java
+  --- a/src/main/java/app/order/ShippingPolicy.java
+  +++ b/src/main/java/app/order/ShippingPolicy.java
+  @@ -6,5 +6,5 @@ public final class ShippingPolicy {
+  -  private static final BigDecimal FREE_FROM = new BigDecimal("1000");
+  +  private static final BigDecimal FREE_FROM = new BigDecimal("500");
+
+     public boolean isFree(BigDecimal total) {
+       return total.compareTo(FREE_FROM) > 0;
+expect:
+  verdict: findings
+  findings:
+    - file: ShippingPolicy.java
+      pattern: "test|untested|no test|unproven|coverage"
+      severity: [unproven]

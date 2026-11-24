@@ -10,10 +10,11 @@ public record TestShopProjectBuilder(
     @Nullable String kind,
     List<String> pipelineCommand,
     List<String> verifyCommand,
-    List<String> setupCommand) {
+    List<String> setupCommand,
+    List<String> postCommand) {
 
   public static TestShopProjectBuilder shopProject() {
-    return new TestShopProjectBuilder(null, List.of(), List.of(), List.of());
+    return new TestShopProjectBuilder(null, List.of(), List.of(), List.of(), List.of());
   }
 
   public ProjectConfig build() {
@@ -21,7 +22,14 @@ public record TestShopProjectBuilder(
         new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of(), null, null),
         new ProjectConfig.Branches("origin/main", "dev", null),
         new ProjectConfig.CodeHost(
-            kind, null, pipelineCommand, List.of(), List.of(), List.of(), List.of()),
+            kind,
+            null,
+            pipelineCommand,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            new ProjectConfig.Review(List.of(), List.of(), postCommand, List.of())),
         new ProjectConfig.Verify(verifyCommand, null),
         new ProjectConfig.Setup(setupCommand, null));
   }

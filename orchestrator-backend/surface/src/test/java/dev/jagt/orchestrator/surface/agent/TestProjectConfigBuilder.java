@@ -15,8 +15,7 @@ public record TestProjectConfigBuilder(String base, String deploy, String remote
     return new ProjectConfig(
         new ProjectConfig.Repository("/repo", List.of(), null, List.of(), null, null),
         new ProjectConfig.Branches(base, deploy, remote),
-        new ProjectConfig.CodeHost(
-            null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+        ProjectConfig.CodeHost.defaults(),
         new ProjectConfig.Verify(List.of(), null),
         new ProjectConfig.Setup(List.of(), null));
   }

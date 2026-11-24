@@ -1,7 +1,7 @@
 import { render as paint } from "preact";
 
 import { list } from "./list.js";
-import { pane } from "./pane.js";
+import * as rolelogpane from "./rolelogpane.js";
 import * as selection from "./selection.js";
 import { hideStaleTip } from "./tips.js";
 
@@ -15,9 +15,12 @@ const board = /** @type {HTMLElement} */ (document.getElementById("board"));
  */
 export function body(view, repaint) {
   const { open } = view;
-  board.classList.toggle("open", selection.isOpen());
+  const role = rolelogpane.showing();
+  board.classList.toggle("open", selection.isOpen() || role);
   paint(
-    open ? [list({ ...view, open }), pane({ ...view, open }, repaint)] : null,
+    open || role
+      ? [list({ ...view, open }), rolelogpane.stand({ ...view, open }, repaint)]
+      : null,
     board,
   );
   hideStaleTip(null);

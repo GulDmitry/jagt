@@ -197,7 +197,7 @@
   "legend.row.18": "odpowiedź na akcję, przemijająca: wykonano · odrzucono",
   "legend.row.19": "tytuł karty: ile zadań na Ciebie czeka; ikona ma bursztynową kropkę, a czerwoną, gdy coś się zepsuło",
   "legend.row.20": "w nagłówku: ile kart to przerwanie Twojej pracy",
-  "legend.row.21": "w nagłówku: nic nie odpytuje requestów · zadanie cykliczne, którego ostatnie uruchomienie nie powiodło się, kliknij, by zobaczyć zadania · Master naciska przyciski, które Ty byś nacisnął",
+  "legend.row.21": "w nagłówku: nic nie odpytuje requestów · zadanie cykliczne, którego ostatnie uruchomienie nie powiodło się, kliknij, by zobaczyć zadania · Master naciska przyciski, które Ty byś nacisnął · nazwa roli, kliknięta: jej dziennik pokazuje się w panelu, ponownie kliknięta, znika",
   "legend.row.22": "w nagłówku: ta strona jest odcięta od backendu i nic na niej nie może działać · dostawca modelu zawiódł wielokrotnie, więc odczyty bez okna czekają na jedną próbę · jagt nie może połączyć się z hostem kodu, kliknij, by się zalogować, żadna karta się nie zatrzymuje",
   "legend.row.23": "w nagłówku: koło zębate otwiera ustawienia · motyw (auto podąża za systemem) i język, zapamiętane tylko w tej przeglądarce",
   "sample.refused": "odrzucono",

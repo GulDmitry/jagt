@@ -21,7 +21,6 @@ export async function refresh() {
   const mine = ++state.asked;
   try {
     const data = await api("/api/tasks");
-    // Reads overlap, and one answered late describes the board before a later one.
     if (mine < state.painted) return;
     state.painted = mine;
     store.set({
@@ -32,6 +31,7 @@ export async function refresh() {
       autoReview: { summary: data.autoReview, enabled: data.autoReviewEnabled },
       jobs: data.jobs,
       chips: data.chips || [],
+      roleLogs: data.roleLogs || [],
       reach: data.reach || [],
       offers: data.offers || {},
     });
@@ -43,14 +43,11 @@ export async function refresh() {
   }
 }
 
-// Settles once the first read of the verbs does, failed or not: a line parsed before it would go to the model.
 /** @type {Promise<void>} */
 export const verbsArrived = new Promise((resolve) => {
   state.verbsRead = resolve;
 });
 
-// Fetched, not hardcoded: the palette completes and validates against the server's own verb list. Without it
-// the palette degrades rather than breaks, said once per failing streak rather than on every reconnect.
 export async function refreshVerbs() {
   try {
     store.set({ verbs: await api("/api/commands") });

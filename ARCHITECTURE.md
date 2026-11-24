@@ -41,8 +41,8 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | fitness function | one automated fitness function with a measured number, a threshold and a direction, in one place in the reserved tree | built — `fitness.yml` read by the included build `fitness/`; a coded fitness function a `Fitness` class found by id ([0209](docs/decisions/0209-one-fitness-yml-declares-every-fitness-function-in-a-reserved-tree.md)); its own boundary [0210](docs/decisions/0210-fitness-is-an-included-build-with-its-own-boundary.md) | Building Evolutionary Architectures, ch. 2; ISO/IEC 25010 and 25012 section names · `FitnessTest` |
 | `startup/` | why the assembly must not start | built — `port/host/StartupCheck`, `StartupValidation` and every check | fail-fast configuration validation · `StartupValidationTest` |
 | deployment example | a file a user copies and edits to run jagt somewhere, in `examples/`; `.dist` stays for a file whose copy is ignored | built — `Dockerfile` and `docker-compose.yml` (jagt's own image), `examples/agent-image.Dockerfile`, `examples/kubernetes.yml`, `examples/server.env`; one walk-through, [`docs/server.md`](docs/server.md), [0171](docs/decisions/0171-the-image-is-a-base-without-agent-clis.md) | twelve-factor app, Kubernetes restricted Pod Security Standard · `KubernetesManifestsTest` |
-| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesFitness` | use cases as WHEN/THEN before code · `RoleNamesFitness` |
-| script | a program the repository stores to run from a shell or a CI step | built — **logic is Java**: a `build-logic` task (`testsFor`) or a JUnit suite in its own source set (`installTest`), under the build's floor (Checkstyle, complexity, duplication, JUnit, pitest). **Shell only** where no JVM runs yet (`install.sh`, `install.ps1`, the container `entrypoint.sh`), where a JVM is wrong (a fake CLI a suite spawns), or as a one-call wrapper of a tool (scans, publish, the container and Linux suites); `mcp_client.js` stays a per-session Node bridge, one JVM per session being the cost. **Speed decides the edge**: a script stays shell when Java's start breaks its latency budget for how often it runs; measured 2026-11-22 on a laptop, a JVM starts in 0.05 s, a warm Gradle task in 0.7 s, a cold one in 7 s. **Done**: Java — its tests and `fitness` green; shell — one bats case per promise and a run on a real setup | Google Shell Style Guide, "When to use Shell": past 100 lines or with non-straightforward control flow, a structured language · `scripts-are-java` ([0227](docs/decisions/0227-a-script-with-logic-is-java.md)) |
+| `roles/<id>/` | an optional role, off or absent with jagt still whole: nothing outside its modules names or needs it (owner 2026-11-19): a role's words stay in its modules, core holds only the pinned kinds (`RoleModules`); its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart; a third shape is a job with no region, the code reviewer ([0231](docs/decisions/0231-a-code-reviewer-role-posts-notes-on-requests.md)) | built — `role.yml` → `RoleDefinition` and `CheckerRegion` (its words: [`docs/role-vocabulary.md`](docs/role-vocabulary.md)), the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesFitness` | use cases as WHEN/THEN before code · `RoleNamesFitness` |
+| script | a program the repository stores to run from a shell or a CI step | built — **logic is Java**: a `build-logic` task (`testsFor`) or a JUnit suite in its own source set (`installTest`), under the build's floor (Checkstyle, complexity, duplication, JUnit, pitest). **Shell only** where no JVM runs yet (`install.sh`, `install.ps1`, the container `entrypoint.sh`), where a JVM is wrong (a fake CLI a suite spawns), or as a one-call wrapper of a tool (scans, publish, the container and Linux suites); `mcp_client.js` stays a per-session Node bridge, one JVM per session being the cost. **Speed decides the edge**: a script stays shell when Java's start breaks its latency budget for how often it runs; measured 2026-11-22 on a laptop, a JVM starts in 0.05 s, a warm Gradle task in 0.7 s, a cold one in 7 s. **Done**: Java — its tests and `fitness` green; shell — one bats case per promise and a run on a real setup | Google Shell Style Guide, "When to use Shell": past 100 lines or with non-straightforward control flow, a structured language · `scripts-are-java` ([0227](docs/decisions/0227-a-script-with-logic-is-java.md)); where a script runs, by tier: [`ci`](docs/rules/ci.md) |
 | contributor guard | a hook script that refuses one mistake of a contributor's agent session, shared by every contributor | built — `scripts/guards/*.sh`: the bare command on stdin, exit 2 blocks, any other exit allows; wired by a `jq` pipe in the tracked `.claude/settings.json`; `orchestrator-backend/scripts/ci-local.sh` records the green tree `push-after-local-ci.sh` reads; the loop, the backlog and the owner's limits stay private ([0230](docs/decisions/0230-contributor-guards-are-tracked-shell-the-loop-the-backlog-and-the-owners-limits-stay-private.md)) | Google Shell Style Guide, "When to use Shell": a hook runs per tool call, `jq` 0.02 s against a JVM 0.9 s, measured 2026-11-22 · `guardsTest`: shellcheck, one bats case per promise |
 
 **A new kind names its sphere's standard and the check pinning it before its first code.** The gates of testing, QA,
@@ -51,8 +51,7 @@ operations and supply chain have one inventory, `openspec/specs/engineering/spec
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
 surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it.
-`FitnessTest` ratchets each kind's count to `fitness.yml`
-([0176](docs/decisions/0176-every-kind-has-a-ceiling.md)). The board renders
+`FitnessTest` ratchets each kind's count to `fitness.yml` ([0176](docs/decisions/0176-every-kind-has-a-ceiling.md)). The board renders
 `flow/view/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
 ## The rings
@@ -165,7 +164,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/worktree/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/agent/{codex/Codex,opencode/OpenCode}AgentRuntime`, `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `reach/ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
-| `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline, closing a request and opening the acceptance workspace's request are jagt's code-host writes |
+| `CodeHost`, `RequestNotes` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`, `adapter/codehost/notes/ChosenRequestNotes` a `NotesDriver` the same way; re-running a pipeline, closing a request and opening the acceptance workspace's request are jagt's code-host writes |
 | `CodeHostCommands` | `adapter/codehost/cli/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/gate/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
@@ -217,6 +216,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `port/assistant` | core | the headless assistants and readers, their answers |
 | `port/channel` | core | the channel driver port and what it carries |
 | `port/codehost` | core | the code host port and its commands |
+| `port/codehost/review` | core | the request notes port: requests awaiting review, a change, notes, a posted note, reactions |
 | `port/host` | core | the host: processes, keep-awake, supervisor, startup checks, the data layout, the release feed |
 | `port/reach` | core | what jagt's reach loss is told in |
 | `port/terminal` | core | terminal, editor and session-host ports |
@@ -266,6 +266,8 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `job/deploy` | usecase | deploy checks, pipelines and infra retries |
 | `job/host` | usecase | jobs about the install: keep-awake, the running-jar watch and the newer-release check |
 | `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
+| `job/codereview` | usecase | the code reviewer: jobs, subjects, checkout, panel |
+| `job/codereview/request` | usecase | one request's read: ledger, resolutions, subject, diff anchors, note poster |
 | `job/review` | usecase | auto-review and the verify and your-move jobs |
 | `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
 | `job/stop` | usecase | stop reads |
@@ -291,6 +293,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `service/report` | usecase | status reports and their effects |
 | `service/review` | usecase | review rounds: cadence, drafts, sweep |
 | `service/role` | usecase | installed roles, their beans, settings and config origins |
+| `service/role/model` | usecase | the model roles a role module declares and which of them run |
 | `service/scenario` | usecase | scenario sessions and windows |
 | `service/session` | usecase | session hosting, lines, prompts and offered models |
 | `service/stop` | usecase | stops: announcements, policy, per-task stops |
@@ -310,8 +313,10 @@ row with no package, on a package of more than ten classes and on one of a singl
 | `adapter/assistant` | adapter | the headless assistants, readers and replays |
 | `adapter/assistant/reach` | adapter | MCP and local-model reach probes |
 | `adapter/channel` | adapter | notification channel drivers |
-| `adapter/codehost` | adapter | code host drivers: choice, pipeline, replay, none |
+| `adapter/codehost` | adapter | code host drivers: choice, replay, none |
 | `adapter/codehost/cli` | adapter | the GitHub and GitLab CLIs and their commands |
+| `adapter/codehost/command` | adapter | the command driver: a project's own commands |
+| `adapter/codehost/notes` | adapter | the request notes drivers: GitHub, GitLab, command, offline |
 | `adapter/flows` | adapter | the scripted-flows runner and its Playwright driver |
 | `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
@@ -345,6 +350,7 @@ row with no package, on a package of more than ten classes and on one of a singl
 ### Over ten classes
 
 A package-private partner that cannot move without widening keeps its package whole, until its partners move; never by raising the number.
+A package of one class folds into its parent.
 
 | package | why |
 |---------|-----|
@@ -357,10 +363,6 @@ A package-private partner that cannot move without widening keeps its package wh
 | `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |
 | `stand/invariant` | seventeen checks of one feature, no sub-kind of three; `StateFiles` is package-private to them |
 | `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
-
-### A single class
-
-None today; a package of one class folds into its parent.
 
 ## Where a new thing goes
 

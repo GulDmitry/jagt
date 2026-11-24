@@ -7,7 +7,7 @@
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **`test` fails a module under 0.80 line coverage (JaCoCo) and a class with a branch no
 test reaches** ([0181](../decisions/0181-every-module-keeps-80-percent-line-coverage.md),
-[0191](../decisions/0191-every-class-with-logic-is-reached-by-a-test.md)). **A suite ends within `suite-minutes`, a probe in `-PrunMinutes`**
+[0191](../decisions/0191-every-class-with-logic-is-reached-by-a-test.md)). **A suite's ceiling is `suite-minutes`; an overrun warns, 3x stops it**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 **Root `:test` runs the rule tests whole; a filtered run names its project**, `:<module>:test --tests '<Name>'` (bare `--tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
@@ -59,7 +59,7 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### The board is tested in a browser
 
-- `boardTest` drives `board/` on the real backend in headless Chromium (libraries: `scripts/linux-test-deps.sh`): grid, buttons, repaint.
+- `boardTest` drives `board/` on the real backend in headless Chromium: grid, buttons, repaint; `boardCoverage` never skips on CI.
 - Its own track in `board/`: `npm run lint`, `npm test` in CI's `test` job, `npm run mutate` nightly; [gates](../decisions/0229-board-test-floor.md).
 - Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its `@MockitoBean`s stub
   whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`,
@@ -89,8 +89,8 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 
 ### Linux, and one set of steps per host
 
-- `scripts/linux-suite.sh` runs `test`, `e2eTest`, `boardTest`, `linuxDriverTest`, `guardsTest` in a container (`docker/linux-suite.Dockerfile`),
-  the only place the Linux drivers meet real binaries: the notifier off the session bus (`dbus-monitor`), kitty under Xvfb.
+- `scripts/ci-local.sh` runs each CI job's own command in CI's image at a runner's size ([suites](testing-suites.md#the-local-ci)).
+  **A CI red after a local green is a defect**: a row in the [divergence register](../divergences.md), its fix in the local run, never a rerun.
 - What a container cannot host — a code viewer, the AppleScript raise, the real `claude` — stays **named as
   uncovered**, never faked; raising and closing the viewer stay `@Disabled` (`LinuxKittyTerminalDriverLinuxTest`).
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,

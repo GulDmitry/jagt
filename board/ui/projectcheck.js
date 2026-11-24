@@ -54,7 +54,6 @@ const fill = (id, value) => {
 const option = (value, label) =>
   Object.assign(document.createElement("option"), { value, label });
 
-// Each folder under the last typed one completes the path.
 async function offerFolders() {
   const mine = ++state.listed;
   const typed = path.value;

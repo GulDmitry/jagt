@@ -15,10 +15,11 @@ technical:
   maintainability:
     modularity:
       collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
-      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 56, decision: "0176" }
+      ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 58, decision: "0176" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 24, decision: "0176" }
-      scripts-are-java: { engine: scan, set: tracked, glob: "../**/*.{sh,ps1,bash,py,js}", except: "../install.sh,../install.ps1,../scripts/guards/*.sh,../entrypoint.sh,../mcp_client.js,../board/**,adapter/src/main/resources/opencode/jagt-gate/index.js,gradle/stop-test-tmux.sh,scripts/container-suite.sh,scripts/container-suite/stub-agent.sh,scripts/ci-local.sh,scripts/gradle-slot.sh,scripts/linux-suite.sh,scripts/linux-test-deps.sh,scripts/publish-base-image.sh,scripts/publish-image.sh,scripts/secret-scan.sh,scripts/vulnerability-scan.sh,scripts/with-linux-desktop.sh,stand/src/main/resources/server/fake-claude.sh,stand/src/stand/resources/flows/flows.sh", per: file, governs: count, max: 0, decision: "0227", hint: "a script with logic is Java: a build-logic task or a JUnit suite; shell only on this allow-list (ARCHITECTURE.md, the kind script)" }
+      workflow-gradle-lines: { engine: scan, set: tracked, glob: "../.github/workflows/*.yml,../.gitlab-ci.yml", per: file, regex: "\\./gradlew(?!( --[a-z-]+)* (gate\\w*|-q printVersion|-q provenTree)\\b)", governs: count, max: 0, hint: "a CI job runs one gate<Job> task, which scripts/ci-local.sh runs too (docs/rules/testing-suites.md)" }
+      scripts-are-java: { engine: scan, set: tracked, glob: "../**/*.{sh,ps1,bash,py,js}", except: "../install.sh,../install.ps1,../scripts/guards/*.sh,../entrypoint.sh,../mcp_client.js,../board/**,adapter/src/main/resources/opencode/jagt-gate/index.js,gradle/stop-test-tmux.sh,scripts/container-suite.sh,scripts/container-suite/stub-agent.sh,scripts/ci-local.sh,scripts/gradle-slot.sh,scripts/linux-suite.sh,scripts/linux-test-deps.sh,scripts/publish-base-image.sh,scripts/publish-image.sh,scripts/secret-scan.sh,scripts/vulnerability-scan.sh,scripts/with-linux-desktop.sh,stand/src/main/resources/server/fake-claude.sh,stand/src/main/resources/server/fake-gh.sh,stand/src/stand/resources/flows/flows.sh", per: file, governs: count, max: 0, decision: "0227", hint: "a script with logic is Java: a build-logic task or a JUnit suite; shell only on this allow-list (ARCHITECTURE.md, the kind script)" }
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
       spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ChildProcesses,Git", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone: its owner kills and reaps every live child at stop" }
       spawn-owner-exec: { engine: archunit, set: main, calls: java.lang.Runtime.exec, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone" }
@@ -34,16 +35,16 @@ technical:
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
       dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 98, decision: "0176" }
     analysability:
-      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 9, decision: "0176" }
-      ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176" }
-      source-sets: { fitness: SourceSetsFitness, governs: count, max: 27, decision: "0176" }
-      start-triggers: { fitness: StartTriggersFitness, governs: count, max: 57, decision: "0176" }
+      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 11, decision: "0176" }
+      ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176", hint: "push, pull request, and a dispatch that runs one job alone (owner 2026-11-24)" }
+      source-sets: { fitness: SourceSetsFitness, governs: count, max: 28, decision: "0176" }
+      start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
       task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
-      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 84, decision: "0176" }
+      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 85, decision: "0176" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
-      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 33, decision: "0176" }
-      roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 4, decision: "0176" }
-      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 52, decision: "0216" }
+      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 34, decision: "0176" }
+      roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }
+      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 53, decision: "0231" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
       rule-lines: { engine: scan, glob: "../docs/rules/*.md", per: file, measure: lines, governs: size, max: 100 }
       # each exception ends when its class is cut to 1000 lines or less, at a cut of its own
@@ -55,7 +56,7 @@ technical:
       line-characters: { engine: scan, glob: "../AGENTS.md,../README.md,../docs/decisions/README.md,../docs/*.md,../docs/features/*.md,../openspec/specs/*/spec.md,../docs/decisions/????-*.md,../docs/rules/*.md,../ARCHITECTURE.md,../roles/session/brief.md.dist", per: line, measure: characters, regex: "^[^|]", governs: size, max: 150 }
       sentence-words: { engine: scan, glob: "../docs/rules/*.md,../openspec/specs/*/spec.md,../AGENTS.md", per: sentence, measure: words, governs: size, max: 25 }
       session-brief-sentence-words: { engine: scan, glob: "../roles/session/brief.md.dist", per: sentence, measure: words, governs: size, max: 25, hint: "a prompt: compress it, then run promptEval and roleEval -Prole=master (docs/rules/testing.md)" }
-      rule-docs: { engine: scan, glob: "../docs/rules/*.md", per: name, governs: count, max: 8, decision: "0176" }
+      rule-docs: { engine: scan, glob: "../docs/rules/*.md", per: name, governs: count, max: 9, decision: "0176" }
       left-for-later-markers: { engine: scan, set: tracked, per: file, regex: "\\b(TO[D]O|FIXM[E]|XX[X])\\b", governs: count, max: 7 }
       home-paths: { engine: scan, set: tracked, per: file, machine: paths, governs: count, max: 0 }
       cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", except: "**/board/vendor/**,src/test/resources/archunit/**,**/recordings/**", governs: count, max: 0 }
@@ -65,8 +66,16 @@ technical:
       spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
       release-not-on-tag-push: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "tags:\\s*\\[", governs: count, max: 0, hint: "the release job runs on a push to main; nobody pushes a tag" }
       release-checks-tag-is-new: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "git ls-remote --exit-code --tags origin", governs: count, min: 1, hint: "release publishes only when the version's tag does not exist yet" }
+      release-needs-no-stand-or-install: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "(?m)^    needs: \\[[^\\]]*\\b(stand|install)\\b", governs: count, max: 0, decision: "0233", hint: "main publishes the tree the pull request proved; the stand and install do not re-run there (docs/rules/ci.md)" }
       release-runs-only-when-tag-new: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "needs\\.test\\.outputs\\.new == 'true'", governs: count, min: 1, hint: "release publishes only when the version's tag does not exist yet" }
       pages-deployments-pruned-by-age: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "jq -r '\\.\\[1:\\]\\[\\] \\| \\.id'", governs: count, min: 1, hint: "a Pages deployment carries ref main, so all but the newest go, never matched by tag name" }
+      ci-no-retry: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "continue-on-error|retry|rerun-failed|re-run-failed", governs: count, max: 0, decision: "0233", hint: "a CI red is never rerun or tolerated: fix the local run (docs/rules/ci.md)" }
+      ci-per-push-reads-no-live-scan: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suites.gradle", per: file, regex: "gate(Test|Heavy): \\[[^\\]]*'(vulnerabilityScan|boardAudit)'|npm ci && npm audit[^']*&& npm run", governs: count, max: 0, decision: "0233", hint: "npm audit and the osv scan run in gateScan, nightly or on a dependency diff, never in the per-push test or heavy gate (docs/rules/ci.md)" }
+      ci-no-time-flags: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "-Pbudgets|-PrunMinutes", governs: count, max: 0, decision: "0233", hint: "CI has no time ceiling, measurement or stop; only a job timeout (docs/rules/ci.md)" }
+      ci-no-package-install: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "linux-test-deps|\\bapt(-get)?\\b", governs: count, max: 0, decision: "0233", hint: "a CI job installs nothing: the package belongs in base/Dockerfile.ci (docs/rules/ci.md)" }
+      ci-image-pinned-by-digest: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "(?m)^\\s+image: (?!\\S+@sha256:[0-9a-f]{64}$)", governs: count, max: 0, decision: "0233", hint: "a job's container image is pinned by digest (docs/rules/ci.md)" }
+      ci-no-sleep: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "\\bsleep\\b", governs: count, max: 0, decision: "0233", hint: "a wait in CI is a hang guard, never a shell sleep (docs/rules/ci.md)" }
+      nightly-calls-no-pull-request-job: { engine: scan, glob: "../.github/workflows/nightly.yml", per: file, regex: "uses:\\s*\\./\\.github/workflows/ci\\.yml", governs: count, max: 0, decision: "0233", hint: "the nightly runs only what the local gate cannot: it never calls ci.yml (docs/rules/ci.md rule 10)" }
       nightly-dispatchable: { engine: scan, glob: "../.github/workflows/nightly.yml", per: file, regex: "(?m)^  workflow_dispatch:", governs: count, min: 1, hint: "the nightly can be started by hand" }
       skill-lines: { engine: scan, glob: "../.claude/skills/*/SKILL.md", per: file, measure: lines, governs: size, max: 500, hint: "a skill file: split into files one level deep (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)" }
       skill-name: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A(?!---\\n(?:(?!^---).)*?^name: [a-z0-9-]{1,64}$)", governs: count, max: 0, hint: "frontmatter name: lowercase letters, digits and hyphens, at most 64 characters" }
@@ -99,6 +108,7 @@ technical:
       log-capture: { fitness: LogCaptureFitness, governs: class-dependency, max: 0 }
       suites-tap-nobody: { fitness: SuitesTapNobodyFitness, governs: count, max: 0, decision: "0058" }
       sleep-in-tests: { engine: scan, set: test, per: file, regex: "Thread\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\(", governs: count, max: 0 }
+      wait-literal-in-tests: { engine: scan, set: test, per: file, regex: "\\.(atMost|within|timeout)\\(\\s*(Duration\\.of|\\d)", governs: count, max: 0, decision: "0233", hint: "a wait is a hang guard: use the source set's one wait ceiling constant, never a literal duration (docs/rules/ci.md rule 8)" }
       context-booting-tests: { engine: scan, set: test, regex: "(?m)^import org\\.springframework\\.boot\\.(test\\.context\\.SpringBootTest|builder\\.SpringApplicationBuilder);", governs: count, max: 13, decision: "0187" }
 security:
   security:

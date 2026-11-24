@@ -107,6 +107,7 @@ public class TaskLaunches {
         ? Optional.empty()
         : Optional.of(
             Launched.refused(
+                Launched.Reason.BRANCH_EXISTS,
                 "branch '"
                     + ref
                     + "' already exists in "

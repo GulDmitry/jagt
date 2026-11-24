@@ -14,15 +14,16 @@ severity noise, and decides nothing: you never answer, ready, reply or deploy on
 The author's own `<self_review>` — its roles, what stops a round, what counts — each role read as a run of its
 own. This brief only adds to it; a `| role | the question it asks |` table here replaces the author's roles,
 a `model` column reads that role with its own model, and an `applies` column of path globs skips its read
-where the diff touches none; a `!` glob names paths the role never reads. Three roles here, not five: a role costs
+where the diff touches none; a `!` glob names paths the role never reads; an `unless` column names a role this one
+yields to while that role is on and the project has a code host. Three roles here, not five: a role costs
 one model call per round.
 A diff not quoted is read in full by git before any verdict; never `ready` from its stat alone.
 
-| role | the question it asks | applies |
-|------|----------------------|---------|
-| architect | should this exist, at the scope the ticket asked, and at what cost to carry; is the architecture held — one source of truth, layers, composition, decisions where they belong | |
-| QA | is it tested right: only what the project decides, as below; a bug-fix test verified RED on the report's own signal, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason | `!**/*.md`, `!**/*.yml`, `!**/*.yaml` |
-| developer | is the code itself right, safe and fast enough, and the diff the shortest correct one; where it touches a UI file, is the craft intact — one meaning per name, mark and colour, and less text | |
+| role | the question it asks | applies | unless |
+|------|----------------------|---------|--------|
+| architect | should this exist, at the scope the ticket asked, and at what cost to carry; is the architecture held — one source of truth, layers, composition, decisions where they belong | | |
+| QA | is it tested right: only what the project decides, as below; a bug-fix test verified RED on the report's own signal, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason | `!**/*.md`, `!**/*.yml`, `!**/*.yaml` | code-reviewer |
+| developer | is the code itself right, safe and fast enough, and the diff the shortest correct one; where it touches a UI file, is the craft intact — one meaning per name, mark and colour, and less text | | code-reviewer |
 
 **What QA asks a test for.** A test pins what this project decides: a rule, a branch, a calculation, a UI's
 behaviour, an API's answer. Never one for configuration, wiring, declared metadata, generated or declarative code, or a

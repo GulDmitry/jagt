@@ -3,13 +3,19 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.yaml.snakeyaml.Yaml;
 
@@ -17,16 +23,29 @@ class CiWorkflowTest {
 
   private static final Path CODEQL = Path.of("../.github/workflows/codeql.yml");
 
+  private static final Path GATES = Path.of("build-logic/src/main/groovy/jagt.suites.gradle");
+
   @Test
-  void publishesReleaseOnlyOnceEveryJobOnTheMainPushIsGreen() {
+  void publishesReleaseOnceTheMainPushsUnitSuiteIsGreen() {
     Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
-    Set<String> others =
-        jobs.keySet().stream()
-            .filter(job -> !job.equals("release") && !job.equals("heavy"))
-            .collect(Collectors.toSet());
     assertThat(Objects.requireNonNull(jobs.get("release")).get("needs"))
         .asInstanceOf(list(String.class))
-        .containsExactlyInAnyOrderElementsOf(others);
+        .containsExactly("test");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "install"})
+  void reRunsNoSlowJobOnTheMainPush(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("if")))
+        .contains("github.event_name != 'push'");
+  }
+
+  @Test
+  void publishesOnlyAfterTheTreeCheckOfTheMergeCommit() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("release")).get("steps"));
+
+    assertThat(steps.indexOf("provenTree")).isPositive().isLessThan(steps.indexOf("gateRelease"));
   }
 
   @Test
@@ -70,26 +89,26 @@ class CiWorkflowTest {
             .map(Map.Entry::getKey)
             .collect(Collectors.toSet());
 
-    assertThat(parsed.get("permissions")).isEqualTo(Map.of("contents", "read"));
+    assertThat(parsed.get("permissions")).isEqualTo(Map.of("contents", "read", "packages", "read"));
     assertThat(widened).containsExactly("release");
   }
 
   @Test
   void runsExactlyTheFourGroupsAndTheInstallCheckOnGithub() {
     assertThat(CiWorkflow.jobs().keySet())
-        .containsExactlyInAnyOrder("test", "heavy", "stand", "install", "release");
+        .containsExactlyInAnyOrder("test", "heavy", "audit", "stand", "install", "release");
   }
 
   @Test
   void runsExactlyTheFourGroupsOnGitlab() {
     assertThat(CiWorkflow.gitlabJobs())
-        .containsExactlyInAnyOrder("test", "heavy", "stand", "release");
+        .containsExactlyInAnyOrder("test", "audit", "heavy", "stand", "release");
   }
 
   @Test
-  void startsOnGithubOnlyOnPushPullRequestAndWorkflowCall() {
+  void startsOnGithubOnlyOnPushPullRequestAndDispatch() {
     assertThat(CiWorkflow.githubTriggers())
-        .containsExactlyInAnyOrder("push", "pull_request", "workflow_call");
+        .containsExactlyInAnyOrder("push", "pull_request", "workflow_dispatch");
   }
 
   @Test
@@ -103,9 +122,18 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheHeavyJobOnScheduleAndPullRequest() {
-    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if"))
-        .isEqualTo("inputs.nightly || github.event_name == 'pull_request'");
+  void runsTheHeavyJobOnPullRequestsAndDispatchesButNeverOnPushes() {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("heavy")).get("if")))
+        .startsWith("github.event_name != 'push' && ");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"test", "heavy", "stand", "audit", "install"})
+  void runsOneJobAloneWhenTheDispatchNamesIt(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("if")))
+        .contains("(!inputs.job || inputs.job == '" + job + "')");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .contains("  workflow_dispatch:\n    inputs:\n      job:");
   }
 
   @Test
@@ -137,20 +165,124 @@ class CiWorkflowTest {
         .contains("cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}");
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "e2e", "properties", "scan", "install"})
+  void runsOneNightlyJobAloneWhenTheDispatchNamesIt(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("if")))
+        .isEqualTo("(!inputs.job || inputs.job == '" + job + "')");
+  }
+
   @Test
-  void letsTheNightlyBeStartedByHandAndLogsItsDelayOnlyOnTheSchedule() {
+  void letsTheNightlyBeStartedByHand() {
     assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
-        .contains("  workflow_dispatch:")
-        .contains("if: github.event_name == 'schedule'");
+        .contains("  workflow_dispatch:");
   }
 
   @Test
   void runsTheStandOnEveryEngineForPullRequests() {
     assertThat(
             String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("strategy")))
-        .contains(
-            "(inputs.nightly || github.event_name == 'pull_request')"
-                + " && fromJSON('[\"compose\",\"kind\"]')");
+        .contains("github.event_name != 'push' && fromJSON('[\"compose\",\"kind\"]')");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"test, ./gradlew --no-daemon gateTest", "install, ./gradlew --no-daemon gateInstall"})
+  void runsEachPullRequestJobAsTheGateLineTheLocalCiRunsToo(String job, String line) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps")))
+        .contains("run=" + line);
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains(job + ") echo '" + line);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "heavy, scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy",
+    "stand, ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose"
+  })
+  void runsTheHeavyAndStandJobsThroughTheLocalTwinInTheCiImage(String job, String line) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps")))
+        .contains("run=scripts/linux-suite.sh " + job);
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains(job + ") echo '" + line);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"heavy", "stand"})
+  void cachesTheLocalTwinsGradleHomeOnTheRunnerBetweenRuns(String job) {
+    String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .contains("path=${{ runner.temp }}/gradle-home")
+        .contains("env={JAGT_GRADLE_CACHE=${{ runner.temp }}/gradle-home}");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"heavy", "stand"})
+  void keepsTheHeavyAndStandJobsOffTheContainerAndTheHostDockerSocket(String job) {
+    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get(job))).doesNotContainKey("container");
+  }
+
+  @Test
+  void runsTheTestJobInTheCiImagePinnedByDigest() {
+    Map<?, ?> container =
+        (Map<?, ?>)
+            Objects.requireNonNull(
+                Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("container"));
+
+    assertThat(String.valueOf(container.get("image")))
+        .matches("ghcr\\.io/\\S+-ci:base@sha256:[0-9a-f]{64}");
+  }
+
+  @Test
+  void scansLiveDataPerPushOnlyOnTheDependencyDiff() {
+    Map<String, Object> audit = Objects.requireNonNull(CiWorkflow.jobs().get("audit"));
+
+    assertThat(String.valueOf(audit.get("env")))
+        .contains("format('origin/{0}', github.base_ref)")
+        .contains("github.event.before");
+    assertThat(String.valueOf(audit.get("steps")))
+        .contains("run=./gradlew --no-daemon gateScan -Paudit.base=\"$AUDIT_BASE\"");
+  }
+
+  @Test
+  void scansGitlabOnItsScheduleAndOnTheDependencyDiffThroughTheSameGate() {
+    assertThat(CiWorkflow.gitlabText())
+        .contains("audit:\n  stage: test")
+        .contains("- if: $CI_PIPELINE_SOURCE == \"schedule\"")
+        .contains("compare_to: refs/heads/main")
+        .contains("- board/package-lock.json");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"test", "heavy", "stand", "install"})
+  void readsNoLiveVulnerabilityDataInTheOtherPerPushJobs(String job) {
+    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps")))
+        .doesNotContain("npm audit")
+        .doesNotContain("vulnerability-scan.sh")
+        .doesNotContain("gateScan");
+  }
+
+  @Test
+  void runsTheNightlyScanWithNoBaseSoItAlwaysScans() {
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("nightly-scan) echo './gradlew --no-daemon gateScan'");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
+        .doesNotContain("audit.base");
+  }
+
+  @Test
+  void runsTheMacosInstallJobsGateNativelyInTheLocalCi() {
+    assertThat(SourceRoots.read(Path.of("scripts/ci-local.sh")))
+        .contains("jobs=${*:-test heavy stand install install-macos audit}")
+        .contains("./gradlew --no-daemon gateInstall");
+  }
+
+  @Test
+  void runsEveryLinuxJobLocallyWithItsOwnDockerEngineAndUntimedAsOnCi() {
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("--privileged")
+        .contains("-e CI=true -e ORG_GRADLE_PROJECT_timed=false")
+        .contains("dockerd");
   }
 
   @Test
@@ -162,56 +294,118 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheTestJobNeverOnSchedule() {
-    assertThat(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("if"))
-        .isEqualTo("!inputs.nightly");
-  }
-
-  @Test
-  void runsTheNightlyAsItsOwnWorkflowCallingCiOnTheSchedule() {
-    String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
-
-    assertThat(nightly)
+  void runsTheNightlyAsItsOwnWorkflowThatCallsNoPullRequestJob() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
         .contains("name: nightly")
         .contains("cron: '17 3 * * *'")
-        .contains("uses: ./.github/workflows/ci.yml")
-        .contains("nightly: true")
-        .contains("secrets: inherit");
+        .doesNotContain("uses: ./.github/workflows/ci.yml");
   }
 
   @Test
-  void grantsTheNightlyEveryPermissionThatCiJobsItCallsAskFor() {
+  void runsOnlyWhatTheLocalGateCannotInTheNightly() {
+    assertThat(CiWorkflow.nightlyJobs().keySet())
+        .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install", "report");
+  }
+
+  @Test
+  void judgesMutantsLocallyOnlyNoCiOrNightlyJobMutates() throws IOException {
+    Pattern mutation = Pattern.compile("pitest|stryker|gate[M]utation|boardMutate");
+    List<String> mutating;
+    try (Stream<Path> files = Files.list(Path.of("../.github/workflows"))) {
+      mutating =
+          Stream.concat(
+                  files.filter(file -> file.toString().endsWith(".yml")),
+                  Stream.of(Path.of("scripts/linux-suite.sh")))
+              .filter(file -> mutation.matcher(SourceRoots.read(file)).find())
+              .map(Path::toString)
+              .toList();
+    }
+
+    assertThat(mutating).isEmpty();
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "stand, nightly-stand-${{ matrix.engine }}",
+    "e2e, nightly-e2e",
+    "properties, nightly-properties",
+    "scan, nightly-scan"
+  })
+  void runsEachNightlyJobThroughTheLocalTwinInTheCiImage(String job, String twinJob) {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .contains("run=scripts/linux-suite.sh " + twinJob)
+        .contains("env={JAGT_GRADLE_CACHE=${{ runner.temp }}/gradle-home}")
+        .doesNotContain("setup-java")
+        .doesNotContain("run=./gradlew");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "nightly-stand-compose",
+        "nightly-stand-kind",
+        "nightly-e2e",
+        "nightly-properties",
+        "nightly-scan"
+      })
+  void holdsEachNightlyJobsLineInTheLocalTwin(String twinJob) {
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .containsPattern("\n {8}" + twinJob + "\\) echo '\\./gradlew --no-daemon ");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"stand", "e2e", "properties", "scan"})
+  void restoresTheNightlysDependenciesReadOnlyFromTheCiCache(String job) {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.nightlyJobs().get(job)).get("steps"));
+
+    assertThat(steps)
+        .containsPattern(
+            "actions/cache/restore@[0-9a-f]{40}, "
+                + "with=\\{path=\\$\\{\\{ runner.temp \\}\\}/gradle-home")
+        .doesNotContainPattern("actions/cache@[0-9a-f]{40}");
+  }
+
+  @Test
+  void letsTheNightlyWriteIssuesOnItsReportJobAndReadElsewhere() {
     Map<?, ?> nightly =
         new Yaml().load(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")));
-    Set<Object> asked =
-        CiWorkflow.jobs().values().stream()
-            .map(job -> job.get("permissions"))
-            .filter(Map.class::isInstance)
-            .flatMap(permissions -> ((Map<?, ?>) permissions).entrySet().stream())
-            .collect(Collectors.<Object>toSet());
+    Set<String> widened =
+        CiWorkflow.nightlyJobs().entrySet().stream()
+            .filter(job -> job.getValue().containsKey("permissions"))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
 
-    Map<?, ?> granted = (Map<?, ?>) Objects.requireNonNull(nightly.get("permissions"));
-
-    assertThat(Set.<Object>copyOf(granted.entrySet())).containsAll(asked);
+    assertThat(nightly.get("permissions")).isEqualTo(Map.of("contents", "read"));
+    assertThat(widened).containsExactly("report");
+    assertThat(Objects.requireNonNull(CiWorkflow.nightlyJobs().get("report")).get("permissions"))
+        .isEqualTo(Map.of("issues", "write"));
   }
 
   @Test
-  void storesTheStandTimingTrendOnAnEventWithoutCommitByReadingTheCommitThroughTheApi() {
-    assertThat(String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps")))
-        .contains("github-token=${{ github.token }}")
-        .contains("ref=${{ github.sha }}");
+  void opensAnIssueWhenAnyNightlyJobIsRed() {
+    Map<String, Object> report = Objects.requireNonNull(CiWorkflow.nightlyJobs().get("report"));
+
+    assertThat(report.get("if")).isEqualTo("failure()");
+    assertThat(report.get("needs"))
+        .asInstanceOf(list(String.class))
+        .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install");
   }
 
   @Test
-  void startsTheNightlyOffTheHourAndLogsItsStartDelayAsNotice() {
-    String nightly = SourceRoots.read(Path.of("../.github/workflows/nightly.yml"));
+  void verifiesTheRealFeedInstallsProvenanceWithTheRunsToken() {
+    Map<String, Object> install = Objects.requireNonNull(CiWorkflow.nightlyJobs().get("install"));
 
-    assertThat(nightly)
-        .doesNotContainPattern("cron: '0 ")
-        .contains("actions/runs/$GITHUB_RUN_ID")
-        .contains("--jq .created_at")
-        .contains("::notice title=nightly start delay::event=nightly.delay")
-        .contains("delay_seconds=$delay");
+    assertThat(install.get("env")).isEqualTo(Map.of("GH_TOKEN", "${{ github.token }}"));
+  }
+
+  @Test
+  void startsTheNightlyOffTheHour() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
+        .doesNotContainPattern("cron: '0 ");
   }
 
   @Test
@@ -226,7 +420,7 @@ class CiWorkflowTest {
     String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
 
     assertThat(release)
-        .contains("cyclonedxBom")
+        .contains("./gradlew --no-daemon gateRelease")
         .contains("build/reports/sbom/jagt.cdx.json")
         .contains("jagt-$version.cdx.json")
         .contains("gh release upload \"$TAG\" build/release/*");
@@ -258,13 +452,6 @@ class CiWorkflowTest {
   }
 
   @Test
-  void runsTheInstallSuiteOnEveryRunner() {
-    String install = Objects.requireNonNull(CiWorkflow.jobs().get("install")).toString();
-
-    assertThat(install).contains("./gradlew --no-daemon installTest");
-  }
-
-  @Test
   void publishesTheImageWithItsSbom() {
     assertThat(SourceRoots.read(Path.of("scripts/publish-image.sh"))).contains("--sbom=true");
   }
@@ -272,12 +459,13 @@ class CiWorkflowTest {
   @Test
   void attachesTheSbomToTheGitlabReleaseToo() {
     assertThat(CiWorkflow.gitlabText())
-        .contains("bootJar cyclonedxBom")
+        .contains("./gradlew --no-daemon gateRelease")
         .contains("orchestrator-backend/build/reports/sbom/jagt.cdx.json");
+    assertThat(SourceRoots.read(GATES)).contains("gateRelease: ['bootJar', 'cyclonedxBom'],");
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"test", "heavy", "stand", "install", "release"})
+  @ValueSource(strings = {"test", "stand", "install", "release"})
   void keepsGradleCachesBetweenRunsByThePinnedSetupGradleOnItsOpenSourceProvider(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 
@@ -289,15 +477,26 @@ class CiWorkflowTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"test", "heavy", "stand", "install", "release"})
+  @ValueSource(strings = {"test", "stand", "install", "release"})
   void restoresTheNewestGradleCacheOfTheJobWhenTheBuildFilesChangedSoTheRunStartsWarm(String job) {
     String steps = String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get(job)).get("steps"));
 
     assertThat(steps)
         .containsPattern(
-            "actions/cache@[0-9a-f]{40}, with=\\{path=~/.gradle/caches\\n~/.gradle/wrapper")
+            "actions/cache(/restore)?@[0-9a-f]{40}, "
+                + "with=\\{path=~/.gradle/caches\\n~/.gradle/wrapper")
         .contains("key=gradle-${{ runner.os }}-${{ github.job }}-")
         .contains("restore-keys=gradle-${{ runner.os }}-${{ github.job }}-");
+  }
+
+  @Test
+  void savesTheTestJobsGradleCacheUnderTheKeyItsRestoreComputed() {
+    String steps =
+        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("steps"));
+
+    assertThat(steps)
+        .containsPattern("actions/cache/save@[0-9a-f]{40}")
+        .contains("key=${{ steps.gradle-cache.outputs.cache-primary-key }}");
   }
 
   @Test
@@ -389,6 +588,41 @@ class CiWorkflowTest {
   }
 
   @Test
+  void buildsTheCiImageFromItsDockerfileBesideTheOtherBaseImages() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/base-images.yml")))
+        .contains("name: ci\n      dockerfile: Dockerfile.ci");
+    assertThat(SourceRoots.read(Path.of("../base/Dockerfile.ci")))
+        .containsPattern("(?m)^FROM eclipse-temurin:25-jdk-noble@sha256:[0-9a-f]{64}$")
+        .containsPattern("(?m)^FROM node:22\\S+@sha256:[0-9a-f]{64} AS node$")
+        .contains("linux-test-deps.sh");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"base, Dockerfile", "stand-base, Dockerfile.stand", "ci, Dockerfile.ci"})
+  void scansEachBaseImageTheRegistryWorkflowPublishesInTheLocalAudit(
+      String name, String dockerfile) {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/base-images.yml")))
+        .contains("name: " + name + "\n      dockerfile: " + dockerfile);
+    assertThat(
+            SourceRoots.read(
+                Path.of("build-logic/src/main/java/dev/jagt/gradle/audit/BaseImages.java")))
+        .contains("new Image(\"" + name + "\", \"" + dockerfile + "\"");
+    assertThat(SourceRoots.read(Path.of("scripts/ci-local.sh")))
+        .contains("audit) images=1")
+        .contains("./gradlew --no-daemon baseImageScan -Paudit.base=origin/main");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/base-image.yml")))
+        .contains("scripts/vulnerability-scan.sh scan image");
+  }
+
+  @Test
+  void runsTheLocalGateInTheImageCiPinsAndBuildsItWhenItsDigestIsNotPullable() {
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("workflows/ci.yml")
+        .contains("docker pull")
+        .contains("base/Dockerfile.ci");
+  }
+
+  @Test
   void deletesTheImageOfEveryReleaseTheRetentionDeletesAndEveryPagesDeploymentButTheNewest() {
     String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
 
@@ -429,7 +663,7 @@ class CiWorkflowTest {
   void passesAnImageScanWhenTheOnlyFixNeedsUbuntuPro() {
     String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));
 
-    assertThat(scan).contains("grep -Fvq '~esm'");
+    assertThat(scan).contains("grep -Evq '[~+]esm'");
   }
 
   @Test
@@ -446,21 +680,24 @@ class CiWorkflowTest {
   }
 
   @Test
-  void failsTheStandJobWhenOneTimingPassesTwiceItsMedianAndOnlyStoresTheTrendInTheActionsCache() {
-    String stand =
-        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("stand")).get("steps"));
+  void measuresNoTimeOnCi() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .doesNotContain("standTimingGate")
+        .doesNotContain("github-action-benchmark")
+        .doesNotContain("timings-history");
+  }
 
-    assertThat(stand)
-        .containsPattern("benchmark-action/github-action-benchmark@[0-9a-f]{40}")
-        .contains("tool=customSmallerIsBetter")
-        .contains(
-            "external-data-json-path=orchestrator-backend/stand/build/stand/timings-history.json")
-        .contains("fail-on-alert=false")
-        .contains("standTimingGate")
-        .doesNotContain("alert-threshold")
-        .contains("-Prunner=ubuntu-24.04")
-        .doesNotContain("auto-push")
-        .doesNotContain("gh-pages");
+  @Test
+  void limitsNoSuiteByTimeAndRecordsNoSuiteTimeOnEitherCiEngine() {
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
+        .contains("  ORG_GRADLE_PROJECT_timed: 'false'");
+    assertThat(CiWorkflow.gitlabText()).contains("export ORG_GRADLE_PROJECT_timed=false");
+    assertThat(SourceRoots.read(Path.of("build-logic/src/main/groovy/jagt.fitness.gradle")))
+        .contains("timed = providers.gradleProperty('timed').map { it != 'false' }.orElse(true)");
+    assertThat(SourceRoots.read(Path.of("build-logic/src/main/groovy/jagt.suite-stats.gradle")))
+        .contains("if (providers.gradleProperty('timed').getOrElse('true') != 'false') {");
+    assertThat(SourceRoots.read(Path.of("fitness/build.gradle")))
+        .contains("if (providers.gradleProperty('timed').getOrElse('true') != 'false') {");
   }
 
   @Test
@@ -468,30 +705,33 @@ class CiWorkflowTest {
     String steps =
         String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("steps"));
 
-    assertThat(steps)
-        .contains("fetch-depth=0")
-        .contains("orchestrator-backend/scripts/secret-scan.sh");
-    assertThat(CiWorkflow.gitlabText())
-        .contains("GIT_DEPTH: \"0\"")
-        .contains("orchestrator-backend/scripts/secret-scan.sh");
+    assertThat(steps).contains("fetch-depth=0").contains("gateTest");
+    assertThat(SourceRoots.read(GATES))
+        .contains("gateTest: ['secretScan', 'boardCheck',")
+        .contains("'orchestrator-backend/scripts/secret-scan.sh'");
+    assertThat(CiWorkflow.gitlabText()).contains("GIT_DEPTH: \"0\"").contains("gateTest");
   }
 
   @Test
-  void scansTheReleaseSbomForKnownVulnerabilitiesInGitlabsTestJobThroughTheSharedScript() {
+  void scansTheReleaseSbomForKnownVulnerabilitiesInGitlabsAuditJobThroughTheSharedGate() {
     Map<?, ?> pipeline = new Yaml().load(CiWorkflow.gitlabText());
-    Map<?, ?> test = (Map<?, ?>) Objects.requireNonNull(pipeline.get("test"));
+    Map<?, ?> audit = (Map<?, ?>) Objects.requireNonNull(pipeline.get("audit"));
 
-    assertThat(String.valueOf(test.get("script"))).contains("scripts/vulnerability-scan.sh");
+    assertThat(String.valueOf(audit.get("script"))).contains("gateScan");
   }
 
   @Test
-  void scansTheReleaseSbomInGithubsTestJobThroughTheSharedScriptNotTheAction() {
-    String steps =
-        String.valueOf(Objects.requireNonNull(CiWorkflow.jobs().get("test")).get("steps"));
-
-    assertThat(steps)
-        .contains("run=scripts/vulnerability-scan.sh")
+  void scansTheReleaseSbomOnEveryEngineThroughTheSharedScriptNotTheAction() {
+    assertThat(SourceRoots.read(GATES))
+        .contains("gateScan: ['boardAudit', 'vulnerabilityScan'],")
+        .contains("file('scripts/vulnerability-scan.sh')");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/ci.yml")))
         .doesNotContain("osv-scanner-action");
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("nightly-scan) echo './gradlew --no-daemon gateScan'");
+    assertThat(SourceRoots.read(Path.of("../.github/workflows/nightly.yml")))
+        .doesNotContain("osv-scanner-action");
+    assertThat(CiWorkflow.gitlabText()).doesNotContain("osv-scanner-action");
   }
 
   @Test

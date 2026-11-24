@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,16 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
 public class RecordedVerdicts {
+
+  /**
+   * The code reviewer's reads, by the lead each opens with, and the role a recording names them by.
+   */
+  public static final String REVIEW_ROLE = "code-reviewer";
+
+  public static final String ANSWER_ROLE = "bot-answer";
+
+  private static final Map<String, String> CODE_REVIEWER_ROLES =
+      Map.of(RoundReviewer.REVIEW_LEAD, REVIEW_ROLE, RoundReviewer.ANSWER_LEAD, ANSWER_ROLE);
 
   private final Recording recording;
   private final List<RecordingLine.Judged> left;
@@ -41,13 +52,23 @@ public class RecordedVerdicts {
     if (prompt.contains(RoundReviewer.QUESTION_LEAD)) {
       return decision();
     }
-    if (left.isEmpty()) {
+    Optional<String> reviewer =
+        CODE_REVIEWER_ROLES.entrySet().stream()
+            .filter(lead -> prompt.startsWith(lead.getKey()))
+            .map(Map.Entry::getValue)
+            .findFirst();
+    if (reviewer.isPresent()) {
+      return codeReviewer(reviewer.get());
+    }
+    List<RecordingLine.Judged> master =
+        left.stream().filter(read -> !CODE_REVIEWER_ROLES.containsValue(read.role())).toList();
+    if (master.isEmpty()) {
       recording.diverge("", "master", "the Master read a round the recording holds no verdict for");
       return Optional.empty();
     }
-    long round = left.getFirst().round();
+    long round = master.getFirst().round();
     List<RecordingLine.Judged> current =
-        left.stream().filter(read -> read.round() == round).toList();
+        master.stream().filter(read -> read.round() == round).toList();
     RecordingLine.Judged taken =
         current.stream()
             .filter(read -> prompt.contains(" " + read.role() + " "))
@@ -55,6 +76,18 @@ public class RecordedVerdicts {
             .orElse(current.getFirst());
     left.remove(taken);
     return Optional.of(taken.judgement());
+  }
+
+  private Optional<Judgement> codeReviewer(String role) {
+    Optional<RecordingLine.Judged> taken =
+        left.stream().filter(read -> read.role().equals(role)).findFirst();
+    if (taken.isEmpty()) {
+      recording.diverge(
+          "", role, "the code reviewer read a request the recording holds no verdict for");
+      return Optional.empty();
+    }
+    left.remove(taken.get());
+    return Optional.of(taken.get().judgement());
   }
 
   private Optional<Judgement> decision() {

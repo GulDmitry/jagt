@@ -56,6 +56,14 @@ sourceSets {
 }
 
 sourceSets {
+    codeReviewEval {
+        java.srcDirs = ['src/codeReviewEval/java']
+        compileClasspath += sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
     triageEval {
         java.srcDirs = ['src/triageEval/java']
         compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
@@ -117,10 +125,6 @@ tasks.register('boardTest', Test) {
     doFirst { coverageDump.deleteDir() }
     finalizedBy 'boardCoverage'
     shouldRunAfter tasks.named('test')
-    if (System.getenv('JAGT_BOARD_URL')) { // the container run must not overwrite the board run's reports
-        reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/boardTestContainer')
-        reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/boardTestContainer')
-    }
 }
 
 tasks.register('boardCoverage', Exec) {
@@ -139,7 +143,10 @@ tasks.register('boardCoverage', Exec) {
         if (!new File(board, 'node_modules').directory) {
             missing << 'board/node_modules (run npm ci in board/)'
         }
-        if (missing) { // skip, naming what is missing, as the container run has no Node
+        if (missing && System.getenv('CI')) {
+            throw new GradleException("boardCoverage cannot run on CI — missing: ${missing.join(', ')}.")
+        }
+        if (missing) {
             task.logger.lifecycle("Skipping boardCoverage — missing: ${missing.join(', ')}.")
         }
         !filteredRun && missing.isEmpty() && new File(board, 'coverage/browser').directory // a `--tests` run proves no ratio
@@ -169,14 +176,27 @@ tasks.register('linuxDriverTest', Test) {
         }
         if (missing) {
             task.logger.lifecycle("Skipping linuxDriverTest — missing: ${missing.join(', ')}."
-                    + " On a Mac: scripts/linux-suite.sh runs it in a container.")
+                    + " On a Mac: scripts/ci-local.sh heavy runs it in a container.")
         }
         missing.isEmpty()
     }
     shouldRunAfter tasks.named('test')
 }
 
-tasks.register('guardsTest', dev.jagt.gradle.guards.GuardsGateTask) {
+tasks.register('divergenceRegister', dev.jagt.gradle.divergence.DivergenceRegisterTask) {
+    description = 'Fails for each red CI run of a locally green tree that docs/divergences.md has no row for.'
+    group = 'verification'
+    repository = layout.settingsDirectory
+}
+
+tasks.register('provenTree', dev.jagt.gradle.provenance.ProvenTreeTask) {
+    description = 'Fails unless -Pcommit is a merge whose tree equals its request head tree, green in CI.'
+    group = 'verification'
+    repository = layout.settingsDirectory
+    commit = providers.gradleProperty('commit')
+}
+
+tasks.register('guardsTest',dev.jagt.gradle.guards.GuardsGateTask) {
     description = 'Gates every script in scripts/guards/test/scripts.list: shellcheck, a case file and the contract tags, then the bats cases.'
     group = 'verification'
     repository = layout.settingsDirectory.dir('..')
@@ -220,6 +240,124 @@ tasks.register('installTest', Test) {
     def jar = tasks.named('bootJar').flatMap { it.archiveFile }
     systemProperty 'install.repo', layout.settingsDirectory.dir('..').asFile.absolutePath
     doFirst { systemProperty 'install.jar', jar.get().asFile.absolutePath }
-    timeout = java.time.Duration.ofMinutes(20)
     shouldRunAfter tasks.named('test')
+}
+
+// One gate per CI job: the workflows and scripts/ci-local.sh call these and no other task (row `workflow-gradle-lines`).
+def repository = layout.settingsDirectory.dir('..').asFile
+def board = new File(repository, 'board')
+def sbom = layout.buildDirectory.file('reports/sbom/jagt.cdx.json')
+
+tasks.register('secretScan', Exec) {
+    description = 'Scans the tree and its history for secrets.'
+    group = 'verification'
+    workingDir = repository
+    commandLine new File(repository, 'orchestrator-backend/scripts/secret-scan.sh').absolutePath
+}
+
+tasks.register('boardCheck', Exec) {
+    description = 'Installs the board, lints it and runs its node tests.'
+    group = 'verification'
+    workingDir = board
+    commandLine 'sh', '-c', 'npm ci && npm run lint && npm test'
+}
+
+tasks.register('boardInstall', Exec) {
+    description = 'Installs the board from its lock file.'
+    workingDir = board
+    commandLine 'npm', 'ci'
+}
+
+tasks.register('boardMutate', Exec) {
+    description = "Mutates the board's covered JavaScript."
+    workingDir = board
+    mustRunAfter 'boardInstall'
+    commandLine 'npm', 'run', 'mutate'
+}
+
+// Live data: a scan runs where the dependency set changed against -Paudit.base, and always without it.
+def auditScan = dev.jagt.gradle.audit.DependencySet.scanNeeded(providers.gradleProperty('audit.base').orNull) { ref ->
+    providers.exec { workingDir repository; commandLine 'git', 'diff', '--name-only', "${ref}...HEAD" }
+        .standardOutput.asText.get().readLines()
+}
+
+tasks.register('boardAudit', Exec) {
+    description = "Audits the board's dependencies for known vulnerabilities."
+    group = 'verification'
+    workingDir = board
+    onlyIf { auditScan }
+    commandLine 'sh', '-c', 'npm ci && npm audit --audit-level=high'
+}
+
+tasks.register('vulnerabilityScan', Exec) {
+    description = 'Scans the release SBOM for known vulnerabilities.'
+    group = 'verification'
+    onlyIf { auditScan }
+    dependsOn tasks.named('cyclonedxBom')
+    commandLine file('scripts/vulnerability-scan.sh').absolutePath, 'scan', 'source', '-L'
+    argumentProviders.add({ [sbom.get().asFile.absolutePath] } as CommandLineArgumentProvider)
+}
+
+tasks.register('baseImageScan', dev.jagt.gradle.audit.BaseImageScanTask) {
+    description = 'Builds each base image for amd64 and scans it, as the registry workflow does.'
+    group = 'verification'
+    it.repository = layout.settingsDirectory.dir('..')
+    needed = providers.provider {
+        dev.jagt.gradle.audit.BaseImages.scanNeeded(providers.gradleProperty('audit.base').orNull) { ref ->
+            providers.exec { workingDir repository; commandLine 'git', 'diff', '--name-only', "${ref}...HEAD" }
+                .standardOutput.asText.get().readLines()
+        }
+    }
+}
+
+tasks.register('containerUp', Exec) {
+    description = "Starts jagt's image under compose with a stub project."
+    dependsOn tasks.named('bootJar')
+    commandLine file('scripts/container-suite.sh').absolutePath, 'up'
+    finalizedBy 'containerDown'
+}
+
+tasks.register('containerDown', Exec) {
+    description = 'Removes what containerUp started.'
+    commandLine file('scripts/container-suite.sh').absolutePath, 'down'
+}
+
+tasks.register('boardContainerTest', Test) {
+    description = "Drives the board of jagt's image under compose."
+    group = 'verification'
+    testClassesDirs = sourceSets.boardTest.output.classesDirs
+    classpath = sourceSets.boardTest.runtimeClasspath
+    useJUnitPlatform()
+    filter { includeTestsMatching '*BoardContainerTest' }
+    dependsOn tasks.named('playwrightChromium'), tasks.named('containerUp')
+    environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
+    def login = layout.buildDirectory.file('container-suite/board.env')
+    doFirst { login.get().asFile.readLines().each { line -> environment(*line.split('=', 2)) } }
+    finalizedBy 'containerDown'
+    mustRunAfter 'boardTest'
+}
+tasks.named('containerDown') { mustRunAfter 'boardContainerTest' }
+tasks.named('boardTest') { mustRunAfter 'boardInstall', 'boardCheck' }
+
+[
+    gateTest: ['secretScan', 'boardCheck', 'test', 'guardsTest', 'checkLicences'],
+    gateHeavy: ['boardInstall', 'e2eTest', 'linuxDriverTest', 'boardTest', 'boardContainerTest'],
+    gateStand: [':stand:standTest'],
+    gateInstall: ['installTest'],
+    gateRelease: ['bootJar', 'cyclonedxBom'],
+    gateCodeql: ['classes', 'testClasses'],
+    gateRepeat: ['e2eTest'],
+    gateProperties: ['test'],
+    gateScan: ['boardAudit', 'vulnerabilityScan'],
+].each { gate, steps ->
+    tasks.register(gate) {
+        description = "Runs the work of the CI job ${gate}."
+        group = 'verification'
+        dependsOn steps
+    }
+}
+tasks.register('gate') {
+    description = "Runs every gate a pull request's CI runs."
+    group = 'verification'
+    dependsOn 'gateTest', 'gateHeavy', 'gateStand', 'gateInstall'
 }

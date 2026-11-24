@@ -114,7 +114,7 @@ class TmuxSessionHostTest {
   private static Stream<Consumer<TmuxSessionHost>> windowChanges() {
     return Stream.of(
         host -> host.submitTaskWindow("jagt", "ABC-1"),
-        host -> host.keepFeedWindow("jagt", "feed", Path.of("/feeds/a.log")),
+        host -> host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli")),
         host -> host.killTaskWindows("jagt", "ABC-1"),
         host -> host.pressTaskWindow("jagt", "ABC-1", SessionHost.Key.DOWN));
   }
@@ -268,7 +268,7 @@ class TmuxSessionHostTest {
     ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("tmux");
     TmuxSessionHost host = tmuxHost().withToolchain(properties).build(processes, terminal, agent);
 
-    host.keepFeedWindow("jagt", "feed", Path.of("/feed.log"));
+    host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli"));
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
@@ -536,29 +536,6 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void createsTheSessionForTheFeedWhereNoneExistsYet() {
-    processes.answering(new Processes.Result(1, "", "no session"), "has-session");
-
-    host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/master.log"));
-
-    List<List<String>> commands = processes.issued();
-    assertThat(commands)
-        .anySatisfy(
-            command -> assertThat(command).containsSequence("new-session", "-d", "-s", "jagt"));
-  }
-
-  @Test
-  void tailsTheFeedInWindowOfItsOwnWhereNoneIsOpen() {
-
-    host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/it's.log"));
-
-    List<List<String>> commands = processes.issued();
-    assertThat(commands)
-        .anySatisfy(command ->
-            assertThat(command.getLast()).startsWith("tail -n 200 -F '/feeds/it'\\''s.log'"));
-  }
-
-  @Test
   void runsCommandAsTheProcessOfWindowOfItsOwnQuotedWordByWord() {
 
     host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli", "auth", "it's"));
@@ -605,17 +582,6 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void opensNoSecondFeedWindowWhereOneIsOpen() {
-    processes.answering(
-        new Processes.Result(0, "@5 100 1700000000 master-feed\n", ""), "list-windows");
-
-    host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/master.log"));
-
-    List<List<String>> commands = processes.issued();
-    assertThat(commands).noneMatch(command -> command.contains("new-window"));
-  }
-
-  @Test
   void submitsNothingWhereTheTaskHasNoWindow() {
     FakeProcesses processes =
         new FakeProcesses()
@@ -654,44 +620,6 @@ class TmuxSessionHostTest {
           .extracting(ILoggingEvent::getLevel)
           .containsExactly(Level.WARN);
     }
-  }
-
-  @Test
-  void opensNoFeedWindowAndNamesTheCauseWhereTheSessionsWindowsCannotBeListed() {
-    FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
-    processes.answering(new Processes.Result(1, "", "protocol version mismatch"), "list-windows");
-    TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
-    try (FakeLogCapture log = new FakeLogCapture(TmuxReads.class)) {
-      host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
-
-      assertThat(processes.issuedContaining("new-window")).isEmpty();
-      assertThat(log.events())
-          .filteredOn(event -> "tmux windows unreadable".equals(event.getMessage()))
-          .flatExtracting(ILoggingEvent::getKeyValuePairs)
-          .anySatisfy(pair -> assertThat(pair.value).isEqualTo("protocol version mismatch"));
-    }
-  }
-
-  @Test
-  void opensNoSecondFeedWindowWhereOneByThatNameExists() {
-    FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
-    processes.answering(
-        new Processes.Result(0, "@1 100 1700000000 master\n@2 200 1700000500 xmaster\n", ""),
-        "list-windows");
-    TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
-
-    host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
-
-    assertThat(processes.issuedContaining("new-window")).isEmpty();
-  }
-
-  @Test
-  void opensOneFeedWindowWhereNoneByThatNameExists() {
-    processes.answering(new Processes.Result(0, "@2 200 1700000500 xmaster\n", ""), "list-windows");
-
-    host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
-
-    assertThat(processes.issuedContaining("new-window")).hasSize(1);
   }
 
   @Test

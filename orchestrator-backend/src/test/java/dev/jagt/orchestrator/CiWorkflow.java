@@ -12,6 +12,8 @@ public final class CiWorkflow {
 
   private static final Path WORKFLOW = Path.of("../.github/workflows/ci.yml");
 
+  private static final Path NIGHTLY = Path.of("../.github/workflows/nightly.yml");
+
   private static final Path GITLAB = Path.of("../.gitlab-ci.yml");
 
   private CiWorkflow() {}
@@ -36,7 +38,15 @@ public final class CiWorkflow {
   }
 
   public static Map<String, Map<String, Object>> jobs() {
-    Map<?, ?> workflow = new Yaml().load(SourceRoots.read(WORKFLOW));
+    return jobsOf(WORKFLOW);
+  }
+
+  static Map<String, Map<String, Object>> nightlyJobs() {
+    return jobsOf(NIGHTLY);
+  }
+
+  private static Map<String, Map<String, Object>> jobsOf(Path file) {
+    Map<?, ?> workflow = new Yaml().load(SourceRoots.read(file));
     Map<String, Map<String, Object>> jobs = new LinkedHashMap<>();
     Map<?, ?> declared = (Map<?, ?>) Objects.requireNonNull(workflow.get("jobs"));
     for (Map.Entry<?, ?> job : declared.entrySet()) {

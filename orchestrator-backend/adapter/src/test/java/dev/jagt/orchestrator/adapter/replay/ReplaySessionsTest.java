@@ -12,6 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.adapter.ProcessRunnerTest;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -22,7 +23,6 @@ import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -257,7 +257,7 @@ class ReplaySessionsTest {
 
     sessions.start();
 
-    await().atMost(Duration.ofSeconds(10)).until(recording::drained);
+    await().atMost(ProcessRunnerTest.WAIT_CEILING).until(recording::drained);
   }
 
   @Test

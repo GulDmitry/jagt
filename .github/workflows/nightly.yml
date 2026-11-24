@@ -1,53 +1,195 @@
+# What a pull request's CI and the local gate leave out: repeated, cold, long, live. Every job but install runs its line through
+# scripts/linux-suite.sh <job>, the local twin; its dependencies restore read-only from CI's, as ~20 cold resolutions at once draw
+# Maven Central's 429.
+# A red opens one issue (the report job); nothing here reruns. docs/rules/ci.md, tier T4.
 name: nightly
 
 on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      job:
+        description: 'The one job to run, every leg of its matrix (empty: every job)'
+        required: false
+        default: ''
 
 permissions:
-  contents: write
-  packages: write
-  pages: write
-  deployments: write
-  id-token: write
-  attestations: write
+  contents: read
+
+env:
+  ORG_GRADLE_PROJECT_timed: 'false'
+
+defaults:
+  run:
+    working-directory: orchestrator-backend
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
-    secrets: inherit
-    with:
-      nightly: true
-  mutate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+  stand:
+    name: stand ${{ matrix.engine }} x3
+    if: (!inputs.job || inputs.job == 'stand')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [compose, kind]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: board/package-lock.json
-      - name: Mutate the board's covered JavaScript
-        working-directory: board
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: run the stand without a model three times on the engine
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-stand-${{ matrix.engine }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: nightly-stand-${{ matrix.engine }}-evidence
+          retention-days: 14
+          path: |
+            orchestrator-backend/stand/build/stand/failed
+            orchestrator-backend/stand/build/test-results/standTest
+
+  e2e:
+    name: e2e round ${{ matrix.round }}
+    if: (!inputs.job || inputs.job == 'e2e')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        round: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: run the end-to-end flows from scratch
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: nightly-e2e-${{ matrix.round }}-reports
+          retention-days: 14
+          path: |
+            orchestrator-backend/build/reports/tests/e2eTest
+            orchestrator-backend/build/test-results/e2eTest
+
+  properties:
+    name: properties at 1000 tries
+    if: (!inputs.job || inputs.job == 'properties')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: run the properties at 1000 tries
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-properties
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: nightly-properties-report
+          retention-days: 14
+          path: orchestrator-backend/build/reports/tests/test
+
+  scan:
+    name: live vulnerability scan
+    if: (!inputs.job || inputs.job == 'scan')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: log in to the registry holding the CI image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/gradle-home
+          key: gradle-home-nightly
+          restore-keys: gradle-home-
+      - name: scan the dependencies against live data
+        env:
+          JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
+        run: scripts/linux-suite.sh nightly-scan
+
+  install:
+    name: real-feed install (${{ matrix.os }})
+    if: (!inputs.job || inputs.job == 'install')
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    defaults:
+      run:
+        working-directory: .
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: install the latest published release from the real feed
+        if: runner.os != 'Windows'
         run: |
-          npm ci
-          npm run mutate
-  delay:
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+          JAGT_HOME="$RUNNER_TEMP/jagt" JAGT_BIN="$RUNNER_TEMP/bin" sh install.sh
+          test -x "$RUNNER_TEMP/bin/jagt"
+      - name: install the latest published release from the real feed (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:JAGT_HOME = "$env:RUNNER_TEMP\jagt"
+          $env:JAGT_BIN = "$env:RUNNER_TEMP\bin"
+          ./install.ps1
+          if (-not (Test-Path "$env:JAGT_BIN\jagt.cmd")) { throw 'no launcher' }
+
+  report:
+    name: open an issue for a red night
+    if: failure()
+    needs: [stand, e2e, properties, scan, install]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
-      actions: read
+      issues: write
+    defaults:
+      run:
+        working-directory: .
     steps:
-      - name: Log the start delay against the cron
+      - name: open the night's issue, or add this run to the open one
         env:
           GH_TOKEN: ${{ github.token }}
-          CRON: ${{ github.event.schedule }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          created=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)
-          read -r minute hour _ <<< "$CRON"
-          scheduled=$(date -u -d "$(date -u -d "$created" +%F) $hour:$minute" +%s)
-          delay=$(( $(date -u -d "$created" +%s) - scheduled ))
-          echo "::notice title=nightly start delay::event=nightly.delay cron='$CRON' created_at=$created delay_seconds=$delay"
+          gh label create nightly --repo "$GITHUB_REPOSITORY" --force
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label nightly --json number -q '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "Red again: $RUN"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --label nightly --title "nightly red" --body "Red: $RUN"
+          fi

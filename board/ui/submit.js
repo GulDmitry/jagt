@@ -2,9 +2,8 @@ import { refusal } from "../core/api.js";
 import { submitButton } from "../core/dom.js";
 import { toast } from "./toast.js";
 
-/** @typedef {{ waiting: string, send: () => Promise<{ message: string }>, done?: (result: { message: string }) => void, problem?: () => string | null }} Sending */
+/** @typedef {{ waiting: string, send: () => Promise<{ message: string }>, done?: (result: { message: string }) => void, problem?: () => string | null, inline?: (failure: unknown) => void }} Sending */
 
-// The board is read again after every form.
 /** @type {{ afterwards: () => Promise<void> }} */
 const held = {
   afterwards: async () => {},
@@ -16,31 +15,49 @@ export const onSent = (read) => {
 };
 
 /**
+ * @param {unknown} failure
+ * @param {Element | null} state
+ * @param {Sending["inline"]} inline
+ * @returns {boolean} whether the reason stays in the form
+ */
+const refused = (failure, state, inline) => {
+  if (!inline || !state) {
+    toast(refusal(failure), true);
+    return false;
+  }
+  state.textContent = refusal(failure);
+  state.classList.add("bad");
+  inline(failure);
+  return true;
+};
+
+/**
  * @param {HTMLFormElement} form
  * @param {Sending} options
  */
-export async function sending(form, { waiting, send, done, problem }) {
+export async function sending(form, { waiting, send, done, problem, inline }) {
   const state = form.querySelector(".state");
   const button = submitButton(form);
   // requestSubmit() submits past a disabled button.
   if (button.disabled) return;
-  const refused = problem?.();
-  state?.classList.toggle("bad", !!refused);
-  if (refused) {
-    if (state) state.textContent = refused;
+  const blocked = problem?.();
+  state?.classList.toggle("bad", !!blocked);
+  if (blocked) {
+    if (state) state.textContent = blocked;
     return;
   }
   button.disabled = true;
   if (state) state.textContent = waiting;
+  let kept = false;
   try {
     const result = await send();
     toast(result.message);
     if (done) done(result);
   } catch (e) {
-    toast(refusal(e), true);
+    kept = refused(e, state, inline);
   } finally {
     button.disabled = false;
-    if (state) state.textContent = "";
+    if (state && !kept) state.textContent = "";
     await held.afterwards();
   }
 }

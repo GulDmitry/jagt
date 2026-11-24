@@ -1,4 +1,4 @@
-ARG BASE=ghcr.io/guldmitry/jagt-base:base@sha256:77a0031e88b4bc083ef4fa2e87b49b7e8a9dd8dac0cf510cf8815ae9f4a6bbd5
+ARG BASE=ghcr.io/guldmitry/jagt-base:base@sha256:fe607a00ebd2dd623b200fd41bcad94971719f75988a6cabf69d2ee86747a1fa
 FROM eclipse-temurin:25-jdk-noble@sha256:80f67fb3d6f76e2d817d98a4cc2a9cf05f054d4e6adc5e2144bde671d722e63f AS build
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 WORKDIR /src

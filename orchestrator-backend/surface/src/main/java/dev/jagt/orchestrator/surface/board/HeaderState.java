@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.role.HeaderChips;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.model.ModelRoles;
 import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ class HeaderState {
   private final Reach reach;
   private final Clock clock;
   private final List<HeaderChips> chips;
+  private final ModelRoles roles;
 
   Jobs.Summary summary() {
     return jobs.summary(clock.millis());
@@ -33,6 +35,10 @@ class HeaderState {
 
   List<HeaderChip> chips() {
     return chips.stream().flatMap(source -> source.chips().stream()).toList();
+  }
+
+  List<String> roleLogs() {
+    return roles.running();
   }
 
   List<ReachLost> reachLost() {

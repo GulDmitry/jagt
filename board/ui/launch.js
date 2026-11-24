@@ -23,7 +23,6 @@ export const open = () => {
 /** @type {HTMLElement} */ (document.getElementById("close-launch")).onclick =
   () => dialog.close();
 
-// ⌘↵ starts from any field.
 form.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
     event.preventDefault();
@@ -45,6 +44,7 @@ export function render() {
   strategy.replaceChildren(
     ...choices.map((choice) => new Option(choice.id, choice.id)),
   );
+  offerAlternatives(choices);
   strategy.dataset.tip = choices
     .map((choice) => `${choice.id} — ${choice.hint}`)
     .join(" · ");
@@ -52,6 +52,29 @@ export function render() {
     strategy.value = chosenBefore;
   }
 }
+
+const alternatives = /** @type {HTMLElement} */ (
+  document.getElementById("launch-choices")
+);
+
+/** @param {{ id: string, hint: string }[]} choices */
+const offerAlternatives = (choices) =>
+  alternatives.replaceChildren(
+    ...choices
+      .filter((choice) => choice.id !== "fresh")
+      .map((choice) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.id = `launch-${choice.id}`;
+        button.textContent = choice.id;
+        button.dataset.tip = choice.hint;
+        button.onclick = () => {
+          strategy.value = choice.id;
+          form.requestSubmit();
+        };
+        return button;
+      }),
+  );
 
 const plan = /** @type {HTMLInputElement} */ (document.getElementById("plan"));
 const notes = /** @type {HTMLInputElement} */ (
@@ -76,8 +99,14 @@ form.addEventListener("change", () =>
 submits(form, {
   problem,
   waiting: t("launch.starting"),
-  send: () =>
-    api("/api/tasks", {
+  inline: (failure) => {
+    alternatives.hidden =
+      !(failure instanceof Error && "code" in failure) ||
+      failure.code !== "BRANCH_EXISTS";
+  },
+  send: () => {
+    alternatives.hidden = true;
+    return api("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -90,7 +119,8 @@ submits(form, {
         ).value,
         notes: notes.value,
       }),
-    }),
+    });
+  },
   done: () => {
     form.reset();
     projects.forget();

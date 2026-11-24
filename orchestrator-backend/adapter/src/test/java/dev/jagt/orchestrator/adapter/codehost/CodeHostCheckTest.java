@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.adapter.codehost.command.CommandPipeline;
+import dev.jagt.orchestrator.adapter.codehost.notes.CommandNotes;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -20,7 +22,8 @@ class CodeHostCheckTest {
   private final CodeHostCheck check =
       new CodeHostCheck(
           configService,
-          List.of(new CommandPipeline(mock(Processes.class), new ReachLedger()), new NoCodeHost()));
+          List.of(new CommandPipeline(mock(Processes.class), new ReachLedger()), new NoCodeHost()),
+          List.of(new CommandNotes(mock(Processes.class), new ReachLedger())));
 
   @Test
   void refusesCodeHostNoDriverAnswersForNamingTheKey() {
@@ -60,5 +63,24 @@ class CodeHostCheckTest {
                 .withProjects(Map.of("shop", shopProject().withKind("none").build())));
 
     assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void refusesCommandHostWhoseNotePostingProgramIsMissingNamingTheKey() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "shop",
+                        shopProject()
+                            .withKind("command")
+                            .withPipelineCommand(List.of("sh", "{sha}"))
+                            .withPostCommand(List.of("no-such-notes-program", "{request}"))
+                            .build())));
+
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.projects.shop.postCommand");
   }
 }

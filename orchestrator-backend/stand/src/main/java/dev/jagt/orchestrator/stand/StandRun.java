@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jspecify.annotations.Nullable;
 import org.opentest4j.TestAbortedException;
 import tools.jackson.databind.JsonNode;
@@ -30,7 +31,10 @@ public final class StandRun implements AutoCloseable {
           "master-deploy",
           "deploy-check",
           "acceptance-check",
-          "deploy-conflict");
+          "deploy-conflict",
+          "code-review",
+          "review-signals");
+  private static final List<String> REVIEWS = List.of("code-review", "review-signals");
   private static final Duration STALL = Duration.ofMinutes(15);
 
   private final Path root;
@@ -74,7 +78,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   public static StandRun start(String scenario, StandMode mode) throws IOException {
-    return StandLauncher.standard().start(scenario, mode, null);
+    return StandLauncher.standard().start(scenario, mode, null, StandConfig.Posts.NONE);
   }
 
   /**
@@ -83,7 +87,45 @@ public final class StandRun implements AutoCloseable {
    */
   public static StandRun replay(String scenario, StandMode mode, Path recording)
       throws IOException {
-    return StandLauncher.standard().start(scenario, mode, recording);
+    return StandLauncher.standard().start(scenario, mode, recording, StandConfig.Posts.NONE);
+  }
+
+  public static StandRun replayReviewing(String scenario, Path recording, StandConfig.Posts posts)
+      throws IOException {
+    return StandLauncher.standard().start(scenario, StandMode.ACT, recording, posts);
+  }
+
+  public int actorNotes() {
+    return (int)
+        host.store().allNotes().stream()
+            .filter(note -> note.path("kind").asString().equals("actor"))
+            .count();
+  }
+
+  public boolean awaitActorNotes(int notes, Duration limit) {
+    Instant deadline = StandClock.now().plus(limit);
+    while (actorNotes() < notes && StandClock.now().isBefore(deadline)) {
+      reviewNow();
+      JagtProcess.pause(poll);
+    }
+    return actorNotes() >= notes;
+  }
+
+  public void reviewNow() {
+    REVIEWS.forEach(jagt.board()::run);
+  }
+
+  public void killJagtAfterFirstNote() {
+    AtomicBoolean once = new AtomicBoolean();
+    host.afterPost(() -> {
+      if (once.compareAndSet(false, true)) {
+        jagt.terminate();
+      }
+    });
+  }
+
+  public Path statistics() {
+    return root.resolve("records").resolve("code-review.jsonl");
   }
 
   void restartJagt() {

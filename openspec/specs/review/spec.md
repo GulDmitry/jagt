@@ -64,8 +64,8 @@ a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is writ
 - **WHEN** a GitHub review is written in the body, not a thread
 - **THEN** relayed all the same
 #### Scenario: The agent answered last
-- **WHEN** two polls read a thread whose newest note is by the account the host's tools act as
-- **THEN** neither relays it, as it waits on the reviewer, the task is not REVIEWED, and only a new note on it starts a round
+- **WHEN** two polls read a thread whose newest note is by the account the host's tools act as, unless it opens with the AI line
+- **THEN** neither relays it, as it waits on the reviewer; only a new note starts a round, and one with the AI line awaits an answer
 
 ### Requirement: Threads are resolved at ship
 The agent SHALL resolve at ship time over its own MCP (`ShipService.repliesStep`), only threads whose code it changed. During the

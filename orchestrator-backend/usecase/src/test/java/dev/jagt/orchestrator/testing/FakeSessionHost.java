@@ -41,9 +41,6 @@ public final class FakeSessionHost implements SessionHost {
       Path worktreePath) {}
 
   @Override
-  public void keepFeedWindow(String session, String name, Path file) {}
-
-  @Override
   public void openCommandWindow(
       String session, String dedicatedTitle, String name, List<String> command) {}
 

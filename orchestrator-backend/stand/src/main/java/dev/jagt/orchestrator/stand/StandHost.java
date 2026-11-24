@@ -7,6 +7,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class StandHost implements AutoCloseable {
@@ -14,12 +17,15 @@ public class StandHost implements AutoCloseable {
   private final HttpServer server;
   private final StandStore store;
   private final JsonRpc rpc;
+  private final FakeGh gh;
 
   private StandHost(HttpServer server, StandStore store, JsonRpc rpc) {
     this.server = server;
     this.store = store;
     this.rpc = rpc;
+    this.gh = new FakeGh(store);
     server.createContext("/mcp", this::serve);
+    server.createContext("/gh", this::serveGh);
     server.createContext("/app", this::page);
   }
 
@@ -47,6 +53,10 @@ public class StandHost implements AutoCloseable {
     return store;
   }
 
+  public void afterPost(Runnable hook) {
+    gh.afterPost(hook);
+  }
+
   @Override
   public void close() {
     server.stop(0);
@@ -61,6 +71,25 @@ public class StandHost implements AutoCloseable {
       byte[] bytes = "<h1>Hello, World</h1>".getBytes(StandardCharsets.UTF_8);
       exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
       exchange.sendResponseHeaders(200, bytes.length);
+      exchange.getResponseBody().write(bytes);
+    }
+  }
+
+  private void serveGh(HttpExchange exchange) throws IOException {
+    try (exchange) {
+      String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+      List<String> args = new ArrayList<>(List.of(body.split("\0", -1)));
+      args.removeLast();
+      int status = 200;
+      String printed;
+      try {
+        printed = gh.run(args);
+      } catch (StandFailure refused) {
+        status = 400;
+        printed = Objects.requireNonNullElse(refused.getMessage(), "refused");
+      }
+      byte[] bytes = printed.getBytes(StandardCharsets.UTF_8);
+      exchange.sendResponseHeaders(status, bytes.length);
       exchange.getResponseBody().write(bytes);
     }
   }

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReplayCodeHost extends OfflineCodeHost {
 
-  static final String ID = "replay";
+  public static final String ID = "replay";
 
   @Override
   public String id() {

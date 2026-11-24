@@ -74,6 +74,13 @@ public final class StandEngine {
     return !KIND.equals(engine);
   }
 
+  public void needsHost(String scenario) {
+    if (!HOST.equals(engine)) {
+      throw new TestAbortedException(
+          scenario + " runs a fake gh beside jagt, which only the host engine has; -Pengine=host");
+    }
+  }
+
   public Path inside(Path root) {
     return sharesRoot() ? root : POD_FIXTURES;
   }

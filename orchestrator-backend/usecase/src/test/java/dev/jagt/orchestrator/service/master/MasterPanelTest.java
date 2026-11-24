@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -52,6 +53,7 @@ class MasterPanelTest {
   private final ChargedReviews reviews = mock(ChargedReviews.class);
   private final MasterBriefs briefs = mock(MasterBriefs.class);
   private final RoundQuotes quotes = mock(RoundQuotes.class);
+  private final ConfigService configService = mock(ConfigService.class);
   private final ConfigFile.ArbiterConfig judge =
       new ConfigFile.ArbiterConfig("judge", null, null, null, null);
   private final ConfigFile.ArbiterConfig act =
@@ -79,11 +81,13 @@ class MasterPanelTest {
             reducer,
             event -> {});
     stored = new MasterReview(state);
-    panel = new MasterPanel(reviews, briefs, quotes, stored);
+    panel =
+        new MasterPanel(reviews, briefs, quotes, stored, new RoleYields(configService, List.of()));
     reviewPending =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     planPending = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
     inProgress = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
+    when(configService.load()).thenReturn(ConfigFile.defaults());
     when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.of(emptyRead));
     when(quotes.question(inProgress)).thenReturn(Optional.of(emptyRead));
@@ -247,7 +251,8 @@ class MasterPanelTest {
                 "designer",
                 "is the ideology intact",
                 "opus",
-                List.of("static/**", "docs/{rules,usage}.md")));
+                List.of("static/**", "docs/{rules,usage}.md"),
+                ""));
   }
 
   @Test
@@ -281,7 +286,7 @@ class MasterPanelTest {
   void skipsRoleWhereEveryChangedPathIsOneItNeverReads(String first, String second, boolean read) {
     MasterPanel.Role qa =
         new MasterPanel.Role(
-            "QA", "is it tested", "", List.of("**/*.java", "!**/*.md", "!**/*.yml"));
+            "QA", "is it tested", "", List.of("**/*.java", "!**/*.md", "!**/*.yml"), "");
 
     assertThat(qa.reads(Optional.of(List.of(first, second)))).isEqualTo(read);
   }

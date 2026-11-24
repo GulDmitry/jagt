@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
+import dev.jagt.orchestrator.task.review.AiLine;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -28,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class GitLabCli implements CodeHostDriver {
 
-  static final String ID = "gitlab";
+  public static final String ID = "gitlab";
   private static final String MARKER = "/pipelines/";
   private static final String REQUEST_MARKER = "/merge_requests/";
   private static final Set<String> FAILED = Set.of("failed", "canceled", "canceling");
@@ -47,7 +48,12 @@ public class GitLabCli implements CodeHostDriver {
   private final HostCli cli;
 
   public GitLabCli(Processes processes, Reach reach) {
-    this.cli = new HostCli(processes, reach, "glab", GitLabCli::login);
+    this.cli = cli(processes, reach);
+  }
+
+  /** The {@code glab} every driver of this host asks through. */
+  public static HostCli cli(Processes processes, Reach reach) {
+    return new HostCli(processes, reach, "glab", GitLabCli::login);
   }
 
   private static List<String> login(String hostname) {
@@ -282,7 +288,8 @@ public class GitLabCli implements CodeHostDriver {
           }
           JsonNode newest = notes.path(notes.size() - 1);
           String author = newest.path("author").path("username").asString("");
-          if (open && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+          boolean mine = author.equalsIgnoreCase(me) && !me.isBlank();
+          if (open && (AiLine.opens(newest.path("body").asString("")) || !mine)) {
             ids.add(newest.path("id").asString(""));
           }
         });

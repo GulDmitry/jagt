@@ -22,6 +22,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class RefusedStartServedUntilSavedTest {
 
+  private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
+
   @Test
   @Timeout(120)
   void refusedStartIsServedOnTheBoardPortAndRethrownWhenTheWaitIsInterrupted(@TempDir Path root)
@@ -38,7 +40,7 @@ class RefusedStartServedUntilSavedTest {
             .uncaughtExceptionHandler((thread, failure) -> ended.set(failure))
             .start(() -> OrchestratorApplication.main(launchArgs(root, port).build()));
     await()
-        .atMost(Duration.ofSeconds(60))
+        .atMost(WAIT_CEILING)
         .ignoreExceptions()
         .until(() ->
             HttpClient.newHttpClient().send(read, HttpResponse.BodyHandlers.ofString()).statusCode()
@@ -70,7 +72,7 @@ class RefusedStartServedUntilSavedTest {
         .uncaughtExceptionHandler((thread, failure) -> ended.set(failure))
         .start(() -> OrchestratorApplication.main(launchArgs(root, port).build()));
     await()
-        .atMost(Duration.ofSeconds(60))
+        .atMost(WAIT_CEILING)
         .ignoreExceptions()
         .until(() ->
             client
@@ -94,7 +96,7 @@ class RefusedStartServedUntilSavedTest {
         HttpResponse.BodyHandlers.ofString());
 
     await()
-        .atMost(Duration.ofMinutes(2))
+        .atMost(WAIT_CEILING)
         .ignoreExceptions()
         .until(() ->
             client

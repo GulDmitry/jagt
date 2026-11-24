@@ -1,4 +1,12 @@
 pluginManagement {
+    repositories {
+        maven { // 0235
+            name = 'CentralMirror'
+            url = 'https://maven-central.storage-download.googleapis.com/maven2/'
+            content { excludeModuleByRegex '.*', '.*\\.gradle\\.plugin' } // plugin markers are the portal's
+        }
+        gradlePluginPortal()
+    }
     includeBuild 'build-logic'
     includeBuild 'fitness'
 }

@@ -229,8 +229,7 @@ class McpToolScopeTest {
                             new ProjectConfig.Repository(
                                 "/api", List.of("backend"), "the order API", List.of(), null, null),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                            ProjectConfig.CodeHost.defaults(),
                             new ProjectConfig.Verify(List.of(), null),
                             ProjectConfig.Setup.NONE))));
     Registered registered = new Registered();

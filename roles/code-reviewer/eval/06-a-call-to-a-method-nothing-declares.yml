@@ -1,0 +1,26 @@
+case: a call to a method nothing declares
+description: |
+  Show the member's display name on the profile page.
+diff: |
+  diff --git a/src/main/java/app/profile/ProfilePage.java b/src/main/java/app/profile/ProfilePage.java
+  --- a/src/main/java/app/profile/ProfilePage.java
+  +++ b/src/main/java/app/profile/ProfilePage.java
+  @@ -14,5 +14,5 @@ public class ProfilePage {
+     String title(Member member) {
+  -    return member.name();
+  +    return member.displayName();
+     }
+   }
+  diff --git a/src/main/java/app/profile/Member.java b/src/main/java/app/profile/Member.java
+  --- a/src/main/java/app/profile/Member.java
+  +++ b/src/main/java/app/profile/Member.java
+  @@ -1,3 +1,3 @@
+   package app.profile;
+
+   public record Member(String name, String email) {}
+expect:
+  verdict: findings
+  findings:
+    - file: ProfilePage.java
+      pattern: "displayName|compile|does not exist|undefined|no such|not declared|cannot find"
+      severity: [blocking]

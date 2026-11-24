@@ -22,6 +22,8 @@ orchestrator:
   roles:
     acceptance:
       enabled: true                            # roles: the outer loop; its environments live in roles/acceptance/role.yml
+    code-reviewer:
+      enabled: true                            # roles: reads each request's change and posts notes; idle until a code host is chosen
     master:
       mode: act                                # roles: the Master presses what a human would; `mine` keeps its default: plan and deploy stay yours
   # releaseFeed:

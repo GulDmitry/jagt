@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import org.jspecify.annotations.Nullable;
 
 public final class StandConfig {
@@ -13,13 +14,32 @@ public final class StandConfig {
 
   private StandConfig() {}
 
-  public record Replay(Path recording, String appUrl) {}
+  public enum Posts {
+    NONE,
+    OWN,
+    OTHERS
+  }
+
+  public record Reviews(String hostUrl, Path origin, Posts posts) {
+
+    static final String HOST = "stand.example";
+
+    String project() {
+      return ", url: \"file://" + origin + "\", codeHost: github, codeHostName: \"" + HOST + "\"";
+    }
+  }
+
+  public record Replay(Path recording, String appUrl, @Nullable Reviews reviews) {}
 
   public record Target(
       String project, String mcpUrl, String orchestrator, String sandbox, String server) {
 
     public static Target local(Path repo, String mcpUrl) {
       return new Target("path: \"" + repo + "\"", mcpUrl, "", "", "");
+    }
+
+    Target reviewed(Reviews reviews) {
+      return new Target(project + reviews.project(), mcpUrl, orchestrator, sandbox, server);
     }
 
     public static Target container(Path root, String mcpUrl, String publicUrl) {
@@ -48,6 +68,11 @@ public final class StandConfig {
       @Nullable Replay replay) {
     try {
       install(shipped, root);
+      Target reviewed = target;
+      if (replay != null && replay.reviews() != null) {
+        reviewing(root, replay.reviews());
+        reviewed = target.reviewed(replay.reviews());
+      }
       Path servers = root.resolve("servers.json");
       Files.writeString(
           servers,
@@ -57,9 +82,22 @@ public final class StandConfig {
               .formatted(target.mcpUrl()));
       Files.writeString(
           root.resolve("jagt.yml"),
-          jagtYml(target, servers, tmuxSession, mode, replay, acceptance(root, replay)));
+          jagtYml(reviewed, servers, tmuxSession, mode, replay, acceptance(root, replay)));
     } catch (IOException e) {
       throw new StandFailure("cannot write the stand configuration under " + root, e);
+    }
+  }
+
+  private static void reviewing(Path root, Reviews reviews) throws IOException {
+    Path bin = Files.createDirectories(root.resolve("bin"));
+    Path gh = bin.resolve("gh");
+    Files.writeString(
+        gh, ServerFixtures.resource("/server/fake-gh.sh").replace("@HOST@", reviews.hostUrl()));
+    Files.setPosixFilePermissions(gh, PosixFilePermissions.fromString("rwxr-xr-x"));
+    if (reviews.posts() == Posts.OTHERS) {
+      Files.writeString(
+          Files.createDirectories(root.resolve("roles/code-reviewer")).resolve("review.yml"),
+          "post:\n  others: true\n");
     }
   }
 

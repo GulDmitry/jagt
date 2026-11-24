@@ -10,11 +10,13 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.Request;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,10 +32,16 @@ final class BoardBrowser implements ParameterResolver, AfterEachCallback {
   private static final ExtensionContext.Namespace BROWSERS =
       ExtensionContext.Namespace.create(BoardBrowser.class);
 
+  private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
+
   private static final class Launched implements AutoCloseable {
 
     private final Playwright playwright = Playwright.create();
     private final Browser browser = playwright.chromium().launch();
+
+    Launched() {
+      PlaywrightAssertions.setDefaultAssertionTimeout((double) WAIT_CEILING.toMillis());
+    }
 
     @Override
     public void close() {

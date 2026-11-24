@@ -61,8 +61,8 @@ public record ReviewFacts(Request request, Pipeline pipeline, Discussion discuss
   }
 
   /**
-   * The threads whose newest note is by {@code account} moved to {@code awaitingReviewer}; blank
-   * moves none.
+   * The threads whose newest note is by {@code account}, and does not open with {@link AiLine},
+   * moved to {@code awaitingReviewer}; blank moves none.
    */
   public ReviewFacts answeredBy(String account) {
     List<String> open = new ArrayList<>();
@@ -82,7 +82,10 @@ public record ReviewFacts(Request request, Pipeline pipeline, Discussion discuss
     String who = normal(account);
     String newest = thread.strip().lines().reduce((first, second) -> second).orElse("");
     int colon = newest.indexOf(':');
-    return !who.isEmpty() && colon > 0 && normal(newest.substring(0, colon)).equals(who);
+    return !who.isEmpty()
+        && colon > 0
+        && normal(newest.substring(0, colon)).equals(who)
+        && !AiLine.opens(newest.substring(colon + 1));
   }
 
   private static String normal(String author) {

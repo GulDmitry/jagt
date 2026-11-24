@@ -42,7 +42,6 @@ const routes = [
   ],
 ];
 
-// A click carries NAMES, never a captured task: a rebuilt row cannot act for the old one.
 /** @param {{ action: (taskId: string, actionId: string) => void, repaint: () => void }} handlers */
 export const onClick = ({ action, repaint }) => {
   /** @type {Route[]} */

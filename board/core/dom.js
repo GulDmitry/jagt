@@ -1,5 +1,3 @@
-// Built, never interpolated into markup: ids, aliases and project keys come out of a file a human edits.
-
 /**
  * @template {keyof HTMLElementTagNameMap} K
  * @param {K} tag
@@ -27,7 +25,6 @@ export const span = (className, text = "") => {
   return node;
 };
 
-// A mark whose hover is its only words: named for a screen reader, and focusable so the hover opens by keyboard.
 /**
  * @template {HTMLElement | SVGElement} T
  * @param {T} node

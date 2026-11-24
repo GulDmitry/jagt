@@ -6,6 +6,7 @@
 ## Status
 
 Accepted 2026-11-22: protection decided by the owner 2026-11-21, CD trigger chosen the same day.
+The release's needs: amended by [0233](0233-a-local-green-predicts-ci.md).
 
 ## Context
 

@@ -39,6 +39,7 @@ public class MasterPanel {
   private final MasterBriefs briefs;
   private final RoundQuotes quotes;
   private final MasterReview stored;
+  private final RoleYields yields;
 
   static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
 
@@ -46,9 +47,11 @@ public class MasterPanel {
   record RoundRead(String ticket, String diff, String decided, List<String> said, String notes) {}
 
   /**
-   * {@code model} blank reads with the Master's own model; {@code applies} empty reads every round.
+   * {@code model} blank reads with the Master's own model; {@code applies} empty reads every round;
+   * {@code unless} names a role whose reading this one yields to, blank where none.
    */
-  public record Role(String name, String question, String model, List<String> applies) {
+  public record Role(
+      String name, String question, String model, List<String> applies, String unless) {
 
     String modelOr(String masters) {
       return model.isBlank() ? masters : model;
@@ -73,6 +76,14 @@ public class MasterPanel {
               .toList();
       return only.isEmpty() ? !left.isEmpty() : WorktreeFiles.firstMatching(only, left).isPresent();
     }
+  }
+
+  private static MasterVerdictFile.Skipped skipped(Role role, boolean yielded) {
+    return new MasterVerdictFile.Skipped(
+        role.name(),
+        yielded
+            ? "the " + role.unless() + " role reads it"
+            : "no changed path matches " + String.join(", ", role.applies()));
   }
 
   /**
@@ -101,7 +112,10 @@ public class MasterPanel {
         named.stream().allMatch(role -> role.applies().isEmpty())
             ? Optional.empty()
             : quotes.paths(task);
-    List<Role> applying = named.stream().filter(role -> role.reads(changed)).toList();
+    List<Role> applying =
+        named.stream()
+            .filter(role -> role.reads(changed) && !yields.yields(role.unless(), task))
+            .toList();
     // A round no role reads would pass unread.
     List<Role> roles = applying.isEmpty() ? named : applying;
     String shared =
@@ -149,7 +163,12 @@ public class MasterPanel {
         task,
         review,
         MasterVerdictFile.of(
-            taskId, reads, named.stream().filter(role -> !roles.contains(role)).toList()));
+            taskId,
+            reads,
+            named.stream()
+                .filter(role -> !roles.contains(role))
+                .map(role -> skipped(role, yields.yields(role.unless(), task)))
+                .toList()));
   }
 
   /**
@@ -196,7 +215,7 @@ public class MasterPanel {
   }
 
   private static final Role PLANNER =
-      new Role("planner", "whether the plan does what the ticket asks", "", List.of());
+      new Role("planner", "whether the plan does what the ticket asks", "", List.of(), "");
 
   /** What a question came back with: a decision, or why none came. */
   public sealed interface Answer permits Decision, Undecided {}
@@ -270,7 +289,7 @@ public class MasterPanel {
     List<Role> own = table(brief);
     List<Role> roles = own.isEmpty() ? table(authorBrief) : own;
     return roles.isEmpty()
-        ? List.of(new Role("reviewer", "every question your brief asks", "", List.of()))
+        ? List.of(new Role("reviewer", "every question your brief asks", "", List.of(), ""))
         : roles;
   }
 
@@ -296,7 +315,8 @@ public class MasterPanel {
                 GLOBS
                     .splitAsStream(cell(cells, header, "applies").replace("`", ""))
                     .filter(glob -> !glob.isEmpty())
-                    .toList()));
+                    .toList(),
+                cell(cells, header, "unless")));
       }
     }
     return roles;

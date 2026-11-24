@@ -29,7 +29,6 @@ const RequestChip = ({ url, label, openedAt = 0, task, sole, now }) => {
   >`;
 };
 
-// Where several links share one approval there is no label to tick, so it becomes the same glyph on its own.
 const ApprovalTick = () =>
   html`<span
     class="tick"
@@ -54,7 +53,6 @@ const ChecksDot = ({ task }) => {
   ></span>`;
 };
 
-// The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
 /** @param {{ task: CardTask, stalled: Stalled | null, now: number }} props */
 const StatusChip = ({ task, stalled, now }) => {
   const { tip, live } = statusTip(task, stalled);
@@ -69,7 +67,6 @@ const StatusChip = ({ task, stalled, now }) => {
   >`;
 };
 
-// Each repository named once, its request on its name: a chip beside every name would crowd the row.
 /** @param {{ task: CardTask, now: number }} props */
 const Repositories = ({ task, now }) =>
   html`<span
@@ -94,7 +91,6 @@ const Repositories = ({ task, now }) =>
 /** @param {{ task: CardTask, manyProjects: boolean, now: number }} props */
 export function Meta({ task, manyProjects, now }) {
   const many = (task.repos || []).length > 1;
-  // A stopped poll with no request chip to ring rings the state instead.
   const watch = watchLine(task.autoReview, now);
   return html`<div class="meta">
     <${StatusChip}

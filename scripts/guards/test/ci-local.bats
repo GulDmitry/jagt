@@ -22,6 +22,19 @@ teardown() {
   [ "$(cat .git/ci-local.ok)" = "$(git rev-parse 'HEAD^{tree}')" ]
 }
 
+@test "every green run adds its tree to the list of recorded greens" {
+  JAGT_CI_LOCAL_SUITE=true run "$script"
+  echo b > f
+  JAGT_CI_LOCAL_SUITE=true run "$script"
+  [ "$(wc -l < .git/ci-local.greens)" -eq 2 ]
+}
+
+@test "a green run of a chosen job records nothing" {
+  JAGT_CI_LOCAL_SUITE=true run "$script" heavy
+  [ "$status" -eq 0 ]
+  [ ! -f .git/ci-local.ok ]
+}
+
 # bats test_tags=exit:1
 @test "a red suite records nothing" {
   JAGT_CI_LOCAL_SUITE=false run "$script"
@@ -48,5 +61,13 @@ teardown() {
   JAGT_CI_LOCAL_SUITE=false run "$script" --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"Usage: ci-local.sh"* ]]
+  [ ! -f .git/ci-local.ok ]
+}
+
+@test "nightly stands for every nightly job and records nothing" {
+  JAGT_CI_LOCAL_SUITE=echo run "$script" nightly
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nightly-stand-compose nightly-stand-kind nightly-e2e nightly-properties nightly-scan"* ]]
+  [[ "$output" != *pitest* && "$output" != *stryker* ]]
   [ ! -f .git/ci-local.ok ]
 }

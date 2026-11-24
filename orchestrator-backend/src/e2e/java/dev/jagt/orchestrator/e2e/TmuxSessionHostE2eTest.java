@@ -88,25 +88,6 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void keepsOneFeedWindowFollowingTheFileHoweverOftenItIsKept() {
-    host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
-    host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
-
-    assertThat(processes.run(null, Duration.ofSeconds(10), listWindows).stdout().lines().toList())
-        .containsOnlyOnce("master");
-  }
-
-  @Test
-  void keepsFeedWindowThatIsAlreadyThereInThreeCommands() {
-    host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
-    clearInvocations(processes);
-
-    host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
-
-    verify(processes, times(3)).run(any(), any(), anyList());
-  }
-
-  @Test
   void readsRunningAgentInTwoCommands() {
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     clearInvocations(processes);

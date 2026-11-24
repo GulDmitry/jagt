@@ -14,7 +14,6 @@ const typingInto = (target) =>
 const toggling = (event) =>
   (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
 
-// The keys the board answers whatever is focused, and the ones a field keeps for itself.
 /** @param {KeyboardEvent} event */
 function claimed(event) {
   if (toggling(event)) {
@@ -30,7 +29,6 @@ function claimed(event) {
 }
 
 document.addEventListener("keydown", (event) => {
-  // Behind a modal the board is inert: a shortcut would change it unseen.
   if (document.querySelector("dialog[open]") || claimed(event)) return;
   const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
   verbKey(event, plain, letters[event.key]) ||

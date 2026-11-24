@@ -1,0 +1,25 @@
+case: a migration that drops a column the code still reads
+description: |
+  Tidy the schema: drop the unused `legacy_ref` column from `contract`.
+diff: |
+  diff --git a/src/main/resources/db/migration/V42__drop_legacy_ref.sql b/src/main/resources/db/migration/V42__drop_legacy_ref.sql
+  new file mode 100644
+  --- /dev/null
+  +++ b/src/main/resources/db/migration/V42__drop_legacy_ref.sql
+  @@ -0,0 +1 @@
+  +ALTER TABLE contract DROP COLUMN legacy_ref;
+  diff --git a/src/main/java/app/contract/ContractExport.java b/src/main/java/app/contract/ContractExport.java
+  --- a/src/main/java/app/contract/ContractExport.java
+  +++ b/src/main/java/app/contract/ContractExport.java
+  @@ -30,4 +30,4 @@ public class ContractExport {
+     List<Row> rows() {
+  -    // all contracts
+  +    // every contract, oldest first
+       return jdbc.query("SELECT id, legacy_ref, signed_on FROM contract", exportMapper);
+     }
+expect:
+  verdict: findings
+  findings:
+    - file: ContractExport.java
+      pattern: "drop|data loss|still (read|used|referenced|selected)|legacy_ref"
+      severity: [blocking]

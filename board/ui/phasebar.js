@@ -20,7 +20,6 @@ export function render(tasks, showing) {
   filtered.hidden = empty.filteredHidden;
   if (!filtered.hidden) filtered.textContent = empty.filtered;
   phaseBar.hidden = tasks.length === 0;
-  // The separator is content, not a gap: the words stay apart without the stylesheet.
   phaseBar.replaceChildren(
     ...segments(store.phases(), filters.narrowed(tasks), filters.holds).flatMap(
       (one, index) => {

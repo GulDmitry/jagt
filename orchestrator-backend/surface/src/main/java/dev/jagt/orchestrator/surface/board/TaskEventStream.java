@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
+import dev.jagt.orchestrator.surface.ui.log.RoleFeeds;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -63,6 +64,20 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
       broadcastQueued.set(false);
       log.atDebug()
           .setMessage("board broadcast skipped")
+          .addKeyValue("cause", "backend stopping")
+          .addKeyValue("note", e.toString())
+          .log();
+    }
+  }
+
+  @EventListener
+  void queueRoleLog(RoleFeeds.RoleFeedWritten written) {
+    try {
+      broadcaster.execute(
+          () -> browsers.forEach(browser -> send(browser, "role-log", written.role())));
+    } catch (RejectedExecutionException e) {
+      log.atDebug()
+          .setMessage("role log broadcast skipped")
           .addKeyValue("cause", "backend stopping")
           .addKeyValue("note", e.toString())
           .log();

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -35,7 +34,6 @@ class TaskFlowMatrixTest {
     FlowHarness.livesIn(registry, workspace);
   }
 
-  private final Jobs jobs;
   private final TaskProvisioning provisioning;
   private final TaskRetirement retirement;
   private final StateService stateService;
@@ -44,13 +42,11 @@ class TaskFlowMatrixTest {
 
   @Autowired
   TaskFlowMatrixTest(
-      Jobs jobs,
       TaskProvisioning provisioning,
       TaskRetirement retirement,
       StateService stateService,
       OrchestratorPaths paths,
       ToolchainProperties properties) {
-    this.jobs = jobs;
     this.provisioning = provisioning;
     this.retirement = retirement;
     this.stateService = stateService;
@@ -90,7 +86,6 @@ class TaskFlowMatrixTest {
                 .title("Widget layout is off")
                 .build());
 
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-feed");
     assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
     assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
     assertThat(worktree.resolve("task_context.md")).exists();

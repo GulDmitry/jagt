@@ -10,7 +10,7 @@ export const list = ({ groups, shown, open, now }) => {
     .find((action) => action.onRow);
   return html`<${TaskList}
     groups=${groups}
-    selected=${open.id}
+    selected=${open?.id}
     changed=${seen.changed}
     now=${now}
     keys=${said(rowVerb)}

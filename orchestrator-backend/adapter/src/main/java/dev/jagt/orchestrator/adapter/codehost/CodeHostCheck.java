@@ -19,6 +19,7 @@ public class CodeHostCheck implements StartupCheck {
 
   private final ConfigService configService;
   private final List<CodeHostDriver> drivers;
+  private final List<HostNeeds> needs;
 
   @Override
   public List<Problem> problems() {
@@ -33,6 +34,9 @@ public class CodeHostCheck implements StartupCheck {
         .projects()
         .forEach((project, declared) -> {
           CodeHostChoice choice = CodeHostChoice.of(config, project, declared);
+          needs.stream()
+              .filter(driver -> driver.kinds().contains(choice.kind()))
+              .forEach(driver -> problems.addAll(driver.problems(choice.host())));
           drivers.stream()
               .filter(driver -> driver.id().equals(choice.kind()))
               .findFirst()

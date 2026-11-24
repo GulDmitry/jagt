@@ -27,8 +27,8 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 #### Scenario: Which roles read, and on what model
 - **WHEN** a role's row names a `model`
 - **THEN** it runs on it; blank keeps `roles.master.model`
-- **WHEN** the diff touches none of a role's `applies` globs, or only paths its `!` globs name
-- **THEN** a `# skipped` line replaces its read; unread paths, or no role left, read every role
+- **WHEN** the diff touches none of a role's `applies` globs, only paths its `!` globs name, or its `unless` names a role that is on
+- **THEN** a `# skipped` line names its reason and replaces its read; unread paths, no role left, or no code host, read every role
 - **WHEN** a session hands back a round
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
 
@@ -71,7 +71,7 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 - **WHEN** a round is `ready` and `mine: [ship]`, or the Master ships and `mine: [reply]`
 - **THEN** it ships nothing, or the session leaves `review_replies.md` for you
 - **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
-- **THEN** it presses neither; the `master` window names the path
+- **THEN** it presses neither; the Master's log names the path
 
 #### Scenario: A verb pressed or kept
 - **WHEN** the Master presses `trust`, `lift`, `escalate`, `pause`, `done` or `remove-repo` and a Master case allows it at the status

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NoCodeHost extends OfflineCodeHost {
 
-  static final String ID = ProjectConfig.NO_CODE_HOST;
+  public static final String ID = ProjectConfig.NO_CODE_HOST;
 
   @Override
   public String id() {

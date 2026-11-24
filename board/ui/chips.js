@@ -17,7 +17,6 @@ const roleChips = /** @type {HTMLElement} */ (
 /** @param {number} due */
 const left = (due) => (due > 0 ? countdown(due) : t("due"));
 
-// Only a failed run is news: the next one sits in the hover.
 function renderJobs() {
   const jobs = store.jobs();
   if (!jobs || !jobs.failing) {

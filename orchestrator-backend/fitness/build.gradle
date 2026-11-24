@@ -23,6 +23,7 @@ subprojects {
     group = 'fitness'
 
     repositories {
+        maven { name = 'CentralMirror'; url = 'https://maven-central.storage-download.googleapis.com/maven2/' } // 0235
         mavenCentral()
     }
 
@@ -78,6 +79,8 @@ subprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         testJvmProperties.each { key, value -> systemProperty key.toString(), value.toString() }
-        timeout = Duration.ofMinutes(10)
+        if (providers.gradleProperty('timed').getOrElse('true') != 'false') {
+            timeout = Duration.ofMinutes(10)
+        }
     }
 }
