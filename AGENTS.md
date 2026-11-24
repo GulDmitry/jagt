@@ -32,6 +32,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 | [`docs/features.md`](docs/features.md) | what jagt does, one line each, linked to its spec |
 
+**Read the specs and decisions a change touches before proposing or building it**: one it contradicts changes first.
 **An architectural decision gets its `docs/decisions/` record in the commit taking it.** **A behaviour change carries its
 `openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
 **A new capability adds its line to `docs/features.md`** (`FeaturesTest`).
@@ -90,8 +91,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`; stop work is a `SmartLifecycle` after the web server
   (`static-state`, `post-construct-hooks`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md),
   [0169](docs/decisions/0169-stop-work-is-a-smartlifecycle-after-the-web-server.md)).
-- **No duplicated block of 75 tokens or more** (`duplication`): one holder in main, a builder or parameterized case
-  in tests. Never raise the number.
+- **No duplicated block of 75 tokens or more** (`duplication`): one holder in main, a builder or parameterized case in tests; never raised.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
 - **A compiler or Gradle warning fails the build**: fixed, never suppressed without its reason; only upstream's go in
