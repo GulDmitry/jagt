@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -54,8 +55,10 @@ public class ShipService {
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
     ConfigFile config = configService.load();
     String title =
-        ReviewRequestTitle.expand(
-            config.codeReview().mrTitlePatternOrDefault(), taskId, task.ticket().title());
+        task.ticket().ticketUrl() == null
+            ? null
+            : ReviewRequestTitle.expand(
+                config.codeReview().mrTitlePatternOrDefault(), taskId, task.ticket().title());
 
     List<Target> targets = targets(task, config);
     List<Target> carrying = targets.stream().filter(this::carries).toList();
@@ -173,7 +176,7 @@ public class ShipService {
       " Resolve threads exactly as your `<review_replies>` rules say.\n";
 
   static String shipFacts(
-      String title,
+      @Nullable String title,
       String taskId,
       List<Target> targets,
       boolean spansRepositories,
@@ -188,11 +191,7 @@ public class ShipService {
             : "Push nothing: no repository of this" + " task has a remote.")
         + "\n"
         + (requests
-            ? "The request's title is EXACTLY \""
-                + title
-                + "\"; a later round's commit message STARTS with \""
-                + taskId
-                + "\".\n"
+            ? titleLine(title, taskId)
             : "No request is opened: no repository of this task has a code host.\n")
         + (targets.size() > 1
             ? "The task spans these repositories, and what each one still needs:\n"
@@ -206,6 +205,19 @@ public class ShipService {
         + " and "
         + reportField(targets, spansRepositories)
         + ".";
+  }
+
+  private static String titleLine(@Nullable String title, String taskId) {
+    return title == null
+        ? "No ticket names this task: the request's title is ONE short imperative sentence you"
+            + " write from the change itself, at most ~10 words, no task id, no ellipsis; the first"
+            + " commit's message is that same sentence; a later round's commit message is one"
+            + " imperative line on what it changed, no task id.\n"
+        : "The request's title is EXACTLY \""
+            + title
+            + "\"; a later round's commit message STARTS with \""
+            + taskId
+            + "\".\n";
   }
 
   private static String listed(List<Target> targets) {

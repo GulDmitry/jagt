@@ -121,6 +121,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
             .alsoIn(List.of("web"))
             .instructions("Move the api side")
             .title(TITLE)
+            .ticketUrl("https://tracker.example/" + TASK)
             .build());
     Files.writeString(flow.worktree().resolve("widget.txt"), "api side\n");
     Files.writeString(flow.worktree().resolve("task_notes.md"), "api side done\n");

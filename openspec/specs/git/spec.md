@@ -27,8 +27,7 @@ no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). T
 branch onto its request's target. The resume or the session pushes it under `--force-with-lease` when the target moved on.
 
 #### Scenario: Release request
-- **WHEN** resuming a `dev` → `main` request
-- **THEN** refused
+- **WHEN** resuming a `dev` → `main` request **THEN** refused
 
 #### Scenario: Target moved on
 - **WHEN** the target gained commits after the branch was cut, or the session ships
@@ -39,8 +38,7 @@ branch onto its request's target. The resume or the session pushes it under `--f
 git call locks its repository (shared checkout). A task named after a base or deploy branch MUST be refused.
 
 #### Scenario: A task named after the base branch
-- **WHEN** a task is named after the base or a deploy branch
-- **THEN** it is refused
+- **WHEN** a task is named after the base or a deploy branch **THEN** it is refused
 
 ### Requirement: No verdict gates deploy
 `FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS, VERIFYING, SHIPPING, REVERTED and DONE
@@ -52,16 +50,14 @@ are refused; `ship` still runs from DEPLOYED. The confirm's `project → branch`
 - **AND** Revert: the branches it pushes to, the last deploy only
 
 #### Scenario: REVERTED
-- **WHEN** a task is REVERTED: `focus`, then `ship` or `done`
-- **THEN** no `deploy`: re-merging it brings nothing
+- **WHEN** a task is REVERTED: `focus`, then `ship` or `done` **THEN** no `deploy`: re-merging it brings nothing
 
 ### Requirement: Deploy stops at the first conflict
 `deploy` SHALL check every repository deployable before the **first** push, land them in the task's order, and stop at
 the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 
 #### Scenario: Conflict
-- **WHEN** a conflict: resolve it (`git add`), then `deploy`
-- **THEN** DEPLOY_CONFLICT until you do
+- **WHEN** a conflict: resolve it (`git add`), then `deploy` **THEN** DEPLOY_CONFLICT until you do
 
 #### Scenario: Multi-repo deploy
 - **WHEN** `deploy ABC-42` and one conflicts after another landed
@@ -95,8 +91,7 @@ A commit SHALL carry task work, never jagt's plumbing (`WorktreeFiles.generated`
 agent's. A ship approves ONE commit: only the next relay replaces `task_context.md`; re-reading it is no permission.
 
 #### Scenario: Follow-up
-- **WHEN** one more change after a ship: instruct the session
-- **THEN** back uncommitted for review; only a new `ship` lands it
+- **WHEN** one more change after a ship: instruct the session **THEN** back uncommitted for review; only a new `ship` lands it
 
 ### Requirement: Ship hands the work to the agent
 `ship` SHALL send ONE `ShipService` instruction for every repository holding work (changed in its worktree or ahead of
@@ -108,6 +103,11 @@ A repository whose `codeHost` is `none` is asked for the push alone and no reque
 - **WHEN** `ship ABC-42`
 - **THEN** a commit, push and request per repository onto its base
 - **AND** where `codeHost` is `none`, a push alone: the session reports REVIEW_PENDING and `deploy` is next
+
+#### Scenario: A task no ticket names
+- **WHEN** `ship` runs on a task with no ticket link
+- **THEN** the agent writes one short imperative sentence as first commit and request title, never the task's name nor its cut instructions
+- **AND** a ticketed task's title stays the pattern over its key and summary
 
 #### Scenario: No request to open
 - **WHEN** every repository has `codeHost` `none` or no `remote`, and none holds unpublished work
@@ -152,8 +152,7 @@ sets `core.hooksPath` via `GIT_CONFIG_*` on the launch command: that session and
 guardrail: a runtime-built push, an alias or a script passes; `deploy`, `revert` and a human's shell run ungated.
 
 #### Scenario: Hooks
-- **WHEN** a client-side hook fires
-- **THEN** a stub runs the repository's own, re-resolved at run time with the override off, guard first
+- **WHEN** a client-side hook fires **THEN** a stub runs the repository's own, re-resolved at run time with the override off, guard first
 
 ### Requirement: ToolGate refuses the line
 `ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch, deleting the task's

@@ -101,6 +101,45 @@ class ShipServiceTest {
   }
 
   @Test
+  void asksTheAgentForOneShortSentenceWhenNoTicketNamesTheTask() {
+    stateService.putTask(
+        "worker-smoke-test",
+        TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
+            .title("Worker smoke test, no ticket and no behaviour change: README.md lacks a new…")
+            .build());
+
+    ships.ship("worker-smoke-test");
+
+    ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
+    verify(relay)
+        .write(
+            eq("worker-smoke-test"),
+            eq(Step.SHIP),
+            instruction.capture(),
+            any(SessionStanding.class));
+    assertThat(instruction.getValue())
+        .contains("ONE short imperative sentence you write")
+        .doesNotContain("EXACTLY", "…", "STARTS with");
+  }
+
+  @Test
+  void keepsTicketKeyAndSummaryAsTheTitleWhenTicketNamesTheTask() {
+    stateService.putTask(
+        "ABC-42",
+        TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
+            .title("Widget layout is off")
+            .ticketUrl("https://tracker.example/ABC-42")
+            .build());
+
+    ships.ship("ABC-42");
+
+    ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
+    verify(relay)
+        .write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(SessionStanding.class));
+    assertThat(instruction.getValue()).contains("EXACTLY \"ABC-42 Widget layout is off\"");
+  }
+
+  @Test
   void namesTheTasksOwnBaseBranchAsWhatTheRequestMergesIntoWhenItHasOne() {
     stateService.putTask(
         "ABC-7",
