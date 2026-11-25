@@ -43,6 +43,7 @@
   "settings.add": "Add a project",
   "settings.edit": "Edit",
   "settings.default": "default",
+  "settings.set": "set",
   "settings.none": "none",
   "settings.unread": "The settings cannot be read: {cause}",
   "settings.restart": "Applies after a restart: {keys}",

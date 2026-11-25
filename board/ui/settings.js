@@ -19,7 +19,7 @@ const restartBar = /** @type {HTMLElement} */ (
 const state = { waiting: new Set() };
 
 const paintRestart = () => {
-  restartBar.hidden = state.waiting.size === 0;
+  restartBar.classList.toggle("waiting", state.waiting.size > 0);
   /** @type {HTMLElement} */ (
     document.getElementById("settings-restart-text")
   ).textContent = t("settings.restart", {
@@ -42,6 +42,9 @@ async function change(setting, value) {
       }),
     });
     toast(result.message);
+    body
+      .querySelector(`[data-key="${setting.key}"] .hint`)
+      ?.replaceChildren(t("settings.set"));
     if (result.restart) {
       state.waiting.add(labelOf(setting.key));
       paintRestart();

@@ -19,7 +19,7 @@ const control = (setting, value) => {
   if (setting.kind === "BOOLEAN") {
     const box = Object.assign(document.createElement("input"), {
       type: "checkbox",
-      checked: value === true,
+      checked: value === true || (value == null && setting.fallback === "true"),
     });
     box.setAttribute("role", "switch");
     return box;
@@ -27,6 +27,7 @@ const control = (setting, value) => {
   return Object.assign(document.createElement("input"), {
     type: setting.kind === "INTEGER" ? "number" : "text",
     min: "0",
+    placeholder: setting.fallback ?? "",
     value: Array.isArray(value) ? value.join(", ") : String(value ?? ""),
   });
 };
@@ -55,7 +56,7 @@ const row =
     const hint = make(
       "small",
       "hint",
-      value == null ? t("settings.default") : "",
+      t(value == null ? "settings.default" : "settings.set"),
     );
     const name = make("span", "", labelOf(setting.key));
     /** @type {HTMLElement} */

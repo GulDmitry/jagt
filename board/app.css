@@ -144,7 +144,8 @@ button.apart {
   border-color: transparent;
   background: none;
 }
-button.apart:hover:not(:disabled) {
+button.apart:hover:not(:disabled),
+.chip.bad {
   color: var(--danger);
   border-color: var(--danger);
 }
@@ -187,7 +188,6 @@ dialog form .report-head {
 .field input,
 .field select {
   font-size: 14px;
-  color: var(--text);
 }
 fieldset.field legend {
   padding: 0;
@@ -250,14 +250,17 @@ fieldset.field legend {
   margin: 0;
   cursor: pointer;
 }
-.choice label:has(input:checked) {
+.choice label:has(input:checked),
+#settings-body .tabs button[aria-selected="true"] {
   background: var(--chip-bg);
   font-weight: 600;
 }
 .choice label:has(input:checked) span::before {
   content: "✓ ";
 }
-.choice label:has(input:focus-visible) {
+.choice label:has(input:focus-visible),
+.row .pick:focus-visible,
+.row-verb:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
@@ -293,9 +296,6 @@ input[role="switch"]:checked::after {
   color: var(--muted);
   font-size: 11px;
 }
-.hint:empty {
-  display: none;
-}
 #settings-dialog[open] {
   display: flex;
   flex-direction: column;
@@ -319,6 +319,9 @@ input[role="switch"]:checked::after {
 }
 #settings-dialog .dialog-foot {
   padding: 10px 16px;
+}
+#settings-restart:not(.waiting) {
+  visibility: hidden;
 }
 .field-row {
   display: flex;
@@ -379,10 +382,6 @@ input[role="switch"]:checked::after {
 #settings-body .tabs button {
   text-align: left;
   padding: 6px 10px;
-}
-#settings-body .tabs button[aria-selected="true"] {
-  background: var(--chip-bg);
-  font-weight: 600;
 }
 .screen {
   margin: 0;
@@ -545,6 +544,7 @@ h1 {
 }
 select,
 input[type="text"],
+input[type="number"],
 input:not([type]) {
   background: var(--bg);
   color: var(--text);
@@ -562,7 +562,8 @@ button {
   padding: 4px 10px;
   cursor: pointer;
 }
-button:hover:not(:disabled) {
+button:hover:not(:disabled),
+button[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -588,10 +589,6 @@ button.primary:hover:not(:disabled) {
   border-radius: 999px;
   padding: 2px 8px;
 }
-.chip.bad {
-  color: var(--danger);
-  border-color: var(--danger);
-}
 body.stale #board,
 body.stale #phases,
 body.stale #report-line {
@@ -610,10 +607,6 @@ body.stale #report-line {
 #palette input#ask {
   flex: 1;
   min-width: 260px;
-}
-button[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 #palette-state.ok {
   color: var(--ok);
@@ -1373,11 +1366,6 @@ button.quiet:hover:not(:disabled) {
   font-size: 11px;
   color: var(--muted);
   font-family: var(--mono);
-}
-.row .pick:focus-visible,
-.row-verb:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
 }
 table.jobs th {
   text-align: left;
