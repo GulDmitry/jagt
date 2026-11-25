@@ -103,6 +103,22 @@ class TaskNameTest {
   }
 
   @Test
+  void namesBranchAfterAtMostFourWordsOfSummary() {
+    assertThat(TaskName.summarised("Upgrade the Sonar linter for all builds"))
+        .isEqualTo("upgrade-the-sonar-linter");
+  }
+
+  @Test
+  void namesNothingForSummaryWithNoWordBranchCanUse() {
+    assertThat(TaskName.summarised("!!!")).isNull();
+  }
+
+  @Test
+  void namesNothingForSummaryNobodyGave() {
+    assertThat(TaskName.summarised(null)).isNull();
+  }
+
+  @Test
   void refusesToRequireNameGitWouldRefuse() {
     assertThatThrownBy(() -> TaskName.require("a b", "task"))
         .isInstanceOf(IllegalArgumentException.class)

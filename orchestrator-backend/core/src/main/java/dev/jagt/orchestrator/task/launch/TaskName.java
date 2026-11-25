@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.task.launch;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -40,6 +42,8 @@ public final class TaskName {
   /** Long enough to read the task off a branch listing, short enough to leave the suffixes room. */
   private static final int WRITTEN_MAX = 40;
 
+  private static final int SUMMARY_WORDS = 4;
+
   private record Refusal(Predicate<String> applies, String reason) {}
 
   private static final List<Refusal> REFUSALS =
@@ -72,14 +76,38 @@ public final class TaskName {
     if (text == null) {
       return null;
     }
-    String head = text.strip().lines().findFirst().orElse("").toLowerCase(Locale.ROOT);
-    String slug =
-        NOT_PLAIN.matcher(head).replaceAll("-").replaceAll("-{2,}", "-").replaceAll("^-|-$", "");
-    if (slug.length() > WRITTEN_MAX) {
-      String whole = slug.substring(0, WRITTEN_MAX).replaceAll("-[^-]*$", "");
-      slug = whole.isEmpty() ? slug.substring(0, WRITTEN_MAX) : whole;
+    return capped(plain(text.strip().lines().findFirst().orElse("")));
+  }
+
+  /**
+   * A branch name made of the few words a model said the work does, {@value #SUMMARY_WORDS} at
+   * most. Null when they leave nothing a branch can be called.
+   */
+  public static @Nullable String summarised(@Nullable String words) {
+    if (words == null) {
+      return null;
     }
-    return slug.isEmpty() ? null : slug;
+    return capped(
+        Arrays.stream(plain(words).split("-"))
+            .limit(SUMMARY_WORDS)
+            .collect(Collectors.joining("-")));
+  }
+
+  private static String plain(String line) {
+    return NOT_PLAIN
+        .matcher(line.toLowerCase(Locale.ROOT))
+        .replaceAll("-")
+        .replaceAll("-{2,}", "-")
+        .replaceAll("^-|-$", "");
+  }
+
+  private static @Nullable String capped(String slug) {
+    String result = slug;
+    if (result.length() > WRITTEN_MAX) {
+      String whole = result.substring(0, WRITTEN_MAX).replaceAll("-[^-]*$", "");
+      result = whole.isEmpty() ? result.substring(0, WRITTEN_MAX) : whole;
+    }
+    return result.isEmpty() ? null : result;
   }
 
   /**

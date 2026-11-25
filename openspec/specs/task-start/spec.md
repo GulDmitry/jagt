@@ -14,7 +14,9 @@ A message opening a task SHALL carry `mode` `auto` or `plan`, `branchStrategy` `
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
 - **THEN** branch `ABC-42` is cut from the project's base
 - **WHEN** you run `do <project> <what to do…>`
-- **THEN** your words are the instructions and name the branch
+- **THEN** your words are the instructions; four words at most on what the work changes, a lightest-model reading, name the branch
+- **WHEN** no reading is available
+- **THEN** the task opens all the same, your opening words naming the branch
 - **WHEN** you run `do ABC-42 from <branch>`
 - **THEN** it is cut from that branch and the request targets it ([git](../git/spec.md))
 #### Scenario: Plan before code
@@ -129,7 +131,6 @@ The scratch folder SHALL be deleted after the state write; the session starts fr
 
 ### Requirement: An existing branch is never lost
 Nothing SHALL be freed or moved until `recreate` or `resume` is picked for a branch that exists.
-
 #### Scenario: Intake meets a leftover branch
 - **WHEN** intake finds the branch
 - **THEN** it resumes if the branch or its origin copy holds commits the base lacks, else recreates; neither loses work
@@ -145,7 +146,6 @@ worktree holding it, MUST refuse naming the directory; untracked files block not
 ### Requirement: A worktree carries what the project needs
 `worktree.copyGlobs` SHALL copy gitignored files (`.env`, key, cert) into every new worktree at the same path. A repository's own `CLAUDE.md`,
 `AGENTS.md`, Codex config and git hooks MUST stay untouched and in force, jagt's briefing and guard beside them.
-
 #### Scenario: A gitignored key
 - **WHEN** `worktree.copyGlobs` names `.env`
 - **THEN** every new worktree has it

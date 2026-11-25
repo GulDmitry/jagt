@@ -12,8 +12,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.BranchNamer;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
 import dev.jagt.orchestrator.task.launch.NewTask;
@@ -32,7 +34,10 @@ class TaskLaunchesTest {
   private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
   private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
   private final TicketPlacement placement = mock(TicketPlacement.class);
-  private final TaskLaunches launches = new TaskLaunches(provisioning, worktrees, placement);
+  private final BranchNamer namer = mock(BranchNamer.class, invocation -> Answer.unavailable());
+  private final UsageTracker usage = mock(UsageTracker.class);
+  private final TaskLaunches launches =
+      new TaskLaunches(provisioning, worktrees, placement, new WrittenTaskNames(namer, usage));
   private final ArgumentCaptor<NewTask> created = ArgumentCaptor.captor();
   private final TicketFacts widget =
       TicketFacts.defaults()
@@ -291,6 +296,52 @@ class TaskLaunchesTest {
             "Split the invoice mailer",
             null);
     verify(placement, never()).read(any());
+  }
+
+  @Test
+  void namesBranchOfPromptWhatTheWorkDoesNotItsComplaintOpening() {
+    String prompt = "the linter was updated and there are a lot of new warnings, fix them";
+    when(namer.nameBranch(prompt))
+        .thenReturn(new Answer<>(Optional.of("upgrade linter"), TokenUsage.NONE));
+    when(worktrees.freeTaskName("upgrade-linter", List.of("group-a"))).thenReturn("upgrade-linter");
+    when(provisioning.initializeTask(any())).thenReturn("started");
+
+    Launched launched =
+        launches.written(
+            LaunchRequest.defaults().withProject("group-a").withNotes(prompt), List.of("group-a"));
+
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(launched).isEqualTo(Launched.created("upgrade-linter", "started"));
+    assertThat(created.getValue().title()).isEqualTo(prompt);
+  }
+
+  @Test
+  void keepsPromptDerivedBranchWhenNoSummaryIsAvailable() {
+    when(worktrees.freeTaskName("the-linter-was-updated", List.of("group-a")))
+        .thenReturn("the-linter-was-updated");
+
+    launches.written(
+        LaunchRequest.defaults().withProject("group-a").withNotes("The linter was updated"),
+        List.of("group-a"));
+
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(created.getValue().taskId()).isEqualTo("the-linter-was-updated");
+  }
+
+  @Test
+  void chargesTheNamingCallToTheTaskOnceItExists() {
+    TokenUsage spent = TokenUsage.ofCall(2_000, 0, 20, 0.01);
+    when(namer.nameBranch("upgrade the linter"))
+        .thenReturn(new Answer<>(Optional.of("upgrade linter"), spent));
+    when(worktrees.freeTaskName("upgrade-linter", List.of("group-a"))).thenReturn("upgrade-linter");
+
+    launches.written(
+        LaunchRequest.defaults().withProject("group-a").withNotes("upgrade the linter"),
+        List.of("group-a"));
+
+    var order = inOrder(provisioning, usage);
+    order.verify(provisioning).initializeTask(any());
+    order.verify(usage).chargeTask("upgrade-linter", spent);
   }
 
   @Test

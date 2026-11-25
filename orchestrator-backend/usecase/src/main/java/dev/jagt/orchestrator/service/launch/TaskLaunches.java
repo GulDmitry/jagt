@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
 import dev.jagt.orchestrator.task.launch.NewTask;
-import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import dev.jagt.orchestrator.task.text.Outside;
 import dev.jagt.orchestrator.task.ticket.TicketFacts;
@@ -31,6 +30,7 @@ public class TaskLaunches {
   private final TaskProvisioning provisioning;
   private final NewTaskWorktrees worktrees;
   private final TicketPlacement placement;
+  private final WrittenTaskNames names;
 
   public Launched ticket(LaunchRequest request, @Nullable List<String> chosen) {
     // The read answers with the canonical key, which is what names the branch and the worktree.
@@ -72,21 +72,22 @@ public class TaskLaunches {
   }
 
   /**
-   * A task nobody filed: the human's own words are its instructions, and they name its branch too,
-   * since a task IS its branch and no tracker handed this one a key.
+   * A task nobody filed: the human's own words are its instructions, and their gist names its
+   * branch, since a task IS its branch and no tracker handed this one a key.
    */
   public Launched written(LaunchRequest request, List<String> projects) {
     String written = Objects.requireNonNull(request.notes());
-    String named = TaskName.from(written);
-    if (named == null) {
+    WrittenTaskNames.Named named = names.name(written);
+    if (named.name() == null) {
       return Launched.refused(
           Launched.Reason.NO_BRANCH_NAME, "error: nothing in that line can name a branch");
     }
-    String taskId = worktrees.freeTaskName(named, projects);
-    return Launched.created(
-        taskId,
+    String taskId = worktrees.freeTaskName(named.name(), projects);
+    String result =
         provisioning.initializeTask(
-            newTask(taskId, projects, written, request).title(titleOf(written)).build()));
+            newTask(taskId, projects, written, request).title(titleOf(written)).build());
+    names.charge(taskId, named.spent());
+    return Launched.created(taskId, result);
   }
 
   /**
