@@ -8,6 +8,9 @@ import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets.Target;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
+import dev.jagt.orchestrator.service.git.RevertConflictException;
+import dev.jagt.orchestrator.service.git.Shas;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.time.Clock;
@@ -30,6 +33,7 @@ public class RevertRunner {
 
   private final StateService stateService;
   private final GitDeploy gitDeploy;
+  private final GitRevert gitRevert;
   private final Clock clock;
 
   public Outcome advance(
@@ -40,13 +44,13 @@ public class RevertRunner {
       Deployment.Target recorded = recorded(task, target);
       try {
         lastRevertCommit =
-            gitDeploy.revertMergeAndPush(
+            gitRevert.revertMergeAndPush(
                 target.path(),
                 taskId,
                 target.deployBranch(),
                 Objects.requireNonNull(recorded.landing().merge()),
                 recorded.landing().fixes().reversed());
-      } catch (GitDeploy.RevertConflictException e) {
+      } catch (RevertConflictException e) {
         return handBackConflict(taskId, target, reverted, e);
       } catch (RuntimeException e) {
         return stillLive(taskId, target, reverted, e);
@@ -58,7 +62,7 @@ public class RevertRunner {
               + " on "
               + target.deployBranch()
               + " ("
-              + GitDeploy.shortSha(lastRevertCommit)
+              + Shas.shortSha(lastRevertCommit)
               + ")");
     }
     // Only once all is out: a refused revert keeps the human's resolution.
@@ -71,14 +75,14 @@ public class RevertRunner {
     String commit;
     try {
       commit =
-          gitDeploy.revertMergeAndPush(
+          gitRevert.revertMergeAndPush(
               target.path(), taskId, target.deployBranch(), merge, List.of());
-    } catch (GitDeploy.RevertConflictException kept) {
+    } catch (RevertConflictException kept) {
       throw new IllegalStateException(
           "revert "
               + taskId
               + ": CONFLICT reverting "
-              + GitDeploy.shortSha(merge)
+              + Shas.shortSha(merge)
               + " on "
               + target.deployBranch()
               + ", nothing pushed. `hand-off` on the task gives the session the worktree "
@@ -86,11 +90,11 @@ public class RevertRunner {
               + "; `revert "
               + taskId
               + " "
-              + GitDeploy.shortSha(merge)
+              + Shas.shortSha(merge)
               + "` finishes it.",
           kept);
     }
-    String on = "on " + target.deployBranch() + " (" + GitDeploy.shortSha(commit) + ")";
+    String on = "on " + target.deployBranch() + " (" + Shas.shortSha(commit) + ")";
     if (onlyRepo) {
       return Outcome.ok("Reverted " + taskId + " " + on + "; REVERTED.", "reverted " + on);
     }
@@ -129,7 +133,7 @@ public class RevertRunner {
     String tail = "; REVERTED — fix and ship again, or `done`.";
     if (singleRepo) {
       String on =
-          "on " + landed.getFirst().deployBranch() + " (" + GitDeploy.shortSha(revertCommit) + ")";
+          "on " + landed.getFirst().deployBranch() + " (" + Shas.shortSha(revertCommit) + ")";
       return Outcome.ok("Reverted " + taskId + " " + on + tail, "reverted " + on);
     }
     return Outcome.ok(
@@ -141,7 +145,7 @@ public class RevertRunner {
    * finishes.
    */
   private Outcome handBackConflict(
-      String taskId, Target at, List<String> reverted, GitDeploy.RevertConflictException e) {
+      String taskId, Target at, List<String> reverted, RevertConflictException e) {
     stateService.reduce(
         taskId,
         (reducer, t) ->

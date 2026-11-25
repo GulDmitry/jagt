@@ -133,7 +133,11 @@ class ArchUnitEngineTest {
   void acceptsEachMeasureTheEngineImplements() {
     assertThat(engine.vocabulary().get("measure"))
         .containsExactlyInAnyOrder(
-            "constructor-parameters", "module-isolation", "single-implementer", "flag-arguments");
+            "constructor-parameters",
+            "module-isolation",
+            "single-implementer",
+            "flag-arguments",
+            "static-helpers");
   }
 
   @Test
@@ -202,5 +206,18 @@ class ArchUnitEngineTest {
     assertThat(found.items())
         .contains("fitness.archunit.ViaStereotype")
         .doesNotContain("fitness.archunit.Unstereotyped");
+  }
+
+  @Test
+  void listsEveryPublicStaticMethodOfAStereotypedClass() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder()
+            .select("measure", "static-helpers")
+            .select("annotated", "fitness.archunit.Stereotype")
+            .build();
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.items()).containsExactly("fitness.archunit.Flagged.shout(java.lang.String)");
   }
 }

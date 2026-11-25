@@ -5,7 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.TaskBranches;
 import dev.jagt.orchestrator.task.repo.GitRemote;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -208,7 +208,7 @@ final class E2eWorkspace {
     }
     gitQuietly(repo, "worktree", "prune");
     gitQuietly(repo, "branch", "-D", branch);
-    gitQuietly(repo, "branch", "-D", GitDeploy.deployBranch(branch));
+    gitQuietly(repo, "branch", "-D", TaskBranches.deploy(branch));
     gitQuietly(repo, "branch", "-D", "jagt-revert-" + branch);
     gitQuietly(repo, "push", "origin", "--delete", branch);
   }

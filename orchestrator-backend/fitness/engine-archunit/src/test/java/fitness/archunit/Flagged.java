@@ -9,9 +9,21 @@ final class Flagged {
 
   void tellQuietly(boolean loud) {}
 
+  public static String shout(String text) {
+    return text;
+  }
+
+  static String whisper(String text) {
+    return text;
+  }
+
   @Stereotype
   static final class Nested {
 
     public void tell(boolean loud) {}
+
+    public static String shout(String text) {
+      return text;
+    }
   }
 }

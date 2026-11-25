@@ -605,7 +605,7 @@ public class GitWorktrees {
         projectPath,
         () ->
             git.removeWorktreeAndBranch(
-                projectPath, deployWorktree, GitDeploy.deployBranch(sourceBranch)));
+                projectPath, deployWorktree, TaskBranches.deploy(sourceBranch)));
   }
 
   /**

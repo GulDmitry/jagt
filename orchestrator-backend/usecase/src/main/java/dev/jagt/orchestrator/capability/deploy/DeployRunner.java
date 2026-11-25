@@ -9,7 +9,11 @@ import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.deploy.DeployTargets.Target;
+import dev.jagt.orchestrator.service.git.ForeignDeployWorktreeException;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.MergeConflictException;
+import dev.jagt.orchestrator.service.git.NothingToDeployException;
+import dev.jagt.orchestrator.service.git.Shas;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import java.time.Clock;
@@ -77,8 +81,8 @@ public class DeployRunner {
   private static final class Landing {
     final Map<String, String> merged = new LinkedHashMap<>();
     final List<String> nothingToDo = new ArrayList<>();
-    GitDeploy.@Nullable NothingToDeployException idle;
-    GitDeploy.@Nullable ForeignDeployWorktreeException obstacle;
+    @Nullable NothingToDeployException idle;
+    @Nullable ForeignDeployWorktreeException obstacle;
   }
 
   private static List<String> blocked(TaskState task, int from) {
@@ -108,17 +112,17 @@ public class DeployRunner {
                       now),
                   new DeployStep.Pushed(target.project(), now),
                   now));
-    } catch (GitDeploy.NothingToDeployException e) {
+    } catch (NothingToDeployException e) {
       landing.nothingToDo.add(target.project());
       landing.idle = landing.idle == null ? e : landing.idle;
-    } catch (GitDeploy.ForeignDeployWorktreeException e) {
+    } catch (ForeignDeployWorktreeException e) {
       // The sibling holding the shared path is in this very list, so coming back beats refusing.
       stateService.reduce(
           taskId,
           (reducer, t) ->
               reducer.deployStepped(t, new DeployStep.Blocked(target.project()), clock.millis()));
       landing.obstacle = landing.obstacle == null ? e : landing.obstacle;
-    } catch (GitDeploy.MergeConflictException e) {
+    } catch (MergeConflictException e) {
       return handBackConflict(taskId, targets, at, e);
     } catch (RuntimeException e) {
       return stoppedPartWay(taskId, targets, at, e);
@@ -136,7 +140,7 @@ public class DeployRunner {
       String taskId,
       Map<String, String> merged,
       List<String> blocked,
-      GitDeploy.ForeignDeployWorktreeException obstacle) {
+      ForeignDeployWorktreeException obstacle) {
     List<String> landed = List.copyOf(merged.keySet());
     String next =
         landed.isEmpty()
@@ -161,7 +165,7 @@ public class DeployRunner {
    * deploy branch carries.
    */
   private Outcome handBackConflict(
-      String taskId, List<Target> targets, int at, GitDeploy.MergeConflictException e) {
+      String taskId, List<Target> targets, int at, MergeConflictException e) {
     Target conflicted = targets.get(at);
     stateService.reduce(
         taskId,
@@ -222,7 +226,7 @@ public class DeployRunner {
               + " into "
               + only.deployBranch()
               + " ("
-              + GitDeploy.shortSha(merged.get(only.project()))
+              + Shas.shortSha(merged.get(only.project()))
               + "); DEPLOYED",
           stamp);
     }
@@ -234,7 +238,7 @@ public class DeployRunner {
                     + " into "
                     + target.deployBranch()
                     + " ("
-                    + GitDeploy.shortSha(merged.get(target.project()))
+                    + Shas.shortSha(merged.get(target.project()))
                     + ")")
             .toList();
     // A resumed sequence merged only its tail; the whole picture is what the human is owed.
@@ -249,7 +253,7 @@ public class DeployRunner {
                       .merge();
               return merge == null
                   ? target.project()
-                  : target.project() + " (" + GitDeploy.shortSha(merge) + ")";
+                  : target.project() + " (" + Shas.shortSha(merge) + ")";
             })
             .toList();
     String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);

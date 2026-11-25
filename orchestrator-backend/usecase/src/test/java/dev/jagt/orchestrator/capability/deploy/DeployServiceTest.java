@@ -29,7 +29,10 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
+import dev.jagt.orchestrator.service.git.ForeignDeployWorktreeException;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.MergeConflictException;
+import dev.jagt.orchestrator.service.git.NothingToDeployException;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
@@ -98,7 +101,7 @@ class DeployServiceTest {
     void blockedDeployWithNothingLandedNamesTheObstacleInsteadOfAdvisingTheSameRunAgain() {
       when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev")))
           .thenThrow(
-              new GitDeploy.ForeignDeployWorktreeException(
+              new ForeignDeployWorktreeException(
                   Path.of("/repos/ABC-1-deploy"), Path.of("/repos/x")));
 
       Outcome outcome = deploys.deploy("a1");
@@ -146,9 +149,7 @@ class DeployServiceTest {
               .alias("a2")
               .build());
       Path deployWorktree = root.resolve("ABC-2-deploy");
-      doThrow(
-              new GitDeploy.MergeConflictException(
-                  "ABC-2", "dev", "conflict in schema.yaml", deployWorktree))
+      doThrow(new MergeConflictException("ABC-2", "dev", "conflict in schema.yaml", deployWorktree))
           .when(git)
           .mergeIntoAndPush(any(), eq("ABC-2"), eq("dev"));
 
@@ -270,9 +271,7 @@ class DeployServiceTest {
     @Test
     void namesWhatIsLiveAndWhatIsNotWhenRepositoryConflictsAfterAnotherHasLanded() {
       Path deployWorktree = root.resolve("ABC-1-deploy");
-      doThrow(
-              new GitDeploy.MergeConflictException(
-                  "ABC-1", "dev", "conflict in Widget.java", deployWorktree))
+      doThrow(new MergeConflictException("ABC-1", "dev", "conflict in Widget.java", deployWorktree))
           .when(git)
           .mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
 
@@ -305,7 +304,7 @@ class DeployServiceTest {
 
     @Test
     void landsTheRepositoriesThatHaveWorkAndPassesOverTheOnesWithNothingToDeploy() {
-      doThrow(new GitDeploy.NothingToDeployException("ABC-1", "dev"))
+      doThrow(new NothingToDeployException("ABC-1", "dev"))
           .when(git)
           .mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
 
@@ -319,12 +318,12 @@ class DeployServiceTest {
 
     @Test
     void refusesTheDeployWhenNoRepositoryHasAnythingToDeploy() {
-      doThrow(new GitDeploy.NothingToDeployException("ABC-1", "dev"))
+      doThrow(new NothingToDeployException("ABC-1", "dev"))
           .when(git)
           .mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
 
       assertThatThrownBy(() -> deploys.deploy("a1"))
-          .isInstanceOf(GitDeploy.NothingToDeployException.class)
+          .isInstanceOf(NothingToDeployException.class)
           .hasMessageContaining("Nothing to deploy");
       assertThat(state.task("ABC-1").orElseThrow().standing().status())
           .isEqualTo(TaskStatus.APPROVED);
@@ -427,9 +426,7 @@ class DeployServiceTest {
                               Deployment.Target.of("api", "dev").withMerge("0ldc0mm1t111"),
                               Deployment.Target.of("web", "dev").withMerge("0ldc0mm1t222")))
                       .build()));
-      doThrow(
-              new GitDeploy.MergeConflictException(
-                  "ABC-1", "dev", "conflict", root.resolve("ABC-1-deploy")))
+      doThrow(new MergeConflictException("ABC-1", "dev", "conflict", root.resolve("ABC-1-deploy")))
           .when(git)
           .mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
 

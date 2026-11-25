@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.service.git.GitCommands;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
+import dev.jagt.orchestrator.service.git.Shas;
 import dev.jagt.orchestrator.task.repo.Remote;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -19,12 +21,13 @@ public class GitCaseFacts {
 
   private final GitCommands git;
   private final GitDeploy gitDeploy;
+  private final GitRevert gitRevert;
 
   /** A merge commit on a deploy branch naming the task. */
   public record Candidate(String sha, String date, String subject) {
 
     public String line() {
-      return GitDeploy.shortSha(sha) + " " + date + " " + subject;
+      return Shas.shortSha(sha) + " " + date + " " + subject;
     }
   }
 
@@ -68,12 +71,12 @@ public class GitCaseFacts {
   public List<String> cases(Path projectPath, String taskId, String project, String deployBranch) {
     Remote remote = git.remote(projectPath);
     List<String> cases = new ArrayList<>();
-    if (gitDeploy.hasRevertWorktree(projectPath, taskId)) {
+    if (gitRevert.hasRevertWorktree(projectPath, taskId)) {
       cases.add(
           worktreeCase(
               project,
               "revert",
-              gitDeploy.revertWorktreePath(projectPath, taskId),
+              gitRevert.revertWorktreePath(projectPath, taskId),
               remote.track(deployBranch),
               "revert " + taskId));
     }
@@ -140,13 +143,13 @@ public class GitCaseFacts {
         "branch "
             + branch
             + " ("
-            + GitDeploy.shortSha(head(projectPath, "refs/heads/" + branch))
+            + Shas.shortSha(head(projectPath, "refs/heads/" + branch))
             + ", "
             + counted[1]
             + " commit(s) only here) and "
             + remote.track(branch)
             + " ("
-            + GitDeploy.shortSha(head(projectPath, remote.trackingRef(branch)))
+            + Shas.shortSha(head(projectPath, remote.trackingRef(branch)))
             + ", "
             + counted[0]
             + " only there) diverged; run `git rebase "

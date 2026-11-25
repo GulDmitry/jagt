@@ -751,14 +751,14 @@ class GitWorktreesTest {
         "add",
         "-q",
         "-b",
-        GitDeploy.deployBranch("ABC-1"),
+        TaskBranches.deploy("ABC-1"),
         deploy.toString(),
         "origin/main");
 
     git.removeDeployWorktreeIfPresent(repo, deploy, "ABC-1");
 
     assertThat(deploy).doesNotExist();
-    assertThat(git.branchExists(repo, GitDeploy.deployBranch("ABC-1"))).isFalse();
+    assertThat(git.branchExists(repo, TaskBranches.deploy("ABC-1"))).isFalse();
   }
 
   @Test

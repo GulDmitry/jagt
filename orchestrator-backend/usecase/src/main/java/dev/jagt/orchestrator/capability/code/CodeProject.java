@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.nio.file.Path;
@@ -21,6 +22,7 @@ class CodeProject {
 
   private final DeployTargets deployTargets;
   private final GitDeploy gitDeploy;
+  private final GitRevert gitRevert;
   private final EditorDriver editorDriver;
 
   String open(String taskId, TaskState task) {
@@ -55,12 +57,12 @@ class CodeProject {
         .stopped(task)
         .filter(target ->
             reverting
-                ? gitDeploy.hasRevertWorktree(target.path(), taskId)
+                ? gitRevert.hasRevertWorktree(target.path(), taskId)
                 : gitDeploy.hasDeployWorktree(target.path(), taskId))
         .map(target -> {
           Path worktree =
               reverting
-                  ? gitDeploy.revertWorktreePath(target.path(), taskId)
+                  ? gitRevert.revertWorktreePath(target.path(), taskId)
                   : gitDeploy.deployWorktreePath(target.path(), taskId);
           editorDriver.open(worktree);
           return "Opened the "
