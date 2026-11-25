@@ -34,6 +34,7 @@ final class SessionHooks {
   private static final String RATE_LIMIT_ERROR = "rate-limit-error";
   private static final String CONTINUING_END = "continuing-end";
   private static final String TRUST_DIALOG = "trust-dialog";
+  private static final String FIRST_RUN_PROMPT = "first-run-prompt";
   private static final Set<String> NOT_A_STATE =
       Set.of(
           GATE,
@@ -44,7 +45,8 @@ final class SessionHooks {
           TURN_FAILURE,
           RATE_LIMIT_ERROR,
           CONTINUING_END,
-          TRUST_DIALOG);
+          TRUST_DIALOG,
+          FIRST_RUN_PROMPT);
 
   /** The event this CLI answers with allow or deny, or nothing where it has none. */
   static Optional<String> gate(String runtime) {
@@ -90,7 +92,16 @@ final class SessionHooks {
    * undeclared.
    */
   static Set<String> trustDialog(String runtime) {
-    return Arrays.stream(declared(runtime).getProperty(TRUST_DIALOG, "").split("\\|"))
+    return phrases(runtime, TRUST_DIALOG);
+  }
+
+  /** Phrases only this CLI's first-run onboarding shows; none where undeclared. */
+  static Set<String> firstRunPrompt(String runtime) {
+    return phrases(runtime, FIRST_RUN_PROMPT);
+  }
+
+  private static Set<String> phrases(String runtime, String key) {
+    return Arrays.stream(declared(runtime).getProperty(key, "").split("\\|"))
         .map(String::strip)
         .filter(phrase -> !phrase.isEmpty())
         .collect(Collectors.toUnmodifiableSet());

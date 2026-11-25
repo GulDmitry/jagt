@@ -114,6 +114,8 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 - HOME is `/data/home`, on the volume: a revived session finds its conversation and login after a new pod. The volume hides whatever the
   image bakes under it; so on every start `entrypoint.sh` copies the seed over the agent's folder (`JAGT_AGENT_HOME`):
   settings, MCP config and plugins are replaced, conversations and logins kept; with either variable unset nothing is copied.
+- jagt marks the agent's first-run onboarding done in `<home>/.claude.json` when it provisions a worktree, keeping every other key;
+  the seed folder needs no `.claude.json`. A window still showing the first-run picker is reported as waiting on it.
 - `claude.mcpConfig` or `assistant.mcpConfig` naming a file the container lacks is one mark on the board's head, until the file is there.
   A value holding the JSON itself is not a file and is not checked.
 - A plugin server needing a browser login cannot sign in here: list its plugin (`name@marketplace`) under `claude.disabledPlugins`

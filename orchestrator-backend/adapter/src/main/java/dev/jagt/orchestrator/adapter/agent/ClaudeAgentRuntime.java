@@ -192,6 +192,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     if (SessionHooks.trustDialog("claude").stream().anyMatch(shown::contains)) {
       return Optional.of("waiting on the trust dialog");
     }
+    if (SessionHooks.firstRunPrompt("claude").stream().anyMatch(shown::contains)) {
+      return Optional.of("waiting on the first-run setup");
+    }
     return shown.contains(PERMISSION_QUESTION) && shown.contains(PERMISSION_CANCEL)
         ? Optional.of("waiting on a permission dialog")
         : Optional.empty();

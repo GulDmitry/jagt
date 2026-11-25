@@ -24,7 +24,8 @@ import tools.jackson.databind.node.ObjectNode;
  * prompts nobody answers, and every worktree is such a directory. Claude writes this file too,
  * under a lock this cannot take, so the read and the replace stay adjacent and anything unexpected
  * in it costs the flag rather than the file. Every jagt process on the machine takes a lock of its
- * own around them.
+ * own around them. A home that never ran Claude also stops at its first-run picker until the file
+ * says onboarding is done.
  */
 @Slf4j
 public final class ClaudeTrust {
@@ -33,6 +34,7 @@ public final class ClaudeTrust {
       JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
   private static final String PROJECTS = "projects";
   private static final String TRUSTED = "hasTrustDialogAccepted";
+  private static final String ONBOARDED = "hasCompletedOnboarding";
   private static final String UNTRUSTED = "worktree left untrusted";
   private static final String STALE = "trust entry orphaned";
   private static final int ATTEMPTS = 3;
@@ -101,9 +103,10 @@ public final class ClaudeTrust {
         projects.path(worktree).isObject()
             ? (ObjectNode) projects.get(worktree)
             : projects.putObject(worktree);
-    if (entry.path(TRUSTED).asBoolean(false)) {
+    if (entry.path(TRUSTED).asBoolean(false) && root.path(ONBOARDED).asBoolean(false)) {
       return null;
     }
+    root.put(ONBOARDED, true);
     entry.put(TRUSTED, true);
     return JSON.writeValueAsString(root);
   }

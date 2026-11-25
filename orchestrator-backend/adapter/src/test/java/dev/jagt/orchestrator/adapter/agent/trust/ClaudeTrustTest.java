@@ -49,12 +49,46 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void writesNothingWhenTheWorktreeIsAlreadyTrusted() {
+  void writesNothingWhenTheWorktreeIsAlreadyTrustedAndOnboardingDone() {
+    String updated =
+        ClaudeTrust.accepted(
+            "{\"hasCompletedOnboarding\": true, \"projects\": {\"/wt/ABC-42\":"
+                + " {\"hasTrustDialogAccepted\": true}}}",
+            "/wt/ABC-42");
+
+    assertThat(updated).isNull();
+  }
+
+  @Test
+  void marksFirstRunOnboardingDoneForHomeThatNeverRanClaude() {
+    String updated = ClaudeTrust.accepted("{}", "/wt/ABC-42");
+
+    assertThat(new JsonMapper().readTree(updated).path("hasCompletedOnboarding").asBoolean(false))
+        .isTrue();
+  }
+
+  @Test
+  void marksOnboardingDoneForTrustedWorktreeOfHomeThatLacksIt() {
     String updated =
         ClaudeTrust.accepted(
             "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}}}", "/wt/ABC-42");
 
-    assertThat(updated).isNull();
+    assertThat(new JsonMapper().readTree(updated).path("hasCompletedOnboarding").asBoolean(false))
+        .isTrue();
+  }
+
+  @Test
+  void keepsTheLoginAndOtherKeysWhenMarkingOnboardingDone() {
+    String updated =
+        ClaudeTrust.accepted(
+            "{\"oauthAccount\": {\"emailAddress\": \"a@example.com\"}, \"numStartups\": 7}",
+            "/wt/ABC-42");
+
+    var root = new JsonMapper().readTree(updated);
+
+    assertThat(root.path("oauthAccount").path("emailAddress").asString())
+        .isEqualTo("a@example.com");
+    assertThat(root.path("numStartups").asInt(0)).isEqualTo(7);
   }
 
   @Test
