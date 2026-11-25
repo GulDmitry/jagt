@@ -48,6 +48,7 @@ public class SubjectCheckout {
     Path repository = Path.of(declared.path());
     Path dir =
         paths
+            .layout()
             .codeReviewCheckouts()
             .resolve(
                 UUID.nameUUIDFromBytes(

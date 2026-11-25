@@ -84,8 +84,8 @@ class ProjectConfigTest {
             new ProjectConfig.Setup(List.of(), null, List.of()));
     var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
 
-    assertThat(declared.humanPathsOrNone()).containsExactly("db/migration/**");
-    assertThat(undeclared.humanPathsOrNone()).isEmpty();
+    assertThat(declared.humanPaths()).containsExactly("db/migration/**");
+    assertThat(undeclared.humanPaths()).isEmpty();
   }
 
   @Test

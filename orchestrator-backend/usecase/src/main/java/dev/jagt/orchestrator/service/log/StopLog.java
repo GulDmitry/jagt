@@ -42,7 +42,7 @@ public class StopLog {
 
   public StopLog(ObjectMapper mapper, OrchestratorPaths paths) {
     this.mapper = mapper;
-    this.file = new RollingFile(paths.stops());
+    this.file = new RollingFile(paths.layout().stops());
   }
 
   public void record(Stop stop) {

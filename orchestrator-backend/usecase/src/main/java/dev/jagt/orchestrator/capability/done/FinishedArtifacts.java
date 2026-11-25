@@ -58,7 +58,7 @@ public class FinishedArtifacts {
     this.clock = clock;
     this.config = config;
     this.mapper = mapper;
-    this.store = paths.archive();
+    this.store = paths.layout().archive();
   }
 
   /**

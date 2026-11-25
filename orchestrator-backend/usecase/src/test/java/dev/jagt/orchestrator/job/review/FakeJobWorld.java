@@ -20,7 +20,6 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
@@ -66,6 +65,7 @@ import dev.jagt.orchestrator.service.master.RoleYields;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.review.ReachOffers;
 import dev.jagt.orchestrator.service.review.ReviewSweepService;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.review.Rounds;
@@ -282,7 +282,7 @@ public final class FakeJobWorld implements AutoCloseable {
             new Rounds(
                 config,
                 ignored -> false,
-                () -> Facts.Reach.defaults(),
+                new ReachOffers(() -> false, () -> false),
                 unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             config);

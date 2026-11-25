@@ -3,12 +3,12 @@ package dev.jagt.orchestrator.job.master;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterStopAnswer;
 import dev.jagt.orchestrator.service.master.MasterStopPanel;
+import dev.jagt.orchestrator.service.review.ReachOffers;
 import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
@@ -69,7 +69,7 @@ public record TestMasterStopJobBuilder(
         new Rounds(
             configService,
             ignored -> false,
-            () -> Facts.Reach.defaults(),
+            new ReachOffers(() -> false, () -> false),
             unheld -> null,
             new Checkers(new TaskChart(Composition.builtIn()))));
   }

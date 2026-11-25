@@ -41,7 +41,7 @@ public final class ArchUnitEngine implements Engine {
         Map.entry("calls", Set.of()),
         Map.entry("without", Set.of()),
         Map.entry("except", Set.of()),
-        Map.entry("measure", Set.of("constructor-parameters", "module-isolation")),
+        Map.entry("measure", Set.of("constructor-parameters", "module-isolation", "single-implementer")),
         Map.entry("package", Set.of()));
   }
 
@@ -93,6 +93,9 @@ public final class ArchUnitEngine implements Engine {
             .toList();
     if ("constructor-parameters".equals(selectors.get("measure"))) {
       return parameters(function, annotated);
+    }
+    if ("single-implementer".equals(selectors.get("measure"))) {
+      return SingleImplementers.measure(annotated);
     }
     return Measurement.of(
         annotated.stream()

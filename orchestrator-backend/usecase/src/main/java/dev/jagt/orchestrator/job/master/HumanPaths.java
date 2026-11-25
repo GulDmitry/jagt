@@ -35,8 +35,7 @@ class HumanPaths {
               .distinct()
               .collect(
                   Collectors.toMap(
-                      project -> project,
-                      project -> configService.project(project).humanPathsOrNone()));
+                      project -> project, project -> configService.project(project).humanPaths()));
     } catch (RuntimeException unknownProject) {
       return Optional.of(UNREAD);
     }

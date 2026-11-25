@@ -251,10 +251,6 @@ public record ProjectConfig(
   }
 
   /** Repository paths, as globs, whose change only a human takes further. */
-  public List<String> humanPathsOrNone() {
-    return humanPaths();
-  }
-
   public Remote gitRemote() {
     return Remote.of(remote());
   }

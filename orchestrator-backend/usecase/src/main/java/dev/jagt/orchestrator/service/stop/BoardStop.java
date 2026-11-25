@@ -25,13 +25,13 @@ public class BoardStop {
   private final Clock clock;
 
   public boolean stopped() {
-    return Files.exists(paths.boardStopped());
+    return Files.exists(paths.layout().boardStopped());
   }
 
   public Optional<Standing> standing() {
     try {
       return Optional.of(
-          new Standing(Long.parseLong(Files.readString(paths.boardStopped()).strip())));
+          new Standing(Long.parseLong(Files.readString(paths.layout().boardStopped()).strip())));
     } catch (java.nio.file.NoSuchFileException none) {
       return Optional.empty();
     } catch (IOException | NumberFormatException unread) {
@@ -45,9 +45,9 @@ public class BoardStop {
       return false;
     }
     try {
-      Files.writeString(paths.boardStopped(), Long.toString(clock.millis()));
+      Files.writeString(paths.layout().boardStopped(), Long.toString(clock.millis()));
     } catch (IOException e) {
-      throw new UncheckedIOException("Cannot write " + paths.boardStopped(), e);
+      throw new UncheckedIOException("Cannot write " + paths.layout().boardStopped(), e);
     }
     log.atWarn()
         .setMessage("board stopped")
@@ -59,11 +59,11 @@ public class BoardStop {
   /** True where it stood. */
   public synchronized boolean lift() {
     try {
-      boolean was = Files.deleteIfExists(paths.boardStopped());
+      boolean was = Files.deleteIfExists(paths.layout().boardStopped());
       log.atInfo().setMessage("board stop lifted").addKeyValue("wasStopped", was).log();
       return was;
     } catch (IOException e) {
-      throw new UncheckedIOException("Cannot remove " + paths.boardStopped(), e);
+      throw new UncheckedIOException("Cannot remove " + paths.layout().boardStopped(), e);
     }
   }
 }

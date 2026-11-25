@@ -90,4 +90,17 @@ class ArchUnitEngineTest {
 
     assertThat(found.items()).containsExactly("fitness.archunit.ArchUnitEngine");
   }
+
+  @Test
+  void listsAnInterfaceWhoseOnlyImplementerSharesItsPackage() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder()
+            .select("interface", true)
+            .select("measure", "single-implementer")
+            .build();
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.items()).containsExactly("fitness.archunit.Lone");
+  }
 }

@@ -29,7 +29,7 @@ class OpenCodeGate {
   private final HookEndpoint hooks;
 
   OpenCodeGate(OrchestratorPaths paths, ReadOnlyTools tools, HookEndpoint hooks) {
-    this.directory = paths.openCodeGate();
+    this.directory = paths.layout().openCodeGate();
     this.tools = tools;
     this.hooks = hooks;
     write();

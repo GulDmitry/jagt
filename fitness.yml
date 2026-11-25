@@ -16,6 +16,7 @@ technical:
     modularity:
       collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
       ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 58, decision: "0176" }
+      single-use-indirections: { engine: archunit, set: all, kind: class, interface: true, measure: single-implementer, governs: count, max: 4, decision: "0176", hint: "an interface whose one implementer sits beside it, with no fake, is an indirection: fold it into the class; the floor only falls" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 24, decision: "0176" }
       workflow-gradle-lines: { engine: scan, set: tracked, glob: "../.github/workflows/*.yml,../.gitlab-ci.yml", per: file, regex: "\\./gradlew(?!( --[a-z-]+)* (gate\\w*|-q printVersion|-q provenTree)\\b)", governs: count, max: 0, hint: "a CI job runs one gate<Job> task, which scripts/ci-local.sh runs too (docs/rules/testing-suites.md)" }

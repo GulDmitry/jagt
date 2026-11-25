@@ -34,7 +34,7 @@ class OrchestratorPathsTest {
             OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()),
             FakeHost.machine());
 
-    assertThat(paths.roleBranchWorktree("web", "jagt/acceptance-qa"))
+    assertThat(paths.layout().roleBranchWorktree("web", "jagt/acceptance-qa"))
         .isEqualTo(data.resolve("role-branches/web-jagt-acceptance-qa"));
   }
 
@@ -117,8 +117,8 @@ class OrchestratorPathsTest {
                 .withData(root.resolve("vault").toString()),
             FakeHost.machine());
 
-    assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
-    assertThat(paths.token()).isEqualTo(root.resolve("vault/jagt/master-token"));
+    assertThat(paths.layout().stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
+    assertThat(paths.layout().token()).isEqualTo(root.resolve("vault/jagt/master-token"));
     assertThat(paths.worktree("web", "ABC-1"))
         .isEqualTo(root.resolve("vault/tasks/ABC-1/worktrees/web"));
   }
@@ -129,8 +129,8 @@ class OrchestratorPathsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
-    assertThat(paths.data()).isEqualTo(root.resolve("data"));
-    assertThat(paths.stateFile()).isEqualTo(root.resolve("data/jagt/state.json"));
+    assertThat(paths.layout().data()).isEqualTo(root.resolve("data"));
+    assertThat(paths.layout().stateFile()).isEqualTo(root.resolve("data/jagt/state.json"));
   }
 
   @Test
@@ -139,7 +139,8 @@ class OrchestratorPathsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
-    assertThat(paths.scratchCeiling(paths.scratch("ABC-1"))).isEqualTo(root.resolve("data/tasks"));
+    assertThat(paths.layout().scratchCeiling(paths.scratch("ABC-1")))
+        .isEqualTo(root.resolve("data/tasks"));
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-1")).isTrue();
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-2")).isFalse();
   }

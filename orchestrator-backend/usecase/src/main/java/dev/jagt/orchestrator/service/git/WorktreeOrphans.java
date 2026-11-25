@@ -83,7 +83,7 @@ public class WorktreeOrphans {
   private void shelveTaskFolderOf(Orphan orphan) {
     Path worktrees = orphan.path().getParent();
     Path folder = worktrees == null ? null : worktrees.getParent();
-    if (folder == null || !paths.tasks().equals(folder.getParent())) {
+    if (folder == null || !paths.layout().tasks().equals(folder.getParent())) {
       return;
     }
     String slug = folder.getFileName().toString();
@@ -165,7 +165,7 @@ public class WorktreeOrphans {
 
   private void underData(
       String projectKey, List<PathMatcher> secretMatchers, Map<Path, Orphan> found) {
-    if (!Files.isDirectory(paths.tasks())) {
+    if (!Files.isDirectory(paths.layout().tasks())) {
       return;
     }
     Set<String> live = new java.util.HashSet<>();
@@ -179,7 +179,7 @@ public class WorktreeOrphans {
               .filter(path -> path != null && !path.isBlank())
               .forEach(path -> recorded.add(Path.of(path).toAbsolutePath().normalize()));
         });
-    for (String slug : directoryNames(paths.tasks())) {
+    for (String slug : directoryNames(paths.layout().tasks())) {
       Path worktree = paths.worktree(projectKey, slug);
       List<Path> candidates =
           List.of(
@@ -206,7 +206,7 @@ public class WorktreeOrphans {
       Set<String> owned,
       List<PathMatcher> secretMatchers,
       Map<Path, Orphan> found) {
-    Path own = paths.legacyWorktrees(projectKey);
+    Path own = paths.layout().legacyWorktrees(projectKey);
     if (!Files.isDirectory(own)) {
       return;
     }

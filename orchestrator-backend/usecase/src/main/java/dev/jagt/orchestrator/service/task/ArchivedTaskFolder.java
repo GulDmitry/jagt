@@ -70,7 +70,7 @@ public class ArchivedTaskFolder {
   }
 
   private Path named(LocalDateTime at, String slug) {
-    return paths.archive().resolve(SnapshotName.of(at, slug));
+    return paths.layout().archive().resolve(SnapshotName.of(at, slug));
   }
 
   private static boolean holdsWorktree(Path folder) throws IOException {

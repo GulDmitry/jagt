@@ -42,7 +42,7 @@ public class ConfigSource {
   }
 
   public Path clone(String projectKey) {
-    return paths.clone(projectKey);
+    return paths.layout().clone(projectKey);
   }
 
   private record Parsed(FileVersion version, Resolution resolution, @Nullable Object section) {}

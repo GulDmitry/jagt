@@ -44,15 +44,15 @@ public class DataFolderStart {
   @EventListener(ContextRefreshedEvent.class)
   public void prepare() {
     try {
-      Files.createDirectories(paths.data());
+      Files.createDirectories(paths.layout().data());
       olderFolder().ifPresent(this::bringIn);
-      for (Path folder : paths.folders()) {
+      for (Path folder : paths.layout().folders()) {
         Files.createDirectories(folder);
       }
     } catch (IOException e) {
       log.atWarn()
           .setMessage("data folder not created")
-          .addKeyValue("path", paths.data())
+          .addKeyValue("path", paths.layout().data())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "the start check names it")
           .log();
@@ -60,10 +60,10 @@ public class DataFolderStart {
   }
 
   private Optional<Path> olderFolder() {
-    if (Files.exists(paths.stateFile())) {
+    if (Files.exists(paths.layout().stateFile())) {
       return Optional.empty();
     }
-    List<Path> folders = new ArrayList<>(List.of(paths.data()));
+    List<Path> folders = new ArrayList<>(List.of(paths.layout().data()));
     if (!previousData.isBlank()) {
       folders.add(Path.of(previousData).toAbsolutePath().normalize());
     }
@@ -75,14 +75,15 @@ public class DataFolderStart {
   }
 
   private void bringIn(Path older) {
-    paths.placed().forEach((name, to) -> place(older.resolve(name), to));
+    paths.layout().placed().forEach((name, to) -> place(older.resolve(name), to));
     paths
+        .layout()
         .placedEntries()
         .forEach((folder, target) ->
             listed(older.resolve(folder))
                 .forEach(entry -> place(entry, target.apply(entry.getFileName().toString()))));
     for (Path file : listed(older)) {
-      Path to = paths.placedVerdicts(file.getFileName().toString());
+      Path to = paths.layout().placedVerdicts(file.getFileName().toString());
       if (to != null) {
         place(file, to);
       }
@@ -91,8 +92,8 @@ public class DataFolderStart {
   }
 
   private void dropStaleToken(Path older) {
-    Path token = older.resolve(paths.token().getFileName());
-    if (token.equals(paths.token()) || !Files.isRegularFile(token)) {
+    Path token = older.resolve(paths.layout().token().getFileName());
+    if (token.equals(paths.layout().token()) || !Files.isRegularFile(token)) {
       return;
     }
     try {

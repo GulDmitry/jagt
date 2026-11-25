@@ -101,11 +101,11 @@ public class CheckerRecords {
   }
 
   private Path file() {
-    return paths.checkerVerdicts(role);
+    return paths.layout().checkerVerdicts(role);
   }
 
   private Path legacy() {
-    return Checkers.ACCEPTANCE.equals(role) ? paths.legacyQaVerdicts() : file();
+    return Checkers.ACCEPTANCE.equals(role) ? paths.layout().legacyQaVerdicts() : file();
   }
 
   private List<String> lines() {

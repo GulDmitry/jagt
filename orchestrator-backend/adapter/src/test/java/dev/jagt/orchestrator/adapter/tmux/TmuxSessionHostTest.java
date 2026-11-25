@@ -692,7 +692,7 @@ class TmuxSessionHostTest {
     assertThat(commands)
         .anySatisfy(command ->
             assertThat(command.getLast())
-                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.tasks() + "' "));
+                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.layout().tasks() + "' "));
   }
 
   @Test

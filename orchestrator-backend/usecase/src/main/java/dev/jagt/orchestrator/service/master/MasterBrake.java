@@ -69,7 +69,7 @@ public class MasterBrake {
   }
 
   public boolean stopped() {
-    return Files.exists(paths.actStopped());
+    return Files.exists(paths.layout().actStopped());
   }
 
   /** True where it was stopped. */
@@ -77,11 +77,11 @@ public class MasterBrake {
     strikes.clear();
     keep();
     try {
-      boolean was = Files.deleteIfExists(paths.actStopped());
+      boolean was = Files.deleteIfExists(paths.layout().actStopped());
       log.atInfo().setMessage("master act restored").addKeyValue("wasStopped", was).log();
       return was;
     } catch (IOException e) {
-      throw new UncheckedIOException("Cannot remove " + paths.actStopped(), e);
+      throw new UncheckedIOException("Cannot remove " + paths.layout().actStopped(), e);
     }
   }
 
@@ -146,7 +146,7 @@ public class MasterBrake {
 
   private void stop() {
     try {
-      Files.writeString(paths.actStopped(), String.join("\n", strikes) + "\n");
+      Files.writeString(paths.layout().actStopped(), String.join("\n", strikes) + "\n");
       log.atWarn()
           .setMessage("master act stopped")
           .addKeyValue("tasks", List.copyOf(strikes))
@@ -156,7 +156,7 @@ public class MasterBrake {
     } catch (IOException e) {
       log.atError()
           .setMessage("master act not stopped")
-          .addKeyValue("file", paths.actStopped())
+          .addKeyValue("file", paths.layout().actStopped())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "act keeps pressing")
           .log();
@@ -167,13 +167,13 @@ public class MasterBrake {
 
   private List<String> kept() {
     try {
-      return Files.isRegularFile(paths.actStrikes())
-          ? Files.readAllLines(paths.actStrikes())
+      return Files.isRegularFile(paths.layout().actStrikes())
+          ? Files.readAllLines(paths.layout().actStrikes())
           : List.of();
     } catch (IOException e) {
       log.atWarn()
           .setMessage("master strikes unread")
-          .addKeyValue("file", paths.actStrikes())
+          .addKeyValue("file", paths.layout().actStrikes())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "the count starts again")
           .log();
@@ -184,14 +184,14 @@ public class MasterBrake {
   private void keep() {
     try {
       if (strikes.isEmpty()) {
-        Files.deleteIfExists(paths.actStrikes());
+        Files.deleteIfExists(paths.layout().actStrikes());
       } else {
-        Files.writeString(paths.actStrikes(), String.join("\n", strikes) + "\n");
+        Files.writeString(paths.layout().actStrikes(), String.join("\n", strikes) + "\n");
       }
     } catch (IOException e) {
       log.atWarn()
           .setMessage("master strikes not kept")
-          .addKeyValue("file", paths.actStrikes())
+          .addKeyValue("file", paths.layout().actStrikes())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "a restart forgets the count")
           .log();

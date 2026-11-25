@@ -34,7 +34,7 @@ public class MissLog {
 
   public MissLog(ObjectMapper mapper, OrchestratorPaths paths, Clock clock) {
     this.mapper = mapper;
-    this.file = new RollingFile(paths.misses());
+    this.file = new RollingFile(paths.layout().misses());
     this.clock = clock;
   }
 

@@ -36,7 +36,7 @@ public class MasterToken implements RootToken {
     new SecureRandom().nextBytes(random);
     String value = HexFormat.of().formatHex(random);
     this.token = value.getBytes(StandardCharsets.UTF_8);
-    write(paths.token(), value);
+    write(paths.layout().token(), value);
   }
 
   @Override

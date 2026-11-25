@@ -8,9 +8,7 @@ import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -47,32 +45,9 @@ public class OrchestratorPaths {
                 : null);
   }
 
-  /** Everything jagt writes; {@code data} under the root where none is configured. */
-  public Path data() {
-    return layout.data();
-  }
-
-  /** The folders jagt creates at start. */
-  public List<Path> folders() {
-    return layout.folders();
-  }
-
-  public Path tasks() {
-    return layout.tasks();
-  }
-
   /** Where a task's checkout of one project is cut. */
   public Path worktree(String projectKey, String taskId) {
     return layout.worktree(TaskName.slug(taskId), projectKey);
-  }
-
-  public Path legacyWorktrees(String projectKey) {
-    return layout.legacyWorktrees(projectKey);
-  }
-
-  /** Where a project named by url is cloned. */
-  public Path clone(String projectKey) {
-    return layout.clone(projectKey);
   }
 
   /** Where a task's deploy worktree stands in one project. */
@@ -95,22 +70,8 @@ public class OrchestratorPaths {
     return layout.revertWorktree(TaskName.slug(taskId), projectKey);
   }
 
-  /** Where a project's checkout of a role's branch is cut for one commit. */
-  public Path roleBranchWorktree(String projectKey, String branch) {
-    return layout.roleBranchWorktree(projectKey, branch);
-  }
-
-  /** What an older version kept flat in an older folder, by name, with where it belongs now. */
-  public Map<String, Path> placed() {
-    return layout.placed();
-  }
-
-  public Map<String, Function<String, Path>> placedEntries() {
-    return layout.placedEntries();
-  }
-
-  public @Nullable Path placedVerdicts(String name) {
-    return layout.placedVerdicts(name);
+  public Layout layout() {
+    return layout;
   }
 
   public Path root() {
@@ -119,61 +80,6 @@ public class OrchestratorPaths {
 
   public Path configFile() {
     return configFile;
-  }
-
-  public Path stateFile() {
-    return layout.stateFile();
-  }
-
-  /** Present while `act` is stopped, whatever the configured mode says. */
-  public Path actStopped() {
-    return layout.actStopped();
-  }
-
-  /** Present while the whole board is stopped; holds the epoch millis of the stop. */
-  public Path boardStopped() {
-    return layout.boardStopped();
-  }
-
-  /**
-   * The tasks counted toward stopping `act`, one per line, present while the count is above zero.
-   */
-  public Path actStrikes() {
-    return layout.actStrikes();
-  }
-
-  /**
-   * The Master's token, drawn at each start: beside the state, so a read-only root still starts.
-   */
-  public Path token() {
-    return layout.token();
-  }
-
-  /** The last moment this process was seen alive, rewritten every minute. */
-  public Path alive() {
-    return layout.alive();
-  }
-
-  /** The keys intake turned away, one per line. */
-  public Path intakeTurnedAway() {
-    return layout.intakeTurnedAway();
-  }
-
-  /** What each deploy's check by the checker {@code role} ended in, one line per task. */
-  public Path checkerVerdicts(String role) {
-    return layout.checkerVerdicts(role);
-  }
-
-  /**
-   * Where the verdicts were kept while the role was called qa; read while the new file is absent.
-   */
-  public Path legacyQaVerdicts() {
-    return layout.legacyQaVerdicts();
-  }
-
-  /** The usage levels already told, with the period each was told in. */
-  public Path usageAlerts() {
-    return layout.usageAlerts();
   }
 
   /** Everything of one task: its worktrees, plan baseline, ticket text and scratch. */
@@ -198,58 +104,6 @@ public class OrchestratorPaths {
 
   public boolean isScratchOf(Path folder, String taskId) {
     return layout.isScratchOf(folder, TaskName.slug(taskId));
-  }
-
-  public @Nullable Path scratchCeiling(Path folder) {
-    return layout.scratchCeiling(folder);
-  }
-
-  public Path archive() {
-    return layout.archive();
-  }
-
-  public Path memory() {
-    return layout.memory();
-  }
-
-  public Path openCodeGate() {
-    return layout.openCodeGate();
-  }
-
-  public Path usageByDay() {
-    return layout.usageByDay();
-  }
-
-  public Path finished() {
-    return layout.finished();
-  }
-
-  public Path misses() {
-    return layout.misses();
-  }
-
-  public Path interactions() {
-    return layout.interactions();
-  }
-
-  public Path stops() {
-    return layout.stops();
-  }
-
-  public Path stopsReviewed() {
-    return layout.stopsReviewed();
-  }
-
-  public Path codeReviewLedger() {
-    return layout.codeReviewLedger();
-  }
-
-  public Path codeReviewCheckouts() {
-    return layout.codeReviewCheckouts();
-  }
-
-  public Path codeReviewStats() {
-    return layout.codeReviewStats();
   }
 
   private Path resolve(@Nullable String override, String defaultName) {

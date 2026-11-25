@@ -40,7 +40,7 @@ public class SessionEnvironment {
    * A data folder may lie inside a repository: git must not climb out of a scratch folder to it.
    */
   private String outsideGit(Path worktree) {
-    Path ceiling = paths.scratchCeiling(worktree);
+    Path ceiling = paths.layout().scratchCeiling(worktree);
     return ceiling != null ? "GIT_CEILING_DIRECTORIES=" + quoted(ceiling.toString()) + " " : "";
   }
 

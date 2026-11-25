@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.job.codereview.request.Subject;
+import dev.jagt.orchestrator.port.host.Layout;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -31,7 +32,7 @@ class SubjectCheckoutTest {
 
   @Test
   void checkoutLeftByKilledReadIsClearedBeforeTheHeadIsCheckedOutAgain() {
-    when(paths.codeReviewCheckouts()).thenReturn(Path.of("/data/checkouts"));
+    when(paths.layout()).thenReturn(new Layout(Path.of("/data"), null));
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
