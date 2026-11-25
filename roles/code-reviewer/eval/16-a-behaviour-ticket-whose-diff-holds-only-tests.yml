@@ -1,0 +1,21 @@
+case: a behaviour ticket whose diff holds only tests
+description: |
+  ABC-42: map the new `currency` and `dueDate` fields of the invoice payload onto `InvoiceDto`.
+diff: |
+  diff --git a/src/test/java/app/billing/InvoiceMapperTest.java b/src/test/java/app/billing/InvoiceMapperTest.java
+  --- a/src/test/java/app/billing/InvoiceMapperTest.java
+  +++ b/src/test/java/app/billing/InvoiceMapperTest.java
+  @@ -9,3 +9,10 @@ class InvoiceMapperTest {
+  +  @Test
+  +  void mapsCurrencyAndDueDate() {
+  +    InvoiceDto dto = mapper.toDto(new Invoice("INV-1", "CHF", LocalDate.of(2026, 1, 10)));
+  +    assertThat(dto.currency()).isEqualTo("CHF");
+  +    assertThat(dto.dueDate()).isEqualTo(LocalDate.of(2026, 1, 10));
+  +  }
+   }
+expect:
+  verdict: findings
+  findings:
+    - file: InvoiceMapperTest.java
+      pattern: "implement|production|main source|missing|no .*(change|code)"
+      severity: [blocking]
