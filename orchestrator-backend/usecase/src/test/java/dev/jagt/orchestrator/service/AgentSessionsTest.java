@@ -5,7 +5,6 @@ import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -18,6 +17,7 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -190,7 +190,7 @@ class AgentSessionsTest {
         .isEqualTo(
             "Instructions written to task_context.md; a fresh session was started to read"
                 + " them with task_notes.md.");
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
   }
 
@@ -205,7 +205,7 @@ class AgentSessionsTest {
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
   }
 
@@ -228,7 +228,8 @@ class AgentSessionsTest {
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
-    verify(tmux, timeout(5000)).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux, timeout(5000))
+        .openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
   }
 
@@ -239,7 +240,7 @@ class AgentSessionsTest {
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
   }
 
@@ -295,7 +296,7 @@ class AgentSessionsTest {
 
     assertThat(answer).contains("a fresh session was started");
     assertThat(Files.readString(root.resolve("task_context.md"))).contains("jagt was restarted.");
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
   }
 
@@ -325,7 +326,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "sonnet");
   }
 
   @Test
@@ -336,7 +337,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "sonnet");
   }
 
   @Test
@@ -348,7 +349,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "opus");
   }
 
   @Test
@@ -364,7 +365,7 @@ class AgentSessionsTest {
     String said = sessions.restartOnTier("ABC-1");
 
     assertThat(said).isEqualTo("session of ABC-1 started again on opus");
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "opus");
     assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().tier()).current())
         .isEqualTo("opus");
   }
@@ -384,7 +385,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "sonnet");
     assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().tier()).raised())
         .isFalse();
   }
@@ -415,7 +416,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
   }
 
   @Test
@@ -427,7 +428,7 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
   }
 
   @Test
@@ -448,7 +449,7 @@ class AgentSessionsTest {
     assertThat(sessions.openTaskTab("ABC-1", "auto")).contains("New Claude session started");
     verify(tmux)
         .openTaskWindow(
-            anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false), anyString());
+            anyString(), anyString(), eq("ABC-1"), any(), any(), eq(LaunchMode.WORK), anyString());
     verify(tmux, never()).reviveTaskWindow(anyString(), anyString(), anyString(), any(), any());
   }
 
@@ -491,7 +492,7 @@ class AgentSessionsTest {
 
     assertThat(pressed).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
   }
 
   @Test
@@ -563,7 +564,7 @@ class AgentSessionsTest {
     assertThat(root.resolve("task_context.md"))
         .content()
         .startsWith("and handle empty files\n\n## Carried from the previous session");
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
   }
 
   @Test
@@ -638,8 +639,7 @@ class AgentSessionsTest {
       sessions.startWaitingFreshWhenFree("ABC-1");
 
       verify(tmux, never())
-          .openTaskWindow(
-              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+          .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
     }
 
     @Test
@@ -649,11 +649,10 @@ class AgentSessionsTest {
 
       sessions.startWaitingFreshWhenFree("ABC-1");
       verify(tmux, never())
-          .openTaskWindow(
-              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+          .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
       sessions.startWaitingFreshWhenFree("ABC-1");
 
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     }
 
     @Test
@@ -668,8 +667,7 @@ class AgentSessionsTest {
       sessions.startWaitingFreshWhenFree("ABC-1");
 
       verify(tmux, never())
-          .openTaskWindow(
-              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+          .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
     }
 
     @Test
@@ -684,7 +682,7 @@ class AgentSessionsTest {
 
       sessions.startWaitingFreshWhenFree("ABC-1");
 
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     }
 
     @Test
@@ -695,7 +693,7 @@ class AgentSessionsTest {
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
 
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     }
 
     @Test
@@ -707,13 +705,12 @@ class AgentSessionsTest {
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
       verify(tmux, never())
-          .openTaskWindow(
-              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+          .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
       ownTurnOpen.set(false);
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
 
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     }
 
     @Test
@@ -722,7 +719,7 @@ class AgentSessionsTest {
 
       sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     }
 
     @Test
@@ -733,14 +730,13 @@ class AgentSessionsTest {
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
       verify(tmux, never())
-          .openTaskWindow(
-              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+          .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
       windowUnreadable.set(false);
 
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
 
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
     }
   }
 

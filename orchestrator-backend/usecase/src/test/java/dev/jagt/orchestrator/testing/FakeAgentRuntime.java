@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.testing;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +23,7 @@ public final class FakeAgentRuntime implements AgentRuntime {
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode) {
+  public String launchCommand(Path worktree, LaunchMode mode) {
     return "fake-agent";
   }
 

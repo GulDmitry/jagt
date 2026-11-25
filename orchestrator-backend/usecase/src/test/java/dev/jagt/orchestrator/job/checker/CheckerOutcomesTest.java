@@ -141,8 +141,12 @@ class CheckerOutcomesTest {
             .replace("id: acceptance", "id: " + id));
     StepRelay relay = mock(StepRelay.class);
     List<String> sentUnder = new ArrayList<>();
-    when(relay.relayRound(
-            eq("ABC-42"), eq(Step.ACCEPTANCE_ROUND), anyString(), any(StepRelay.Claim.class)))
+    when(relay.relay(
+            eq("ABC-42"),
+            eq(Step.ACCEPTANCE_ROUND),
+            anyString(),
+            eq(StepRelay.Delivery.ROUND),
+            any(StepRelay.Claim.class)))
         .thenAnswer(call -> {
           sentUnder.add(OriginContext.current() + "/" + OriginContext.checker());
           return false;

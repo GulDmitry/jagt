@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -44,7 +45,7 @@ public class TaskProvisioning {
     }
     String taskId = request.taskId();
     ConfigFile config = configService.load();
-    boolean plan = AgentSessions.planMode(request.mode());
+    LaunchMode launch = AgentSessions.launchMode(request.mode());
     BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
     List<NewRepo> repos;
     String alias;
@@ -81,7 +82,7 @@ public class TaskProvisioning {
         taskId,
         alias,
         session.worktreePath(),
-        plan,
+        launch,
         "worktree created at " + session.worktreePath(),
         taskId
             + " is "
@@ -96,7 +97,7 @@ public class TaskProvisioning {
   private String initializeUnplaced(NewTask request) {
     String taskId = request.taskId();
     ConfigFile config = configService.load();
-    boolean plan = AgentSessions.planMode(request.mode());
+    LaunchMode launch = AgentSessions.launchMode(request.mode());
     Path folder;
     String alias;
     synchronized (this) {
@@ -121,7 +122,7 @@ public class TaskProvisioning {
         taskId,
         alias,
         folder,
-        plan,
+        launch,
         "scratch folder created at " + folder,
         taskId + " is " + alias + " — agent planning in " + folder + ", no project yet.");
   }
@@ -151,13 +152,13 @@ public class TaskProvisioning {
         reducer ->
             reducer.planAsked(
                 autoplan(config) ? reducer.autoplanned(born) : born,
-                AgentSessions.planMode(request.mode())));
+                AgentSessions.launchMode(request.mode()) == LaunchMode.PLAN));
   }
 
   private String started(
-      String taskId, String alias, Path folder, boolean plan, String created, String result) {
+      String taskId, String alias, Path folder, LaunchMode launch, String created, String result) {
     try {
-      agentSessions.startAgent(taskId, alias, folder, plan);
+      agentSessions.startAgent(taskId, alias, folder, launch);
     } catch (RuntimeException e) {
       return "Task "
           + taskId
@@ -169,7 +170,10 @@ public class TaskProvisioning {
           + taskId
           + "\") — do NOT call initialize_task again.";
     }
-    return result + (plan ? " Plan mode: read plan.md, then approve-plan " + alias + "." : "");
+    return result
+        + (launch == LaunchMode.PLAN
+            ? " Plan mode: read plan.md, then approve-plan " + alias + "."
+            : "");
   }
 
   private static boolean autoplan(ConfigFile config) {

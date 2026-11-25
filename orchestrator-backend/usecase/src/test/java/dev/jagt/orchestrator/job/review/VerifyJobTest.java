@@ -61,7 +61,12 @@ class VerifyJobTest {
 
     verify(statusReports).verified(true, "verified", "ABC-1");
     verify(relay, never())
-        .relayRound(eq("ABC-1"), any(Step.class), anyString(), any(Standing.class));
+        .relay(
+            eq("ABC-1"),
+            any(Step.class),
+            anyString(),
+            eq(StepRelay.Delivery.ROUND),
+            any(Standing.class));
   }
 
   @Test
@@ -73,7 +78,12 @@ class VerifyJobTest {
     job.runOn(state.tasks());
 
     verify(relay)
-        .relayRound(eq("ABC-1"), eq(Step.VERIFY), contains("BUILD FAILED"), any(Standing.class));
+        .relay(
+            eq("ABC-1"),
+            eq(Step.VERIFY),
+            contains("BUILD FAILED"),
+            eq(StepRelay.Delivery.ROUND),
+            any(Standing.class));
     verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
     verify(statusReports, never()).verified(eq(true), any(), any());
   }
@@ -90,7 +100,12 @@ class VerifyJobTest {
 
     verify(verification, never()).failure(any());
     verify(relay, never())
-        .relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            eq(StepRelay.Delivery.ROUND),
+            any(Standing.class));
   }
 
   @Nested
@@ -101,7 +116,12 @@ class VerifyJobTest {
       state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
       when(verification.failure(any()))
           .thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
-      when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class)))
+      when(relay.relay(
+              eq("ABC-1"),
+              eq(Step.VERIFY),
+              anyString(),
+              eq(StepRelay.Delivery.ROUND),
+              any(Standing.class)))
           .thenReturn(true);
     }
 
@@ -114,7 +134,12 @@ class VerifyJobTest {
 
       verify(verification).failure(any());
       verify(relay, times(1))
-          .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
+          .relay(
+              eq("ABC-1"),
+              eq(Step.VERIFY),
+              anyString(),
+              eq(StepRelay.Delivery.ROUND),
+              any(Standing.class));
       verify(statusReports, never()).verified(eq(true), any(), any());
       TaskStop stop = state.task("ABC-1").orElseThrow().work().stop();
       assertThat(Objects.requireNonNull(stop).trigger())
@@ -133,12 +158,22 @@ class VerifyJobTest {
 
       verify(verification, times(2)).failure(any());
       verify(relay, times(2))
-          .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
+          .relay(
+              eq("ABC-1"),
+              eq(Step.VERIFY),
+              anyString(),
+              eq(StepRelay.Delivery.ROUND),
+              any(Standing.class));
     }
 
     @Test
     void keepsTaskStoppedAtItsRoundCeilingInVerifyingInsteadOfReportingTheRunFailed() {
-      when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class)))
+      when(relay.relay(
+              eq("ABC-1"),
+              eq(Step.VERIFY),
+              anyString(),
+              eq(StepRelay.Delivery.ROUND),
+              any(Standing.class)))
           .thenAnswer(stopsTheTask -> {
             state.updateTask(
                 "ABC-1",
@@ -160,7 +195,12 @@ class VerifyJobTest {
     when(verification.key(any())).thenReturn(Optional.of("tree-1"));
     when(verification.failure(any()))
         .thenReturn(Optional.of("a".repeat(4_001) + "b".repeat(5_999)));
-    when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.VERIFY),
+            anyString(),
+            eq(StepRelay.Delivery.ROUND),
+            any(Standing.class)))
         .thenReturn(true);
 
     job.runOn(state.tasks());
@@ -192,10 +232,11 @@ class VerifyJobTest {
     job.runOn(state.tasks());
 
     verify(relay)
-        .relayRound(
+        .relay(
             eq("ABC-1"),
             eq(Step.PROBES),
             eq("artifact docs/guide.md — FAILED\nno such file"),
+            eq(StepRelay.Delivery.ROUND),
             any(Standing.class));
     verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-1");
     assertThat(state.task("ABC-1").orElseThrow().gate().probes()).containsExactly(passed, failed);
@@ -226,7 +267,12 @@ class VerifyJobTest {
       job.runOn(state.tasks());
 
       verify(relay, never())
-          .relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
+          .relay(
+              anyString(),
+              any(Step.class),
+              anyString(),
+              eq(StepRelay.Delivery.ROUND),
+              any(Standing.class));
       verify(statusReports, never()).verified(anyBoolean(), any(), any());
       assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
       assertThat(state.task("ABC-42").orElseThrow().gate().probes()).isEmpty();
@@ -239,10 +285,11 @@ class VerifyJobTest {
       job.runOn(state.tasks());
 
       verify(relay)
-          .relayRound(
+          .relay(
               "ABC-42",
               Step.PROBES,
               "artifact docs/guide.md — FAILED\nno such file",
+              StepRelay.Delivery.ROUND,
               Standing.of(state.task("ABC-42").orElseThrow()));
       verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-42");
     }

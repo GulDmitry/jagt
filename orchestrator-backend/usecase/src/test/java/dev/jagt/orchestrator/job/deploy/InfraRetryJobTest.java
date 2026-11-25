@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.job.deploy;
 
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -60,7 +59,7 @@ class InfraRetryJobTest {
 
     job.run();
 
-    verify(retries).clear("ABC-42", false);
+    verify(retries).clearArmed("ABC-42");
     verify(pipelines, never()).retryFailed("shop", "https://host.invalid/p/1");
   }
 
@@ -70,7 +69,7 @@ class InfraRetryJobTest {
 
     job.run();
 
-    verify(retries).clear("ABC-42", false);
+    verify(retries).clearArmed("ABC-42");
     verify(pipelines, never()).retryFailed("shop", "https://host.invalid/p/1");
   }
 
@@ -80,7 +79,7 @@ class InfraRetryJobTest {
 
     job.run();
 
-    verify(retries).clear("ABC-42", false);
+    verify(retries).clearArmed("ABC-42");
   }
 
   @Test
@@ -93,7 +92,7 @@ class InfraRetryJobTest {
 
     job.run();
 
-    verify(retries).clear("ABC-42", false);
+    verify(retries).clearArmed("ABC-42");
     verify(pipelines, never()).retryFailed("shop", "https://host.invalid/p/1");
   }
 
@@ -111,7 +110,8 @@ class InfraRetryJobTest {
     job.run();
 
     verify(retries, never()).refused(anyString(), anyString());
-    verify(retries, never()).clear(anyString(), anyBoolean());
+    verify(retries, never()).clearArmed(anyString());
+    verify(retries, never()).clearAll(anyString());
   }
 
   @Test

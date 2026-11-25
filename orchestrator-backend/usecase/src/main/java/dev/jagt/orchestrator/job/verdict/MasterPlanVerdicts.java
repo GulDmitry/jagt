@@ -76,7 +76,8 @@ class MasterPlanVerdicts {
       String revision) {
     StepRelay.Claim claim =
         claims.reporting(taskId, standing, AgentReport.PLAIN, "reviewer: not ready; relayed");
-    if (!relay.relayRound(taskId, MasterMove.PLAN_NOT_READY.step(), revision, claim)) {
+    if (!relay.relay(
+        taskId, MasterMove.PLAN_NOT_READY.step(), revision, StepRelay.Delivery.ROUND, claim)) {
       return false;
     }
     decisions.returned(task, verdict.round(), List.of());
@@ -104,6 +105,7 @@ class MasterPlanVerdicts {
             + verdict.advice().stream()
                 .map(MasterReview.Said::line)
                 .collect(Collectors.joining("\n")),
+        StepRelay.Delivery.CONTEXT,
         claims.opening(taskId, task, after));
     return after.get();
   }

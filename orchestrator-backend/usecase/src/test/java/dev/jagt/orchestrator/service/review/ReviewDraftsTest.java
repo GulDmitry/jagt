@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.CodeReviewConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -35,7 +36,7 @@ class ReviewDraftsTest {
                 .mrCreatedAt(2_000)
                 .build(),
             TaskStatus.REVIEW_PENDING,
-            true);
+            CodeReviewConfig.defaults());
 
     assertThat(pending).isFalse();
   }
@@ -53,13 +54,15 @@ class ReviewDraftsTest {
                 .mrCreatedAt(2_000)
                 .build(),
             TaskStatus.REVIEW_PENDING,
-            true);
+            CodeReviewConfig.defaults());
 
     assertThat(pending).isTrue();
   }
 
   @Test
   void keepsAnnouncingRepliesNoShipWillEverPost(@TempDir Path worktree) throws IOException {
+    CodeReviewConfig authorFiltered =
+        CodeReviewConfig.defaults().withReviewReplyAuthors(List.of("ABC"));
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(1_000));
@@ -70,7 +73,7 @@ class ReviewDraftsTest {
                 .mrCreatedAt(2_000)
                 .build(),
             TaskStatus.REVIEW_PENDING,
-            false);
+            authorFiltered);
 
     assertThat(pending).isTrue();
   }
@@ -78,6 +81,8 @@ class ReviewDraftsTest {
   @Test
   void keepsAnnouncingRepliesNoShipWillPostAfterTheTaskLeftHandBack(@TempDir Path worktree)
       throws IOException {
+    CodeReviewConfig authorFiltered =
+        CodeReviewConfig.defaults().withReviewReplyAuthors(List.of("ABC"));
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
         FileTime.fromMillis(3_000));
@@ -88,7 +93,7 @@ class ReviewDraftsTest {
                 .mrCreatedAt(2_000)
                 .build(),
             TaskStatus.CI_POLLING,
-            false);
+            authorFiltered);
 
     assertThat(pending).isTrue();
   }
@@ -106,7 +111,7 @@ class ReviewDraftsTest {
                 .mrCreatedAt(2_000)
                 .build(),
             TaskStatus.REVIEW_PENDING,
-            true);
+            CodeReviewConfig.defaults());
 
     assertThat(pending).isTrue();
   }

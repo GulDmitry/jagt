@@ -34,9 +34,7 @@ public class Rounds implements PhaseProfiles {
    */
   public RoundState of(TaskState task, ConfigFile config) {
     Arbiter.Profile arbiter = config.arbiter().profile().at(task);
-    boolean drafted =
-        ReviewDrafts.pending(
-            task, task.standing().status(), config.codeReview().shipPostsEveryDraft());
+    boolean drafted = ReviewDrafts.pending(task, task.standing().status(), config.codeReview());
     return RoundState.of(task.standing().report(), drafted)
         .withRepliesWrittenAt(drafted ? ReviewDrafts.writtenAt(task) : 0)
         .withArbiter(arbiter)

@@ -103,8 +103,7 @@ public class RepoDeparture {
               + cause
               + ". Its branch "
               + taskId
-              + " is kept; do not work there.",
-          false);
+              + " is kept; do not work there.");
     } catch (RuntimeException unheard) {
       log.atWarn()
           .setMessage("session not told of repository leaving")

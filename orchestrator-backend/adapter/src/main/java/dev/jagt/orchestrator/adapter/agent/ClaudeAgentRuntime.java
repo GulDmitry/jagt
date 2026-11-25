@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.adapter.agent.trust.ClaudeTrust;
 import dev.jagt.orchestrator.adapter.assistant.ClaudeToolScope;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.host.Host;
@@ -70,18 +71,18 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode) {
-    return launchCommand(worktree, planMode, "");
+  public String launchCommand(Path worktree, LaunchMode mode) {
+    return launchCommand(worktree, mode, "");
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode, String model) {
-    return launchCommand(worktree, planMode, model, brief.line(Step.START));
+  public String launchCommand(Path worktree, LaunchMode mode, String model) {
+    return launchCommand(worktree, mode, model, brief.line(Step.START));
   }
 
   @Override
   public String launchCommand(
-      Path worktree, boolean planMode, String model, @Nullable String prompt) {
+      Path worktree, LaunchMode mode, String model, @Nullable String prompt) {
     return COMPACT_ENV
         + claude.command()
         + pinnedServers(worktree)
@@ -94,7 +95,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   @Override
   public String workspaceCommand(
       Path root, String model, String prompt, CheckerReader.Workspace reach) {
-    return launchCommand(root, false, model, prompt)
+    return launchCommand(root, LaunchMode.WORK, model, prompt)
         + " --allowedTools "
         + ClaudeToolScope.of(List.of(), List.of(), List.of(), false, Optional.of(reach))
             .allow()
@@ -110,7 +111,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   @Override
   public String reviveCommand(Path worktree) {
     if (sessionLogOf(worktree).isEmpty()) {
-      return launchCommand(worktree, false);
+      return launchCommand(worktree, LaunchMode.WORK);
     }
     return COMPACT_ENV
         + claude.command()

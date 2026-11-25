@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.adapter.agent.AbstractAgentRuntime;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -58,17 +59,17 @@ public class OpenCodeAgentRuntime extends AbstractAgentRuntime implements Startu
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode) {
-    return launchCommand(worktree, planMode, "", brief.line(Step.START));
+  public String launchCommand(Path worktree, LaunchMode mode) {
+    return launchCommand(worktree, mode, "", brief.line(Step.START));
   }
 
   @Override
   public String launchCommand(
-      Path worktree, boolean planMode, String model, @Nullable String prompt) {
+      Path worktree, LaunchMode mode, String model, @Nullable String prompt) {
     return "OPENCODE_CONFIG="
         + shellQuote(worktree.resolve(CONFIG_FILE).toString())
         + " OPENCODE_DISABLE_PROJECT_CONFIG=1"
-        + (planMode ? " OPENCODE_CONFIG_CONTENT=" + shellQuote(PLAN_AGENT) : "")
+        + (mode == LaunchMode.PLAN ? " OPENCODE_CONFIG_CONTENT=" + shellQuote(PLAN_AGENT) : "")
         + " "
         + opencode.command()
         + " --standalone --prompt "

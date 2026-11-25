@@ -33,7 +33,9 @@ class TrustCapabilityTest {
     Standing read = new Standing(TaskStatus.IN_PROGRESS, "", 0, 0);
     when(trusted.trust("ABC-1")).thenReturn(true);
     when(relay.standing("ABC-1")).thenReturn(read);
-    when(relay.relay("ABC-1", Step.ANSWERED, TrustCapability.TRUSTED, read)).thenReturn(true);
+    when(relay.relay(
+            "ABC-1", Step.ANSWERED, TrustCapability.TRUSTED, StepRelay.Delivery.CONTEXT, read))
+        .thenReturn(true);
 
     Outcome outcome = new TrustCapability(trusted, relay).run("ABC-1");
 

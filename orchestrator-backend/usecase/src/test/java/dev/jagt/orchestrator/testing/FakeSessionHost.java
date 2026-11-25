@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.testing;
 
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public final class FakeSessionHost implements SessionHost {
       String taskId,
       @Nullable String alias,
       Path worktreePath,
-      boolean planMode,
+      LaunchMode mode,
       String model) {}
 
   @Override

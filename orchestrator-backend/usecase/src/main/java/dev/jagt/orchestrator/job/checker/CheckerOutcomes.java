@@ -125,7 +125,9 @@ public class CheckerOutcomes {
             opened -> reports.undoClaim(taskId, task, opened));
     boolean sent =
         OriginContext.asChecker(
-            role.id(), () -> relay.relayRound(taskId, Step.ACCEPTANCE_ROUND, facts, claim));
+            role.id(),
+            () ->
+                relay.relay(taskId, Step.ACCEPTANCE_ROUND, facts, StepRelay.Delivery.ROUND, claim));
     if (sent) {
       String digest =
           Objects.requireNonNull(Objects.requireNonNull(task.work().deployment()).askedDigest());

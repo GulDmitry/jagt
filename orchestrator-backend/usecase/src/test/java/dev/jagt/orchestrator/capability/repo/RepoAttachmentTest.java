@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -91,11 +90,11 @@ class RepoAttachmentTest {
     String said = attachment.attach("ABC-7");
 
     verify(relay)
-        .relayUnder(
+        .relay(
             eq("ABC-7"),
             eq(Step.REPO),
             contains("/wt/ABC-7-registry"),
-            eq(false),
+            eq(StepRelay.Delivery.UNDER),
             any(Standing.class));
     assertThat(said).contains("the session was told");
   }
@@ -111,7 +110,7 @@ class RepoAttachmentTest {
     when(worktrees.attach(eq("ABC-7"), eq("registry"), any())).thenReturn(registry);
     doThrow(new IllegalStateException("no window"))
         .when(relay)
-        .relayUnder(any(), any(), any(), anyBoolean(), any(Standing.class));
+        .relay(any(), any(), any(), eq(StepRelay.Delivery.UNDER), any(Standing.class));
 
     String said = attachment.attach("ABC-7");
 

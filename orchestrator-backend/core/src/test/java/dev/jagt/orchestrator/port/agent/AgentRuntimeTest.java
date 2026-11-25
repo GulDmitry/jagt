@@ -17,8 +17,8 @@ class AgentRuntimeTest {
     }
 
     @Override
-    public String launchCommand(Path worktree, boolean planMode) {
-      return "run in " + worktree + (planMode ? " planning" : "");
+    public String launchCommand(Path worktree, LaunchMode mode) {
+      return "run in " + worktree + (mode == LaunchMode.PLAN ? " planning" : "");
     }
 
     @Override
@@ -39,9 +39,9 @@ class AgentRuntimeTest {
   void startsTheSameSessionWhateverModelOrPromptRuntimeCannotBeTold() {
     AgentRuntime runtime = new Minimal();
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), true, "fast"))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.PLAN, "fast"))
         .isEqualTo("run in /wt planning");
-    assertThat(runtime.launchCommand(Path.of("/wt"), false, "fast", "a brief"))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.WORK, "fast", "a brief"))
         .isEqualTo("run in /wt");
   }
 

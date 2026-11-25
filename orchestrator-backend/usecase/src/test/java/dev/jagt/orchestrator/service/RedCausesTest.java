@@ -108,7 +108,7 @@ class RedCausesTest {
     RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", red, Pipeline.RED);
 
     assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
-    verify(retries).clear("ABC-42", true);
+    verify(retries).clearAll("ABC-42");
     verify(retries, never()).arm(any(), any(), any(), any(), any());
   }
 
@@ -154,7 +154,14 @@ class RedCausesTest {
 
     causes.judge("ABC-42", "shop", red, Pipeline.GREEN);
 
-    verify(retries).clear("ABC-42", true);
+    verify(retries).clearAll("ABC-42");
+  }
+
+  @Test
+  void forgetsEveryRetryOnceTheDeployPipelineWentGreen() {
+    causes.deployStands("ABC-42");
+
+    verify(retries).clearAll("ABC-42");
   }
 
   @Test
@@ -163,7 +170,7 @@ class RedCausesTest {
 
     causes.judge("ABC-42", "shop", red, Pipeline.RUNNING);
 
-    verify(retries).clear("ABC-42", false);
+    verify(retries).clearArmed("ABC-42");
   }
 
   @Test
@@ -185,7 +192,8 @@ class RedCausesTest {
 
     causes.judge("ABC-42", "shop", red, Pipeline.GREEN);
 
-    verify(retries, never()).clear(any(), org.mockito.ArgumentMatchers.anyBoolean());
+    verify(retries, never()).clearArmed(any());
+    verify(retries, never()).clearAll(any());
   }
 
   @Test

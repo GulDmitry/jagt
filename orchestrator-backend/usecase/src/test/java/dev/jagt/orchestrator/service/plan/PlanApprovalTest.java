@@ -63,7 +63,12 @@ class PlanApprovalTest {
   @Test
   void opensThePlanGateAndTellsTheSessionToStartOnThePlan() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
-    when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.PLAN),
+            anyString(),
+            eq(StepRelay.Delivery.CONTEXT),
+            any(Standing.class)))
         .thenReturn(true);
 
     boolean told =
@@ -77,13 +82,19 @@ class PlanApprovalTest {
             "ABC-1",
             Step.PLAN,
             "The human read plan.md: the plan holds.",
+            StepRelay.Delivery.CONTEXT,
             Standing.of(state.task("ABC-1").orElseThrow()));
   }
 
   @Test
   void tellsTheCallerWhereTheSessionWasNotToldTheStartOnThePlan() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
-    when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.PLAN),
+            anyString(),
+            eq(StepRelay.Delivery.CONTEXT),
+            any(Standing.class)))
         .thenReturn(false);
 
     boolean told =
@@ -101,6 +112,12 @@ class PlanApprovalTest {
     assertThat(told).isFalse();
     assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
     verify(plan, never()).settle(anyString());
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            any(StepRelay.Delivery.class),
+            any(Standing.class));
   }
 }

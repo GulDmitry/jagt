@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,46 +55,70 @@ public class StepRelay {
     return turns.standing(taskId).orElse(Standing.ABSENT);
   }
 
-  public boolean relay(String taskId, Step step, String facts, Standing read) {
+  /** How the session is told; every delivery opens the turn. */
+  public enum Delivery {
+    /** Written to the task's context file. */
+    CONTEXT,
+    /**
+     * A round sent back to work: written to the context file, false too where the rounds of this
+     * step running reached their ceiling.
+     */
+    ROUND,
+    /** Below an instruction still pending, which stands. */
+    UNDER,
+    /** Below an instruction still pending, on a fresh session. */
+    UNDER_FRESH
+  }
+
+  public boolean relay(String taskId, Step step, String facts, Delivery delivery, Standing read) {
     requireStanding(taskId, step.id(), read);
-    return opened(
-        taskId, step, facts, false, null, told -> sessions.writeTaskContext(taskId, told));
+    Optional<CaseDoor.Admission> admission = admitted(taskId, step, facts, delivery);
+    admission.ifPresent(opened ->
+        recorded(
+            taskId,
+            step.id(),
+            Turn.digestOf(facts),
+            opened.status(),
+            () -> sender(taskId, delivery).accept(told(step, facts))));
+    return admission.isPresent();
   }
 
-  public boolean relay(String taskId, Step step, String facts, Claim claim) {
-    return opened(
-        taskId, step, facts, false, claim, told -> sessions.writeTaskContext(taskId, told));
-  }
-
-  /**
-   * A round sent back to work, false too where the rounds of this step running reached their
-   * ceiling.
-   */
-  public boolean relayRound(String taskId, Step step, String facts, Standing read) {
-    requireStanding(taskId, step.id(), read);
-    return opened(taskId, step, facts, true, null, told -> sessions.writeTaskContext(taskId, told));
-  }
-
-  public boolean relayRound(String taskId, Step step, String facts, Claim claim) {
-    return opened(
-        taskId, step, facts, true, claim, told -> sessions.writeTaskContext(taskId, told));
+  public boolean relay(String taskId, Step step, String facts, Delivery delivery, Claim claim) {
+    requireStanding(taskId, step, claim);
+    Optional<CaseDoor.Admission> admission = admitted(taskId, step, facts, delivery);
+    if (admission.isEmpty()) {
+      return false;
+    }
+    String digest = Turn.digestOf(facts);
+    AtomicReference<Turn> opened = new AtomicReference<>();
+    UnaryOperator<TaskState> opening = turns.opening(step.id(), digest);
+    FlowReports.Claimed claimed =
+        claim
+            .write()
+            .apply(task -> {
+              TaskState written = opening.apply(task);
+              opened.set(written.work().turnOrNone());
+              return written;
+            });
+    if (claimed == FlowReports.Claimed.MOVED_ON) {
+      throw dropped(taskId, step.id(), claim);
+    }
+    if (claimed == FlowReports.Claimed.GONE) {
+      return false;
+    }
+    turns.announced(taskId, step.id(), admission.get().status());
+    try {
+      sender(taskId, delivery).accept(told(step, facts));
+    } catch (RuntimeException failure) {
+      undone(taskId, step.id(), claim, opened.get(), failure);
+      throw failure;
+    }
+    return true;
   }
 
   /** Written whatever the session already holds, as a hand-off that must land again. */
   public boolean write(String taskId, Step step, String facts, Standing read) {
     return sent(taskId, step, facts, read, told -> sessions.writeTaskContext(taskId, told));
-  }
-
-  /** Below an instruction still pending, which stands. */
-  public boolean relayUnder(String taskId, Step step, String facts, boolean fresh, Standing read) {
-    requireStanding(taskId, step.id(), read);
-    return opened(
-        taskId, step, facts, false, null, told -> sessions.relayUnder(taskId, told, fresh));
-  }
-
-  public boolean relayUnder(String taskId, Step step, String facts, boolean fresh, Claim claim) {
-    return opened(
-        taskId, step, facts, false, claim, told -> sessions.relayUnder(taskId, told, fresh));
   }
 
   /** Typed into the session's window, which takes one line. */
@@ -138,52 +163,20 @@ public class StepRelay {
     return true;
   }
 
-  private boolean opened(
-      String taskId,
-      Step step,
-      String facts,
-      boolean round,
-      @Nullable Claim claim,
-      Consumer<String> send) {
-    if (claim != null) {
-      requireStanding(taskId, step, claim);
-    }
-    CaseDoor.Admission admission = door.opens(taskId, step);
-    if (!admission.admitted()) {
-      return false;
-    }
-    String digest = Turn.digestOf(facts);
-    if (turns.of(taskId).holds(step.id(), digest) || (round && !door.roundDue(taskId, step.id()))) {
-      return false;
-    }
-    if (claim == null) {
-      recorded(taskId, step.id(), digest, admission.status(), () -> send.accept(told(step, facts)));
-      return true;
-    }
-    AtomicReference<Turn> opened = new AtomicReference<>();
-    UnaryOperator<TaskState> opening = turns.opening(step.id(), digest);
-    FlowReports.Claimed claimed =
-        claim
-            .write()
-            .apply(task -> {
-              TaskState written = opening.apply(task);
-              opened.set(written.work().turnOrNone());
-              return written;
-            });
-    if (claimed == FlowReports.Claimed.MOVED_ON) {
-      throw dropped(taskId, step.id(), claim);
-    }
-    if (claimed == FlowReports.Claimed.GONE) {
-      return false;
-    }
-    turns.announced(taskId, step.id(), admission.status());
-    try {
-      send.accept(told(step, facts));
-    } catch (RuntimeException failure) {
-      undone(taskId, step.id(), claim, opened.get(), failure);
-      throw failure;
-    }
-    return true;
+  private Optional<CaseDoor.Admission> admitted(
+      String taskId, Step step, String facts, Delivery delivery) {
+    return Optional.of(door.opens(taskId, step))
+        .filter(CaseDoor.Admission::admitted)
+        .filter(admission -> !turns.of(taskId).holds(step.id(), Turn.digestOf(facts)))
+        .filter(admission -> delivery != Delivery.ROUND || door.roundDue(taskId, step.id()));
+  }
+
+  private Consumer<String> sender(String taskId, Delivery delivery) {
+    return switch (delivery) {
+      case CONTEXT, ROUND -> told -> sessions.writeTaskContext(taskId, told);
+      case UNDER -> told -> sessions.relayUnder(taskId, told);
+      case UNDER_FRESH -> told -> sessions.relayUnderFresh(taskId, told);
+    };
   }
 
   private void recorded(

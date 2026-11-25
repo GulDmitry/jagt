@@ -24,14 +24,14 @@ public interface AgentRuntime {
    * A bare shell command to run with {@code worktree} as its working directory, bootstrap prompt
    * inside it.
    */
-  String launchCommand(Path worktree, boolean planMode);
+  String launchCommand(Path worktree, LaunchMode mode);
 
   /**
    * The same, run by a named model. A runtime that cannot be told offers no {@link #models()}, and
    * a configured model is refused at startup rather than ignored here.
    */
-  default String launchCommand(Path worktree, boolean planMode, String model) {
-    return launchCommand(worktree, planMode);
+  default String launchCommand(Path worktree, LaunchMode mode, String model) {
+    return launchCommand(worktree, mode);
   }
 
   /**
@@ -40,8 +40,8 @@ public interface AgentRuntime {
    * session owning no task.
    */
   default String launchCommand(
-      Path worktree, boolean planMode, String model, @Nullable String prompt) {
-    return launchCommand(worktree, planMode, model);
+      Path worktree, LaunchMode mode, String model, @Nullable String prompt) {
+    return launchCommand(worktree, mode, model);
   }
 
   /**
@@ -51,7 +51,7 @@ public interface AgentRuntime {
    */
   default String workspaceCommand(
       Path root, String model, String prompt, CheckerReader.Workspace reach) {
-    return launchCommand(root, false, model, prompt);
+    return launchCommand(root, LaunchMode.WORK, model, prompt);
   }
 
   /**
@@ -60,7 +60,7 @@ public interface AgentRuntime {
    * nothing to re-enter.
    */
   default String reviveCommand(Path worktree) {
-    return launchCommand(worktree, false);
+    return launchCommand(worktree, LaunchMode.WORK);
   }
 
   /**

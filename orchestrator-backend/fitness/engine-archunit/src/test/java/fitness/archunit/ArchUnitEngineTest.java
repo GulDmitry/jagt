@@ -103,4 +103,22 @@ class ArchUnitEngineTest {
 
     assertThat(found.items()).containsExactly("fitness.archunit.Lone");
   }
+
+  @Test
+  void listsEveryBooleanParameterOfAStereotypedClassAndOfAPortInterface() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder()
+            .select("measure", "flag-arguments")
+            .select("annotated", "fitness.archunit.Stereotype")
+            .build();
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.items())
+        .containsExactly(
+            "fitness.archunit.Flagged#tell(1)",
+            "fitness.archunit.Flagged#tell(2)",
+            "fitness.archunit.port.FlaggedPort#launch(0)",
+            "fitness.archunit.port.inner.FlaggedInnerPort#launch(0)");
+  }
 }

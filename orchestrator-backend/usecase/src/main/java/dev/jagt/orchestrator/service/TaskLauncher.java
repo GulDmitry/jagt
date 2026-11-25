@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.launch.TaskLaunches;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
@@ -56,7 +57,7 @@ public class TaskLauncher {
    * asked.
    */
   public Launched launchUnplaced(LaunchRequest request) {
-    if (!AgentSessions.planMode(request.mode())) {
+    if (AgentSessions.launchMode(request.mode()) != LaunchMode.PLAN) {
       return Launched.refused(
           "error: no project and no plan first — choose a project, or start with plan first");
     }

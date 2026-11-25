@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -21,6 +20,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
@@ -50,7 +50,7 @@ class TmuxSessionHostE2eTest {
 
   @BeforeEach
   void startHostInTheTempRoot() {
-    when(agentRuntime.launchCommand(any(), anyBoolean())).thenReturn("sleep 30");
+    when(agentRuntime.launchCommand(any(), any())).thenReturn("sleep 30");
     OrchestratorProperties orchestrator =
         OrchestratorProperties.defaults().withRoot(root.toString());
     host =
@@ -73,8 +73,8 @@ class TmuxSessionHostE2eTest {
 
   @Test
   void leavesOneWindowPerTaskWhenTheSameTaskIsStartedTwice() {
-    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
-    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, LaunchMode.WORK, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, LaunchMode.WORK, "");
 
     assertThat(processes.run(null, Duration.ofSeconds(10), listWindows).stdout().lines().toList())
         .containsOnlyOnce("ABC-1");
@@ -82,8 +82,8 @@ class TmuxSessionHostE2eTest {
 
   @Test
   void killsOnlyTheNamedTasksWindowsAndSaysHowMany() {
-    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
-    host.openTaskWindow(SESSION, "jagt", "ABC-2", "a2", root, false, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, LaunchMode.WORK, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-2", "a2", root, LaunchMode.WORK, "");
 
     int killed = host.killTaskWindows(SESSION, "ABC-1");
 
@@ -95,7 +95,7 @@ class TmuxSessionHostE2eTest {
 
   @Test
   void readsRunningAgentInTwoCommands() {
-    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, LaunchMode.WORK, "");
     clearInvocations(processes);
 
     SessionHost.WindowState state = host.taskWindowState(SESSION, "ABC-1");
@@ -106,7 +106,7 @@ class TmuxSessionHostE2eTest {
 
   @Test
   void readsWindowsLastActivityInOneCommand() {
-    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, LaunchMode.WORK, "");
     clearInvocations(processes);
 
     long activity = host.lastWindowActivityMillis(SESSION, "ABC-1");
@@ -117,14 +117,15 @@ class TmuxSessionHostE2eTest {
 
   @Test
   void reportsWindowThatWasNeverOpenedAsMissing() {
-    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+    host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, LaunchMode.WORK, "");
 
     assertThat(host.taskWindowState(SESSION, "ABC-9")).isEqualTo(SessionHost.WindowState.MISSING);
   }
 
   @Test
   void showsLongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole() {
-    host.openTaskWindow(SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, false, "");
+    host.openTaskWindow(
+        SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, LaunchMode.WORK, "");
 
     String shown =
         processes

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class ReplayAgentRuntimeTest {
     ReplayAgentRuntime runtime = new ReplayAgentRuntime(sessions);
     Path worktree = Path.of("/work/ABC-1");
 
-    String command = runtime.launchCommand(worktree, false);
+    String command = runtime.launchCommand(worktree, LaunchMode.WORK);
 
     assertThat(command).isEqualTo("exec cat >/dev/null");
     verify(sessions).launched(worktree);

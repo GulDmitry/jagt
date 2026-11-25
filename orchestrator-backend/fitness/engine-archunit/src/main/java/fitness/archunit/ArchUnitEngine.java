@@ -41,7 +41,7 @@ public final class ArchUnitEngine implements Engine {
         Map.entry("calls", Set.of()),
         Map.entry("without", Set.of()),
         Map.entry("except", Set.of()),
-        Map.entry("measure", Set.of("constructor-parameters", "module-isolation", "single-implementer")),
+        Map.entry("measure", Set.of("constructor-parameters", "module-isolation", "single-implementer", "flag-arguments")),
         Map.entry("package", Set.of()));
   }
 
@@ -84,6 +84,9 @@ public final class ArchUnitEngine implements Engine {
 
   private static Measurement classes(FitnessFunction function, List<JavaClass> owners) {
     Map<String, Object> selectors = function.selectors();
+    if ("flag-arguments".equals(selectors.get("measure"))) {
+      return FlagArguments.measure(owners, String.valueOf(selectors.get(ANNOTATED)));
+    }
     List<JavaClass> annotated =
         owners.stream()
             .filter(

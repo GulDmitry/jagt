@@ -69,7 +69,7 @@ public class InfraRetryJob implements Job {
 
   private void retry(String taskId, InfraRetry armed) {
     if (!retries.stillWaiting(taskId) || !stops.moveDue(taskId)) {
-      retries.clear(taskId, false);
+      retries.clearArmed(taskId);
       return;
     }
     String project = armed.project();
@@ -82,7 +82,7 @@ public class InfraRetryJob implements Job {
     } else if (RedCause.of(failed.facts().get()) == RedCause.INFRASTRUCTURE) {
       send(taskId, project, armed);
     } else {
-      retries.clear(taskId, false);
+      retries.clearArmed(taskId);
     }
   }
 

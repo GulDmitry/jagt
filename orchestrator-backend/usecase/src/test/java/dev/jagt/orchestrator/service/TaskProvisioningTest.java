@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,6 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.NewTask;
@@ -95,7 +95,7 @@ class TaskProvisioningTest {
 
     assertThat(answer).contains("agent running on ABC-7", "also in web");
     assertThat(state.task("ABC-7").orElseThrow().projects()).containsExactly("api", "web");
-    verify(sessions).startAgent("ABC-7", "a1", Path.of("/ABC-7-api"), false);
+    verify(sessions).startAgent("ABC-7", "a1", Path.of("/ABC-7-api"), LaunchMode.WORK);
   }
 
   @Test
@@ -264,7 +264,7 @@ class TaskProvisioningTest {
   void keepsTheTaskRegisteredAndSaysSoWhenItsAgentSessionFailsToStart() {
     doThrow(new IllegalStateException("no tmux"))
         .when(sessions)
-        .startAgent(any(), any(), any(), anyBoolean());
+        .startAgent(any(), any(), any(), any());
 
     String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
 
@@ -311,6 +311,6 @@ class TaskProvisioningTest {
     assertThat(task.ticket().baseBranch()).isEqualTo("feature/parent");
     assertThat(task.unplaced()).isTrue();
     assertThat(task.worktreePath()).isEqualTo(folder.toString());
-    verify(sessions).startAgent("ABC-8", "a1", folder, true);
+    verify(sessions).startAgent("ABC-8", "a1", folder, LaunchMode.PLAN);
   }
 }

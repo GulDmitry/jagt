@@ -52,7 +52,9 @@ public class PlanApproval {
     }
     String facts = reader + ": the plan holds.";
     boolean told =
-        claim == null ? tell(id, facts, placed, read) : tell(id, facts, placed, opened(claim));
+        claim == null
+            ? relay.relay(id, Step.PLAN, facts, delivery(placed), read)
+            : relay.relay(id, Step.PLAN, facts, delivery(placed), opened(claim));
     if (claim != null && !told) {
       stateService.reduce(id, TaskReducer::planApproved);
     }
@@ -66,16 +68,8 @@ public class PlanApproval {
   }
 
   /** A task just placed starts a fresh session in its new primary: its plan carries the context. */
-  private boolean tell(String id, String facts, boolean fresh, Standing read) {
-    return fresh
-        ? relay.relayUnder(id, Step.PLAN, facts, true, read)
-        : relay.relay(id, Step.PLAN, facts, read);
-  }
-
-  private boolean tell(String id, String facts, boolean fresh, StepRelay.Claim claim) {
-    return fresh
-        ? relay.relayUnder(id, Step.PLAN, facts, true, claim)
-        : relay.relay(id, Step.PLAN, facts, claim);
+  private static StepRelay.Delivery delivery(boolean placed) {
+    return placed ? StepRelay.Delivery.UNDER_FRESH : StepRelay.Delivery.CONTEXT;
   }
 
   private StepRelay.Claim opened(StepRelay.Claim claim) {

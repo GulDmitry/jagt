@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.AgentConfig;
@@ -128,7 +129,7 @@ class OpenCodeAgentRuntimeTest {
             new McpEndpoint("http://127.0.0.1:8290/mcp"),
             mock(ConfigService.class));
 
-    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), LaunchMode.WORK))
         .isEqualTo(
             "OPENCODE_CONFIG='/wt/ABC-1-proj/.jagt/opencode/opencode.json'"
                 + " OPENCODE_DISABLE_PROJECT_CONFIG=1 opencode --standalone --prompt 'Read"
@@ -142,7 +143,7 @@ class OpenCodeAgentRuntimeTest {
             .withProperties(new OpenCodeProperties("/opt/bin/opencode", "", "", Map.of()))
             .build(mock(ConfigService.class));
 
-    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true, "", "go"))
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), LaunchMode.PLAN, "", "go"))
         .isEqualTo(
             "OPENCODE_CONFIG='/wt/ABC-1-proj/.jagt/opencode/opencode.json'"
                 + " OPENCODE_DISABLE_PROJECT_CONFIG=1"

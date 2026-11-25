@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.reach.SessionVet;
 import dev.jagt.orchestrator.service.session.SessionHosting;
@@ -163,7 +164,7 @@ public class AgentWindows {
       String taskId,
       @Nullable String alias,
       Path worktreePath,
-      boolean planMode,
+      LaunchMode mode,
       @Nullable ModelTier at) {
     refuseWhileCredentialFails(taskId);
     ConfigFile config = configService.load();
@@ -180,7 +181,7 @@ public class AgentWindows {
             taskId,
             alias,
             worktreePath,
-            planMode,
+            mode,
             tier == null ? own : tier.current());
     return session;
   }

@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service.repo;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -252,9 +251,8 @@ class RepoDepartureTest {
 
     departure.leave("ABC-42", web, "its request was closed on the host");
 
-    verify(sessions).relayUnder(eq("ABC-42"), contains("web"), anyBoolean());
-    verify(sessions)
-        .relayUnder(eq("ABC-42"), contains("its request was closed on the host"), anyBoolean());
+    verify(sessions).relayUnder(eq("ABC-42"), contains("web"));
+    verify(sessions).relayUnder(eq("ABC-42"), contains("its request was closed on the host"));
   }
 
   @Test
@@ -268,6 +266,6 @@ class RepoDepartureTest {
 
     departure.leave("ABC-42", web, "its request was closed on the host");
 
-    verify(sessions).relayUnder(eq("ABC-42"), contains("web"), anyBoolean());
+    verify(sessions).relayUnder(eq("ABC-42"), contains("web"));
   }
 }
