@@ -51,8 +51,8 @@ Verify a published image: `gh attestation verify oci://ghcr.io/guldmitry/jagt:<v
 
 ## Configuration
 
-The image keeps its `jagt.yml` at `/data/jagt.yml`, on the volume, so a project added from the board survives a recreate.
-A first start copies a mounted `/app/jagt.yml`, else `jagt.server.yml.dist`, there and later ones leave it; edit it in place or in the volume.
+The image keeps `jagt.yml` at `/data/jagt.yml` on the volume, so a board edit survives a recreate; a first start copies a mounted `/app/jagt.yml`,
+else `jagt.server.yml.dist`, there. `JAGT_CONFIG_FROM_IMAGE=true` copies the image's file over it each start: new keys apply, board edits are lost.
 
 - `jagt.server.yml.dist` opens no terminal window, needs no kitty, notifier, editor or keep-awake, and logs to the console.
   Each key is described in `jagt.desktop.yml.dist` under the same name, and nowhere else.

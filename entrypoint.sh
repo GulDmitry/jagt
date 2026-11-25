@@ -20,8 +20,8 @@ mkdir -p /data/dumps "$HOME"
 for dir in "$TMPDIR" "$XDG_CACHE_HOME"; do
   case "$dir" in "$ORCHESTRATOR_DATA"/?*) mkdir -p "$dir" ;; esac
 done
-# The configuration the board edits lives on the volume; the image's copy only seeds a first start.
-if [ -n "$ORCHESTRATOR_CONFIG_FILE" ] && [ ! -e "$ORCHESTRATOR_CONFIG_FILE" ]; then
+# The configuration the board edits lives on the volume; the image's copy seeds a first start, or every start with JAGT_CONFIG_FROM_IMAGE=true.
+if [ -n "$ORCHESTRATOR_CONFIG_FILE" ] && { [ ! -e "$ORCHESTRATOR_CONFIG_FILE" ] || [ "$JAGT_CONFIG_FROM_IMAGE" = true ]; }; then
   mkdir -p "$(dirname "$ORCHESTRATOR_CONFIG_FILE")"
   seed=/app/jagt.seed.yml
   # An upgrade from an image that read a mounted /app/jagt.yml keeps that file's projects.

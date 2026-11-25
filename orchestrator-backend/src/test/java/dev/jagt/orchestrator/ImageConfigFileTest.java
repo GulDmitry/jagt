@@ -28,6 +28,14 @@ class ImageConfigFileTest {
   }
 
   @Test
+  void startOverwritesConfigurationFromImageOnlyWhenAskedTo() {
+    assertThat(SourceRoots.read(ENTRYPOINT))
+        .contains(
+            "{ [ ! -e \"$ORCHESTRATOR_CONFIG_FILE\" ]",
+            "|| [ \"$JAGT_CONFIG_FROM_IMAGE\" = true ]; }");
+  }
+
+  @Test
   void upgradeSeedsVolumeFromConfigurationMountedWhereOldImageReadIt() {
     assertThat(SourceRoots.read(ENTRYPOINT)).contains("[ -e /app/jagt.yml ] && seed=/app/jagt.yml");
   }
