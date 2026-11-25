@@ -205,6 +205,8 @@
   "legend.row.22": "w nagłówku: nic nie odpytuje requestów · zadanie cykliczne, którego ostatnie uruchomienie nie powiodło się, kliknij, by zobaczyć zadania · Master naciska przyciski, które Ty byś nacisnął · nazwa roli, kliknięta: jej dziennik pokazuje się w panelu, ponownie kliknięta, znika",
   "legend.row.23": "w nagłówku: ta strona jest odcięta od backendu i nic na niej nie może działać · dostawca modelu zawiódł wielokrotnie, więc odczyty bez okna czekają na jedną próbę · jagt nie może połączyć się z hostem kodu, kliknij, by się zalogować, żadna karta się nie zatrzymuje",
   "legend.row.24": "w nagłówku: koło zębate otwiera okno ustawień · Wygląd (motyw, auto podąża za systemem), Język i ustawienia jagt.yml; wybrana wartość ma ✓, motyw i język zapamiętane tylko w tej przeglądarce",
+  "legend.row.25": "w każdym dzienniku: czas w UTC, wyciszony, potem poziom i co się stało; najnowszy wpis na górze, wpisy rozdziela odstęp",
+  "legend.row.26": "w każdym dzienniku: wpis WARN lub ERROR na czerwono, odmowa lub awaria",
   "sample.refused": "odrzucono",
   "sample.done": "gotowe",
   "auto-review-off": "auto-review wyłączone",

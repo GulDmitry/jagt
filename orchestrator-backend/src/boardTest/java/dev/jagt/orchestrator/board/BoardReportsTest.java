@@ -488,4 +488,47 @@ class BoardReportsTest extends BoardPageContext {
     assertThat(page.locator("#report-section .legend a.id")).hasCount(1);
     assertThat(page.locator("#report-section .legend .repos .tick")).hasCount(1);
   }
+
+  @Test
+  void theTailReportListsTheNewestLineFirstAndColoursFailuresDanger() {
+    Page page = openLiveBoard();
+    page.route(
+        Pattern.compile(".*/api/commands/tail.*"),
+        route ->
+            route.fulfill(
+                new Route.FulfillOptions()
+                    .setContentType("text/plain")
+                    .setBody(
+                        """
+                        the last 2 lines of jagt-backend.log (UTC):
+                        11-25 09:00:01 INFO started
+                        11-25 09:00:02 ERROR deploy failed\
+                        """)));
+
+    ask(page, "tail");
+
+    assertThat(page.locator("#report-body .log-line"))
+        .hasText(new Pattern[] {Pattern.compile("deploy failed"), Pattern.compile("started")});
+    assertThat(page.locator("#report-body .log-line.danger")).hasCount(1);
+    assertThat(page.locator("#report-body .log-head")).containsText("jagt-backend.log");
+  }
+
+  @Test
+  void theSessionLogListsTheNewestMessageFirst() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1.", Outcome.Kind.OK))
+        .thenReturn(new Pressed("Focused ABC-1 again.", Outcome.Kind.OK));
+    Page page = openLiveBoard();
+    button(page, "Focus").click();
+    button(page, "Focus").click();
+
+    page.locator("#show-log").click();
+
+    assertThat(page.locator("#report-body .log-line"))
+        .hasText(
+            new Pattern[] {
+              Pattern.compile("Focused ABC-1 again."), Pattern.compile("Focused ABC-1\\.")
+            });
+  }
 }

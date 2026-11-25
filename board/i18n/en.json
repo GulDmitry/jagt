@@ -245,6 +245,8 @@
   "legend.row.22": "in the header: nothing polls the requests · a job whose last run failed, pressed for the jobs · the Master presses the buttons you would · a role’s name, pressed: its log follows in the pane, pressed again, it hides",
   "legend.row.23": "in the header: this page is cut off from the backend, and nothing on it can run · the model provider failed repeatedly, so headless reads wait for one probe · jagt cannot reach a code host, pressed to log in, no card stops",
   "legend.row.24": "in the header: the gear opens the settings dialog · Appearance (theme, auto following the system), Language and the jagt.yml settings; the chosen value carries a ✓, the theme and language are kept in this browser alone",
+  "legend.row.25": "in every log: the time in UTC, muted, then the level and what happened; the newest entry is on top and a gap separates entries",
+  "legend.row.26": "in every log: a WARN or ERROR entry in red, a refusal or a failure",
   "sample.refused": "refused",
   "sample.done": "done",
   "auto-review-off": "auto-review off",

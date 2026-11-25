@@ -11,6 +11,10 @@
     "lines": 100,
     "branches": 100
   },
+  "components/LogLines.js": {
+    "lines": 100,
+    "branches": 100
+  },
   "components/Meta.js": {
     "lines": 100,
     "branches": 96

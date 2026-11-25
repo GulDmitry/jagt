@@ -1,10 +1,6 @@
 import { t } from "../core/i18n.js";
+import { LogLines } from "./LogLines.js";
 import { html } from "./html.js";
-
-/** @param {HTMLElement | null} node */
-const following = (node) => {
-  if (node) node.scrollTop = node.scrollHeight;
-};
 
 /** @param {{ role: string, lines: string[] }} props */
 export const RoleLog = ({ role, lines }) =>
@@ -14,6 +10,11 @@ export const RoleLog = ({ role, lines }) =>
     aria-label=${t("rolelog.label", { role })}
   >
     <button class="back" data-back="">${t("pane.back")}</button>
-    <pre ref=${following}>
-${lines.length ? lines.join("\n") : t("rolelog.empty", { role })}</pre>
+    <div class="log-scroll">
+      ${
+        lines.length
+          ? html`<${LogLines} said=${lines.join("\n")} />`
+          : t("rolelog.empty", { role })
+      }
+    </div>
   </section>`;

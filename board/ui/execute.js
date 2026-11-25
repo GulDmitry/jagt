@@ -29,7 +29,11 @@ async function report(verb, argument, part) {
   const opened = await openReport(
     `${verb.id} ${store.nameOf(argument)}`.trim(),
     commandUrl(verb, argument),
-    { about: verb.aboutOneTask ? argument : null, extra: part.section?.() },
+    {
+      about: verb.aboutOneTask ? argument : null,
+      extra: part.section?.(),
+      log: verb.id === "tail",
+    },
   );
   return opened ? HANDLED : KEPT;
 }
