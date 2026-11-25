@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.capability.Outcome;
@@ -28,6 +29,7 @@ import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -407,6 +409,61 @@ class TaskReducerProperties {
                     },
                     (left, right) -> right))
         .isNotNull();
+  }
+
+  @Property
+  void noMoveSentWithoutTimeYieldsAnEffectThatReadsOne(
+      @ForAll("tasks") TaskState task,
+      @ForAll("timelessDoors") Function<TaskState, TaskState> door) {
+    assertThatCode(() -> door.apply(task)).doesNotThrowAnyException();
+  }
+
+  @Provide
+  Arbitrary<Function<TaskState, TaskState>> timelessDoors() {
+    TaskRepo extra = TaskRepo.of("registry", "/wt-registry");
+    return Arbitraries.of(AgentReport.class)
+        .flatMap(report ->
+            Arbitraries.of(
+                task -> reducer.planAsked(task, true),
+                task -> reducer.planAsked(task, false),
+                reducer::planApproved,
+                reducer::noPlanDeclared,
+                reducer::autoplanned,
+                task -> reducer.said(task, report),
+                task -> reducer.stamped(task, report),
+                task -> reducer.arbiterLeft(task, "deploy x"),
+                reducer::arbiterTook,
+                task -> reducer.arbiterUnanswered(task, "d1"),
+                task -> reducer.arbiterAskedStop(task, "key"),
+                task -> reducer.arbiterLiftedStops(task, 2),
+                task -> reducer.arbiterSealed(task, "s", 4),
+                reducer::arbiterVerdictGone,
+                task -> reducer.checkerPassed(task, "acceptance", "api@abc"),
+                task -> reducer.checkerRoundSent(task, "acceptance", "d1", "- row"),
+                task ->
+                    reducer.turnRestored(task, new Turn("ship", 2, "d", 500, Map.of(), List.of())),
+                reducer::sessionStartedOver,
+                task -> reducer.gitTrusted(task, GitTrust.of(Map.of("b", "2"))),
+                task -> reducer.gitChanged(task, "b changed"),
+                task -> reducer.gitRepoJoined(task, GitTrust.of(Map.of("c", "3"))),
+                task -> reducer.repoAsked(task, "registry"),
+                task -> reducer.repoAsked(task, null),
+                task -> reducer.repoAttached(task, extra),
+                task -> reducer.placed(task, List.of(extra), "origin/main"),
+                task -> reducer.mergedByGit(task, "api", true),
+                task -> reducer.mergedByGit(task, "api", false),
+                task -> reducer.mergedByHost(task, "api"),
+                task -> reducer.headSeen(task, "t1"),
+                task -> reducer.checksRead(task, "failed", "t1"),
+                task -> reducer.checksUnread(task, new ChecksUnread(500, "no listing")),
+                task -> reducer.approvalRead(task, true),
+                task ->
+                    reducer.infraArmed(
+                        task,
+                        InfraRetry.armed(
+                            9_000, "shop", "https://host.invalid/p/1", "unit-tests", "x", 1, 3)),
+                task -> reducer.infraCleared(task, true),
+                task -> reducer.infraCleared(task, false)));
   }
 
   @Provide

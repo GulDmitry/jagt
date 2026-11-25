@@ -43,6 +43,7 @@ technical:
       public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 85, decision: "0176" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
       startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 34, decision: "0176" }
+      reducer-zero-time: { engine: scan, set: main, glob: "**/flow/TaskReducer.java", per: file, regex: "\\b(?:step|applied|stayed|apply)\\([^;]*,\\s*0L?\\)", governs: count, max: 0, decision: "0176", hint: "a door with no time of its own sends its move through step(task, move), which refuses an effect that reads one; a door whose move lands takes now" }
       roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }
       spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 55, decision: "0241" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }

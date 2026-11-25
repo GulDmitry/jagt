@@ -72,6 +72,17 @@ class TaskReducerRepoTest {
   }
 
   @Test
+  void repositoryRequestEndsWhereTheReportNamesNone() {
+    TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+    TaskState asked = reducer.repoAsked(task, "registry");
+
+    TaskState unasked = reducer.repoAsked(asked, null);
+
+    assertThat(asked.work().asksForRepository()).isTrue();
+    assertThat(unasked.work().asksForRepository()).isFalse();
+  }
+
+  @Test
   void placesTaskInTheRepositoriesItsPlanNamedInPlaceOfItsScratchFolder() {
     TaskState task =
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-9")), TaskStatus.PLAN_PENDING)
@@ -217,7 +228,7 @@ class TaskReducerRepoTest {
             .build()
             .withMergedByHost("api");
 
-    TaskState left = reducer.repoLeft(task, "web");
+    TaskState left = reducer.repoLeft(task, "web", 2_000);
 
     assertThat(left.projects()).containsExactly("api");
     assertThat(left.requestsMerged()).isTrue();
@@ -231,7 +242,7 @@ class TaskReducerRepoTest {
                 TaskStatus.CI_POLLING)
             .build();
 
-    TaskState left = reducer.repoLeft(task, "api");
+    TaskState left = reducer.repoLeft(task, "api", 2_000);
 
     assertThat(left.projects()).containsExactly("api");
   }
@@ -250,7 +261,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = reducer.repoLeft(red, "beta");
+    TaskState left = reducer.repoLeft(red, "beta", 2_000);
 
     assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(left.projects()).containsExactly("alpha", "gamma");
@@ -272,7 +283,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = reducer.repoLeft(red, "beta");
+    TaskState left = reducer.repoLeft(red, "beta", 2_000);
     TaskState asked = reducer.deployStepped(left, new DeployStep.Asked("dg"), 1_300);
 
     assertThat(DeployPhase.of(left.work().deployment())).isEqualTo(DeployPhase.LANDING);
@@ -294,7 +305,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             opened, new DeployStep.Conflicted("alpha", Deployment.Cause.RED_PIPELINE), 1_100);
 
-    TaskState left = reducer.repoLeft(red, "alpha");
+    TaskState left = reducer.repoLeft(red, "alpha", 2_000);
 
     assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(Objects.requireNonNull(left.work().deployment()).conflictedTarget()).isPresent();
@@ -306,7 +317,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             openedTwo, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
 
-    TaskState left = reducer.repoLeft(conflicted, "beta");
+    TaskState left = reducer.repoLeft(conflicted, "beta", 2_000);
 
     assertThat(left.standing().status()).isEqualTo(TaskStatus.REVIEWED);
     assertThat(Objects.requireNonNull(left.work().deployment()).conflictedTarget()).isEmpty();
@@ -320,7 +331,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_200);
 
-    TaskState left = reducer.repoLeft(conflicted, "beta");
+    TaskState left = reducer.repoLeft(conflicted, "beta", 2_000);
 
     assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(left.projects()).containsExactly("alpha", "gamma");
@@ -341,7 +352,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_200);
 
-    TaskState left = reducer.repoLeft(conflicted, "beta");
+    TaskState left = reducer.repoLeft(conflicted, "beta", 2_000);
 
     assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(Objects.requireNonNull(left.work().deployment()).targets())
@@ -351,12 +362,41 @@ class TaskReducerRepoTest {
   }
 
   @Test
+  void stampsTheDepartureTimeWhereTheConflictedLastRepositoryLeavesAndDeployedLands() {
+    TaskState alpha =
+        reducer.deployStepped(openedThree, new DeployStep.Merged("alpha", "a1"), 1_100);
+    TaskState beta = reducer.deployStepped(alpha, new DeployStep.Merged("beta", "b1"), 1_150);
+    TaskState conflicted =
+        reducer.deployStepped(
+            beta, new DeployStep.Conflicted("gamma", Deployment.Cause.MERGE), 1_200);
+
+    TaskState left = reducer.repoLeft(conflicted, "gamma", 2_000);
+
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(left.standing().lastActiveTimestamp()).isEqualTo(2_000);
+    assertThat(left.standing().history().getLast().at()).isEqualTo(2_000);
+  }
+
+  @Test
+  void stampsTheDepartureTimeWhereTheConflictedRepositoryLeavesAndReviewedLands() {
+    TaskState conflicted =
+        reducer.deployStepped(
+            openedTwo, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
+
+    TaskState left = reducer.repoLeft(conflicted, "beta", 2_000);
+
+    assertThat(left.standing().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(left.standing().lastActiveTimestamp()).isEqualTo(2_000);
+    assertThat(left.standing().history().getLast().at()).isEqualTo(2_000);
+  }
+
+  @Test
   void leavesNothingToPushWhereThePipelineConflictedRepositoryLeavesTheTask() {
     TaskState red =
         reducer.deployStepped(
             openedThree, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = reducer.repoLeft(red, "beta");
+    TaskState left = reducer.repoLeft(red, "beta", 2_000);
 
     assertThat(Objects.requireNonNull(left.work().deployment()).at()).isEqualTo(2);
   }
@@ -367,7 +407,7 @@ class TaskReducerRepoTest {
         reducer.deployStepped(
             openedThree, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = reducer.repoLeft(red, "gamma");
+    TaskState left = reducer.repoLeft(red, "gamma", 2_000);
 
     assertThat(left.standing().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(

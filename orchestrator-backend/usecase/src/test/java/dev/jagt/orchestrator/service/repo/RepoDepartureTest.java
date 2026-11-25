@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -24,6 +25,7 @@ import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +51,7 @@ class RepoDepartureTest {
   @BeforeEach
   void startsWithAnEmptyState() {
     state = stateService().withRoot(root).build();
-    departure = new RepoDeparture(config, worktrees, sessions, state);
+    departure = new RepoDeparture(config, worktrees, sessions, state, new FakeClock());
   }
 
   @Test
@@ -159,6 +161,35 @@ class RepoDepartureTest {
     boolean left = departure.leave("ABC-42", web, "its request was closed on the host");
 
     assertThat(left).isTrue();
+  }
+
+  @Test
+  void stampsTheTimeOfTheDepartureWhereTheConflictedRepositoryLeavesAndTheTaskLandsReviewed() {
+    TaskState opened =
+        state
+            .reducer()
+            .deployStepped(
+                TaskState.builder(
+                        List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.DEPLOY_CONFLICT)
+                    .build(),
+                new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))),
+                1_000);
+    state.putTask(
+        "ABC-42",
+        state
+            .reducer()
+            .deployStepped(
+                opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_100));
+    when(config.load()).thenReturn(ConfigFile.defaults());
+
+    departure.leave("ABC-42", web, "its request was closed on the host");
+
+    assertThat(state.task("ABC-42").orElseThrow().standing().status())
+        .isEqualTo(TaskStatus.REVIEWED);
+    assertThat(state.task("ABC-42").orElseThrow().standing().lastActiveTimestamp())
+        .isEqualTo(1_792_749_600_000L);
+    assertThat(state.task("ABC-42").orElseThrow().standing().history().getLast().at())
+        .isEqualTo(1_792_749_600_000L);
   }
 
   @Test
