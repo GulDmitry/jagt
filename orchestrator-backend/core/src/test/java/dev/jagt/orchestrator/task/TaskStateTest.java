@@ -155,4 +155,11 @@ class TaskStateTest {
         .isTrue();
     assertThat(TaskState.builder("api", "/wt", TaskStatus.NEW).build().unplaced()).isFalse();
   }
+
+  @Test
+  void holdsNoRequestForProjectWhenTheTaskHasNoRepository() {
+    TaskState task = TaskState.builder(null, null, TaskStatus.IN_PROGRESS).build();
+
+    assertThat(task.reviewRequestOf("api")).isEmpty();
+  }
 }

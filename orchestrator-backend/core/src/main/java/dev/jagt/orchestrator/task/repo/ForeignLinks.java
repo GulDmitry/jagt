@@ -46,9 +46,16 @@ public final class ForeignLinks {
     if (foreign.isEmpty()) {
       return new Judged(byProject, url, List.of());
     }
-    String stays =
-        kept.isEmpty() ? null : kept.containsValue(url) ? url : kept.values().iterator().next();
+    String stays = kept.isEmpty() ? null : kept.containsValue(url) ? url : firstKept(task, kept);
     return new Judged(byProject.isEmpty() ? byProject : kept, stays, foreign);
+  }
+
+  private static String firstKept(TaskState task, Map<String, String> kept) {
+    return task.projects().stream()
+        .filter(kept::containsKey)
+        .findFirst()
+        .map(kept::get)
+        .orElseGet(() -> new ArrayList<>(kept.values()).getFirst());
   }
 
   /** {@code task} without the requests its repositories' remotes do not hold. */

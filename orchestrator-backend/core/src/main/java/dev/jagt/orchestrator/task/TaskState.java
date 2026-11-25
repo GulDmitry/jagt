@@ -166,7 +166,7 @@ public record TaskState(
   @JsonIgnore
   public Optional<String> reviewRequestOf(String project) {
     return repos.stream()
-        .filter(repo -> Objects.requireNonNull(repo.project()).equals(project))
+        .filter(repo -> repo.project() != null && repo.project().equals(project))
         .map(TaskRepo::mrUrl)
         .filter(url -> url != null && !url.isBlank())
         .findFirst();

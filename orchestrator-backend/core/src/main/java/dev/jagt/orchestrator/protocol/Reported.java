@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.protocol;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
@@ -22,7 +24,8 @@ public record Reported(
     Map<String, String> switches) {
 
   public Reported {
-    requests = requests == null ? Map.of() : Map.copyOf(requests);
+    requests =
+        requests == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(requests));
     switches = switches == null ? Map.of() : Map.copyOf(switches);
   }
 }
