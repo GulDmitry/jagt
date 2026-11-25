@@ -56,6 +56,29 @@ public final class TestsFor {
     return path.startsWith(prefix) ? path.substring(prefix.length()) : path;
   }
 
+  public List<String> resolve(List<String> entries, String base) {
+    List<String> paths = entries.stream().map(this::fromRepositoryRoot).toList();
+    if (paths.stream().allMatch(repo::exists)) {
+      return paths;
+    }
+    List<String> changed = repo.changed(base);
+    paths.stream()
+        .filter(path -> !repo.exists(path) && !changed.contains(path))
+        .findFirst()
+        .ifPresent(
+            path -> {
+              throw new UnknownPathException(path);
+            });
+    return paths;
+  }
+
+  private String fromRepositoryRoot(String entry) {
+    String path = stripRoot(entry);
+    return path.startsWith("../")
+        ? Path.of(layout.backend()).resolve(path).normalize().toString().replace('\\', '/')
+        : path;
+  }
+
   public Plan plan(List<String> paths) {
     Selection selection = new Selection();
     Classifier classifier = new Classifier(repo, layout, selection);

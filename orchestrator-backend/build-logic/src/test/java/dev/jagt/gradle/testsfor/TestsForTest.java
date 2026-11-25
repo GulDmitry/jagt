@@ -211,4 +211,33 @@ class TestsForTest {
 
     assertThat(stripped).isEqualTo("board/app.js");
   }
+
+  @Test
+  void failsNamingThePathWhenAnEntryNamesNoFileAndNoDeletion(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/src/main/java/a/Foo.java", "x")
+            .committed();
+
+    assertThatThrownBy(
+            () ->
+                testsFor.resolve(
+                    List.of("../orchestrator-backend/src/main/java/a/Gone.java"), "HEAD"))
+        .isInstanceOf(UnknownPathException.class)
+        .hasMessageContaining("orchestrator-backend/src/main/java/a/Gone.java");
+  }
+
+  @Test
+  void resolvesDotDotEntriesAgainstTheBackendWhenTheFileExists(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/src/main/java/a/Foo.java", "x")
+            .committed();
+
+    List<String> resolved =
+        testsFor.resolve(List.of("../orchestrator-backend/src/main/java/a/Foo.java"), "HEAD");
+
+    assertThat(resolved).containsExactly("orchestrator-backend/src/main/java/a/Foo.java");
+  }
 }
