@@ -35,14 +35,35 @@ public class DeployService {
   public Outcome deploy(String taskId) {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
-    List<Target> targets = deployTargets.all(task);
+    List<Target> targets = deployTargets.deployable(task);
+    List<Target> skipped = deployTargets.skipped(task);
+    if (targets.isEmpty() && !skipped.isEmpty()) {
+      throw Refusal.byState(
+          "No repository has a deployBranch in jagt.yml: "
+              + String.join(", ", skipped.stream().map(Target::project).toList())
+              + " — set it to enable deploy");
+    }
     targets.forEach(DeployTargets::requireDeployable);
     Optional<Target> waiting = waitingAt(task, taskId);
     requireTheFixStaged(task, taskId, waiting);
     if (resumeFrom(task, targets, waiting) == 0) {
       runner.open(taskId, targets);
     }
-    return runner.advance(taskId);
+    return withSkipped(runner.advance(taskId), skipped);
+  }
+
+  private static Outcome withSkipped(Outcome outcome, List<Target> skipped) {
+    if (skipped.isEmpty()) {
+      return outcome;
+    }
+    String message = outcome.message();
+    String note =
+        (message.endsWith(".") ? " " : ". ")
+            + "Skipped, no deployBranch in jagt.yml: "
+            + String.join(", ", skipped.stream().map(Target::project).toList())
+            + ".";
+    return new Outcome(
+        outcome.kind(), message + note, outcome.stamp(), outcome.stampMeans(), outcome.cause());
   }
 
   /**

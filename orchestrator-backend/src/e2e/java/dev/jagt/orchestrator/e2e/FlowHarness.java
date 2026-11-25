@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.util.FileSystemUtils;
 
 final class FlowHarness {
 
@@ -47,8 +46,6 @@ final class FlowHarness {
     private static Path createWorld() {
       try {
         Path created = Files.createTempDirectory("flow-world");
-        Runtime.getRuntime()
-            .addShutdownHook(new Thread(() -> FileSystemUtils.deleteRecursively(created.toFile())));
         createThrowawayWorld(created, true);
         E2eWorkspace.createRepositoryWithOrigin(
             created.resolve("web-origin.git"), created.resolve("web"));

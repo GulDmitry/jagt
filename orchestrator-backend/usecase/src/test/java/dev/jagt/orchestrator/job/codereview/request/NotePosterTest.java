@@ -9,18 +9,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
-import dev.jagt.orchestrator.task.review.AiLine;
+import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 class NotePosterTest {
@@ -43,12 +46,15 @@ class NotePosterTest {
 
   @Test
   void noteOpensWithTheAiLineAndCarriesItsKey() {
-    NotePoster.Outcome outcome = poster.post(subject, "h1", "k1", "Null here", "", NoteAnchor.NONE);
+    NotePoster.Outcome outcome =
+        poster.post(subject, "h1", "k1", "t1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
 
     ArgumentCaptor<NoteDraft> draft = ArgumentCaptor.forClass(NoteDraft.class);
     verify(notes).post(any(), any(), draft.capture());
     assertThat(outcome).isEqualTo(NotePoster.Outcome.POSTED);
-    assertThat(draft.getValue().body()).startsWith(AiLine.TEXT).endsWith("<!-- jagt-review:k1 -->");
+    assertThat(draft.getValue().body())
+        .startsWith("AI note: 👍 helps, 👎 does not; reply with what is wrong.")
+        .contains("<!-- jagt-review:k1 -->");
   }
 
   @Test
@@ -59,34 +65,25 @@ class NotePosterTest {
                 Optional.of(List.of(RequestNote.defaults().withBody("x <!-- jagt-review:k1 -->"))),
                 TokenUsage.NONE));
 
-    NotePoster.Outcome outcome = poster.post(subject, "h1", "k1", "Null here", "", NoteAnchor.NONE);
+    NotePoster.Outcome outcome =
+        poster.post(subject, "h1", "k1", "t1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
 
     assertThat(outcome).isEqualTo(NotePoster.Outcome.DUPLICATE);
     verify(notes, never()).post(any(), any(), any());
   }
 
-  @Test
-  void judgementIsDroppedUnpostedWhenTheHeadMovedSinceTheRead() {
-    when(notes.change("shop", subject.url()))
-        .thenReturn(
-            new Answer<>(Optional.of(RequestChange.defaults().withHeadSha("h2")), TokenUsage.NONE));
-
-    NotePoster.Outcome outcome = poster.post(subject, "h1", "k1", "Null here", "", NoteAnchor.NONE);
-
-    assertThat(outcome).isEqualTo(NotePoster.Outcome.DROPPED);
-    verify(notes, never()).post(any(), any(), any());
-  }
-
-  @Test
-  void judgementIsDroppedUnpostedWhenTheRequestIsMerged() {
+  @ParameterizedTest
+  @CsvSource({"h2,OPEN", "h1,MERGED"})
+  void judgementIsDroppedUnpostedWhenTheRequestMovedOnSinceTheRead(
+      String head, RequestState state) {
     when(notes.change("shop", subject.url()))
         .thenReturn(
             new Answer<>(
-                Optional.of(
-                    RequestChange.defaults().withHeadSha("h1").withState(RequestState.MERGED)),
+                Optional.of(RequestChange.defaults().withHeadSha(head).withState(state)),
                 TokenUsage.NONE));
 
-    NotePoster.Outcome outcome = poster.post(subject, "h1", "k1", "Null here", "", NoteAnchor.NONE);
+    NotePoster.Outcome outcome =
+        poster.post(subject, "h1", "k1", "t1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
 
     assertThat(outcome).isEqualTo(NotePoster.Outcome.DROPPED);
     verify(notes, never()).post(any(), any(), any());
@@ -94,7 +91,7 @@ class NotePosterTest {
 
   @Test
   void noteIsPostedOnTheLineItsAnchorNames() {
-    poster.post(subject, "h1", "k1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
+    poster.post(subject, "h1", "k1", "t1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
 
     ArgumentCaptor<NoteDraft> draft = ArgumentCaptor.forClass(NoteDraft.class);
     verify(notes).post(any(), any(), draft.capture());
@@ -102,17 +99,56 @@ class NotePosterTest {
   }
 
   @Test
-  void lineTheHostRefusesIsPostedOnTheRequestInstead() {
+  void lineTheHostRefusesPostsNoNoteOnTheRequest() {
     when(notes.post(any(), any(), any()))
-        .thenReturn(Answer.failed(TokenUsage.NONE, "line is not part of the diff"))
-        .thenReturn(new Answer<>(Optional.of("9"), TokenUsage.NONE));
+        .thenReturn(Answer.failed(TokenUsage.NONE, "line is not part of the diff"));
 
     NotePoster.Outcome outcome =
-        poster.post(subject, "h1", "k1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
+        poster.post(subject, "h1", "k1", "t1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
+
+    assertThat(outcome).isEqualTo(NotePoster.Outcome.SKIPPED);
+    verify(notes, times(1)).post(any(), any(), any());
+  }
+
+  @Test
+  void findingWithNoDiffLinePostsNoNote() {
+    NotePoster.Outcome outcome =
+        poster.post(subject, "h1", "k1", "t1", "Title is vague", "", new NoteAnchor("", 0, "h1"));
+
+    assertThat(outcome).isEqualTo(NotePoster.Outcome.SKIPPED);
+    verify(notes, never()).post(any(), any(), any());
+  }
+
+  @ParameterizedTest
+  @CsvSource({"OPEN,DUPLICATE", "RESOLVED,POSTED"})
+  void findingIsPostedAgainOnlyWhenItsThreadOfTheRolesOwnIsResolved(
+      Resolution thread, NotePoster.Outcome expected) {
+    when(notes.notes("shop", subject.url()))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    List.of(
+                        RequestNote.defaults()
+                            .withKind(AuthorKind.ACTOR)
+                            .withResolution(thread)
+                            .withBody("x <!-- jagt-thread:t1 -->"))),
+                TokenUsage.NONE));
+
+    NotePoster.Outcome outcome =
+        poster.post(subject, "h1", "k1", "t1", "Null here", "", new NoteAnchor("A.java", 11, "h1"));
+
+    assertThat(outcome).isEqualTo(expected);
+    verify(ledger).update(any(), any(), any(), any());
+  }
+
+  @Test
+  void replyInsideThreadIsPostedWithoutLine() {
+    NotePoster.Outcome outcome =
+        poster.post(subject, "h1", "k1", "", "Done", "31", NoteAnchor.NONE);
 
     ArgumentCaptor<NoteDraft> draft = ArgumentCaptor.forClass(NoteDraft.class);
-    verify(notes, times(2)).post(any(), any(), draft.capture());
+    verify(notes).post(any(), any(), draft.capture());
     assertThat(outcome).isEqualTo(NotePoster.Outcome.POSTED);
-    assertThat(draft.getAllValues().getLast().anchor()).isEqualTo(NoteAnchor.NONE);
+    assertThat(draft.getValue().body()).doesNotContain("jagt-thread");
   }
 }

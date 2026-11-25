@@ -58,6 +58,7 @@ class RoundRelayTest {
           .facts()
           .orElseThrow();
   private final TaskStops relayingStops = mock(TaskStops.class);
+  private final ThreadAuthors authors = mock(ThreadAuthors.class);
   private OrchestratorPaths paths;
   private StateService state;
   private TaskStops stops;
@@ -89,7 +90,7 @@ class RoundRelayTest {
       throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(stops, steps, door, brief);
+    RoundRelay relay = new RoundRelay(stops, steps, door, brief, authors);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
         reviewAnswer()
@@ -100,9 +101,10 @@ class RoundRelayTest {
             .build()
             .facts()
             .orElseThrow();
-    relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
+    relay.relay("ABC-42", RoundSource.REQUEST, "https://host/mr/1", round, "running", "");
 
-    SweepResult again = relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
+    SweepResult again =
+        relay.relay("ABC-42", RoundSource.REQUEST, "https://host/mr/1", round, "running", "");
 
     assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
     verify(sessions, times(1)).relayFresh(eq("ABC-42"), anyString());
@@ -112,7 +114,7 @@ class RoundRelayTest {
   void relaysNothingWhileTheAgentsQuestionStandsAndTheChecksAreRed() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(stops, steps, door, brief);
+    RoundRelay relay = new RoundRelay(stops, steps, door, brief, authors);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -122,6 +124,7 @@ class RoundRelayTest {
     SweepResult result =
         relay.relay(
             "ABC-42",
+            RoundSource.REQUEST,
             "https://host/mr/1",
             reviewAnswer()
                 .withStatus("failed")
@@ -142,14 +145,15 @@ class RoundRelayTest {
   void relaysNothingIntoTaskJagtStopped() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(stops, steps, door, brief);
+    RoundRelay relay = new RoundRelay(stops, steps, door, brief, authors);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships"))
             .build());
 
-    SweepResult result = relay.relay("ABC-42", "https://host/mr/1", noted, "running", "");
+    SweepResult result =
+        relay.relay("ABC-42", RoundSource.REQUEST, "https://host/mr/1", noted, "running", "");
 
     assertThat(result.kind()).isEqualTo(SweepResult.Kind.STOPPED);
     verify(sessions, never()).relayFresh(anyString(), anyString());
@@ -159,11 +163,12 @@ class RoundRelayTest {
   void relaysTheThreadsAsDraftsAndCountsThem() throws Exception {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief);
+    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief, authors);
 
     SweepResult result =
         relay.relay(
             "ABC-42",
+            RoundSource.REQUEST,
             "http://mr/api, http://mr/web",
             reviewAnswer()
                 .withStatus("success")
@@ -186,11 +191,12 @@ class RoundRelayTest {
   void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands() throws Exception {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief);
+    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief, authors);
     when(relayingStops.asking("ABC-42")).thenReturn(true);
 
     relay.relay(
         "ABC-42",
+        RoundSource.REQUEST,
         "http://mr/api, http://mr/web",
         reviewAnswer()
             .withStatus("failed")
@@ -216,7 +222,7 @@ class RoundRelayTest {
   void reportsRoundUnchangedWhileTheSessionHoldsTheTurnItOpened() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief);
+    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief, authors);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
         reviewAnswer()
@@ -227,9 +233,10 @@ class RoundRelayTest {
             .build()
             .facts()
             .orElseThrow();
-    relay.relay("ABC-42", "http://mr/1", round, "success", "");
+    relay.relay("ABC-42", RoundSource.REQUEST, "http://mr/1", round, "success", "");
 
-    SweepResult again = relay.relay("ABC-42", "http://mr/1", round, "success", "");
+    SweepResult again =
+        relay.relay("ABC-42", RoundSource.REQUEST, "http://mr/1", round, "success", "");
 
     assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
     assertThat(again.message()).contains("unchanged since the last relay");
@@ -239,10 +246,11 @@ class RoundRelayTest {
   void relaysNoRoundWhereNoCaseSendsItsStepsAtTheTasksStatus() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(mock(TaskStops.class), steps, door, brief);
+    RoundRelay relay = new RoundRelay(mock(TaskStops.class), steps, door, brief, authors);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
 
-    SweepResult result = relay.relay("ABC-42", "https://host/mr/1", noted, "running", "");
+    SweepResult result =
+        relay.relay("ABC-42", RoundSource.REQUEST, "https://host/mr/1", noted, "running", "");
 
     assertThat(result.kind()).isEqualTo(SweepResult.Kind.REFUSED);
     verify(sessions, never()).relayFresh(anyString(), anyString());

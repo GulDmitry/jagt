@@ -32,6 +32,10 @@ test("aPrimaryDeployAgainNamesBoth whenItIsAnAgainVerb", () => {
   );
 });
 
+test("aVerbWearsQuiet whenItsPressChangedNothing", () => {
+  assert.equal(verbClass(task({}), true), "quiet");
+});
+
 test("verbsGroupInOrderAndApartEndsTheRow whenGroupsAlternate", () => {
   const rows = actionRows(
     task({

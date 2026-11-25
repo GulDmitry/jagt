@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.StubAgentProperties;
 import dev.jagt.orchestrator.adapter.agent.StubAgentRuntime;
 import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.OriginContext;
 import java.nio.file.Files;
@@ -391,7 +392,7 @@ class WorktreeInspectionTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                stopped -> {}),
+                new NoWorktreeContainers()),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.aheadOfTarget(repo, repo, "dev")).isTrue();

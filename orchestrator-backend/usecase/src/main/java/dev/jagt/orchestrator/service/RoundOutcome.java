@@ -98,7 +98,7 @@ public class RoundOutcome {
                   ? ", nothing unresolved yet, not approved — waiting"
                   : " on infrastructure, nothing unresolved — retry armed (" + waiting + ")"));
     }
-    return relay.relay(taskId, mrUrl, r, said, tip);
+    return relay.relay(taskId, RoundSource.REQUEST, mrUrl, r, said, tip);
   }
 
   private static SweepResult stopped(String taskId, String said, TaskStop stop) {

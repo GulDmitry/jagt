@@ -9,7 +9,7 @@ A local green predicts a CI green. CI adds no check the local gate lacks and tak
 | tier | what belongs | command | runs | a red means |
 |---|---|---|---|---|
 | T0 edit loop | the files changed, mutants on the diff, 2 minutes at most | `./gradlew -q testsFor`, `pitestDiff` | the session, per change | fix before the commit |
-| T1 local gate | every job a pull request runs, in CI's image, offline, time ceilings on | `ci-local.sh`, jobs by name | the session, before a push | fix before the push |
+| T1 local gate | every job a pull request runs, in CI's image, online, time ceilings on | `ci-local.sh`, jobs by name | the session, before a push | fix before the push |
 | T2 pull request | T1's commands, Windows and macOS install, CodeQL; a job timeout and no other limit | one `./gradlew` line or script per job | GitHub, per push to a request | a divergence when T1 was green |
 | T3 main | publish the tree T2 proved: the version read and tree equality with the request head | `release` job | GitHub, on a merge | a publish failure |
 | T4 nightly | what the default T1 run leaves out: long, repeated, cold, live | `nightly.yml` jobs, each with a local twin | GitHub, once a night | an issue opens (`nightly` label), never a rerun |
@@ -29,11 +29,13 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`. none yet.
 5. **The CI image is one, pinned by digest**, used by CI and the local gate; no `ci.yml` job installs a package.
    `ci-image-pinned-by-digest`, `ci-no-package-install`, `CiWorkflowTest`.
-6. **The local gate is offline and never capped**; parallelism comes from the machine, never fixed
-   ([0236](../decisions/0236-a-local-run-is-never-capped.md)). `linux-suite.bats`: the docker run line carries no CPU or memory
-   limit, the run has `--network none` after an online warm-up, each run has its own Gradle home;
-   `standParallelism` and `e2eForks` read the available processors. `install` keeps its network until the Java runtime feed has a
-   loopback twin (rule 7).
+6. **Every Linux job runs through `scripts/linux-suite.sh <job>`, online; a cache only speeds it up**, and the gate is never capped:
+   parallelism comes from the machine ([0238](../decisions/0238-every-linux-job-runs-through-one-script-online.md),
+   [0236](../decisions/0236-a-local-run-is-never-capped.md)). Maven Central's rate limit is the mirror's to absorb
+   ([0235](../decisions/0235-dependencies-resolve-from-a-central-mirror-first.md)). A cache key is exact, never a prefix fallback.
+   `CiWorkflowTest`: every Linux job's `run` is a `linux-suite.sh` line, no `container:` job, no `restore-keys`;
+   `linux-suite.bats`: no `--network`, no warm-up, no CPU or memory limit, moby's dind cgroup loop with its retry;
+   `standParallelism` and `e2eForks` read the available processors. `install` ubuntu and `audit` run natively.
 7. **A per-push check reads no live data**: a scan or feed read needing the network runs nightly, or per push on a dependency diff
    (`gateScan -Paudit.base`; `installTest` serves the runtime from loopback).
    The local `audit` also builds and scans each base image for amd64 (`baseImageScan`)
@@ -42,7 +44,7 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 9. **A rerun or retry never turns a CI red green.** `ci-no-retry`.
 10. **The nightly runs only what T1 does not**; no nightly job repeats a pull request job unchanged.
     `nightly-calls-no-pull-request-job`; the rest: none yet.
-11. **Main publishes the tree the pull request proved**; the stand and install do not re-run there.
+11. **Main publishes the tree the pull request proved**; no test, stand or install job re-runs there.
     `release-needs-no-stand-or-install`, `CiWorkflowTest`, `ProvenTree`.
 12. **A change to CI or the local twin runs first as one job alone on a throwaway branch**: a dispatch with input `job`,
     never first on the release request. `CiWorkflowTest`.

@@ -31,7 +31,7 @@
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-shows-in-the-boards-head)
-- **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
+- **Settings dialog on the gear** — Theme, language, `jagt.yml` in sections. [spec](../openspec/specs/board-settings/spec.md)
 - **Board as its own app** — `board/` from the jar or `orchestrator.board.dir`; coupled by `contracts/`. [spec](../openspec/specs/board-app/spec.md)
 - **Accessible board** — axe-core checks every view. [spec](../openspec/specs/board-app/spec.md#requirement-the-board-passes-an-accessibility-check)
 - **Board access** — Loopback, `password` or `oidc`; refuses foreign writes; own-origin CSP, login back-off, audit line, owner-only metrics.
@@ -115,8 +115,8 @@
 
 ## Review · [spec](../openspec/specs/review/spec.md) · [code review](features/code-review.md)
 - **Review threads** — Each is fixed, declined with a why, or asked. [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
-- **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
-  [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
+- **Drafted replies** — Drafted into a file you read first. [spec](../openspec/specs/review-actors/spec.md#requirement-drafted-replies-are-a-file)
+- **Actors on a request** — Each actor, moment and setting has one written outcome. [spec](../openspec/specs/review-actors/spec.md)
 - **Take over** — A new task can take over an open review request. [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
 - **Infrastructure waits** — A red pipeline goes back to its session unless the host blames infrastructure; a `wait` probes on, then stops.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)

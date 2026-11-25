@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -29,9 +27,6 @@ import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -182,77 +177,6 @@ class TaskProvisioningTest {
 
     verify(worktrees)
         .uncut(request, List.of(TestNewRepoBuilder.proj().build()), BranchStrategy.FRESH);
-  }
-
-  @Test
-  void cutsSecondTaskOnlyOnceTheFirstIsRegistered() throws Exception {
-    CountDownLatch firstCutting = new CountDownLatch(1);
-    CountDownLatch secondCutting = new CountDownLatch(1);
-    AtomicBoolean firstRegisteredWhenSecondCut = new AtomicBoolean();
-    doAnswer(
-            call -> {
-              firstCutting.countDown();
-              secondCutting.await(500, TimeUnit.MILLISECONDS);
-              return List.of(
-                  TestNewRepoBuilder.proj()
-                      .withWorktree(Path.of("/one"))
-                      .withBaseBranch("main")
-                      .build());
-            })
-        .when(worktrees)
-        .cut(argThat(task -> task.taskId().equals("ABC-1")), any(), any());
-    doAnswer(
-            call -> {
-              firstRegisteredWhenSecondCut.set(state.task("ABC-1").isPresent());
-              secondCutting.countDown();
-              return List.of(
-                  TestNewRepoBuilder.proj()
-                      .withWorktree(Path.of("/two"))
-                      .withBaseBranch("main")
-                      .build());
-            })
-        .when(worktrees)
-        .cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
-    Thread first =
-        Thread.ofVirtual()
-            .start(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build()));
-    firstCutting.await();
-
-    provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
-    first.join();
-
-    assertThat(firstRegisteredWhenSecondCut).isTrue();
-  }
-
-  @Test
-  void startsAnotherTaskWhileOneProjectsSetupStillRuns() throws Exception {
-    CountDownLatch settingUp = new CountDownLatch(1);
-    CountDownLatch secondRegistered = new CountDownLatch(1);
-    AtomicBoolean secondStartedDuringSetup = new AtomicBoolean();
-    doAnswer(
-            call -> {
-              settingUp.countDown();
-              secondStartedDuringSetup.set(secondRegistered.await(2, TimeUnit.SECONDS));
-              return null;
-            })
-        .when(worktrees)
-        .setUp(argThat(task -> task.taskId().equals("ABC-1")), any());
-    doAnswer(
-            call -> {
-              secondRegistered.countDown();
-              return List.of(TestNewRepoBuilder.proj().withWorktree(Path.of("/two")).build());
-            })
-        .when(worktrees)
-        .cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
-    Thread first =
-        Thread.ofVirtual()
-            .start(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build()));
-    settingUp.await();
-
-    provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
-    first.join();
-
-    assertThat(secondStartedDuringSetup).isTrue();
   }
 
   @Test

@@ -1,6 +1,6 @@
 import { Pane } from "../components/Pane.js";
 import { html } from "../components/html.js";
-import { blockedOn, offersOn } from "./offers.js";
+import { blockedOn, offersOn, sayingOn } from "./offers.js";
 import * as repliesOpened from "./repliesOpened.js";
 import * as tabs from "./tabs.js";
 
@@ -15,6 +15,7 @@ export const pane = ({ open, manyProjects, flagged, now }, repaint) =>
       manyProjects,
       flagged,
       blocked: blockedOn(open),
+      quiet: sayingOn(open),
       offers: offersOn(open),
       now,
     }}

@@ -31,9 +31,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -56,14 +55,14 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 class TaskEventStreamTest {
 
   private final TaskScheduler scheduler = mock(TaskScheduler.class);
-  private final ExecutorService broadcaster = mock(ExecutorService.class);
+  private final ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
   private final ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
   private final ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
   private final TaskEventStream stream =
       new TaskEventStream(new FakeClock(), scheduler, broadcaster);
   private final TaskEventStream spiedStream = spy(stream);
   private final TaskEventStream beatingStream =
-      spy(new TaskEventStream(new FakeClock(), scheduler, Executors.newSingleThreadExecutor()));
+      spy(new TaskEventStream(new FakeClock(), scheduler, mock(ScheduledExecutorService.class)));
 
   @Test
   void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
@@ -278,7 +277,7 @@ class TaskEventStreamTest {
         new TaskEventStream(
             Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
             scheduler,
-            Executors.newSingleThreadExecutor());
+            mock(ScheduledExecutorService.class));
 
     stream.open();
 

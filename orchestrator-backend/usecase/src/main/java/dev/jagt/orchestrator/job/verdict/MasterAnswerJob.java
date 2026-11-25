@@ -85,7 +85,7 @@ public class MasterAnswerJob implements Job {
    * What no prose answer settles: a right only the human grants, a repository jagt attaches, a
    * plan.
    */
-  private static Optional<String> humans(TaskState task) {
+  private static Optional<String> humans(TaskState task, ConfigFile.ArbiterConfig config) {
     if (task.standing().report() == AgentReport.PERMISSION) {
       return Optional.of("a permission only the human grants");
     }
@@ -95,13 +95,16 @@ public class MasterAnswerJob implements Job {
     if (task.work().asksForRepository()) {
       return Optional.of("a repository jagt attaches");
     }
+    if (task.gate().planGate().closed() && !config.may(MasterRight.PLAN)) {
+      return Optional.of("a plan approval only the human grants");
+    }
     return FlowRules.holdsPlan(task.standing().status())
         ? Optional.of("the plan review answers it")
         : Optional.empty();
   }
 
   private void answer(String taskId, TaskState task, ConfigFile.ArbiterConfig config) {
-    Optional<String> humans = humans(task);
+    Optional<String> humans = humans(task, config);
     if (humans.isPresent()) {
       log.atInfo()
           .setMessage("master answer withheld")

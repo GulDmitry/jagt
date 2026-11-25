@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.review.RoundTrail;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,17 @@ public class HandBackDue {
   }
 
   private Optional<String> repliesOwed(TaskState task) {
+    return unanswered(task)
+        .map(round ->
+            round.threads()
+                + " thread(s) were relayed and "
+                + Artifact.REPLIES.fileName()
+                + " was not written since: write a block for each thread awaiting your answer,"
+                + " whatever the checks say, then hand back");
+  }
+
+  /** The newest relayed round whose threads the session has written no block for since. */
+  Optional<RoundTrail.Round> unanswered(TaskState task) {
     return task.round().trailOrNone().rounds().stream()
         .reduce((first, second) -> second)
         .filter(round -> round.threads() > 0)
@@ -44,13 +56,7 @@ public class HandBackDue {
                 .noneMatch(step -> step.status() == TaskStatus.SHIPPING && step.at() > round.at()))
         .filter(round ->
             olderThan(
-                round.at(), Path.of(task.worktreePath()).resolve(Artifact.REPLIES.fileName())))
-        .map(round ->
-            round.threads()
-                + " thread(s) were relayed and "
-                + Artifact.REPLIES.fileName()
-                + " was not written since: write a block for each thread awaiting your answer,"
-                + " whatever the checks say, then hand back");
+                round.at(), Path.of(task.worktreePath()).resolve(Artifact.REPLIES.fileName())));
   }
 
   private static boolean olderThan(long relayedAt, Path file) {

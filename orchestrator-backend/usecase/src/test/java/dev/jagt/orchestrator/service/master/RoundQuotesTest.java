@@ -52,7 +52,7 @@ class RoundQuotesTest {
             new TaskReducer(new TaskChart(Composition.builtIn())),
             event -> {});
     reviews = new MasterReview(state);
-    quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews, mock(NamedTickets.class));
     pending =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -286,7 +286,8 @@ class RoundQuotesTest {
     when(facts.notes(task)).thenReturn("disputed: the guard is right");
     when(decisions.of(task)).thenReturn("- asked: keep v2? — decided: keep it");
 
-    var read = new RoundQuotes(facts, decisions, reviews).round("ABC-1", task);
+    var read =
+        new RoundQuotes(facts, decisions, reviews, mock(NamedTickets.class)).round("ABC-1", task);
 
     assertThat(read)
         .contains(
@@ -308,7 +309,8 @@ class RoundQuotesTest {
     when(facts.notes(task)).thenReturn("disputed: the guard is right");
     when(decisions.of(task)).thenReturn("");
 
-    var read = new RoundQuotes(facts, decisions, reviews).plan("ABC-1", task);
+    var read =
+        new RoundQuotes(facts, decisions, reviews, mock(NamedTickets.class)).plan("ABC-1", task);
 
     assertThat(read)
         .contains(
@@ -327,7 +329,7 @@ class RoundQuotesTest {
     when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
     when(decisions.of(task)).thenReturn("- settled");
 
-    var read = new RoundQuotes(facts, decisions, reviews).question(task);
+    var read = new RoundQuotes(facts, decisions, reviews, mock(NamedTickets.class)).question(task);
 
     assertThat(read)
         .contains(new MasterPanel.RoundRead("", "", "- settled", List.of("keep v2"), ""));

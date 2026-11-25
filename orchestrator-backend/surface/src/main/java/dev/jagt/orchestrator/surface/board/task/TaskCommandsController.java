@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.surface.board.task;
 
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.Causes;
@@ -27,6 +29,9 @@ public class TaskCommandsController {
 
   public record ActionResult(String message) {}
 
+  /** {@code quiet}: the press changed nothing, so its button says so until the card moves. */
+  public record PressResult(String message, boolean quiet) {}
+
   private final CommandService commands;
   private final TaskLauncher launcher;
 
@@ -35,14 +40,15 @@ public class TaskCommandsController {
    * is stale.
    */
   @PostMapping("/tasks/actions/{actionId}")
-  public ActionResult act(
+  public PressResult act(
       @RequestParam("task") String taskId,
       @PathVariable String actionId,
       @RequestParam(value = "project", required = false) @Nullable String project) {
     TaskAction action =
         TaskAction.byId(actionId)
             .orElseThrow(() -> new IllegalArgumentException("Unknown action '" + actionId + "'"));
-    return new ActionResult(commands.execute(taskId, action, project));
+    Pressed pressed = commands.press(taskId, action, project);
+    return new PressResult(pressed.message(), pressed.kind() == Outcome.Kind.NOTHING);
   }
 
   /** Slow on purpose when a ticket is named: reading it is a remote call. */

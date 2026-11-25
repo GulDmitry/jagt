@@ -13,6 +13,8 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ReplyRightTest {
 
@@ -62,5 +64,23 @@ class ReplyRightTest {
     Optional<String> step = right.repliesStep("ABC-42", config);
 
     assertThat(step).isEmpty();
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "MASTER, false, false",
+    "MASTER, true, true",
+    "BOARD, false, true",
+    "BOARD, true, true"
+  })
+  void postsPersonRepliesToTheMasterOnlyWhereTheyWereAllowedUnasked(
+      ActionOrigin origin, boolean unasked, boolean posted) {
+    ConfigFile config =
+        ConfigFile.defaults()
+            .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, unasked));
+
+    boolean posts = OriginContext.as(origin, () -> right.postsPersonReplies(config));
+
+    assertThat(posts).isEqualTo(posted);
   }
 }

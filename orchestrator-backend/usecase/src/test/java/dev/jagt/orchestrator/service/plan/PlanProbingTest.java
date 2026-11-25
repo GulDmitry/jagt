@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.gate.ToolGate;
 import dev.jagt.orchestrator.task.plan.Probe;
 import dev.jagt.orchestrator.task.repo.Remote;
@@ -24,7 +25,9 @@ import org.junit.jupiter.api.io.TempDir;
 class PlanProbingTest {
 
   private final Processes processes = mock(Processes.class);
-  private final PlanProbing probing = new PlanProbing(processes, new ToolGate(List.of()), 8290);
+  private final WorktreeContainers containers = mock(WorktreeContainers.class);
+  private final PlanProbing probing =
+      new PlanProbing(processes, new ToolGate(List.of()), containers, 8290);
   private final List<Probe> gradleTest =
       List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0));
 
@@ -34,7 +37,7 @@ class PlanProbingTest {
         .thenReturn(new Processes.Result(1, "", ""));
 
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -66,7 +69,7 @@ class PlanProbingTest {
   @Test
   void neverRunsCommandTheSessionsOwnGuardRefuses(@TempDir Path worktree) {
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -89,7 +92,7 @@ class PlanProbingTest {
     Files.createDirectories(worktree.resolve(".jagt/hooks"));
     when(processes.run(any(), any(), anyMap(), any())).thenReturn(new Processes.Result(0, "", ""));
 
-    new PlanProbing(processes, new ToolGate(List.of()), 8290)
+    new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
         .probed(
             "ABC-42",
             worktree,
@@ -108,6 +111,21 @@ class PlanProbingTest {
                     "core.hooksPath",
                     "GIT_CONFIG_VALUE_0",
                     worktree.resolve(".jagt/hooks").toString())),
+            eq(List.of("./gradlew", "test")));
+  }
+
+  @Test
+  void runsCommandInTheContainerEnvironmentOfItsWorktree(@TempDir Path worktree) {
+    when(containers.environment(worktree)).thenReturn(Map.of("COMPOSE_PROJECT_NAME", "app-abc-42"));
+    when(processes.run(any(), any(), anyMap(), any())).thenReturn(new Processes.Result(0, "", ""));
+
+    probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
+
+    verify(processes)
+        .run(
+            eq(worktree),
+            any(),
+            eq(Map.of("COMPOSE_PROJECT_NAME", "app-abc-42")),
             eq(List.of("./gradlew", "test")));
   }
 
@@ -136,7 +154,7 @@ class PlanProbingTest {
         .thenReturn(new Processes.Result(0, "", ""));
 
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -152,7 +170,7 @@ class PlanProbingTest {
     Files.writeString(worktree.resolve("docs/guide.md"), "x");
 
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -189,7 +207,7 @@ class PlanProbingTest {
   @Test
   void failsFileTheWorktreeDoesNotHold(@TempDir Path worktree) {
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -206,7 +224,7 @@ class PlanProbingTest {
     Files.createSymbolicLink(worktree.resolve("inside.md"), root.resolve("outside.md"));
 
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -226,7 +244,7 @@ class PlanProbingTest {
     Files.createSymbolicLink(worktree.resolve("loop.md"), worktree.resolve("loop.md"));
 
     List<Probe> probed =
-        new PlanProbing(processes, new ToolGate(List.of()), 8290)
+        new PlanProbing(processes, new ToolGate(List.of()), containers, 8290)
             .probed(
                 "ABC-42",
                 worktree,

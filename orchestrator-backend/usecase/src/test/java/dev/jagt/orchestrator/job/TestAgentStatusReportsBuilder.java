@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.StateService;
@@ -30,8 +31,8 @@ public record TestAgentStatusReportsBuilder() {
             new Rounds(
                 config,
                 ignored -> false,
-                () -> false,
-                () -> false,
+                () -> Facts.Reach.defaults(),
+                unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             config),
         config);

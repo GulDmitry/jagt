@@ -361,13 +361,52 @@ class DeployServiceTest {
     }
 
     @Test
-    void refusesTheWholeDeployWhenAnyRepositoryHasNoDeployBranch() {
+    void landsTheOtherRepositoryAndNamesTheOneSkippedWhenItHasNoDeployBranch() {
       projects = deployProjects().withWebDeployBranch(null).build();
 
+      Outcome outcome = deploys.deploy("a1");
+
+      assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+      assertThat(outcome.message())
+          .contains(
+              "into dev (cafebabe)", "; DEPLOYED. Skipped, no deployBranch in jagt.yml: web.");
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())
+                  .targets())
+          .extracting(Deployment.Target::project)
+          .containsExactly("api");
+      verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/web")), anyString(), anyString());
+    }
+
+    @Test
+    void refusesTheDeployWhenNoRepositoryHasDeployBranch() {
+      projects = deployProjects().withApiDeployBranch(null).withWebDeployBranch(null).build();
+
       assertThatThrownBy(() -> deploys.deploy("a1"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("web")
+          .isInstanceOf(Refusal.class)
           .hasMessageContaining("deployBranch");
+      verifyNoInteractions(git);
+    }
+
+    @Test
+    void namesEveryRepositoryWhenNoneHasDeployBranch() {
+      projects = deployProjects().withApiDeployBranch(null).withWebDeployBranch(null).build();
+
+      assertThatThrownBy(() -> deploys.deploy("a1"))
+          .isInstanceOf(Refusal.class)
+          .hasMessage(
+              "No repository has a deployBranch in jagt.yml: api, web — set it to enable deploy");
+    }
+
+    @Test
+    void refusesTheDeployWhenRepositoryDeploysIntoItsBaseBranchEvenWithAnotherSkipped() {
+      projects = deployProjects().withWebDeployBranch(null).build();
+      when(config.project("api"))
+          .thenReturn(new ProjectConfig("/repo/api", "origin/release", "release", List.of()));
+
+      assertThatThrownBy(() -> deploys.deploy("a1"))
+          .isInstanceOf(Refusal.class)
+          .hasMessageContaining("base branch");
       verifyNoInteractions(git);
     }
   }
@@ -417,6 +456,28 @@ class DeployServiceTest {
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
       assertThat(outcome.message())
           .contains("web into dev (f00dfeed)", "already on the deploy branch: api (cafebabe)");
+    }
+
+    @Test
+    void dropsTheParenthesisOfTheEarlierRepositoryWhenItsMergeIsUnknown() {
+      state.putTask("ABC-1", apiAndWebTask().withStatus(TaskStatus.DEPLOY_CONFLICT).build());
+      state.updateTask(
+          "ABC-1",
+          t ->
+              t.withDeployment(
+                  deployment()
+                      .withTargets(
+                          List.of(
+                              Deployment.Target.of("api", "dev"),
+                              Deployment.Target.of("web", "dev")))
+                      .build()));
+      when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
+
+      Outcome outcome = deploys.deploy("a1");
+
+      assertThat(outcome.message())
+          .contains("web into dev (f00dfeed)", "already on the deploy branch: api;")
+          .doesNotContain("null");
     }
 
     @Test

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.eval;
 
 import dev.jagt.orchestrator.eval.CodeReviewCase.Expected;
 import dev.jagt.orchestrator.eval.CodeReviewCase.Finding;
+import dev.jagt.orchestrator.eval.CodeReviewCase.Note;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,18 @@ public final class CodeReviewCases {
             Yamls.listOrEmpty(expect.get("findings")).stream()
                 .map(Yamls::map)
                 .map(CodeReviewCases::finding)
-                .toList()));
+                .toList(),
+            note(expect.get("note"))));
+  }
+
+  private static Note note(@Nullable Object row) {
+    if (row == null) {
+      return Note.UNHELD;
+    }
+    Map<String, Object> limits = Yamls.map(row);
+    return new Note(
+        Integer.parseInt(Yamls.text(limits.get("maxLines"))),
+        Integer.parseInt(Yamls.text(limits.get("maxWords"))));
   }
 
   private static Finding finding(Map<String, Object> row) {

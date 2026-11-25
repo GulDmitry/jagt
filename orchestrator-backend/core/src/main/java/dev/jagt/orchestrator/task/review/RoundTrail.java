@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.task.review;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -94,6 +96,14 @@ public record RoundTrail(List<Round> rounds, long since) {
       told.add("still open, unchanged: " + kept);
     }
     return "Since the last round — " + String.join("; ", told) + ".";
+  }
+
+  /** The last round relayed was answered by a plan instead of the work, so it was not done. */
+  public boolean divertedToPlan(List<StatusChange> history) {
+    return !rounds.isEmpty()
+        && history.stream()
+            .anyMatch(change ->
+                change.status() == TaskStatus.PLAN_PENDING && change.at() >= rounds.getLast().at());
   }
 
   public boolean relayed(String digest) {

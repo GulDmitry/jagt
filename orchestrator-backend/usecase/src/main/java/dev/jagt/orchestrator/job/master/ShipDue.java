@@ -24,6 +24,7 @@ class ShipDue {
 
   boolean due(String taskId, TaskState task) {
     return !task.requestsMerged()
+        && !drafts.heldForHuman(task)
         && !shippedAsItStands(task)
         && (changes.anythingNewToShip(task) || drafts.drafted(task))
         && stops.mayShip(taskId);

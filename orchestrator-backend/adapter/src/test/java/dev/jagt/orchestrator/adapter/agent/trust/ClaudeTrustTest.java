@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent.trust;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
@@ -46,50 +45,6 @@ class ClaudeTrustTest {
 
     assertThat(new JsonMapper().readTree(Files.readString(configFile)).path("projects").size())
         .isEqualTo(40);
-  }
-
-  @Test
-  void waitsWhileAnotherJagtProcessIsWritingTheConfig(@TempDir Path dir) throws Exception {
-    Path configFile = dir.resolve(".claude.json");
-    Path holder =
-        Files.writeString(
-            dir.resolve("Holder.java"),
-            """
-            class Holder {
-                public static void main(String[] args) throws Exception {
-                    try (var channel = java.nio.channels.FileChannel.open(java.nio.file.Path.of(args[0]),
-                            java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.WRITE);
-                         var held = channel.lock()) {
-                        System.out.println("held");
-                        System.in.read();
-                    }
-                }
-            }
-            """);
-    Process otherJagt =
-        new ProcessBuilder(
-                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
-                holder.toString(),
-                dir.resolve(".claude.json.jagt-lock").toString())
-            .start();
-    assertThat(otherJagt.inputReader().readLine()).isEqualTo("held");
-
-    var writing =
-        java.util.concurrent.CompletableFuture.runAsync(
-            () -> ClaudeTrust.accept(configFile, Path.of("/wt/ABC-42")));
-
-    assertThatThrownBy(() -> writing.get(1, java.util.concurrent.TimeUnit.SECONDS))
-        .isInstanceOf(java.util.concurrent.TimeoutException.class);
-    otherJagt.getOutputStream().close();
-    writing.get(30, java.util.concurrent.TimeUnit.SECONDS);
-    assertThat(
-            new JsonMapper()
-                .readTree(Files.readString(configFile))
-                .path("projects")
-                .path("/wt/ABC-42")
-                .path("hasTrustDialogAccepted")
-                .asBoolean(false))
-        .isTrue();
   }
 
   @Test

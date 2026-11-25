@@ -62,6 +62,7 @@ export const cardRows = () => [
   [flagButton(false), flagButton(true)],
   [aged("status", "in progress", "12m"), aged("status live", "done", "3d")],
   [make("button", "again", "Deploy")],
+  [make("button", "quiet", "Check review")],
   [
     requestChip("id", "ABC-42"),
     requestChip("mr-age approved", `${t("request")} 5d ✓`),

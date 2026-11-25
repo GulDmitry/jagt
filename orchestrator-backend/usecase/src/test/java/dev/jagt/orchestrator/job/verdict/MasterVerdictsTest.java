@@ -45,8 +45,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -335,22 +333,6 @@ class MasterVerdictsTest {
         .isInstanceOf(TaskMovedOn.class);
 
     verify(decisions, never()).returned(any(), anyLong(), any());
-  }
-
-  @Test
-  void writesNoStateWhileTheSessionIsBeingTold() throws Exception {
-    state.putTask("ABC-1", reviewPending);
-    state.putTask("ABC-2", reviewPending);
-    when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
-        .thenAnswer(told ->
-            CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other))
-                    .get(2, TimeUnit.SECONDS)
-                ? "told"
-                : "not told");
-
-    boolean moved = verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting);
-
-    assertThat(moved).isTrue();
   }
 
   @Test

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -25,8 +26,8 @@ class RoundsTest {
       new Rounds(
           configService,
           ignored -> false,
-          () -> false,
-          () -> false,
+          () -> Facts.Reach.defaults(),
+          unheld -> null,
           new Checkers(new TaskChart(Composition.builtIn())));
 
   @Test
@@ -108,8 +109,8 @@ class RoundsTest {
         new Rounds(
                 configService,
                 standing -> Objects.equals(standing, task),
-                () -> false,
-                () -> false,
+                () -> Facts.Reach.defaults(),
+                unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn())))
             .of(task, ConfigFile.defaults());
 
@@ -130,5 +131,20 @@ class RoundsTest {
 
     assertThat(rounds.at(standsIn).running()).isTrue();
     assertThat(rounds.at(left).running()).isFalse();
+  }
+
+  @Test
+  void roundCarriesWhatHoldsTheSessionBack() {
+    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.NEW).build();
+    Rounds held =
+        new Rounds(
+            configService,
+            ignored -> false,
+            () -> Facts.Reach.defaults(),
+            ignored -> "credential check fails",
+            new Checkers(new TaskChart(Composition.builtIn())));
+
+    assertThat(held.of(task, ConfigFile.defaults()).reach().sessionHeld())
+        .isEqualTo("credential check fails");
   }
 }

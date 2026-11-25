@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -42,8 +43,8 @@ public record TestYourMoveJobBuilder(String mode, @Nullable List<String> mine) {
             new Rounds(
                 configService,
                 ignored -> false,
-                () -> false,
-                () -> false,
+                () -> Facts.Reach.defaults(),
+                unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             configService),
         clock,

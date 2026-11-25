@@ -55,7 +55,7 @@ public record TestPressEngineBuilder(
     return new FlowEngine(
         tasks,
         new Capabilities(List.of(new Does(action, ran)), List.of()),
-        new FactSources(agents, ignored -> false, trust, merged, origin),
+        new FactSources(agents, ignored -> false, trust, merged, origin, id -> Optional.empty()),
         Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
         new FlowRules(new TaskChart(Composition.builtIn())));
   }

@@ -29,7 +29,7 @@ class QualityGatesTest {
             + SUITES
             + "gateScan: \\[.*'vulnerabilityScan'",
         "dependency licence check in the test gate" + SUITES + "gateTest: \\[.*'checkLicences'",
-        "test gate on GitHub|../.github/workflows/ci.yml|gradlew --no-daemon gateTest",
+        "test gate on GitHub|scripts/linux-suite.sh|gradlew --no-daemon gateTest",
         "test gate on GitLab|../.gitlab-ci.yml|gradlew --no-daemon gateTest",
         "dependency licence check|build-logic/src/main/groovy/jagt.sbom.gradle"
             + "|tasks.register\\('checkLicences'\\)",

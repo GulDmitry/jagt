@@ -1,6 +1,6 @@
 # What a pull request's CI and the local gate leave out: repeated, cold, long, live. Every job but install runs its line through
-# scripts/linux-suite.sh <job>, the local twin; its dependencies restore read-only from CI's, as ~20 cold resolutions at once draw
-# Maven Central's 429.
+# scripts/linux-suite.sh <job>, the local twin, online; the cache only speeds it up, the Central mirror (decision 0235) absorbs
+# the rate limit.
 # A red opens one issue (the report job); nothing here reruns. docs/rules/ci.md, tier T4.
 name: nightly
 
@@ -40,11 +40,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/gradle-home
-          key: gradle-home-nightly
-          restore-keys: gradle-home-
+          key: gradle-home-nightly-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', '**/gradle.lockfile', 'orchestrator-backend/gradle/verification-metadata.xml', 'board/package-lock.json') }}
       - name: run the stand without a model three times on the engine
         env:
           JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
@@ -73,11 +72,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/gradle-home
-          key: gradle-home-nightly
-          restore-keys: gradle-home-
+          key: gradle-home-nightly-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', '**/gradle.lockfile', 'orchestrator-backend/gradle/verification-metadata.xml', 'board/package-lock.json') }}
       - name: run the end-to-end flows from scratch
         env:
           JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
@@ -102,11 +100,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/gradle-home
-          key: gradle-home-nightly
-          restore-keys: gradle-home-
+          key: gradle-home-nightly-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', '**/gradle.lockfile', 'orchestrator-backend/gradle/verification-metadata.xml', 'board/package-lock.json') }}
       - name: run the properties at 1000 tries
         env:
           JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home
@@ -129,11 +126,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/gradle-home
-          key: gradle-home-nightly
-          restore-keys: gradle-home-
+          key: gradle-home-nightly-${{ github.job }}-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle/*.versions.toml', '**/gradle.lockfile', 'orchestrator-backend/gradle/verification-metadata.xml', 'board/package-lock.json') }}
       - name: scan the dependencies against live data
         env:
           JAGT_GRADLE_CACHE: ${{ runner.temp }}/gradle-home

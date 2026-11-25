@@ -42,7 +42,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 | about to touch | read first |
 |----------------|------------|
 | `flow/`, a status, a capability, an outcome, a task's start | [`task-flow`](openspec/specs/task-flow/spec.md), [`task-start`](openspec/specs/task-start/spec.md) |
-| the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md), [`board-verbs`](openspec/specs/board-verbs/spec.md), [`board-workspace`](openspec/specs/board-workspace/spec.md) |
+| the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md), [`board-verbs`](openspec/specs/board-verbs/spec.md), [`board-workspace`](openspec/specs/board-workspace/spec.md), [`board-settings`](openspec/specs/board-settings/spec.md) |
 | a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
 | whose move it is, a badge, an owner, a clock | [`attention`](openspec/specs/attention/spec.md) |
 | a notification, a point, a channel, a route | [`notification-routing`](openspec/specs/notification-routing/spec.md) |
@@ -175,9 +175,9 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   and drafts, its gate in the outcome rather than the trigger. The base branch stays read-only for all four. jagt re-runs a pipeline the host says
   died on infrastructure, and a red deploy pipeline once per pushed commit ([0133](docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)). The
   acceptance workspace request is sixth, off by default (`workspace.mergeRequest`): one open request per role on `jagt/acceptance-<role>`
-  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). The code reviewer's note is seventh (decision 0231): on a task's
-  request by default, else only with `post.others`. Nothing else writes to the code host unasked. A kept release switches itself only with
-  `releaseFeed.autoUpgrade` (decision 0207).
+  ([0198](docs/decisions/0198-the-acceptance-workspace-is-proposed-by-a-request.md)). The code reviewer's note is seventh
+  (decisions 0231, 0240): only on a request no task holds, with `post.others`. Nothing else writes to the code host unasked.
+  A kept release switches itself only with `releaseFeed.autoUpgrade` (decision 0207).
 - **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsFitness`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A

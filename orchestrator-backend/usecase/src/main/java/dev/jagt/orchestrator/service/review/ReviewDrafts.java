@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.review;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.service.ConfigFile.CodeReviewConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -9,6 +10,8 @@ import dev.jagt.orchestrator.task.turn.Turn;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -27,11 +30,12 @@ public class ReviewDrafts {
   private final ConfigService configService;
 
   /**
-   * Announced only where it is actionable, and only while a ship would still send it. {@code
-   * status} is the one the task is being MOVED to, which is not always the one it still carries.
+   * Announced where a ship would still send it, and wherever no ship ever will, whatever the
+   * status. {@code status} is the one the task is being MOVED to, which is not always the one it
+   * still carries.
    */
   public static boolean pending(TaskState task, TaskStatus status, boolean shipPostsEveryDraft) {
-    if (!FlowRules.handsBack(status)) {
+    if (shipPostsEveryDraft && !FlowRules.handsBack(status)) {
       return false;
     }
     Path file = draftsIn(task.worktreePath());
@@ -76,16 +80,54 @@ public class ReviewDrafts {
     }
   }
 
-  /** Replies written and not yet spent by a ship; a blank file holds none. */
+  /**
+   * Drafts the human reads, posts or ends: a block no ship posts, or a person's reply the Master
+   * may not post unasked. The code reviewer's blocks are no draft.
+   */
+  public boolean heldForHuman(TaskState task) {
+    return drafted(task) && readBlocks(task).blocks().stream().anyMatch(this::heldForHuman);
+  }
+
+  private boolean heldForHuman(ReplyBlocks.Block block) {
+    CodeReviewConfig config = configService.load().codeReview();
+    return switch (block.kind()) {
+      case REVIEWER -> false;
+      case UNKNOWN -> true;
+      case BOT -> !postedByShip(block, config);
+      case PERSON -> !postedByShip(block, config) || !config.repliesToPeopleUnaskedOrDefault();
+    };
+  }
+
+  private static boolean postedByShip(ReplyBlocks.Block block, CodeReviewConfig config) {
+    String author = block.author().toLowerCase(Locale.ROOT);
+    return config.postReviewRepliesOrDefault()
+        && (config.reviewReplyAuthorsOrEmpty().isEmpty()
+            || config.reviewReplyAuthorsOrEmpty().stream()
+                .anyMatch(wanted -> author.contains(wanted.toLowerCase(Locale.ROOT))));
+  }
+
+  /**
+   * Replies written and not yet spent by a ship; a blank file, and a file of the code reviewer's
+   * blocks alone, hold none.
+   */
   public boolean drafted(TaskState task) {
     Path file = draftsIn(task.worktreePath());
     try {
       return file != null
           && Files.isRegularFile(file)
-          && !Files.readString(file).isBlank()
-          && !spent(file, task, postsEveryDraft());
+          && !spent(file, task, postsEveryDraft())
+          && ReplyBlocks.parse(Files.readString(file)).blocks().stream()
+              .anyMatch(block -> block.kind() != ReplyBlocks.Kind.REVIEWER);
     } catch (IOException e) {
       return true;
+    }
+  }
+
+  private ReplyBlocks readBlocks(TaskState task) {
+    try {
+      return ReplyBlocks.parse(Files.readString(draftsIn(task.worktreePath())));
+    } catch (IOException e) {
+      return new ReplyBlocks(List.of(new ReplyBlocks.Block(ReplyBlocks.Kind.PERSON, "")));
     }
   }
 

@@ -31,6 +31,10 @@ orchestrator:
                                                # `worktree.copyGlobs` and before the session starts; {branch} and {worktree} are filled;
                                                # a non-zero exit or the limit fails the start, no session opens
       # setupMinutes: 20    # minutes the setup command may run before jagt stops it; 20 where you write none
+      # credentialChecks:   # read-only commands, run at start, daily and before a session of this project starts; only the exit
+      #   - name: npm registry   # code is read, never a credential; a failing one marks the board's head and holds the project's sessions
+      #     command: ["npm", "view", "@scope/package", "version"]   # run in the project's folder, so its own .npmrc applies
+      #     renewedBy: "npm login --scope=@scope"   # what renews the credential, shown on the mark
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
       #                             # name is shipped and deployed by you alone; the Master's log names the path
 
@@ -249,6 +253,7 @@ orchestrator:
     mrTitlePattern: "{ticket} {title}"
     postReviewReplies: true    # false leaves every reply a draft that you post yourself
     reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
+    repliesToPeopleUnasked: false # true lets the Master in act ship and post replies to people; each opens with the AI line asking for a rating
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.
   # The one exception is `infraWait`: jagt re-runs a pipeline the host says died on infrastructure.

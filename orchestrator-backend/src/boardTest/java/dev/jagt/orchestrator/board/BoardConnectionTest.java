@@ -9,6 +9,8 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -160,7 +162,8 @@ class BoardConnectionTest extends BoardPageContext {
   @Test
   void buttonPressedFromTheKeyboardKeepsTheFocusOnceItsMoveHasRun() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1.", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     Locator focus = button(page, "Focus");
@@ -259,6 +262,18 @@ class BoardConnectionTest extends BoardPageContext {
     page.clock().runFor(50_500);
     assertThat(page.locator("#offline")).isVisible();
     page.waitForRequest("**/api/events", () -> page.clock().runFor(1_000));
+
+    assertThat(page.locator("#offline")).isHidden();
+  }
+
+  @Test
+  void boardWhosePushConnectionNeverAnswersConnectsAgain() {
+    Page page = session.newPage();
+    page.clock().install();
+    page.route("**/api/events", held -> {}, new Page.RouteOptions().setTimes(1));
+    page.waitForRequest("**/api/events", () -> page.navigate("http://localhost:" + port + "/"));
+
+    page.waitForRequest("**/api/events", () -> page.clock().runFor(51_500));
 
     assertThat(page.locator("#offline")).isHidden();
   }

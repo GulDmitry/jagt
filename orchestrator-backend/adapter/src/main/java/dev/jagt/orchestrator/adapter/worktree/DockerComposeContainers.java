@@ -8,7 +8,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,6 +35,28 @@ public class DockerComposeContainers implements WorktreeContainers {
   private static final JsonMapper MAPPER = new JsonMapper();
 
   private final Processes processRunner;
+
+  @Override
+  public Map<String, String> environment(Path worktree) {
+    return Map.of("COMPOSE_PROJECT_NAME", projectName(worktree));
+  }
+
+  /**
+   * {@code <repository>-<task>} of {@code .../<task>/worktrees/<repository>}, as compose allows.
+   */
+  static String projectName(Path worktree) {
+    Path folder = worktree.toAbsolutePath().normalize();
+    Path parent = folder.getParent();
+    Path owner =
+        parent != null && "worktrees".equals(String.valueOf(parent.getFileName()))
+            ? parent.getParent()
+            : parent;
+    String task = owner == null ? "" : String.valueOf(owner.getFileName());
+    return (folder.getFileName() + "-" + task)
+        .toLowerCase(Locale.ROOT)
+        .replaceAll("[^a-z0-9_-]+", "-")
+        .replaceAll("^[^a-z0-9]+", "");
+  }
 
   @Override
   public void stop(Path worktree) {
@@ -59,10 +85,11 @@ public class DockerComposeContainers implements WorktreeContainers {
       }
       throw e;
     }
-    if (listed.exitCode() != 0) {
-      return;
+    Set<String> projects = new LinkedHashSet<>(List.of(projectName(worktree)));
+    if (listed.exitCode() == 0) {
+      projects.addAll(projectsUnder(listed.stdout(), roots(worktree)));
     }
-    for (String project : projectsUnder(listed.stdout(), roots(worktree))) {
+    for (String project : projects) {
       var down =
           processRunner.run(
               null,

@@ -214,6 +214,26 @@ class YourMoveJobTest {
     }
 
     @Test
+    void tellsYouDraftedRepliesWaitWhereTheRoundChangedNoCode() throws IOException {
+      state.putTask(
+          "ABC-1",
+          yourMoveTask()
+              .withWorktree(worktree)
+              .withStatus(TaskStatus.REVIEW_PENDING)
+              .withReport(AgentReport.NO_CHANGES)
+              .build());
+      Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
+
+      job.run();
+      clock.advance(Duration.ofSeconds(10));
+      job.run();
+
+      ArgumentCaptor<Notification> sent = ArgumentCaptor.forClass(Notification.class);
+      verify(notifications).send(sent.capture());
+      assertThat(sent.getValue().body()).contains("drafted replies wait");
+    }
+
+    @Test
     void tapsYouAgainWhenDraftedRepliesArriveUnderTheMoveYouWereToldOf() throws IOException {
       job.run();
       clock.advance(Duration.ofSeconds(10));

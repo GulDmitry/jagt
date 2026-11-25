@@ -5,7 +5,7 @@
 ## Status
 
 Accepted 2026-10-22. Amends [0014](0014-behaviour-is-recorded-as-openspec-specs.md).
-Amended by [0064](0064-a-plan-the-human-asked-for-is-theirs.md).
+Amended by [0064](0064-a-plan-the-human-asked-for-is-theirs.md) and 2026-11-24 (shell writes seen: the flow holds the gate).
 
 ## Context
 
@@ -20,6 +20,8 @@ Amended by [0064](0064-a-plan-the-human-asked-for-is-theirs.md).
   `plan.md`, `task_visual.md` and `task_notes.md` (`PlanFirst`); the refusal counts as `Guard.PLAN_FIRST`.
 - `approve-plan` (legal at `PLAN_PENDING`) and the Master's `go` open it through `PlanApproval` and tell the session to start.
 - Under autoplan, `outcome=no_plan` with `IN_PROGRESS` opens it; for a `plan`-mode task it is a protocol violation.
+- Shell writes stay unrefused, so the flow holds the gate: while closed, a report of `REVIEW_PENDING`,
+  `SHIPPING` or `CI_POLLING` and the `ship` verb are refused; a round relayed past the plan opens it.
 - The plan lists every file the session will create after approval.
 - Codex declares no `gate` event, so it keeps `--sandbox read-only` for a plan.
 

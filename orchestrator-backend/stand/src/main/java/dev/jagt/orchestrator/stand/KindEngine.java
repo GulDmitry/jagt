@@ -28,6 +28,12 @@ public final class KindEngine implements UnitEngine {
   private static final Duration DELETE_BACKOFF = Duration.ofSeconds(1);
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
+  private static final List<List<String>> PROBES =
+      List.of(
+          List.of("kubectl", "get", "pod", "-l", "app=jagt", "-o", "yaml"),
+          List.of("tmux", "list-sessions"),
+          List.of("ps", "-ef"));
+
   @FunctionalInterface
   public interface Forwarder extends AutoCloseable {
     Process open(Path root, int port) throws IOException;
@@ -177,6 +183,7 @@ public final class KindEngine implements UnitEngine {
   public JagtEngine restart(Restart how) {
     logs();
     JagtProcess.keepOutput(root);
+    capture("before-restart");
     switch (how) {
       case JVM -> killJvm();
       case UNIT -> {
@@ -185,7 +192,30 @@ public final class KindEngine implements UnitEngine {
       }
       default -> upgrade();
     }
-    return awaitReady();
+    KindEngine ready = awaitReady();
+    capture("after-restart");
+    return ready;
+  }
+
+  private void capture(String phase) {
+    StringBuilder text = new StringBuilder();
+    for (List<String> probe : PROBES) {
+      try {
+        String[] command = probe.toArray(String[]::new);
+        StandShell.Result result =
+            probe.getFirst().equals("kubectl") ? run(command) : exec(command);
+        text.append("=== ").append(String.join(" ", probe)).append(" exit ").append(result.exit());
+        text.append('\n').append(result.output()).append('\n');
+      } catch (RuntimeException e) {
+        StandConsole.line(
+            "stand capture failed: phase=" + phase + " probe=" + probe.getFirst() + " cause=" + e);
+      }
+    }
+    try {
+      Files.writeString(root.resolve("pod-" + phase + ".txt"), text.toString());
+    } catch (IOException e) {
+      StandConsole.line("stand capture failed: phase=" + phase + " cause=" + e);
+    }
   }
 
   @Override

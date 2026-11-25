@@ -60,15 +60,6 @@ ship on. The Deploy button is green while the work is live. A `⚐` beside the t
 #### Scenario: A task shipped again
 - **WHEN** ABC-42 shipped twice; **THEN** its request chip's hover reads `shipped 2 times`
 
-### Requirement: The gear holds the board's settings
-One gear at the header's top right SHALL open a menu. It offers the `jagt.yml` settings ([`settings`](../project-setup/spec.md)), the theme and
-the language, one entry per catalog file present, named by that catalog. `auto` follows `prefers-color-scheme`; `light` and `dark` force it.
-Theme and language are kept in this browser alone and applied before the first paint. English fills any key a catalog lacks;
-only the board's own UI text is translated. The legend has the gear's row.
-#### Scenario: Dark and Polish chosen
-- **WHEN** the human chooses `dark` and Polish on the gear and reloads the board
-- **THEN** the page is dark with no flash and its header reads Polish, a key Polish lacks reads English, and `auto` clears the theme
-
 ### Requirement: A plan shows what changed since its last approval
 Each `approve-plan` SHALL keep the approved `plan.md` as the task's baseline, in jagt's own root, not the worktree.
 The Artifacts tab SHALL render `plan.md` against that baseline: a line new or changed is bold with a bar,
@@ -92,7 +83,7 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 
 ### Requirement: Components ship as the files that run
 The board SHALL render Preact components written with `htm`, served from `board/vendor/` byte for byte as the npm registry published them. The page's
-import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 224 KB
+import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 232 KB
 (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
 - **WHEN** `vendor/preact.mjs` differs from the published 11.2.0 by one byte

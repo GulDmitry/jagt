@@ -101,7 +101,7 @@ class MasterCheckTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withArbiter(ArbiterConfig.defaults().withMode("act"))
-                .withCodeReview(new CodeReviewConfig(null, false, null)));
+                .withCodeReview(new CodeReviewConfig(null, false, null, null)));
 
     assertThat(check.problems())
         .extracting(Problem::key)

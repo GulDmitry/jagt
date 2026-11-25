@@ -1,46 +1,65 @@
-import { make, within } from "../core/dom.js";
 import { choose, current, languages, t } from "../core/i18n.js";
+import { choice } from "./choice.js";
 import "./settings.js";
 
 const gear = /** @type {HTMLElement} */ (document.getElementById("gear"));
-const list = /** @type {HTMLElement} */ (document.getElementById("gear-menu"));
+const dialog = /** @type {HTMLDialogElement} */ (
+  document.getElementById("gear-dialog")
+);
 const root = document.documentElement;
 
-/** @param {string} choice */
-const paint = (choice) => {
-  if (choice === "auto") delete root.dataset.theme;
-  else root.dataset.theme = choice;
-  list
-    .querySelectorAll("button[value]")
-    .forEach(
-      (button) =>
-        button instanceof HTMLButtonElement &&
-        button.setAttribute("aria-pressed", String(button.value === choice)),
-    );
+/** @param {string} chosen */
+const paint = (chosen) => {
+  if (chosen === "auto") delete root.dataset.theme;
+  else root.dataset.theme = chosen;
 };
 
-/** @param {boolean} open */
-const shut = (open) => {
-  list.hidden = !open;
-  gear.setAttribute("aria-expanded", String(open));
+/** @param {string} chosen */
+const pickTheme = (chosen) => {
+  try {
+    if (chosen === "auto") localStorage.removeItem("theme");
+    else localStorage.theme = chosen;
+  } catch {
+    // the choice then lasts until reload
+  }
+  paint(chosen);
 };
 
-list.append(
-  ...["auto", "light", "dark"].map((choice) =>
-    Object.assign(make("button", "", t(`theme.${choice}`)), { value: choice }),
+/**
+ * @param {string} id
+ * @param {Node} control
+ */
+const into = (id, control) =>
+  /** @type {HTMLElement} */ (document.getElementById(id)).append(control);
+
+const stored = root.dataset.theme;
+into(
+  "gear-appearance",
+  choice(
+    "theme",
+    ["auto", "light", "dark"].map((value) => ({
+      value,
+      label: t(`theme.${value}`),
+    })),
+    stored === "light" || stored === "dark" ? stored : "auto",
+    pickTheme,
   ),
 );
-const offer = () =>
-  languages().then((offered) =>
-    list.append(
-      ...offered.map(({ code, name }) => {
-        const button = make("button", "", name);
-        button.dataset.lang = code;
-        button.setAttribute("aria-pressed", String(code === current()));
-        return button;
-      }),
+
+const offered = languages().then((found) =>
+  into(
+    "gear-language",
+    choice(
+      "lang",
+      found.map(({ code, name }) => ({ value: code, label: name })),
+      current(),
+      (code) => {
+        choose(code);
+        window.location.reload();
+      },
     ),
-  );
+  ),
+);
 fetch("/api/session")
   .then((response) => response.json())
   .then(({ login }) => {
@@ -48,40 +67,26 @@ fetch("/api/session")
       !login;
   })
   .catch(() => {});
-gear.addEventListener("click", offer, { once: true });
-gear.onclick = () => shut(Boolean(list.hidden));
-list.onclick = ({ target }) => {
+gear.onclick = () =>
+  offered.then(() => {
+    dialog.showModal();
+    gear.setAttribute("aria-expanded", "true");
+  });
+dialog.addEventListener("close", () => {
+  gear.setAttribute("aria-expanded", "false");
+  gear.focus();
+});
+dialog.onclick = ({ target }) => {
+  if (target === dialog) dialog.close();
   if (!(target instanceof HTMLElement)) return;
+  if (target.id === "close-gear") dialog.close();
   if (target.id === "gear-logout") {
     fetch("/logout", { method: "POST" }).finally(() =>
       window.location.assign("/"),
     );
-    return;
   }
   if (target.id === "gear-settings") {
-    shut(false);
+    dialog.close();
     document.dispatchEvent(new Event("settings-open"));
-    return;
   }
-  if (target.dataset.lang) {
-    choose(target.dataset.lang);
-    window.location.reload();
-    return;
-  }
-  const choice = target instanceof HTMLButtonElement ? target.value : "";
-  if (!choice) return;
-  try {
-    if (choice === "auto") localStorage.removeItem("theme");
-    else localStorage.theme = choice;
-  } catch {
-    // the choice then lasts until reload
-  }
-  paint(choice);
-  shut(false);
 };
-document.addEventListener(
-  "pointerdown",
-  (event) => within(event.target, ".menu") || shut(false),
-);
-const stored = root.dataset.theme;
-paint(stored === "light" || stored === "dark" ? stored : "auto");

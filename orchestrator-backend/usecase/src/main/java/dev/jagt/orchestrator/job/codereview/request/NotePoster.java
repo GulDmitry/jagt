@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.job.codereview.request;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
+import dev.jagt.orchestrator.port.codehost.review.Resolution;
 import dev.jagt.orchestrator.task.review.AiLine;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -30,11 +32,13 @@ public class NotePoster {
 
   private static final int DIGEST_LENGTH = 16;
   public static final String MARKER = "jagt-review:";
+  private static final String THREAD_MARKER = "jagt-thread:";
 
   /** How a post ended; only {@code POSTED} wrote to the host. */
   public enum Outcome {
     POSTED,
     DUPLICATE,
+    SKIPPED,
     DROPPED,
     FAILED
   }
@@ -45,10 +49,17 @@ public class NotePoster {
   /**
    * A note on the request for one finding, on the line {@code anchor} names where it names one, or
    * an answer to {@code replyTo}. Dropped where the request is over, its head is no longer {@code
-   * head}, or it can no longer be read. A line the host refuses is posted on the request instead.
+   * head}, or it can no longer be read. A finding with no diff line, a line the host refuses, and a
+   * finding an open thread of the role's own already says ({@code threadKey}) post nothing.
    */
   public Outcome post(
-      Subject subject, String head, String key, String text, String replyTo, NoteAnchor anchor) {
+      Subject subject,
+      String head,
+      String key,
+      String threadKey,
+      String text,
+      String replyTo,
+      NoteAnchor anchor) {
     Answer<RequestChange> change = notes.change(subject.project(), subject.url());
     if (change.facts().isEmpty()
         || !change.facts().get().headSha().equals(head)
@@ -63,29 +74,48 @@ public class NotePoster {
       remember(subject, key);
       return Outcome.DUPLICATE;
     }
-    String body = body(text, key);
+    boolean onRequest = replyTo.isBlank();
+    if (onRequest && !anchor.inline()) {
+      warn(subject, "the finding has no line of the diff", "no note is posted");
+      return Outcome.SKIPPED;
+    }
+    if (onRequest && openThreadSays(read.facts().get(), threadKey)) {
+      remember(subject, key);
+      return Outcome.DUPLICATE;
+    }
     Answer<String> posted =
-        notes.post(subject.project(), subject.url(), new NoteDraft(body, replyTo, anchor));
-    if (posted.facts().isEmpty() && anchor.inline()) {
-      log.atInfo()
-          .setMessage("code review inline note refused")
-          .addKeyValue("request", subject.url())
-          .addKeyValue("cause", posted.failure())
-          .addKeyValue("effect", "the note is posted on the request instead")
-          .log();
-      posted = notes.post(subject.project(), subject.url(), NoteDraft.replyTo(body, replyTo));
+        notes.post(
+            subject.project(),
+            subject.url(),
+            new NoteDraft(body(text, key, threadKey), replyTo, anchor));
+    if (posted.facts().isEmpty() && onRequest) {
+      warn(subject, posted.failure(), "no note is posted");
+      return Outcome.SKIPPED;
     }
     if (posted.facts().isEmpty()) {
-      log.atWarn()
-          .setMessage("code review note not posted")
-          .addKeyValue("request", subject.url())
-          .addKeyValue("cause", posted.failure())
-          .addKeyValue("effect", "the note is tried again on the next read")
-          .log();
+      warn(subject, posted.failure(), "the note is tried again on the next read");
       return Outcome.FAILED;
     }
     remember(subject, key);
     return Outcome.POSTED;
+  }
+
+  private static boolean openThreadSays(List<RequestNote> read, String threadKey) {
+    return !threadKey.isBlank()
+        && read.stream()
+            .anyMatch(note ->
+                note.kind() == AuthorKind.ACTOR
+                    && note.resolution() != Resolution.RESOLVED
+                    && note.body().contains(THREAD_MARKER + threadKey));
+  }
+
+  private void warn(Subject subject, String cause, String effect) {
+    log.atWarn()
+        .setMessage("code review note not posted")
+        .addKeyValue("request", subject.url())
+        .addKeyValue("cause", cause)
+        .addKeyValue("effect", effect)
+        .log();
   }
 
   /** The short digest that makes a note, an answer or a brief the same one in a later run. */
@@ -100,8 +130,9 @@ public class NotePoster {
     }
   }
 
-  static String body(String text, String key) {
-    return AiLine.TEXT + "\n\n" + text.strip() + "\n\n<!-- " + MARKER + key + " -->";
+  static String body(String text, String key, String threadKey) {
+    String thread = threadKey.isBlank() ? "" : "\n<!-- " + THREAD_MARKER + threadKey + " -->";
+    return AiLine.TEXT + "\n\n" + text.strip() + "\n\n<!-- " + MARKER + key + " -->" + thread;
   }
 
   private void remember(Subject subject, String key) {

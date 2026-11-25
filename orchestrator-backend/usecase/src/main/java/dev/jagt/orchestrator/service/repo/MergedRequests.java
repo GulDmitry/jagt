@@ -41,6 +41,7 @@ public class MergedRequests implements MergedRefresh {
     if (task == null) {
       return false;
     }
+    leaveWorkless(taskId, task);
     for (TaskRepo repo : task.repos()) {
       if (repo.hasReviewRequest() && !repo.wasHostMerged()) {
         mergedNow(taskId, task, repo)
@@ -49,6 +50,17 @@ public class MergedRequests implements MergedRefresh {
       }
     }
     return stateService.task(taskId).map(TaskState::requestsMerged).orElse(false);
+  }
+
+  private void leaveWorkless(String taskId, TaskState task) {
+    if (!task.hasReviewRequest()) {
+      return;
+    }
+    for (TaskRepo repo : task.repos()) {
+      if (!repo.hasReviewRequest() && !holdsWork(task, repo)) {
+        departure.leaveWorkless(taskId, repo, "it holds no work");
+      }
+    }
   }
 
   /**
@@ -106,14 +118,23 @@ public class MergedRequests implements MergedRefresh {
    * The projects among these repositories with no request though one is owed: a repository with no
    * code host is owed none.
    */
-  public List<String> owingRequest(List<TaskRepo> repos) {
+  public List<String> owingRequest(TaskState task) {
     ConfigFile config = configService.load();
-    return repos.stream()
+    return task.repos().stream()
         .filter(repo ->
             !repo.hasReviewRequest()
-                && !config.hasNoCodeHost(Objects.requireNonNull(repo.project())))
+                && !config.hasNoCodeHost(Objects.requireNonNull(repo.project()))
+                && holdsWork(task, repo))
         .map(TaskRepo::project)
         .toList();
+  }
+
+  private boolean holdsWork(TaskState task, TaskRepo repo) {
+    String project = Objects.requireNonNull(repo.project());
+    return worktreeChanges.holdsWork(
+        project,
+        Objects.requireNonNull(repo.worktreePath()),
+        WorktreeChanges.targetBranch(task, configService.project(project)));
   }
 
   private Path projectPath(String project) {

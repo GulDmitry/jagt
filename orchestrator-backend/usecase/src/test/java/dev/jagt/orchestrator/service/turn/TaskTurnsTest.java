@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
@@ -52,6 +53,43 @@ class TaskTurnsTest {
             event -> {});
     turns =
         new TaskTurns(state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn())));
+  }
+
+  @Test
+  void opensTheGateWhenTheRoundOpenedPastThePlanFindsItClosed() {
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .build());
+
+    turns.opened("ABC-42", "round", "a1b2", TaskStatus.REVIEW_PENDING);
+
+    assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
+  }
+
+  @Test
+  void keepsTheGateClosedWhenTheTurnOpenedStillBelongsToThePlan() {
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).planGate(PlanGate.CLOSED).build());
+
+    turns.opened("ABC-42", "answer", "a1b2", TaskStatus.IN_PROGRESS);
+
+    assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
+
+  @Test
+  void keepsTheGateClosedWhenReportClosesTheTurnPastThePlan() {
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .build());
+
+    state.reduce("ABC-42", (reducer, task) -> TaskTurns.closed(reducer, task));
+
+    assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
   }
 
   @Nested

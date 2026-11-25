@@ -217,6 +217,25 @@ class TaskStopsTest {
   }
 
   @Test
+  void relaysTheSameRoundAgainWhereTheSessionAnsweredItWithPlan() {
+    ReviewFacts round =
+        new ReviewFacts(
+            openRequest, running, new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
+    state.putTask("ABC-42", polling);
+    stops.round("ABC-42", round, "brief", "");
+    state.putTask(
+        "ABC-42",
+        state
+            .task("ABC-42")
+            .orElseThrow()
+            .withStatus(TaskStatus.PLAN_PENDING, null, Long.MAX_VALUE));
+
+    TaskStops.Relay again = stops.round("ABC-42", round, "brief", "");
+
+    assertThat(again).isEqualTo(TaskStops.Relay.RELAY);
+  }
+
+  @Test
   void answersRoundTheLastRelayedOneRepeatsAsUnchanged() {
     state.putTask("ABC-42", polling);
     ReviewFacts round =

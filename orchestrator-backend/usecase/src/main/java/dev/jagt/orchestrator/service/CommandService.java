@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowEngine;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -24,9 +26,16 @@ public class CommandService {
 
   /** As above, with the project a human typed after the ticket, or null. */
   public String execute(String taskIdOrAlias, TaskAction action, @Nullable String project) {
+    return press(taskIdOrAlias, action, project).message();
+  }
+
+  /**
+   * As {@link #execute(String, TaskAction, String)}, with how the work ended beside its sentence.
+   */
+  public Pressed press(String taskIdOrAlias, TaskAction action, @Nullable String project) {
     return door.presses(taskIdOrAlias, action)
-        ? flow.run(taskIdOrAlias, action, project)
-        : declined(taskIdOrAlias, action);
+        ? flow.press(taskIdOrAlias, action, project)
+        : new Pressed(declined(taskIdOrAlias, action), Outcome.Kind.NOTHING);
   }
 
   /** As {@link #execute(String, TaskAction)}, with the line a verb that takes one types. */

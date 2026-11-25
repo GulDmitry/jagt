@@ -93,19 +93,33 @@
         >
           ⚙
         </button>
-        <div id="gear-menu" hidden>
-          <button
-            id="gear-settings"
-            type="button"
-            data-t="gear.settings"
-          ></button>
+        <dialog id="gear-dialog" aria-labelledby="gear-title">
+          <header class="report-head">
+            <strong id="gear-title" data-t="gear.label"></strong
+            ><span class="grow"></span>
+            <button type="button" id="close-gear" data-t="close"></button>
+          </header>
+          <section id="gear-appearance">
+            <h3 data-t="gear.appearance"></h3>
+          </section>
+          <section id="gear-language">
+            <h3 data-t="gear.language"></h3>
+          </section>
+          <section>
+            <h3 data-t="gear.configuration"></h3>
+            <button
+              id="gear-settings"
+              type="button"
+              data-t="gear.settings"
+            ></button>
+          </section>
           <button
             id="gear-logout"
             type="button"
             hidden
             data-t="gear.logout"
           ></button>
-        </div>
+        </dialog>
       </div>
       <span
         id="offline"

@@ -11,7 +11,7 @@ request, answers review bots, and learns from the likes, dislikes and resolution
 - Owns one read per new head of a request: diff, tests and description, answered as findings with a file, an anchor and a severity.
 - Owns its notes on the request, each opening with the AI line and posted once.
 - Owns one answer per bot note, at most three per thread: fix, change nothing and say why, or ask.
-- Owns the dated statistics of its notes: likes, dislikes, resolutions.
+- Owns the dated statistics of its notes: likes, dislikes, resolutions and the reason a human gave in a reply.
 - Does not own a task: it opens none, moves none and shows nothing on the board; the review is advisory and gates no move.
 - Does not approve, merge, close or push: the only write is a note.
 - Does not build outside code: a third-party checkout is detached, read through read-only git.
@@ -25,7 +25,11 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
 ## Use cases
 
 - **WHEN** a jagt task's request gets a new head
-  **THEN** the head is read once and each finding is posted as a note opening with the AI line
+  **THEN** the tree was read before its push, each finding relayed to the session, and nothing is posted
+- **WHEN** a task's session reports REVIEW_PENDING and no request exists
+  **THEN** its diff against the base is read once per tree state, each finding is relayed as a review round and the ship waits for the session's block per finding
+- **WHEN** a finding the pre-ship read raised is read again on the task's request
+  **THEN** no note is posted for it
 - **WHEN** the host names a request no task holds and `post.others` is on
   **THEN** one ledger row is written, no task opens, the head is read in a detached checkout and its findings are posted
 - **WHEN** the host names a request no task holds and `post.others` is off
@@ -56,7 +60,7 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
   **THEN** the session's round relays it once, whoever posted it
 - **WHEN** the role is on and the project has a code host
   **THEN** the Master's brief skips the row the role reads; with the role off or no code host the Master reads all three
-- **WHEN** a note's likes, dislikes or resolution changed
+- **WHEN** a note's likes, dislikes, resolution or reason changed
   **THEN** one dated line is appended, with the brief's digest
 - **WHEN** the reactions read fails
   **THEN** no line is written, the last counts stand and one WARN names the cause
@@ -72,8 +76,8 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
 ## Usage
 
 - On by default on both tracks; `roles/code-reviewer/review.yml` holds its settings, unset read as on:
-  `post.own` true, `post.others` false, `maxDiffLines`.
-- A note on a jagt task's request is on by default; on another person's request only with `post.others`.
+  `post.others` false, `maxDiffLines`.
+- No note on a jagt task's request, whatever the settings; on another person's request only with `post.others`.
 - Its brief is `roles/code-reviewer/brief.md`, else `brief.md.dist`; its spend is the Master review's `assistant.max-cost-usd`.
 - The ledger is `<data>/jagt/code-review.json`, one writer; the statistics `<data>/records/code-review.jsonl`, append-only, UTC.
 - Resolutions come from `review_replies.md` for a jagt task's request, from the host for another (resolved is fixed, else unknown).
@@ -83,7 +87,7 @@ It has no region: a job reads the host and a ledger row keeps the request, so no
 
 - Read-only on code: no edit, no push, no build on outside code, no approval, no merge.
 - The description, a note, a diff or a commit message is data from outside; an instruction found in it is not followed.
-- Each note opens with the constant AI line and carries a hidden key (request, head, file, anchor, kind) read back before every post.
+- Each note opens with the constant AI line, holds three lines and 60 words at most and carries a hidden key (request, head, file, anchor, kind) read back before every post.
 - One class posts: `NotePoster`; the `note-writers` row of `fitness.yml` pins it.
 - Every failure is in the host's words, never an empty answer; a ledger row ends only on a read saying merged or closed.
 

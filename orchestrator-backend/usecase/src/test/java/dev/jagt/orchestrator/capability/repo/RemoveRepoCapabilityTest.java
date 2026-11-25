@@ -1,19 +1,17 @@
 package dev.jagt.orchestrator.capability.repo;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FactSources;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.capability.Capabilities;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
@@ -30,15 +28,21 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class RemoveRepoCapabilityTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
-
   private final RepoRemoval removal = mock(RepoRemoval.class);
+
+  private final FactSources sources =
+      new FactSources(
+          mock(AgentPresence.class),
+          ignored -> false,
+          id -> Optional.empty(),
+          id -> false,
+          () -> ActionOrigin.BOARD,
+          id -> Optional.empty());
 
   @Test
   void keepsTheTaskMessageAndTellsTheHumanWhenTheRepositoryLeft() {
@@ -75,15 +79,7 @@ class RemoveRepoCapabilityTest {
 
   @Test
   void leavesTheStatusWhereItIsWhenRepositoryOfAnOpenRoundIsRemoved(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-7",
         TaskState.builder(
@@ -96,12 +92,7 @@ class RemoveRepoCapabilityTest {
         new FlowEngine(
             state,
             new Capabilities(List.of(new RemoveRepoCapability(removal)), List.of()),
-            new FactSources(
-                mock(AgentPresence.class),
-                ignored -> false,
-                id -> Optional.empty(),
-                id -> false,
-                () -> ActionOrigin.BOARD),
+            sources,
             new FakeClock(),
             rules);
 
@@ -114,27 +105,14 @@ class RemoveRepoCapabilityTest {
 
   @Test
   void refusesTheRemovalOnTaskHoldingOneRepositoryAndRunsNothing(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
+    StateService state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEWED).alias("a1").build());
     FlowEngine engine =
         new FlowEngine(
             state,
             new Capabilities(List.of(new RemoveRepoCapability(removal)), List.of()),
-            new FactSources(
-                mock(AgentPresence.class),
-                ignored -> false,
-                id -> Optional.empty(),
-                id -> false,
-                () -> ActionOrigin.BOARD),
+            sources,
             new FakeClock(),
             rules);
 

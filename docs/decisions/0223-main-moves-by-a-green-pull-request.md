@@ -6,7 +6,7 @@
 ## Status
 
 Accepted 2026-11-22: protection decided by the owner 2026-11-21, CD trigger chosen the same day.
-The release's needs: amended by [0233](0233-a-local-green-predicts-ci.md).
+The release's needs: amended by [0233](0233-a-local-green-predicts-ci.md) and JAGT-253.
 
 ## Context
 
@@ -19,10 +19,11 @@ The release's needs: amended by [0233](0233-a-local-green-predicts-ci.md).
 - `main` on GitHub is protected: pull requests only, required checks green and up to date (strict), no force-push, admins included.
 - Work reaches `main` as one pull request, pushed as often as needed, merged once green.
 - The release is the version bump a green pull request carries; nobody pushes a tag.
-- `ci.yml`'s `release` job runs on a push to `main`: the `test` job reads `printVersion` and checks `git ls-remote` for `v<version>`.
+- `ci.yml`'s `release` job runs on a push to `main`: the `release` job's first step reads `printVersion` and checks `git ls-remote` for `v<version>`.
 - Only when that tag is new, `release` creates it on the pushed sha (`gh release create --target`) and publishes the jar,
   SBOM, attestation, image and Pages; a merge without a bump runs the post-merge checks alone.
-- `release` needs `test`, `stand` and `install`; `heavy` ran on the pull request and strict protection keeps that sha current.
+- `release` needs no job: no test job runs on `main`, its later steps run only on a new tag, `provenTree` refuses a tree no green request had.
+- `heavy` ran on the pull request and strict protection keeps that sha current.
 - A run on `main` is never cancelled by the next push, so a publish is not cut short.
 - The nightly gains `workflow_dispatch`, to start it by hand once the pull request is green.
 - `fitness.yml` rows pin the absent tag trigger, the tag-exists guard and the dispatch.

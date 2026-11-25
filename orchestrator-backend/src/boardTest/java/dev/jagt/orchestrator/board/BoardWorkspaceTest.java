@@ -5,6 +5,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.Page;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -72,13 +74,14 @@ class BoardWorkspaceTest extends BoardPageContext {
   void theRowsOwnFocusActsOnItsTaskWithoutOpeningIt() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
     state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-2", TaskAction.FOCUS, null)).thenReturn("Focused ABC-2.");
+    when(commands.press("ABC-2", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-2.", Outcome.Kind.OK));
     Page page = openLiveBoard();
 
     page.getByLabel("Focus a2", new Page.GetByLabelOptions().setExact(true)).click();
 
     assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-2.");
-    verify(commands).execute("ABC-2", TaskAction.FOCUS, null);
+    verify(commands).press("ABC-2", TaskAction.FOCUS, null);
     assertThat(page.locator("#pane article .alias")).hasText("a1");
   }
 

@@ -52,6 +52,16 @@ class FitnessLoaderAcceptsTest {
   }
 
   @Test
+  void keepsTheDecisionGrantingARulesExceptions() {
+    FitnessConfig config =
+        loader.parse(
+            "schema: 1\ntechnical: { maintainability: { modularity: { ports: { engine: fake, governs: count, max: 2, exception: '0001' } } } }",
+            Path.of("."));
+
+    assertThat(config.functions().getFirst().selectors()).containsEntry("exception", "0001");
+  }
+
+  @Test
   void aFitnessClassInItsSectionsPackageIsAccepted() {
     FitnessConfig config =
         loader.parse(

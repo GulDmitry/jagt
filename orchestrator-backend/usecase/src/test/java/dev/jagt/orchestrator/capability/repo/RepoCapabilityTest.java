@@ -83,7 +83,8 @@ class RepoCapabilityTest {
                   ignored -> false,
                   id -> Optional.empty(),
                   id -> false,
-                  () -> ActionOrigin.BOARD),
+                  () -> ActionOrigin.BOARD,
+                  id -> Optional.empty()),
               new FakeClock(),
               rules);
     }

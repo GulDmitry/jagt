@@ -10,7 +10,6 @@ The Master: a headless reader judging each handed-back round; in `act` it stands
 One headless run per brief role SHALL read each round in the worktrees and present `agent.sandbox.allowWrite` dirs, loading no worktree setting.
 jagt SHALL store each answer with the hand-back it asked about (`MasterReview`), `master-review.md` only its rendering;
 a round SHALL cost one heavy read per role it applies to, charged as `master`, later roles reading the cached round.
-
 #### Scenario: What a role may call
 - **WHEN** a role reads
 - **THEN** read-only git, `-C` naming a worktree, plain words, option by option, `--no-ext-diff --no-textconv`
@@ -35,7 +34,6 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 ### Requirement: The Master judges by a brief
 The Master SHALL judge by `roles.master.brief`, else the first that exists of `roles/master/brief.md` and
 `roles/master/brief.md.dist` (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
-
 #### Scenario: No brief copied
 - **WHEN** no brief is copied
 - **THEN** the shipped one judges
@@ -59,7 +57,9 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **WHEN** the press is refused, as a deploy of ABC-42 with no commit beyond dev
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
 - **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
-- **THEN** it presses nothing, and the task waits for you; an unpushed commit, uncommitted work or replies drafted since the last ship make it due
+- **THEN** it presses nothing, and the task waits for you; an unpushed commit or uncommitted work makes it due
+- **WHEN** replies are drafted
+- **THEN** it ships or holds as P1 to P5 and B1 of [review-actors](../review-actors/spec.md) say, never by a rule of its own
 
 ### Requirement: The human keeps what mine and humanPaths name
 `roles.master.mine` SHALL name the steps (`task/master/MasterRight`) and verbs the human keeps, any `TaskAction` or `GlobalCommand` id.
@@ -89,6 +89,8 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours; the same words asked again are a new question
+- **AND** a ticket the question names is read from the tracker and answered by its status; unreadable, the question is yours
+- **AND** asked which of the ticket's own routes to take, it picks the one needing no right the session lacks, and says why
 
 #### Scenario: A plan in act
 - **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
@@ -142,11 +144,9 @@ until the round ceiling stops it; a finding is the same by file, anchor and kind
 - **AND** a verdict `ready` beside findings counts as not ready
 - **AND** the session fixes every instance its diff holds of a finding's pattern, not only the one cited
 
-#### Scenario: The acceptance check skipped
-- **WHEN** a round skipped it
+#### Scenario: A skipped check or an unasked removal
+- **WHEN** a round skipped the acceptance check
 - **THEN** it is not ready, or a question where it cannot be
-
-#### Scenario: An unasked removal
 - **WHEN** it removes an endpoint or version unasked
 - **THEN** it is a question, not a verdict
 

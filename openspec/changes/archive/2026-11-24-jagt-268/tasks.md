@@ -1,0 +1,1 @@
+- [x] `RepoDeparture.leaveWorkless`, `TaskState.canLose`, `MergedRequests`, `UnaffectedRepos`

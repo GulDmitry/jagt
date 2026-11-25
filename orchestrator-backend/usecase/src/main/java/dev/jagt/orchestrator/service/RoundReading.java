@@ -49,8 +49,8 @@ public class RoundReading {
   /**
    * A repository with no request is work nobody is reviewing, so the round cannot be called clean.
    */
-  private Optional<Refused> unshipped(String taskId, List<TaskRepo> repos) {
-    List<String> unshipped = mergedRequests.owingRequest(repos);
+  private Optional<Refused> unshipped(String taskId, TaskState task) {
+    List<String> unshipped = mergedRequests.owingRequest(task);
     return unshipped.isEmpty()
         ? Optional.empty()
         : Optional.of(
@@ -66,12 +66,15 @@ public class RoundReading {
 
   public Read read(String taskId) {
     mergedRequests.refresh(taskId);
-    List<TaskRepo> repos = stateService.task(taskId).map(TaskState::repos).orElse(List.of());
-    List<TaskRepo> reviewed = repos.stream().filter(TaskRepo::hasReviewRequest).toList();
+    Optional<TaskState> task = stateService.task(taskId);
+    List<TaskRepo> reviewed =
+        task.map(TaskState::repos).orElse(List.of()).stream()
+            .filter(TaskRepo::hasReviewRequest)
+            .toList();
     if (reviewed.isEmpty()) {
       return noRequest(taskId);
     }
-    Optional<Refused> unshipped = unshipped(taskId, repos);
+    Optional<Refused> unshipped = unshipped(taskId, task.orElseThrow());
     if (unshipped.isPresent()) {
       return unshipped.get();
     }

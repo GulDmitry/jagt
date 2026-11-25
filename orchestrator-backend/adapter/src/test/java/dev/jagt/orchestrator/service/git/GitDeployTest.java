@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -903,7 +904,7 @@ class GitDeployTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                stopped -> {}),
+                new NoWorktreeContainers()),
             worktreePaths);
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -922,7 +923,7 @@ class GitDeployTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> java.util.Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                stopped -> {}),
+                new NoWorktreeContainers()),
             worktreePaths);
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");

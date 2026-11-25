@@ -27,10 +27,17 @@ A request by the acting account itself SHALL be skipped. Design: [`roles/code-re
 - **THEN** nothing is listed, read or posted, and no failure is shown
 
 ### Requirement: A note is posted once and says who wrote it
-`NotePoster` SHALL be the one caller of `RequestNotes.post`. Each body SHALL open with the constant AI line asking for a thumbs up or down.
-Each note SHALL carry a hidden key, a digest of request, head, file, anchor and kind, read back from the host before every post.
-A finding naming a file and a line SHALL be posted on that line, and on the request where the host refuses the line.
+`NotePoster` SHALL be the one caller of `RequestNotes.post`.
+Each body SHALL open with the constant AI line, then the defect, its evidence as file:line and the fix.
+Each note SHALL carry a hidden key, read back before a post.
+A finding SHALL go on its diff line; with none, or if the host refuses it, one WARN names the cause and no note is posted.
+A finding an open thread of the role's own says SHALL post nothing.
 jagt SHALL never approve, merge, close or push through the role.
+
+#### Scenario: A note is posted
+- **WHEN** the role posts a note
+- **THEN** it opens with `AI note: 👍 helps, 👎 does not; reply with what is wrong.`
+- **AND** its text is at most three lines and 60 words naming file:line and the fix
 
 #### Scenario: A restart between a post and its ledger write
 - **WHEN** jagt restarts between a post and its ledger write
@@ -50,13 +57,21 @@ jagt SHALL never approve, merge, close or push through the role.
 
 #### Scenario: A finding names a file and a line
 - **WHEN** a finding quotes a line of a file the diff changes
-- **THEN** the note is posted on that line
+- **THEN** the note is posted on that line, its position sent as JSON where the host needs it
 
 #### Scenario: The host refuses the line
 - **WHEN** the host refuses a note's line
-- **THEN** the note is posted on the request instead
+- **THEN** no note is posted and one WARN names the cause
 
-### Requirement: Notes are on for a jagt task's request and opt-in for another's
+#### Scenario: A finding has no diff line
+- **WHEN** a finding names no line of the diff
+- **THEN** no note is posted and one WARN names the cause
+
+#### Scenario: A re-review after a new push
+- **WHEN** a finding is what an open thread of the role's own already says
+- **THEN** nothing new is posted
+
+### Requirement: A jagt task's request gets no note and another's is opt-in
 On a jagt task's request notes SHALL be on by default (`post.own`); on another person's request only with `post.others`, off by default.
 The settings SHALL live in `roles/code-reviewer/review.yml`, unset read as on, never in `jagt.yml`.
 
@@ -83,18 +98,6 @@ A failed listing SHALL remove no row and SHALL show the reach mark on the board'
 #### Scenario: A reviewed request is merged or closed
 - **WHEN** a reviewed request is merged or closed
 - **THEN** its judgement is dropped unposted and its row ends after one final read
-
-### Requirement: Review bots are answered, bounded per thread
-The role SHALL answer a review bot's note once per note id: fix, change nothing and say why, or ask. It SHALL answer a thread at most three times.
-A thread past the bound SHALL be exhausted until it resolves or the request closes. The role SHALL never answer its own newest note.
-
-#### Scenario: A bot answers a fourth time
-- **WHEN** a bot answers the role's answer a fourth time
-- **THEN** nothing is posted and the thread is exhausted until it resolves or the request closes
-
-#### Scenario: The newest note is the role's own
-- **WHEN** the newest note of a thread is the role's own
-- **THEN** nothing is posted
 
 ### Requirement: The session hears the role and the Master yields code review to it
 A note opening with the AI line SHALL await an answer whoever posted it, so the session's round relays it once.
@@ -127,7 +130,8 @@ A third-party read SHALL be charged to the request's ledger row.
 - **THEN** its checkout is gone
 
 ### Requirement: Likes, dislikes and resolutions are recorded as dated statistics per change
-`ReviewStats` SHALL append a line to `<data>/records/code-review.jsonl`, in UTC, only where a count or resolution changed, with the brief's digest.
+`ReviewStats` SHALL append a line to `<data>/records/code-review.jsonl`, in UTC,
+only where a count, resolution or reason changed, with the brief's digest.
 A note's resolution SHALL be the session's answer in `review_replies.md` where a block's heading links the note,
 else the host's: resolved is fixed, else unknown.
 
@@ -176,3 +180,21 @@ A host with no reactions SHALL answer cannot-say, never zero. A rating SHALL nev
 #### Scenario: A note on the request itself
 - **WHEN** a note is on the request, not on a line
 - **THEN** its likes and dislikes are read all the same
+
+### Requirement: A rating's reason is what a human replied
+A note's reason SHALL be the human replies under it with their reactions; a thumbs down with no reply SHALL be reason unknown.
+
+#### Scenario: A human replies under a note
+- **WHEN** a human replies under the role's note
+- **THEN** the reply and its reactions are recorded with the note's rating as its reason
+
+#### Scenario: A thumbs down with no reply
+- **WHEN** a note is thumbed down and no human replied
+- **THEN** its reason is recorded as unknown
+
+### Requirement: A note with the earlier AI line still counts
+A note opening with `AI review note: react with a thumbs up if it helps, a thumbs down if it does not.` SHALL count as the role's.
+
+#### Scenario: A note with the earlier AI line
+- **WHEN** a note posted with the earlier AI line is read
+- **THEN** it still counts as the role's note

@@ -66,4 +66,57 @@ class CodeReviewAnswerTest {
 
     assertThat(answer.problems(review.expected())).hasSize(1);
   }
+
+  @Test
+  void stopsNoteOverSixtyWordsOrNamingNoFileAndLine() {
+    CodeReviewCase review =
+        CodeReviewCases.parse(
+            """
+            case: a short note
+            description: add a search
+            diff: x
+            expect:
+              verdict: findings
+              findings:
+                - pattern: "inject"
+              note:
+                maxLines: 3
+                maxWords: 5
+            """);
+    CodeReviewAnswer answer =
+        CodeReviewAnswer.parse(
+            """
+            {"verdict": "findings", "findings": [{"file": "A.java", "issue": "SQL injection here",
+            "pattern": "inject", "severity": "blocking", "anchor": "a", "kind": "k"}]}
+            """);
+
+    assertThat(answer.problems(review.expected())).hasSize(1);
+  }
+
+  @Test
+  void passesNoteWithinTheLimitsNamingFileAndLine() {
+    CodeReviewCase review =
+        CodeReviewCases.parse(
+            """
+            case: a short note
+            description: add a search
+            diff: x
+            expect:
+              verdict: findings
+              findings:
+                - pattern: "inject"
+              note:
+                maxLines: 3
+                maxWords: 6
+            """);
+    CodeReviewAnswer answer =
+        CodeReviewAnswer.parse(
+            """
+            {"verdict": "findings", "findings": [{"file": "A.java",
+            "issue": "SQL injection at A.kt:21, bind it", "pattern": "inject",
+            "severity": "blocking", "anchor": "a", "kind": "k"}]}
+            """);
+
+    assertThat(answer.problems(review.expected())).isEmpty();
+  }
 }

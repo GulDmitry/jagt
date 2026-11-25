@@ -31,3 +31,8 @@ run_hook() {
   run run_hook reviewer-read-only jagt-implementer "rm -rf build"
   [ "$status" -eq 0 ]
 }
+
+@test "no guard strips quoted strings line by line, so a quote spanning lines hides nothing" {
+  run grep -lE 'sed .*\[\^\\?"\]\*' "$BATS_TEST_DIRNAME"/../*.sh
+  [ "$status" -eq 1 ]
+}

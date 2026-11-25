@@ -129,14 +129,21 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsThePrimaryRepositoryWhenTheTaskHoldsOthers() {
+  void movesThePrimaryToTheNextRepositoryWhenThePrimaryLeaves() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("web", "/wt-web")),
                 TaskStatus.IN_PROGRESS)
             .build();
 
-    assertThat(task.withoutRepo("api").projects()).containsExactly("api", "web");
+    assertThat(task.withoutRepo("api").project()).isEqualTo("web");
+  }
+
+  @Test
+  void keepsTheOnlyRepositoryOfTheTask() {
+    TaskState task = TaskState.builder("api", "/wt-api", TaskStatus.IN_PROGRESS).build();
+
+    assertThat(task.withoutRepo("api").projects()).containsExactly("api");
   }
 
   @Test

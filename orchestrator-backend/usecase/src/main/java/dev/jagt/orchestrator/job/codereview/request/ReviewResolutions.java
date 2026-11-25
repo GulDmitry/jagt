@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.codereview.request;
 
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.review.ReplyBlocks;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
@@ -27,8 +28,6 @@ public class ReviewResolutions {
       Pattern.compile("#(?:note_|discussion_r|issuecomment-|r)?(\\d+)\\b");
   private static final Pattern VERDICT = Pattern.compile("(?m)^(FIXED|NO CHANGE|QUESTION)\\b");
 
-  private static final Pattern BLOCK = Pattern.compile("(?ms)^## ([^\\n]*)\\n(.*?)(?=^## |\\z)");
-
   private final StateService stateService;
 
   /** The verdict per note number, as {@code fixed}, {@code no-change} or {@code question}. */
@@ -38,7 +37,7 @@ public class ReviewResolutions {
 
   static Map<String, String> parse(String text) {
     Map<String, String> answers = new LinkedHashMap<>();
-    Matcher blocks = BLOCK.matcher(text);
+    Matcher blocks = ReplyBlocks.BLOCK.matcher(text);
     while (blocks.find()) {
       Matcher link = LINK.matcher(blocks.group(1));
       Matcher verdict = VERDICT.matcher(blocks.group(2));

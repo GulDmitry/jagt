@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.gate.ToolGate;
 import dev.jagt.orchestrator.service.plan.PlanProbing;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
@@ -33,7 +34,7 @@ class VerificationTest {
       new Verification(
           config,
           processes,
-          new PlanProbing(processes, new ToolGate(List.of()), 8290),
+          new PlanProbing(processes, new ToolGate(List.of()), mock(WorktreeContainers.class), 8290),
           mock(WorktreeChanges.class));
   private final ConfigFile gradleProject =
       ConfigFile.defaults()

@@ -29,7 +29,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -345,7 +346,8 @@ class PasswordLoginRefusalOnTomcatTest {
         cookies.getCookieStore().getCookies().stream()
             .map(HttpCookie::toString)
             .collect(Collectors.joining("; "));
-    CompletableFuture<Integer> closed = new CompletableFuture<>();
+    AtomicInteger closedWith = new AtomicInteger();
+    CountDownLatch closed = new CountDownLatch(1);
 
     client
         .newWebSocketBuilder()
@@ -356,12 +358,15 @@ class PasswordLoginRefusalOnTomcatTest {
             new WebSocket.Listener() {
               @Override
               public CompletionStage<?> onClose(WebSocket socket, int code, String reason) {
-                closed.complete(code);
+                closedWith.set(code);
+                closed.countDown();
                 return CompletableFuture.completedFuture(null);
               }
             })
         .join();
 
-    assertThat(closed.get(5, TimeUnit.SECONDS)).isEqualTo(4404);
+    closed.await();
+
+    assertThat(closedWith).hasValue(4404);
   }
 }

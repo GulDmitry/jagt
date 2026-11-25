@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -75,8 +76,8 @@ class HumanWaitRecorderTest {
                 new Rounds(
                     config,
                     ignored -> false,
-                    () -> false,
-                    () -> false,
+                    () -> Facts.Reach.defaults(),
+                    unheld -> null,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 clock,
                 new Checkers(new TaskChart(Composition.builtIn()))));

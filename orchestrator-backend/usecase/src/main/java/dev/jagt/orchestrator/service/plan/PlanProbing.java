@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.plan;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.gate.ToolGate;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +35,7 @@ public class PlanProbing {
 
   private final Processes processes;
   private final ToolGate toolGate;
+  private final WorktreeContainers containers;
 
   @Value("${server.port:8290}")
   private final int boardPort;
@@ -58,7 +61,8 @@ public class PlanProbing {
   }
 
   private Probe run(Path worktree, Probe probe, List<String> command) {
-    Map<String, String> env = WorktreeHooks.gitEnvironment(worktree);
+    Map<String, String> env = new HashMap<>(WorktreeHooks.gitEnvironment(worktree));
+    env.putAll(containers.environment(worktree));
     try {
       Processes.Result result = processes.run(worktree, LIMIT, env, command);
       boolean passed = result.exitCode() == probe.exit();

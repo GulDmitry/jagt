@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.service.repo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -73,6 +75,55 @@ class MergedRequestsTest {
   }
 
   @Test
+  void primaryRepositoryHoldingNoWorkLeavesOnceAnotherHoldsRequest() {
+    TaskRepo api = TaskRepo.of("api", "/wt-api");
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/srv/api", "origin/main", "dev", List.of()));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder(
+                List.of(api, new TaskRepo("proj", "/wt", null, "http://mr/1")), TaskStatus.REVIEWED)
+            .build());
+
+    requests.refresh("ABC-42");
+
+    verify(departure).leaveWorkless("ABC-42", api, "it holds no work");
+  }
+
+  @Test
+  void repositoryHoldingWorkStaysWhereAnotherHoldsRequest() {
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/srv/api", "origin/main", "dev", List.of()));
+    when(inspection.hasUncommittedChanges(any(), any())).thenReturn(true);
+    state.putTask(
+        "ABC-42",
+        TaskState.builder(
+                List.of(
+                    TaskRepo.of("api", "/wt-api"),
+                    new TaskRepo("proj", "/wt", null, "http://mr/1")),
+                TaskStatus.REVIEWED)
+            .build());
+
+    requests.refresh("ABC-42");
+
+    verifyNoInteractions(departure);
+  }
+
+  @Test
+  void repositoryHoldingNoWorkStaysWhereNoRepositoryHoldsRequest() {
+    state.putTask(
+        "ABC-42",
+        TaskState.builder(
+                List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("proj", "/wt")),
+                TaskStatus.IN_PROGRESS)
+            .build());
+
+    requests.refresh("ABC-42");
+
+    verifyNoInteractions(departure);
+  }
+
+  @Test
   void requestStaysMergedWhereTheHostSaidSoAndGitSeesNoMergeCommit() {
     state.putTask("ABC-42", reviewed.withMergedByHost("proj"));
 
@@ -116,14 +167,39 @@ class MergedRequestsTest {
                                 .withCodeHost("none")
                                 .build(),
                         "docs", new ProjectConfig("/docs", "origin/main", "dev", List.of()))));
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/api", "origin/main", "dev", List.of()));
+    when(inspection.hasUncommittedChanges(any(), any())).thenReturn(true);
     List<String> owing =
         requests.owingRequest(
-            List.of(
-                TaskRepo.of("api", "/wt-api"),
-                TaskRepo.of("web", "/wt-web"),
-                new TaskRepo("docs", "/wt-docs", null, "http://mr/docs")));
+            TaskState.builder(
+                    List.of(
+                        TaskRepo.of("api", "/wt-api"),
+                        TaskRepo.of("web", "/wt-web"),
+                        new TaskRepo("docs", "/wt-docs", null, "http://mr/docs")),
+                    TaskStatus.CI_POLLING)
+                .build());
 
     assertThat(owing).containsExactly("api");
+  }
+
+  @Test
+  void owesNoRequestForHostedRepositoryHoldingNothingToShip() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(
+                    java.util.Map.of(
+                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
+    when(config.project("api"))
+        .thenReturn(new ProjectConfig("/api", "origin/main", "dev", List.of()));
+
+    List<String> owing =
+        requests.owingRequest(
+            TaskState.builder(List.of(TaskRepo.of("api", "/wt-api")), TaskStatus.CI_POLLING)
+                .build());
+
+    assertThat(owing).isEmpty();
   }
 
   @Test

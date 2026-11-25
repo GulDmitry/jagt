@@ -30,15 +30,20 @@ public class CodeReviewPanel {
   private final Assistants assistants;
   private final OrchestratorPaths paths;
   private final ReviewLedger ledger;
+  private final PreShipCoverage coverage;
 
   /** The brief's text the judgement reads by; blank where it is unreadable. */
   public String brief() {
     return new RoleFiles(paths, CodeReviewSettings.ROLE).text();
   }
 
-  /** Failed where the brief is unreadable or the read stopped; nothing else in it was read. */
+  /**
+   * Failed where the brief is unreadable or the read stopped; nothing else in it was read. A task's
+   * own read leaves out what the review before its ship raised.
+   */
   public Judgement review(Subject subject, RequestChange change, Path checkout, String model) {
-    return judged(subject, prompt(subject, change, checkout), checkout, model);
+    Judgement judged = judged(subject, prompt(subject, change, checkout), checkout, model);
+    return subject.own() ? coverage.unseen(subject.taskId(), judged) : judged;
   }
 
   /** The first finding's issue is the answer to the newest note of {@code thread}. */

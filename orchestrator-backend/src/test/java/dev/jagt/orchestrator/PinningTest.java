@@ -112,6 +112,15 @@ class PinningTest {
   }
 
   @Test
+  void scorecardRunsItsImageByDigestBecauseTheActionOnlyTakesFloatingTag() {
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/scorecard.yml"));
+
+    assertThat(workflow)
+        .doesNotContain("uses: ossf/scorecard-action")
+        .containsPattern("(?m)^\\s+ghcr\\.io/ossf/scorecard-action:\\S+@sha256:[0-9a-f]{64}$");
+  }
+
+  @Test
   void everyGitlabImageIsPinnedByDigest() {
     List<String> unpinned =
         SourceRoots.read(Path.of("../.gitlab-ci.yml"))

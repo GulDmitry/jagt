@@ -23,9 +23,10 @@ public class RoundRelay {
   private final StepRelay steps;
   private final CaseDoor door;
   private final SessionBrief sessionBrief;
+  private final ThreadAuthors authors;
 
   public SweepResult relay(
-      String taskId, String mrUrl, ReviewFacts round, String said, String tip) {
+      String taskId, RoundSource source, String mrUrl, ReviewFacts round, String said, String tip) {
     ReviewFacts r = stops.asking(taskId) ? round.withoutChecks() : round;
     Standing standing = steps.standing(taskId);
     String told = RoundRecord.orUnknown(r.pipeline().status());
@@ -44,7 +45,14 @@ public class RoundRelay {
       }
       checked = admission.status();
     }
-    String brief = RoundBrief.of(mrUrl, r, told, stops.sinceLast(taskId, r), sessionBrief);
+    String brief =
+        RoundBrief.of(
+            mrUrl,
+            r,
+            told,
+            stops.sinceLast(taskId, r),
+            authors.lines(taskId, source, mrUrl, r.discussion().threads()),
+            sessionBrief);
     return switch (stops.round(taskId, r, brief, tip)) {
       case STOPPED -> stopped(read, said);
       case UNCHANGED -> unchanged(read, said);

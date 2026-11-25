@@ -40,8 +40,7 @@ public class CodeReviewRound {
   private final NotePoster poster;
 
   public void run(Subject subject, Settings settings, String model) {
-    boolean may = subject.own() ? settings.postOwn() : settings.postOthers();
-    if (!may) {
+    if (subject.own() || !settings.postOthers()) {
       return;
     }
     Optional<LedgerRow> row = ledger.row(subject.url());
@@ -130,10 +129,18 @@ public class CodeReviewRound {
       }
       String key =
           NotePoster.digest(subject.url(), head, finding.file(), finding.anchor(), finding.kind());
+      String threadKey =
+          NotePoster.digest(subject.url(), finding.file(), finding.anchor(), finding.kind());
       int line = DiffAnchors.lineOf(change.diff(), finding.file(), finding.anchor());
       NotePoster.Outcome outcome =
           poster.post(
-              subject, head, key, text(finding), "", new NoteAnchor(finding.file(), line, head));
+              subject,
+              head,
+              key,
+              threadKey,
+              text(finding),
+              "",
+              new NoteAnchor(finding.file(), line, head));
       if (outcome == NotePoster.Outcome.FAILED || outcome == NotePoster.Outcome.DROPPED) {
         return false;
       }
@@ -141,7 +148,7 @@ public class CodeReviewRound {
     return true;
   }
 
-  private static String text(Finding finding) {
+  static String text(Finding finding) {
     return finding.file().isBlank()
         ? finding.issue()
         : "`" + finding.file() + "`: " + finding.issue();

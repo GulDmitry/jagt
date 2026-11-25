@@ -62,7 +62,8 @@ public record ReviewFacts(Request request, Pipeline pipeline, Discussion discuss
 
   /**
    * The threads whose newest note is by {@code account}, and does not open with {@link AiLine},
-   * moved to {@code awaitingReviewer}; blank moves none.
+   * moved to {@code awaitingReviewer}; blank moves none. A thread left open keeps only the notes
+   * after the newest one by {@code account}.
    */
   public ReviewFacts answeredBy(String account) {
     List<String> open = new ArrayList<>();
@@ -71,11 +72,33 @@ public record ReviewFacts(Request request, Pipeline pipeline, Discussion discuss
       if (newestAuthorIs(discussion.threads().get(i), account)) {
         answered.add(discussion.threads().get(i));
       } else {
-        open.add(discussion.threads().get(i));
+        open.add(afterAnswerBy(account, discussion.threads().get(i)));
       }
     }
     return new ReviewFacts(
         request, pipeline, discussion.withThreads(open).withAwaitingReviewer(answered));
+  }
+
+  private static String afterAnswerBy(String account, String thread) {
+    List<String> lines = thread.strip().lines().toList();
+    int answer = -1;
+    for (int i = 0; i < lines.size(); i++) {
+      if (authorIs(lines.get(i), account)) {
+        answer = i;
+      }
+    }
+    if (answer < 0) {
+      return thread;
+    }
+    List<String> kept = new ArrayList<>(answer > 0 ? lines.subList(0, 1) : List.of());
+    kept.addAll(lines.subList(answer + 1, lines.size()));
+    return String.join("\n", kept);
+  }
+
+  private static boolean authorIs(String note, String account) {
+    String who = normal(account);
+    int colon = note.indexOf(':');
+    return !who.isEmpty() && colon > 0 && normal(note.substring(0, colon)).equals(who);
   }
 
   private static boolean newestAuthorIs(String thread, String account) {

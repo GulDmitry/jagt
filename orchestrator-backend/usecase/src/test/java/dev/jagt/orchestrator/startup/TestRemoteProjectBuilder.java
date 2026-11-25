@@ -26,6 +26,6 @@ public record TestRemoteProjectBuilder(@Nullable String codeHost, @Nullable Stri
             List.of(),
             ProjectConfig.Review.NONE),
         new ProjectConfig.Verify(List.of(), null),
-        new ProjectConfig.Setup(List.of(), null));
+        new ProjectConfig.Setup(List.of(), null, List.of()));
   }
 }

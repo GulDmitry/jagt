@@ -81,8 +81,7 @@ class MasterPanelTest {
             reducer,
             event -> {});
     stored = new MasterReview(state);
-    panel =
-        new MasterPanel(reviews, briefs, quotes, stored, new RoleYields(configService, List.of()));
+    panel = new MasterPanel(reviews, briefs, quotes, stored, new RoleYields(configService));
     reviewPending =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     planPending = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
@@ -453,6 +452,33 @@ class MasterPanelTest {
 
     assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
     verify(reviews, never()).review(any(), any());
+  }
+
+  @Test
+  void leavesTheQuestionToTheHumanWhereTheTrackerCouldNotSayAboutNamedTicket() {
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
+    when(quotes.named("ABC-1", "Is ABC-7 closed?"))
+        .thenReturn(List.of(new NamedTickets.Fact("ABC-7", "", false)));
+
+    MasterPanel.Answer decision = panel.answer("ABC-1", inProgress, "Is ABC-7 closed?", act, false);
+
+    assertThat(decision)
+        .isEqualTo(new MasterPanel.Undecided("the tracker could not say about ABC-7"));
+    verify(reviews, never()).review(any(), any());
+  }
+
+  @Test
+  void givesTheMasterTheStatusJagtReadForNamedTicket() {
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
+    when(quotes.named("ABC-1", "Is ABC-7 closed?"))
+        .thenReturn(List.of(new NamedTickets.Fact("ABC-7", "Done", true)));
+
+    panel.answer("ABC-1", inProgress, "Is ABC-7 closed?", act, false);
+
+    ArgumentCaptor<RoundReviewer.Round> asked = ArgumentCaptor.captor();
+    verify(reviews).review(eq("ABC-1"), asked.capture());
+    assertThat(asked.getValue().prompt())
+        .contains("ABC-7: status \"Done\", at the stage that closes work: yes");
   }
 
   @Test

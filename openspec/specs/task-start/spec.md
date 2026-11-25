@@ -30,16 +30,21 @@ How a task starts: its branch and worktree, the plan gate, and what a start neve
 A task opened or reopened in `plan` mode, or with `agent.autoplan.enabled` on, SHALL hold its plan gate closed (`TaskState.planGate`): a session's
 write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused (`PlanFirst`). `approve-plan` at `PLAN_PENDING`, and the Master's
 `go` on a gate autoplan closed, SHALL open it and start the session.
+While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`, `SHIPPING` or `CI_POLLING`.
 
 #### Scenario: A source file before approval
 - **WHEN** a session in `plan` mode writes `src/Foo.java` before its plan is approved
 - **THEN** the write is refused with `plan first`, and `plan.md` and `task_visual.md` are still written
+- **WHEN** a session on a closed gate asks a question and the Master does not hold `plan`
+- **THEN** the question waits for the human and the Master writes no answer
 
 #### Scenario: A plan lists its files
 - **WHEN** a session plans first
 - **THEN** `plan.md` lists every file it will create after approval: spec delta, code, tests
 - **WHEN** a session writes a file through the shell before approval
-- **THEN** it is not refused ([guards](../../../docs/rules/guards.md))
+- **THEN** the write is not refused ([guards](../../../docs/rules/guards.md)), but its `REVIEW_PENDING` report and `ship` are, naming the plan
+- **WHEN** a review round is relayed to a task at `REVIEW_PENDING` whose gate is closed
+- **THEN** the gate opens and the session's writes are not refused as plan first
 
 #### Scenario: Approved
 - **WHEN** you press `approve-plan`, or the Master in `act` finds a plan holds
@@ -99,8 +104,6 @@ It SHALL say the plan's `## Repositories` names every project the task changes, 
 ### Requirement: An approved plan places the task
 `approve-plan` on a task with no repository SHALL cut a worktree per `[changed]` key of the plan's `## Repositories`, the first primary.
 The scratch folder SHALL be deleted after the state write; the session starts fresh in the primary and the task is `IN_PROGRESS`.
-A `[changed]` key `jagt.yml` lacks, or a typed base branch a named project lacks, SHALL cut nothing:
-the task stays `PLAN_PENDING` and the human's question names the keys and points at the add-project form.
 
 #### Scenario: Placed
 - **WHEN** you approve a plan listing `- [changed] api` and `- [changed] web`, both configured
@@ -185,9 +188,8 @@ A clone is fetched before a task is cut from it.
 
 ### Requirement: A project's setup command runs in every new worktree
 A project's `setupCommand`, an argv list, SHALL run once in every new worktree of that project.
-It runs after `worktree.copyGlobs` and before the session starts, with `{branch}` and `{worktree}` filled,
-within `setupMinutes` (20 where unset). A non-zero exit or the limit
-MUST fail the start naming the project, the exit and the output's tail; every cut is unwound and no session starts.
+It runs after `worktree.copyGlobs` and before the session starts, with `{branch}` and `{worktree}` filled, within `setupMinutes` (20 where unset).
+A non-zero exit or the limit MUST fail the start naming the project, the exit and the output's tail; every cut is unwound and no session starts.
 Unset, nothing runs.
 #### Scenario: A setup command
 - **WHEN** a project names `setupCommand` and a task starts in it
@@ -195,6 +197,3 @@ Unset, nothing runs.
 #### Scenario: A setup that fails
 - **WHEN** `setupCommand` exits non-zero or passes `setupMinutes`
 - **THEN** the start fails naming the project, the exit and the output's tail, and no session starts
-#### Scenario: No setup command
-- **WHEN** a project names no `setupCommand`
-- **THEN** a task starts as before

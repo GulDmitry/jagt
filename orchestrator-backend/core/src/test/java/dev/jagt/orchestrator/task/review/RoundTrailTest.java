@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.task.review;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.turn.StatusChange;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,30 @@ class RoundTrailTest {
 
     assertThat(trail.relayed("b")).isTrue();
     assertThat(trail.relayed("a")).isFalse();
+  }
+
+  @Test
+  void callsTheLastRoundUnfinishedWherePlanReportCameAfterIt() {
+    RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(10, 3, "", "a", ""));
+
+    assertThat(trail.divertedToPlan(List.of(new StatusChange(TaskStatus.PLAN_PENDING, 12, null))))
+        .isTrue();
+  }
+
+  @Test
+  void callsTheLastRoundUnfinishedWherePlanReportCameAtTheSameMoment() {
+    RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(10, 3, "", "a", ""));
+
+    assertThat(trail.divertedToPlan(List.of(new StatusChange(TaskStatus.PLAN_PENDING, 10, null))))
+        .isTrue();
+  }
+
+  @Test
+  void callsTheLastRoundDoneWhereThePlanReportCameBeforeIt() {
+    RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(10, 3, "", "a", ""));
+
+    assertThat(trail.divertedToPlan(List.of(new StatusChange(TaskStatus.PLAN_PENDING, 5, null))))
+        .isFalse();
   }
 
   @Test

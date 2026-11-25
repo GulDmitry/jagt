@@ -7,7 +7,7 @@ on [0162](0162-a-check-holds-for-all-code.md), [0180](0180-each-spheres-industry
 
 ## Status
 
-Accepted 2026-11-23, by the owner's order: a local green predicts a CI green; amended by [0236](0236-a-local-run-is-never-capped.md).
+Accepted 2026-11-23, by the owner's order; amended by 0236 and [0238](0238-every-linux-job-runs-through-one-script-online.md).
 
 ## Context
 

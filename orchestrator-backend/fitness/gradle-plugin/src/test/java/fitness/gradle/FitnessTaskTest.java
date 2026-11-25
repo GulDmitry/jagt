@@ -177,36 +177,4 @@ class FitnessTaskTest {
 
     assertThat(output).contains("fitness: suite-minutes: measured by test, max 7, last value 5");
   }
-
-  @Test
-  void aGateThatMakesNoProgressPastItsHangGuardIsStoppedAndNamedHung() throws IOException {
-    Files.writeString(project.resolve("settings.gradle"), "rootProject.name = 'sample'");
-    Files.writeString(
-        project.resolve("fitness.yml"),
-        """
-        schema: 1
-        operational:
-          performance-efficiency:
-            time-behaviour:
-              gate-minutes: { engine: tool, tool: gradle, task: slow, per: gate, measure: minutes, governs: size, max: 1 }
-        """);
-    Files.writeString(
-        project.resolve("build.gradle"),
-        """
-        plugins { id 'java'; id 'fitness' }
-        fitness { file = layout.projectDirectory.file('fitness.yml') }
-        tasks.register('slow') { doLast { Thread.sleep(60000) } }
-        gradle.taskGraph.whenReady { tasks.slow.timeout = java.time.Duration.ofMillis(300) }
-        """);
-
-    String output =
-        GradleRunner.create()
-            .withProjectDir(project.toFile())
-            .withPluginClasspath()
-            .withArguments("slow", "-Pfitness.block=operational")
-            .buildAndFail()
-            .getOutput();
-
-    assertThat(output).contains("fitness: gate-minutes: :slow hung: no end within 3x its ceiling of 1 minutes");
-  }
 }

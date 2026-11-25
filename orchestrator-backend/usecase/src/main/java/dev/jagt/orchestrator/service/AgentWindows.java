@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.session.SessionPhase;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
+import dev.jagt.orchestrator.service.reach.SessionVet;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
@@ -35,6 +37,7 @@ public class AgentWindows {
   private final ConfigService configService;
   private final StateService stateService;
   private final SessionHosting hosting;
+  private final SessionVet credentials;
 
   /**
    * Never pruned: a lock dropped while a writer holds it lets a second writer in, and an entry
@@ -162,6 +165,7 @@ public class AgentWindows {
       Path worktreePath,
       boolean planMode,
       @Nullable ModelTier at) {
+    refuseWhileCredentialFails(taskId);
     ConfigFile config = configService.load();
     String own = modelFor(worktreePath, config);
     ModelTier tier =
@@ -179,6 +183,13 @@ public class AgentWindows {
             planMode,
             tier == null ? own : tier.current());
     return session;
+  }
+
+  private void refuseWhileCredentialFails(String taskId) {
+    String failing = stateService.task(taskId).map(credentials::vet).orElse(null);
+    if (failing != null) {
+      throw Refusal.byState("no session starts: " + failing);
+    }
   }
 
   /** The notes' `next-model:` wins over `agent.model`; blank is the CLI's own default. */

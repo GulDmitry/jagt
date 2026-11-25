@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.repo;
 
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -32,19 +33,40 @@ public class RepoDeparture {
    * repository and one whose change is deployed stay, and this answers false.
    */
   public boolean leave(String taskId, TaskRepo repo, String cause) {
+    return depart(taskId, repo, cause, false);
+  }
+
+  /** As {@link #leave}, the primary included once no agent runs in its checkout. */
+  public boolean leaveWorkless(String taskId, TaskRepo repo, String cause) {
+    return depart(taskId, repo, cause, true);
+  }
+
+  private boolean depart(String taskId, TaskRepo repo, String cause, boolean primaryMayGo) {
     String project = Objects.requireNonNull(repo.project());
     TaskState task = stateService.task(taskId).orElse(null);
     if (task == null || !task.canLose(project) || task.work().landedIn(project)) {
       return false;
     }
+    boolean primary = task.isPrimary(project);
+    if (primary && (!primaryMayGo || agentRuns(taskId))) {
+      return false;
+    }
     Set<String> trustedOnlyByIt = worktrees.trustedOnlyBy(taskId, task, repo);
     stateService.reduce(
         taskId, (reducer, current) -> reducer.repoLeft(current, project, trustedOnlyByIt));
-    settle(taskId, repo, cause);
+    settle(taskId, repo, cause, !primary);
     return true;
   }
 
-  private void settle(String taskId, TaskRepo repo, String cause) {
+  private boolean agentRuns(String taskId) {
+    try {
+      return sessions.windowState(taskId) == SessionHost.WindowState.AGENT_RUNNING;
+    } catch (RuntimeException unknown) {
+      return true;
+    }
+  }
+
+  private void settle(String taskId, TaskRepo repo, String cause, boolean tellSession) {
     log.atInfo()
         .setMessage("repository left the task")
         .addKeyValue("task", taskId)
@@ -63,6 +85,12 @@ public class RepoDeparture {
           .addKeyValue("effect", "the repository is out of the task; its checkout stays on disk")
           .log();
     }
+    if (tellSession) {
+      tell(taskId, repo, cause);
+    }
+  }
+
+  private void tell(String taskId, TaskRepo repo, String cause) {
     try {
       sessions.relayUnder(
           taskId,

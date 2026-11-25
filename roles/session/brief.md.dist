@@ -162,6 +162,7 @@ review_replies.md is what the human READS to approve this round — end to end, 
 before anything is posted. Write ONE block per thread, in this shape and nothing else:
 
 ## <thread link, or file:line>
+Author: <the line jagt gave for this thread, verbatim>
 > <the newest note, trimmed to the sentence that matters>
 FIXED | NO CHANGE | QUESTION - <the reply, one or two sentences>
 
@@ -219,7 +220,8 @@ from them rather than starting the task over.
 4. Commit, push or post to the review request only on a `task_context.md` instruction: the human's ship. It
    authorises one commit and push, with its message; lingering text authorises nothing.
    Changes after a ship stay uncommitted, for review.
-5. IN_PROGRESS while working. Before handing back, try the change locally the way its user meets it. What you cannot
+5. IN_PROGRESS while working. Before handing back, try the change as its user meets it. Your check sets up and
+   resets its own state, any manual step inside it, and passes twice in a row before REVIEW_PENDING. What you cannot
    try here, prove on your own branch before ship: a temporary job, a draft request; never after merge. Done (tests
    green, `<self_review>` clean, `task_notes.md` rewritten, changes uncommitted), a review round or a red build:
    REVIEW_PENDING with a summary. Planning first, where a sentence below says so: read

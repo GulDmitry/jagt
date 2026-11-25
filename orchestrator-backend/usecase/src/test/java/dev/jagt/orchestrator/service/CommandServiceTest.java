@@ -12,6 +12,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.FlowEngine;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.view.Refusal;
@@ -40,19 +42,32 @@ class CommandServiceTest {
   @Test
   void handsBackWhateverTheFlowSaidWithoutRewordingIt() {
     when(door.presses("ABC-1", TaskAction.SHIP)).thenReturn(true);
-    when(flow.run("ABC-1", TaskAction.SHIP, null)).thenReturn("ship ABC-1: approval relayed");
+    when(flow.press("ABC-1", TaskAction.SHIP, null))
+        .thenReturn(new Pressed("ship ABC-1: approval relayed", Outcome.Kind.OK));
 
     assertThat(commands.execute("ABC-1", TaskAction.SHIP))
         .isEqualTo("ship ABC-1: approval relayed");
   }
 
   @Test
+  void handsBackHowTheWorkEndedBesideWhatTheFlowSaid() {
+    when(door.presses("ABC-1", TaskAction.SWEEP)).thenReturn(true);
+    when(flow.press("ABC-1", TaskAction.SWEEP, null))
+        .thenReturn(new Pressed("sweep ABC-1: unchanged", Outcome.Kind.NOTHING));
+
+    assertThat(commands.press("ABC-1", TaskAction.SWEEP, null).kind())
+        .isEqualTo(Outcome.Kind.NOTHING);
+  }
+
+  @Test
   void handsTheProjectHumanTypedToTheFlowAlongWithTheAction() {
     when(door.presses("ABC-1", TaskAction.ADD_REPO)).thenReturn(true);
+    when(flow.press("ABC-1", TaskAction.ADD_REPO, "beta"))
+        .thenReturn(new Pressed("added", Outcome.Kind.OK));
 
     commands.execute("ABC-1", TaskAction.ADD_REPO, "beta");
 
-    verify(flow).run("ABC-1", TaskAction.ADD_REPO, "beta");
+    verify(flow).press("ABC-1", TaskAction.ADD_REPO, "beta");
   }
 
   @Test
@@ -75,16 +90,18 @@ class CommandServiceTest {
   @Test
   void passesAnAliasDownUntouchedSoOnlyOnePlaceResolvesIt() {
     when(door.presses("a1", TaskAction.FOCUS)).thenReturn(true);
+    when(flow.press("a1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("focused", Outcome.Kind.OK));
 
     commands.execute("a1", TaskAction.FOCUS);
 
-    verify(flow).run("a1", TaskAction.FOCUS, null);
+    verify(flow).press("a1", TaskAction.FOCUS, null);
   }
 
   @Test
   void letsRefusalReachTheCallerWithTheCodeItMustActOn() {
     when(door.presses("ABC-1", TaskAction.DEPLOY)).thenReturn(true);
-    when(flow.run("ABC-1", TaskAction.DEPLOY, null))
+    when(flow.press("ABC-1", TaskAction.DEPLOY, null))
         .thenThrow(
             new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE,
@@ -138,7 +155,7 @@ class CommandServiceTest {
 
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 
-    verify(flow, never()).run("ABC-1", TaskAction.DEPLOY);
+    verify(flow, never()).press("ABC-1", TaskAction.DEPLOY, null);
     assertThat(Files.readString(root.resolve("records/misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
@@ -156,6 +173,6 @@ class CommandServiceTest {
 
     assertThat(said)
         .isEqualTo("ship ABC-1: no arbiter case allows it at this status; see misses.jsonl");
-    verify(flow, never()).run("ABC-1", TaskAction.SHIP);
+    verify(flow, never()).press("ABC-1", TaskAction.SHIP, null);
   }
 }

@@ -315,6 +315,8 @@ tasks.register('containerUp', Exec) {
     dependsOn tasks.named('bootJar')
     commandLine file('scripts/container-suite.sh').absolutePath, 'up'
     finalizedBy 'containerDown'
+    // A new network fails every request Chromium has in flight with ERR_NETWORK_CHANGED.
+    mustRunAfter 'boardTest'
 }
 
 tasks.register('containerDown', Exec) {

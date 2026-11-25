@@ -49,7 +49,7 @@ public class DeployRunner {
 
   public Outcome advance(String taskId) {
     TaskState task = requireTask(taskId);
-    List<Target> targets = deployTargets.all(task);
+    List<Target> targets = deployTargets.deployable(task);
     int from = Objects.requireNonNull(task.work().deployment()).at();
     Landing landing = new Landing();
     for (int i = from; i < targets.size(); i++) {
@@ -241,15 +241,16 @@ public class DeployRunner {
     List<Deployment.Target> recorded = Objects.requireNonNull(task.work().deployment()).targets();
     List<String> earlier =
         targets.subList(0, from).stream()
-            .map(target ->
-                target.project()
-                    + " ("
-                    + GitDeploy.shortSha(
-                        recorded
-                            .get(task.work().deployment().indexOf(target.project()))
-                            .landing()
-                            .merge())
-                    + ")")
+            .map(target -> {
+              String merge =
+                  recorded
+                      .get(task.work().deployment().indexOf(target.project()))
+                      .landing()
+                      .merge();
+              return merge == null
+                  ? target.project()
+                  : target.project() + " (" + GitDeploy.shortSha(merge) + ")";
+            })
             .toList();
     String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
     String idle = nothingToDo.isEmpty() ? "" : ", nothing to deploy in " + names(nothingToDo);

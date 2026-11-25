@@ -81,4 +81,13 @@ class ServerStarterTest {
 
     assertThat(server).containsPattern("(?m)^    acceptance:\\n      enabled: true\\b");
   }
+
+  @Test
+  void theServerStarterLetsTheMasterReplyToPeopleWhereTheDesktopDoesNot() {
+    String server = SourceRoots.read(SERVER);
+    String desktop = SourceRoots.read(DESKTOP);
+
+    assertThat(server).containsPattern("(?m)^  codeReview:\\n    repliesToPeopleUnasked: true\\b");
+    assertThat(desktop).containsPattern("(?m)^    repliesToPeopleUnasked: false\\b");
+  }
 }

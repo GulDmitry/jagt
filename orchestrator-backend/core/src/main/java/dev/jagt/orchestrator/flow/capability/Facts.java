@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import lombok.With;
+import org.jspecify.annotations.Nullable;
 
 /** What a rule may ask about a task besides its status. */
 @With
@@ -44,10 +45,14 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
    */
   @With
   public record Hold(
-      boolean stopped, boolean stopIsTheArbiters, boolean tierAbove, BooleanSupplier agentLive) {
+      boolean stopped,
+      boolean stopIsTheArbiters,
+      boolean tierAbove,
+      boolean planClosed,
+      BooleanSupplier agentLive) {
 
     public static Hold defaults() {
-      return new Hold(false, false, false, () -> false);
+      return new Hold(false, false, false, false, () -> false);
     }
   }
 
@@ -56,19 +61,23 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
       boolean gitStateChanged,
       boolean repoRequested,
       boolean severalRepos,
-      Supplier<Optional<String>> distrust) {
+      Supplier<Optional<String>> distrust,
+      Supplier<Optional<String>> findingsOpen) {
 
     public static Workspace defaults() {
-      return new Workspace(false, false, false, Optional::empty);
+      return new Workspace(false, false, false, Optional::empty, Optional::empty);
     }
   }
 
-  /** What the configuration lets jagt offer, whatever the task is. */
+  /**
+   * What the configuration lets jagt offer, whatever the task is; {@code sessionHeld} is why the
+   * task's session cannot start, null where nothing holds it.
+   */
   @With
-  public record Reach(boolean scenarios, boolean shellEscape) {
+  public record Reach(boolean scenarios, boolean shellEscape, @Nullable String sessionHeld) {
 
     public static Reach defaults() {
-      return new Reach(false, false);
+      return new Reach(false, false, null);
     }
   }
 
@@ -110,6 +119,7 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
         Hold.defaults()
             .withStopped(task.work().stopped())
             .withTierAbove(tierAbove(task))
+            .withPlanClosed(task.gate().planGate().closed())
             .withStopIsTheArbiters(StopHold.mayBeLifted(task) && !StopHold.asked(task)),
         Workspace.defaults()
             .withGitStateChanged(task.gate().gitStateChanged())

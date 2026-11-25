@@ -47,6 +47,11 @@ run_cmd() {
   [ "$status" -eq 0 ]
 }
 
+@test "a multi-line quoted argument naming git push passes" {
+  run run_cmd $'backlog task edit ABC-42 --notes "State: x\nNext: run the gate, exit 0; git push origin release\nDecided: none"'
+  [ "$status" -eq 0 ]
+}
+
 @test "a push from a hotfix branch without a local green is refused" {
   git checkout -q -b hotfix/abc-42
   run run_cmd "git push -u origin hotfix/abc-42"

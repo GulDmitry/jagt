@@ -35,6 +35,8 @@ illegible. A hex outside `:root` is a bug, but the translucent blacks (four shad
 - status chip — `.status`: the state, its age inside it. `.status.live` green: the work is on a shared branch.
 - green button — `button.again`, a ring on the primary one and a border otherwise: this verb ran and what it
   did is live, so pressing repeats it.
+- dashed muted button — `button.quiet`: this verb was pressed and changed nothing (a round unchanged or still waiting); ends when the
+  card's state moves or the verb is pressed again.
 - dotted underline — `a.id`, `a.mr-age`: the text opens something.
 - 9px dot — `.checks.red` / `.checks.green` filled: a verdict is in. `.checks.running` hollow ring, carrying
   the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too, or a retry pending. The ring says it,
@@ -55,7 +57,7 @@ illegible. A hex outside `:root` is a bug, but the translucent blacks (four shad
 - `.detail.problem` in `--danger` / `.detail.you` in `--you` — the card's own line: broken, your move.
 - `.waiting` pill on `--you-bg`, in the header — how many cards interrupt you.
 - `button.chip.log` — a running model role: its log in the pane, `.on` in `--accent` while open; replaces the tmux `master` window.
-- `.chip.bad` in `--danger` — a job failed, the backend is unreachable, or jagt cannot reach a code host or the assistant.
+- `.chip.bad` in `--danger` — a job failed, the backend is unreachable, or jagt cannot reach a code host, the assistant or a project's credential.
 - `td.last.failed` in `--danger` — a job's last run failed; its dot, and a path check's, are `.checks` as above.
 - toast edge, 3px — `.toast` `--ok`, `.toast.error` `--danger`: the verb ran, or was refused.
 - a verb's key drawn after its name (`data-key`), and `button.apart` muted at the row's end until hovered.
@@ -85,3 +87,5 @@ is not depth: the 2px `--ok` ring on a primary deploy button.
 **No build step** (AGENTS.md): every mark is a border, a background or a character in the jar.
 A library is a vendored file the jar serves as published, pinned by `BoardAssetsTest`
 ([0046](../decisions/0046-the-board-renders-preact-components-with-no-build.md)).
+
+**A chosen value is never marked by colour alone**: the gear's and the settings' radios wear a check glyph (✓) and `aria-checked`.

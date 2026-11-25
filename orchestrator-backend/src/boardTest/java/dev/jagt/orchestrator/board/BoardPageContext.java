@@ -28,7 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -147,8 +147,6 @@ abstract class BoardPageContext {
     try {
       Path created = Files.createTempDirectory("board-root");
       nameTheProjectsTheBoardOffers(created);
-      Runtime.getRuntime()
-          .addShutdownHook(new Thread(() -> FileSystemUtils.deleteRecursively(created.toFile())));
       return created;
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -227,10 +225,10 @@ abstract class BoardPageContext {
         AriaRole.BUTTON, new Page.GetByRoleOptions().setName(name).setExact(true));
   }
 
-  CompletableFuture<String> dismissedDialogMessage(Page page) {
-    CompletableFuture<String> asked = new CompletableFuture<>();
+  AtomicReference<String> dismissedDialogMessage(Page page) {
+    AtomicReference<String> asked = new AtomicReference<>();
     page.onDialog(dialog -> {
-      asked.complete(dialog.message());
+      asked.set(dialog.message());
       dialog.dismiss();
     });
     return asked;

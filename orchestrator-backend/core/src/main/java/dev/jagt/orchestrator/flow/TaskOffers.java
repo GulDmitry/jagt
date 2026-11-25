@@ -85,6 +85,10 @@ final class TaskOffers {
 
   private static final DataId<Fact> STOP_HELD = new DataId<>("stop held", Fact.class);
 
+  private static final DataId<Fact> FINDINGS_HELD = new DataId<>("findings held", Fact.class);
+
+  private static final DataId<Fact> PLAN_HELD = new DataId<>("plan held", Fact.class);
+
   private record Need(DataId<Fact> region, Fact is) {}
 
   /** What only a press reads: the sentence it is declined with, empty where it may go on. */
@@ -109,6 +113,22 @@ final class TaskOffers {
                       ? Optional.of("every request is already merged — nothing to ship")
                       : Optional.empty(),
               true),
+          new Press(
+              PLAN_HELD,
+              EnumSet.of(TaskAction.SHIP),
+              facts ->
+                  facts.facts().hold().planClosed()
+                      ? Optional.of("the plan is not approved — approve it before shipping")
+                      : Optional.empty(),
+              false),
+          new Press(
+              FINDINGS_HELD,
+              EnumSet.of(TaskAction.SHIP),
+              facts ->
+                  facts.facts().delivery().hasReviewRequest()
+                      ? Optional.empty()
+                      : facts.facts().workspace().findingsOpen().get(),
+              false),
           new Press(
               STOP_HELD,
               EnumSet.of(TaskAction.SHIP, TaskAction.DEPLOY),

@@ -21,9 +21,21 @@ function retry() {
   state.retryIn = Math.min(state.retryIn * 2, 30000);
 }
 
+// The server's beat interval until its first beat says it: a connect that never answers is retried too.
+const FIRST_BEAT = 20000;
+
 export function listen() {
   const events = new EventSource("/api/events");
   let silence = 0;
+  const watch = (/** @type {number} */ interval) => {
+    clearTimeout(silence);
+    silence = setTimeout(() => {
+      events.close();
+      connected(false);
+      retry();
+    }, interval * 2.5);
+  };
+  watch(FIRST_BEAT);
   events.addEventListener("open", (event) => {
     if (event instanceof MessageEvent) {
       if (state.servedBy && state.servedBy !== event.data)
@@ -37,17 +49,7 @@ export function listen() {
     readBoard();
   });
   // A connection a sleeping laptop dropped stays open to the page: two missed beats are what says it is gone.
-  events.addEventListener("beat", (beat) => {
-    clearTimeout(silence);
-    silence = setTimeout(
-      () => {
-        events.close();
-        connected(false);
-        retry();
-      },
-      Number(beat.data) * 2.5,
-    );
-  });
+  events.addEventListener("beat", (beat) => watch(Number(beat.data)));
   events.addEventListener("changed", () => {
     tabs.forget();
     readBoard();
@@ -59,8 +61,10 @@ export function listen() {
   });
   // A refused connect is final for an EventSource; only a new one tries again.
   events.onerror = () => {
-    clearTimeout(silence);
     connected(false);
-    if (events.readyState === EventSource.CLOSED) retry();
+    if (events.readyState === EventSource.CLOSED) {
+      clearTimeout(silence);
+      retry();
+    } else watch(FIRST_BEAT);
   };
 }

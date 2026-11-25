@@ -17,6 +17,6 @@ public record TestClonedProjectBuilder(String url, String path) {
         new ProjectConfig.Branches("origin/main", null, null),
         ProjectConfig.CodeHost.defaults(),
         new ProjectConfig.Verify(List.of(), null),
-        new ProjectConfig.Setup(List.of(), null));
+        new ProjectConfig.Setup(List.of(), null, List.of()));
   }
 }

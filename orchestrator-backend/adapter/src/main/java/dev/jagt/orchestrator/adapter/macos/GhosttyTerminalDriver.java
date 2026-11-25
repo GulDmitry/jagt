@@ -88,7 +88,9 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
               + string(dedicatedTitle)
               + "\n"
               + "else\n"
+              + "set priorTab to selected tab of hostWindow\n"
               + "set newTab to new tab in hostWindow with configuration cfg\n"
+              + "select tab priorTab\n"
               + "set name override of newTab to "
               + string(dedicatedTitle)
               + "\n"

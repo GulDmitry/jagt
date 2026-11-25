@@ -10,6 +10,8 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.StateService;
@@ -21,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -37,8 +40,8 @@ class BoardReportsTest extends BoardPageContext {
   @Test
   void theLogButtonKeepsItsNameAndCarriesTheLastMessageInItsHover() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.FOCUS, null))
-        .thenReturn("Focused ABC-1 — its window is in front.");
+    when(commands.press("ABC-1", TaskAction.FOCUS, null))
+        .thenReturn(new Pressed("Focused ABC-1 — its window is in front.", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     button(page, "Focus").click();
@@ -264,8 +267,7 @@ class BoardReportsTest extends BoardPageContext {
     Page page = openLiveBoard();
     ask(page, "replies a19");
     assertThat(page.locator("#report-body")).containsText("Renamed it.");
-    List<Runnable> answers = new java.util.concurrent.CopyOnWriteArrayList<>();
-    List<String> bodies = new java.util.concurrent.CopyOnWriteArrayList<>();
+    AtomicReference<Runnable> heldOlderAnswer = new AtomicReference<>();
     page.route(
         "**/api/commands/replies**",
         route -> {
@@ -276,8 +278,12 @@ class BoardReportsTest extends BoardPageContext {
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
-          bodies.add(read);
-          answers.add(() -> route.fulfill(new Route.FulfillOptions().setBody(read)));
+          Runnable answer = () -> route.fulfill(new Route.FulfillOptions().setBody(read));
+          if (read.contains("The older read.") && heldOlderAnswer.get() == null) {
+            heldOlderAnswer.set(answer);
+          } else {
+            answer.run();
+          }
         });
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The older read.\n").build();
     state.putTask(
@@ -286,7 +292,7 @@ class BoardReportsTest extends BoardPageContext {
             .task("ABC-19")
             .orElseThrow()
             .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis()));
-    page.waitForCondition(() -> bodies.stream().anyMatch(body -> body.contains("The older read.")));
+    page.waitForCondition(() -> heldOlderAnswer.get() != null);
     replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The newer read.\n").build();
     state.putTask(
         "ABC-19",
@@ -294,12 +300,9 @@ class BoardReportsTest extends BoardPageContext {
             .task("ABC-19")
             .orElseThrow()
             .withStatus(TaskStatus.REVIEW_PENDING, "newer", System.currentTimeMillis()));
-    page.waitForCondition(() -> bodies.stream().anyMatch(body -> body.contains("The newer read.")));
-    int newest = answers.size() - 1;
-    answers.get(newest).run();
     assertThat(page.locator("#report-body")).containsText("The newer read.");
 
-    page.waitForRequestFinished(() -> answers.subList(0, newest).forEach(Runnable::run));
+    page.waitForRequestFinished(() -> heldOlderAnswer.get().run());
     page.evaluate("() => new Promise(done => requestAnimationFrame(() => done()))");
 
     org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())

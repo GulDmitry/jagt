@@ -42,6 +42,20 @@ public class DeployTargets {
     return targets;
   }
 
+  /** The repositories a deploy lands in: those naming a deploy branch. */
+  public List<Target> deployable(TaskState task) {
+    return all(task).stream().filter(DeployTargets::hasDeployBranch).toList();
+  }
+
+  /** Those a deploy passes over because no deploy branch is configured. */
+  public List<Target> skipped(TaskState task) {
+    return all(task).stream().filter(target -> !hasDeployBranch(target)).toList();
+  }
+
+  private static boolean hasDeployBranch(Target target) {
+    return !target.deployBranch().isBlank();
+  }
+
   /**
    * The repositories an undo has something to take out, and ONLY those: a repository that never
    * landed must not stand between a human and the merge that is live, whatever became of its

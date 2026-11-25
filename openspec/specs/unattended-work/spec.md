@@ -8,7 +8,8 @@ What jagt does unasked: the auto-review poll, its cadence, and every other job i
 
 ### Requirement: The auto-review poll only reads and drafts
 The poll (`AutoReviewScheduler` → `ReviewSweepService`) SHALL only read and draft: threads relayed, the agent fixing locally into
-`review_replies.md`, nothing posted without a human `ship`, the diff and drafts left for `code <alias>`. Code review is never fully automated.
+`review_replies.md`, the diff and drafts left for `code <alias>`. A reply reaches the host only by a ship: the human's, or the Master's
+in `act` where `codeReview.repliesToPeopleUnasked` is `true`, as the server starter sets it (P3 and S1 of [review-actors](../review-actors/spec.md)).
 Rounds: [review](../review/spec.md).
 
 #### Scenario: Sweep by hand

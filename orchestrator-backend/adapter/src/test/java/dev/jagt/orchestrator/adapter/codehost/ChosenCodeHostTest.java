@@ -128,7 +128,7 @@ class ChosenCodeHostTest {
                             new ProjectConfig.Branches("main", "dev", "none"),
                             ProjectConfig.CodeHost.defaults(),
                             new ProjectConfig.Verify(List.of(), null),
-                            new ProjectConfig.Setup(List.of(), null)))));
+                            new ProjectConfig.Setup(List.of(), null, List.of())))));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", "", "0123abc");
 

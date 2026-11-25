@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.eval;
 
 import dev.jagt.orchestrator.eval.CodeReviewCase.Expected;
 import dev.jagt.orchestrator.eval.CodeReviewCase.Finding;
+import dev.jagt.orchestrator.eval.CodeReviewCase.Note;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,7 +41,9 @@ public record CodeReviewAnswer(List<Seen> findings) {
   }
 
   public List<String> problems(Expected expected) {
-    return Stream.concat(stopping(expected), unmatched(expected)).toList();
+    return Stream.of(stopping(expected), unmatched(expected), oversized(expected))
+        .flatMap(problems -> problems)
+        .toList();
   }
 
   private Stream<String> stopping(Expected expected) {
@@ -64,6 +67,22 @@ public record CodeReviewAnswer(List<Seen> findings) {
                 + wanted.pattern()
                 + ", saw "
                 + findings);
+  }
+
+  private Stream<String> oversized(Expected expected) {
+    Note note = expected.note();
+    if (note.maxWords() == 0) {
+      return Stream.empty();
+    }
+    return findings.stream()
+        .filter(seen -> !seen.severity().equals("noise"))
+        .filter(seen -> !seen.issue().matches("(?s).*\\S:\\d+.*") || tooLong(seen.issue(), note))
+        .map(seen -> "a note breaks " + note + " or names no file:line: " + seen.issue());
+  }
+
+  private static boolean tooLong(String issue, Note note) {
+    return issue.strip().lines().count() > note.maxLines()
+        || issue.strip().split("\\s+").length > note.maxWords();
   }
 
   private static boolean matches(Finding wanted, Seen seen) {

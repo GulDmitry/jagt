@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import static dev.jagt.orchestrator.flow.ChartRegions.LIFECYCLE;
+import static dev.jagt.orchestrator.flow.ChartRegions.PLAN;
 import static dev.jagt.orchestrator.flow.StatusSets.BEFORE_THE_CODE;
 import static dev.jagt.orchestrator.flow.StatusSets.BEFORE_THE_VERDICT;
 import static dev.jagt.orchestrator.flow.StatusSets.HELD;
@@ -23,6 +24,8 @@ import static dev.jagt.orchestrator.task.TaskStatus.VERIFYING;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.statechart.Guard;
 import dev.jagt.statechart.StatechartBuilder;
 import dev.jagt.statechart.TransitionBuilder;
 import java.util.EnumSet;
@@ -33,6 +36,12 @@ import java.util.function.Predicate;
  * The lifecycle region's edges: what each outcome, report, read and verification does to a status.
  */
 final class LifecycleEdges {
+
+  private static final Set<TaskStatus> PAST_THE_PLAN =
+      EnumSet.of(SHIPPING, REVIEW_PENDING, CI_POLLING);
+
+  private static final Guard<TaskMove> PLAN_IS_OPEN =
+      (active, move) -> active.state(PLAN) == PlanGate.OPEN;
 
   private LifecycleEdges() {}
 
@@ -105,10 +114,17 @@ final class LifecycleEdges {
     for (TaskStatus to : REPORTED) {
       Set<TaskStatus> free = EnumSet.noneOf(TaskStatus.class);
       OPEN.stream().filter(from -> mayReport(from, to) && !HELD.contains(from)).forEach(free::add);
+      Guard<TaskMove> open = PAST_THE_PLAN.contains(to) ? PLAN_IS_OPEN : (active, move) -> true;
       if (to == REVIEW_PENDING) {
-        edges(chart, free, "report " + to + " owing verification", reportOf(to, true), VERIFYING);
+        edges(
+            chart,
+            free,
+            "report " + to + " owing verification",
+            reportOf(to, true),
+            open,
+            VERIFYING);
       }
-      edges(chart, free, "report " + to, reportOf(to, false), to);
+      edges(chart, free, "report " + to, reportOf(to, false), open, to);
       HELD.stream()
           .filter(held -> mayReport(held, to))
           .forEach(held -> edge(chart, held, "report " + to, reportOf(to, false), held));
@@ -133,8 +149,22 @@ final class LifecycleEdges {
       String label,
       Predicate<TaskMove> matches,
       TaskStatus to) {
+    edges(chart, from, label, matches, (active, move) -> true, to);
+  }
+
+  private static void edges(
+      StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
+      Set<TaskStatus> from,
+      String label,
+      Predicate<TaskMove> matches,
+      Guard<TaskMove> when,
+      TaskStatus to) {
     if (!from.isEmpty()) {
-      chart.onMatching(LIFECYCLE, from, label, matches).emit(new TaskEffect.Lands(to)).to(to);
+      chart
+          .onMatching(LIFECYCLE, from, label, matches)
+          .when(when)
+          .emit(new TaskEffect.Lands(to))
+          .to(to);
     }
   }
 

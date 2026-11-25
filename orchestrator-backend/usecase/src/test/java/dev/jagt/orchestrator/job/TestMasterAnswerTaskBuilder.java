@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
@@ -12,11 +13,12 @@ public record TestMasterAnswerTaskBuilder(
     @Nullable String message,
     AgentReport report,
     long lastActiveTimestamp,
-    @Nullable String repoRequest) {
+    @Nullable String repoRequest,
+    PlanGate planGate) {
 
   public static TestMasterAnswerTaskBuilder askingTask() {
     return new TestMasterAnswerTaskBuilder(
-        TaskStatus.IN_PROGRESS, "keep v2?", AgentReport.QUESTION, 0, null);
+        TaskStatus.IN_PROGRESS, "keep v2?", AgentReport.QUESTION, 0, null, PlanGate.OPEN);
   }
 
   public TaskState build() {
@@ -25,6 +27,7 @@ public record TestMasterAnswerTaskBuilder(
         .message(message)
         .report(report)
         .repoRequest(repoRequest)
+        .planGate(planGate)
         .build();
   }
 }

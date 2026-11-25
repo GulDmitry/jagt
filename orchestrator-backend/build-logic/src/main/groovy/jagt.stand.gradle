@@ -66,6 +66,8 @@ tasks.register('standTest', Test) {
     }
     doFirst { standReport.delete() }
     testLogging { showStandardStreams = true; exceptionFormat = 'full' }
+    // A run proves the machine, which no cache key holds: a restored result would be green with nothing run.
+    outputs.cacheIf { false }
     outputs.upToDateWhen { false }
     finalizedBy 'standCleanup', 'standReport'
 }

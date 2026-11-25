@@ -2,14 +2,12 @@ package dev.jagt.orchestrator.service.review;
 
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
-import dev.jagt.orchestrator.port.reach.ScenarioReach;
-import dev.jagt.orchestrator.port.reach.ShellEscapeReach;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.reach.SessionHold;
 import dev.jagt.orchestrator.service.stop.PhaseProfiles;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +20,8 @@ public class Rounds implements PhaseProfiles {
 
   private final ConfigService configService;
   private final RequestlessShip requestless;
-  private final ScenarioReach scenarios;
-  private final ShellEscapeReach shellEscape;
+  private final ReachOffers offers;
+  private final SessionHold hold;
   private final Checkers checkers;
 
   public RoundState of(TaskState task) {
@@ -46,10 +44,7 @@ public class Rounds implements PhaseProfiles {
             FlowRules.readByTheArbiter(task.standing().status()) && arbiter.running())
         .withCheckers(checkers.of(task))
         .withRequestless(requestless.stands(task))
-        .withReach(
-            Facts.Reach.defaults()
-                .withScenarios(scenarios.ready())
-                .withShellEscape(shellEscape.ready()));
+        .withReach(offers.facts().withSessionHeld(hold.held(task)));
   }
 
   @Override

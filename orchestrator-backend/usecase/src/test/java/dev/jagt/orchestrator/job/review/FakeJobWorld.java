@@ -10,8 +10,8 @@ import static dev.jagt.orchestrator.job.review.TestYourMoveJobBuilder.yourMoveJo
 import static dev.jagt.orchestrator.notify.TestPointWatchBuilder.pointWatch;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
+import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
@@ -35,10 +36,10 @@ import dev.jagt.orchestrator.notify.NextMove;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.notify.PointWatch;
 import dev.jagt.orchestrator.notify.Routes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentWindows;
 import dev.jagt.orchestrator.service.CarriedBlock;
-import dev.jagt.orchestrator.service.CodeReviewSettings;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.FreshStarts;
@@ -60,6 +61,7 @@ import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.service.master.NamedTickets;
 import dev.jagt.orchestrator.service.master.RoleYields;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
@@ -97,7 +99,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -164,7 +165,7 @@ public final class FakeJobWorld implements AutoCloseable {
   private final CommandService commands;
   private int reviewed;
   private int edits;
-  private final ScheduledExecutorService retries = Executors.newSingleThreadScheduledExecutor();
+  private final ScheduledExecutorService retries = mock(ScheduledExecutorService.class);
   private final List<Told> sent = new ArrayList<>();
   private final List<Said> said = new ArrayList<>();
   private Jobs jobs;
@@ -271,7 +272,7 @@ public final class FakeJobWorld implements AutoCloseable {
             new FakeProcesses(root.resolve(".fake")),
             worktree -> {},
             repository -> Optional.empty(),
-            worktree -> {});
+            mock(WorktreeContainers.class));
     WorktreeChanges changes = new WorktreeChanges(config, new WorktreeInspection(git, runtime));
     HandBack handBack =
         new HandBack(
@@ -279,8 +280,8 @@ public final class FakeJobWorld implements AutoCloseable {
             new Rounds(
                 config,
                 ignored -> false,
-                () -> false,
-                () -> false,
+                () -> Facts.Reach.defaults(),
+                unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             config);
     Notifications notifications =
@@ -290,7 +291,7 @@ public final class FakeJobWorld implements AutoCloseable {
             new ChannelPosts(List.of(driver), new FakeReach(), Runnable::run, retries),
             state);
     SessionHosting hosting = new SessionHosting(host, runtime, new CarriedBlock(changes, runtime));
-    AgentWindows windows = new AgentWindows(config, state, hosting);
+    AgentWindows windows = new AgentWindows(config, state, hosting, unvetted -> null);
     AgentSessions sessions =
         new AgentSessions(state, hosting, rules, windows, new FreshStarts(windows, state, hosting));
     UsageTracker usage = new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, clock));
@@ -305,11 +306,10 @@ public final class FakeJobWorld implements AutoCloseable {
                 new RoundFacts(
                     new TicketTexts(models, usage, new KeptTicketTexts(paths)), changes, runtime),
                 new MasterDecisions(changes),
-                stored),
+                stored,
+                mock(NamedTickets.class)),
             stored,
-            new RoleYields(
-                config,
-                List.of(new CodeReviewSettings(config, paths, AssistantProperties.empty()))));
+            new RoleYields(config));
     MasterReviewJob master = new MasterReviewJob(state, config, panel, stored, ruling);
     StepRelay relay = stepRelay().withRoot(root).build(state, sessions, clock);
     AliveStamp alive = new AliveStamp(paths, clock);
@@ -475,7 +475,6 @@ public final class FakeJobWorld implements AutoCloseable {
 
   @Override
   public void close() {
-    retries.shutdownNow();
     try (Stream<Path> files = Files.walk(root)) {
       files.sorted(Comparator.reverseOrder()).forEach(file -> file.toFile().delete());
     } catch (IOException e) {

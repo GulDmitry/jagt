@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.project.ConfigWriteFailed;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.util.DisconnectedClientHelper;
 
 @RestControllerAdvice
 @Slf4j
@@ -73,7 +75,11 @@ public class RefusedRequests {
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Map<String, String>> failed(Exception e, HttpServletRequest request) {
+  public @Nullable ResponseEntity<Map<String, String>> failed(
+      Exception e, HttpServletRequest request) {
+    if (DisconnectedClientHelper.isClientDisconnectedException(e)) {
+      return null;
+    }
     if (e instanceof ErrorResponse framework) {
       return ResponseEntity.status(framework.getStatusCode())
           .body(Map.of("error", String.valueOf(e.getMessage())));

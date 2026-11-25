@@ -8,7 +8,10 @@ import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** Reads the requests jagt's own tasks hold and those the host names for review. */
+/**
+ * Reads the change of a task before its ship, the requests jagt's own tasks hold and those the host
+ * names for review.
+ */
 @Service
 @RequiredArgsConstructor
 public class CodeReviewJob implements Job {
@@ -17,6 +20,7 @@ public class CodeReviewJob implements Job {
   private final ReviewSubjects subjects;
   private final CodeReviewRound round;
   private final ConfigService configService;
+  private final PreShipReview preShip;
 
   @Override
   public String id() {
@@ -45,6 +49,7 @@ public class CodeReviewJob implements Job {
       return;
     }
     String model = configService.load().role(CodeReviewSettings.ROLE).modelOrInherited();
+    preShip.run(model);
     subjects.list().subjects().forEach(subject -> round.run(subject, read, model));
   }
 }

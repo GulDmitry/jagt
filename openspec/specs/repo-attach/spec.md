@@ -131,3 +131,36 @@ The line SHALL stand whoever reported; only a reporting session SHALL be told, o
 #### Scenario: The line ends with the task
 - **WHEN** the task closes while its line stands
 - **THEN** the line leaves the board's head on the next read
+
+### Requirement: A repository holding no work leaves the task
+Where a task's repository has a request, each repository with no request that holds no work SHALL leave the task, the
+primary one included (`RepoDeparture.leaveWorkless`); one the approved plan marks unaffected leaves the same way.
+A primary that leaves moves the task's home to the repository that comes first.
+A primary SHALL stay while an agent runs in its checkout. A task's only repository SHALL stay.
+
+#### Scenario: The primary holds no work
+- **WHEN** ABC-42 works in `api` and `web`, only `web` has a request, `api` holds no work and no agent runs
+- **THEN** `api` leaves ABC-42 and its next session starts in `web`
+
+#### Scenario: An agent runs in the primary
+- **WHEN** an agent runs in the checkout of `api`, the primary one holding no work
+- **THEN** `api` stays until a later read finds no agent in it
+
+#### Scenario: The only repository holds no work
+- **WHEN** ABC-42 works in `api` alone and it holds no work
+- **THEN** `api` stays on the card and nothing waits on a request from it
+
+### Requirement: A failing credential check holds a session's start
+A project's `credentialChecks` SHALL each name a read-only argv command and what renews its credential.
+jagt SHALL run each at start, daily, and before a session of that project starts, under a timeout, and read its exit code alone.
+A failing check SHALL put one mark in the header naming the project, the check and what renews it; the next passing run ends it.
+No session of that project SHALL start while one fails; its card says why in a note, never a problem, a badge or a stop.
+#### Scenario: A registry token expired
+- **WHEN** ABC-42's project declares check `npm registry` and it exits non-zero as ABC-42's session would start
+- **THEN** no session opens, the card's note names the check and what renews it, and the header carries one mark
+#### Scenario: The credential is renewed
+- **WHEN** the check next exits zero, at the minutely read or as a session starts
+- **THEN** the header mark and the card's note are gone, and the session opens
+#### Scenario: A check prints a credential
+- **WHEN** a check's output holds a token
+- **THEN** jagt neither logs, shows nor stores that output, only the exit code

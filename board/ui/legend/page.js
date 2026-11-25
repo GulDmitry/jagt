@@ -1,5 +1,6 @@
 import { make, span } from "../../core/dom.js";
 import { t } from "../../core/i18n.js";
+import { choice } from "../choice.js";
 
 const yoursHead = () =>
   make("div", "group yours", "", span("group-head", `${t("list.yours")} 2`));
@@ -59,6 +60,14 @@ const gearButton = () => {
   return button;
 };
 
+const checkedChoice = () =>
+  choice(
+    "legend-theme",
+    ["auto", "dark"].map((value) => ({ value, label: t(`theme.${value}`) })),
+    "dark",
+    () => {},
+  );
+
 export const pageRows = () => [
   [yoursHead()],
   [span("row-title changed", "Login form loses focus")],
@@ -83,5 +92,5 @@ export const pageRows = () => [
     span("chip bad", t("assistant")),
     span("chip bad", "code host CLI not logged in"),
   ],
-  [gearButton()],
+  [gearButton(), checkedChoice()],
 ];

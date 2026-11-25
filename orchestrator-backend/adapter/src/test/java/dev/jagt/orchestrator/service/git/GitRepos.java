@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.git;
 
 import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import java.io.IOException;
@@ -21,7 +22,10 @@ public final class GitRepos {
 
   public static GitCommands commands(Processes runner) {
     return new GitCommands(
-        runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
+        runner,
+        new LsofWorktreeProcesses(runner),
+        path -> Optional.empty(),
+        new NoWorktreeContainers());
   }
 
   public static Processes.Result git(Processes runner, Path dir, String... args) {

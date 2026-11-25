@@ -2,7 +2,7 @@
 
 ## Purpose
 
-How a review round is answered, reported and drafted into replies, and how an existing request is taken over.
+How a review round is answered, reported and drafted into replies, how a request is taken over, and how the code reviewer's findings reach it.
 
 ## Requirements
 
@@ -30,7 +30,6 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 #### Scenario: A marker typed into the message
 - **WHEN** a session reports `outcome=question: which branch?` as its message and no `outcome`
 - **THEN** the line reads as written, and nobody is asked
-#### Scenario: A question from before the field
 - **WHEN** jagt starts on a `state.json` whose line reads `awaiting: which database`
 - **THEN** the card reads `NEEDS INPUT: which database`
 #### Scenario: A round comes back clean or approved
@@ -38,7 +37,6 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 - **THEN** REVIEWED, nothing asked of you
 - **WHEN** an approval arrives
 - **THEN** you are tapped, the one time: it is yours to deploy
-#### Scenario: Claimed no change, files changed
 - **WHEN** the agent says it changed nothing but files changed
 - **THEN** not believed: the round has a diff
 
@@ -49,31 +47,6 @@ replaced, one id per line; unset, it gives none.
 - **WHEN** `codeHost: command` has a `notesCommand` printing two ids and the next poll prints the same
 - **THEN** the round is the same and is relayed once
 
-### Requirement: The unit of a round is a thread
-`ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest.
-Threads SHALL be relayed while unresolved, the round telling how many notes are new or unchanged since the last round
-(`RoundTrail.sinceLast`). The checks SHALL never decide whether a thread is answered. After a round with threads,
-a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
-#### Scenario: Red checks outside the code and a reviewer's answer
-- **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread
-- **THEN** refused, told how many threads await their block
-#### Scenario: A resolved thread
-- **WHEN** a reviewer resolves a thread on ABC-42's request
-- **THEN** no later round reads it again
-#### Scenario: GitHub review in the body
-- **WHEN** a GitHub review is written in the body, not a thread
-- **THEN** relayed all the same
-#### Scenario: The agent answered last
-- **WHEN** two polls read a thread whose newest note is by the account the host's tools act as, unless it opens with the AI line
-- **THEN** neither relays it, as it waits on the reviewer; only a new note starts a round, and one with the AI line awaits an answer
-
-### Requirement: Threads are resolved at ship
-The agent SHALL resolve at ship time over its own MCP (`ShipService.repliesStep`), only threads whose code it changed. During the
-round it SHALL post nothing, and a draft SHALL go only where the answered note's author matches `reviewReplyAuthors`.
-#### Scenario: Replies are posted
-- **WHEN** you `ship`
-- **THEN** replies are posted only now; a fixed thread is resolved, a disputed one left for the reviewer
-
 ### Requirement: Pipeline status is one of jagt's five words
 `TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/deploy/Pipeline` parses it.
 A round reading no listing SHALL write nothing, the last word standing flagged. The third such round running since the `lift`
@@ -81,7 +54,6 @@ SHALL stop the task, its evidence the reads' words for why; a listing counts ane
 #### Scenario: No checks dot while the host shows a failed run
 - **WHEN** no checks dot shows while the host shows a failed run
 - **THEN** nobody read one yet; `none` means the host listed none
-#### Scenario: Checks nobody can list
 - **WHEN** a third poll running cannot list ABC-42's pipelines, `list_pipelines: 403 Forbidden`
 - **THEN** jagt stops it, and the hover says `3 reads running could not list the checks: list_pipelines: 403 Forbidden`
 
@@ -91,31 +63,18 @@ same, or every poll re-briefs. A red the host calls infrastructure is not relaye
 #### Scenario: Pipeline goes red
 - **WHEN** the pipeline goes red
 - **THEN** `checks failed` on the card, one notification; the session finds and fixes the cause
-#### Scenario: Red, no comments
 - **WHEN** checks are red, no comments
 - **THEN** the agent fixes the build and hands back
-#### Scenario: Red the session cannot reproduce
 - **WHEN** the red is not in the code, or nothing here reads it, and the host does not call it infrastructure
 - **THEN** the session changes nothing and asks you, naming the job
 
 ### Requirement: The reply shape is prescribed once
-The round brief (`RoundBrief.of`), relayed every round, SHALL prescribe one block per thread: its link, the quoted
-newest note, `FIXED | NO CHANGE | QUESTION`, reply.
+The round brief (`RoundBrief.of`), relayed every round, SHALL prescribe one block per thread: its link, one author-kind line
+(`person`, `bot` or `reviewer`, given by jagt from the note's author), the quoted newest note, `FIXED | NO CHANGE | QUESTION`,
+reply. Which threads a round carries and who answers them is [review-actors](../review-actors/spec.md).
 #### Scenario: Replies too long
 - **WHEN** replies run long
 - **THEN** the agent broke its brief; a re-`sweep` re-briefs
-
-### Requirement: Drafted replies are a file
-`TaskViews` SHALL stat `review_replies.md` for presence, never a count; `ReviewDrafts.pending` SHALL want it newer than
-`mrCreatedAt`. jagt SHALL never delete the file; the agent is asked to.
-`CodeReviewConfig.shipPostsEveryDraft` SHALL decide when drafts are spent: under `postReviewReplies=false` or a partial
-`reviewReplyAuthors` filter none is, and the announcement stands until the human ends it.
-#### Scenario: Stale reply file
-- **WHEN** the file predates `mrCreatedAt`
-- **THEN** nothing is pending
-#### Scenario: Posting off
-- **WHEN** you `ship` under `postReviewReplies=false`
-- **THEN** the announcement stands
 
 ### Requirement: The replies report reads the file
 `replies [task]` (`command/ReviewRepliesReport`) SHALL print every block off the file, never the badge, unrecognised shape
@@ -159,7 +118,7 @@ A GitHub request with no review required SHALL count as approved once someone ap
 `TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git
 while the checks are red, and the sorted newest note ids awaiting the agent. The host's own read gives those ids
 (`CodeHost.unresolvedNotes`), never the model; they are compared without the request link. A round equal to the digest SHALL NOT
-be relayed again, whatever the brief's wording. A `lift` SHALL forget both.
+be relayed again, whatever the brief's wording, unless the task reported `PLAN_PENDING` since. A `lift` SHALL forget both.
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
 - **THEN** the sweep says the round is unchanged and no fresh session starts
@@ -177,7 +136,6 @@ be relayed again, whatever the brief's wording. A `lift` SHALL forget both.
 Where the repository cannot name the tip, or a job or note id is unknown, the brief SHALL be digested.
 A failed host read SHALL leave the ids unknown, with a warning naming the cause.
 Neither SHALL open threads with the last notes while the checks are red in neither.
-
 #### Scenario: A tip or an id is unknown
 - **WHEN** the pushed tip cannot be named from the repository, or the host read failed, while the checks are red
 - **THEN** the brief is digested, and a failed host read logs a warning naming the cause
@@ -197,3 +155,39 @@ An auto-review poll finding both unchanged SHALL keep that verdict unpaid; anyth
 - **THEN** no model is asked
 - **WHEN** the fingerprint or a note changed, the host gives none, or you `sweep` ABC-42
 - **THEN** the request is read again
+
+### Requirement: Review bots are answered, bounded per thread
+The role SHALL answer a review bot's note once per note id: fix, change nothing and say why, or ask. It SHALL answer a thread at most three times.
+A thread past the bound SHALL be exhausted until it resolves or the request closes. The role SHALL never answer its own newest note.
+
+#### Scenario: A bot answers a fourth time
+- **WHEN** a bot answers the role's answer a fourth time
+- **THEN** nothing is posted and the thread is exhausted until it resolves or the request closes
+
+#### Scenario: The newest note is the role's own
+- **WHEN** the newest note of a thread is the role's own
+- **THEN** nothing is posted
+
+### Requirement: The code reviewer reads a task's diff before its ship
+The code reviewer SHALL read the diff of a task at REVIEW_PENDING holding no request once per tree state, relaying each finding as a round.
+`FlowRules` SHALL refuse SHIP, the Master's too, while a finding awaits its block in `review_replies.md` or the tree is unread.
+A finding raised there SHALL not be posted again on the request. A failed read, a reviewer switched off or an empty diff SHALL never hold a SHIP.
+
+#### Scenario: A session hands back
+- **WHEN** ABC-42's session reports REVIEW_PENDING and the Master presses SHIP before its diff was read
+- **THEN** SHIP is declined, and once read each finding reaches the session as a review round that holds SHIP until its block is written
+
+#### Scenario: A finding already raised
+- **WHEN** ABC-42's request is read and a finding is one the pre-ship read raised
+- **THEN** no note is posted for it
+
+### Requirement: A round with nothing new says so on its verb
+A `sweep` reading the round unchanged, or still waiting, SHALL answer as work not done.
+The board SHALL draw that verb's own button with a dashed muted edge, its hover carrying the answer.
+The mark ends when the task's status moves or the verb is pressed again.
+#### Scenario: Nothing new
+- **WHEN** the human presses Check review on ABC-42 and the round reads unchanged
+- **THEN** the button wears the dashed edge and the toast says so
+#### Scenario: The card moves
+- **WHEN** ABC-42's status changes, or the human presses Check review again
+- **THEN** the dashed edge is gone

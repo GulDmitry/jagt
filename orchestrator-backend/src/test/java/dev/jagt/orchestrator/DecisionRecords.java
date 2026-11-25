@@ -2,9 +2,12 @@ package dev.jagt.orchestrator;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class DecisionRecords {
@@ -30,6 +33,48 @@ final class DecisionRecords {
         .map(MatchResult::group)
         .filter(target -> !namesAmender(records, target, number))
         .map(target -> target + " does not name " + number);
+  }
+
+  static Stream<String> exceptionsWithoutQuorum(List<Path> records, String fitnessYml) {
+    Set<String> named =
+        Pattern.compile("\\bexception: \"(\\d{4})\"")
+            .matcher(fitnessYml)
+            .results()
+            .map(row -> row.group(1))
+            .collect(Collectors.toSet());
+    Stream<String> unknown =
+        named.stream()
+            .filter(number -> records.stream().noneMatch(record -> numberOf(record).equals(number)))
+            .map(number -> number + " is named by an exception row and is no decision");
+    Stream<String> unquorumed =
+        records.stream()
+            .filter(record -> named.contains(numberOf(record)) || grantsException(statusOf(record)))
+            .flatMap(record -> missingQuorum(numberOf(record), statusOf(record)));
+    return Stream.concat(unknown, unquorumed);
+  }
+
+  private static boolean grantsException(String status) {
+    return Pattern.compile("(?m)^Exception\\b").matcher(status).find();
+  }
+
+  private static Stream<String> missingQuorum(String number, String status) {
+    boolean owner =
+        Pattern.compile("(?m)^Owner approved \\d{4}-\\d{2}-\\d{2}\\b").matcher(status).find();
+    boolean reviewer =
+        Pattern.compile("(?m)^Reviewer agreed \\d{4}-\\d{2}-\\d{2}, \\S").matcher(status).find();
+    return Stream.of(
+            owner ? null : number + " grants an exception without the owner's approval",
+            reviewer ? null : number + " grants an exception without a reviewer's agreement")
+        .filter(Objects::nonNull);
+  }
+
+  private static String numberOf(Path record) {
+    return record.getFileName().toString().substring(0, 4);
+  }
+
+  private static String statusOf(Path record) {
+    Matcher status = Pattern.compile("(?s)## Status\\s*(.*?)\\n## ").matcher(DocFiles.read(record));
+    return status.find() ? status.group(1) : "";
   }
 
   private static boolean namesAmender(List<Path> records, String target, String number) {

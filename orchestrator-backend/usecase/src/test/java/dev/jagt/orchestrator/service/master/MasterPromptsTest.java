@@ -156,7 +156,7 @@ class MasterPromptsTest {
             "ABC-1",
             inProgress,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), List.of(), false),
             true);
 
     assertThat(prompt).contains("`--no-ext-diff --no-textconv`", "`git -C <worktree>`");
@@ -170,10 +170,57 @@ class MasterPromptsTest {
             "ABC-1",
             inProgress,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), List.of(), false),
             false);
 
     assertThat(prompt).contains("The ticket was not read").doesNotContain("Read the ticket");
+  }
+
+  @Test
+  void quotesWhatJagtReadFromTheTrackerAsTheAnswerToTheMaster() {
+    String prompt =
+        MasterPrompts.answerPrompt(
+            "ABC-1",
+            inProgress,
+            briefsPair,
+            new MasterPanel.Asked(
+                "Is ABC-7 closed?",
+                "",
+                List.of(),
+                List.of("ABC-7: status \"Done\", at the stage that closes work: yes"),
+                false),
+            false);
+
+    assertThat(prompt)
+        .contains(
+            "<tracker_facts>\nABC-7: status \"Done\", at the stage that closes work: yes\n"
+                + "</tracker_facts>");
+  }
+
+  @Test
+  void quotesNoTrackerFactsWhereTheQuestionNamesNoTicket() {
+    String prompt =
+        MasterPrompts.answerPrompt(
+            "ABC-1",
+            inProgress,
+            briefsPair,
+            new MasterPanel.Asked("keep v2?", "", List.of(), List.of(), false),
+            false);
+
+    assertThat(prompt).doesNotContain("tracker_facts");
+  }
+
+  @Test
+  void asksTheMasterToPickTheRouteNeedingNoExtraRightsWhereTheTicketNamesTwo() {
+    String prompt =
+        MasterPrompts.answerPrompt(
+            "ABC-1",
+            inProgress,
+            briefsPair,
+            new MasterPanel.Asked("route A or route B?", "", List.of(), List.of(), false),
+            false);
+
+    assertThat(prompt).contains("which of the ticket's own routes", "no right the session lacks");
   }
 
   @Test
@@ -194,7 +241,7 @@ class MasterPromptsTest {
             "ABC-1",
             inProgress,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), List.of(), false),
             false);
 
     assertThat(prompt).contains("outcome=question — keep v2?").contains("Never answer question");
@@ -209,7 +256,11 @@ class MasterPromptsTest {
             reviewPending,
             briefsPair,
             new MasterPanel.Asked(
-                "outcome=question — refactor, or override the gate?", "", List.of(), false),
+                "outcome=question — refactor, or override the gate?",
+                "",
+                List.of(),
+                List.of(),
+                false),
             false);
 
     assertThat(prompt)
@@ -226,7 +277,8 @@ class MasterPromptsTest {
             "ABC-1",
             reviewPending,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — override the gate?", "", List.of(), true),
+            new MasterPanel.Asked(
+                "outcome=question — override the gate?", "", List.of(), List.of(), true),
             false);
 
     assertThat(prompt).contains("where options remain, recommend the best and take it");
@@ -240,7 +292,7 @@ class MasterPromptsTest {
             "ABC-1",
             reviewPending,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), List.of(), false),
             false);
     String review = MasterPrompts.shared("judge hard", "never commit unasked", true, true);
 
@@ -297,7 +349,7 @@ class MasterPromptsTest {
                 "ABC-1",
                 planPending,
                 new MasterPanel.Briefs("judge hard", "author"),
-                new MasterPanel.Asked("keep v2?", "", List.of(), false),
+                new MasterPanel.Asked("keep v2?", "", List.of(), List.of(), false),
                 true))
         .contains("<role>You stand in for the human on task ABC-1.</role>")
         .endsWith("Respond directly, no preamble.");
@@ -352,7 +404,11 @@ class MasterPromptsTest {
             inProgress,
             briefsPair,
             new MasterPanel.Asked(
-                "outcome=question — rename the field?", "", List.of("rename it everywhere"), false),
+                "outcome=question — rename the field?",
+                "",
+                List.of("rename it everywhere"),
+                List.of(),
+                false),
             false);
 
     assertThat(prompt).contains("<human_said>\nrename it everywhere\n</human_said>");
@@ -407,7 +463,7 @@ class MasterPromptsTest {
             "ABC-1",
             task,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), List.of(), false),
             true);
 
     assertThat(prompt)
@@ -424,7 +480,7 @@ class MasterPromptsTest {
             "ABC-1",
             task,
             briefsPair,
-            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
+            new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), List.of(), false),
             true);
 
     assertThat(prompt).contains("[/wt/ABC-1-proj/task_notes.md, /wt/ABC-1-proj/task_context.md]");

@@ -11,6 +11,8 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.RequestOptions;
+import dev.jagt.orchestrator.flow.Pressed;
+import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -60,8 +62,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   @Test
   void thePaletteExecutesCommandItUnderstandsWithoutPayingForTheModel() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.SHIP, null))
-        .thenReturn("Shipped ABC-1 — review request updated.");
+    when(commands.press("ABC-1", TaskAction.SHIP, null))
+        .thenReturn(new Pressed("Shipped ABC-1 — review request updated.", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     ask(page, "ship a1");
@@ -118,8 +120,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     state.putTask(
         "ABC-1",
         alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host/x/merge_requests/7").build());
-    when(commands.execute("ABC-1", TaskAction.SWEEP, null))
-        .thenReturn("sweep ABC-1: checks success");
+    when(commands.press("ABC-1", TaskAction.SWEEP, null))
+        .thenReturn(new Pressed("sweep ABC-1: checks success", Outcome.Kind.OK));
 
     Page page = openLiveBoard();
     page.keyboard().press("Control+k");

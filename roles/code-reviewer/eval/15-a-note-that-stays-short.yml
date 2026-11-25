@@ -1,0 +1,31 @@
+case: a posted note stays short and names its evidence and fix
+description: |
+  Add a search by customer name to the order list endpoint.
+diff: |
+  diff --git a/src/main/java/app/order/OrderRepository.java b/src/main/java/app/order/OrderRepository.java
+  --- a/src/main/java/app/order/OrderRepository.java
+  +++ b/src/main/java/app/order/OrderRepository.java
+  @@ -20,3 +20,8 @@ public class OrderRepository {
+  +  public List<Order> findByCustomerName(String name) {
+  +    String sql = "SELECT * FROM orders WHERE customer_name = '" + name + "'";
+  +    return jdbc.query(sql, orderMapper);
+  +  }
+   }
+  diff --git a/src/test/java/app/order/OrderRepositoryTest.java b/src/test/java/app/order/OrderRepositoryTest.java
+  --- a/src/test/java/app/order/OrderRepositoryTest.java
+  +++ b/src/test/java/app/order/OrderRepositoryTest.java
+  @@ -9,3 +9,8 @@ class OrderRepositoryTest {
+  +  @Test
+  +  void findsOrdersOfOneCustomer() {
+  +    assertThat(repository.findByCustomerName("Acme")).hasSize(2);
+  +  }
+   }
+expect:
+  verdict: findings
+  findings:
+    - file: OrderRepository.java
+      pattern: "inject|concatenat|parameter|prepared|bind"
+      severity: [blocking]
+  note:
+    maxLines: 3
+    maxWords: 60

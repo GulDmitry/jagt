@@ -191,7 +191,7 @@ class WorktreeSetupTest {
             "repo",
             TestProjectConfigBuilder.projectConfig()
                 .withPath(project.toString())
-                .withSetup(new ProjectConfig.Setup(List.of("seed", "{worktree}"), null))
+                .withSetup(new ProjectConfig.Setup(List.of("seed", "{worktree}"), null, List.of()))
                 .build(),
             project,
             worktree,

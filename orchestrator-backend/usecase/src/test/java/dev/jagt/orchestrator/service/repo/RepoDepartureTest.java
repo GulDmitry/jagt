@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -77,6 +78,55 @@ class RepoDepartureTest {
     assertThat(left).isFalse();
     assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
     verifyNoInteractions(worktrees, sessions);
+  }
+
+  @Test
+  void takesThePrimaryRepositoryHoldingNoWorkOutOfTaskHoldingOthersAndMovesTheHome() {
+    TaskRepo primary = TaskRepo.of("api", "/api-wt");
+    state.putTask("ABC-42", TaskState.builder(List.of(primary, web), TaskStatus.REVIEWED).build());
+    when(config.load()).thenReturn(ConfigFile.defaults());
+    when(sessions.windowState("ABC-42")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
+
+    boolean left = departure.leaveWorkless("ABC-42", primary, "it holds no work");
+
+    assertThat(left).isTrue();
+    assertThat(state.task("ABC-42").orElseThrow().worktreePath()).isEqualTo("/web-wt");
+    verify(worktrees).remove(eq("ABC-42"), eq(List.of(primary)), any());
+  }
+
+  @Test
+  void keepsThePrimaryRepositoryWhileAnAgentRunsInIt() {
+    TaskRepo primary = TaskRepo.of("api", "/api-wt");
+    state.putTask("ABC-42", TaskState.builder(List.of(primary, web), TaskStatus.REVIEWED).build());
+    when(sessions.windowState("ABC-42")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+
+    boolean left = departure.leaveWorkless("ABC-42", primary, "it holds no work");
+
+    assertThat(left).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
+    verifyNoInteractions(worktrees);
+  }
+
+  @Test
+  void keepsThePrimaryRepositoryWhereTheSessionsWindowCannotBeRead() {
+    TaskRepo primary = TaskRepo.of("api", "/api-wt");
+    state.putTask("ABC-42", TaskState.builder(List.of(primary, web), TaskStatus.REVIEWED).build());
+    when(sessions.windowState("ABC-42")).thenThrow(new IllegalStateException("no tmux"));
+
+    boolean left = departure.leaveWorkless("ABC-42", primary, "it holds no work");
+
+    assertThat(left).isFalse();
+  }
+
+  @Test
+  void keepsTheOnlyRepositoryThoughItHoldsNoWork() {
+    TaskRepo only = TaskRepo.of("api", "/api-wt");
+    state.putTask("ABC-42", TaskState.builder(List.of(only), TaskStatus.REVIEWED).build());
+
+    boolean left = departure.leaveWorkless("ABC-42", only, "it holds no work");
+
+    assertThat(left).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
   }
 
   @Test

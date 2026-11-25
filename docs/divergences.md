@@ -7,6 +7,8 @@ A CI red on a tree the local gate recorded green is a defect in the local run. E
 
 | date | run | tree | class | fix |
 |------|-----|------|-------|-----|
+| 2026-11-24 | 45407359631 | unknown | cache: the nightly's dependency cache lacked Spotless's detached google-java-format, and the local twin ran offline on a cache it had filled with a narrower resolve; a runner has its network | 0238 |
+| 2026-11-24 | 45407359631 | unknown | cache: npm answered ENOTCACHED for the board audit from a cache the twin never filled; a runner reads the registry | 0238 |
 | 2026-11-24 | 45338587686 | 82aac1dd5 | network: Maven Central kept answering 429 to the hosted runner past every retry; local resolves from its warm cache | 0235 |
 | 2026-11-24 | 45322490446 | 4bf02ab22 | network: the CI image lacked zstd, so the test job missed every cached Gradle home and hit Maven Central's 429; local resolves from its warm cache | 1427c09e6 |
 | 2026-11-24 | 45309806524 | c675335ec | state: the local engine volume kept the PowerShell image across runs; a runner's engine starts empty and the stand runs offline | c3b4744e9 |

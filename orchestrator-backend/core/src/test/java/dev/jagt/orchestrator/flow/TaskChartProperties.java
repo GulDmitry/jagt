@@ -623,9 +623,9 @@ class TaskChartProperties {
       Facts every =
           new Facts(
               new Facts.Delivery(true, true, true, true, true, () -> true),
-              new Facts.Hold(true, true, true, () -> true),
-              new Facts.Workspace(true, true, true, Optional::empty),
-              new Facts.Reach(true, true));
+              new Facts.Hold(true, true, true, true, () -> true),
+              new Facts.Workspace(true, true, true, Optional::empty, Optional::empty),
+              new Facts.Reach(true, true, null));
       List<Facts> variants =
           List.of(
               none,
@@ -638,6 +638,7 @@ class TaskChartProperties {
               none.withDelivery(none.delivery().withMergedNow(() -> true)),
               none.withHold(none.hold().withStopped(true)),
               none.withHold(none.hold().withTierAbove(true)),
+              none.withHold(none.hold().withPlanClosed(true)),
               none.withHold(none.hold().withAgentLive(() -> true)),
               none.withWorkspace(none.workspace().withGitStateChanged(true)),
               none.withWorkspace(none.workspace().withRepoRequested(true)),

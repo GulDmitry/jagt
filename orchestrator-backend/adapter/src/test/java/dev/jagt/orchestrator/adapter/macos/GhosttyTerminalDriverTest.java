@@ -38,6 +38,22 @@ class GhosttyTerminalDriverTest {
   }
 
   @Test
+  void leavesTheTabTheHumanWorksInSelectedWhenItOpensAnother() {
+    OsaScript osaScript = mock(OsaScript.class);
+    var driver = new GhosttyTerminalDriver(osaScript, mock(Host.class), new FakeClock());
+
+    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+
+    ArgumentCaptor<String> script = ArgumentCaptor.captor();
+    verify(osaScript).run(script.capture());
+    assertThat(script.getValue())
+        .containsSubsequence(
+            "set priorTab to selected tab of hostWindow",
+            "new tab in hostWindow",
+            "select tab priorTab");
+  }
+
+  @Test
   void runsTheAttachCommandItIsGivenWordForWord() {
     OsaScript osaScript = mock(OsaScript.class);
     var driver = new GhosttyTerminalDriver(osaScript, mock(Host.class), new FakeClock());

@@ -15,7 +15,7 @@ export const TABS = [
 
 /**
  * @typedef {import("../core/store.js").Task} CardTask
- * @typedef {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, now: number }} CardProps
+ * @typedef {{ task: CardTask, manyProjects: boolean, flagged: boolean, blocked: Set<string>, quiet?: Map<string, string>, now: number }} CardProps
  * @typedef {CardProps & { offers: { part?: string }[] }} PaneCard
  * @typedef {{ name?: string | null, names?: string[], held?: boolean, shown?: string, Terminal?: import("preact").FunctionComponent<{ task: string, name: string | null | undefined }> }} Window
  * @typedef {{ Code?: import("preact").FunctionComponent<{ task: CardTask }>, failure?: string }} Reading

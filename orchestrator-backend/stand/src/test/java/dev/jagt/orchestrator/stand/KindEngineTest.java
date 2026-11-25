@@ -441,6 +441,35 @@ class KindEngineTest {
   }
 
   @Test
+  void restartKeepsThePodsStateBeforeAndAfterAndGoesOnWhenOneProbeFails() throws IOException {
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          if (command.contains("ps")) {
+            throw new StandFailure("exec refused");
+          }
+          return new StandShell.Result(0, String.join(" ", command));
+        };
+    when(board.ready()).thenReturn(true, false, true);
+    KindEngine kind =
+        new KindEngine(
+            root,
+            9000,
+            board,
+            shell,
+            (where, local) -> forwarding,
+            manifest,
+            Duration.ofMinutes(5));
+
+    kind.restart(Restart.JVM);
+
+    assertThat(Files.readString(root.resolve("pod-before-restart.txt")))
+        .contains("get pod -l app=jagt -o yaml", "tmux list-sessions")
+        .doesNotContain("ps -ef");
+    assertThat(Files.readString(root.resolve("pod-after-restart.txt")))
+        .contains("get pod -l app=jagt -o yaml", "tmux list-sessions");
+  }
+
+  @Test
   void jvmThatWasNotRunningFailsTheRestart() {
     StandShell.Runner shell =
         (cwd, command, env) -> new StandShell.Result(command.contains("pkill") ? 1 : 0, "none");
