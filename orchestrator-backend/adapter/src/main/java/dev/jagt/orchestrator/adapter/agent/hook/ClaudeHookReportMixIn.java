@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent.hook;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
@@ -15,7 +16,7 @@ abstract class ClaudeHookReportMixIn {
   private ClaudeHookReportMixIn(
       @JsonProperty("transcript_path") @Nullable String transcriptPath,
       @JsonProperty("source") @Nullable String source,
-      @JsonProperty("message") @Nullable String message,
+      @JsonProperty("message") @JsonAlias("last_assistant_message") @Nullable String message,
       @JsonUnwrapped SessionHookReport.Ending ending,
       @JsonUnwrapped SessionHookReport.Turn turn) {}
 

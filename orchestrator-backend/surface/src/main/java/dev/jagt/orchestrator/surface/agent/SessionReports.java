@@ -109,7 +109,7 @@ public class SessionReports {
         taskId,
         pausedOnBackgroundWork ? SessionProbe.State.WORKING : SessionProbe.State.IDLE,
         report);
-    return turnEnds.answer(taskId, report.task(), sentOn, pausedOnBackgroundWork);
+    return turnEnds.answer(taskId, report.task(), sentOn, pausedOnBackgroundWork, report.said());
   }
 
   private boolean continuing(SessionProbe.State state, @Nullable String endedBy) {

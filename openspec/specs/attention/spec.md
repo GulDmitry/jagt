@@ -53,6 +53,8 @@ nothing newer behind it past the threshold: the same flip, a NEEDS YOU line, ove
 - **THEN** it is recorded as `IDLE`, not as gone; no banner is sent
 - **WHEN** Claude ends its turn without reporting, or the turn that began with the human's terminal answer to its question does
 - **THEN** it is sent back once to report first, so NEEDS INPUT does not outlive its answer; still unreported, it is silent
+- **WHEN** a turn at a status the agent works in ends with an `OPEN QUESTIONS` line other than `none` and the report asks nothing
+- **THEN** it is sent back once to report it as `outcome=question`
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`
 - **THEN** NEEDS YOU at once with no threshold, saying its turn failed: overloaded, the CLI's own error word
 - **WHEN** any report arrives

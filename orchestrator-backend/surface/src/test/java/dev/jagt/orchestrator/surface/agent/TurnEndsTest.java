@@ -53,7 +53,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -65,7 +65,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEmpty();
   }
@@ -84,9 +84,54 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
+  }
+
+  @Test
+  void sendsOnTurnWhoseTextHoldsOpenQuestionsThatNoReportAsked() {
+    when(runtime.refusedTurnEnd(contains("outcome=question")))
+        .thenReturn("{\"decision\": \"block\"}");
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L))
+            .build();
+
+    String answered =
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, false, false, "Done so far.\nOPEN QUESTIONS: keep v2?");
+
+    assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "OPEN QUESTIONS: none|false|PLAIN",
+        "open questions:   None.|false|PLAIN",
+        "no questions at all|false|PLAIN",
+        "OPEN QUESTIONS: keep v2?|true|PLAIN",
+        "OPEN QUESTIONS: keep v2?|false|QUESTION"
+      })
+  void letsTurnEndWhoseTextAsksNothingWasSentBackOnceOrWasReportedAsked(
+      String text, boolean sentOn, AgentReport report) {
+    when(config.load()).thenReturn(ConfigFile.defaults());
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .message("keep v2?")
+            .report(report)
+            .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L))
+            .build();
+
+    String answered =
+        new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
+            .answer("ABC-1", task, sentOn, false, text);
+
+    assertThat(answered).isEmpty();
   }
 
   @ParameterizedTest
@@ -101,7 +146,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEmpty();
   }
@@ -121,7 +166,7 @@ class TurnEndsTest {
     String answered =
         new TurnEnds(
                 runtime, config, notes, turnTree, List.of(given -> Optional.of("with the role")))
-            .answer("ABC-1", task, sentOn, false);
+            .answer("ABC-1", task, sentOn, false, null);
 
     assertThat(answered).isEqualTo("{\"systemMessage\": \"with the role\"}");
   }
@@ -136,7 +181,7 @@ class TurnEndsTest {
     String answered =
         new TurnEnds(
                 runtime, config, notes, turnTree, List.of(given -> Optional.of("with the role")))
-            .answer("ABC-1", task, false, true);
+            .answer("ABC-1", task, false, true, null);
 
     assertThat(answered).isEqualTo("{\"systemMessage\": \"with the role\"}");
   }
@@ -152,7 +197,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, List.of(given -> Optional.empty()))
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEmpty();
   }
@@ -168,7 +213,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, sentOn, paused);
+            .answer("ABC-1", task, sentOn, paused, null);
 
     assertThat(answered).isEmpty();
   }
@@ -190,7 +235,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -209,7 +254,7 @@ class TurnEndsTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, noRoleNotes)
-            .answer("ABC-1", task, true, false);
+            .answer("ABC-1", task, true, false, null);
 
     assertThat(answered).isEmpty();
   }
