@@ -15,7 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -77,7 +77,7 @@ class DeployCheckJobTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
     verify(pipelines, never()).read(anyString(), any());
     assertThat(state.task("ABC-42").orElseThrow().standing().status())
         .isEqualTo(TaskStatus.IN_PROGRESS);
@@ -95,7 +95,7 @@ class DeployCheckJobTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 
   @Test
@@ -151,7 +151,7 @@ class DeployCheckJobTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
     verify(pipelines, never()).read(anyString(), any());
   }
 
@@ -165,13 +165,13 @@ class DeployCheckJobTest {
 
     @Test
     void handsBackPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone() {
-      when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
+      when(relay.standing("ABC-42")).thenReturn(SessionStanding.ABSENT);
       when(relay.relay(
               eq("ABC-42"),
               eq(Step.DEPLOY),
               anyString(),
               eq(StepRelay.Delivery.CONTEXT),
-              any(Standing.class)))
+              any(SessionStanding.class)))
           .thenReturn(true);
       when(pipelines.read(eq("ABC-42"), any()))
           .thenReturn(
@@ -228,7 +228,7 @@ class DeployCheckJobTest {
               any(Step.class),
               anyString(),
               any(StepRelay.Delivery.class),
-              any(Standing.class));
+              any(SessionStanding.class));
       assertThat(state.task("ABC-42").orElseThrow().standing().message())
           .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
     }
@@ -257,7 +257,7 @@ class DeployCheckJobTest {
               any(Step.class),
               anyString(),
               any(StepRelay.Delivery.class),
-              any(Standing.class));
+              any(SessionStanding.class));
     }
 
     @Nested
@@ -266,7 +266,7 @@ class DeployCheckJobTest {
       @BeforeEach
       void givenGreenPipelineAndNoSessionStanding() {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
-        when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
+        when(relay.standing("ABC-42")).thenReturn(SessionStanding.ABSENT);
       }
 
       @Test
@@ -279,7 +279,7 @@ class DeployCheckJobTest {
                 eq(Step.DEPLOY),
                 contains("- proj: 01234567 on dev"),
                 eq(StepRelay.Delivery.CONTEXT),
-                any(Standing.class));
+                any(SessionStanding.class));
       }
 
       @Test
@@ -294,7 +294,7 @@ class DeployCheckJobTest {
                 eq(Step.DEPLOY),
                 contains("- proj: 01234567 on dev"),
                 eq(StepRelay.Delivery.CONTEXT),
-                any(Standing.class));
+                any(SessionStanding.class));
       }
 
       @Test
@@ -309,7 +309,7 @@ class DeployCheckJobTest {
                 eq(Step.DEPLOY),
                 contains("- proj: 01234567 on its deploy branch"),
                 eq(StepRelay.Delivery.CONTEXT),
-                any(Standing.class));
+                any(SessionStanding.class));
       }
 
       @Test
@@ -319,7 +319,7 @@ class DeployCheckJobTest {
                 eq(Step.DEPLOY),
                 anyString(),
                 eq(StepRelay.Delivery.CONTEXT),
-                any(Standing.class)))
+                any(SessionStanding.class)))
             .thenReturn(true);
 
         job.runOn(state.tasks());

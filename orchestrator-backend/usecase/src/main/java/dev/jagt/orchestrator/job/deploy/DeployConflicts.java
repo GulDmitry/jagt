@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job.deploy;
 
 import dev.jagt.orchestrator.flow.capability.Facts;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.service.git.GitRevert;
@@ -44,7 +44,7 @@ public class DeployConflicts {
           gitRevert.revertProgress(target.path(), taskId),
           null,
           true,
-          Standing.of(task));
+          SessionStanding.of(task));
     }
     Path worktree = gitDeploy.deployWorktreePath(target.path(), taskId);
     return new WaitingConflict(
@@ -53,7 +53,7 @@ public class DeployConflicts {
         gitDeploy.deployProgress(target.path(), taskId),
         DeployTargets.handedBackForItsPipeline(task) ? task.standing().message() : null,
         false,
-        Standing.of(task));
+        SessionStanding.of(task));
   }
 
   /**
@@ -67,5 +67,5 @@ public class DeployConflicts {
       Conflict.Progress progress,
       @Nullable String red,
       boolean revert,
-      Standing read) {}
+      SessionStanding read) {}
 }

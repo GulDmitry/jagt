@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -11,7 +13,7 @@ import java.util.List;
 public record TaskRef(String taskId) implements Message {
 
   public TaskRef {
-    taskId = taskId == null || taskId.isBlank() ? null : taskId;
+    taskId = absent(taskId);
   }
 
   /** Each tool describes itself; the field is the same field everywhere. */

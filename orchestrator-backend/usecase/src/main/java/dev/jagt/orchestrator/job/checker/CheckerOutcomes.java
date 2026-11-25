@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.job.checker;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.stop.TaskStops;
@@ -113,7 +113,7 @@ public class CheckerOutcomes {
                 .collect(Collectors.joining("\n"));
     StepRelay.Claim claim =
         new StepRelay.Claim(
-            Standing.of(task),
+            SessionStanding.of(task),
             opensTheTurn ->
                 reports.reportWhileStanding(
                     taskId,

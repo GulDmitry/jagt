@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
@@ -34,7 +34,7 @@ class StagedFixReadTest {
             new Conflict.Progress(7, 0, "d"),
             null,
             false,
-            Standing.ABSENT);
+            SessionStanding.ABSENT);
     when(config.load())
         .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
     when(conflicts.waiting("ABC-42", task)).thenReturn(Optional.of(conflict));

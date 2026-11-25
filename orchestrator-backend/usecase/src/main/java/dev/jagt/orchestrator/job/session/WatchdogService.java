@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.presence.SessionProbe;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.session.Session;
+import dev.jagt.orchestrator.task.text.Blank;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.time.Clock;
 import java.time.Duration;
@@ -84,8 +85,8 @@ public class WatchdogService implements Job {
   /** An agent that exited without a word from its harness, told by what it printed last. */
   public void ended(String taskId, String printed) {
     long now = clock.millis();
-    SessionSign.Ended sign =
-        new SessionSign.Ended(printed.isBlank() ? null : OneLine.clipped(printed));
+    String line = Blank.toNull(printed);
+    SessionSign.Ended sign = new SessionSign.Ended(line == null ? null : OneLine.clipped(line));
     SessionSign.Read unread =
         new SessionSign.Read(
             Session.Window.State.UNREAD,

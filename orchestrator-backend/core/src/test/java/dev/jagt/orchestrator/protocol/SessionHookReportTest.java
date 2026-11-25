@@ -19,6 +19,16 @@ class SessionHookReportTest {
   }
 
   @Test
+  void dropsLogPathHoldingNulAsViolationInsteadOfThrowing() {
+    var said = new SessionHookReport("/tmp/agent/\0session.jsonl", "startup", null);
+
+    assertThat(said.violations(MessageContext.NONE))
+        .extracting(Violation::field)
+        .containsExactly("transcriptPath");
+    assertThat(said.sessionLog()).isEmpty();
+  }
+
+  @Test
   void followsTheLogTheHarnessNamedInFull() {
     var said = new SessionHookReport("/tmp/agent/session.jsonl", "startup", null);
 

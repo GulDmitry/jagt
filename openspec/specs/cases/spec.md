@@ -174,7 +174,7 @@ human extends the cases.
 - **THEN** the reply is taken and ABC-42 is not stopped
 
 ### Requirement: A relay acts only where the task still stands
-Every relay SHALL carry the standing of the task it decided on: `flow/session/Standing`, its status, the way its stop ends and its turn.
+Every relay SHALL carry the standing of the task it decided on: `flow/session/SessionStanding`, its status, the way its stop ends and its turn.
 It SHALL refuse where the task stands elsewhere by the time it is sent, opening no turn and writing nothing.
 Writes that move none of these (usage, polls, silence, probes) never refuse one.
 

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.debug;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -26,7 +28,7 @@ public record TranscriptRead(String taskId, @Nullable Integer maxChars) implemen
               "Newest characters kept, at most " + MAX_CHARS + ". Default: " + DEFAULT_CHARS + ".");
 
   public TranscriptRead {
-    taskId = taskId == null || taskId.isBlank() ? null : taskId;
+    taskId = absent(taskId);
   }
 
   public int count() {

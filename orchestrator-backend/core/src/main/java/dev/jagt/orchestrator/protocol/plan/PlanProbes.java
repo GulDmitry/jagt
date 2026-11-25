@@ -39,13 +39,9 @@ public final class PlanProbes {
   public static Read of(String plan) {
     List<Probe> probes = new ArrayList<>();
     List<Violation> violations = new ArrayList<>();
-    boolean inBlock = false;
-    for (String line : plan.lines().map(String::strip).toList()) {
-      if (!inBlock) {
-        inBlock = line.equals(OPEN);
-      } else if (line.equals(CLOSE)) {
-        inBlock = false;
-      } else if (!line.isEmpty()) {
+    PlanSection block = PlanSection.fenced(OPEN, CLOSE, plan);
+    for (String line : block.lines()) {
+      if (!line.isEmpty()) {
         probe(line)
             .ifPresentOrElse(
                 probes::add,
@@ -60,7 +56,7 @@ public final class PlanProbes {
                                 + " shell, so no | ; & < > $ ` or \\")));
       }
     }
-    if (inBlock) {
+    if (!block.closed()) {
       violations.add(new Violation(FIELD, "close the ```probes block with ```"));
     }
     if (probes.size() > MAX) {

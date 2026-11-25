@@ -21,30 +21,23 @@ public final class PlanCriteria {
 
   public static List<Violation> violationsIn(String plan) {
     List<Violation> violations = new ArrayList<>();
-    boolean inSection = false;
-    boolean found = false;
-    int items = 0;
-    for (String line : plan.lines().map(String::strip).toList()) {
-      if (line.startsWith("## ")) {
-        inSection = line.equalsIgnoreCase(HEADING);
-        found |= inSection;
-      } else if (inSection && line.startsWith("- ")) {
-        items++;
-        if (!ITEM.matcher(line).matches()) {
-          violations.add(
-              new Violation(
-                  FIELD,
-                  "`"
-                      + line
-                      + "` carries no tag: write `- [here] <criterion>`,"
-                      + " `- [elsewhere: <part>] <criterion>` or `- [wrong: <why>] <criterion>`;"
-                      + " add `, own` inside the brackets to one you wrote yourself"));
-        }
+    PlanSection section = PlanSection.under(HEADING, plan);
+    List<String> items = section.items();
+    for (String line : items) {
+      if (!ITEM.matcher(line).matches()) {
+        violations.add(
+            new Violation(
+                FIELD,
+                "`"
+                    + line
+                    + "` carries no tag: write `- [here] <criterion>`,"
+                    + " `- [elsewhere: <part>] <criterion>` or `- [wrong: <why>] <criterion>`;"
+                    + " add `, own` inside the brackets to one you wrote yourself"));
       }
     }
-    if (!found) {
+    if (!section.found()) {
       violations.add(new Violation(FIELD, "add a `" + HEADING + "` section"));
-    } else if (items == 0) {
+    } else if (items.isEmpty()) {
       violations.add(
           new Violation(
               FIELD, "list at least one criterion under `" + HEADING + "` as a `- ` item"));

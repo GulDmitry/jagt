@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import static dev.jagt.orchestrator.protocol.Wire.absent;
+import static dev.jagt.orchestrator.protocol.Wire.webLink;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
@@ -108,9 +109,7 @@ public record NewTaskMessage(
       found.add(
           new Violation("branchStrategy", "one of " + BranchStrategy.ids() + ", or left out"));
     }
-    if (ticketUrl != null
-        && !ticketUrl.startsWith("http://")
-        && !ticketUrl.startsWith("https://")) {
+    if (ticketUrl != null && !webLink(ticketUrl)) {
       found.add(new Violation("ticketUrl", "an http(s) link the human can open, not " + ticketUrl));
     }
     if (projectKey != null && placement.alsoProjects().contains(projectKey)) {

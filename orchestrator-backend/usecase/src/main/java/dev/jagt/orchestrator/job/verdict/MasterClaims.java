@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.turn.AgentReport;
@@ -23,7 +23,7 @@ class MasterClaims {
    */
   StepRelay.Claim reporting(String taskId, TaskState read, AgentReport means, String message) {
     return new StepRelay.Claim(
-        Standing.of(read),
+        SessionStanding.of(read),
         opensTheTurn ->
             reports.reportWhileStanding(
                 taskId, read, FlowRules.relayed(), means, message, opensTheTurn),
@@ -33,7 +33,7 @@ class MasterClaims {
   /** Opens a turn of its own and moves no status; the task as opened lands in {@code after}. */
   StepRelay.Claim opening(String taskId, TaskState task, AtomicReference<TaskState> after) {
     return new StepRelay.Claim(
-        Standing.of(task),
+        SessionStanding.of(task),
         opens ->
             reports.claimWhileStanding(
                 taskId,

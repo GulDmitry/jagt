@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task.deploy;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import dev.jagt.orchestrator.task.text.Blank;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -33,18 +34,18 @@ public record Checks(
   }
 
   public Checks withRead(String hostStatus, @Nullable String tip) {
-    return new Checks(hostStatus, List.of(), blankToNull(tip), headTip, infraRetries, pipelineUrl);
+    return new Checks(hostStatus, List.of(), Blank.toNull(tip), headTip, infraRetries, pipelineUrl);
   }
 
   public Checks withPipelineUrl(@Nullable String url) {
-    String listed = blankToNull(url);
+    String listed = Blank.toNull(url);
     return listed == null || listed.equals(pipelineUrl)
         ? this
         : new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries, listed);
   }
 
   public Checks withHead(@Nullable String tip) {
-    String head = blankToNull(tip);
+    String head = Blank.toNull(tip);
     return head == null || head.equals(headTip)
         ? this
         : new Checks(pipelineStatus, checksUnread, checksTip, head, infraRetries, pipelineUrl);
@@ -75,14 +76,10 @@ public record Checks(
   }
 
   public boolean readsStaleOn(@Nullable String tip) {
-    return headTip != null && !headTip.equals(blankToNull(tip));
+    return headTip != null && !headTip.equals(Blank.toNull(tip));
   }
 
   public boolean unread() {
     return !checksUnread.isEmpty();
-  }
-
-  private static @Nullable String blankToNull(@Nullable String tip) {
-    return tip == null || tip.isBlank() ? null : tip;
   }
 }

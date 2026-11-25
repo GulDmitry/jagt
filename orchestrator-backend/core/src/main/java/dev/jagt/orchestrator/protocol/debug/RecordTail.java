@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.debug;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -33,7 +35,7 @@ public record RecordTail(String record, @Nullable Integer lines) implements Mess
                   + ".");
 
   public RecordTail {
-    record = record == null || record.isBlank() ? null : record.strip();
+    record = absent(record);
   }
 
   public int count() {

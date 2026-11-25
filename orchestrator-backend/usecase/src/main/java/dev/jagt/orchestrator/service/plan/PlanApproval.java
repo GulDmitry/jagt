@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.plan;
 
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -46,7 +46,8 @@ public class PlanApproval {
       return false;
     }
     boolean placed = plan.settle(id);
-    Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
+    SessionStanding read =
+        stateService.task(id).map(SessionStanding::of).orElse(SessionStanding.ABSENT);
     if (claim == null) {
       stateService.reduce(id, TaskReducer::planApproved);
     }

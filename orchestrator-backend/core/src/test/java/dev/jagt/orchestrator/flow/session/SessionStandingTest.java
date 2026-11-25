@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
-class StandingTest {
+class SessionStandingTest {
 
   @Test
   void staysTheSameWhereOnlyPollWasWritten() {
@@ -14,7 +14,7 @@ class StandingTest {
 
     TaskState polled = read.withLastPolledAt(5_000);
 
-    assertThat(Standing.of(polled)).isEqualTo(Standing.of(read));
+    assertThat(SessionStanding.of(polled)).isEqualTo(SessionStanding.of(read));
   }
 
   @Test
@@ -24,6 +24,6 @@ class StandingTest {
     TaskState relayed =
         read.withTurn(read.work().turnOrNone().relayed("ship", "digest", "", 1_000));
 
-    assertThat(Standing.of(relayed)).isNotEqualTo(Standing.of(read));
+    assertThat(SessionStanding.of(relayed)).isNotEqualTo(SessionStanding.of(read));
   }
 }

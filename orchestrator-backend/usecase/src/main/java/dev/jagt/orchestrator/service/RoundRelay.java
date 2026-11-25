@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.role.SessionBrief;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -28,7 +28,7 @@ public class RoundRelay {
   public SweepResult relay(
       String taskId, RoundSource source, String mrUrl, ReviewFacts round, String said, String tip) {
     ReviewFacts r = stops.asking(taskId) ? round.withoutChecks() : round;
-    Standing standing = steps.standing(taskId);
+    SessionStanding standing = steps.standing(taskId);
     String told = RoundRecord.orUnknown(r.pipeline().status());
     String read = "sweep " + taskId + ": " + r.discussion().threads().size() + " thread(s)";
     TaskStatus checked = null;

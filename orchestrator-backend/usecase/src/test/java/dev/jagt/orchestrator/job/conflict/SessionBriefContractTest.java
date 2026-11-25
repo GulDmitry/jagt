@@ -18,7 +18,7 @@ import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
@@ -102,7 +102,7 @@ class SessionBriefContractTest {
                 new Conflict.Progress(7, 0, "d"),
                 null,
                 false,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
+                new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
 
     ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
     verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());

@@ -27,15 +27,16 @@ in jagt's own types or nothing. The status, the round's claim, its request and t
 ### Requirement: Arguments are read into the message
 `MessageTool` SHALL be the one path from the wire to a verb: arguments are read into the message and judged before
 the tool runs. A field the message does not declare is ignored, so a CLI a version ahead is not rejected; one
-misspelling a field the call left out is refused.
+misspelling a field the call left out is refused. A blank field reads as absent and a padded one is stripped, the same
+for every message (`protocol/Wire`).
 
-#### Scenario: An unknown field
+#### Scenario: An unknown, a misspelled or a blank field
 - **WHEN** a call carries an undeclared field
 - **THEN** it is ignored and the rest judged
-
-#### Scenario: A misspelled field
 - **WHEN** a call sends `task_id` and no `taskId`
 - **THEN** it is refused naming `taskId`, never run on the caller's own task
+- **WHEN** a field is blank or padded with spaces
+- **THEN** the blank one reads absent and the padded one is stripped
 
 ### Requirement: Field and consistency rules, one report
 Field rules SHALL catch a value out of its enum, a missing required field, a link nobody can open, a question with no
@@ -91,10 +92,9 @@ what comes next off what the handler threw: `validation`, a wrong argument, is f
 
 ### Requirement: A hook's post is filtered, not refused
 `protocol/SessionHookReport` SHALL filter what a hook posts, never refuse it: what jagt cannot believe is dropped, logged once.
-
-#### Scenario: A relative log path
-- **WHEN** a hook posts one
-- **THEN** it is dropped, the rest kept
+#### Scenario: A relative or unparseable log path
+- **WHEN** a hook posts a relative path, or one holding a NUL character
+- **THEN** it is dropped as a violation, never thrown, the rest kept
 
 ### Requirement: A paid read is judged and asked again
 For a paid read jagt is the sender: `protocol/TicketRead` SHALL judge the answer, and its violations ride into the next
@@ -157,14 +157,12 @@ A call whose `X-Working-Directory` lies in a task's worktree SHALL be that task'
 #### Scenario: Nobody in particular
 - **WHEN** a tokenless `curl`, or a worktree no task holds, calls
 - **THEN** it is refused, never the Master
+- **WHEN** a caller names an unknown tool
+- **THEN** the refusal lists its tools
 
 #### Scenario: What a sub-agent sees
 - **WHEN** a sub-agent lists or calls tools
 - **THEN** it has `update_agent_status`, `notify_user` and `open_code`; every other tool is the Master's alone
-
-#### Scenario: A tool name nobody declared
-- **WHEN** a caller names an unknown tool
-- **THEN** the refusal lists its tools
 
 ### Requirement: A tool says whether it changes anything
 `McpToolRegistry` SHALL take an `Effect` for every tool, and `tools/list` SHALL carry `readOnlyHint` from it. A read, or a

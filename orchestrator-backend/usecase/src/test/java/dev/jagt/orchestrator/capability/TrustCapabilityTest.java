@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -30,7 +30,7 @@ class TrustCapabilityTest {
 
   @Test
   void tellsTheSessionToGoOnWhereItWaitedOnTheTrust() {
-    Standing read = new Standing(TaskStatus.IN_PROGRESS, "", 0, 0);
+    SessionStanding read = new SessionStanding(TaskStatus.IN_PROGRESS, "", 0, 0);
     when(trusted.trust("ABC-1")).thenReturn(true);
     when(relay.standing("ABC-1")).thenReturn(read);
     when(relay.relay(
@@ -44,7 +44,7 @@ class TrustCapabilityTest {
 
   @Test
   void saysNothingOfTheSessionWhereTheRelayWasRefused() {
-    Standing read = new Standing(TaskStatus.IN_PROGRESS, "", 0, 0);
+    SessionStanding read = new SessionStanding(TaskStatus.IN_PROGRESS, "", 0, 0);
     when(trusted.trust("ABC-1")).thenReturn(true);
     when(relay.standing("ABC-1")).thenReturn(read);
 

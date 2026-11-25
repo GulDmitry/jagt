@@ -14,7 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.Verification;
 import dev.jagt.orchestrator.service.report.AgentStatusReports;
@@ -66,7 +66,7 @@ class VerifyJobTest {
             any(Step.class),
             anyString(),
             eq(StepRelay.Delivery.ROUND),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 
   @Test
@@ -83,7 +83,7 @@ class VerifyJobTest {
             eq(Step.VERIFY),
             contains("BUILD FAILED"),
             eq(StepRelay.Delivery.ROUND),
-            any(Standing.class));
+            any(SessionStanding.class));
     verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
     verify(statusReports, never()).verified(eq(true), any(), any());
   }
@@ -105,7 +105,7 @@ class VerifyJobTest {
             any(Step.class),
             anyString(),
             eq(StepRelay.Delivery.ROUND),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 
   @Nested
@@ -121,7 +121,7 @@ class VerifyJobTest {
               eq(Step.VERIFY),
               anyString(),
               eq(StepRelay.Delivery.ROUND),
-              any(Standing.class)))
+              any(SessionStanding.class)))
           .thenReturn(true);
     }
 
@@ -139,7 +139,7 @@ class VerifyJobTest {
               eq(Step.VERIFY),
               anyString(),
               eq(StepRelay.Delivery.ROUND),
-              any(Standing.class));
+              any(SessionStanding.class));
       verify(statusReports, never()).verified(eq(true), any(), any());
       TaskStop stop = state.task("ABC-1").orElseThrow().work().stop();
       assertThat(Objects.requireNonNull(stop).trigger())
@@ -163,7 +163,7 @@ class VerifyJobTest {
               eq(Step.VERIFY),
               anyString(),
               eq(StepRelay.Delivery.ROUND),
-              any(Standing.class));
+              any(SessionStanding.class));
     }
 
     @Test
@@ -173,7 +173,7 @@ class VerifyJobTest {
               eq(Step.VERIFY),
               anyString(),
               eq(StepRelay.Delivery.ROUND),
-              any(Standing.class)))
+              any(SessionStanding.class)))
           .thenAnswer(stopsTheTask -> {
             state.updateTask(
                 "ABC-1",
@@ -200,7 +200,7 @@ class VerifyJobTest {
             eq(Step.VERIFY),
             anyString(),
             eq(StepRelay.Delivery.ROUND),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(true);
 
     job.runOn(state.tasks());
@@ -237,7 +237,7 @@ class VerifyJobTest {
             eq(Step.PROBES),
             eq("artifact docs/guide.md — FAILED\nno such file"),
             eq(StepRelay.Delivery.ROUND),
-            any(Standing.class));
+            any(SessionStanding.class));
     verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-1");
     assertThat(state.task("ABC-1").orElseThrow().gate().probes()).containsExactly(passed, failed);
   }
@@ -272,7 +272,7 @@ class VerifyJobTest {
               any(Step.class),
               anyString(),
               eq(StepRelay.Delivery.ROUND),
-              any(Standing.class));
+              any(SessionStanding.class));
       verify(statusReports, never()).verified(anyBoolean(), any(), any());
       assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();
       assertThat(state.task("ABC-42").orElseThrow().gate().probes()).isEmpty();
@@ -290,7 +290,7 @@ class VerifyJobTest {
               Step.PROBES,
               "artifact docs/guide.md — FAILED\nno such file",
               StepRelay.Delivery.ROUND,
-              Standing.of(state.task("ABC-42").orElseThrow()));
+              SessionStanding.of(state.task("ABC-42").orElseThrow()));
       verify(statusReports).verified(false, "plan probe failed; relayed", "ABC-42");
     }
   }

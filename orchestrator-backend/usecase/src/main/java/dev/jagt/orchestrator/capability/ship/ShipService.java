@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -69,7 +69,7 @@ public class ShipService {
         taskId,
         Step.SHIP,
         shipFacts(title, taskId, carrying, targets.size() > 1, repliesStep(taskId, config)),
-        Standing.of(task))) {
+        SessionStanding.of(task))) {
       return Outcome.nothing(
           "ship "
               + taskId

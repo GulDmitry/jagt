@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job.session;
 
 import dev.jagt.orchestrator.flow.capability.Watch;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.port.AgentPresence;
@@ -59,7 +59,7 @@ public class RestartAskJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    ask(taskId, Standing.of(task));
+    ask(taskId, SessionStanding.of(task));
   }
 
   private boolean running(String taskId) {
@@ -70,7 +70,7 @@ public class RestartAskJob implements TaskJob {
     }
   }
 
-  private void ask(String taskId, Standing read) {
+  private void ask(String taskId, SessionStanding read) {
     if (!running(taskId) || sessions.composing(taskId)) {
       log.atInfo()
           .setMessage("restart ask skipped")

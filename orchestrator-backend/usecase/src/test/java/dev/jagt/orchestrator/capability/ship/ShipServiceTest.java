@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -74,7 +74,7 @@ class ShipServiceTest {
     when(configService.project("web"))
         .thenReturn(new ProjectConfig("/web", "origin/master", "dev", List.of()));
     when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
-    when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
+    when(relay.write(anyString(), any(Step.class), anyString(), any(SessionStanding.class)))
         .thenReturn(true);
     ships = new ShipService(stateService, configService, relay, changes, new ReplyRight(door));
   }
@@ -90,7 +90,11 @@ class ShipServiceTest {
     Outcome outcome = ships.ship("ABC-42");
 
     verify(relay)
-        .write(eq("ABC-42"), eq(Step.SHIP), contains("Push branch ABC-42."), any(Standing.class));
+        .write(
+            eq("ABC-42"),
+            eq(Step.SHIP),
+            contains("Push branch ABC-42."),
+            any(SessionStanding.class));
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
     assertThat(outcome.message()).contains("relayed to the agent", "SHIPPING");
     assertThat(outcome.stamp()).isEqualTo("shipping");
@@ -108,7 +112,8 @@ class ShipServiceTest {
     ships.ship("ABC-7");
 
     ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-    verify(relay).write(eq("ABC-7"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
+    verify(relay)
+        .write(eq("ABC-7"), eq(Step.SHIP), instruction.capture(), any(SessionStanding.class));
     assertThat(instruction.getValue()).contains("merges into feature/parent");
   }
 
@@ -127,7 +132,8 @@ class ShipServiceTest {
     ships.ship("ABC-42");
 
     ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-    verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
+    verify(relay)
+        .write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(SessionStanding.class));
     assertThat(instruction.getValue())
         .contains("demo: /wt, merges into main")
         .contains("web: /wt-web, merges into master")
@@ -150,14 +156,15 @@ class ShipServiceTest {
     Outcome outcome = ships.ship("ABC-42");
 
     ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-    verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
+    verify(relay)
+        .write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(SessionStanding.class));
     assertThat(instruction.getValue()).contains("demo: /wt").doesNotContain("web: /wt-web");
     assertThat(outcome.message()).contains("nothing to ship in web");
   }
 
   @Test
   void shipsNothingWhereNoCaseSendsTheShipAtTheTasksStatus() {
-    when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
+    when(relay.write(anyString(), any(Step.class), anyString(), any(SessionStanding.class)))
         .thenReturn(false);
     stateService.putTask(
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
@@ -178,7 +185,8 @@ class ShipServiceTest {
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
     assertThat(outcome.message()).contains("nothing to ship");
-    verify(relay, never()).write(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .write(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -205,7 +213,7 @@ class ShipServiceTest {
             eq("ABC-42"),
             eq(Step.SHIP),
             contains("its request is already open"),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 
   @Test
@@ -219,12 +227,12 @@ class ShipServiceTest {
               return null;
             })
         .when(relay)
-        .write(eq("ABC-42"), eq(Step.SHIP), anyString(), any(Standing.class));
+        .write(eq("ABC-42"), eq(Step.SHIP), anyString(), any(SessionStanding.class));
 
     ships.ship("ABC-42");
 
     assertThat(reentrant.get().message()).contains("already running");
-    verify(relay).write(eq("ABC-42"), eq(Step.SHIP), anyString(), any(Standing.class));
+    verify(relay).write(eq("ABC-42"), eq(Step.SHIP), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -430,7 +438,7 @@ class ShipServiceTest {
               eq("ABC-42"),
               eq(Step.SHIP),
               contains("this ship is the Master session's"),
-              any(Standing.class));
+              any(SessionStanding.class));
     }
 
     @Test
@@ -454,7 +462,7 @@ class ShipServiceTest {
               eq("ABC-42"),
               eq(Step.SHIP),
               contains("post each drafted reply"),
-              any(Standing.class));
+              any(SessionStanding.class));
     }
   }
 
@@ -490,7 +498,8 @@ class ShipServiceTest {
     ships.ship("ABC-42");
 
     ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-    verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
+    verify(relay)
+        .write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(SessionStanding.class));
     assertThat(instruction.getValue())
         .contains("reviewRequests={\"demo\": \"<its url>\"}")
         .doesNotContain("reviewRequestUrl");
@@ -504,7 +513,8 @@ class ShipServiceTest {
     ships.ship("ABC-42");
 
     ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-    verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
+    verify(relay)
+        .write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(SessionStanding.class));
     assertThat(instruction.getValue())
         .contains("reviewRequestUrl=<the url>")
         .doesNotContain("reviewRequests=");

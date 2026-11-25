@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import static dev.jagt.orchestrator.protocol.Wire.blank;
+import static dev.jagt.orchestrator.protocol.Wire.webLink;
 
 import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.ArrayList;
@@ -48,9 +49,7 @@ public final class TicketRead {
     }
     if (blank(facts.url())) {
       found.add(new Violation("url", "the item's canonical web link; never invent one"));
-    } else if (!facts.url().startsWith("http://")
-        && !facts.url().startsWith("https://")
-        && !facts.url().startsWith("file://")) {
+    } else if (!webLink(facts.url()) && !facts.url().startsWith("file://")) {
       found.add(new Violation("url", "an http(s) or file link, not " + facts.url()));
     }
     // An unassigned item is an answer; a blank status is not, an intake trigger having nothing to

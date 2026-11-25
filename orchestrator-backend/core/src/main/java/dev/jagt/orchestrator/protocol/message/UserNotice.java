@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -18,8 +20,8 @@ public record UserNotice(String title, String message) implements Message {
           .required("message", "string", "One line, for a banner that is read in passing.");
 
   public UserNotice {
-    title = title == null || title.isBlank() ? null : title;
-    message = message == null || message.isBlank() ? null : message;
+    title = absent(title);
+    message = absent(message);
   }
 
   @Override

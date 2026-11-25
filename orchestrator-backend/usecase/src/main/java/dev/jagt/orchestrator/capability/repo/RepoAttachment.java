@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability.repo;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
@@ -42,7 +42,7 @@ class RepoAttachment {
         .addKeyValue("project", project)
         .addKeyValue("path", added.worktreePath())
         .log();
-    return told(id, added, Standing.of(task));
+    return told(id, added, SessionStanding.of(task));
   }
 
   /** Makes {@code project} the task's repository request, as if its session had asked. */
@@ -58,7 +58,7 @@ class RepoAttachment {
     }
   }
 
-  private String told(String taskId, NewRepo added, Standing read) {
+  private String told(String taskId, NewRepo added, SessionStanding read) {
     String where = added.project() + " is at " + added.worktreePath();
     try {
       relay.relay(

@@ -34,8 +34,8 @@ public record ProjectConfig(
       @Nullable SpecRoot specs) {
 
     public Repository {
-      labels = labels == null ? List.of() : labels;
-      humanPaths = humanPaths == null ? List.of() : humanPaths;
+      labels = labels == null ? List.of() : List.copyOf(labels);
+      humanPaths = humanPaths == null ? List.of() : List.copyOf(humanPaths);
     }
   }
 
@@ -72,11 +72,11 @@ public record ProjectConfig(
 
     public CodeHost {
       review = review == null ? Review.NONE : review;
-      notesCommand = notesCommand == null ? List.of() : notesCommand;
-      pipelineCommand = pipelineCommand == null ? List.of() : pipelineCommand;
-      retryCommand = retryCommand == null ? List.of() : retryCommand;
-      loginCommand = loginCommand == null ? List.of() : loginCommand;
-      closeCommand = closeCommand == null ? List.of() : closeCommand;
+      notesCommand = notesCommand == null ? List.of() : List.copyOf(notesCommand);
+      pipelineCommand = pipelineCommand == null ? List.of() : List.copyOf(pipelineCommand);
+      retryCommand = retryCommand == null ? List.of() : List.copyOf(retryCommand);
+      loginCommand = loginCommand == null ? List.of() : List.copyOf(loginCommand);
+      closeCommand = closeCommand == null ? List.of() : List.copyOf(closeCommand);
     }
   }
 
@@ -96,10 +96,10 @@ public record ProjectConfig(
     public static final Review NONE = new Review(List.of(), List.of(), List.of(), List.of());
 
     public Review {
-      awaitingCommand = awaitingCommand == null ? List.of() : awaitingCommand;
-      changeCommand = changeCommand == null ? List.of() : changeCommand;
-      postCommand = postCommand == null ? List.of() : postCommand;
-      reviewBots = reviewBots == null ? List.of() : reviewBots;
+      awaitingCommand = awaitingCommand == null ? List.of() : List.copyOf(awaitingCommand);
+      changeCommand = changeCommand == null ? List.of() : List.copyOf(changeCommand);
+      postCommand = postCommand == null ? List.of() : List.copyOf(postCommand);
+      reviewBots = reviewBots == null ? List.of() : List.copyOf(reviewBots);
     }
   }
 
@@ -113,7 +113,7 @@ public record ProjectConfig(
       @JsonProperty("verifyMinutes") @Nullable Integer minutes) {
 
     public Verify {
-      command = command == null ? List.of() : command;
+      command = command == null ? List.of() : List.copyOf(command);
     }
   }
 
@@ -133,9 +133,9 @@ public record ProjectConfig(
     public static final Setup NONE = new Setup(List.of(), null, List.of(), List.of());
 
     public Setup {
-      command = command == null ? List.of() : command;
-      credentialChecks = credentialChecks == null ? List.of() : credentialChecks;
-      companions = companions == null ? List.of() : companions;
+      command = command == null ? List.of() : List.copyOf(command);
+      credentialChecks = credentialChecks == null ? List.of() : List.copyOf(credentialChecks);
+      companions = companions == null ? List.of() : List.copyOf(companions);
     }
   }
 
@@ -147,7 +147,7 @@ public record ProjectConfig(
   public record CredentialCheck(String name, List<String> command, String renewedBy) {
 
     public CredentialCheck {
-      command = command == null ? List.of() : command;
+      command = command == null ? List.of() : List.copyOf(command);
       renewedBy = renewedBy == null ? "" : renewedBy;
     }
   }

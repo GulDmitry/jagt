@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.command.workspace;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.service.project.ProjectRemoval;
 import dev.jagt.orchestrator.service.project.ProjectSetup;
+import dev.jagt.orchestrator.task.text.Blank;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -63,7 +64,7 @@ public class ProjectCommand implements GlobalCommand {
             reading.key(),
             path,
             reading.baseBranch(),
-            reading.deployBranch().isBlank() ? null : reading.deployBranch(),
+            Blank.toNull(reading.deployBranch()),
             reading.verifyCommand().isEmpty() ? null : reading.verifyCommand(),
             null,
             null,

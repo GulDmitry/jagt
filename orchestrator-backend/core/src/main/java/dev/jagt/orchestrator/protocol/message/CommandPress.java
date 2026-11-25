@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -17,7 +19,7 @@ public record CommandPress(String verb, String tail) implements Message {
   }
 
   public CommandPress {
-    verb = verb == null || verb.isBlank() ? null : verb.strip();
+    verb = absent(verb);
     tail = tail == null ? "" : tail.strip();
   }
 

@@ -39,17 +39,11 @@ public final class PlanRepositories {
     }
     List<Violation> violations = new ArrayList<>();
     Set<String> listed = new LinkedHashSet<>();
-    boolean inSection = false;
-    boolean found = false;
-    for (String line : plan.lines().map(String::strip).toList()) {
-      if (line.startsWith("## ")) {
-        inSection = line.equalsIgnoreCase(HEADING);
-        found |= inSection;
-      } else if (inSection && line.startsWith("- ")) {
-        itemViolation(line, projects, listed).ifPresent(violations::add);
-      }
+    PlanSection section = PlanSection.under(HEADING, plan);
+    for (String line : section.items()) {
+      itemViolation(line, projects, listed).ifPresent(violations::add);
     }
-    if (!found) {
+    if (!section.found()) {
       violations.add(
           new Violation(
               FIELD,
@@ -97,15 +91,10 @@ public final class PlanRepositories {
 
   private static List<Matcher> itemsIn(String plan) {
     List<Matcher> items = new ArrayList<>();
-    boolean inSection = false;
-    for (String line : plan.lines().map(String::strip).toList()) {
-      if (line.startsWith("## ")) {
-        inSection = line.equalsIgnoreCase(HEADING);
-      } else if (inSection) {
-        Matcher item = ITEM.matcher(line);
-        if (item.matches()) {
-          items.add(item);
-        }
+    for (String line : PlanSection.under(HEADING, plan).lines()) {
+      Matcher item = ITEM.matcher(line);
+      if (item.matches()) {
+        items.add(item);
       }
     }
     return items;

@@ -14,7 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -68,7 +68,7 @@ class PlanApprovalTest {
             eq(Step.PLAN),
             anyString(),
             eq(StepRelay.Delivery.CONTEXT),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(true);
 
     boolean told =
@@ -83,7 +83,7 @@ class PlanApprovalTest {
             Step.PLAN,
             "The human read plan.md: the plan holds.",
             StepRelay.Delivery.CONTEXT,
-            Standing.of(state.task("ABC-1").orElseThrow()));
+            SessionStanding.of(state.task("ABC-1").orElseThrow()));
   }
 
   @Test
@@ -94,7 +94,7 @@ class PlanApprovalTest {
             eq(Step.PLAN),
             anyString(),
             eq(StepRelay.Delivery.CONTEXT),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(false);
 
     boolean told =
@@ -118,6 +118,6 @@ class PlanApprovalTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 }

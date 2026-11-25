@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.flow.role.Arbiter;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -54,8 +54,8 @@ public class TaskTurns {
         .orElse(Turn.none());
   }
 
-  public Optional<Standing> standing(String taskId) {
-    return stateService.task(stateService.canonicalTaskId(taskId)).map(Standing::of);
+  public Optional<SessionStanding> standing(String taskId) {
+    return stateService.task(stateService.canonicalTaskId(taskId)).map(SessionStanding::of);
   }
 
   public void opened(String taskId, String step, String digest, @Nullable TaskStatus checked) {

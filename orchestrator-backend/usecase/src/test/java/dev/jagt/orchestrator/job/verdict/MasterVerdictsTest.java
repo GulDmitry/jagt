@@ -18,7 +18,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.job.master.MasterShip;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -739,7 +739,7 @@ class MasterVerdictsTest {
                 Step.ASKED_HUMAN,
                 "The reviewer asked the human: Add v3 beside v2, or replace it?",
                 StepRelay.Delivery.CONTEXT,
-                Standing.of(reviewPending)));
+                SessionStanding.of(reviewPending)));
 
     boolean moved =
         verdicts.act(
@@ -781,7 +781,7 @@ class MasterVerdictsTest {
                 Step.ANSWERED,
                 "The Master answered your question, standing in for the human:\nkeep v2 beside v3",
                 StepRelay.Delivery.CONTEXT,
-                Standing.of(reviewPending)));
+                SessionStanding.of(reviewPending)));
 
     boolean moved =
         verdicts.answered(

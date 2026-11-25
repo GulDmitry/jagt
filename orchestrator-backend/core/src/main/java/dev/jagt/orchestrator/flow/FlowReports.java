@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -232,7 +232,7 @@ public class FlowReports {
   }
 
   private static boolean standing(TaskState task, TaskState read) {
-    return Standing.of(task).equals(Standing.of(read));
+    return SessionStanding.of(task).equals(SessionStanding.of(read));
   }
 
   private TaskState declined(
