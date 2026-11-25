@@ -17,7 +17,7 @@ public final class StandRuns {
             scenario,
             StandInputs.of("stand.scenario", ""),
             StandInputs.of("stand.modes", ""),
-            Integer.getInteger("stand.runs", 1))
+            StandInputs.of("stand.runs", 1))
         .stream()
         .map(run -> Arguments.of(run.mode(), run.index()));
   }

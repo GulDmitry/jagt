@@ -5,6 +5,7 @@ import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.domain.JavaModifier;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,7 +55,13 @@ final class Members {
         .toList();
   }
 
-  static List<String> calls(List<JavaClass> owners, String call, Object without) {
+  static List<String> calls(List<JavaClass> owners, String calls, Object without) {
+    return Arrays.stream(calls.split(","))
+        .flatMap(call -> callsTo(owners, call.trim(), without).stream())
+        .toList();
+  }
+
+  private static List<String> callsTo(List<JavaClass> owners, String call, Object without) {
     int dot = call.lastIndexOf('.');
     String target = call.substring(0, dot);
     String name = call.substring(dot + 1);

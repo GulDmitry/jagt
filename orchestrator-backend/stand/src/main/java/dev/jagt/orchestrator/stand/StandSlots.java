@@ -4,7 +4,7 @@ import java.util.concurrent.Semaphore;
 
 public final class StandSlots {
 
-  static final StandSlots LIVE = new StandSlots(Integer.getInteger("stand.parallelism", 6));
+  static final StandSlots LIVE = new StandSlots(StandInputs.of("stand.parallelism", 6));
 
   private final Semaphore permits;
 

@@ -107,6 +107,21 @@ class ArchUnitEngineMembersTest {
   }
 
   @Test
+  void listsTheCallsToEveryMethodOfACommaSeparatedList() {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("calls", "java.time.ZoneId.systemDefault, java.time.LocalDate.now")
+                .build(),
+            new Project(root, "fitness", List.of("all"), Map.of()));
+
+    assertThat(found.items())
+        .hasSize(2)
+        .anyMatch(item -> item.contains("Clocked.zone"))
+        .anyMatch(item -> item.contains("Clocked.today"));
+  }
+
+  @Test
   void listsTheCallsToAMethodOfAPackageThatTakeNoClock() {
     Measurement found =
         engine.measure(

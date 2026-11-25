@@ -10,6 +10,10 @@ public final class StandInputs {
     return System.getProperty(key, fallback);
   }
 
+  public static int of(String key, int fallback) {
+    return Integer.getInteger(key, fallback);
+  }
+
   public static @Nullable String of(String key) {
     return System.getProperty(key);
   }

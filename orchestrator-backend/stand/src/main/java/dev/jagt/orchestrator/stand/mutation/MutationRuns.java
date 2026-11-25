@@ -24,7 +24,7 @@ public final class MutationRuns {
             StandInputs.of("stand.mutations", ""),
             seed.isBlank() ? System.nanoTime() : Long.parseLong(seed),
             StandInputs.of("stand.modes", ""),
-            Integer.getInteger("stand.runs", 1))
+            StandInputs.of("stand.runs", 1))
         .stream()
         .map(run -> Arguments.of(run.mutation().name(), run.seed(), run.mode(), run.index()));
   }
