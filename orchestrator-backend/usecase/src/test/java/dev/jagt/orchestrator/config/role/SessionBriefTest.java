@@ -122,9 +122,9 @@ class SessionBriefTest {
   @ValueSource(
       strings = {
         "Read task_notes.md (if present) and task_context.md",
-        "One carried from a previous session keeps the status the board shows",
-        "answer a question and end your turn without a report",
-        "report IN_PROGRESS when a change begins"
+        "One carried from a previous session keeps the board's status until a change begins",
+        "answer a question and end your turn unreported",
+        "report IN_PROGRESS when it begins"
       })
   void startStepTellsSessionTo(String instruction, @TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
