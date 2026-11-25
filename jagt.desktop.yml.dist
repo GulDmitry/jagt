@@ -270,6 +270,9 @@ orchestrator:
   # after the same guards: checks green, no conflict, the base branch read-only. A conflict waits for you.
   # deploy:
   #   onApproval: false
+  # `requireApproval: true` offers `deploy` only once the code host approves, to you and the Master alike; never on
+  # a reviewed request. A press before then is refused naming this key.
+  #   requireApproval: false
 
   # ── Infrastructure failures ────────────────────────────────────────────────────────────────────────────────
   # A pipeline the host says died on infrastructure, not on the code, is re-run by jagt after each wait here; one

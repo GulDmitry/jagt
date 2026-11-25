@@ -107,6 +107,19 @@ class ConfigServiceTest {
   }
 
   @Test
+  void deployRequireApprovalIsOffUntilJagtYmlTurnsItOn() throws Exception {
+    Path configFile = root.resolve("jagt.yml");
+    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+    boolean unset = service.load().deploy().requireApprovalOrDefault();
+    Files.writeString(configFile, "orchestrator:\n  deploy:\n    requireApproval: true\n");
+
+    boolean written = service.load().deploy().requireApprovalOrDefault();
+
+    assertThat(unset).isFalse();
+    assertThat(written).isTrue();
+  }
+
+  @Test
   void jagtYmlWithTheOldMasterKeyStillActs() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");

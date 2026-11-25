@@ -543,14 +543,18 @@ public record ConfigFile(
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record DeployConfig(@Nullable Boolean onApproval) {
+  public record DeployConfig(@Nullable Boolean onApproval, @Nullable Boolean requireApproval) {
 
     public static DeployConfig defaults() {
-      return new DeployConfig(null);
+      return new DeployConfig(null, null);
     }
 
     public boolean onApprovalOrDefault() {
       return onApproval != null && onApproval;
+    }
+
+    public boolean requireApprovalOrDefault() {
+      return requireApproval != null && requireApproval;
     }
   }
 

@@ -78,6 +78,23 @@ class FlowRulesTest {
   }
 
   @ParameterizedTest
+  @CsvSource({
+    "REVIEWED,true,false",
+    "APPROVED,true,true",
+    "REVIEWED,false,true",
+    "APPROVED,false,true"
+  })
+  void offersDeployOnReviewedRequestOnlyWhereNoApprovalIsRequired(
+      TaskStatus status, boolean requireApproval, boolean offered) {
+    Facts facts =
+        Facts.defaults()
+            .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true))
+            .withReach(Facts.Reach.defaults().withRequireApproval(requireApproval));
+
+    assertThat(rules.allows(status, TaskAction.DEPLOY, facts)).isEqualTo(offered);
+  }
+
+  @ParameterizedTest
   @CsvSource({"SHIPPING,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
   void awaitsAnInstructionOnlyWhereJagtRelayedOne(TaskStatus status, boolean awaits) {
     assertThat(FlowRules.awaitsItsInstruction(status)).isEqualTo(awaits);

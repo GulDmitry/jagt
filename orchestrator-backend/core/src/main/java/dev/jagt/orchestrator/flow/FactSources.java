@@ -26,7 +26,8 @@ public record FactSources(
     GitDistrust trust,
     MergedRefresh merged,
     CurrentOrigin origin,
-    Function<String, Optional<String>> findings) {
+    Function<String, Optional<String>> findings,
+    BooleanSupplier requireApproval) {
 
   boolean agentLive(String taskId) {
     try {

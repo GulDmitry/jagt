@@ -305,6 +305,11 @@ public final class FlowRules {
     return StatusSets.waitsForDeploy(status);
   }
 
+  /** As above, where {@code requireApproval} leaves a request read but not yet approved alone. */
+  public static boolean deployedByTheArbiter(TaskStatus status, boolean requireApproval) {
+    return deployedByTheArbiter(status) && !(requireApproval && FlowRules.reviewed(status));
+  }
+
   /**
    * A round is out with the reviewers, so only the code host moves it on. NOT what the unattended
    * poll watches, which is an open request whatever the status.

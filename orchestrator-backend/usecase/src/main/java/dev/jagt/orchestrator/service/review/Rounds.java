@@ -42,7 +42,11 @@ public class Rounds implements PhaseProfiles {
             FlowRules.readByTheArbiter(task.standing().status()) && arbiter.running())
         .withCheckers(checkers.of(task))
         .withRequestless(requestless.stands(task))
-        .withReach(offers.facts().withSessionHeld(hold.held(task)));
+        .withReach(
+            offers
+                .facts()
+                .withRequireApproval(config.deploy().requireApprovalOrDefault())
+                .withSessionHeld(hold.held(task)));
   }
 
   @Override

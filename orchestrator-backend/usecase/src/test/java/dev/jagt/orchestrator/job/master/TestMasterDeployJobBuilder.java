@@ -13,15 +13,21 @@ import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 @With
-public record TestMasterDeployJobBuilder(String mode, @Nullable List<String> mine) {
+public record TestMasterDeployJobBuilder(
+    String mode, @Nullable List<String> mine, boolean requireApproval) {
 
   public static TestMasterDeployJobBuilder masterDeployJob() {
-    return new TestMasterDeployJobBuilder("act", List.of());
+    return new TestMasterDeployJobBuilder("act", List.of(), false);
   }
 
   public ConfigFile config() {
     return ConfigFile.defaults()
-        .withArbiter(new ConfigFile.ArbiterConfig(mode, null, null, mine, null));
+        .withReviewing(
+            new ConfigFile.Reviewing(
+                null,
+                null,
+                new ConfigFile.ArbiterConfig(mode, null, null, mine, null),
+                new ConfigFile.DeployConfig(null, requireApproval)));
   }
 
   public MasterDeployJob build(

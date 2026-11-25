@@ -89,6 +89,8 @@ you. **It never posts, pushes or deploys.** One model call per poll.
 
 **`deploy.onApproval`** deploys an approved request once, with the guards of your own `deploy`; off by default,
 on in `jagt.server.yml.dist`. The history names the code host as who acted.
+**`deploy.requireApproval`** offers `deploy` only once the host approves, never on a reviewed request; off by default,
+on in `jagt.server.yml.dist`.
 
 **`startupChecks`.** What is missing is [said at startup, all of it at
 once](rules/components.md#what-is-missing-is-said-at-startup-not-at-the-click-that-needed-it). Nothing reaches

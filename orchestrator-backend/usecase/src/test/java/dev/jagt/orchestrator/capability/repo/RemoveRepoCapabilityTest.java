@@ -42,7 +42,8 @@ class RemoveRepoCapabilityTest {
           id -> Optional.empty(),
           id -> false,
           () -> ActionOrigin.BOARD,
-          id -> Optional.empty());
+          id -> Optional.empty(),
+          () -> false);
 
   @Test
   void keepsTheTaskMessageAndTellsTheHumanWhenTheRepositoryLeft() {

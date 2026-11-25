@@ -64,13 +64,15 @@ public class FlowEngine {
             ? read
             : capabilities.of(action).map(named -> named.naming(read)).orElse(read);
     if (!rules.allows(task.standing().status(), action, facts)) {
-      throw notAvailable(taskId, task, action);
+      throw notAvailable(taskId, task, action, facts);
     }
     Facts pressed = pressed(facts, taskId);
     ActionOrigin by = sources.pressedBy();
     if (!rules.allows(task.standing().status(), action, pressed, by)) {
       Decline decline =
-          rules.declined(action, pressed, by).orElseThrow(() -> notAvailable(taskId, task, action));
+          rules
+              .declined(action, pressed, by)
+              .orElseThrow(() -> notAvailable(taskId, task, action, facts));
       if (decline.quiet()) {
         return apply(
             taskId,
@@ -101,8 +103,7 @@ public class FlowEngine {
         wrapped(taskId, action, capability, project, line));
   }
 
-  private Refusal notAvailable(String taskId, TaskState task, TaskAction action) {
-    Facts projected = Facts.projected(task);
+  private Refusal notAvailable(String taskId, TaskState task, TaskAction action, Facts facts) {
     return new Refusal(
         Refusal.Code.ACTION_NOT_AVAILABLE,
         action.label()
@@ -114,10 +115,7 @@ public class FlowEngine {
             + Move.forTask(
                     rules,
                     task.standing().status(),
-                    projected.withDelivery(
-                        projected
-                            .delivery()
-                            .withShippedWithoutRequest(sources.shippedWithoutRequest(task))),
+                    facts,
                     dev.jagt.orchestrator.flow.view.RoundState.of(task.standing().report(), false),
                     SessionPhase.silent(task))
                 .hint()
@@ -228,6 +226,7 @@ public class FlowEngine {
             .withScenarios(
                 capabilities.of(TaskAction.SCENARIOS).map(TaskCapability::offered).orElse(false))
             .withShellEscape(
-                capabilities.of(TaskAction.RUN).map(TaskCapability::offered).orElse(false)));
+                capabilities.of(TaskAction.RUN).map(TaskCapability::offered).orElse(false))
+            .withRequireApproval(sources.requireApproval().getAsBoolean()));
   }
 }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.task.TaskState;
@@ -173,6 +174,37 @@ class TurnsTest {
         Turns.next(status, report, false, Map.of(), Objects.requireNonNull(PROFILES.get(profile)));
 
     assertThat(holder).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"REVIEWED, CI", "APPROVED, ARBITER"})
+  void theMasterHoldsNoTurnOnReadRequestWhereTheHostsApprovalIsRequired(
+      TaskStatus status, Holder.Fixed expected) {
+    Holder holder =
+        Turns.next(
+            status,
+            AgentReport.PLAIN,
+            StopHold.NONE,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get("act")),
+            true);
+
+    assertThat(holder).isEqualTo(expected);
+  }
+
+  @Test
+  void theBoardShowsReadRequestWaitingOnTheHostWhereItsApprovalIsRequired() {
+    Move move =
+        Move.forTask(
+            rules,
+            TaskStatus.REVIEWED,
+            withReviewRequest.withReach(Facts.Reach.defaults().withRequireApproval(true)),
+            RoundState.of(AgentReport.PLAIN, false)
+                .withArbiter(Objects.requireNonNull(PROFILES.get("act"))),
+            false,
+            neverExpiringWatch);
+
+    assertThat(move.owner()).isEqualTo(Owner.CI);
   }
 
   @ParameterizedTest

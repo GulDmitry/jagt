@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.flow.view.Attention;
 import dev.jagt.orchestrator.flow.view.Owner;
 import dev.jagt.orchestrator.flow.view.Phase;
@@ -105,7 +106,14 @@ public record Move(
     }
     boolean hasReviewRequest = facts.delivery().hasReviewRequest();
     boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
-    Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());
+    Owner owner =
+        ownerOf(
+            status,
+            hasReviewRequest,
+            round,
+            agentSilent,
+            watch.stopped(),
+            facts.reach().requireApproval());
     Attention attention = attentionOf(owner, status, round, polled);
     return new Move(
         phaseOf(status),
@@ -120,7 +128,8 @@ public record Move(
             round,
             agentSilent,
             polled,
-            facts.delivery().revertConflict()));
+            facts.delivery().revertConflict(),
+            facts.reach().requireApproval()));
   }
 
   private static Move arbiterDecidesStop(FlowRules rules, TaskStatus status, Facts facts) {
@@ -170,16 +179,17 @@ public record Move(
       boolean hasReviewRequest,
       RoundState round,
       boolean agentSilent,
-      boolean pollStopped) {
+      boolean pollStopped,
+      boolean requireApproval) {
     if (arbiterReading(status, round) || Checkers.reading(round.checkers()).isPresent()) {
       return Owner.AGENT;
     }
     // ASKING IS STOPPING, whatever status it was asked from: the session waits until its question
     // is answered.
     if (asking(status, round)) {
-      return turnOf(status, round);
+      return turnOf(status, round, requireApproval);
     }
-    Owner owner = waitingOn(status, hasReviewRequest, round);
+    Owner owner = waitingOn(status, hasReviewRequest, round, requireApproval);
     if (owner == Owner.AGENT && agentSilent && !FlowRules.awaitingVerification(status)) {
       return Owner.YOU;
     }
@@ -189,7 +199,7 @@ public record Move(
 
   /** Whose turn a status ALONE means. */
   public static Owner ownerOf(TaskStatus status) {
-    return turnOf(status, RoundState.NONE);
+    return turnOf(status, RoundState.NONE, false);
   }
 
   private static Attention attentionOf(
@@ -267,7 +277,8 @@ public record Move(
   }
 
   /** Whose turn it is before liveness and the poller are taken into account. */
-  private static Owner waitingOn(TaskStatus status, boolean hasReviewRequest, RoundState round) {
+  private static Owner waitingOn(
+      TaskStatus status, boolean hasReviewRequest, RoundState round, boolean requireApproval) {
     // The only move left hands the same threads back, so the wait belongs to whoever writes the
     // next comment.
     if (status == TaskStatus.REVIEW_PENDING
@@ -283,11 +294,18 @@ public record Move(
     if (status == TaskStatus.REVIEW_PENDING && round.report() == AgentReport.NO_CHANGES) {
       return Owner.YOU;
     }
-    return turnOf(status, round);
+    return turnOf(status, round, requireApproval);
   }
 
-  private static Owner turnOf(TaskStatus status, RoundState round) {
-    return Owner.of(Turns.next(status, round.report(), false, round.checkers(), round.arbiter()));
+  private static Owner turnOf(TaskStatus status, RoundState round, boolean requireApproval) {
+    return Owner.of(
+        Turns.next(
+            status,
+            round.report(),
+            StopHold.NONE,
+            round.checkers(),
+            round.arbiter(),
+            requireApproval));
   }
 
   private static boolean arbiterReading(TaskStatus status, RoundState round) {
@@ -373,7 +391,7 @@ public record Move(
   }
 
   private static String askingHint(TaskStatus status, RoundState round) {
-    if (turnOf(status, round) == Owner.AGENT) {
+    if (turnOf(status, round, false) == Owner.AGENT) {
       return "the Master is answering the session; no action required";
     }
     // At REVIEW_PENDING the round is already back, so the answer is followed by a ship.
@@ -389,7 +407,8 @@ public record Move(
       RoundState round,
       boolean agentSilent,
       boolean polled,
-      boolean revertConflict) {
+      boolean revertConflict,
+      boolean requireApproval) {
     if (arbiterReading(status, round)) {
       return "the Master is reading this round; no action required";
     }
@@ -410,7 +429,7 @@ public record Move(
           hasReviewRequest
               ? "sweep relays the failure to the agent"
               : "no review request to read the failure from; see the Session tab";
-      case REVIEWED -> reviewedHint(hasReviewRequest, polled);
+      case REVIEWED -> reviewedHint(hasReviewRequest, polled, requireApproval);
       case APPROVED -> "approved: deploy or done";
       case DEPLOY_CONFLICT ->
           revertConflict
@@ -455,9 +474,14 @@ public record Move(
 
   // The checks are NOT asserted here: a red run on a round that came back clean leaves the status
   // alone.
-  private static String reviewedHint(boolean hasReviewRequest, boolean polled) {
+  private static String reviewedHint(
+      boolean hasReviewRequest, boolean polled, boolean requireApproval) {
     if (!hasReviewRequest) {
       return "nothing to approve: no request on this task; see the Session tab, or done to close";
+    }
+    if (requireApproval) {
+      return "nothing unresolved: deploy waits for the host's approval"
+          + " (deploy.requireApproval is on)";
     }
     return polled
         ? "nothing unresolved: waiting for an approval — deploy without one, or done"

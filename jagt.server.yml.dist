@@ -32,6 +32,7 @@ orchestrator:
   #   autoUpgrade: false                       # true: switch to a kept release once no session is up
   deploy:
     onApproval: true                           # deploy: an approved request deploys itself, then its deploy check runs
+    requireApproval: true                      # deploy: offered only once the host approves, never on a reviewed request
   autoReview:
     enabled: true                              # autoReview: reads open requests; an approval moves the task on
     waitingMaxIntervalMinutes: 60              # autoReview: a request waiting for an approval is read this often

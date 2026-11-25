@@ -38,7 +38,8 @@ class DeployOnApprovalJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withReviewing(
-                    new ConfigFile.Reviewing(null, null, null, new ConfigFile.DeployConfig(true))));
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
     when(state.task("ABC-1")).thenReturn(Optional.of(approved));
     ActionOrigin[] actedAs = new ActionOrigin[1];
     when(commands.execute("ABC-1", TaskAction.DEPLOY))
@@ -59,7 +60,7 @@ class DeployOnApprovalJobTest {
             ConfigFile.defaults()
                 .withReviewing(
                     new ConfigFile.Reviewing(
-                        null, null, null, new ConfigFile.DeployConfig(false))));
+                        null, null, null, new ConfigFile.DeployConfig(false, null))));
     when(state.task("ABC-1")).thenReturn(Optional.of(approved));
 
     job.runOn(Map.of("ABC-1", approved));
@@ -83,7 +84,8 @@ class DeployOnApprovalJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withReviewing(
-                    new ConfigFile.Reviewing(null, null, null, new ConfigFile.DeployConfig(true))));
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
     when(state.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build()));
 
@@ -98,7 +100,8 @@ class DeployOnApprovalJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withReviewing(
-                    new ConfigFile.Reviewing(null, null, null, new ConfigFile.DeployConfig(true))));
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
     TaskState reviewed = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
 
     job.runOn(Map.of("ABC-1", reviewed));
@@ -112,7 +115,8 @@ class DeployOnApprovalJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withReviewing(
-                    new ConfigFile.Reviewing(null, null, null, new ConfigFile.DeployConfig(true))));
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
     when(state.task("ABC-1")).thenReturn(Optional.of(approved));
 
     job.runOn(Map.of("ABC-1", approved));
@@ -127,7 +131,8 @@ class DeployOnApprovalJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withReviewing(
-                    new ConfigFile.Reviewing(null, null, null, new ConfigFile.DeployConfig(true))));
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
     when(state.task("ABC-1")).thenReturn(Optional.of(approved));
     when(commands.execute("ABC-1", TaskAction.DEPLOY))
         .thenThrow(new IllegalStateException("checks are not green"));

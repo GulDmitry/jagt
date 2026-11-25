@@ -77,6 +77,9 @@ final class TaskOffers {
 
   private static final DataId<Fact> SCENARIOS_READY = new DataId<>("scenarios ready", Fact.class);
 
+  private static final DataId<Fact> APPROVAL_REQUIRED =
+      new DataId<>("approval required", Fact.class);
+
   private static final DataId<Fact> SHELL_ESCAPE = new DataId<>("shell escape", Fact.class);
 
   private static final DataId<Fact> DISTRUSTED = new DataId<>("git distrusted", Fact.class);
@@ -153,7 +156,7 @@ final class TaskOffers {
       difference(SHIP_FROM, EnumSet.of(IN_PROGRESS, VERIFYING, REVIEW_PENDING, SHIPPING));
 
   private static final Set<TaskStatus> DEPLOY_ON_A_REQUEST =
-      difference(DEPLOY_FROM, EnumSet.of(DEPLOY_CONFLICT));
+      difference(DEPLOY_FROM, EnumSet.of(DEPLOY_CONFLICT, REVIEWED));
 
   private static final Set<TaskStatus> DEPLOY_WITHOUT_A_REQUEST = EnumSet.of(REVIEW_PENDING);
 
@@ -198,6 +201,13 @@ final class TaskOffers {
               yes(REVIEW_REQUEST)),
           offer(
               TaskAction.DEPLOY,
+              EnumSet.of(REVIEWED),
+              no(GIT_CHANGED),
+              no(REVERT_CONFLICT),
+              yes(REVIEW_REQUEST),
+              no(APPROVAL_REQUIRED)),
+          offer(
+              TaskAction.DEPLOY,
               DEPLOY_WITHOUT_A_REQUEST,
               no(GIT_CHANGED),
               no(REVERT_CONFLICT),
@@ -237,6 +247,7 @@ final class TaskOffers {
         facts -> Fact.of(facts.facts().delivery().shippedWithoutRequest()));
     chart.datum(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
     chart.datum(SCENARIOS_READY, facts -> Fact.of(facts.facts().reach().scenarios()));
+    chart.datum(APPROVAL_REQUIRED, facts -> Fact.of(facts.facts().reach().requireApproval()));
     chart.datum(SHELL_ESCAPE, facts -> Fact.of(facts.facts().reach().shellEscape()));
     for (Press press : PRESSES) {
       chart.datum(press.region(), facts -> Fact.of(press.why().apply(facts).isPresent()));
