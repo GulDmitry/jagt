@@ -34,16 +34,29 @@ class BoardSettingsTest extends BoardPageContext {
   }
 
   @Test
-  void projectEditButtonNamesItsProjectAndMasterModeIsChosenByRadios() {
+  void projectEditButtonNamesItsProject() {
     Page page = openLiveBoard();
     page.locator("#gear").click();
     page.locator("#gear-settings").click();
 
     assertThat(page.locator("#settings-body [data-project=alpha] button"))
         .hasAttribute("aria-label", "Edit alpha");
+  }
+
+  @Test
+  void masterModeShowsItsDefaultCheckedAndMarkedWhileJagtYmlLeavesItOut() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+
     page.locator("#settings-tab-master").click();
+
     assertThat(page.locator("#settings-body [data-key='roles.master.mode'] input[type=radio]"))
         .hasCount(3);
+    assertThat(page.locator("#settings-body [data-key='roles.master.mode'] input[value=act]"))
+        .isChecked();
+    assertThat(page.locator("#settings-body [data-key='roles.master.mode'] .hint"))
+        .hasText("default");
   }
 
   @Test

@@ -240,6 +240,32 @@ abstract class BoardPageContext {
     return page;
   }
 
+  Page openRoleLog(String role, String slice) {
+    Page page = session.newPage();
+    page.route(
+        "**/api/tasks",
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setResponse(route.fetch())
+                    .setBody(
+                        route
+                            .fetch()
+                            .text()
+                            .replaceFirst(
+                                "\"roleLogs\":\\[[^\\]]*\\]", "\"roleLogs\":[\"" + role + "\"]"))));
+    page.route(
+        Pattern.compile(".*/api/roles/" + role + "/log.*"),
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setContentType("application/json")
+                    .setBody(slice)));
+    page.navigate("http://localhost:" + port + "/");
+    page.locator("#role-logs button.chip").click();
+    return page;
+  }
+
   Page openBoard() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");

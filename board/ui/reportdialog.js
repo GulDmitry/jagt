@@ -1,8 +1,6 @@
 import { render } from "preact";
 import { html } from "../components/html.js";
-import { Report } from "../components/Report.js";
-
-import { reportParts } from "../core/format.js";
+import { ReportBody } from "../components/Report.js";
 import * as store from "../core/store.js";
 
 const report = /** @type {HTMLDialogElement} */ (
@@ -32,26 +30,30 @@ export const isOpen = () => report.open;
 /** @param {() => void} listener */
 export const onClose = (listener) => report.addEventListener("close", listener);
 
-/** @param {string} said */
-const drawn = (said) =>
+/**
+ * @param {string} said
+ * @param {boolean} log
+ */
+const drawn = (said, log) => {
+  reportBody.classList.toggle("log", log);
   render(
-    html`<${Report}
-      parts=${reportParts(
-        said,
-        store.tasks().map((task) => task.id),
-      )}
+    html`<${ReportBody}
+      said=${said}
+      taskIds=${store.tasks().map((task) => task.id)}
+      log=${log}
     />`,
     reportBody,
   );
+};
 
 /**
  * @param {string} title
  * @param {string} said
  * @param {import("./dialogs.js").Showing} showing
  */
-export function paint(title, said, { extra, about }) {
+export function paint(title, said, { extra, about, log }) {
   reportTitle.textContent = title;
-  drawn(said);
+  drawn(said, log);
   reportSection.replaceChildren(...(extra ? [extra] : []));
   reportLine.hidden = !about;
   sayInput.value = "";
@@ -59,10 +61,13 @@ export function paint(title, said, { extra, about }) {
   reportScroll.scrollTop = 0;
 }
 
-/** @param {string} said */
-export function redraw(said) {
+/**
+ * @param {string} said
+ * @param {boolean} log
+ */
+export function redraw(said, log) {
   const where = reportScroll.scrollTop;
-  drawn(said);
+  drawn(said, log);
   reportScroll.scrollTop = where;
 }
 

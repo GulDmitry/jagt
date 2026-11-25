@@ -220,14 +220,25 @@ tasks.register('e2eTest', Test) {
     useJUnitPlatform()
     // Its classes are order-dependent within, not between: each fork names its tmux sessions by its own pid.
     maxParallelForks = (project.findProperty('e2eForks') ?: Runtime.runtime.availableProcessors().intdiv(2)) as int
-    // A run killed mid-suite skips its @TempDir cleanup: its leftovers land here, and the next run wipes them.
-    def scratch = temporaryDir
-    systemProperty 'java.io.tmpdir', scratch.absolutePath
-    doFirst {
-        scratch.deleteDir()
-        scratch.mkdirs()
-    }
     shouldRunAfter tasks.named('test')
+}
+
+// A suite's temp roots live in one folder of the machine's temp dir, outside any repository: a finalizing task removes it
+// whether the suite passes or fails, and the next run wipes what a killed run left.
+['boardTest', 'e2eTest'].each { suite ->
+    def scratch = new File(System.getProperty('java.io.tmpdir'), "jagt-${suite}-${Integer.toHexString(rootDir.path.hashCode())}")
+    def removal = tasks.register("${suite}Scratch") {
+        description = "Removes the temp roots ${suite} created."
+        doLast { scratch.deleteDir() }
+    }
+    tasks.named(suite) {
+        systemProperty 'java.io.tmpdir', scratch.absolutePath
+        doFirst {
+            scratch.deleteDir()
+            scratch.mkdirs()
+        }
+        finalizedBy removal
+    }
 }
 
 tasks.register('installTest', Test) {

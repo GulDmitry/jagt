@@ -97,13 +97,32 @@ class CiWorkflowTest {
             .collect(Collectors.toSet());
 
     assertThat(parsed.get("permissions")).isEqualTo(Map.of("contents", "read", "packages", "read"));
-    assertThat(widened).containsExactly("release");
+    assertThat(widened).containsExactlyInAnyOrder("release", "pages");
   }
 
   @Test
   void runsExactlyTheFourGroupsAndTheInstallCheckOnGithub() {
     assertThat(CiWorkflow.jobs().keySet())
-        .containsExactlyInAnyOrder("test", "heavy", "audit", "stand", "install", "release");
+        .containsExactlyInAnyOrder(
+            "test", "heavy", "audit", "stand", "install", "release", "pages");
+  }
+
+  @Test
+  void deploysPagesInItsOwnJobAfterTheReleaseJobUploadedTheArtifact() {
+    Map<String, Map<String, Object>> jobs = CiWorkflow.jobs();
+    String release = Objects.requireNonNull(jobs.get("release")).toString();
+    Map<String, Object> pages = Objects.requireNonNull(jobs.get("pages"));
+
+    assertThat(release)
+        .contains("actions/upload-pages-artifact")
+        .doesNotContain("actions/deploy-pages");
+    assertThat(pages.get("needs")).isEqualTo("release");
+    assertThat(pages.get("if")).isEqualTo("needs.release.outputs.new == 'true'");
+    assertThat(String.valueOf(pages.get("permissions")))
+        .contains("pages=write")
+        .contains("id-token=write");
+    assertThat(String.valueOf(pages.get("environment"))).contains("name=github-pages");
+    assertThat(pages.toString()).contains("actions/deploy-pages@");
   }
 
   @Test

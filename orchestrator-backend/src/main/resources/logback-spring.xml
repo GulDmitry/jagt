@@ -14,7 +14,7 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
     <appender name="ROLE_master" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
         <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %level %msg %kvp%n</pattern>
         </encoder>
     </appender>
     <logger name="dev.jagt.orchestrator.job.verdict.MasterAnswerJob"><appender-ref ref="ROLE_master"/></logger>
@@ -34,7 +34,7 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
     <appender name="ROLE_acceptance" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
         <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %level %msg %kvp%n</pattern>
         </encoder>
     </appender>
     <logger name="dev.jagt.orchestrator.job.checker"><appender-ref ref="ROLE_acceptance"/></logger>
@@ -42,14 +42,14 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
     <appender name="ROLE_triage" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
         <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %level %msg %kvp%n</pattern>
         </encoder>
     </appender>
     <logger name="dev.jagt.orchestrator.job.triage"><appender-ref ref="ROLE_triage"/></logger>
     <appender name="ROLE_code-reviewer" class="dev.jagt.orchestrator.surface.ui.log.RecentLines">
         <filter class="dev.jagt.orchestrator.surface.ui.log.TaskAliasLogFilter"/>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %msg %kvp%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %level %msg %kvp%n</pattern>
         </encoder>
     </appender>
     <logger name="dev.jagt.orchestrator.job.codereview"><appender-ref ref="ROLE_code-reviewer"/></logger>

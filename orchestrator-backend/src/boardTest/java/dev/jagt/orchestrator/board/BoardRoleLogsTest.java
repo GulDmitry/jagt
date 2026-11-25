@@ -83,22 +83,69 @@ class BoardRoleLogsTest extends BoardPageContext {
                     .setContentType("application/json")
                     .setBody(
                         route.request().url().endsWith("after=0")
-                            ? "{\"lines\":[\"first step\"],\"next\":1}"
-                            : "{\"lines\":[\"second step\"],\"next\":2}")));
+                            ? "{\"lines\":[\"2026-11-25 09:00:01Z INFO first step\"],"
+                                + "\"next\":1}"
+                            : "{\"lines\":[\"2026-11-25 09:00:02Z INFO second step\"],"
+                                + "\"next\":2}")));
     page.navigate("http://localhost:" + port + "/");
 
     page.locator("#role-logs button.chip").click();
 
-    assertThat(page.locator("#pane.role-log pre")).hasText("first step");
+    assertThat(page.locator("#pane.role-log .log-line")).hasText(Pattern.compile("first step"));
     assertThat(page.locator("#role-logs button.chip")).hasAttribute("aria-pressed", "true");
 
     events.publishEvent(new RoleFeedWritten("master"));
 
-    assertThat(page.locator("#pane.role-log pre")).hasText("first step\nsecond step");
+    assertThat(page.locator("#pane.role-log .log-line"))
+        .hasText(new Pattern[] {Pattern.compile("second step"), Pattern.compile("first step")});
 
     page.locator("#role-logs button.chip").click();
 
     assertThat(page.locator("#pane.role-log")).hasCount(0);
     assertThat(page.locator("#role-logs button.chip")).hasAttribute("aria-pressed", "false");
+  }
+
+  @Test
+  void theMastersLogListsItsNewestEntryOnTopWithGapsBetweenEntries() {
+    Page page =
+        openRoleLog(
+            "master",
+            "{\"lines\":[\"2026-11-25 09:00:01Z INFO first step\","
+                + "\"2026-11-25 09:00:02Z INFO second step\"],\"next\":2}");
+
+    assertThat(page.locator("#pane.role-log .log-line"))
+        .hasText(new Pattern[] {Pattern.compile("second step"), Pattern.compile("first step")});
+    assertThat(page.locator("#pane.role-log .log-line").first()).hasCSS("margin-bottom", "6px");
+    assertThat(page.locator("#pane.role-log .log-time").first()).hasText("09:00:02");
+  }
+
+  @Test
+  void refusalIsDangerWhileMoveAndNoteKeepQuietColours() {
+    Page page =
+        openRoleLog(
+            "master",
+            "{\"lines\":[\"2026-11-25 09:00:01Z ERROR refused ABC-42\","
+                + "\"2026-11-25 09:00:02Z INFO moved ABC-42\","
+                + "\"2026-11-25 09:00:03Z INFO noted ABC-42\"],\"next\":3}");
+
+    assertThat(page.locator("#pane.role-log .log-line.danger")).hasCount(1);
+    assertThat(page.locator("#pane.role-log .log-line.danger")).hasCSS("color", "rgb(180, 35, 24)");
+    assertThat(page.locator("#pane.role-log .log-line:not(.danger)").first())
+        .hasCSS("color", "rgb(28, 32, 36)");
+    assertThat(page.locator("#pane.role-log .log-line:not(.danger) .log-level").first())
+        .hasCSS("color", "rgb(95, 102, 114)");
+    assertThat(page.locator("#pane.role-log .log-line .log-time").first())
+        .hasCSS("color", "rgb(95, 102, 114)");
+  }
+
+  @Test
+  void helpHasRowsForTheMutedTimeAndForDangerEntries() {
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    page.locator("#reports-toggle").click();
+    page.locator("#show-help").click();
+
+    assertThat(page.locator("#report-section .legend .log-line .log-time")).hasCount(2);
+    assertThat(page.locator("#report-section .legend .log-line.danger")).hasCount(1);
   }
 }

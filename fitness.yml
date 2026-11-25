@@ -35,7 +35,7 @@ technical:
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
       dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 98, decision: "0176" }
     analysability:
-      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 11, decision: "0176" }
+      ci-jobs: { fitness: CiJobsFitness, governs: count, max: 12, decision: "0244" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176", hint: "push, pull request, and a dispatch that runs one job alone (owner 2026-11-24)" }
       source-sets: { fitness: SourceSetsFitness, governs: count, max: 28, decision: "0176" }
       start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
@@ -64,6 +64,7 @@ technical:
       editor-launcher-not-a-default: { engine: scan, glob: "src/main/resources/application.yml", per: file, regex: "(?m)^ *editor(-diff)?-command:\\s*\\[\\s*[^\\s\\]]", governs: count, max: 0, hint: "no editor is a default: an uncommented editor-command in application.yml stays empty" }
       suite-stats-reads-no-other-project: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suite-stats.gradle", per: file, regex: "provider\\s*\\{\\s*allprojects", governs: count, max: 0 }
       spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
+      suite-temp-roots-removed: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suites.gradle", per: file, regex: "finalizedBy removal", governs: count, min: 1, hint: "boardTest and e2eTest keep their temp roots in the task scratch folder and a finalizing task removes it, so no run leaves a root behind" }
       release-not-on-tag-push: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "tags:\\s*\\[", governs: count, max: 0, hint: "the release job runs on a push to main; nobody pushes a tag" }
       release-checks-tag-is-new: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "git ls-remote --exit-code --tags origin", governs: count, min: 1, hint: "release publishes only when the version's tag does not exist yet" }
       release-needs-no-stand-or-install: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "(?m)^    needs: \\[[^\\]]*\\b(stand|install)\\b", governs: count, max: 0, decision: "0233", hint: "main publishes the tree the pull request proved; the stand and install do not re-run there (docs/rules/ci.md)" }

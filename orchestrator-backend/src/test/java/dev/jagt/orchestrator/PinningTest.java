@@ -121,6 +121,15 @@ class PinningTest {
   }
 
   @Test
+  void scorecardImageGetsItsTokenAsTheRepoTokenInputItOverwritesTheAuthTokenWith() {
+    String workflow = SourceRoots.read(Path.of("../.github/workflows/scorecard.yml"));
+
+    assertThat(workflow)
+        .contains("INPUT_REPO_TOKEN: ${{ github.token }}")
+        .contains("-e INPUT_REPO_TOKEN ");
+  }
+
+  @Test
   void everyGitlabImageIsPinnedByDigest() {
     List<String> unpinned =
         SourceRoots.read(Path.of("../.gitlab-ci.yml"))

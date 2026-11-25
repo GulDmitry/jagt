@@ -3,11 +3,11 @@ import { follow, stopWaiting } from "./followup.js";
 import * as dialog from "./reportdialog.js";
 import { toast } from "./toast.js";
 
-/** @typedef {{ path: string | null, about: string | null, body: string, extra: HTMLElement | null }} Showing */
+/** @typedef {{ path: string | null, about: string | null, body: string, extra: HTMLElement | null, log: boolean }} Showing */
 
 /** @type {{ showing: Showing, asked: number, reread: number }} */
 const state = {
-  showing: { path: null, about: null, body: "", extra: null },
+  showing: { path: null, about: null, body: "", extra: null, log: false },
   asked: 0,
   reread: 0,
 };
@@ -16,10 +16,11 @@ const state = {
  * @param {string} title
  * @param {string} said
  * @param {HTMLElement | null} [extra]
+ * @param {boolean} [log]
  */
-export function showReport(title, said, extra = null) {
+export function showReport(title, said, extra = null, log = false) {
   state.asked++;
-  state.showing = { path: null, about: null, body: said, extra };
+  state.showing = { path: null, about: null, body: said, extra, log };
   stopWaiting();
   dialog.paint(title, said, state.showing);
 }
@@ -28,18 +29,18 @@ export function showReport(title, said, extra = null) {
 /**
  * @param {string} title
  * @param {string} path
- * @param {{ extra?: HTMLElement | null, about?: string | null }} [options]
+ * @param {{ extra?: HTMLElement | null, about?: string | null, log?: boolean }} [options]
  */
 export async function openReport(
   title,
   path,
-  { extra = null, about = null } = {},
+  { extra = null, about = null, log = false } = {},
 ) {
   const mine = ++state.asked;
   try {
     const said = await text(path);
     if (mine !== state.asked) return true;
-    state.showing = { path, about, body: said, extra };
+    state.showing = { path, about, body: said, extra, log };
     stopWaiting();
     dialog.paint(title, said, state.showing);
     // Whatever changed WHILE this was being read reached no open dialog, so it is read once more now.
@@ -76,7 +77,7 @@ export async function repaintReport() {
     return;
   }
   state.showing = { ...state.showing, body: said };
-  dialog.redraw(said);
+  dialog.redraw(said, state.showing.log);
   stopWaiting();
 }
 

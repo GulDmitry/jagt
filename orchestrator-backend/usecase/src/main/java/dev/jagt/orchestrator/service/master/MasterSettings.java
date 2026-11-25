@@ -23,7 +23,7 @@ public class MasterSettings implements RoleSettingKeys {
       return List.of();
     }
     return List.of(
-        Setting.choice(SECTION, "roles.master.mode", "judge", "act", "off"),
+        Setting.choice(SECTION, "roles.master.mode", "act", "judge", "act", "off"),
         Setting.of(SECTION, "loopBreaker.stalledRounds", Kind.INTEGER),
         Setting.of(SECTION, "loopBreaker.ships", Kind.INTEGER),
         Setting.of(SECTION, "loopBreaker.rounds", Kind.INTEGER),

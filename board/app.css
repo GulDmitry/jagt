@@ -1116,16 +1116,43 @@ button.chip.log {
   color: var(--accent);
   border-color: var(--accent);
 }
-.role-log pre {
-  margin: 0;
+.log-scroll {
   overflow: auto;
   max-height: calc(100vh - 80px);
+}
+#report-body.log {
+  white-space: normal;
+}
+.log-lines {
   font:
     12px ui-monospace,
     SFMono-Regular,
     Menlo,
     monospace;
+  line-height: 1.45;
+}
+.log-line,
+.log-head {
+  margin: 0 0 6px;
+  color: var(--text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-left: 9ch;
+  text-indent: -9ch;
+}
+.log-head {
+  color: var(--muted);
+  padding-left: 0;
+  text-indent: 0;
+}
+.log-time,
+.log-level {
+  color: var(--muted);
+  margin-right: 1ch;
+}
+.log-line.danger,
+.log-line.danger .log-level {
+  color: var(--danger);
 }
 .tick {
   font-size: 11px;

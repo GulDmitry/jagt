@@ -26,10 +26,10 @@ jobs:
           persist-credentials: false
       - name: scorecard
         env:
-          GITHUB_AUTH_TOKEN: ${{ github.token }}
+          INPUT_REPO_TOKEN: ${{ github.token }}
         run: |
           docker run --rm \
-            -e GITHUB_ACTIONS=true -e GITHUB_AUTH_TOKEN -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH \
+            -e GITHUB_ACTIONS=true -e INPUT_REPO_TOKEN -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH \
             -e GITHUB_REF -e GITHUB_REPOSITORY -e GITHUB_WORKSPACE -e GITHUB_API_URL \
             -e INPUT_RESULTS_FILE=scorecard.sarif -e INPUT_RESULTS_FORMAT=sarif \
             -e INPUT_PUBLISH_RESULTS=false -e INPUT_FILE_MODE=archive \

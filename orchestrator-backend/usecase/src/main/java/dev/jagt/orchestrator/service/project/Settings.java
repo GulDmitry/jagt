@@ -34,7 +34,7 @@ public class Settings {
           Setting.of(REVIEW, "autoReview.minIntervalMinutes", Kind.INTEGER),
           Setting.of(REVIEW, "autoReview.maxIntervalMinutes", Kind.INTEGER),
           Setting.of(REVIEW, "infraWait.backoff", Kind.LIST).needingRestart(),
-          Setting.choice(TRACKER, "tracker.mode", "off", "take", "close", "both"),
+          Setting.choice(TRACKER, "tracker.mode", "off", "off", "take", "close", "both"),
           Setting.of(TRACKER, "tracker.assignee", Kind.TEXT),
           Setting.of(TRACKER, "tracker.startStatus", Kind.TEXT),
           Setting.of(TRACKER, "tracker.doneStatus", Kind.TEXT),

@@ -68,6 +68,26 @@ const checkedChoice = () =>
     () => {},
   );
 
+/**
+ * @param {string} className
+ * @param {string} level
+ * @param {string} text
+ */
+const logEntry = (className, level, text) =>
+  make(
+    "div",
+    "log-lines",
+    "",
+    make(
+      "p",
+      className,
+      "",
+      span("log-time", "09:41:07"),
+      span("log-level", level),
+      text,
+    ),
+  );
+
 export const pageRows = () => [
   [yoursHead()],
   [span("row-title changed", "Login form loses focus")],
@@ -93,4 +113,6 @@ export const pageRows = () => [
     span("chip bad", "code host CLI not logged in"),
   ],
   [gearButton(), checkedChoice()],
+  [logEntry("log-line", "INFO", t("sample.done"))],
+  [logEntry("log-line danger", "ERROR", t("sample.refused"))],
 ];

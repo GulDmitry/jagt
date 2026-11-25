@@ -57,6 +57,9 @@ illegible. A hex outside `:root` is a bug, but the translucent blacks (four shad
 - `.detail.problem` in `--danger` / `.detail.you` in `--you` — the card's own line: broken, your move.
 - `.waiting` pill on `--you-bg`, in the header — how many cards interrupt you.
 - `button.chip.log` — a running model role: its log in the pane, `.on` in `--accent` while open; replaces the tmux `master` window.
+- `.log-time` in `--muted` — a log entry's time, UTC; every log lists newest first, `.log-line` blocks 6px apart.
+  A wrapped line hangs 9ch under its time; the feed's line is `<UTC time> <level> <message> <fields>`.
+- `.log-line.danger` in `--danger` — a WARN or ERROR entry: a refusal or a failure; an INFO entry keeps `--text`, its level `--muted`.
 - `.chip.bad` in `--danger` — a job failed, the backend is unreachable, or jagt cannot reach a code host, the assistant or a project's credential.
 - `td.last.failed` in `--danger` — a job's last run failed; its dot, and a path check's, are `.checks` as above.
 - toast edge, 3px — `.toast` `--ok`, `.toast.error` `--danger`: the verb ran, or was refused.

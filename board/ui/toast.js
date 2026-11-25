@@ -19,7 +19,9 @@ export const showLog = (open) => {
  * @param {boolean} [isError]
  */
 export function toast(message, isError) {
-  messages.push(`${withSeconds(Date.now())}  ${message}`);
+  messages.push(
+    `${withSeconds(Date.now())} ${isError ? "ERROR" : "INFO"} ${message}`,
+  );
   opener.hidden = false;
   opener.dataset.tip = t("toast.log.tip", { message });
 

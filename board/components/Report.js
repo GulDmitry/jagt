@@ -1,4 +1,6 @@
 import { httpOnly } from "../core/dom.js";
+import { reportParts } from "../core/format.js";
+import { LogLines } from "./LogLines.js";
 import { html } from "./html.js";
 
 /** @typedef {import("../core/format.js").Part} PartData */
@@ -32,3 +34,9 @@ const Part = ({ part }) => {
 /** @param {{ parts: PartData[] }} props */
 export const Report = ({ parts }) =>
   parts.map((part) => html`<${Part} part=${part} />`);
+
+/** @param {{ said: string, taskIds: string[], log: boolean }} props */
+export const ReportBody = ({ said, taskIds, log }) =>
+  log
+    ? html`<${LogLines} said=${said} />`
+    : html`<${Report} parts=${reportParts(said, taskIds)} />`;
