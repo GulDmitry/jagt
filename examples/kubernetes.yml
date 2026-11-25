@@ -155,10 +155,13 @@ spec:
 ---
 # The host is the host of JAGT_PUBLIC_URL. The board streams, so keep the controller's read and send timeouts long;
 # ingress-nginx: nginx.ingress.kubernetes.io/proxy-read-timeout and proxy-send-timeout "3600" as annotations.
+# OpenShift turns this Ingress into an edge Route: enable the router's timeout annotation below.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: jagt
+  # annotations:
+  #   haproxy.router.openshift.io/timeout: 1h
 spec:
   # ingressClassName: nginx
   tls: [{hosts: [jagt.example.com], secretName: jagt-tls}]   # a kubernetes.io/tls Secret you create, or cert-manager
@@ -174,7 +177,7 @@ spec:
                 port:
                   number: 8290
 ---
-# Ingress only from the controller's namespace (name it below); egress to DNS, then HTTPS and SSH to public addresses:
+# Ingress only from the controller's namespace (pick its selector below); egress to DNS, then HTTPS and SSH to public addresses:
 # the code host, tracker, notification webhook, model API. A NetworkPolicy names no host: narrow the blocks to those
 # addresses, and add one for each acceptance environment on a private range.
 apiVersion: networking.k8s.io/v1
@@ -191,6 +194,10 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: ingress-nginx
+        # OpenShift: the router runs in another namespace; select it by this label instead of the one above.
+        # - namespaceSelector:
+        #     matchLabels:
+        #       policy-group.network.openshift.io/ingress: ""
       ports:
         - { protocol: TCP, port: 8290 }
   egress:

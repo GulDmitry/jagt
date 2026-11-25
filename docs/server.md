@@ -150,6 +150,8 @@ a service account without a token, one optional PVC, Secrets
 | temporary files, caches | `TMPDIR`, `XDG_CACHE_HOME` | unset; with a tight ephemeral-storage quota set them under `/data`, and each start creates them |
 | shutdown | `terminationGracePeriodSeconds` | 60: preStop 5 s, `spring.lifecycle.timeout-per-shutdown-phase` 20 s twice |
 | probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min, liveness 3 misses |
+| ingress controller | `NetworkPolicy` `from` | namespace `ingress-nginx`; on OpenShift swap in the commented selector `policy-group.network.openshift.io/ingress` |
+| route timeout | Ingress annotation | OpenShift turns the Ingress into a Route: enable `haproxy.router.openshift.io/timeout` (the board streams); ingress-nginx has its own two |
 | egress | `NetworkPolicy` | DNS, then HTTPS and SSH to public addresses; add acceptance environments |
 
 - Liveness is the application's own state alone; readiness holds only while a clone runs (see step 5 above).
