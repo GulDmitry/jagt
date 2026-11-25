@@ -73,7 +73,8 @@ public record TaskStop(
         false),
     UNCHANGED_FAILURE(
         "same failure again",
-        "Change the tree, or fix the check itself: its access or a file it needs",
+        "Change the tree, or fix the check itself: its access, a file it needs, or a probe that"
+            + " execs into a stack no earlier probe starts",
         Ends.LIFT,
         true),
     INFRA(

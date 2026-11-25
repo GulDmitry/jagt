@@ -151,4 +151,66 @@ class PlanProbesTest {
     assertThat(read.violations()).isEmpty();
     assertThat(read.probes()).hasSize(1);
   }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "command docker compose exec app ./check",
+        "command docker compose -f ci.yml exec -T app ./check",
+        "command docker-compose exec app ./check",
+      })
+  void refusesComposeExecWhenNoComposeUpProbeCameBefore(String line) {
+    PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
+
+    assertThat(read.violations())
+        .singleElement()
+        .asString()
+        .contains(
+            line.substring("command ".length()), "list `command docker compose up -d --wait`");
+  }
+
+  @Test
+  void refusesComposeExecWhenTheComposeUpProbeIsOfAnotherRepository() {
+    PlanProbes.Read read =
+        PlanProbes.of(
+            """
+            ```probes
+            command repo=api docker compose up -d
+            command repo=web docker compose exec app ./check
+            ```
+            """);
+
+    assertThat(read.violations())
+        .singleElement()
+        .asString()
+        .contains("list `command repo=web docker compose up");
+  }
+
+  @Test
+  void refusesComposeExecListedBeforeItsComposeUpProbe() {
+    PlanProbes.Read read =
+        PlanProbes.of(
+            """
+            ```probes
+            command docker compose exec app ./check
+            command docker compose up -d
+            ```
+            """);
+
+    assertThat(read.violations()).hasSize(1);
+  }
+
+  @Test
+  void acceptsComposeExecAfterTheComposeUpProbeOfTheSameRepository() {
+    PlanProbes.Read read =
+        PlanProbes.of(
+            """
+            ```probes
+            command repo=web docker compose up -d --wait
+            command repo=web docker compose exec app ./check
+            ```
+            """);
+
+    assertThat(read.violations()).isEmpty();
+  }
 }

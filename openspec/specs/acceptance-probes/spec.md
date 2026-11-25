@@ -12,12 +12,10 @@ A plan's acceptance criteria, tagged, and its acceptance checks, declared as typ
 before the argv, and only a `command` takes `repo=`. A command SHALL run as argv with no shell.
 A probe whose `repo=` is no repository of the task SHALL be refused as `validation`.
 
-#### Scenario: A line no probe reads
+#### Scenario: A line no probe reads, or a repository the task lacks
 - **WHEN** a session reports PLAN_PENDING with `command ./gradlew test | tee out.log` in its block
 - **THEN** the report is refused as `validation`, naming the line
-
-#### Scenario: A repository the task lacks
-- **WHEN** a session reports PLAN_PENDING with `command repo=front npm test` and the task has no repository `front`
+- **WHEN** it reports `command repo=front npm test` and the task has no repository `front`
 - **THEN** the report is refused as `validation`, naming the line
 
 #### Scenario: A plan without probes
@@ -34,11 +32,9 @@ custom field; where it has none the session writes them. A criterion of a part t
 - **WHEN** ABC-42 keeps its acceptance criteria in a custom field the tracker's default read omits
 - **THEN** the session reads the ticket with every field and the plan lists each criterion, tagged
 
-#### Scenario: A ticket without criteria
+#### Scenario: A ticket without criteria, or a criterion for another part
 - **WHEN** ABC-42 names no acceptance criteria
 - **THEN** the plan holds criteria the session wrote, each tagged `, own`
-
-#### Scenario: A criterion for another part
 - **WHEN** a criterion of ABC-42 describes the frontend and the task builds the backend
 - **THEN** the plan keeps it as `- [elsewhere: frontend] <text>`
 
@@ -69,19 +65,15 @@ A probe runs in the worktree of the repository it names, the primary one where i
 Each result SHALL be recorded with its output's last 20 lines.
 A command SHALL run under `ToolGate` and the worktree's own git hooks (`PlanProbing`).
 
-#### Scenario: A probe fails
+#### Scenario: A probe fails, or names a repository
 - **WHEN** a probe fails
 - **THEN** the session gets that probe and its output, and the task is IN_PROGRESS
-
-#### Scenario: A probe names a repository
 - **WHEN** a task of repositories `api` and `front` carries `command repo=front npm test`
 - **THEN** it runs in `front`'s worktree
 
-#### Scenario: A probe pushes to the base branch
+#### Scenario: A probe the guard or the worktree refuses
 - **WHEN** a command probe is `git push origin main`
 - **THEN** it never runs and fails with the guard's refusal
-
-#### Scenario: A file linked from outside
 - **WHEN** an `artifact` resolves outside the worktree
 - **THEN** it fails
 
@@ -89,11 +81,9 @@ A command SHALL run under `ToolGate` and the worktree's own git hooks (`PlanProb
 The Master's plan read SHALL quote the probes it ratifies; its round read SHALL quote each result (`MasterPanel`).
 Its plan read SHALL flag a probe reaching another repository by a path rather than `repo=`, pattern `misplaced probe`.
 
-#### Scenario: A round carrying probes
+#### Scenario: A round carrying probes, or a probe reaching another repository by a path
 - **WHEN** a round reaches the Master
 - **THEN** each role reads the probes and the results jagt recorded
-
-#### Scenario: A probe reaching another repository by a path
 - **WHEN** a plan of a task with repositories `api` and `web` declares `command npm --prefix ../web test`
 - **THEN** the Master's plan read is not ready, naming the probe
 
@@ -101,11 +91,9 @@ Its plan read SHALL flag a probe reaching another repository by a path rather th
 A verification run SHALL be keyed on the worktree's tree state and the declared probes (`Verification.key`).
 The last failing run's key is kept on the turn's marks. A question or permission request MUST NOT be verified.
 
-#### Scenario: A question is not verified
+#### Scenario: A question, or an unchanged tree, is not verified
 - **WHEN** a session reports a question or a permission request
 - **THEN** it does not land at `VERIFYING`, and a question standing there runs no probe and relays nothing
-
-#### Scenario: An unchanged tree is not verified twice
 - **WHEN** a task is at `VERIFYING` with the tree state and probes of its last failing run
 - **THEN** no probe runs, nothing is relayed, and the task stops for you naming the standing failure
 
@@ -113,11 +101,9 @@ The last failing run's key is kept on the turn's marks. A question or permission
 A task with no repository SHALL report PLAN_PENDING only with the section and at least one `- [changed] <key>`;
 any key passes, configured or not, and `[unaffected]` keys are ignored.
 
-#### Scenario: A task with no repository names none
+#### Scenario: A task with no repository names none, or a key jagt.yml lacks
 - **WHEN** a task with no repository reports a plan whose section lists `- [unaffected: no change] api` alone
 - **THEN** the report is refused as `validation`, naming `## Repositories`
-
-#### Scenario: A task with no repository names a key jagt.yml lacks
 - **WHEN** a task with no repository reports a plan listing `- [changed] billing`, not configured
 - **THEN** the plan passes
 
@@ -138,11 +124,9 @@ A flow that could not be run or found, or whose test passed only on retry or was
 - **WHEN** flow `AC-1`'s test passed on its second attempt
 - **THEN** its result is `unprovable`
 
-#### Scenario: The command cannot start
+#### Scenario: The command cannot start, or no driver is configured
 - **WHEN** the configured command is missing or the flows repository is unreachable
 - **THEN** every flow is `unprovable` and none is `failed`
-
-#### Scenario: No driver is configured
 - **WHEN** `roles/acceptance/role.yml` and its `.dist` name no `flows.driver`
 - **THEN** every flow is `unprovable` and nothing runs
 
@@ -195,3 +179,20 @@ A flow naming one decides that criterion's row, as [`acceptance`](../acceptance/
 #### Scenario: A flow fails
 - **WHEN** the read, told the flows repository, answers `flows: [{id: AC-1, criterion: ""}]` on `https://alpha.test` and that flow fails
 - **THEN** the verdict holds a not met row `AC-1` and `acceptance-report.md` carries it
+
+### Requirement: A probe execing into a compose service follows its stack's start
+A `command` probe running `compose exec` SHALL have a `compose up` probe of the same repository listed before it
+(probes run one by one, no shell); else the plan is refused as `validation`, naming the probe and the fix.
+An `UNCHANGED_FAILURE` stop's next step SHALL name a probe needing a stack it does not start.
+
+#### Scenario: An exec with no stack up
+- **WHEN** a plan lists `command docker compose exec app ./check` and no `compose up` probe of its repository before it
+- **THEN** the report is refused as `validation`, naming the probe and the `compose up` probe to list first
+
+#### Scenario: The stack is started first
+- **WHEN** a `command docker compose up -d --wait` probe of that repository is listed before the exec
+- **THEN** the plan passes the check
+
+#### Scenario: A task stops on the same failure
+- **WHEN** a task stops on `UNCHANGED_FAILURE`
+- **THEN** the hover's next step names a probe execing into a stack no earlier probe starts

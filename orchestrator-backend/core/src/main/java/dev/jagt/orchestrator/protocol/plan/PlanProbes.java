@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +66,40 @@ public final class PlanProbes {
     if (probes.size() > MAX) {
       violations.add(new Violation(FIELD, "at most " + MAX + " probes, not " + probes.size()));
     }
+    violations.addAll(execWithoutUp(probes));
     return new Read(List.copyOf(probes), List.copyOf(violations));
+  }
+
+  private static List<Violation> execWithoutUp(List<Probe> probes) {
+    List<Violation> violations = new ArrayList<>();
+    for (int at = 0; at < probes.size(); at++) {
+      Probe probe = probes.get(at);
+      boolean started =
+          probes.subList(0, at).stream()
+              .anyMatch(earlier ->
+                  Objects.equals(earlier.repo(), probe.repo()) && composes(earlier, "up"));
+      if (composes(probe, "exec") && !started) {
+        violations.add(
+            new Violation(
+                FIELD,
+                "`"
+                    + probe
+                    + "` execs into a compose service no earlier probe started; probes run one by"
+                    + " one with no shell, so list `command"
+                    + (probe.repo() == null ? "" : " repo=" + probe.repo())
+                    + " docker compose up -d --wait` before it"));
+      }
+    }
+    return violations;
+  }
+
+  private static boolean composes(Probe probe, String subcommand) {
+    if (probe.kind() != Probe.Kind.COMMAND) {
+      return false;
+    }
+    List<String> words = probe.words();
+    int compose = Math.max(words.indexOf("compose"), words.indexOf("docker-compose"));
+    return compose >= 0 && words.subList(compose + 1, words.size()).contains(subcommand);
   }
 
   private static Optional<Probe> probe(String line) {
