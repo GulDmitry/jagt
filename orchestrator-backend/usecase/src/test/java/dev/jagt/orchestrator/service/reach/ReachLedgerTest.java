@@ -31,4 +31,13 @@ class ReachLedgerTest {
 
     assertThat(reach.standing()).extracting(ReachLost::host).containsExactly("b.example.invalid");
   }
+
+  @Test
+  void markedLossStandsUntilReadReachesIt() {
+    ReachLost lost = new ReachLost("notification", "team", List.of(), "team tells nothing");
+
+    reach.marked(lost);
+
+    assertThat(reach.standing()).containsExactly(lost);
+  }
 }

@@ -29,6 +29,7 @@ import dev.jagt.orchestrator.job.session.RestartAskJob;
 import dev.jagt.orchestrator.job.verdict.MasterReviewJob;
 import dev.jagt.orchestrator.job.verdict.MasterRuling;
 import dev.jagt.orchestrator.notify.ChannelPosts;
+import dev.jagt.orchestrator.notify.DroppedChannels;
 import dev.jagt.orchestrator.notify.FakeChannelDriver;
 import dev.jagt.orchestrator.notify.Messages;
 import dev.jagt.orchestrator.notify.NextMove;
@@ -103,6 +104,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.core.env.StandardEnvironment;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -288,7 +290,7 @@ public final class FakeJobWorld implements AutoCloseable {
             config);
     Notifications notifications =
         new Notifications(
-            new Routes(config),
+            new Routes(config, new DroppedChannels(new StandardEnvironment())),
             new Messages(new BoardUrl("8290", ""), new NextMove(handBack, rules)),
             new ChannelPosts(List.of(driver), new FakeReach(), Runnable::run, retries),
             state);

@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig;
 import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.ChannelDef;
 import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.RouteDef;
@@ -14,15 +15,16 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
  * A route or a channel in {@code jagt.yml} that nothing could tell through is refused, every
- * problem at once; a route naming the point of a disabled role is inert and said once.
+ * problem at once; a channel whose variable is unset is dropped and marked, and a route naming the
+ * point of a disabled role is inert; both are said once.
  */
 @Component
 public class ChannelsCheck implements StartupCheck {
@@ -34,17 +36,17 @@ public class ChannelsCheck implements StartupCheck {
   private final ConfigService config;
   private final InstalledRoles roles;
   private final List<ChannelDriver> drivers;
-  private final Environment environment;
+  private final DroppedChannels dropped;
 
   public ChannelsCheck(
       ConfigService config,
       InstalledRoles roles,
       List<ChannelDriver> drivers,
-      Environment environment) {
+      DroppedChannels dropped) {
     this.config = config;
     this.roles = roles;
     this.drivers = List.copyOf(drivers);
-    this.environment = environment;
+    this.dropped = dropped;
   }
 
   @Override
@@ -67,16 +69,61 @@ public class ChannelsCheck implements StartupCheck {
     if (!config.fileExists()) {
       return List.of();
     }
-    Set<String> routed = config.load().notifications().routeDefs().keySet();
+    NotificationsConfig notifications = config.load().notifications();
+    List<Problem> notes = new ArrayList<>();
+    Map<String, String> silent = dropped.of(notifications);
+    silent.forEach((name, variable) ->
+        notes.add(droppedNote(notifications.routeDefs(), silent.keySet(), name, variable)));
+    Set<String> routed = notifications.routeDefs().keySet();
     if (routed.isEmpty()) {
-      return List.of(
+      notes.add(
           new Problem(
               NOTIFICATIONS + "points",
               NOTIFICATIONS + "points routes no point, so nothing will be told"));
     }
-    return routed.stream()
-        .flatMap(id -> disabledRoleOf(id).stream().map(role -> inert(id, role)))
-        .toList();
+    routed.forEach(id -> disabledRoleOf(id).ifPresent(role -> notes.add(inert(id, role))));
+    return notes;
+  }
+
+  private static Problem droppedNote(
+      Map<String, List<RouteDef>> routes, Set<String> silent, String name, String variable) {
+    String key = CHANNELS + name + ".webhookEnv";
+    List<String> toldNowhere =
+        routes.entrySet().stream()
+            .filter(point -> point.getValue().stream().anyMatch(r -> name.equals(r.channel())))
+            .filter(point -> point.getValue().stream().allMatch(r -> silent.contains(r.channel())))
+            .map(Map.Entry::getKey)
+            .sorted()
+            .toList();
+    String text =
+        key
+            + " names the environment variable '"
+            + variable
+            + "', which is not set, so "
+            + name
+            + " tells nothing";
+    return new Problem(key, toldNowhere.isEmpty() ? text : text + "; told nowhere: " + toldNowhere);
+  }
+
+  @Override
+  public List<ReachLost> marks() {
+    if (!config.fileExists()) {
+      return List.of();
+    }
+    List<ReachLost> marks = new ArrayList<>();
+    dropped
+        .of(config.load().notifications())
+        .forEach((name, variable) ->
+            marks.add(
+                new ReachLost(
+                    ChannelPosts.DRIVER,
+                    name,
+                    List.of(),
+                    name
+                        + " tells nothing: the environment variable "
+                        + variable
+                        + " is not set")));
+    return marks;
   }
 
   @Override
@@ -107,15 +154,6 @@ public class ChannelsCheck implements StartupCheck {
     if (needsSecret(kind) && def.webhookEnv() == null) {
       problems.add(
           new Problem(key + ".webhookEnv", key + ".webhookEnv is missing, so nothing is posted"));
-    }
-    if (def.webhookEnv() != null && !isSet(def.webhookEnv())) {
-      problems.add(
-          new Problem(
-              key + ".webhookEnv",
-              key
-                  + ".webhookEnv names the environment variable '"
-                  + def.webhookEnv()
-                  + "', which is not set"));
     }
     return problems;
   }
@@ -204,11 +242,6 @@ public class ChannelsCheck implements StartupCheck {
 
   private List<String> pointIds() {
     return roles.points().stream().map(Point::id).toList();
-  }
-
-  private boolean isSet(String name) {
-    String value = environment.getProperty(name);
-    return value != null && !value.isBlank();
   }
 
   private static ChannelAddress addressOf(String name, String kind, ChannelDef def) {

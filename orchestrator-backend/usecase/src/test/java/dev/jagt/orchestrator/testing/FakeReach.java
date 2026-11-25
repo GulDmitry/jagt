@@ -17,6 +17,9 @@ public final class FakeReach implements Reach {
   public void marked(ReachLost lost) {}
 
   @Override
+  public void marked(ReachLost lost, BooleanSupplier stands) {}
+
+  @Override
   public void reached(String driver, String host) {}
 
   @Override

@@ -97,7 +97,7 @@ Each is set by your image's environment or a mounted file, never a value in `jag
 |----------|------------|--------|
 | tracker | the MCP servers a session and a read reach the tracker through, and the user `take` starts for | a mounted file whose path `JAGT_MCP_CONFIG` holds, `JAGT_TRACKER_USER` |
 | code host | the account `gh` or `glab` acts as | `GH_TOKEN` or `GITLAB_TOKEN` (`GITLAB_HOST` for a self-hosted host) in the environment |
-| notification | the channel's webhook | the starter's commented `chat` channel: `JAGT_NOTIFY_WEBHOOK` holds the URL, `webhookEnv` names it; unset while a route uses it, the start is refused |
+| notification | the channel's webhook | the starter's commented `chat` channel: `JAGT_NOTIFY_WEBHOOK` holds the URL, `webhookEnv` names it; unset, jagt starts without the channel and its board's head says so |
 
 - The mounted MCP file carries the tracker's own `${VAR}` secrets; a `gh` or `glab` login under HOME is only their fallback.
 - Pass the variables at run time (`docker run -e`, `.env`, a `Secret`): `examples/agent-image.Dockerfile`.

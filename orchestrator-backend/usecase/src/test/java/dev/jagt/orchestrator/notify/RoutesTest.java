@@ -14,14 +14,20 @@ import dev.jagt.orchestrator.service.ConfigService;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 
 class RoutesTest {
 
   private final ConfigService config = mock(ConfigService.class);
-  private final Routes routes = new Routes(config);
+  private final StandardEnvironment environment = new StandardEnvironment();
+  private final Routes routes = new Routes(config, new DroppedChannels(environment));
 
   @Test
   void routesOnePointToTwoChannelsEachWithItsOwnText() {
+    environment
+        .getPropertySources()
+        .addFirst(new MapPropertySource("test", Map.of("TEAMS_HOOK", "https://example.invalid")));
     NotificationsConfig notifications =
         new NotificationsConfig(
             Map.of(
@@ -68,5 +74,23 @@ class RoutesTest {
     when(config.load()).thenReturn(ConfigFile.defaults().withNotifications(notifications));
 
     assertThat(routes.of("deployed")).isEmpty();
+  }
+
+  @Test
+  void skipsRouteToChannelWhoseWebhookEnvIsNotSet() {
+    NotificationsConfig notifications =
+        new NotificationsConfig(
+            Map.of(
+                "desktop", new ChannelDef("desktop", null, null),
+                "team", new ChannelDef("teams", "TEAMS_HOOK", null)),
+            Map.of(
+                "deployed",
+                List.of(new RouteDef("desktop", "t", "x"), new RouteDef("team", "t", "x"))));
+
+    when(config.load()).thenReturn(ConfigFile.defaults().withNotifications(notifications));
+
+    assertThat(routes.of("deployed"))
+        .extracting(routed -> routed.channel().name())
+        .containsExactly("desktop");
   }
 }

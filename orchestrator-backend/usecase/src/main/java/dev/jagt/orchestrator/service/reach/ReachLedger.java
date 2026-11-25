@@ -40,7 +40,12 @@ public class ReachLedger implements Reach {
 
   @Override
   public void marked(ReachLost lost) {
-    standing.put(lost.key(), new Standing(lost, () -> true));
+    marked(lost, () -> true);
+  }
+
+  @Override
+  public void marked(ReachLost lost, BooleanSupplier stands) {
+    standing.put(lost.key(), new Standing(lost, stands));
   }
 
   @Override

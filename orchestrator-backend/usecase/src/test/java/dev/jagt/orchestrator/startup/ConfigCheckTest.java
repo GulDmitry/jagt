@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeReach;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -92,7 +93,7 @@ class ConfigCheckTest {
   @Test
   void freshInstallStartsWithNoProject() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    StartupValidation validation = new StartupValidation(List.of(check), true);
+    StartupValidation validation = new StartupValidation(List.of(check), new FakeReach(), true);
 
     assertThatCode(validation::refuseToRunWithoutWhatItNeeds).doesNotThrowAnyException();
   }
