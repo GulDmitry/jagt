@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -14,6 +15,7 @@ import java.util.stream.Stream;
 final class Classifier {
 
   private static final String MAIN = "main";
+  private static final String JQWIK = "import net.jqwik.";
   private static final String TOMCAT = "[A-Za-z0-9]*OnTomcat";
 
   private final Repo repo;
@@ -70,15 +72,28 @@ final class Classifier {
       return;
     }
     String type = Path.of(path).getFileName().toString().replaceFirst("\\.java$", "");
-    if (type.endsWith("Test") && at.set().equals("test")) {
-      selection.tests.add(at.module() + ":" + type);
+    if (at.set().equals("test") && (type.endsWith("Test") || jqwik(path))) {
+      testsOf(path).add(at.module() + ":" + type);
     }
     testsNaming(at.module(), type);
   }
 
   private void testsNaming(String module, String typeRegex) {
-    selection.tests.addAll(
-        named.computeIfAbsent(module + ":" + typeRegex, key -> find(module, typeRegex)));
+    named
+        .computeIfAbsent(module + ":" + typeRegex, key -> find(module, typeRegex))
+        .forEach(file -> testsOf(file).add(entry(file)));
+  }
+
+  private Set<String> testsOf(String file) {
+    return jqwik(file) ? selection.properties : selection.tests;
+  }
+
+  private boolean jqwik(String file) {
+    return repo.holds(file, text -> text.contains(JQWIK));
+  }
+
+  private boolean isSuite(String file) {
+    return file.endsWith("Test.java") || jqwik(file);
   }
 
   private List<String> find(String module, String typeRegex) {
@@ -86,16 +101,17 @@ final class Classifier {
         Stream.concat(Stream.of(module), layout.dependents(module).stream())
             .map(layout::testDirectory)
             .toList();
-    Pattern fileName = Pattern.compile("/" + typeRegex + "[A-Za-z0-9]*Test\\.java$");
+    Pattern fileName = Pattern.compile("/" + typeRegex + "[A-Za-z0-9]*\\.java$");
     Pattern word = Pattern.compile("(?<!\\w)" + typeRegex + "(?!\\w)");
     TreeSet<String> found = new TreeSet<>();
     repo.filesIn(directories).stream()
         .filter(file -> fileName.matcher(file).find())
+        .filter(this::isSuite)
         .forEach(found::add);
     repo.filesWhoseText(text -> word.matcher(text).find(), directories).stream()
-        .filter(file -> file.endsWith("Test.java"))
+        .filter(this::isSuite)
         .forEach(found::add);
-    return found.stream().map(this::entry).toList();
+    return List.copyOf(found);
   }
 
   private String entry(String file) {

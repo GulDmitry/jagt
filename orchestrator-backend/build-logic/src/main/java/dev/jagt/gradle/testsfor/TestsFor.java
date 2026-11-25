@@ -89,12 +89,18 @@ public final class TestsFor {
     addGradle(lines, 600, compile);
     addGradle(lines, 600, check);
     if (!selection.tests.isEmpty()) {
-      addGradle(lines, 900, testsLine(new ArrayList<>(selection.tests)) + PITEST);
+      addGradle(lines, 900, testsLine(new ArrayList<>(selection.tests), "test") + PITEST);
+    }
+    if (!selection.properties.isEmpty()) {
+      addGradle(
+          lines,
+          900,
+          testsLine(new ArrayList<>(selection.properties), "propertyTest") + PITEST);
     }
     List<String> dropped = new ArrayList<>();
     List<String> ruleEntries = ruleEntries(selection, dropped);
     if (!ruleEntries.isEmpty()) {
-      addGradle(lines, 900, testsLine(ruleEntries) + PITEST);
+      addGradle(lines, 900, testsLine(ruleEntries, "test") + PITEST);
     }
     if (selection.fitness) {
       lines.add("cd " + layout.directory() + "/fitness && timeout 600 ../gradlew test");
@@ -161,20 +167,20 @@ public final class TestsFor {
     return set.substring(0, 1).toUpperCase(Locale.ROOT) + set.substring(1);
   }
 
-  private String testsLine(List<String> entries) {
+  private String testsLine(List<String> entries, String task) {
     return Stream.concat(Stream.of(Layout.ROOT), Layout.MODULES.stream())
-        .map(module -> testsOf(module, entries))
+        .map(module -> testsOf(module, entries, task))
         .filter(part -> !part.isEmpty())
         .collect(Collectors.joining(" "));
   }
 
-  private String testsOf(String module, List<String> entries) {
+  private String testsOf(String module, List<String> entries, String task) {
     String names =
         entries.stream()
             .filter(entry -> entry.startsWith(module + ":"))
             .map(entry -> " --tests '*" + entry.substring(module.length() + 1) + "'")
             .collect(Collectors.joining());
-    return names.isEmpty() ? "" : layout.prefix(module) + ":test" + names;
+    return names.isEmpty() ? "" : layout.prefix(module) + ":" + task + names;
   }
 
   private List<String> ruleEntries(Selection selection, List<String> dropped) {

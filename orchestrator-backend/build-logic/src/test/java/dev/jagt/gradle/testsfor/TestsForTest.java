@@ -38,6 +38,47 @@ class TestsForTest {
   }
 
   @Test
+  void runsThePropertyTestTaskNamingTheJqwikClassWhenMainClassChanges(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/core/src/main/java/c/Reducer.java", "class Reducer {}")
+            .file(
+                "orchestrator-backend/core/src/test/java/c/ReducerProperties.java",
+                "import net.jqwik.api.Property;\nclass ReducerProperties {}")
+            .tracked();
+
+    TestsFor.Plan plan =
+        testsFor.plan(List.of("orchestrator-backend/core/src/main/java/c/Reducer.java"));
+
+    assertThat(plan.lines())
+        .contains(
+            GRADLE
+                + "900 ./gradlew :core:propertyTest --tests '*ReducerProperties' -x pitestDiff")
+        .noneMatch(line -> line.contains(":core:test "));
+  }
+
+  @Test
+  void runsThePropertyTestTaskWhenTheJqwikClassItselfChanges(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                "orchestrator-backend/core/src/test/java/c/ReducerProperties.java",
+                "import net.jqwik.api.Property;\nclass ReducerProperties {}")
+            .tracked();
+
+    TestsFor.Plan plan =
+        testsFor.plan(
+            List.of("orchestrator-backend/core/src/test/java/c/ReducerProperties.java"));
+
+    assertThat(plan.lines())
+        .contains(
+            GRADLE
+                + "900 ./gradlew :core:propertyTest --tests '*ReducerProperties' -x pitestDiff")
+        .noneMatch(line -> line.contains(":core:test "));
+  }
+
+  @Test
   void selectsTestOfDependentModuleThatNamesTheChangedClass(@TempDir Path repo) throws Exception {
     TestsFor testsFor =
         TestRepoBuilder.in(repo)

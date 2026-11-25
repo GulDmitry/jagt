@@ -9,6 +9,7 @@ final class Selection {
   final Set<String> projects = new LinkedHashSet<>();
   final Set<String> otherSets = new LinkedHashSet<>();
   final Set<String> tests = new LinkedHashSet<>();
+  final Set<String> properties = new LinkedHashSet<>();
   final Set<String> rules = new LinkedHashSet<>();
   boolean removedMain;
   boolean board;
