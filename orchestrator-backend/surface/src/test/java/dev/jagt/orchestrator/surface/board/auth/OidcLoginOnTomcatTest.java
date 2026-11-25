@@ -41,7 +41,7 @@ import org.springframework.web.util.UriComponentsBuilder;
       "orchestrator.auth.mode=oidc",
       "orchestrator.auth.oidc.clientId=jagt",
       "orchestrator.auth.oidc.clientSecretEnv=SSO_SECRET",
-      "orchestrator.auth.oidc.allowed=owner-sub",
+      "orchestrator.auth.oidc.allowed=owner@example.org",
       "SSO_SECRET=s3cret"
     })
 class OidcLoginOnTomcatTest {
@@ -102,8 +102,15 @@ class OidcLoginOnTomcatTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"owner-sub,302,200", "other-sub,403,302"})
-  void opensTheBoardOnlyForTheAllowedSubject(String subject, int callbackStatus, int boardStatus)
+  @CsvSource({
+    "owner@example.org,,,302,200",
+    "other-sub,,,403,302",
+    "verified-sub,owner@example.org,true,302,200",
+    "unverified-sub,owner@example.org,false,403,302",
+    "unmarked-sub,owner@example.org,,403,302"
+  })
+  void opensTheBoardOnlyForTheAllowedSubjectOrItsVerifiedEmail(
+      String subject, String email, String emailVerified, int callbackStatus, int boardStatus)
       throws Exception {
     HttpClient browser =
         HttpClient.newBuilder()
@@ -121,7 +128,10 @@ class OidcLoginOnTomcatTest {
             .build()
             .getQueryParams();
     PROVIDER.expectLogin(
-        subject, URLDecoder.decode(authorize.getFirst("nonce"), StandardCharsets.UTF_8));
+        subject,
+        URLDecoder.decode(authorize.getFirst("nonce"), StandardCharsets.UTF_8),
+        email,
+        emailVerified);
     HttpResponse<String> callback =
         browser.send(
             HttpRequest.newBuilder(
