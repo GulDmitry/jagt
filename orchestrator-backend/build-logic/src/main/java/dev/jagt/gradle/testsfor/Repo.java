@@ -1,5 +1,6 @@
 package dev.jagt.gradle.testsfor;
 
+import dev.jagt.gradle.exec.Git;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;

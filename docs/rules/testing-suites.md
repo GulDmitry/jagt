@@ -48,6 +48,11 @@ adds them itself. 9509dbb2f changed the server starter with `test` alone and bro
 | `^(board\|orchestrator-backend/src/boardTest)/` | `boardTest --rerun-tasks` |
 | `^orchestrator-backend/stand/` | `standTest -Pmodelfree --rerun-tasks` |
 
+## Hot spots
+
+`./gradlew -q hotSpots` names the ten main classes with the most fix commits of 30 days and fails past `hotSpots.max` in `gradle.properties` or
+below it; the release review runs it ([0251](../decisions/0251-the-classes-the-fixes-return-to-are-named-at-every-release.md)).
+
 ## Context ceilings
 
 - `test`, `boardTest` and `e2eTest` each end in a check summing Spring's cache misses from their test reports (`contexts-test`,

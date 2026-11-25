@@ -1,4 +1,4 @@
-package dev.jagt.gradle.testsfor;
+package dev.jagt.gradle.exec;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -10,19 +10,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class Git {
+public final class Git {
 
   private final Path directory;
 
-  Git(Path directory) {
+  public Git(Path directory) {
     this.directory = directory;
   }
 
-  List<String> lines(String... arguments) {
+  public List<String> lines(String... arguments) {
     return split(run(arguments), "\r?\n");
   }
 
-  List<String> nulSeparated(String... arguments) {
+  public List<String> nulSeparated(String... arguments) {
     return split(run(arguments), "\0");
   }
 

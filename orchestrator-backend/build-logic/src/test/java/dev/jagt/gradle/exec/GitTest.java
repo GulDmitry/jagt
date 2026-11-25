@@ -1,4 +1,4 @@
-package dev.jagt.gradle.testsfor;
+package dev.jagt.gradle.exec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
