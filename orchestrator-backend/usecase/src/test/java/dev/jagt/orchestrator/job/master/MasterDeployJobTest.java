@@ -56,6 +56,16 @@ class MasterDeployJobTest {
                 .withMaster(Master.defaults().withLeft("ship src/Login.java")),
             List.of(TaskAction.DEPLOY)),
         arguments(
+            "reviewed task where the host's approval is required",
+            masterDeployJob().withRequireApproval(true),
+            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build(),
+            List.of()),
+        arguments(
+            "approved task where the host's approval is required",
+            masterDeployJob().withRequireApproval(true),
+            TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build(),
+            List.of(TaskAction.DEPLOY)),
+        arguments(
             "deploy the human kept",
             masterDeployJob().withMine(List.of("deploy")),
             TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build(),

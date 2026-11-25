@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
@@ -143,6 +144,7 @@ public class FreshStarts {
       WorktreeFiles.read(contextFile)
           .ifPresent(held -> WorktreeFiles.write(contextFile, hosting.carried().after(held, task)));
     }
-    windows.openTab(taskId, task.ticket().alias(), Path.of(task.worktreePath()), false, at);
+    windows.openTab(
+        taskId, task.ticket().alias(), Path.of(task.worktreePath()), LaunchMode.WORK, at);
   }
 }

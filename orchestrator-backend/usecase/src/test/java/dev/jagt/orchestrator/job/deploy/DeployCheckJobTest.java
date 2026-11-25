@@ -71,7 +71,13 @@ class DeployCheckJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            any(StepRelay.Delivery.class),
+            any(Standing.class));
     verify(pipelines, never()).read(anyString(), any());
     assertThat(state.task("ABC-42").orElseThrow().standing().status())
         .isEqualTo(TaskStatus.IN_PROGRESS);
@@ -83,7 +89,13 @@ class DeployCheckJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            any(StepRelay.Delivery.class),
+            any(Standing.class));
   }
 
   @Test
@@ -108,6 +120,7 @@ class DeployCheckJobTest {
         "ABC-42",
         Step.ANSWERED,
         "The Master answered your question, standing in for the human:\nyes",
+        StepRelay.Delivery.CONTEXT,
         firstRelay.standing("ABC-42"));
     StateService restarted = stateService().withRoot(root).build();
     StepRelay restartedRelay =
@@ -132,7 +145,13 @@ class DeployCheckJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            any(StepRelay.Delivery.class),
+            any(Standing.class));
     verify(pipelines, never()).read(anyString(), any());
   }
 
@@ -147,7 +166,12 @@ class DeployCheckJobTest {
     @Test
     void handsBackPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone() {
       when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
-      when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class)))
+      when(relay.relay(
+              eq("ABC-42"),
+              eq(Step.DEPLOY),
+              anyString(),
+              eq(StepRelay.Delivery.CONTEXT),
+              any(Standing.class)))
           .thenReturn(true);
       when(pipelines.read(eq("ABC-42"), any()))
           .thenReturn(
@@ -198,7 +222,13 @@ class DeployCheckJobTest {
 
       job.runOn(state.tasks());
 
-      verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+      verify(relay, never())
+          .relay(
+              anyString(),
+              any(Step.class),
+              anyString(),
+              any(StepRelay.Delivery.class),
+              any(Standing.class));
       assertThat(state.task("ABC-42").orElseThrow().standing().message())
           .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
     }
@@ -221,7 +251,13 @@ class DeployCheckJobTest {
       assertThat(handed.standing().message())
           .isEqualTo(
               "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
-      verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+      verify(relay, never())
+          .relay(
+              anyString(),
+              any(Step.class),
+              anyString(),
+              any(StepRelay.Delivery.class),
+              any(Standing.class));
     }
 
     @Nested
@@ -242,6 +278,7 @@ class DeployCheckJobTest {
                 eq("ABC-42"),
                 eq(Step.DEPLOY),
                 contains("- proj: 01234567 on dev"),
+                eq(StepRelay.Delivery.CONTEXT),
                 any(Standing.class));
       }
 
@@ -256,6 +293,7 @@ class DeployCheckJobTest {
                 eq("ABC-42"),
                 eq(Step.DEPLOY),
                 contains("- proj: 01234567 on dev"),
+                eq(StepRelay.Delivery.CONTEXT),
                 any(Standing.class));
       }
 
@@ -270,12 +308,18 @@ class DeployCheckJobTest {
                 eq("ABC-42"),
                 eq(Step.DEPLOY),
                 contains("- proj: 01234567 on its deploy branch"),
+                eq(StepRelay.Delivery.CONTEXT),
                 any(Standing.class));
       }
 
       @Test
       void recordsTheDeployAskedOnceItsSessionWasHanded() {
-        when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class)))
+        when(relay.relay(
+                eq("ABC-42"),
+                eq(Step.DEPLOY),
+                anyString(),
+                eq(StepRelay.Delivery.CONTEXT),
+                any(Standing.class)))
             .thenReturn(true);
 
         job.runOn(state.tasks());

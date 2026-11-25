@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.host.Problem;
 import java.nio.file.Files;
@@ -23,7 +24,7 @@ class CodexAgentRuntimeTest {
         root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
-    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), LaunchMode.WORK))
         .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex 'Read AGENTS.md and work'");
   }
 
@@ -33,9 +34,9 @@ class CodexAgentRuntimeTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
-    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " gpt-5 ", "go"))
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), LaunchMode.WORK, " gpt-5 ", "go"))
         .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex -m 'gpt-5' 'go'");
-    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " ", "go"))
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), LaunchMode.WORK, " ", "go"))
         .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex 'go'");
   }
 
@@ -46,7 +47,7 @@ class CodexAgentRuntimeTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
-    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true))
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), LaunchMode.PLAN))
         .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex --sandbox read-only 'go'");
   }
 

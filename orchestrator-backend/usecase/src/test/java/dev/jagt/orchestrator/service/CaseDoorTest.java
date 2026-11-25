@@ -116,6 +116,32 @@ class CaseDoorTest {
   }
 
   @Test
+  void refusesTheMasterLaterPlanApprovalItsHumanKeepsAsReplan() {
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).planApproved(true).build());
+    CaseDoor door =
+        caseDoor()
+            .withRoot(root)
+            .build(
+                state,
+                taskStops()
+                    .withRoot(root)
+                    .withProfile(
+                        new ConfigFile.ArbiterConfig("act", null, null, List.of("replan"), null)
+                            .profile())
+                    .build(state, new FakeClock()),
+                new FakeClock());
+
+    assertThatThrownBy(() ->
+            OriginContext.as(
+                ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.APPROVE_PLAN)))
+        .isInstanceOfSatisfying(
+            Refusal.class,
+            refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+  }
+
+  @Test
   void letsTheMasterPressVerbCaseAllowsAtTheTasksStatus() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);

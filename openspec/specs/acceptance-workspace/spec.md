@@ -62,6 +62,14 @@ A flow may click and create data on a listed environment alone. What it cannot s
 - **WHEN** acceptance runs its flows command with a `BASE_URL` its `environments` do not list
 - **THEN** the read gate refuses the command
 
+### Requirement: The workspace's layout is the role folder's
+`workspace.index`, `scenarios`, `steps` and `flows` SHALL place the index and each folder, relative to the workspace.
+The brief SHALL name them as `{workspace.<key>}`; unset, they are `index.md`, `scenarios`, `steps` and `flows`.
+
+#### Scenario: A suite with its own layout
+- **WHEN** `roles/acceptance/role.yml` maps `workspace.index` to `wiki/index.md` and the brief is the shipped one
+- **THEN** the acceptance read opens `wiki/index.md` first, with no brief override
+
 ### Requirement: Acceptance analyses a ticket before its plan
 In its interactive session, acceptance SHALL first read the task's ticket for gaps and contradictions. It asks one question per gap.
 It writes `scenarios/<ticket>.md` in its workspace: WHEN/THEN rows, each tagged `from-ticket` or `inferred`, each gap quoting the ticket.

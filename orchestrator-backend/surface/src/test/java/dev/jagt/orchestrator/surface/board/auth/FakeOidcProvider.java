@@ -28,6 +28,7 @@ final class FakeOidcProvider {
   private final RSAKey key;
   private final String clientId;
   private final Map<String, String> nonceByCode = new ConcurrentHashMap<>();
+  private final Map<String, String[]> emailByCode = new ConcurrentHashMap<>();
 
   FakeOidcProvider(String clientId) {
     this.clientId = clientId;
@@ -49,8 +50,11 @@ final class FakeOidcProvider {
     return "http://127.0.0.1:" + server.getAddress().getPort();
   }
 
-  void expectLogin(String code, String loginNonce) {
+  void expectLogin(String code, String loginNonce, String email, String emailVerified) {
     nonceByCode.put(code, loginNonce);
+    if (email != null) {
+      emailByCode.put(code, new String[] {email, emailVerified});
+    }
   }
 
   void stop() {
@@ -76,18 +80,25 @@ final class FakeOidcProvider {
                 .replaceFirst(".*code=([^&]*).*", "$1"),
             StandardCharsets.UTF_8);
     try {
-      JWTClaimsSet claims =
+      JWTClaimsSet.Builder claims =
           new JWTClaimsSet.Builder()
               .issuer(issuer())
               .audience(clientId)
               .subject(code)
               .claim("nonce", nonceByCode.get(code))
               .issueTime(Date.from(Instant.now(Clock.systemUTC())))
-              .expirationTime(Date.from(Instant.now(Clock.systemUTC()).plusSeconds(300)))
-              .build();
+              .expirationTime(Date.from(Instant.now(Clock.systemUTC()).plusSeconds(300)));
+      String[] email = emailByCode.get(code);
+      if (email != null) {
+        claims.claim("email", email[0]);
+        if (email[1] != null) {
+          claims.claim("email_verified", Boolean.parseBoolean(email[1]));
+        }
+      }
       SignedJWT jwt =
           new SignedJWT(
-              new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(key.getKeyID()).build(), claims);
+              new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(key.getKeyID()).build(),
+              claims.build());
       jwt.sign(new RSASSASigner(key));
       reply(
           exchange,

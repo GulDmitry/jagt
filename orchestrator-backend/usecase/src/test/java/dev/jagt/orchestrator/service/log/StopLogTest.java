@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.review.RoundTrail;
 import dev.jagt.orchestrator.task.turn.StatusChange;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +29,8 @@ class StopLogTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withData(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()));
 
     log.record(
         new StopLog.Stop(
@@ -57,7 +59,8 @@ class StopLogTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withData(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()));
     List<StatusChange> history =
         LongStream.rangeClosed(1, 22)
             .mapToObj(at -> new StatusChange(TaskStatus.IN_PROGRESS, at, null))

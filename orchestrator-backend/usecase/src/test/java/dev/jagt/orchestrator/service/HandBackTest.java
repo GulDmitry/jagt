@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.task.plan.Probe;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,7 +62,8 @@ class HandBackTest {
           new OrchestratorPaths(
               OrchestratorProperties.defaults()
                   .withRoot(root.toString())
-                  .withConfigFile(configFile.toString()));
+                  .withConfigFile(configFile.toString()),
+              FakeHost.machine());
       ConfigService config =
           new ConfigService(
               new ConfigSource(paths, new FakeConfigInputs()),

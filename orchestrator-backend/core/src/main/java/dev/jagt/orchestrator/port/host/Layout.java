@@ -22,6 +22,7 @@ public class Layout {
     this.stateFile = stateFile != null ? stateFile : data.resolve("jagt").resolve("state.json");
   }
 
+  /** Everything jagt writes; {@code data} under the root where none is configured. */
   public Path data() {
     return data;
   }
@@ -100,10 +101,12 @@ public class Layout {
     return SCRATCH.equals(String.valueOf(parent.getFileName())) ? parent : null;
   }
 
+  /** Where a project's checkout of a role's branch is cut for one commit. */
   public Path roleBranchWorktree(String projectKey, String branch) {
     return data.resolve("role-branches").resolve(projectKey + "-" + branch.replace('/', '-'));
   }
 
+  /** Where a project named by url is cloned. */
   public Path clone(String projectKey) {
     return data.resolve("projects").resolve(projectKey);
   }
@@ -124,38 +127,53 @@ public class Layout {
     return data.resolve("logs");
   }
 
+  /** Present while `act` is stopped, whatever the configured mode says. */
   public Path actStopped() {
     return beside("act-stopped");
   }
 
+  /** Present while the whole board is stopped; holds the epoch millis of the stop. */
   public Path boardStopped() {
     return beside("board-stopped");
   }
 
+  /**
+   * The tasks counted toward stopping `act`, one per line, present while the count is above zero.
+   */
   public Path actStrikes() {
     return beside("act-strikes");
   }
 
+  /**
+   * The Master's token, drawn at each start: beside the state, so a read-only root still starts.
+   */
   public Path token() {
     return beside("master-token");
   }
 
+  /** The last moment this process was seen alive, rewritten every minute. */
   public Path alive() {
     return beside("alive");
   }
 
+  /** The keys intake turned away, one per line. */
   public Path intakeTurnedAway() {
     return beside("intake-turned-away");
   }
 
+  /** What each deploy's check by the checker {@code role} ended in, one line per task. */
   public Path checkerVerdicts(String role) {
     return beside(role + "-verdicts");
   }
 
+  /**
+   * Where the verdicts were kept while the role was called qa; read while the new file is absent.
+   */
   public Path legacyQaVerdicts() {
     return beside("qa-verdicts");
   }
 
+  /** The usage levels already told, with the period each was told in. */
   public Path usageAlerts() {
     return beside("usage-alerts.properties");
   }

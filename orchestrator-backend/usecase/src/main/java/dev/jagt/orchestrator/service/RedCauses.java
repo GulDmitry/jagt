@@ -43,7 +43,11 @@ public class RedCauses {
   public Verdict judge(String taskId, String project, ReviewFacts facts, Pipeline checks) {
     if (checks != Pipeline.RED) {
       if (retries.applies(taskId)) {
-        retries.clear(taskId, checks == Pipeline.GREEN);
+        if (checks == Pipeline.GREEN) {
+          retries.clearAll(taskId);
+        } else {
+          retries.clearArmed(taskId);
+        }
       }
       return Verdict.CODE;
     }
@@ -62,7 +66,7 @@ public class RedCauses {
 
   /** The deploy's pipeline went green: no retry is owed for it. */
   public void deployStands(String taskId) {
-    retries.clear(taskId, true);
+    retries.clearAll(taskId);
   }
 
   private Verdict judgeRed(String taskId, String project, String pipelineUrl) {
@@ -79,7 +83,7 @@ public class RedCauses {
       return Verdict.CODE;
     }
     if (RedCause.of(failed.facts().get()) == RedCause.CODE) {
-      retries.clear(taskId, true);
+      retries.clearAll(taskId);
       return Verdict.CODE;
     }
     return waitOut(taskId, project, pipelineUrl, failed.facts().get());

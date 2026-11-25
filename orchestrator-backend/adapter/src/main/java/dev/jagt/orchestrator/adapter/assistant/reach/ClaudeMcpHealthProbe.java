@@ -4,11 +4,11 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.agent.McpHealth;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.OneLine;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +52,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
   private final ClaudeProperties claude;
   private final AssistantProperties assistant;
   private final Reach reach;
+  private final Host host;
 
   private Optional<List<Server>> last = Optional.empty();
   private long lastAt;
@@ -133,11 +134,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
   private Optional<List<Server>> probe() {
     Processes.Result result;
     try {
-      result =
-          processRunner.run(
-              Path.of(System.getProperty("java.io.tmpdir")),
-              TIMEOUT,
-              List.of(claude.command(), "mcp", "list"));
+      result = processRunner.run(host.temp(), TIMEOUT, List.of(claude.command(), "mcp", "list"));
     } catch (RuntimeException e) {
       log.atError()
           .setMessage("mcp probe failed")

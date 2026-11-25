@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -29,7 +30,7 @@ class AgentWindowsTest {
     TaskState task = TaskState.builder("shop", "/wt", TaskStatus.NEW).build();
     when(state.task("ABC-42")).thenReturn(Optional.of(task));
 
-    assertThatThrownBy(() -> windows.openTab("ABC-42", "a1", Path.of("/wt"), false, null))
+    assertThatThrownBy(() -> windows.openTab("ABC-42", "a1", Path.of("/wt"), LaunchMode.WORK, null))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("npm registry");
     verifyNoInteractions(hosting);

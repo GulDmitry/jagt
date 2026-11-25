@@ -75,9 +75,9 @@ public class StateService implements ReducingStore {
     // TaskState would otherwise make every older state.json unreadable.
     this.mapper =
         mapper.rebuild().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
-    this.stateFile = paths.stateFile();
-    this.backupFile = sibling(paths.stateFile(), ".bak");
-    this.corruptFile = sibling(paths.stateFile(), ".corrupt");
+    this.stateFile = paths.layout().stateFile();
+    this.backupFile = sibling(paths.layout().stateFile(), ".bak");
+    this.corruptFile = sibling(paths.layout().stateFile(), ".corrupt");
   }
 
   private static Path sibling(Path file, String suffix) {

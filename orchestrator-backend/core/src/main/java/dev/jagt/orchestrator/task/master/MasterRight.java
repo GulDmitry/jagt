@@ -23,8 +23,10 @@ public enum MasterRight {
   REPLY,
   /** Deciding what the ticket or the code leaves open, as the human would. */
   ANSWER,
-  /** Telling a session its plan holds and to start on it. */
+  /** Telling a session its first plan holds and to start on it. */
   PLAN,
+  /** Telling a session a plan after the first holds and to start on it. */
+  REPLAN,
   /** Attaching the repository a session asked for to its task. */
   REPO,
   /** Lifting a stop that jagt's loop guards set. */

@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.task.plan;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.usage.AgentSpend;
@@ -29,7 +31,10 @@ public record Holds(
     // Null until the first metered call.
     @Nullable TokenUsage usage,
     // What this task's own agent sessions have burned, and how far their log has been read.
-    @Nullable AgentSpend agentSpend) {
+    @Nullable AgentSpend agentSpend,
+    // A plan of this task was approved: the next plan waiting is a later one.
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT) @JsonSetter(nulls = Nulls.AS_EMPTY)
+        boolean planApproved) {
 
   public Holds {
     planGate = planGate == null ? PlanGate.OPEN : planGate;
@@ -59,7 +64,8 @@ public record Holds(
     Map<RefusalKind, Integer> counted = new EnumMap<>(RefusalKind.class);
     counted.putAll(refusals);
     counted.merge(kind, 1, Integer::sum);
-    return new Holds(planGate, probes, switches, gitTrust, counted, usage, agentSpend);
+    return new Holds(
+        planGate, probes, switches, gitTrust, counted, usage, agentSpend, planApproved);
   }
 
   /**
@@ -71,27 +77,40 @@ public record Holds(
     }
     Map<String, String> merged = new TreeMap<>(switches);
     merged.putAll(judged);
-    return new Holds(planGate, probes, merged, gitTrust, refusals, usage, agentSpend);
+    return new Holds(planGate, probes, merged, gitTrust, refusals, usage, agentSpend, planApproved);
   }
 
   public Holds withPlanGate(PlanGate changed) {
-    return new Holds(changed, probes, switches, gitTrust, refusals, usage, agentSpend);
+    return new Holds(
+        changed, probes, switches, gitTrust, refusals, usage, agentSpend, planApproved);
+  }
+
+  public Holds withPlanApproved(boolean approved) {
+    return new Holds(planGate, probes, switches, gitTrust, refusals, usage, agentSpend, approved);
   }
 
   public Holds withProbes(List<Probe> changed) {
-    return new Holds(planGate, changed, switches, gitTrust, refusals, usage, agentSpend);
+    return new Holds(
+        planGate, changed, switches, gitTrust, refusals, usage, agentSpend, planApproved);
   }
 
   public Holds withGitTrust(GitTrust trust) {
-    return new Holds(planGate, probes, switches, trust, refusals, usage, agentSpend);
+    return new Holds(planGate, probes, switches, trust, refusals, usage, agentSpend, planApproved);
   }
 
   public Holds withUsageAdded(TokenUsage added) {
     return new Holds(
-        planGate, probes, switches, gitTrust, refusals, usageOrNone().plus(added), agentSpend);
+        planGate,
+        probes,
+        switches,
+        gitTrust,
+        refusals,
+        usageOrNone().plus(added),
+        agentSpend,
+        planApproved);
   }
 
   public Holds withAgentSpend(AgentSpend spend) {
-    return new Holds(planGate, probes, switches, gitTrust, refusals, usage, spend);
+    return new Holds(planGate, probes, switches, gitTrust, refusals, usage, spend, planApproved);
   }
 }

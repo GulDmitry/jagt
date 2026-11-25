@@ -374,3 +374,10 @@ tasks.register('gate') {
     group = 'verification'
     dependsOn 'gateTest', 'gateHeavy', 'gateStand', 'gateInstall'
 }
+
+tasks.register('hotSpots', dev.jagt.gradle.hotspots.HotSpotsTask) {
+    description = 'Prints the ten classes the fix commits of the last 30 days return to most; fails past hotSpots.max or below it.'
+    group = 'verification'
+    it.repository = layout.settingsDirectory
+    max = providers.gradleProperty('hotSpots.max').map { it as int }
+}

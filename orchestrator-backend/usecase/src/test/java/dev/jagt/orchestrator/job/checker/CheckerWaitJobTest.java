@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +43,8 @@ class CheckerWaitJobTest {
             OrchestratorProperties.defaults()
                 .withData(root.toString())
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),

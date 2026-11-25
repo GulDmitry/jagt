@@ -12,9 +12,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.session.ColdPrompts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.session.Session;
@@ -26,7 +26,7 @@ import org.mockito.InOrder;
 
 class PromptGateTest {
 
-  private final ColdPrompts coldPrompts = mock(ColdPrompts.class);
+  private final AgentSessions sessions = mock(AgentSessions.class);
   private final AgentRuntime runtime = mock(AgentRuntime.class);
   private final ConfigService config = mock(ConfigService.class);
   private final TaskState idle =
@@ -47,12 +47,11 @@ class PromptGateTest {
     when(runtime.blockedPrompt(anyString())).thenReturn("{\"decision\": \"block\"}");
 
     String answered =
-        new PromptGate(coldPrompts, runtime, config)
-            .answer("ABC-1", idle, "now handle empty files");
+        new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "now handle empty files");
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
-    InOrder order = inOrder(coldPrompts, runtime);
-    order.verify(coldPrompts).relay("ABC-1", "now handle empty files");
+    InOrder order = inOrder(sessions, runtime);
+    order.verify(sessions).relayUnderCold("ABC-1", "now handle empty files");
     order.verify(runtime).blockedPrompt(anyString());
   }
 
@@ -60,10 +59,10 @@ class PromptGateTest {
   void callsSessionColdFromTheStampTheRelayUses() {
     when(runtime.pastCacheLifetime(1_000L, Duration.ofHours(1))).thenReturn(true);
 
-    String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "go on");
 
     assertThat(answered).isEmpty();
-    verify(coldPrompts, never()).relay(anyString(), anyString());
+    verify(sessions, never()).relayUnderCold(anyString(), anyString());
   }
 
   @Test
@@ -71,9 +70,9 @@ class PromptGateTest {
     TaskState working = idle.withSession(Session.defaults().withMovedAt(5_000));
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
 
-    new PromptGate(coldPrompts, runtime, config).answer("ABC-1", working, "go on");
+    new PromptGate(sessions, runtime, config).answer("ABC-1", working, "go on");
 
-    verify(coldPrompts).relay("ABC-1", "go on");
+    verify(sessions).relayUnderCold("ABC-1", "go on");
   }
 
   @Test
@@ -81,19 +80,18 @@ class PromptGateTest {
     TaskState unsigned = idle.withSession(Session.defaults());
     when(runtime.pastCacheLifetime(anyLong(), any())).thenReturn(true);
 
-    String answered =
-        new PromptGate(coldPrompts, runtime, config).answer("ABC-1", unsigned, "go on");
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", unsigned, "go on");
 
     assertThat(answered).isEmpty();
-    verify(coldPrompts, never()).relay(anyString(), anyString());
+    verify(sessions, never()).relayUnderCold(anyString(), anyString());
   }
 
   @Test
   void letsColdPromptThroughWhenItCouldNotBeRelayed() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
-    doThrow(new IllegalStateException("tmux down")).when(coldPrompts).relay("ABC-1", "go on");
+    doThrow(new IllegalStateException("tmux down")).when(sessions).relayUnderCold("ABC-1", "go on");
 
-    String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "go on");
 
     assertThat(answered).isEmpty();
     verify(runtime, never()).blockedPrompt(anyString());
@@ -101,20 +99,20 @@ class PromptGateTest {
 
   @Test
   void letsPromptThroughWhenNoTaskOwnsTheWorktree() {
-    String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", null, "go on");
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", null, "go on");
 
     assertThat(answered).isEmpty();
-    verify(coldPrompts, never()).relay(anyString(), anyString());
+    verify(sessions, never()).relayUnderCold(anyString(), anyString());
   }
 
   @Test
   void letsPromptThroughWhileTheSessionIsWithinItsCacheLifetime() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(false);
 
-    String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "go on");
 
     assertThat(answered).isEmpty();
-    verify(coldPrompts, never()).relay(anyString(), anyString());
+    verify(sessions, never()).relayUnderCold(anyString(), anyString());
   }
 
   @ParameterizedTest
@@ -122,9 +120,9 @@ class PromptGateTest {
   void letsSlashCommandOrPastedImageThroughEvenInColdSession(String typed) {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
 
-    String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, typed);
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", idle, typed);
 
     assertThat(answered).isEmpty();
-    verify(coldPrompts, never()).relay(anyString(), anyString());
+    verify(sessions, never()).relayUnderCold(anyString(), anyString());
   }
 }

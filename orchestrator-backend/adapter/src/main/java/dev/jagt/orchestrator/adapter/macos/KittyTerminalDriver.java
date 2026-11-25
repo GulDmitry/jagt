@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.macos;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
+import dev.jagt.orchestrator.port.host.Host;
 import java.time.Clock;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,8 +33,12 @@ public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
   private final OsaScript osaScript;
 
   public KittyTerminalDriver(
-      ProcessRunner processRunner, OsaScript osaScript, KittyOptions options, Clock clock) {
-    super(processRunner, options, clock);
+      ProcessRunner processRunner,
+      OsaScript osaScript,
+      KittyOptions options,
+      Clock clock,
+      Host host) {
+    super(processRunner, options, clock, host);
     this.osaScript = osaScript;
   }
 

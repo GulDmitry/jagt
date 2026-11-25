@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.job.TaskJob;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
@@ -50,7 +51,12 @@ public class MasterDeployJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    Arbiter.Profile profile = configService.load().arbiter().profile();
+    ConfigFile config = configService.load();
+    Arbiter.Profile profile = config.arbiter().profile();
+    if (!FlowRules.deployedByTheArbiter(
+        task.standing().status(), config.deploy().requireApprovalOrDefault())) {
+      return;
+    }
     String arrival = String.valueOf(task.standing().statusSince());
     // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a
     // restart.

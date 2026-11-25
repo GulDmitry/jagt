@@ -7,7 +7,6 @@ import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -46,6 +45,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,6 +53,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.event.KeyValuePair;
 
 class StepRelayTest {
 
@@ -115,6 +116,7 @@ class StepRelayTest {
         "ABC-42",
         Step.DEPLOY,
         "ABC-42 is deployed:\n- proj: 01234567 on dev",
+        StepRelay.Delivery.CONTEXT,
         admittingRelay.standing("ABC-42"));
 
     verify(sessions)
@@ -127,17 +129,33 @@ class StepRelayTest {
         Arguments.of(
             "relay",
             (BiFunction<StepRelay, Standing, Boolean>)
-                (relay, read) -> relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
+                (relay, read) ->
+                    relay.relay(
+                        "ABC-42",
+                        Step.DEPLOY,
+                        "ABC-42 is deployed",
+                        StepRelay.Delivery.CONTEXT,
+                        read)),
         Arguments.of(
             "relayRound",
             (BiFunction<StepRelay, Standing, Boolean>)
                 (relay, read) ->
-                    relay.relayRound("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
+                    relay.relay(
+                        "ABC-42",
+                        Step.DEPLOY,
+                        "ABC-42 is deployed",
+                        StepRelay.Delivery.ROUND,
+                        read)),
         Arguments.of(
             "relayUnder",
             (BiFunction<StepRelay, Standing, Boolean>)
                 (relay, read) ->
-                    relay.relayUnder("ABC-42", Step.DEPLOY, "ABC-42 is deployed", false, read)),
+                    relay.relay(
+                        "ABC-42",
+                        Step.DEPLOY,
+                        "ABC-42 is deployed",
+                        StepRelay.Delivery.UNDER,
+                        read)),
         Arguments.of(
             "relay with a claim",
             (BiFunction<StepRelay, Standing, Boolean>)
@@ -146,27 +164,29 @@ class StepRelayTest {
                         "ABC-42",
                         Step.DEPLOY,
                         "ABC-42 is deployed",
+                        StepRelay.Delivery.CONTEXT,
                         new StepRelay.Claim(
                             read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "relayRound with a claim",
             (BiFunction<StepRelay, Standing, Boolean>)
                 (relay, read) ->
-                    relay.relayRound(
+                    relay.relay(
                         "ABC-42",
                         Step.DEPLOY,
                         "ABC-42 is deployed",
+                        StepRelay.Delivery.ROUND,
                         new StepRelay.Claim(
                             read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "relayUnder with a claim",
             (BiFunction<StepRelay, Standing, Boolean>)
                 (relay, read) ->
-                    relay.relayUnder(
+                    relay.relay(
                         "ABC-42",
                         Step.DEPLOY,
                         "ABC-42 is deployed",
-                        false,
+                        StepRelay.Delivery.UNDER,
                         new StepRelay.Claim(
                             read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
@@ -217,8 +237,9 @@ class StepRelayTest {
             opens -> FlowReports.Claimed.MOVED_ON,
             opened -> false);
 
-    assertThatThrownBy(
-            () -> admittingRelay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim))
+    assertThatThrownBy(() ->
+            admittingRelay.relay(
+                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", StepRelay.Delivery.CONTEXT, claim))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
@@ -247,6 +268,7 @@ class StepRelayTest {
         "ABC-42",
         Step.DEPLOY,
         "ABC-42 is deployed:\n- proj: 01234567 on dev",
+        StepRelay.Delivery.CONTEXT,
         admittingRelay.standing("ABC-42"));
 
     verify(sessions).writeTaskContext("ABC-42", "ABC-42 is deployed:\n- proj: 01234567 on dev");
@@ -258,11 +280,19 @@ class StepRelayTest {
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     admittingRelay.relay(
-        "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42"));
+        "ABC-42",
+        Step.DEPLOY,
+        "ABC-42 is deployed",
+        StepRelay.Delivery.CONTEXT,
+        admittingRelay.standing("ABC-42"));
 
     boolean again =
         admittingRelay.relay(
-            "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42"));
+            "ABC-42",
+            Step.DEPLOY,
+            "ABC-42 is deployed",
+            StepRelay.Delivery.CONTEXT,
+            admittingRelay.standing("ABC-42"));
 
     assertThat(again).isFalse();
     verify(sessions, times(1)).writeTaskContext("ABC-42", "ABC-42 is deployed");
@@ -277,12 +307,20 @@ class StepRelayTest {
         .thenThrow(new Error("jagt died"));
     assertThatThrownBy(() ->
             admittingRelay.relay(
-                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
+                "ABC-42",
+                Step.DEPLOY,
+                "ABC-42 is deployed",
+                StepRelay.Delivery.CONTEXT,
+                admittingRelay.standing("ABC-42")))
         .isInstanceOf(Error.class);
 
     boolean again =
         admittingRelay.relay(
-            "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42"));
+            "ABC-42",
+            Step.DEPLOY,
+            "ABC-42 is deployed",
+            StepRelay.Delivery.CONTEXT,
+            admittingRelay.standing("ABC-42"));
 
     assertThat(again).isFalse();
     verify(sessions, times(1)).writeTaskContext("ABC-42", "ABC-42 is deployed");
@@ -298,12 +336,20 @@ class StepRelayTest {
         .thenReturn("written");
     assertThatThrownBy(() ->
             admittingRelay.relay(
-                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
+                "ABC-42",
+                Step.DEPLOY,
+                "ABC-42 is deployed",
+                StepRelay.Delivery.CONTEXT,
+                admittingRelay.standing("ABC-42")))
         .isInstanceOf(IllegalStateException.class);
 
     boolean again =
         admittingRelay.relay(
-            "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42"));
+            "ABC-42",
+            Step.DEPLOY,
+            "ABC-42 is deployed",
+            StepRelay.Delivery.CONTEXT,
+            admittingRelay.standing("ABC-42"));
 
     assertThat(again).isTrue();
   }
@@ -318,7 +364,11 @@ class StepRelayTest {
 
     assertThatThrownBy(() ->
             admittingRelay.relay(
-                "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42")))
+                "ABC-42",
+                Step.DEPLOY,
+                "ABC-42 is deployed",
+                StepRelay.Delivery.CONTEXT,
+                admittingRelay.standing("ABC-42")))
         .isInstanceOf(IllegalStateException.class);
 
     verify(door).undelivered("ABC-42", "deploy", "java.lang.IllegalStateException: window closed");
@@ -336,8 +386,9 @@ class StepRelayTest {
             admittingRelay.standing("ABC-42"), opens -> FlowReports.Claimed.LANDED, opened -> true);
 
     try (FakeLogCapture log = new FakeLogCapture(StepRelay.class)) {
-      assertThatThrownBy(
-              () -> admittingRelay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim))
+      assertThatThrownBy(() ->
+              admittingRelay.relay(
+                  "ABC-42", Step.DEPLOY, "ABC-42 is deployed", StepRelay.Delivery.CONTEXT, claim))
           .isInstanceOf(Processes.Stopped.class);
 
       assertThat(log.events())
@@ -347,6 +398,29 @@ class StepRelayTest {
           .anyMatch(pair ->
               "effect".equals(pair.key)
                   && "the claim undone, the task stopped for the human".equals(pair.value));
+    }
+  }
+
+  @Test
+  void announcesTheTurnTheClaimOpened() {
+    when(door.opens("ABC-42", Step.DEPLOY))
+        .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    StepRelay.Claim claim =
+        new StepRelay.Claim(
+            admittingRelay.standing("ABC-42"), opens -> FlowReports.Claimed.LANDED, opened -> true);
+
+    try (FakeLogCapture log = new FakeLogCapture(TaskTurns.class)) {
+      admittingRelay.relay(
+          "ABC-42", Step.DEPLOY, "ABC-42 is deployed", StepRelay.Delivery.CONTEXT, claim);
+
+      assertThat(log.events())
+          .filteredOn(event -> "turn opened".equals(event.getMessage()))
+          .singleElement()
+          .extracting(ILoggingEvent::getKeyValuePairs)
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .contains(
+              new KeyValuePair("step", "deploy"), new KeyValuePair("status", TaskStatus.REVIEWED));
     }
   }
 
@@ -362,8 +436,9 @@ class StepRelayTest {
             admittingRelay.standing("ABC-42"), opens -> FlowReports.Claimed.LANDED, opened -> true);
 
     try (FakeLogCapture log = new FakeLogCapture(StepRelay.class)) {
-      assertThatThrownBy(
-              () -> admittingRelay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim))
+      assertThatThrownBy(() ->
+              admittingRelay.relay(
+                  "ABC-42", Step.DEPLOY, "ABC-42 is deployed", StepRelay.Delivery.CONTEXT, claim))
           .isInstanceOf(IllegalStateException.class);
 
       assertThat(log.events())
@@ -377,7 +452,12 @@ class StepRelayTest {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
-    relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
+    relay.relay(
+        "ABC-42",
+        Step.DEPLOY,
+        "ABC-42 is deployed",
+        StepRelay.Delivery.CONTEXT,
+        relay.standing("ABC-42"));
 
     verify(sessions).writeTaskContext("ABC-42", "ABC-42 is deployed");
   }
@@ -388,7 +468,12 @@ class StepRelayTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
     boolean told =
-        relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
+        relay.relay(
+            "ABC-42",
+            Step.DEPLOY,
+            "ABC-42 is deployed",
+            StepRelay.Delivery.CONTEXT,
+            relay.standing("ABC-42"));
 
     assertThat(told).isFalse();
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
@@ -408,7 +493,12 @@ class StepRelayTest {
         OriginContext.as(
             ActionOrigin.BOARD,
             () ->
-                relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42")));
+                relay.relay(
+                    "ABC-42",
+                    Step.DEPLOY,
+                    "ABC-42 is deployed",
+                    StepRelay.Delivery.CONTEXT,
+                    relay.standing("ABC-42")));
 
     assertThat(told).isFalse();
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
@@ -427,7 +517,12 @@ class StepRelayTest {
         OriginContext.as(
             ActionOrigin.MCP,
             () ->
-                relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42")));
+                relay.relay(
+                    "ABC-42",
+                    Step.DEPLOY,
+                    "ABC-42 is deployed",
+                    StepRelay.Delivery.CONTEXT,
+                    relay.standing("ABC-42")));
 
     assertThat(told).isTrue();
   }
@@ -437,7 +532,12 @@ class StepRelayTest {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
-    relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
+    relay.relay(
+        "ABC-42",
+        Step.DEPLOY,
+        "ABC-42 is deployed",
+        StepRelay.Delivery.CONTEXT,
+        relay.standing("ABC-42"));
 
     assertThat(state.task("ABC-42").orElseThrow().work().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
@@ -505,7 +605,11 @@ class StepRelayTest {
             ActionOrigin.MASTER,
             () ->
                 relay.relay(
-                    "ABC-42", Step.ANSWERED, "Keep the old keys.", relay.standing("ABC-42")));
+                    "ABC-42",
+                    Step.ANSWERED,
+                    "Keep the old keys.",
+                    StepRelay.Delivery.CONTEXT,
+                    relay.standing("ABC-42")));
 
     assertThat(told).isTrue();
   }
@@ -582,11 +686,15 @@ class StepRelayTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
-        admittingRelay.relayUnder(
-            "ABC-42", Step.DEPLOY, "ABC-42 is deployed", true, admittingRelay.standing("ABC-42"));
+        admittingRelay.relay(
+            "ABC-42",
+            Step.DEPLOY,
+            "ABC-42 is deployed",
+            StepRelay.Delivery.UNDER_FRESH,
+            admittingRelay.standing("ABC-42"));
 
     assertThat(told).isEqualTo(true);
-    verify(sessions).relayUnder("ABC-42", "ABC-42 is deployed", true);
+    verify(sessions).relayUnderFresh("ABC-42", "ABC-42 is deployed");
     assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(true);
   }
 
@@ -598,11 +706,15 @@ class StepRelayTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
-        admittingRelay.relayUnder(
-            "ABC-42", Step.DEPLOY, "ABC-42 is deployed", true, admittingRelay.standing("ABC-42"));
+        admittingRelay.relay(
+            "ABC-42",
+            Step.DEPLOY,
+            "ABC-42 is deployed",
+            StepRelay.Delivery.UNDER,
+            admittingRelay.standing("ABC-42"));
 
     assertThat(told).isEqualTo(false);
-    verify(sessions, never()).relayUnder(anyString(), anyString(), anyBoolean());
+    verify(sessions, never()).relayUnder(anyString(), anyString());
     assertThat(state.task("ABC-42").orElseThrow().work().turnOrNone().open()).isEqualTo(false);
   }
 
@@ -613,19 +725,36 @@ class StepRelayTest {
     void twoRoundsWereSent() throws Exception {
       Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
       state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-      relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
-      relay.relayRound(
-          "ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
+      relay.relay(
+          "ABC-42",
+          Step.VERIFY,
+          "BUILD FAILED in CartTest",
+          StepRelay.Delivery.ROUND,
+          relay.standing("ABC-42"));
+      relay.relay(
+          "ABC-42",
+          Step.VERIFY,
+          "BUILD FAILED in OrderTest",
+          StepRelay.Delivery.ROUND,
+          relay.standing("ABC-42"));
     }
 
     @Test
     void stopsTheTaskInsteadOfSendingFourthRedVerificationRunning() {
-      relay.relayRound(
-          "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest again", relay.standing("ABC-42"));
+      relay.relay(
+          "ABC-42",
+          Step.VERIFY,
+          "BUILD FAILED in CartTest again",
+          StepRelay.Delivery.ROUND,
+          relay.standing("ABC-42"));
 
       boolean told =
-          relay.relayRound(
-              "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
+          relay.relay(
+              "ABC-42",
+              Step.VERIFY,
+              "BUILD FAILED in PaymentTest",
+              StepRelay.Delivery.ROUND,
+              relay.standing("ABC-42"));
 
       assertThat(told).isFalse();
       verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
@@ -638,8 +767,12 @@ class StepRelayTest {
     @Test
     void sendsThirdRedVerificationRunning() {
       boolean told =
-          relay.relayRound(
-              "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
+          relay.relay(
+              "ABC-42",
+              Step.VERIFY,
+              "BUILD FAILED in PaymentTest",
+              StepRelay.Delivery.ROUND,
+              relay.standing("ABC-42"));
 
       assertThat(told).isTrue();
       assertThat(state.task("ABC-42").orElseThrow().work().stopped()).isFalse();

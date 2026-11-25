@@ -76,6 +76,15 @@ class ServerStarterTest {
   }
 
   @Test
+  void theServerStarterRequiresTheHostsApprovalBeforeDeployWhereTheDesktopDoesNot() {
+    String server = SourceRoots.read(SERVER);
+    String desktop = SourceRoots.read(DESKTOP);
+
+    assertThat(server).containsPattern("(?m)^    requireApproval: true\\b");
+    assertThat(desktop).containsPattern("(?m)^  #   requireApproval: false\\b");
+  }
+
+  @Test
   void theServerStarterTurnsTheAcceptanceRoleOn() {
     String server = SourceRoots.read(SERVER);
 

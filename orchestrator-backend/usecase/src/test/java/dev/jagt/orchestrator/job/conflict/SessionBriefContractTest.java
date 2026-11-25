@@ -40,6 +40,7 @@ import dev.jagt.orchestrator.task.repo.Remote;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -58,7 +59,7 @@ class SessionBriefContractTest {
           new RoleSettings(
               RoleDefinition.absent("acceptance"),
               mock(ConfigService.class),
-              new OrchestratorPaths(OrchestratorProperties.defaults())));
+              new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine())));
   private final AgentSessions sessions = mock(AgentSessions.class);
   private StateService state;
   private CaseDoor door;

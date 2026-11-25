@@ -19,6 +19,8 @@ import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.startup.Misconfigured;
 import dev.jagt.orchestrator.startup.StartupValidation;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeReach;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,7 +45,7 @@ class AcceptanceConfigCheckTest {
             .withRoot(root.toString())
             .withConfigFile(root.resolve("jagt.yml").toString())
             .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
+    OrchestratorPaths paths = new OrchestratorPaths(properties, FakeHost.machine());
     check =
         new AcceptanceConfigCheck(
             new ConfigService(
@@ -85,7 +87,9 @@ class AcceptanceConfigCheckTest {
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  " + key + "\n");
 
-    assertThatThrownBy(new StartupValidation(List.of(check), true)::refuseToRunWithoutWhatItNeeds)
+    assertThatThrownBy(
+            new StartupValidation(List.of(check), new FakeReach(), true)
+                ::refuseToRunWithoutWhatItNeeds)
         .isInstanceOf(Misconfigured.class)
         .hasMessageContaining("roles.acceptance");
   }

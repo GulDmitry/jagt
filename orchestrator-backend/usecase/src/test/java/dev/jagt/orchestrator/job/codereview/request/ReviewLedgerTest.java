@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.host.Layout;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,20 +22,21 @@ class ReviewLedgerTest {
 
   @Test
   void ledgerThatCannotBeParsedMovesAsideAndStartsEmpty() throws IOException {
-    Path file = data.resolve("code-review.json");
-    when(paths.codeReviewLedger()).thenReturn(file);
+    Path file = data.resolve("jagt/code-review.json");
+    Files.createDirectories(file.getParent());
+    when(paths.layout()).thenReturn(new Layout(data, null));
     Files.writeString(file, "{not json");
 
     List<LedgerRow> rows = new ReviewLedger(paths).rows();
 
     assertThat(rows).isEmpty();
-    assertThat(data.resolve("code-review.json.corrupt")).exists();
+    assertThat(data.resolve("jagt/code-review.json.corrupt")).exists();
     assertThat(file).doesNotExist();
   }
 
   @Test
   void rowSurvivesNewLedgerReadingTheSameFile() {
-    when(paths.codeReviewLedger()).thenReturn(data.resolve("code-review.json"));
+    when(paths.layout()).thenReturn(new Layout(data, null));
     new ReviewLedger(paths)
         .update("https://h/a/b/7", "shop", "", row -> row.withHeads(List.of("0123abc")));
 
@@ -45,7 +47,7 @@ class ReviewLedgerTest {
 
   @Test
   void spendAnswersAndCountsSurviveNewLedgerReadingTheSameFile() {
-    when(paths.codeReviewLedger()).thenReturn(data.resolve("code-review.json"));
+    when(paths.layout()).thenReturn(new Layout(data, null));
     new ReviewLedger(paths)
         .update(
             "https://h/a/b/7",

@@ -76,7 +76,9 @@ class OidcLogin {
   private static OAuth2UserService<OidcUserRequest, OidcUser> owner(String allowed) {
     return request -> {
       OidcIdToken token = request.getIdToken();
-      if (!allowed.equals(token.getSubject()) && !allowed.equals(token.getEmail())) {
+      boolean verifiedEmail =
+          Boolean.TRUE.equals(token.getEmailVerified()) && allowed.equals(token.getEmail());
+      if (!allowed.equals(token.getSubject()) && !verifiedEmail) {
         throw new OAuth2AuthenticationException(new OAuth2Error("access_denied"));
       }
       return new DefaultOidcUser(Set.of(new SimpleGrantedAuthority("ROLE_OWNER")), token);

@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -33,15 +34,15 @@ class AcceptanceRoleCheckTest {
   void disabledAcceptanceWithNoAcceptanceRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(
       @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     InstalledRoles roles = new InstalledRoles(paths);
 
     AcceptanceRoleCheck check =
         new AcceptanceRoleCheck(
             roles,
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers, kept),
-            paths);
+                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers, kept));
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -62,7 +63,8 @@ class AcceptanceRoleCheckTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
     InstalledRoles roles = new InstalledRoles(paths);
 
     assertThat(
@@ -73,8 +75,7 @@ class AcceptanceRoleCheckTest {
                         agents,
                         actStops,
                         checkers,
-                        kept),
-                    paths)
+                        kept))
                 .problems())
         .singleElement()
         .satisfies(problem -> {

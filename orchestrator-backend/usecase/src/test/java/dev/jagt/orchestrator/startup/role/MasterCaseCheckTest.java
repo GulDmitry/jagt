@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,8 +37,10 @@ class MasterCaseCheckTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withConfigFile(
-                    Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-    check = new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config, paths);
+                    Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()),
+            FakeHost.machine());
+    check = new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config);
+    when(config.fileExists()).thenReturn(true);
   }
 
   @Nested

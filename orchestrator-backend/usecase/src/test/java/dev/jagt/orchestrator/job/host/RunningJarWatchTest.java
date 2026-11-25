@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -84,6 +85,21 @@ class RunningJarWatchTest {
         .send(
             argThat(sent ->
                 sent.topic() == Notification.Topic.INSTALL && sent.title().contains("restart")));
+  }
+
+  @Test
+  void staysQuietWhenTheJarCannotBeReadForAnyReasonButItsAbsence(@TempDir Path dir)
+      throws Exception {
+    Path folder = Files.createDirectories(dir.resolve("libs"));
+    Path jar = Files.writeString(folder.resolve("jagt.jar"), "build");
+    when(host.jar()).thenReturn(Optional.of(jar));
+    RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
+    Files.setPosixFilePermissions(folder, PosixFilePermissions.fromString("---------"));
+
+    watch.run();
+
+    Files.setPosixFilePermissions(folder, PosixFilePermissions.fromString("rwx------"));
+    verifyNoInteractions(notifications);
   }
 
   @Test

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.git;
 
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.task.launch.TaskName;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,14 +21,15 @@ import org.springframework.stereotype.Service;
 public class DiffCheckouts {
 
   private final GitCommands git;
+  private final Host host;
 
   /**
    * Both throwaway checkouts a diff leaves in the temp directory, so retiring a task can find them
    * again. The project is part of the name: the repositories of one task would otherwise clear each
    * other's checkout.
    */
-  public static List<Path> diffWorktreePaths(String taskId, String project) {
-    Path temp = Path.of(System.getProperty("java.io.tmpdir"));
+  public static List<Path> diffWorktreePaths(Host host, String taskId, String project) {
+    Path temp = host.temp();
     String slug = TaskName.slug(taskId) + "-" + TaskName.slug(project);
     return List.of(temp.resolve("jagt-diff-" + slug), temp.resolve("jagt-diff-new-" + slug));
   }
@@ -42,7 +44,7 @@ public class DiffCheckouts {
         () -> {
           git.run(projectPath, List.of("git", "fetch", "--prune"))
               .expectSuccess("git fetch in " + projectPath);
-          Path temp = diffWorktreePaths(taskId, project).getFirst();
+          Path temp = diffWorktreePaths(host, taskId, project).getFirst();
           git.clearWorktreePath(projectPath, temp);
           git.run(
                   projectPath,
@@ -62,7 +64,7 @@ public class DiffCheckouts {
     return git.locked(
         projectPath,
         () -> {
-          Path temp = diffWorktreePaths(taskId, project).getLast();
+          Path temp = diffWorktreePaths(host, taskId, project).getLast();
           git.clearWorktreePath(projectPath, temp);
           String tree = snapshotTree(worktreePath, taskId);
           String commit =

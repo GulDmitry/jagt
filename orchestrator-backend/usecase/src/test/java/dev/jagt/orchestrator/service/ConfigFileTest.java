@@ -114,9 +114,9 @@ class ConfigFileTest {
   }
 
   @Test
-  void keepsThePlanAndTheDeployTheHumansWhenNoStepIsNamedAsTheirs() {
+  void keepsBothPlansAndTheDeployTheHumansWhenNoStepIsNamedAsTheirs() {
     assertThat(ArbiterConfig.defaults().mineOrDefault())
-        .containsExactly("plan", "deploy", "revert");
+        .containsExactly("plan", "replan", "deploy", "revert");
   }
 
   @ParameterizedTest
@@ -418,7 +418,7 @@ class ConfigFileTest {
                     "demo",
                     new dev.jagt.orchestrator.task.repo.ProjectConfig(
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Repository(
-                            "/repo", List.of(), null, List.of(), null, null),
+                            "/repo", List.of(), null, List.of(), null, null, null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Branches(
                             "origin/main", "dev", null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.CodeHost(
@@ -432,7 +432,7 @@ class ConfigFileTest {
                             dev.jagt.orchestrator.task.repo.ProjectConfig.Review.NONE),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Verify(List.of(), null),
                         new dev.jagt.orchestrator.task.repo.ProjectConfig.Setup(
-                            List.of(), null, List.of()))));
+                            List.of(), null, List.of(), List.of()))));
 
     assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
   }

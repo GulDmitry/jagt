@@ -15,11 +15,16 @@ start is told silently.
 - **THEN** each channel gets its own text once; a restart tells nothing again
 - **WHEN** `jagt.yml` holds no `notifications.points` route
 - **THEN** jagt starts with one note that nothing will be told
-- **WHEN** a route names an unknown point, channel, kind or placeholder, or a `webhookEnv` that is unset
+- **WHEN** a route names an unknown point, channel, kind or placeholder
 - **THEN** startup refuses with every problem in one report
 - **WHEN** a channel cannot be reached
 - **THEN** one WARN `notification not delivered` and one board-head mark name channel, point and cause; the point stays untold
 - **AND** it is retried after 10 s, 20 s, then every 30 s; the first success ends both
+
+#### Scenario: A channel's webhook variable is unset
+- **WHEN** a channel's `webhookEnv` names a variable that is unset at start
+- **THEN** jagt starts without that channel: one WARN `start goes on without` names the channel, its variable and each point no other channel tells
+- **AND** one board-head mark names the channel until a read finds the variable set; nothing is posted to it
 
 ### Requirement: A role declares its points
 `roles/<id>/role.yml` `points` SHALL list `passed`, `round-sent` or `declined`; each stands as `<id>-<kind>`. A disabled role contributes no points
@@ -32,7 +37,7 @@ and a route naming one is inert, with one startup WARN.
 A channel of kind `teams` SHALL post the point's title and text as an Adaptive Card within 10 s. The URL is held in the environment variable
 its `webhookEnv` names; each link in the text is an `Action.OpenUrl` action. An answer other than 2xx, an unreachable host or an unset
 variable is a failure naming the host, never the URL, which is a secret; the channel's retry and report apply.
-A `teams` channel with no `webhookEnv` SHALL refuse startup.
+A `teams` channel with no `webhookEnv` SHALL refuse startup; one whose variable is unset at start is dropped.
 #### Scenario: A point is told to Teams
 - **WHEN** `deployed` is routed to a `teams` channel and its text holds `http://localhost:8290/?task=ABC-42`
 - **THEN** one card with that title and text posts, with one `Action.OpenUrl` action for the link
@@ -51,3 +56,11 @@ The URLs a session reaches jagt by (mcp, hook, gate) SHALL stay loopback.
 #### Scenario: No public URL
 - **WHEN** `server.publicUrl` is blank
 - **THEN** links name `http://localhost:<port>` as before
+
+### Requirement: A post the delivery backlog rejects is retried
+A post the full delivery backlog refuses SHALL count as a channel that cannot be reached. It stays pending.
+One WARN and one board-head mark name channel, point and cause `channel backed up`. It is retried on the same backoff until it lands.
+#### Scenario: The backlog is full
+- **WHEN** a point is posted while the delivery backlog is full
+- **THEN** it is not dropped; one board-head mark names the channel and the cause
+- **AND** it is retried after 10 s and delivered once the backlog accepts it

@@ -1,6 +1,7 @@
 technical.maintainability.analysability.CiJobsFitness
 technical.maintainability.analysability.CiTriggersFitness
 technical.maintainability.analysability.PublicSurfaceFitness
+technical.maintainability.analysability.SilentCatchFitness
 technical.maintainability.analysability.SourceSetsFitness
 technical.maintainability.analysability.StartTriggersFitness
 technical.maintainability.analysability.TaskStatusesFitness

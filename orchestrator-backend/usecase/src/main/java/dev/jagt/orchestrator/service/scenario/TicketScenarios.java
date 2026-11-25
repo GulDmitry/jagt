@@ -21,7 +21,8 @@ public class TicketScenarios {
     }
     return acceptance
         .workspacePath()
-        .map(workspace -> workspace.resolve("scenarios").resolve(taskId + ".md").normalize())
+        .map(workspace ->
+            workspace.resolve(acceptance.layout().scenarios()).resolve(taskId + ".md").normalize())
         .filter(Files::isRegularFile)
         .map(TicketScenarios::line)
         .orElse("");

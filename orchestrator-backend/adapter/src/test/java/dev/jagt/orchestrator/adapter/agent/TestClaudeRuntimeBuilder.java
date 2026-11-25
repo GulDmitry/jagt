@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.agent;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.time.Clock;
 import java.util.List;
 import lombok.With;
@@ -18,11 +19,14 @@ public record TestClaudeRuntimeBuilder(String briefRoot, ClaudeProperties proper
   public ClaudeAgentRuntime build(Clock clock) {
     return new ClaudeAgentRuntime(
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(briefRoot))),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(briefRoot), FakeHost.machine())),
         properties,
-        new McpEndpoint("http://localhost:8290/mcp"),
-        new HookEndpoint(
-            "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-        clock);
+        new ClaudeEndpoints(
+            new McpEndpoint("http://localhost:8290/mcp"),
+            new HookEndpoint(
+                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")),
+        clock,
+        FakeHost.machine());
   }
 }

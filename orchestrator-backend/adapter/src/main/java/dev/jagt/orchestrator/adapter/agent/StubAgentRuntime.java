@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,7 @@ public class StubAgentRuntime extends AbstractAgentRuntime {
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode) {
+  public String launchCommand(Path worktree, LaunchMode mode) {
     if (stub.script() == null) {
       // Exits immediately and successfully: a hanging placeholder would wait out its own timeout.
       return "true";
@@ -34,7 +35,7 @@ public class StubAgentRuntime extends AbstractAgentRuntime {
     return shellQuote(stub.script())
         + " "
         + shellQuote(worktree.toString())
-        + (planMode ? " plan" : "");
+        + (mode == LaunchMode.PLAN ? " plan" : "");
   }
 
   /** A scripted session nobody types into. */

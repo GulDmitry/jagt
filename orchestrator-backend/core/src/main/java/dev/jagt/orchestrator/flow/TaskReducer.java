@@ -36,6 +36,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class TaskReducer {
 
+  private static final long TIMELESS = 0;
+
   private final TaskChart chart;
 
   public TaskReducer(TaskChart chart) {
@@ -46,14 +48,9 @@ public final class TaskReducer {
   TaskState reduce(
       TaskState task, TaskMove move, @Nullable String message, boolean event, long now) {
     List<TaskEffect> effects = effectsOf(task, move);
-    if (effects.isEmpty()) {
-      return stayed(task, message, event, now);
-    }
-    TaskState moved = task;
-    for (TaskEffect effect : effects) {
-      moved = apply(moved, effect, message, event, now);
-    }
-    return moved;
+    return effects.isEmpty()
+        ? stayed(task, message, event, now)
+        : applied(task, effects, message, event, now);
   }
 
   /** A line or a step written on the status the task already has, no move taken. */
@@ -134,24 +131,24 @@ public final class TaskReducer {
    * gate stays.
    */
   public TaskState planAsked(TaskState task, boolean planMode) {
-    return step(task, new TaskMove.PlanAsked(planMode), 0);
+    return step(task, new TaskMove.PlanAsked(planMode));
   }
 
   /** {@code task} with the plan the human approved, its gate open. */
   public TaskState planApproved(TaskState task) {
-    return step(task, new TaskMove.PlanApproved(), 0);
+    return step(task, new TaskMove.PlanApproved()).withPlanApproved(true);
   }
 
   /** {@code task} whose session declared it needs no plan; a gate the human asked for stays. */
   public TaskState noPlanDeclared(TaskState task) {
-    return step(task, new TaskMove.NoPlanDeclared(), 0);
+    return step(task, new TaskMove.NoPlanDeclared());
   }
 
   /**
    * {@code task} born under autoplan: its gate shut until a plan is approved or declared needless.
    */
   public TaskState autoplanned(TaskState task) {
-    return step(task, new TaskMove.Autoplanned(), 0);
+    return step(task, new TaskMove.Autoplanned());
   }
 
   /**
@@ -159,7 +156,7 @@ public final class TaskReducer {
    * is not a question.
    */
   TaskState said(TaskState task, AgentReport means) {
-    return step(task, new TaskMove.Said(means), 0);
+    return step(task, new TaskMove.Said(means));
   }
 
   /** {@code task} with a question jagt itself puts, on the status it already has. */
@@ -234,12 +231,12 @@ public final class TaskReducer {
   }
 
   private TaskState noted(TaskState task, MasterNote note) {
-    return step(task, resolved(task, new TaskMove.MasterNoted(note, MasterPhase.STANDS_IN)), 0);
+    return step(task, resolved(task, new TaskMove.MasterNoted(note, MasterPhase.STANDS_IN)));
   }
 
   /** {@code task} that {@code role} passed at the deploy standing on {@code sha}. */
   public TaskState checkerPassed(TaskState task, String role, String sha) {
-    return step(task, resolved(task, new TaskMove.Checked.Passed(role, sha, false)), 0);
+    return step(task, resolved(task, new TaskMove.Checked.Passed(role, sha, false)));
   }
 
   /**
@@ -247,12 +244,12 @@ public final class TaskReducer {
    * {@code rows} it carried.
    */
   public TaskState checkerRoundSent(TaskState task, String role, String digest, String rows) {
-    return step(task, resolved(task, new TaskMove.Checked.RoundSent(role, digest, rows, false)), 0);
+    return step(task, resolved(task, new TaskMove.Checked.RoundSent(role, digest, rows, false)));
   }
 
   /** {@code task} with the report a verb's stamp means. */
   TaskState stamped(TaskState task, AgentReport means) {
-    return step(task, new TaskMove.Stamped(means), 0);
+    return step(task, new TaskMove.Stamped(means));
   }
 
   /**
@@ -270,7 +267,7 @@ public final class TaskReducer {
 
   /** {@code task} with the turn {@code before} put back where a relay failed to send. */
   public TaskState turnRestored(TaskState task, Turn before) {
-    return step(task, new TaskMove.TurnRestored(before), 0);
+    return step(task, new TaskMove.TurnRestored(before));
   }
 
   /**
@@ -303,14 +300,14 @@ public final class TaskReducer {
 
   /** {@code task} whose session starts over: nothing the old one signed speaks for the new one. */
   public TaskState sessionStartedOver(TaskState task) {
-    return step(task, new TaskMove.SessionStartedOver(), 0);
+    return step(task, new TaskMove.SessionStartedOver());
   }
 
   /**
    * {@code task} trusting {@code trust} as the git state it obeys; a change found stands no longer.
    */
   public TaskState gitTrusted(TaskState task, GitTrust trust) {
-    return step(task, new TaskMove.GitTrusted(trust), 0);
+    return step(task, new TaskMove.GitTrusted(trust));
   }
 
   /**
@@ -318,7 +315,7 @@ public final class TaskReducer {
    * yet, nothing is kept.
    */
   public TaskState gitChanged(TaskState task, String changed) {
-    return step(task, new TaskMove.GitChanged(changed), 0);
+    return step(task, new TaskMove.GitChanged(changed));
   }
 
   /**
@@ -326,37 +323,37 @@ public final class TaskReducer {
    * nothing was trusted, it stays so.
    */
   public TaskState gitRepoJoined(TaskState task, GitTrust added) {
-    return step(task, new TaskMove.GitRepoJoined(added), 0);
+    return step(task, new TaskMove.GitRepoJoined(added));
   }
 
   /** {@code task} with the repository its session needs, or none where the report names none. */
   public TaskState repoAsked(TaskState task, @Nullable String project) {
     return step(
-        task, project == null ? new TaskMove.RepoUnasked() : new TaskMove.RepoAsked(project), 0);
+        task, project == null ? new TaskMove.RepoUnasked() : new TaskMove.RepoAsked(project));
   }
 
   /** {@code task} with {@code repo} added, which ends the request for one. */
   public TaskState repoAttached(TaskState task, TaskRepo repo) {
-    return step(task, new TaskMove.RepoAttached(repo), 0);
+    return step(task, new TaskMove.RepoAttached(repo));
   }
 
   /** {@code task} holding {@code repos} in place of the scratch folder it planned in. */
   public TaskState placed(TaskState task, List<TaskRepo> repos, @Nullable String baseBranch) {
-    return step(task, new TaskMove.Placed(repos, baseBranch), 0);
+    return step(task, new TaskMove.Placed(repos, baseBranch));
   }
 
   /** {@code task} without {@code project}, its request ended with it; the last repository stays. */
-  public TaskState repoLeft(TaskState task, String project) {
+  public TaskState repoLeft(TaskState task, String project, long now) {
     return step(
         task,
         resolved(
             task, new TaskMove.RepoLeft(project, RequestPhase.NONE, TaskMove.ConflictDrop.NONE)),
-        0);
+        now);
   }
 
   /** {@code task} without {@code project}, and without the trusted git entries only it held. */
-  public TaskState repoLeft(TaskState task, String project, Set<String> trustedOnlyByIt) {
-    TaskState left = repoLeft(task, project);
+  public TaskState repoLeft(TaskState task, String project, Set<String> trustedOnlyByIt, long now) {
+    TaskState left = repoLeft(task, project, now);
     GitTrust trust = left.gate().gitTrust();
     return trust == null || left.repos().size() == task.repos().size()
         ? left
@@ -379,7 +376,7 @@ public final class TaskReducer {
    * {@code task} with what git found of {@code project}'s request: merged into its target or not.
    */
   public TaskState mergedByGit(TaskState task, String project, boolean merged) {
-    return step(task, resolved(task, new TaskMove.MergedByGit(project, merged, false)), 0);
+    return step(task, resolved(task, new TaskMove.MergedByGit(project, merged, false)));
   }
 
   /**
@@ -387,12 +384,12 @@ public final class TaskReducer {
    * not take back.
    */
   public TaskState mergedByHost(TaskState task, String project) {
-    return step(task, resolved(task, new TaskMove.MergedByHost(project, false)), 0);
+    return step(task, resolved(task, new TaskMove.MergedByHost(project, false)));
   }
 
   /** {@code task} that has seen {@code tip} pushed, where it is not the head it already had. */
   public TaskState headSeen(TaskState task, String tip) {
-    return step(task, resolved(task, new TaskMove.HeadSeen(tip, false, false, InfraPhase.NONE)), 0);
+    return step(task, resolved(task, new TaskMove.HeadSeen(tip, false, false, InfraPhase.NONE)));
   }
 
   /**
@@ -400,7 +397,7 @@ public final class TaskReducer {
    * to read them.
    */
   public TaskState checksRead(TaskState task, String hostStatus, String tip) {
-    return step(task, resolved(task, new TaskMove.ChecksRead(hostStatus, tip, false)), 0);
+    return step(task, resolved(task, new TaskMove.ChecksRead(hostStatus, tip, false)));
   }
 
   /**
@@ -408,12 +405,12 @@ public final class TaskReducer {
    * not this round's.
    */
   public TaskState checksUnread(TaskState task, ChecksUnread read) {
-    return step(task, new TaskMove.ChecksUnread(read), 0);
+    return step(task, new TaskMove.ChecksUnread(read));
   }
 
   /** {@code task} with the approval the host last said. */
   public TaskState approvalRead(TaskState task, boolean approved) {
-    return step(task, new TaskMove.ApprovalRead(approved), 0);
+    return step(task, new TaskMove.ApprovalRead(approved));
   }
 
   /**
@@ -421,12 +418,12 @@ public final class TaskReducer {
    * last lift kept.
    */
   public TaskState infraArmed(TaskState task, InfraRetry retry) {
-    return step(task, new TaskMove.InfraArmed(retry), 0);
+    return step(task, new TaskMove.InfraArmed(retry));
   }
 
   /** {@code task} without the armed re-run, and without the sent ones where {@code all}. */
   public TaskState infraCleared(TaskState task, boolean all) {
-    return step(task, resolved(task, new TaskMove.InfraCleared(all, InfraPhase.NONE)), 0);
+    return step(task, resolved(task, new TaskMove.InfraCleared(all, InfraPhase.NONE)));
   }
 
   /** {@code task} whose armed re-run went out at {@code now}, counted with those sent. */
@@ -553,11 +550,42 @@ public final class TaskReducer {
   }
 
   private TaskState step(TaskState task, TaskMove move, long now) {
+    return applied(task, effectsOf(task, move), null, false, now);
+  }
+
+  private TaskState step(TaskState task, TaskMove move) {
+    List<TaskEffect> effects = effectsOf(task, move);
+    effects.stream()
+        .filter(TaskReducer::readsTime)
+        .findFirst()
+        .ifPresent(effect -> {
+          throw new IllegalStateException(
+              "a move sent without a time yields " + effect.getClass().getSimpleName());
+        });
+    return applied(task, effects, null, false, TIMELESS);
+  }
+
+  private static TaskState applied(
+      TaskState task, List<TaskEffect> effects, @Nullable String message, boolean event, long now) {
     TaskState moved = task;
-    for (TaskEffect effect : effectsOf(task, move)) {
-      moved = apply(moved, effect, null, false, now);
+    for (TaskEffect effect : effects) {
+      moved = apply(moved, effect, message, event, now);
     }
     return moved;
+  }
+
+  private static boolean readsTime(TaskEffect effect) {
+    return effect instanceof TaskEffect.Lands
+        || effect instanceof TaskEffect.ClearsStop
+        || effect instanceof TaskEffect.Lifts
+        || effect instanceof TaskEffect.Escalates
+        || effect instanceof TaskEffect.OpensTurn
+        || effect instanceof TaskEffect.ClosesTurn
+        || effect instanceof TaskEffect.Deploys
+        || effect instanceof TaskEffect.LinksRequests
+        || effect instanceof TaskEffect.SendsInfra
+        || effect instanceof TaskEffect.Signs
+        || effect instanceof TaskEffect.DeclinesRound;
   }
 
   private static List<InfraRetry> sent(TaskState task) {

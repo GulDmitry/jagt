@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 public final class TestsFor {
 
-  public record Plan(List<String> lines, List<String> dropped) {}
+  public record Plan(List<String> lines, List<String> dropped, List<String> reads) {}
 
   private static final List<String> OTHER_SETS =
       List.of(
@@ -56,6 +56,29 @@ public final class TestsFor {
     return path.startsWith(prefix) ? path.substring(prefix.length()) : path;
   }
 
+  public List<String> resolve(List<String> entries, String base) {
+    List<String> paths = entries.stream().map(this::fromRepositoryRoot).toList();
+    if (paths.stream().allMatch(repo::exists)) {
+      return paths;
+    }
+    List<String> changed = repo.changed(base);
+    paths.stream()
+        .filter(path -> !repo.exists(path) && !changed.contains(path))
+        .findFirst()
+        .ifPresent(
+            path -> {
+              throw new UnknownPathException(path);
+            });
+    return paths;
+  }
+
+  private String fromRepositoryRoot(String entry) {
+    String path = stripRoot(entry);
+    return path.startsWith("../")
+        ? Path.of(layout.backend()).resolve(path).normalize().toString().replace('\\', '/')
+        : path;
+  }
+
   public Plan plan(List<String> paths) {
     Selection selection = new Selection();
     Classifier classifier = new Classifier(repo, layout, selection);
@@ -66,12 +89,18 @@ public final class TestsFor {
     addGradle(lines, 600, compile);
     addGradle(lines, 600, check);
     if (!selection.tests.isEmpty()) {
-      addGradle(lines, 900, testsLine(new ArrayList<>(selection.tests)) + PITEST);
+      addGradle(lines, 900, testsLine(new ArrayList<>(selection.tests), "test") + PITEST);
+    }
+    if (!selection.properties.isEmpty()) {
+      addGradle(
+          lines,
+          900,
+          testsLine(new ArrayList<>(selection.properties), "propertyTest") + PITEST);
     }
     List<String> dropped = new ArrayList<>();
     List<String> ruleEntries = ruleEntries(selection, dropped);
     if (!ruleEntries.isEmpty()) {
-      addGradle(lines, 900, testsLine(ruleEntries) + PITEST);
+      addGradle(lines, 900, testsLine(ruleEntries, "test") + PITEST);
     }
     if (selection.fitness) {
       lines.add("cd " + layout.directory() + "/fitness && timeout 600 ../gradlew test");
@@ -82,7 +111,8 @@ public final class TestsFor {
     if (selection.board) {
       lines.add("cd board && timeout 600 sh -c 'npm run lint && npm test'");
     }
-    return new Plan(lines, dropped);
+    return new Plan(
+        lines, dropped, new Pointers(repo.top().resolve(".claude/rules")).readsFor(paths));
   }
 
   private void addGradle(List<String> lines, int seconds, String tasks) {
@@ -138,20 +168,20 @@ public final class TestsFor {
     return set.substring(0, 1).toUpperCase(Locale.ROOT) + set.substring(1);
   }
 
-  private String testsLine(List<String> entries) {
+  private String testsLine(List<String> entries, String task) {
     return Stream.concat(Stream.of(Layout.ROOT), Layout.MODULES.stream())
-        .map(module -> testsOf(module, entries))
+        .map(module -> testsOf(module, entries, task))
         .filter(part -> !part.isEmpty())
         .collect(Collectors.joining(" "));
   }
 
-  private String testsOf(String module, List<String> entries) {
+  private String testsOf(String module, List<String> entries, String task) {
     String names =
         entries.stream()
             .filter(entry -> entry.startsWith(module + ":"))
             .map(entry -> " --tests '*" + entry.substring(module.length() + 1) + "'")
             .collect(Collectors.joining());
-    return names.isEmpty() ? "" : layout.prefix(module) + ":test" + names;
+    return names.isEmpty() ? "" : layout.prefix(module) + ":" + task + names;
   }
 
   private List<String> ruleEntries(Selection selection, List<String> dropped) {

@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,7 +41,8 @@ class MasterCheckTest {
   @BeforeEach
   void checkOverTheTempRoot() {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     check =
         new MasterCheck(
             configService, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);
@@ -63,7 +65,8 @@ class MasterCheckTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
     ConfigService real =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
@@ -177,8 +180,8 @@ class MasterCheckTest {
                         .withMode("act")
                         .withMine(
                             List.of(
-                                "ship", "deploy", "revert", "reply", "answer", "plan", "repo",
-                                "lift"))));
+                                "ship", "deploy", "revert", "reply", "answer", "plan", "replan",
+                                "repo", "lift"))));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.mine");

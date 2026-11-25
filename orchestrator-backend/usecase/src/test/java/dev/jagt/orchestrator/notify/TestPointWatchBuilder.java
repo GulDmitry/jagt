@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.channel.NotificationSink;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import lombok.With;
 
@@ -24,7 +25,8 @@ public record TestPointWatchBuilder(Path root, Arbiter.Profile profile) {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withData(root.toString()))),
+                    .withData(root.toString()),
+                FakeHost.machine())),
         ignored -> profile);
   }
 }

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.git.WorktreeInspection;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,6 +87,14 @@ public class WorktreeChanges {
       }
     }
     return Optional.of(state.toString());
+  }
+
+  /**
+   * Names the change itself: it stays the same when the work is committed or pushed, and moves with
+   * any edit to it.
+   */
+  public String reviewKey(TaskState task) {
+    return Turn.digestOf(diff(task));
   }
 
   /**

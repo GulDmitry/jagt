@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigFile.ViewerConfig;
 import dev.jagt.orchestrator.service.ConfigRanges;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -27,7 +28,6 @@ import org.springframework.stereotype.Component;
 public class ConfigCheck implements StartupCheck {
 
   private static final String CONFIG_FILE = "orchestrator.config-file";
-  private static final List<String> VIEW_MODES = List.of("shared", "tab-per-task");
   private static final Map<String, String> RETIRED_KEYS =
       Map.of(
           "ui", "the board is the only surface",
@@ -62,7 +62,25 @@ public class ConfigCheck implements StartupCheck {
     problems.addAll(numberProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
     projects.forEach((key, project) -> problems.addAll(ProjectProblems.of(key, project)));
+    problems.addAll(companionProblems(projects));
     return problems;
+  }
+
+  private static List<Problem> companionProblems(Map<String, ProjectConfig> projects) {
+    return projects.entrySet().stream()
+        .flatMap(entry ->
+            entry.getValue().companions().stream()
+                .filter(companion -> !projects.containsKey(companion))
+                .map(companion -> {
+                  String key = "orchestrator.projects." + entry.getKey() + ".companions";
+                  return new Problem(
+                      key,
+                      key
+                          + " names '"
+                          + companion
+                          + "', which is not a project. Add it under projects, or remove it.");
+                }))
+        .toList();
   }
 
   /**
@@ -71,7 +89,7 @@ public class ConfigCheck implements StartupCheck {
    */
   private List<Problem> retiredConfig() {
     Path retired = paths.root().resolve("config.json");
-    if (!Files.exists(retired) || Files.exists(paths.configFile())) {
+    if (!Files.exists(retired) || configService.fileExists()) {
       return List.of();
     }
     return List.of(
@@ -154,13 +172,11 @@ public class ConfigCheck implements StartupCheck {
                       "viewer.tmuxSession '" + session + "' " + why + ". Pick another name.")));
     }
     String viewMode = config.viewer().viewMode();
-    if (viewMode != null
-        && !viewMode.isBlank()
-        && VIEW_MODES.stream().noneMatch(mode -> mode.equalsIgnoreCase(viewMode))) {
+    if (viewMode != null && !viewMode.isBlank() && !ViewerConfig.knowsViewMode(viewMode)) {
       problems.add(
           new Problem(
               "orchestrator.viewer.viewMode",
-              "viewer.viewMode '" + viewMode + "' is not one of " + VIEW_MODES + "."));
+              "viewer.viewMode '" + viewMode + "' is not one of " + ViewerConfig.VIEW_MODES + "."));
     }
     return problems;
   }

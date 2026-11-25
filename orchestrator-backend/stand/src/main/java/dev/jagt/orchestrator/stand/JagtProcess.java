@@ -19,7 +19,7 @@ import org.opentest4j.TestAbortedException;
 public final class JagtProcess implements JagtEngine {
 
   private static final Path JAR =
-      Path.of(System.getProperty("stand.jar", "../build/libs/jagt-run.jar")).toAbsolutePath();
+      Path.of(StandInputs.of("stand.jar", "../build/libs/jagt-run.jar")).toAbsolutePath();
   public static final String BEFORE_RESTART = ".before-restart";
   private static final List<String> OUTPUTS = List.of("jagt.out", "jagt-backend.log");
   private static final Duration STARTUP = Duration.ofMinutes(5);

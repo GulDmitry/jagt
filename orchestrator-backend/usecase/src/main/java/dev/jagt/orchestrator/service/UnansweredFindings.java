@@ -41,10 +41,9 @@ public class UnansweredFindings {
     if (!PreShipRead.due(task) || !settings.load().enabled()) {
       return Optional.empty();
     }
-    return changes
-        .state(task)
-        .filter(tree -> !readOrFailed(task, tree))
-        .map(tree ->
+    return readOrFailed(task, changes.reviewKey(task))
+        ? Optional.empty()
+        : Optional.of(
             "the review before the ship has not read this change yet — it reads within a minute,"
                 + " then ship");
   }

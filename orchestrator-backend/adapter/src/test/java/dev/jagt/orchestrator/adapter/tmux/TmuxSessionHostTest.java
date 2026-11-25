@@ -20,10 +20,12 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.SessionHost.WindowState;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
@@ -416,9 +418,9 @@ class TmuxSessionHostTest {
 
   @Test
   void launchesTheAgentWithoutModelFlagWhereNoModelIsAsked() {
-    when(agent.launchCommand(Path.of("/wt/ABC-1"), false)).thenReturn("agent-cmd");
+    when(agent.launchCommand(Path.of("/wt/ABC-1"), LaunchMode.WORK)).thenReturn("agent-cmd");
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
@@ -430,9 +432,9 @@ class TmuxSessionHostTest {
 
   @Test
   void opensTheTasksWindowWithoutSelectingItWhereTheHumanWorksInAnother() {
-    when(agent.launchCommand(Path.of("/wt/ABC-2"), false)).thenReturn("agent-cmd");
+    when(agent.launchCommand(Path.of("/wt/ABC-2"), LaunchMode.WORK)).thenReturn("agent-cmd");
 
-    host.openTaskWindow("jagt", "agents", "ABC-2", null, Path.of("/wt/ABC-2"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-2", null, Path.of("/wt/ABC-2"), LaunchMode.WORK, "");
 
     assertThat(processes.issuedContaining("new-window"))
         .singleElement()
@@ -450,7 +452,7 @@ class TmuxSessionHostTest {
         .when(agent)
         .beforeLaunch(Path.of("/wt/ABC-1"));
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     verify(agent).beforeLaunch(Path.of("/wt/ABC-1"));
     assertThat(processes.issuedContaining("new-window")).hasSize(1);
@@ -458,9 +460,11 @@ class TmuxSessionHostTest {
 
   @Test
   void launchesTheAgentOnTheModelAskedFor() {
-    when(agent.launchCommand(Path.of("/wt/ABC-1"), true, "opus")).thenReturn("agent-on-opus");
+    when(agent.launchCommand(Path.of("/wt/ABC-1"), LaunchMode.PLAN, "opus"))
+        .thenReturn("agent-on-opus");
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), true, "opus");
+    host.openTaskWindow(
+        "jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.PLAN, "opus");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
@@ -470,7 +474,8 @@ class TmuxSessionHostTest {
   @Test
   void carriesTheAliasInWindowOptionAndLeavesTheWindowNameTheTask() {
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", "login fix", Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow(
+        "jagt", "agents", "ABC-1", "login fix", Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
@@ -483,7 +488,7 @@ class TmuxSessionHostTest {
   @Test
   void setsNoAliasOptionOnWindowWhoseTaskHasNone() {
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", "  ", Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", "  ", Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands).noneMatch(command -> command.contains("@jagt_alias"));
@@ -493,7 +498,7 @@ class TmuxSessionHostTest {
   void createsTheSessionWhereNoneExistsYet() {
     processes.answering(new Processes.Result(1, "", "no session"), "has-session");
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
@@ -504,7 +509,7 @@ class TmuxSessionHostTest {
   @Test
   void createsNoSessionWhereOneExists() {
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands).noneMatch(command -> command.contains("new-session"));
@@ -514,7 +519,7 @@ class TmuxSessionHostTest {
   void killsTheTasksEarlierWindowBeforeOpeningItsNewOne() {
     processes.answering(new Processes.Result(0, "@4 ABC-1\n", ""), "list-windows");
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
@@ -529,7 +534,7 @@ class TmuxSessionHostTest {
         ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
     TmuxSessionHost host = tmuxHost().withToolchain(properties).build(processes, terminal, agent);
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     verify(terminal)
         .openViewer(eq(List.of("/opt/jagt/tmux", "attach", "-t", "jagt")), eq("agents"), any());
@@ -627,7 +632,8 @@ class TmuxSessionHostTest {
   void warnsWhereTmuxStepOfOpeningTheWindowFailed(String step, String error, String event) {
     processes.answering(new Processes.Result(1, "", error), step);
     try (FakeLogCapture log = new FakeLogCapture(TmuxSessionHost.class)) {
-      host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+      host.openTaskWindow(
+          "jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
       assertThat(log.events())
           .filteredOn(logged -> event.equals(logged.getMessage()))
@@ -643,7 +649,8 @@ class TmuxSessionHostTest {
     TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
 
     assertThatThrownBy(() ->
-            host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, ""))
+            host.openTaskWindow(
+                "jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, ""))
         .isInstanceOf(IllegalStateException.class);
     assertThat(processes.issuedContaining("new-window")).isEmpty();
   }
@@ -656,13 +663,20 @@ class TmuxSessionHostTest {
             processes,
             new TmuxReads(processes, ToolchainProperties.defaults()),
             new SessionEnvironment(
-                new OrchestratorPaths(OrchestratorProperties.defaults()),
-                new DockerComposeContainers(processes)),
+                new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()),
+                new DockerComposeContainers(processes),
+                FakeHost.machine()),
             terminal,
             agent);
 
     host.openTaskWindow(
-        "jagt", "agents", "ABC-1", null, Path.of("/data/tasks/ABC-1/worktrees/Shop"), false, "");
+        "jagt",
+        "agents",
+        "ABC-1",
+        null,
+        Path.of("/data/tasks/ABC-1/worktrees/Shop"),
+        LaunchMode.WORK,
+        "");
 
     assertThat(processes.issuedContaining("new-window"))
         .singleElement()
@@ -674,28 +688,30 @@ class TmuxSessionHostTest {
   void stopsGitClimbingOutOfScratchFolderWhereTheSessionRuns() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
     ToolchainProperties properties = ToolchainProperties.defaults();
-    OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults());
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
             new TmuxReads(processes, properties),
-            new SessionEnvironment(paths, new NoWorktreeContainers()),
+            new SessionEnvironment(paths, new NoWorktreeContainers(), FakeHost.machine()),
             terminal,
             agent);
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, paths.scratch("ABC-1"), true, "");
+    host.openTaskWindow(
+        "jagt", "agents", "ABC-1", null, paths.scratch("ABC-1"), LaunchMode.PLAN, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)
         .anySatisfy(command ->
             assertThat(command.getLast())
-                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.tasks() + "' "));
+                .startsWith("GIT_CEILING_DIRECTORIES='" + paths.layout().tasks() + "' "));
   }
 
   @Test
   void leavesGitsCeilingAloneForWorktreeOfRepository() {
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
     List<List<String>> commands = processes.issued();
     assertThat(commands)

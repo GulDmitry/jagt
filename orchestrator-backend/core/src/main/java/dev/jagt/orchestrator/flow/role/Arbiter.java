@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /** The one role that stands where the human stands: its id and what it may press. */
@@ -15,7 +16,7 @@ public final class Arbiter {
 
   /** A verb the word of a {@link MasterRight} keeps as well. */
   private static final Map<TaskAction, MasterRight> STEPS =
-      Map.of(TaskAction.APPROVE_PLAN, MasterRight.PLAN, TaskAction.ADD_REPO, MasterRight.REPO);
+      Map.of(TaskAction.ADD_REPO, MasterRight.REPO);
 
   /** {@code mine} are the words the human keeps even where the Master acts: steps and verb ids. */
   public record Profile(MasterMode mode, Set<String> mine) {
@@ -34,13 +35,28 @@ public final class Arbiter {
       return mode == MasterMode.ACT && !mine.contains(right.id());
     }
 
-    public boolean keeps(TaskAction action) {
+    public boolean keeps(TaskAction action, TaskState task) {
       return mine.contains(action.id())
-          || (STEPS.containsKey(action) && mine.contains(STEPS.get(action).id()));
+          || step(action, task).map(right -> mine.contains(right.id())).orElse(false);
     }
 
     public boolean keeps(String verb) {
       return mine.contains(verb.strip().toLowerCase(Locale.ROOT));
+    }
+
+    /** Whether the Master may approve the plan that waits on {@code task}. */
+    public boolean mayApprovePlan(TaskState task) {
+      return may(planRight(task));
+    }
+
+    private static Optional<MasterRight> step(TaskAction action, TaskState task) {
+      return action == TaskAction.APPROVE_PLAN
+          ? Optional.of(planRight(task))
+          : Optional.ofNullable(STEPS.get(action));
+    }
+
+    private static MasterRight planRight(TaskState task) {
+      return task.gate().planApproved() ? MasterRight.REPLAN : MasterRight.PLAN;
     }
 
     /**

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.project;
 
+import static dev.jagt.orchestrator.service.TestConfigPathsBuilder.configPaths;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
@@ -7,7 +8,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
@@ -42,11 +42,7 @@ class ConfigWriterTest {
         Files.writeString(
             Files.createDirectories(root.resolve("conf")).resolve("jagt.yml"),
             "orchestrator:\n  projects: {}\n");
-    paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
+    paths = configPaths().withRoot(root.resolve("conf")).build();
     config =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),

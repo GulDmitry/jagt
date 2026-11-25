@@ -26,6 +26,11 @@ public record NewTask(
     projectKeys = distinct(projectKeys);
   }
 
+  public NewTask withProjectKeys(List<String> keys) {
+    return new NewTask(
+        taskId, keys, instructions, mode, branchStrategy, baseBranch, title, ticketUrl);
+  }
+
   public @Nullable String projectKey() {
     return projectKeys.isEmpty() ? null : projectKeys.get(0);
   }

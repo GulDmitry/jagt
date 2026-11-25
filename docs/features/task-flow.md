@@ -13,9 +13,12 @@
   · [host](../../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
 - **Deploy on approval** — An approved request deploys itself once, the code host named as who acted. Key: `deploy.onApproval`, off by default.
   [spec](../../openspec/specs/deploy-on-approval/spec.md#requirement-an-approved-request-deploys-itself-when-deployonapproval-is-on)
+- **Require approval** — Deploy is offered only on an approved request, never a reviewed one. Key: `deploy.requireApproval`, off by default.
+  [spec](../../openspec/specs/deploy-on-approval/spec.md)
 - **More checkers** — A folder `roles/<id>/role.yml` declaring `jobs: true` runs its own check at deploy beside acceptance.
   [spec](../../openspec/specs/acceptance/spec.md#requirement-a-checker-declares-its-jobs-and-its-read-steps)
-- **Acceptance workspace** — Acceptance keeps scenarios in its own folder, writes only there, and asks one question per ticket gap in a session.
+- **Acceptance workspace** — Acceptance keeps scenarios in its own folder, laid out as `role.yml` maps it, writes only there,
+  and asks one question per ticket gap in a session.
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-keeps-its-checks-in-its-workspace)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-analyses-a-ticket-before-its-plan)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-has-an-interactive-session)
@@ -29,6 +32,8 @@
 - **Setup in a new worktree** — A project's `setupCommand` runs once in every new worktree before its session starts.
   A failure or `setupMinutes` ends the start, naming the project and the output's tail.
   [spec](../../openspec/specs/task-start/spec.md#requirement-a-projects-setup-command-runs-in-every-new-worktree)
+- **Companion projects** — A project's `companions` join every task started on it, one worktree and one request each.
+  [spec](../../openspec/specs/repo-attach/spec.md#requirement-a-projects-companions-join-every-task-started-on-it)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../../openspec/specs/task-start/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
 - **Plan before a project** — `plan first`, no project ticked: plans in a scratch folder; approval cuts each `[changed]` project's worktree.

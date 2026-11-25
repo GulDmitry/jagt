@@ -101,7 +101,7 @@ class WholeApplicationWiringTest {
 
   @Test
   void keepsTheDevelopersOwnStateFileOutOfBootedContext() {
-    assertThat(context.getBean(OrchestratorPaths.class).stateFile().toString())
+    assertThat(context.getBean(OrchestratorPaths.class).layout().stateFile().toString())
         .startsWith(root.toString());
   }
 

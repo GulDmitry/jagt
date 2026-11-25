@@ -8,7 +8,7 @@ project:
     statechart: { exposes: ["dev.jagt.statechart.."] }
     core: { exposes: [".."] }
     usecase: { exposes: [".."] }
-    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay", "dev.jagt.orchestrator.adapter.agent.trust", "dev.jagt.orchestrator.adapter.process"] }
+    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay", "dev.jagt.orchestrator.adapter.agent.trust", "dev.jagt.orchestrator.adapter.process", "dev.jagt.orchestrator.adapter.host"] }
     surface: { exposes: [] }
     stand: { exposes: [] }
 technical:
@@ -16,6 +16,9 @@ technical:
     modularity:
       collaborators-per-class: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: constructor-parameters, governs: coupling, max: 5 }
       ports: { engine: archunit, kind: class, interface: true, package: "port..", governs: count, max: 58, decision: "0176" }
+      single-use-indirections: { engine: archunit, set: all, kind: class, interface: true, measure: single-implementer, governs: count, max: 4, decision: "0176", hint: "an interface whose one implementer sits beside it, with no fake, is an indirection: fold it into the class; the floor only falls" }
+      flag-arguments: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: flag-arguments, governs: count, max: 9, decision: "0176", hint: "a mode is a named value: an enum or two methods, never a boolean parameter; the floor only falls" }
+      static-helpers-on-components: { engine: archunit, set: all, kind: class, annotated: org.springframework.stereotype.Component, measure: static-helpers, governs: count, max: 31, decision: "0176", hint: "a helper a component exposes statically belongs to a holder of its own or to the type it reads; the floor only falls" }
       gradle-modules: { engine: scan, glob: "settings.gradle,fitness/settings.gradle", regex: "(?m)^include\\s+'([^']+)'", per: match, governs: count, max: 12, decision: "0176" }
       build-logic-files: { engine: scan, glob: "build-logic/**/*.{gradle,groovy},fitness/**/*.gradle", governs: count, max: 24, decision: "0176" }
       workflow-gradle-lines: { engine: scan, set: tracked, glob: "../.github/workflows/*.yml,../.gitlab-ci.yml", per: file, regex: "\\./gradlew(?!( --[a-z-]+)* (gate\\w*|-q printVersion|-q provenTree)\\b)", governs: count, max: 0, hint: "a CI job runs one gate<Job> task, which scripts/ci-local.sh runs too (docs/rules/testing-suites.md)" }
@@ -23,6 +26,7 @@ technical:
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
       spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ChildProcesses,Git", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone: its owner kills and reaps every live child at stop" }
       spawn-owner-exec: { engine: archunit, set: main, calls: java.lang.Runtime.exec, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone" }
+      host-properties-owner: { engine: archunit, set: main, calls: "java.lang.System.getProperty,java.lang.Integer.getInteger,java.lang.Long.getLong,java.lang.Boolean.getBoolean", except: "SystemHost,Executables,StandInputs", governs: class-dependency, max: 0, decision: "0248", hint: "a host property (home, temp, working directory, OS) is read through Host alone; the stand reads its own -D inputs through StandInputs" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }
@@ -43,6 +47,12 @@ technical:
       public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 85, decision: "0176" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
       startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 34, decision: "0176" }
+      reducer-zero-time: { engine: scan, set: main, glob: "**/flow/TaskReducer.java", per: file, regex: "\\b(?:step|applied|stayed|apply)\\([^;]*,\\s*0L?\\)", governs: count, max: 0, decision: "0176", hint: "a door with no time of its own sends its move through step(task, move), which refuses an effect that reads one; a door whose move lands takes now" }
+      first-of-unordered-map: { engine: scan, set: main, per: line, regex: "\\.(?:values|keySet|entrySet)\\(\\)(?:\\.iterator\\(\\)\\s*\\.next\\(\\)|\\.stream\\(\\)\\s*\\.(?:findFirst|findAny)\\(\\))", governs: count, max: 2, decision: "0247", hint: "a map has no first element unless it is sequenced: pick by an ordered key list, or keep a LinkedHashMap and say which entry; the floor only falls" }
+      config-file-existence: { engine: scan, set: main, except: "**/service/ConfigService.java", per: line, regex: "Files\\.exists\\((?:\\w+\\.)?configFile\\(\\)\\)", governs: count, max: 1, hint: "whether jagt.yml exists is ConfigService.fileExists(), asked by every reader; the one remaining read is the source behind it" }
+      broad-catches: { engine: scan, set: main, per: line, regex: "catch \\([^)]*\\b(?:RuntimeException|Exception|Throwable)\\b", governs: count, max: 147, decision: "0250", hint: "a catch names the failure it handles: its typed exception, never a broad one; the floor only falls" }
+      silent-catches: { fitness: SilentCatchFitness, governs: count, max: 205, decision: "0250", hint: "a catch logs or rethrows; one that does neither hides its cause; the floor only falls" }
+      status-literals-outside-flow: { engine: scan, set: main, except: "core/**,stand/**", per: line, regex: "TaskStatus\\.[A-Z_]{2,}", governs: count, max: 22, decision: "0144", hint: "a status is compared through a FlowRules predicate; the count only falls; stand/** is exempt, its invariants observe statuses from outside as tests do" }
       roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }
       spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 55, decision: "0241" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
@@ -61,6 +71,9 @@ technical:
       home-paths: { engine: scan, set: tracked, per: file, machine: paths, governs: count, max: 0 }
       cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", except: "**/board/vendor/**,src/test/resources/archunit/**,**/recordings/**", governs: count, max: 0 }
       ide-names: { engine: scan, glob: "**/*.{java,js,sh,gradle,groovy,yml},../board/**/*.js,../.github/**/*.yml,../.gitlab-ci.yml", except: "../fitness.yml,**/node_modules/**", per: file, regex: "\\bIDEs?\\b|\\bIde[A-Z]|Intell[i]J|VS ?Cod[e]", governs: count, max: 0, hint: "jagt has no IDE concept: name a code viewer or a diff viewer" }
+      hook-path-from-project-dir: { engine: scan, glob: "../.claude/settings.json", per: line, regex: "\\$\\(git rev-parse --show-toplevel\\)", governs: count, max: 0, hint: "a hook finds its script from $CLAUDE_PROJECT_DIR: the cwd may be another repository, where the script is missing and the guard never runs" }
+      board-hidden-wins: { engine: scan, glob: "../board/app.css", per: file, regex: "(?m)^\\[hidden\\] \\{\\n  display: none !important;", governs: count, min: 1, hint: "a [hidden] element stays hidden whatever display another rule gives it" }
+      board-hidden-per-selector: { engine: scan, glob: "../board/**/*.css", except: "../board/vendor/**,../board/node_modules/**", per: line, regex: "\\S\\[hidden\\]", governs: count, max: 0, hint: "the one [hidden] rule in app.css already wins over every display: a per-selector copy restates it" }
       editor-launcher-not-a-default: { engine: scan, glob: "src/main/resources/application.yml", per: file, regex: "(?m)^ *editor(-diff)?-command:\\s*\\[\\s*[^\\s\\]]", governs: count, max: 0, hint: "no editor is a default: an uncommented editor-command in application.yml stays empty" }
       suite-stats-reads-no-other-project: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suite-stats.gradle", per: file, regex: "provider\\s*\\{\\s*allprojects", governs: count, max: 0 }
       spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
@@ -97,7 +110,7 @@ technical:
       static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, except: "TaskAliasLogFilter,AbortedConnectionFilter", governs: count, max: 0 }
       post-construct-hooks: { engine: archunit, set: all, kind: method, annotated: jakarta.annotation.PostConstruct, except: AbortedConnectionFilter, governs: annotation, max: 0 }
       # StandClockTest reads real time (0055)
-      no-system-current-time-millis: { engine: archunit, set: &clockSet all, calls: java.lang.System.currentTimeMillis, except: &clockExcept "RuntimeWiring,StandClock,EvalStats,BoardActionsTest,BoardCardTest,BoardConnectionTest,BoardHeaderAndFiltersTest,BoardInteractionLogTest,BoardPageContext,BreakableJob,BoardPopupsAndTabsTest,BoardReportsTest,BoardWorkspaceTest,E2eWorkspace,MasterModeFlowTest,Stalled,StandClockTest,FakeOidcProvider", governs: class-dependency, max: 0 }
+      no-system-current-time-millis: { engine: archunit, set: &clockSet all, calls: java.lang.System.currentTimeMillis, except: &clockExcept "RuntimeWiring,StandClock,EvalStats,BoardActionsTest,BoardCardTest,BoardConnectionTest,BoardHeaderAndFiltersTest,BoardInteractionLogTest,BoardPageContext,BreakableJob,BoardPopupsAndTabsTest,BoardReportsTest,BoardWorkspaceTest,E2eWorkspace,MasterModeFlowTest,Stalled,StandClockTest,FakeOidcProvider,HotSpotsTask", governs: class-dependency, max: 0 }
       no-clock-system-utc: { engine: archunit, set: *clockSet, calls: java.time.Clock.systemUTC, except: *clockExcept, governs: class-dependency, max: 0 }
       no-clock-system: { engine: archunit, set: *clockSet, calls: java.time.Clock.system, except: *clockExcept, governs: class-dependency, max: 0 }
       test-builder-branches: { engine: scan, set: all, glob: "**/Test*Builder.java", regex: "\\b(if|for|while|switch)\\s*\\(|\\bdo\\s*\\{|\\s\\?\\s", governs: count, max: 0 }

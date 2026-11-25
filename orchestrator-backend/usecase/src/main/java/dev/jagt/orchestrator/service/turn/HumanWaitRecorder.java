@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.service.turn;
 
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Turns;
-import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.session.HumanWaits;
 import dev.jagt.orchestrator.flow.session.StopHold;
+import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.review.Rounds;
@@ -70,12 +70,13 @@ public class HumanWaitRecorder {
   }
 
   private Holder holder(TaskState task) {
-    Arbiter.Profile arbiter = rounds.of(task).arbiter();
+    RoundState round = rounds.of(task);
     return Turns.next(
         task.standing().status(),
         task.standing().report(),
-        StopHold.of(task, arbiter),
+        StopHold.of(task, round.arbiter()),
         checkers.of(task),
-        arbiter);
+        round.arbiter(),
+        round.reach().requireApproval());
   }
 }

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.host.Layout;
 import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,14 +29,14 @@ class RoutingMemoryTest {
 
   @Test
   void holdsNoRuleWhereNobodyHasWrittenOne() {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
 
     assertThat(new RoutingMemory(paths, new FakeClock()).rules()).isEmpty();
   }
 
   @Test
   void letsTheNewestRuleForKeyReplaceTheOneItChanged() {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
 
     memory.remember("ABC items about quote import", "sc");
@@ -46,7 +47,7 @@ class RoutingMemoryTest {
 
   @Test
   void writesNothingWhenTheRuleAlreadySaysThat() {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
     memory.remember("ABC items about quote import", "sc");
 
@@ -55,7 +56,7 @@ class RoutingMemoryTest {
 
   @Test
   void keepsTheRuleItRetiredWithTheDateItStoppedBeingTrue() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Clock frozen = Clock.fixed(Instant.parse("2026-09-29T00:00:00Z"), ZoneOffset.UTC);
     RoutingMemory memory = new RoutingMemory(paths, frozen);
 
@@ -68,7 +69,7 @@ class RoutingMemoryTest {
 
   @Test
   void dropsTheRuleNothingHasEverPlacedBeforeOneThatWorks() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(
         root.resolve("memory/routing.md"),
@@ -87,7 +88,7 @@ class RoutingMemoryTest {
 
   @Test
   void dropsTheOldestOfTheRulesNothingHasPlaced() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(
         root.resolve("memory/routing.md"),
@@ -106,7 +107,7 @@ class RoutingMemoryTest {
 
   @Test
   void countsTheSameRuleSaidAgainAsThatRulePlacingAnotherItem() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
 
     memory.remember("ABC items about quote import", "sc");
@@ -118,7 +119,7 @@ class RoutingMemoryTest {
 
   @Test
   void readsRuleHumanWroteByHandWithNoCountOnIt() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(root.resolve("memory/routing.md"), "ABC items about quote import -> sc\n");
 
@@ -128,7 +129,7 @@ class RoutingMemoryTest {
 
   @Test
   void readsPastTheNotesHumanLeftBetweenTheRules() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(
         root.resolve("memory/routing.md"),
@@ -140,7 +141,7 @@ class RoutingMemoryTest {
 
   @Test
   void mergesSecondWordingIntoTheRuleItRepeatsKeepingBothCounts() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
     RoutingMemory memory = new RoutingMemory(paths, frozen);
     memory.remember("quote import", "api");
@@ -158,7 +159,7 @@ class RoutingMemoryTest {
 
   @Test
   void saysTheMergeChangedTheFile() {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
     memory.remember("quote import", "api");
     memory.remember("importing quotes", "api");
@@ -169,7 +170,7 @@ class RoutingMemoryTest {
   @ParameterizedTest
   @CsvSource(value = {"'',api", "quote import,''"})
   void remembersNothingWithoutBothKeyAndProject(String key, String project) {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
 
     boolean changed = memory.remember(key, project);
@@ -180,7 +181,7 @@ class RoutingMemoryTest {
 
   @Test
   void retiresRuleOutOfUseKeepingItDated() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
     RoutingMemory memory = new RoutingMemory(paths, frozen);
     memory.remember("quote import", "api");
@@ -196,7 +197,7 @@ class RoutingMemoryTest {
   @ParameterizedTest
   @ValueSource(strings = {"unknown rule -> api", "no separator here"})
   void retiresNothingItDoesNotHold(String rendered) {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
     memory.remember("quote import", "api");
 
@@ -206,14 +207,14 @@ class RoutingMemoryTest {
 
   @Test
   void retiresNothingWhenGivenNoRule() {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
 
     assertThat(new RoutingMemory(paths, new FakeClock()).retire("")).isFalse();
   }
 
   @Test
   void keepsEveryRetiredRuleAcrossLaterWrites() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
     RoutingMemory memory = new RoutingMemory(paths, frozen);
     memory.remember("quote import", "api");
@@ -227,7 +228,7 @@ class RoutingMemoryTest {
 
   @Test
   void readsRuleWhoseCountIsNotNumberAsOneWithNoCount() throws IOException {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(root.resolve("memory/routing.md"), "quote import -> api #many\n");
 
@@ -237,7 +238,7 @@ class RoutingMemoryTest {
 
   @Test
   void keepsTwoRulesThatPlaceInDifferentProjects() {
-    when(paths.memory()).thenReturn(root.resolve("memory"));
+    when(paths.layout()).thenReturn(new Layout(root, null));
     RoutingMemory memory = new RoutingMemory(paths, new FakeClock());
     memory.remember("quote import", "api");
     memory.remember("importing quotes", "web");

@@ -67,12 +67,17 @@ public class InfraRetries {
     return armed.get();
   }
 
+  /** Forgets the armed retry; the sent ones stay counted. */
+  public void clearArmed(String taskId) {
+    stateService.reduce(taskId, (reducer, task) -> reducer.infraCleared(task, false));
+  }
+
   /**
-   * Forgets the armed retry, and the sent ones too when {@code all}: a run that went green or red
-   * for the code owes no more.
+   * Forgets the armed retry and the sent ones: a run that went green or red for the code owes no
+   * more.
    */
-  public void clear(String taskId, boolean all) {
-    stateService.reduce(taskId, (reducer, task) -> reducer.infraCleared(task, all));
+  public void clearAll(String taskId) {
+    stateService.reduce(taskId, (reducer, task) -> reducer.infraCleared(task, true));
   }
 
   /** The retry sent: it joins those counted, and the task's history keeps the move. */

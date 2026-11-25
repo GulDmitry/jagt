@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -26,7 +25,7 @@ class RoundsTest {
       new Rounds(
           configService,
           ignored -> false,
-          () -> Facts.Reach.defaults(),
+          new ReachOffers(() -> false, () -> false),
           unheld -> null,
           new Checkers(new TaskChart(Composition.builtIn())));
 
@@ -109,7 +108,7 @@ class RoundsTest {
         new Rounds(
                 configService,
                 standing -> Objects.equals(standing, task),
-                () -> Facts.Reach.defaults(),
+                new ReachOffers(() -> false, () -> false),
                 unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn())))
             .of(task, ConfigFile.defaults());
@@ -140,7 +139,7 @@ class RoundsTest {
         new Rounds(
             configService,
             ignored -> false,
-            () -> Facts.Reach.defaults(),
+            new ReachOffers(() -> false, () -> false),
             ignored -> "credential check fails",
             new Checkers(new TaskChart(Composition.builtIn())));
 

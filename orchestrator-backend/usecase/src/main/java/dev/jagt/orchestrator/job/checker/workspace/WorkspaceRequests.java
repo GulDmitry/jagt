@@ -80,7 +80,7 @@ public class WorkspaceRequests {
         folder,
         branch,
         task,
-        paths.roleBranchWorktree(owner.getKey(), branch),
+        paths.layout().roleBranchWorktree(owner.getKey(), branch),
         fromBranch)) {
       return;
     }

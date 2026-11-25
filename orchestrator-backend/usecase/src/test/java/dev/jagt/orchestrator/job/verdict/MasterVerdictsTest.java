@@ -403,8 +403,43 @@ class MasterVerdictsTest {
     verdicts.answered(
         "ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
 
-    verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"), eq(false));
+    verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"));
     verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
+  }
+
+  @Test
+  void answersTrueWhenTheAnswerWentBelowThePendingInstruction() throws Exception {
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+    state.putTask("ABC-42", task);
+
+    boolean moved =
+        verdicts.answered(
+            "ABC-42",
+            task,
+            "keep both imports?",
+            new MasterPanel.Decision("keep both imports", ""));
+
+    assertThat(moved).isTrue();
+  }
+
+  @Test
+  void answersFalseWhenTheSessionAlreadyHoldsTheAnswerGivenBelowThePendingInstruction()
+      throws Exception {
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+    state.putTask("ABC-42", task);
+    verdicts.answered(
+        "ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
+
+    boolean moved =
+        verdicts.answered(
+            "ABC-42",
+            state.task("ABC-42").orElseThrow(),
+            "keep both imports?",
+            new MasterPanel.Decision("keep both imports", ""));
+
+    assertThat(moved).isFalse();
   }
 
   @Test
@@ -703,6 +738,7 @@ class MasterVerdictsTest {
                 "ABC-1",
                 Step.ASKED_HUMAN,
                 "The reviewer asked the human: Add v3 beside v2, or replace it?",
+                StepRelay.Delivery.CONTEXT,
                 Standing.of(reviewPending)));
 
     boolean moved =
@@ -744,6 +780,7 @@ class MasterVerdictsTest {
                 "ABC-1",
                 Step.ANSWERED,
                 "The Master answered your question, standing in for the human:\nkeep v2 beside v3",
+                StepRelay.Delivery.CONTEXT,
                 Standing.of(reviewPending)));
 
     boolean moved =

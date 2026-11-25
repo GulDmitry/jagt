@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.codehost.command;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;

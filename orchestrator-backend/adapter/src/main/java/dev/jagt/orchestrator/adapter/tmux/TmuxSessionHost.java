@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
-import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
@@ -78,7 +79,7 @@ public class TmuxSessionHost implements SessionHost {
       String taskId,
       @Nullable String alias,
       Path worktreePath,
-      boolean planMode,
+      LaunchMode mode,
       String model) {
     taskWindow(
         session,
@@ -87,8 +88,8 @@ public class TmuxSessionHost implements SessionHost {
         alias,
         worktreePath,
         model.isBlank()
-            ? agentRuntime.launchCommand(worktreePath, planMode)
-            : agentRuntime.launchCommand(worktreePath, planMode, model));
+            ? agentRuntime.launchCommand(worktreePath, mode)
+            : agentRuntime.launchCommand(worktreePath, mode, model));
   }
 
   @Override
@@ -144,7 +145,7 @@ public class TmuxSessionHost implements SessionHost {
         resolved.stream()
             .map(part -> "'" + part.replace("'", "'\\''") + "'")
             .collect(Collectors.joining(" "));
-    shown(session, dedicatedTitle, name, VIEWER_CWD, line);
+    shown(session, dedicatedTitle, name, environment.viewerDir(), line);
   }
 
   @Override
@@ -502,12 +503,6 @@ public class TmuxSessionHost implements SessionHost {
     }
   }
 
-  /**
-   * The viewer must NOT open inside a worktree: removing one reaps every process whose cwd is under
-   * it, and a stable home dir is never a reap target.
-   */
-  private static final Path VIEWER_CWD = Path.of(System.getProperty("user.home"));
-
   private void ensureViewer(String session, String dedicatedTitle) {
     // A control client is no screen to look at.
     var clients =
@@ -518,7 +513,8 @@ public class TmuxSessionHost implements SessionHost {
     if (clients.exitCode() == 0 && clients.stdout().lines().anyMatch("0"::equals)) {
       return;
     }
-    terminalDriver.openViewer(tmux("attach", "-t", session), dedicatedTitle, VIEWER_CWD);
+    terminalDriver.openViewer(
+        tmux("attach", "-t", session), dedicatedTitle, environment.viewerDir());
   }
 
   private List<String> tmux(String... args) {

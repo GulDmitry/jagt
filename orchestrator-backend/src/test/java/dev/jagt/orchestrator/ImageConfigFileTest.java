@@ -33,6 +33,14 @@ class ImageConfigFileTest {
   }
 
   @Test
+  void startCreatesTemporaryAndCacheFoldersPointedUnderTheVolume() {
+    assertThat(SourceRoots.read(ENTRYPOINT))
+        .contains(
+            "for dir in \"$TMPDIR\" \"$XDG_CACHE_HOME\"; do",
+            "\"$ORCHESTRATOR_DATA\"/?*) mkdir -p \"$dir\" ;;");
+  }
+
+  @Test
   void baseImageInstallsEveryBinaryJagtSpawns() {
     assertThat(SourceRoots.read(Path.of("../base/Dockerfile")))
         .contains("install -y --no-install-recommends git curl tmux ");

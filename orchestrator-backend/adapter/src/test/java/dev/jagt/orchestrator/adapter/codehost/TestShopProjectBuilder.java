@@ -20,7 +20,7 @@ public record TestShopProjectBuilder(
 
   public ProjectConfig build() {
     return new ProjectConfig(
-        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of(), null, null),
+        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of(), null, null, null),
         new ProjectConfig.Branches("origin/main", "dev", null),
         new ProjectConfig.CodeHost(
             kind,
@@ -32,6 +32,6 @@ public record TestShopProjectBuilder(
             List.of(),
             new ProjectConfig.Review(List.of(), List.of(), postCommand, List.of())),
         new ProjectConfig.Verify(verifyCommand, null),
-        new ProjectConfig.Setup(setupCommand, null, credentialChecks));
+        new ProjectConfig.Setup(setupCommand, null, credentialChecks, List.of()));
   }
 }

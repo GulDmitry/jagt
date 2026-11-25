@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -19,7 +20,8 @@ class MasterTokenTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withData(root.toString())));
+                    .withData(root.toString()),
+                FakeHost.machine()));
 
     String written = Files.readString(root.resolve("jagt/master-token"));
 
@@ -39,7 +41,8 @@ class MasterTokenTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(state.resolve("state.json").toString()));
+                .withStateFile(state.resolve("state.json").toString()),
+            FakeHost.machine());
     Files.setPosixFilePermissions(root, PosixFilePermissions.fromString("r-xr-xr-x"));
 
     MasterToken token = new MasterToken(paths);
@@ -52,7 +55,8 @@ class MasterTokenTest {
   void drawsNewTokenAtEachStart(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()));
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()),
+            FakeHost.machine());
     new MasterToken(paths);
     String first = Files.readString(root.resolve("jagt/master-token"));
 

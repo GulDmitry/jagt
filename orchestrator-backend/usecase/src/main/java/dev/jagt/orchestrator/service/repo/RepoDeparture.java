@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.worktree.RetiredWorktrees;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -27,6 +28,7 @@ public class RepoDeparture {
   private final RetiredWorktrees worktrees;
   private final AgentSessions sessions;
   private final StateService stateService;
+  private final Clock clock;
 
   /**
    * Takes {@code repo} out of the task and settles what it leaves behind. The task's primary
@@ -53,7 +55,8 @@ public class RepoDeparture {
     }
     Set<String> trustedOnlyByIt = worktrees.trustedOnlyBy(taskId, task, repo);
     stateService.reduce(
-        taskId, (reducer, current) -> reducer.repoLeft(current, project, trustedOnlyByIt));
+        taskId,
+        (reducer, current) -> reducer.repoLeft(current, project, trustedOnlyByIt, clock.millis()));
     settle(taskId, repo, cause, !primary);
     return true;
   }
@@ -61,7 +64,7 @@ public class RepoDeparture {
   private boolean agentRuns(String taskId) {
     try {
       return sessions.windowState(taskId) == SessionHost.WindowState.AGENT_RUNNING;
-    } catch (RuntimeException unknown) {
+    } catch (SessionHost.WindowsUnreadable unknown) {
       return true;
     }
   }
@@ -100,8 +103,7 @@ public class RepoDeparture {
               + cause
               + ". Its branch "
               + taskId
-              + " is kept; do not work there.",
-          false);
+              + " is kept; do not work there.");
     } catch (RuntimeException unheard) {
       log.atWarn()
           .setMessage("session not told of repository leaving")

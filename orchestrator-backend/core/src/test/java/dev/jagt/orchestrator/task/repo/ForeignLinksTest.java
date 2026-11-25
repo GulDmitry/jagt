@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -64,5 +65,39 @@ class ForeignLinksTest {
 
     assertThat(cleared.reviewRequestOf("proj")).isEmpty();
     assertThat(cleared.reviewRequestOf("web")).isPresent();
+  }
+
+  @Test
+  void staysOnTheFirstKeptRequestInTheTasksRepositoryOrderWhenAnotherIsForeign() {
+    TaskState spanning =
+        TaskState.builder(
+                List.of(
+                    new TaskRepo("proj", "/wt", "git@host:team/proj.git", null),
+                    new TaskRepo("api", "/wt-api", null, null),
+                    new TaskRepo("db", "/wt-db", null, null),
+                    new TaskRepo("web", "/wt-web", null, null)),
+                TaskStatus.IN_PROGRESS)
+            .build();
+    Map<String, String> asked = new LinkedHashMap<>();
+    asked.put("web", "https://host/web/-/merge_requests/3");
+    asked.put("db", "https://host/db/-/merge_requests/2");
+    asked.put("proj", "https://host/other/proj/-/merge_requests/9");
+    asked.put("api", "https://host/api/-/merge_requests/1");
+
+    ForeignLinks.Judged judged = ForeignLinks.judge(spanning, asked, null);
+
+    assertThat(judged.url()).isEqualTo("https://host/api/-/merge_requests/1");
+  }
+
+  @Test
+  void staysOnTheReportsFirstKeptRequestWhenNoneIsOnProjectOfTheTask() {
+    Map<String, String> asked = new LinkedHashMap<>();
+    asked.put("docs", "https://host/docs/-/merge_requests/4");
+    asked.put("proj", "https://host/other/proj/-/merge_requests/9");
+    asked.put("site", "https://host/site/-/merge_requests/5");
+
+    ForeignLinks.Judged judged = ForeignLinks.judge(task, asked, null);
+
+    assertThat(judged.url()).isEqualTo("https://host/docs/-/merge_requests/4");
   }
 }

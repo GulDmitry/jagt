@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -51,7 +52,8 @@ class ConfigServiceTest {
                 .withRoot(root.toString())
                 .withData(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     stops = new ActStops(new MasterBrake(paths), new BoardStop(paths, new FakeClock()));
     service =
         new ConfigService(
@@ -99,6 +101,19 @@ class ConfigServiceTest {
     Files.writeString(configFile, "orchestrator:\n  deploy:\n    onApproval: true\n");
 
     boolean written = service.load().deploy().onApprovalOrDefault();
+
+    assertThat(unset).isFalse();
+    assertThat(written).isTrue();
+  }
+
+  @Test
+  void deployRequireApprovalIsOffUntilJagtYmlTurnsItOn() throws Exception {
+    Path configFile = root.resolve("jagt.yml");
+    Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+    boolean unset = service.load().deploy().requireApprovalOrDefault();
+    Files.writeString(configFile, "orchestrator:\n  deploy:\n    requireApproval: true\n");
+
+    boolean written = service.load().deploy().requireApprovalOrDefault();
 
     assertThat(unset).isFalse();
     assertThat(written).isTrue();
@@ -463,26 +478,6 @@ class ConfigServiceTest {
     assertThat(reach.standing())
         .extracting(ReachLost::said)
         .containsExactly("is 9: it must be at least 10; the read keeps its default");
-  }
-
-  @Test
-  void reachesTheDirectoriesSessionMayWriteThatExistWithTheSandboxOff() throws Exception {
-    Path specs = Files.createDirectory(root.resolve("specs"));
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile,
-        """
-        orchestrator:
-          agent:
-            sandbox:
-              enabled: false
-              allowWrite: ["%s", "%s"]
-        """
-            .formatted(specs, root.resolve("gone")));
-
-    var beside = service.beside();
-
-    assertThat(beside).containsExactly(specs.toRealPath());
   }
 
   @Test

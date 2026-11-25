@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { mock, test } from "node:test";
 import { byAlias } from "../ui/aliasorder.js";
 
 test("p2SortsBeforeP10 whenAliasesAreOrderedByNumber", () => {
@@ -44,4 +44,14 @@ test("orderIsKept whenTwoTasksHaveNoAlias", () => {
     byAlias(/** @type {never} */ (tasks)).map((task) => task.id),
     ["a", "b"],
   );
+});
+
+test("englishOrderIsAsked whenTwoAliasesAreCompared", () => {
+  const compared = mock.method(String.prototype, "localeCompare", () => 0);
+  const tasks = [{ alias: "p2" }, { alias: "p10" }];
+
+  byAlias(/** @type {never} */ (tasks));
+
+  compared.mock.restore();
+  assert.equal(compared.mock.calls[0].arguments[1], "en");
 });

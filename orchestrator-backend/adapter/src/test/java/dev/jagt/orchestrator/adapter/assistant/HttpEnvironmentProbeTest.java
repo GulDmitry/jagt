@@ -53,6 +53,11 @@ class HttpEnvironmentProbeTest {
   }
 
   @Test
+  void doesNotAnswerAnAddressThatIsNoUrl() {
+    assertThat(probe.answers("not a url")).isFalse();
+  }
+
+  @Test
   void doesNotAnswerAndKeepsItsInterruptWhereTheProbingThreadWasInterrupted() {
     Thread.currentThread().interrupt();
 

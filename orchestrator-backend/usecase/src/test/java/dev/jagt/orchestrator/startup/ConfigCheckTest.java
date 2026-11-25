@@ -19,6 +19,8 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeReach;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,12 +51,13 @@ class ConfigCheckTest {
     check =
         new ConfigCheck(
             new ConfigService(
-                new ConfigSource(new OrchestratorPaths(properties), new FakeConfigInputs()),
+                new ConfigSource(
+                    new OrchestratorPaths(properties, FakeHost.machine()), new FakeConfigInputs()),
                 mock(AgentRuntime.class),
                 mock(ActStops.class),
                 new Checkers(new TaskChart(Composition.builtIn())),
                 new KeptNumbers(new ReachLedger())),
-            new OrchestratorPaths(properties),
+            new OrchestratorPaths(properties, FakeHost.machine()),
             sessions,
             new WorkingDirHost(root));
   }
@@ -69,6 +72,21 @@ class ConfigCheckTest {
           viewer: { tmuxSession: jagt, viewMode: tab-per-task }
           projects:
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
+        """
+            .formatted(root.resolve("repo")));
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void acceptsCompanionThatIsConfiguredProject() throws Exception {
+    Files.createDirectories(root.resolve("repo").resolve(".git"));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        """
+        orchestrator:
+          projects:
+            demo: { path: "%1$s", baseBranch: origin/main, companions: [specs] }
+            specs: { path: "%1$s", baseBranch: origin/main }
         """
             .formatted(root.resolve("repo")));
     assertThat(check.problems()).isEmpty();
@@ -90,7 +108,7 @@ class ConfigCheckTest {
   @Test
   void freshInstallStartsWithNoProject() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    StartupValidation validation = new StartupValidation(List.of(check), true);
+    StartupValidation validation = new StartupValidation(List.of(check), new FakeReach(), true);
 
     assertThatCode(validation::refuseToRunWithoutWhatItNeeds).doesNotThrowAnyException();
   }
@@ -168,6 +186,13 @@ class ConfigCheckTest {
                 demo: { path: $ROOT/repo, baseBranch: origin/main, deployBranch: main }
             """,
             "orchestrator.projects.demo.deployBranch"),
+        Arguments.of(
+            """
+            orchestrator:
+              projects:
+                demo: { path: $ROOT/repo, baseBranch: origin/main, companions: [specs] }
+            """,
+            "orchestrator.projects.demo.companions"),
         Arguments.of(
             """
             orchestrator:

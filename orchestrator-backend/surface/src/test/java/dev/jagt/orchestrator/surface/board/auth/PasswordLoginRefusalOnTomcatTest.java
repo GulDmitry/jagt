@@ -177,6 +177,41 @@ class PasswordLoginRefusalOnTomcatTest {
     assertThat(afterwards.headers().firstValue("Location").orElse("")).endsWith("/login.html");
   }
 
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "POST|/api/interactions|*/*|/",
+        "GET|/api/tasks|*/*|/",
+        "GET|/state|application/json|/",
+        "GET|/state|text/html,*/*;q=0.8|/state?continue"
+      })
+  void loginReturnsOnlyToPageTheLoggedOutBrowserAsked(
+      String method, String path, String accept, String landing) throws Exception {
+    String base = "http://localhost:" + port;
+    HttpClient client = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+    client.send(
+        HttpRequest.newBuilder(URI.create(base + path))
+            .header("Origin", base)
+            .header("Accept", accept)
+            .header("Content-Type", "application/json")
+            .method(method, HttpRequest.BodyPublishers.noBody())
+            .build(),
+        HttpResponse.BodyHandlers.discarding());
+
+    HttpResponse<Void> login =
+        client.send(
+            HttpRequest.newBuilder(URI.create(base + "/login"))
+                .header("Origin", base)
+                .header("X-Forwarded-For", "10.9.9.7")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString("username=owner&password=secret"))
+                .build(),
+            HttpResponse.BodyHandlers.discarding());
+
+    assertThat(login.headers().firstValue("Location")).contains(base + landing);
+  }
+
   @Test
   void refusesPeerThatFailedThePasswordTwiceEvenWithTheRightOne() throws Exception {
     String base = "http://localhost:" + port;

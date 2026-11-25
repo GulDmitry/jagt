@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.stand;
 
 import dev.jagt.orchestrator.adapter.agent.trust.ClaudeTrust;
+import dev.jagt.orchestrator.adapter.host.SystemHost;
+import dev.jagt.orchestrator.port.host.Host;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,12 +37,13 @@ public final class StandTraces {
   }
 
   public static StandTraces ofTheHuman(Path base) {
+    Host host = new SystemHost();
     String configured = System.getenv("CLAUDE_CONFIG_DIR");
     Path claudeDir =
         configured == null || configured.isBlank()
-            ? Path.of(System.getProperty("user.home")).resolve(".claude")
+            ? host.home().resolve(".claude")
             : Path.of(configured);
-    return new StandTraces(base, ClaudeTrust.configFile(), claudeDir.resolve("projects"));
+    return new StandTraces(base, ClaudeTrust.configFile(host), claudeDir.resolve("projects"));
   }
 
   public Removed remove(Predicate<String> rootSelected) {

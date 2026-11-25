@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
+import dev.jagt.orchestrator.port.reach.Reach;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class StartupValidation {
 
   private final List<StartupCheck> checks;
+  private final Reach reach;
 
   @Value("${orchestrator.startup-checks:true}")
   private final boolean machineChecked;
@@ -43,6 +45,8 @@ public class StartupValidation {
                 .addKeyValue("what", note.key())
                 .addKeyValue("cause", note.text())
                 .log());
+    checks.forEach(check ->
+        check.marks().forEach(lost -> reach.marked(lost, () -> check.marks().contains(lost))));
   }
 
   /**

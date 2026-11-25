@@ -28,6 +28,8 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
+import dev.jagt.orchestrator.service.git.RevertConflictException;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
@@ -50,6 +52,7 @@ class RevertServiceTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final GitDeploy git = mock(GitDeploy.class);
+  private final GitRevert revert = mock(GitRevert.class);
   private ConfigFile projects = deployProjects().build();
   private final GitCaseFacts facts = mock(GitCaseFacts.class);
   private final GitCaseFacts.Candidate listed =
@@ -67,11 +70,11 @@ class RevertServiceTest {
         new RevertService(
             state,
             new DeployTargets(config),
-            new RevertRunner(state, git, new FakeClock()),
-            git,
+            new RevertRunner(state, git, revert, new FakeClock()),
+            revert,
             facts);
     when(facts.picked(List.of(listed), "aaaaaaa")).thenReturn(Optional.of(listed));
-    when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("aaaaaaaa1111"), anyList()))
+    when(revert.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("aaaaaaaa1111"), anyList()))
         .thenReturn("rev1234567");
   }
 
@@ -100,7 +103,7 @@ class RevertServiceTest {
                                 .withFix("f1x2")))
                     .build())
             .build());
-    when(git.revertMergeAndPush(
+    when(revert.revertMergeAndPush(
             any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), eq(List.of("f1x2", "f1x1"))))
         .thenReturn("f00dfeed5678");
 
@@ -109,7 +112,7 @@ class RevertServiceTest {
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
     assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment()).live())
         .isFalse();
-    verify(git)
+    verify(revert)
         .revertMergeAndPush(
             any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), eq(List.of("f1x2", "f1x1")));
   }
@@ -125,12 +128,12 @@ class RevertServiceTest {
                  "status":"DEPLOYED","alias":"a1","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0}\
                 """,
                 TaskState.class));
-    when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
+    when(revert.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
         .thenReturn("f00dfeed5678");
 
     service.revert("a1");
 
-    verify(git).revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList());
+    verify(revert).revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList());
   }
 
   @Test
@@ -169,7 +172,7 @@ class RevertServiceTest {
                             Deployment.Target.of("gone", "dev")))
                     .build()));
     when(config.project("gone")).thenThrow(new IllegalArgumentException("Unknown project 'gone'"));
-    when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
+    when(revert.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
         .thenReturn("beef00991122");
 
     Outcome outcome = service.revert("a1");
@@ -196,7 +199,7 @@ class RevertServiceTest {
 
     @Test
     void revertsTheDeployedMergeAndReportsTheUndoAsDone() {
-      when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
+      when(revert.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
           .thenReturn("f00dfeed5678");
 
       Outcome outcome = service.revert("a1");
@@ -209,13 +212,14 @@ class RevertServiceTest {
     @Test
     void revertsOnTheBranchTheMergeLandedOnWhenTheConfigurationMovedSince() {
       projects = deployProjects().withProjDeployBranch("staging").build();
-      when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
+      when(revert.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
           .thenReturn("f00dfeed5678");
 
       service.revert("a1");
 
-      verify(git).revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList());
-      verify(git, never())
+      verify(revert)
+          .revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList());
+      verify(revert, never())
           .revertMergeAndPush(any(), anyString(), eq("staging"), anyString(), anyList());
     }
 
@@ -225,15 +229,15 @@ class RevertServiceTest {
 
       assertThatThrownBy(() -> service.revert("a1"))
           .hasMessageContaining("deployBranch equals the base branch");
-      verify(git, never())
+      verify(revert, never())
           .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
     }
 
     @Test
     void handsConflictingRevertBackAsConflictNamingItsWorktreeAndPushesNothing() {
-      when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
+      when(revert.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
           .thenThrow(
-              new GitDeploy.RevertConflictException(
+              new RevertConflictException(
                   "cafebabe1234", "dev", "details", Path.of("/ABC-1-revert")));
 
       Outcome outcome = service.revert("a1");
@@ -266,7 +270,7 @@ class RevertServiceTest {
           .hasMessageContaining("`revert ABC-1 <sha>` takes the one you pick out")
           .hasMessageContaining("proj: on dev no merge names the task")
           .hasMessageNotContaining("by hand");
-      verify(git, never())
+      verify(revert, never())
           .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
       assertThat(state.task("ABC-1").orElseThrow().standing().status())
           .isEqualTo(TaskStatus.DEPLOYED);
@@ -300,7 +304,7 @@ class RevertServiceTest {
       assertThatThrownBy(() -> service.revertPicked("a1", "deadbeef"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("`deadbeef` is none of the candidates");
-      verify(git, never())
+      verify(revert, never())
           .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
     }
   }
@@ -353,17 +357,17 @@ class RevertServiceTest {
 
     @Test
     void undoesTheRepositoriesInReverseOrderAndForgetsEachMergeItTookOut() {
-      when(git.revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList()))
+      when(revert.revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList()))
           .thenReturn("beef00991122");
 
       Outcome outcome = service.revert("a1");
 
-      InOrder undone = inOrder(git);
+      InOrder undone = inOrder(git, revert);
       undone
-          .verify(git)
+          .verify(revert)
           .revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678", List.of());
       undone
-          .verify(git)
+          .verify(revert)
           .revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of());
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
       assertThat(outcome.message()).contains("reverted web on dev", "api on dev", "REVERTED");
@@ -376,12 +380,13 @@ class RevertServiceTest {
 
     @Test
     void refusesTheUndoAsHalfDoneWhenOneRepositoryCouldNotBeReverted() {
-      when(git.revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678", List.of()))
+      when(revert.revertMergeAndPush(
+              Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678", List.of()))
           .thenReturn("beef00991122");
       doThrow(
               new IllegalStateException(
                   "the revert conflicts with work done there since the deploy"))
-          .when(git)
+          .when(revert)
           .revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of());
 
       Outcome outcome = service.revert("a1");
@@ -400,16 +405,16 @@ class RevertServiceTest {
     void doesNotRevertAgainTheRepositoryThatWasRevertedBeforeAnotherConflicted() {
       state.updateTask(
           "ABC-1", t -> t.withDeployment(Objects.requireNonNull(t.work().deployment()).withAt(2)));
-      when(git.revertMergeAndPush(
+      when(revert.revertMergeAndPush(
               eq(Path.of("/repo/web")), eq("ABC-1"), eq("dev"), eq("f00dfeed5678"), anyList()))
           .thenReturn("beef00991122");
-      when(git.revertMergeAndPush(
+      when(revert.revertMergeAndPush(
               eq(Path.of("/repo/api")), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
           .thenThrow(
-              new GitDeploy.RevertConflictException(
+              new RevertConflictException(
                   "cafebabe1234", "dev", "details", Path.of("/ABC-1-revert")))
           .thenReturn("0ddba11cafe0");
-      when(git.revertUnmerged(Path.of("/repo/api"), "ABC-1")).thenReturn("");
+      when(revert.revertUnmerged(Path.of("/repo/api"), "ABC-1")).thenReturn("");
       Outcome first = service.revert("a1");
       state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DEPLOY_CONFLICT, "conflict", 2));
 
@@ -417,7 +422,7 @@ class RevertServiceTest {
 
       assertThat(first.kind()).isEqualTo(Outcome.Kind.CONFLICT);
       assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
-      verify(git, times(1))
+      verify(revert, times(1))
           .revertMergeAndPush(
               eq(Path.of("/repo/web")), anyString(), anyString(), anyString(), anyList());
       assertThat(
@@ -446,7 +451,8 @@ class RevertServiceTest {
 
     @Test
     void undoesTheRepositoryThatIsLiveWithoutEvenLookingUpOneThatNeverLanded() {
-      when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
+      when(revert.revertMergeAndPush(
+              Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
           .thenReturn("beef00991122");
 
       Outcome outcome = service.revert("a1");
@@ -472,7 +478,8 @@ class RevertServiceTest {
     @Test
     void discardsTheHalfMergeTheConflictLeftWhenTheDeployIsRevertedFromIt() {
       when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
-      when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
+      when(revert.revertMergeAndPush(
+              Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
           .thenReturn("beef00991122");
 
       service.revert("a1");
@@ -483,7 +490,7 @@ class RevertServiceTest {
     @Test
     void keepsTheConflictWaitingWhenTheRevertOfWhatLandedIsRefused() {
       doThrow(new IllegalStateException("the revert conflicts"))
-          .when(git)
+          .when(revert)
           .revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of());
 
       assertThatThrownBy(() -> service.revert("a1")).hasMessage("the revert conflicts");
@@ -527,7 +534,7 @@ class RevertServiceTest {
               .withDeployment(projectMergedAndConflictedBy(Deployment.Cause.MERGE).build())
               .build());
       when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
-      when(git.revertMergeAndPush(Path.of("/repo"), "ABC-1", "dev", "cafebabe1234", List.of()))
+      when(revert.revertMergeAndPush(Path.of("/repo"), "ABC-1", "dev", "cafebabe1234", List.of()))
           .thenReturn("beef00991122");
 
       service.revert("a1");
@@ -543,12 +550,12 @@ class RevertServiceTest {
               .withStatus(TaskStatus.DEPLOY_CONFLICT)
               .withDeployment(projectMergedAndConflictedBy(Deployment.Cause.REVERT).build())
               .build());
-      when(git.revertUnmerged(Path.of("/repo"), "ABC-1")).thenReturn("src/A.java\nsrc/B.java");
+      when(revert.revertUnmerged(Path.of("/repo"), "ABC-1")).thenReturn("src/A.java\nsrc/B.java");
 
       assertThatThrownBy(() -> service.revert("a1"))
           .isInstanceOf(Refusal.class)
           .hasMessageContaining("src/A.java src/B.java");
-      verify(git, never())
+      verify(revert, never())
           .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
       assertThat(
               Objects.requireNonNull(state.task("ABC-1").orElseThrow().work().deployment())

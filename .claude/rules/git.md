@@ -1,6 +1,6 @@
 ---
 paths:
-  - "**/service/Git*.java"
+  - "**/service/git/Git*.java"
   - "**/service/git/WorktreeInspection.java"
   - "**/service/git/DiffCheckouts.java"
   - "**/capability/deploy/**"

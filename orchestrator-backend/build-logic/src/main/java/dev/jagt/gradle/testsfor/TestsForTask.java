@@ -32,10 +32,11 @@ public abstract class TestsForTask extends DefaultTask {
     TestsFor testsFor = TestsFor.in(getBackend().get().getAsFile().toPath());
     List<String> paths =
         getPaths().isPresent()
-            ? Arrays.stream(getPaths().get().split(",")).map(testsFor::stripRoot).toList()
+            ? testsFor.resolve(Arrays.asList(getPaths().get().split(",")), getBase().get())
             : testsFor.changedAgainst(getBase().get());
     TestsFor.Plan plan = testsFor.plan(paths);
     plan.dropped().forEach(note -> getLogger().error(note));
     plan.lines().forEach(line -> getLogger().quiet(line));
+    plan.reads().forEach(file -> getLogger().quiet("read: " + file));
   }
 }

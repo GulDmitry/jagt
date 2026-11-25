@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -34,7 +35,8 @@ class UsageLedgerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withData(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()),
             Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
   }
 

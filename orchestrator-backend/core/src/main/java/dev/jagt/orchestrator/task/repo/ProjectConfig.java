@@ -20,7 +20,8 @@ public record ProjectConfig(
    * {@code about}: one line saying what this repository IS, for placing an item no label places;
    * blank = its path. {@code url}: cloned into the data folder where {@code path} is blank or
    * missing. {@code localFiles}: the folder {@code worktree.copyGlobs} copies from; blank = its
-   * path.
+   * path. {@code specs}: where the repository's behaviour is recorded as specs; null = in itself,
+   * where the spec tool looks by default.
    */
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record Repository(
@@ -29,13 +30,21 @@ public record ProjectConfig(
       @Nullable String about,
       List<String> humanPaths,
       @Nullable String url,
-      @Nullable String localFiles) {
+      @Nullable String localFiles,
+      @Nullable SpecRoot specs) {
 
     public Repository {
       labels = labels == null ? List.of() : labels;
       humanPaths = humanPaths == null ? List.of() : humanPaths;
     }
   }
+
+  /**
+   * {@code path}: the specs folder, relative to the root of the repository holding it; blank = the
+   * spec tool's own. {@code project}: the project whose repository holds it; blank = this one.
+   */
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  public record SpecRoot(@Nullable String path, @Nullable String project) {}
 
   /**
    * {@code remote}: the remote branches are shared through; blank is origin, none a repository kept
@@ -111,19 +120,22 @@ public record ProjectConfig(
   /**
    * {@code command}: run once in every new worktree of the project before its session starts, empty
    * = nothing; {@code minutes}: null, zero or negative = 20. {@code credentialChecks}: read before
-   * a session of the project starts.
+   * a session of the project starts. {@code companions}: the projects every task started on this
+   * one also works in.
    */
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record Setup(
       @JsonProperty("setupCommand") List<String> command,
       @JsonProperty("setupMinutes") @Nullable Integer minutes,
-      List<CredentialCheck> credentialChecks) {
+      List<CredentialCheck> credentialChecks,
+      List<String> companions) {
 
-    public static final Setup NONE = new Setup(List.of(), null, List.of());
+    public static final Setup NONE = new Setup(List.of(), null, List.of(), List.of());
 
     public Setup {
       command = command == null ? List.of() : command;
       credentialChecks = credentialChecks == null ? List.of() : credentialChecks;
+      companions = companions == null ? List.of() : companions;
     }
   }
 
@@ -150,7 +162,7 @@ public record ProjectConfig(
   public ProjectConfig(
       String path, String baseBranch, @Nullable String deployBranch, List<String> labels) {
     this(
-        new Repository(path, labels, null, List.of(), null, null),
+        new Repository(path, labels, null, List.of(), null, null, null),
         new Branches(baseBranch, deployBranch, null),
         CodeHost.defaults(),
         new Verify(List.of(), null),
@@ -178,7 +190,13 @@ public record ProjectConfig(
     Repository held = repository;
     return new ProjectConfig(
         new Repository(
-            path, held.labels(), held.about(), held.humanPaths(), held.url(), held.localFiles()),
+            path,
+            held.labels(),
+            held.about(),
+            held.humanPaths(),
+            held.url(),
+            held.localFiles(),
+            held.specs()),
         branches,
         host,
         verify,
@@ -195,6 +213,10 @@ public record ProjectConfig(
 
   public List<String> humanPaths() {
     return repository.humanPaths();
+  }
+
+  public @Nullable SpecRoot specs() {
+    return repository.specs();
   }
 
   public String baseBranch() {
@@ -242,6 +264,10 @@ public record ProjectConfig(
     return setup.credentialChecks();
   }
 
+  public List<String> companions() {
+    return setup.companions();
+  }
+
   public Duration setupTimeoutOrDefault() {
     return minutesOrDefault(setup.minutes());
   }
@@ -251,10 +277,6 @@ public record ProjectConfig(
   }
 
   /** Repository paths, as globs, whose change only a human takes further. */
-  public List<String> humanPathsOrNone() {
-    return humanPaths();
-  }
-
   public Remote gitRemote() {
     return Remote.of(remote());
   }

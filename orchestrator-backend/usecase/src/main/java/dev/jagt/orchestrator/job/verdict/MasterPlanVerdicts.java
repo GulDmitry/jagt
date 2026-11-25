@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.service.plan.PlanApproval;
 import dev.jagt.orchestrator.service.plan.Unplaceable;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
@@ -42,7 +41,7 @@ class MasterPlanVerdicts {
     return OriginContext.as(
         ActionOrigin.MASTER,
         () ->
-            config.may(MasterRight.PLAN)
+            config.mayApprovePlan(task)
                 && !task.gate().planGate().keptForTheHuman()
                 && go(taskId, task, verdict));
   }
@@ -77,7 +76,8 @@ class MasterPlanVerdicts {
       String revision) {
     StepRelay.Claim claim =
         claims.reporting(taskId, standing, AgentReport.PLAIN, "reviewer: not ready; relayed");
-    if (!relay.relayRound(taskId, MasterMove.PLAN_NOT_READY.step(), revision, claim)) {
+    if (!relay.relay(
+        taskId, MasterMove.PLAN_NOT_READY.step(), revision, StepRelay.Delivery.ROUND, claim)) {
       return false;
     }
     decisions.returned(task, verdict.round(), List.of());
@@ -105,6 +105,7 @@ class MasterPlanVerdicts {
             + verdict.advice().stream()
                 .map(MasterReview.Said::line)
                 .collect(Collectors.joining("\n")),
+        StepRelay.Delivery.CONTEXT,
         claims.opening(taskId, task, after));
     return after.get();
   }

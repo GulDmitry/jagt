@@ -1,11 +1,12 @@
 package dev.jagt.orchestrator.adapter.agent.codex;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.agent.AbstractAgentRuntime;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
@@ -68,19 +69,19 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode) {
-    return launchCommand(worktree, planMode, "", brief.line(Step.START));
+  public String launchCommand(Path worktree, LaunchMode mode) {
+    return launchCommand(worktree, mode, "", brief.line(Step.START));
   }
 
   @Override
   public String launchCommand(
-      Path worktree, boolean planMode, String model, @Nullable String prompt) {
+      Path worktree, LaunchMode mode, String model, @Nullable String prompt) {
     // A read-only sandbox IS plan mode here: the agent can reason but cannot touch the files.
     return "CODEX_HOME="
         + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString())
         + " "
         + codex.command()
-        + (planMode ? " --sandbox read-only" : "")
+        + (mode == LaunchMode.PLAN ? " --sandbox read-only" : "")
         + (model == null || model.isBlank() ? "" : " -m " + shellQuote(model.strip()))
         + " "
         + shellQuote(prompt);

@@ -40,6 +40,17 @@ public final class Turns {
       StopHold stop,
       Map<String, CheckerPhase> checkers,
       Arbiter.Profile profile) {
+    return next(status, report, stop, checkers, profile, false);
+  }
+
+  /** As above, where {@code requireApproval} leaves a read request waiting on the code host. */
+  public static Holder next(
+      TaskStatus status,
+      AgentReport report,
+      StopHold stop,
+      Map<String, CheckerPhase> checkers,
+      Arbiter.Profile profile,
+      boolean requireApproval) {
     if (FlowRules.closed(status)) {
       return Holder.NOBODY;
     }
@@ -56,7 +67,8 @@ public final class Turns {
     if (report.asks()) {
       return asked(report, profile);
     }
-    if (FlowRules.deployedByTheArbiter(status) && profile.may(MasterRight.DEPLOY)) {
+    if (FlowRules.deployedByTheArbiter(status, requireApproval)
+        && profile.may(MasterRight.DEPLOY)) {
       return Holder.ARBITER;
     }
     if (status == TaskStatus.REVIEW_PENDING && report == AgentReport.NO_CHANGES) {

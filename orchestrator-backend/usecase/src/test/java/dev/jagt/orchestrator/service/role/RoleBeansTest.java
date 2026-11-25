@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,7 +34,8 @@ class RoleBeansTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
     ConfigService config =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
@@ -60,7 +62,8 @@ class RoleBeansTest {
         Path.of("src/test/resources/checker-fixture/roles/audit/role.yml"),
         root.resolve("roles/audit/role.yml"));
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     RoleKits kits =
         new RoleBeans()
             .roleKits(new InstalledRoles(paths), mock(ConfigService.class), paths, List.of());

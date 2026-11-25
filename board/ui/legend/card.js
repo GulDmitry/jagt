@@ -1,6 +1,12 @@
 import { make, span } from "../../core/dom.js";
 import { t } from "../../core/i18n.js";
 
+/**
+ * @param {string} key
+ * @param {Node[]} samples
+ */
+export const row = (key, ...samples) => ({ key, samples });
+
 /** @param {string} owner */
 const edge = (owner) => span(`legend-edge ${owner}`, "");
 
@@ -53,37 +59,46 @@ const blockHead = () =>
 const detailLine = (className, text) => make("div", className, text);
 
 export const cardRows = () => [
-  [edge("you"), edge("agent"), edge("ci"), edge("")],
-  [
+  row("edges", edge("you"), edge("agent"), edge("ci"), edge("")),
+  row(
+    "badges",
     span("badge required", "ship it"),
     span("badge optional", "read the round"),
     span("badge required problem", "NEEDS YOU"),
-  ],
-  [flagButton(false), flagButton(true)],
-  [aged("status", "in progress", "12m"), aged("status live", "done", "3d")],
-  [make("button", "again", "Deploy")],
-  [make("button", "quiet", "Check review")],
-  [
+  ),
+  row("flag", flagButton(false), flagButton(true)),
+  row(
+    "status",
+    aged("status", "in progress", "12m"),
+    aged("status live", "done", "3d"),
+  ),
+  row("deployed", make("button", "again", "Deploy")),
+  row("quiet", make("button", "quiet", "Check review")),
+  row(
+    "request",
     requestChip("id", "ABC-42"),
     requestChip("mr-age approved", `${t("request")} 5d ✓`),
     requestChip("mr-age", `${t("request")} 2d`),
-  ],
-  [
+  ),
+  row(
+    "checks",
     span("checks red", ""),
     span("checks green", ""),
     span("checks running", ""),
-  ],
-  [requestChip("mr-age", "alpha 2d"), repositories()],
-  [draftedTab()],
-  [blockHead(), span("quote", "> the row count is wrong")],
-  [
+  ),
+  row("repos", requestChip("mr-age", "alpha 2d"), repositories()),
+  row("drafted", draftedTab()),
+  row("verdict", blockHead(), span("quote", "> the row count is wrong")),
+  row(
+    "stalled",
     requestChip("mr-age stalled", `${t("request")} 9d`),
     aged("status stalled", "out for review", "9d"),
     span("chip stalled", t("act-stopped")),
     span("chip stalled", t("board-stopped")),
-  ],
-  [
+  ),
+  row(
+    "detail",
     detailLine("detail problem", "PROBLEM: no branch to ship"),
     detailLine("detail you", "NEEDS YOU: a red run"),
-  ],
+  ),
 ];

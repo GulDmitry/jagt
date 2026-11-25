@@ -4,6 +4,7 @@ import static dev.jagt.orchestrator.service.TestNewRepoBuilder.api;
 import static dev.jagt.orchestrator.service.TestNewRepoBuilder.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -17,7 +18,8 @@ class OrchestratorPathsTest {
   void cutsTheDeployAndRevertWorktreesOfTaskUnderTheDataFolderPerProject(@TempDir Path data) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
+            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()),
+            FakeHost.machine());
 
     assertThat(paths.deployWorktree("web", "ABC-1"))
         .isEqualTo(data.resolve("tasks/ABC-1/worktrees/web-deploy"));
@@ -29,9 +31,10 @@ class OrchestratorPathsTest {
   void cutsTheCheckoutOfRolesBranchUnderTheDataFolder(@TempDir Path data) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
+            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()),
+            FakeHost.machine());
 
-    assertThat(paths.roleBranchWorktree("web", "jagt/acceptance-qa"))
+    assertThat(paths.layout().roleBranchWorktree("web", "jagt/acceptance-qa"))
         .isEqualTo(data.resolve("role-branches/web-jagt-acceptance-qa"));
   }
 
@@ -39,7 +42,8 @@ class OrchestratorPathsTest {
   void listsTheDeployWorktreeOnlyOfRepositoriesThatHaveDeployBranch(@TempDir Path data) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()));
+            OrchestratorProperties.defaults().withRoot(data.toString()).withData(data.toString()),
+            FakeHost.machine());
 
     assertThat(
             paths.deployWorktrees(
@@ -59,13 +63,15 @@ class OrchestratorPathsTest {
 
     assertThat(
             OrchestratorPaths.configFileOutside(
-                new String[] {"--orchestrator.config-file=" + named}))
+                new String[] {"--orchestrator.config-file=" + named}, FakeHost.machine()))
         .isEqualTo(named);
   }
 
   @Test
   void answersInsideTheRootItWasGivenRatherThanWalkingUpForMarker(@TempDir Path root) {
-    assertThat(OrchestratorPaths.configFileOutside(new String[] {"--orchestrator.root=" + root}))
+    assertThat(
+            OrchestratorPaths.configFileOutside(
+                new String[] {"--orchestrator.root=" + root}, FakeHost.machine()))
         .isEqualTo(root.resolve("jagt.yml"));
   }
 
@@ -77,12 +83,12 @@ class OrchestratorPathsTest {
             .withRoot(root.resolve("somewhere-else").toString())
             .withConfigFile(pinned.toString());
 
-    assertThat(new OrchestratorPaths(moved).configFile()).isEqualTo(pinned);
+    assertThat(new OrchestratorPaths(moved, FakeHost.machine()).configFile()).isEqualTo(pinned);
   }
 
   @Test
   void testJvmNeverResolvesTheHumansRoot() {
-    Path root = new OrchestratorPaths(OrchestratorProperties.defaults()).root();
+    Path root = new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()).root();
 
     assertThat(root)
         .isEqualTo(Path.of(System.getenv("ORCHESTRATOR_ROOT")).toAbsolutePath().normalize());
@@ -94,7 +100,8 @@ class OrchestratorPathsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("work/state.json").toString()));
+                .withStateFile(root.resolve("work/state.json").toString()),
+            FakeHost.machine());
 
     assertThat(paths.scratch("ABC-1")).isEqualTo(root.resolve("data/tasks/ABC-1/scratch"));
     assertThat(paths.worktree("web", "ABC-1"))
@@ -107,10 +114,11 @@ class OrchestratorPathsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withData(root.resolve("vault").toString()));
+                .withData(root.resolve("vault").toString()),
+            FakeHost.machine());
 
-    assertThat(paths.stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
-    assertThat(paths.token()).isEqualTo(root.resolve("vault/jagt/master-token"));
+    assertThat(paths.layout().stateFile()).isEqualTo(root.resolve("vault/jagt/state.json"));
+    assertThat(paths.layout().token()).isEqualTo(root.resolve("vault/jagt/master-token"));
     assertThat(paths.worktree("web", "ABC-1"))
         .isEqualTo(root.resolve("vault/tasks/ABC-1/worktrees/web"));
   }
@@ -118,18 +126,21 @@ class OrchestratorPathsTest {
   @Test
   void keepsEverythingInTheDataFolderUnderTheRootWhereNoneIsNamed(@TempDir Path root) {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
-    assertThat(paths.data()).isEqualTo(root.resolve("data"));
-    assertThat(paths.stateFile()).isEqualTo(root.resolve("data/jagt/state.json"));
+    assertThat(paths.layout().data()).isEqualTo(root.resolve("data"));
+    assertThat(paths.layout().stateFile()).isEqualTo(root.resolve("data/jagt/state.json"));
   }
 
   @Test
   void stopsGitAtTheTasksFolderFromTaskScratchAndRecognisesItOnlyForThatTask(@TempDir Path root) {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
-    assertThat(paths.scratchCeiling(paths.scratch("ABC-1"))).isEqualTo(root.resolve("data/tasks"));
+    assertThat(paths.layout().scratchCeiling(paths.scratch("ABC-1")))
+        .isEqualTo(root.resolve("data/tasks"));
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-1")).isTrue();
     assertThat(paths.isScratchOf(paths.scratch("ABC-1"), "ABC-2")).isFalse();
   }

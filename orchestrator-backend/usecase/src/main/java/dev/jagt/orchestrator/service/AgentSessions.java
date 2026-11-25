@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.session.SessionHosting;
 import dev.jagt.orchestrator.service.session.SessionLines;
@@ -41,8 +42,8 @@ public class AgentSessions implements SessionLines {
   private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
 
   public void startAgent(
-      String taskId, @Nullable String alias, Path worktreePath, boolean planMode) {
-    windows.openTab(taskId, alias, worktreePath, planMode, null);
+      String taskId, @Nullable String alias, Path worktreePath, LaunchMode mode) {
+    windows.openTab(taskId, alias, worktreePath, mode, null);
   }
 
   /**
@@ -85,8 +86,8 @@ public class AgentSessions implements SessionLines {
   public String openTaskTab(String taskId, @Nullable String mode) {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
-    boolean plan = planMode(mode);
-    if (plan && !rules.planMayComeFirst(task.standing().status())) {
+    LaunchMode launch = launchMode(mode);
+    if (launch == LaunchMode.PLAN && !rules.planMayComeFirst(task.standing().status())) {
       throw Refusal.byState(
           "Task "
               + taskId
@@ -95,9 +96,10 @@ public class AgentSessions implements SessionLines {
               + ", so it cannot open in plan mode: a plan is what comes before the code, not after"
               + " it");
     }
-    stateService.reduce(taskId, (reducer, was) -> reducer.planAsked(was, plan));
+    stateService.reduce(
+        taskId, (reducer, was) -> reducer.planAsked(was, launch == LaunchMode.PLAN));
     String session =
-        windows.openTab(taskId, task.ticket().alias(), Path.of(task.worktreePath()), plan, null);
+        windows.openTab(taskId, task.ticket().alias(), Path.of(task.worktreePath()), launch, null);
     return "New "
         + hosting.runtime().displayName()
         + " session started for "
@@ -109,7 +111,9 @@ public class AgentSessions implements SessionLines {
         + "' (worktree "
         + task.worktreePath()
         + ")"
-        + (plan ? "; it plans first, and the plan is approved on the board with approve-plan" : "");
+        + (launch == LaunchMode.PLAN
+            ? "; it plans first, and the plan is approved on the board with approve-plan"
+            : "");
   }
 
   /** The worktree and the state entry stay. */
@@ -302,8 +306,13 @@ public class AgentSessions implements SessionLines {
    * Keeps what the context file holds above its last addition, so an instruction still pending is
    * not lost.
    */
-  public String relayUnder(String taskId, String addition, boolean fresh) {
-    return under(taskId, addition, fresh ? ROUND_HANDED_BACK : null);
+  public String relayUnder(String taskId, String addition) {
+    return under(taskId, addition, null);
+  }
+
+  /** The same, on a fresh session: the round was already handed back. */
+  public String relayUnderFresh(String taskId, String addition) {
+    return under(taskId, addition, ROUND_HANDED_BACK);
   }
 
   /** The same, always on a fresh session: its caller has already seen the conversation go cold. */
@@ -543,12 +552,12 @@ public class AgentSessions implements SessionLines {
    * `plan` = the agent plans first and the plan is approved on the board; `auto` = straight to
    * work.
    */
-  static boolean planMode(@Nullable String mode) {
+  static LaunchMode launchMode(@Nullable String mode) {
     if (mode == null || mode.equalsIgnoreCase("auto")) {
-      return false;
+      return LaunchMode.WORK;
     }
     if (mode.equalsIgnoreCase("plan")) {
-      return true;
+      return LaunchMode.PLAN;
     }
     throw new IllegalArgumentException("Unknown mode '" + mode + "'. Allowed: auto, plan");
   }

@@ -7,9 +7,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import dev.jagt.orchestrator.adapter.agent.trust.ClaudeTrust;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -36,7 +38,7 @@ class ClaudeAgentRuntimeTest {
         root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), false))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.WORK))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'Read AGENTS.md and work'");
   }
 
@@ -47,7 +49,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), true))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.PLAN))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
   }
 
@@ -61,7 +63,8 @@ class ClaudeAgentRuntimeTest {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         Files.createDirectories(
-                ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
+                ClaudeTranscripts.projectsDir(FakeHost.machine())
+                    .resolve(ClaudeTranscripts.slug(worktree)))
             .resolve("s.jsonl"),
         "{}\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
@@ -92,7 +95,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nit's fine\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), false))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.WORK))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'it'\\''s fine'");
   }
 
@@ -106,7 +109,7 @@ class ClaudeAgentRuntimeTest {
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     boolean trusted =
         new JsonMapper()
-            .readTree(Files.readString(ClaudeTrust.configFile()))
+            .readTree(Files.readString(ClaudeTrust.configFile(FakeHost.machine())))
             .path("projects")
             .path(key)
             .path("hasTrustDialogAccepted")
@@ -114,7 +117,7 @@ class ClaudeAgentRuntimeTest {
     runtime.retireWorktree(worktree);
     boolean remembered =
         new JsonMapper()
-            .readTree(Files.readString(ClaudeTrust.configFile()))
+            .readTree(Files.readString(ClaudeTrust.configFile(FakeHost.machine())))
             .path("projects")
             .has(key);
 
@@ -128,13 +131,13 @@ class ClaudeAgentRuntimeTest {
     Path worktree = Files.createDirectories(root.resolve("ABC-8-proj"));
     var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
-    ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
+    ClaudeTrust.forget(ClaudeTrust.configFile(FakeHost.machine()), worktree);
 
     runtime.beforeLaunch(worktree);
 
     boolean trusted =
         new JsonMapper()
-            .readTree(Files.readString(ClaudeTrust.configFile()))
+            .readTree(Files.readString(ClaudeTrust.configFile(FakeHost.machine())))
             .path("projects")
             .path(worktree.toRealPath().toString())
             .path("hasTrustDialogAccepted")
@@ -456,7 +459,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), true, " opus "))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.PLAN, " opus "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --model 'opus' 'go'");
   }
 
@@ -466,7 +469,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), false, "  "))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.WORK, "  "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
   }
 
@@ -499,7 +502,7 @@ class ClaudeAgentRuntimeTest {
             .withProperties(new ClaudeProperties("claude", "/stand/servers.json", "", List.of()))
             .build(new FakeClock());
 
-    assertThat(runtime.launchCommand(Path.of("/wt"), false))
+    assertThat(runtime.launchCommand(Path.of("/wt"), LaunchMode.WORK))
         .isEqualTo(
             "CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --mcp-config '/wt/.mcp.json'"
                 + " '/stand/servers.json' --strict-mcp-config 'go'");
@@ -512,7 +515,8 @@ class ClaudeAgentRuntimeTest {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         Files.createDirectories(
-                ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
+                ClaudeTranscripts.projectsDir(FakeHost.machine())
+                    .resolve(ClaudeTranscripts.slug(worktree)))
             .resolve("s.jsonl"),
         "{}\n");
     var runtime =
@@ -631,7 +635,8 @@ class ClaudeAgentRuntimeTest {
       @TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
-            ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+            ClaudeTranscripts.projectsDir(FakeHost.machine())
+                .resolve(ClaudeTranscripts.slug(worktree)));
     Path log =
         Files.writeString(
             logs.resolve("s.jsonl"),
@@ -653,7 +658,8 @@ class ClaudeAgentRuntimeTest {
   void readsTheHumansQuestionAsTheNewestPromptOfWorktree(@TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
-            ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+            ClaudeTranscripts.projectsDir(FakeHost.machine())
+                .resolve(ClaudeTranscripts.slug(worktree)));
     Files.writeString(
         logs.resolve("s.jsonl"),
         """
@@ -668,7 +674,8 @@ class ClaudeAgentRuntimeTest {
   void readsLineJagtTypedAsNoHumanPromptOfWorktree(@TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
-            ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+            ClaudeTranscripts.projectsDir(FakeHost.machine())
+                .resolve(ClaudeTranscripts.slug(worktree)));
     Files.writeString(
         logs.resolve("s.jsonl"),
         """

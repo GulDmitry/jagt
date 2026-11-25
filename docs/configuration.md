@@ -46,6 +46,7 @@ orchestrator:
 | `codeHost` | `github` (default), `gitlab`, `command`, `none` or `replay`: what jagt reads this project's deploy pipeline through, `none` also shipping with a push and no request; wins over the top-level `codeHost` |
 | `codeHostName` | the code host's name where the remote does not give it, such as a self-hosted GitLab or GitHub Enterprise |
 | `setupCommand`, `setupMinutes` | an argv run once in every new worktree of the project, after `worktree.copyGlobs` and before the session starts, `{branch}` and `{worktree}` filled; a non-zero exit or `setupMinutes` (20 where unset) fails the start naming the project and the output's tail. Unset, nothing runs |
+| `companions` | projects every task started on this one also works in, one worktree and one request each; one that is not a project refuses startup |
 | `awaitingCommand`, `changeCommand`, `postCommand`, `reviewBots` | `codeHost: command` only: commands printing the open requests awaiting review (`{remote}`) and a request's change (`{request}`) as JSON, and posting a note (`{request}`, `{replyTo}`, the text last); the accounts that are bots, beside the host's own word |
 | `pipelineCommand`, `retryCommand`, `closeCommand`, `notesCommand`, `loginCommand` | `codeHost: command` only: a command printing `success`, `failed`, `running`, `none` or `unknown` for `{sha}` ; one re-running `{pipeline}`; one closing the request at `{request}`; one printing the ids of its unresolved review notes, one per line (unset, a round with threads is never read as a repeat), or for the code reviewer a JSON array of notes with `id`, `author`, `body`, optional `thread`, `path`, `resolved`, `mine`, `bot`; one the board's `login` opens when any exits 77 (signed out) |
 
@@ -89,6 +90,8 @@ you. **It never posts, pushes or deploys.** One model call per poll.
 
 **`deploy.onApproval`** deploys an approved request once, with the guards of your own `deploy`; off by default,
 on in `jagt.server.yml.dist`. The history names the code host as who acted.
+**`deploy.requireApproval`** offers `deploy` only once the host approves, never on a reviewed request; off by default,
+on in `jagt.server.yml.dist`.
 
 **`startupChecks`.** What is missing is [said at startup, all of it at
 once](rules/components.md#what-is-missing-is-said-at-startup-not-at-the-click-that-needed-it). Nothing reaches

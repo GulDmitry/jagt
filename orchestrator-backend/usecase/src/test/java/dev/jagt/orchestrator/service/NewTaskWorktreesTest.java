@@ -31,6 +31,7 @@ import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -81,7 +82,7 @@ class NewTaskWorktreesTest {
             .withRoot(root.toString())
             .withData(root.resolve("data").toString())
             .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
+    OrchestratorPaths paths = new OrchestratorPaths(properties, FakeHost.machine());
     state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     worktrees = new NewTaskWorktrees(config, state, git, setup, paths);
     oneProject =

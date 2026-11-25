@@ -42,14 +42,18 @@ public class ConfigSource {
   }
 
   public Path clone(String projectKey) {
-    return paths.clone(projectKey);
+    return paths.layout().clone(projectKey);
   }
 
   private record Parsed(FileVersion version, Resolution resolution, @Nullable Object section) {}
 
+  public boolean fileExists() {
+    return Files.exists(paths.configFile());
+  }
+
   public @Nullable Object section() {
     Path file = paths.configFile();
-    if (!Files.exists(file)) {
+    if (!fileExists()) {
       return rootOf(resolver.resolve(new java.util.LinkedHashMap<>()));
     }
     FileVersion version = FileVersion.of(file);

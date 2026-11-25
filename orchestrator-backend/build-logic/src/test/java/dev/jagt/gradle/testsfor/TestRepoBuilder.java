@@ -22,6 +22,25 @@ record TestRepoBuilder(Path root) {
     return TestsFor.in(root);
   }
 
+  TestsFor committed() throws IOException, InterruptedException {
+    TestsFor testsFor = tracked();
+    new ProcessBuilder(
+            "git",
+            "-C",
+            root.toString(),
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@t.t",
+            "commit",
+            "-q",
+            "-m",
+            "base")
+        .start()
+        .waitFor();
+    return testsFor;
+  }
+
   TestsFor tracked() throws IOException, InterruptedException {
     Files.createDirectories(root.resolve("orchestrator-backend"));
     new ProcessBuilder("git", "-C", root.toString(), "init", "-q").start().waitFor();

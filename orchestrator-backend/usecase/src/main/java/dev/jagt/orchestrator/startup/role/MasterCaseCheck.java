@@ -2,13 +2,11 @@ package dev.jagt.orchestrator.startup.role;
 
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.MasterMove;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.CaseBook;
 import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -27,11 +25,10 @@ public class MasterCaseCheck implements StartupCheck {
   private final MasterCases cases;
   private final SessionCases sessionCases;
   private final ConfigService config;
-  private final OrchestratorPaths paths;
 
   @Override
   public List<Problem> problems() {
-    if (!Files.exists(paths.configFile()) || !config.load().arbiter().running()) {
+    if (!config.fileExists() || !config.load().arbiter().running()) {
       return List.of();
     }
     return Stream.concat(

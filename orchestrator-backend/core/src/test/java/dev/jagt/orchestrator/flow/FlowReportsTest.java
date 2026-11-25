@@ -490,4 +490,27 @@ class FlowReportsTest {
     TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).build();
     assertThat(write.getValue().apply(reducer, reverted)).isSameAs(reverted);
   }
+
+  @ParameterizedTest
+  @CsvSource({
+    "CI_POLLING,true,true",
+    "CI_POLLING,false,false",
+    "REVIEW_PENDING,true,false",
+  })
+  void missesTheShipOnlyWhenCiPollingLinksNothingButForeignRequests(
+      TaskStatus said, boolean everyLinkForeign, boolean missed) {
+    assertThat(FlowReports.missedShip(said, everyLinkForeign)).isEqualTo(missed);
+  }
+
+  @Test
+  void leavesTheTaskWhereItStandsWhenTheShipIsMissed() {
+    assertThat(FlowReports.landing(TaskStatus.CI_POLLING, TaskStatus.IN_PROGRESS, true))
+        .isEqualTo(TaskStatus.IN_PROGRESS);
+  }
+
+  @Test
+  void landsOnTheReportedStatusWhenAnyLinkIsOwned() {
+    assertThat(FlowReports.landing(TaskStatus.CI_POLLING, TaskStatus.IN_PROGRESS, false))
+        .isEqualTo(TaskStatus.CI_POLLING);
+  }
 }

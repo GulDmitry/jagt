@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.git;
 
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import dev.jagt.orchestrator.task.repo.GitRemote;
@@ -24,18 +25,19 @@ import org.springframework.stereotype.Service;
 public class GitWorktrees {
 
   private final GitCommands git;
+  private final Host host;
 
   /**
    * One digest per entry of what git obeys around {@code worktrees}; throws where one cannot be
    * read.
    */
   public Map<String, String> gitState(List<Path> worktrees) {
-    return new GitStates(git, GitStates.Form.DIGEST).read(worktrees);
+    return new GitStates(git, host, GitStates.Form.DIGEST).read(worktrees);
   }
 
   /** The same entries as {@link #gitState}, each as the text git obeys, secrets hidden. */
   public Map<String, String> gitContents(List<Path> worktrees) {
-    return new GitStates(git, GitStates.Form.CONTENT).read(worktrees);
+    return new GitStates(git, host, GitStates.Form.CONTENT).read(worktrees);
   }
 
   public void createWorktree(
@@ -603,7 +605,7 @@ public class GitWorktrees {
         projectPath,
         () ->
             git.removeWorktreeAndBranch(
-                projectPath, deployWorktree, GitDeploy.deployBranch(sourceBranch)));
+                projectPath, deployWorktree, TaskBranches.deploy(sourceBranch)));
   }
 
   /**
@@ -614,7 +616,7 @@ public class GitWorktrees {
     git.locked(
         projectPath,
         () ->
-            DiffCheckouts.diffWorktreePaths(taskId, project)
+            DiffCheckouts.diffWorktreePaths(host, taskId, project)
                 .forEach(temp -> git.clearWorktreePath(projectPath, temp)));
   }
 
@@ -623,7 +625,7 @@ public class GitWorktrees {
    * them.
    */
   public void discardDiffWorktrees(String taskId, String project) {
-    DiffCheckouts.diffWorktreePaths(taskId, project).forEach(git::forceDeleteDir);
+    DiffCheckouts.diffWorktreePaths(host, taskId, project).forEach(git::forceDeleteDir);
   }
 
   /**

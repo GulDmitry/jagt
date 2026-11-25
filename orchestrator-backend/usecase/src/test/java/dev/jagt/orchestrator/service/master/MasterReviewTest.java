@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -45,7 +46,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
+                    .withStateFile(worktree.resolve("state.json").toString()),
+                FakeHost.machine()),
             reducer,
             event -> {});
     reviews = new MasterReview(state);

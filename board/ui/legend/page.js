@@ -1,6 +1,7 @@
 import { make, span } from "../../core/dom.js";
 import { t } from "../../core/i18n.js";
 import { choice } from "../choice.js";
+import { row } from "./card.js";
 
 const yoursHead = () =>
   make("div", "group yours", "", span("group-head", `${t("list.yours")} 2`));
@@ -89,30 +90,33 @@ const logEntry = (className, level, text) =>
   );
 
 export const pageRows = () => [
-  [yoursHead()],
-  [span("row-title changed", "Login form loses focus")],
-  [
+  row("yours", yoursHead()),
+  row("moved", span("row-title changed", "Login form loses focus")),
+  row(
+    "plan",
     planChange("changed", "Retry the upload twice"),
     planChange("removed", "Retry the upload once"),
-  ],
-  [rowVerb("row-verb primary"), rowVerb("row-verb")],
-  [verbButton("", "Focus", "f"), verbButton("apart", "Done")],
-  [failedLastRun()],
-  [toastEdge("toast"), toastEdge("toast error")],
-  [span(null, "(2) jagt")],
-  [span("waiting", t("header.waiting", { n: 2 }))],
-  [
+  ),
+  row("rowverb", rowVerb("row-verb primary"), rowVerb("row-verb")),
+  row("verbkey", verbButton("", "Focus", "f"), verbButton("apart", "Done")),
+  row("jobfailed", failedLastRun()),
+  row("toast", toastEdge("toast"), toastEdge("toast error")),
+  row("tabtitle", span(null, "(2) jagt")),
+  row("interruptions", span("waiting", t("header.waiting", { n: 2 }))),
+  row(
+    "headerstate",
     span("chip", t("auto-review-off")),
     span("chip bad", t("jobs-failed", { failing: 1, count: 16 })),
     span("chip", t("header.acting")),
     make("button", "chip log on", t("legend.role")),
-  ],
-  [
+  ),
+  row(
+    "headerbroken",
     span("chip bad", t("offline")),
     span("chip bad", t("assistant")),
     span("chip bad", "code host CLI not logged in"),
-  ],
-  [gearButton(), checkedChoice()],
-  [logEntry("log-line", "INFO", t("sample.done"))],
-  [logEntry("log-line danger", "ERROR", t("sample.refused"))],
+  ),
+  row("gear", gearButton(), checkedChoice()),
+  row("logentry", logEntry("log-line", "INFO", t("sample.done"))),
+  row("logfailure", logEntry("log-line danger", "ERROR", t("sample.refused"))),
 ];

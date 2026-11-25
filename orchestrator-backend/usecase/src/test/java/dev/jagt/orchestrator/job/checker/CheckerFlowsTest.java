@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,7 +71,8 @@ class CheckerFlowsTest {
                 acceptanceRole,
                 config,
                 new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+                    OrchestratorProperties.defaults().withRoot(root.toString()),
+                    FakeHost.machine())));
   }
 
   @Test

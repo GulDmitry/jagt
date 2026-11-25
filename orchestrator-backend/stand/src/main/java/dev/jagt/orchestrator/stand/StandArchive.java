@@ -16,7 +16,7 @@ public record StandArchive(
         StandRunLog.DIR,
         StandRecordings.DIR,
         StandEvidence.DIR,
-        (run, result) -> StandReport.append(System.getProperty("stand.report", ""), run, result),
+        (run, result) -> StandReport.append(StandInputs.of("stand.report", ""), run, result),
         StandTraces::ofTheHuman);
   }
 }

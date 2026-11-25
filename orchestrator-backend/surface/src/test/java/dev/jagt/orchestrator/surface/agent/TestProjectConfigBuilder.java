@@ -13,10 +13,10 @@ public record TestProjectConfigBuilder(String base, String deploy, String remote
 
   public ProjectConfig build() {
     return new ProjectConfig(
-        new ProjectConfig.Repository("/repo", List.of(), null, List.of(), null, null),
+        new ProjectConfig.Repository("/repo", List.of(), null, List.of(), null, null, null),
         new ProjectConfig.Branches(base, deploy, remote),
         ProjectConfig.CodeHost.defaults(),
         new ProjectConfig.Verify(List.of(), null),
-        new ProjectConfig.Setup(List.of(), null, List.of()));
+        new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
   }
 }

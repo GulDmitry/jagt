@@ -884,4 +884,26 @@ class TaskViewTest {
 
     assertThat(view.statusLabel()).isEqualTo("merged");
   }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void approvePlanHoverNamesWhichPlanWaits(boolean laterPlan) {
+    TaskView view =
+        TaskView.of(
+            rules,
+            "ABC-1",
+            TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING)
+                .planApproved(laterPlan)
+                .build(),
+            RoundState.of(AgentReport.PLAIN, false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
+
+    assertThat(view.actions())
+        .filteredOn(action -> action.id().equals("approve-plan"))
+        .extracting(TaskView.ActionView::hint)
+        .singleElement()
+        .asString()
+        .startsWith(laterPlan ? "a later plan waits" : "the first plan waits");
+  }
 }

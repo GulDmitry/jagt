@@ -30,6 +30,7 @@ import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,7 +78,8 @@ class CheckerDeclineJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withData(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),

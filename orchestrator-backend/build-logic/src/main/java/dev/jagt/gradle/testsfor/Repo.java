@@ -1,5 +1,6 @@
 package dev.jagt.gradle.testsfor;
 
+import dev.jagt.gradle.exec.Git;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +51,10 @@ record Repo(Git git, Path top) {
                 Stream.of("ls-files", "--cached", "--others", "--exclude-standard", "--"),
                 directories.stream())
             .toArray(String[]::new));
+  }
+
+  boolean holds(String file, Predicate<String> holds) {
+    return Files.isRegularFile(top.resolve(file)) && holds.test(read(top.resolve(file)));
   }
 
   List<String> filesWhoseText(Predicate<String> holds, List<String> directories) {

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.nio.file.Files;
@@ -20,7 +21,8 @@ class AgentBootstrapPromptTest {
 
     String bootstrap =
         new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()), new SystemHost()))
             .line(Step.START);
 
     assertThat(bootstrap).isNotBlank().doesNotContainIgnoringCase("commit");

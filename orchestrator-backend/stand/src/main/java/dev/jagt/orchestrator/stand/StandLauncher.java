@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.FileAlreadyExistsException;
@@ -42,8 +43,8 @@ final class StandLauncher {
         StandEngine.configured(),
         new StandTeardown(StandArchive.standard(), StandSlots.LIVE, System.out, poll),
         new Place(
-            Path.of(System.getProperty("stand.base", System.getProperty("java.io.tmpdir"))),
-            Path.of(System.getProperty("stand.repo", "../.."))),
+            Path.of(StandInputs.of("stand.base", new SystemHost().temp().toString())),
+            Path.of(StandInputs.of("stand.repo", "../.."))),
         StandShell::holdAwake,
         poll);
   }

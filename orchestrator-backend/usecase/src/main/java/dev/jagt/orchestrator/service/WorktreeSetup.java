@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.launch.NewTask;
@@ -26,6 +27,7 @@ public class WorktreeSetup {
   private final OrchestratorPaths paths;
   private final ConfigService configService;
   private final FreshWorktree fresh;
+  private final Host host;
 
   /**
    * A step a ship instruction asks for, such as opening the request, is not left to a classifier's
@@ -72,10 +74,7 @@ public class WorktreeSetup {
     provision(
         worktreePath,
         WorktreeSandbox.of(
-            configService.load().agent().sandboxOrDefault(),
-            repos,
-            Path.of(System.getProperty("user.home")),
-            Path.of(System.getProperty("java.io.tmpdir"))));
+            configService.load().agent().sandboxOrDefault(), repos, host.home(), host.temp()));
     paths
         .deployWorktrees(repos, request.taskId())
         .forEach(deployWorktree -> agentRuntime.admit(worktreePath, deployWorktree));
@@ -115,10 +114,7 @@ public class WorktreeSetup {
     provision(
         folder,
         WorktreeSandbox.scratch(
-            configService.load().agent().sandboxOrDefault(),
-            folder,
-            Path.of(System.getProperty("user.home")),
-            Path.of(System.getProperty("java.io.tmpdir"))));
+            configService.load().agent().sandboxOrDefault(), folder, host.home(), host.temp()));
     WorktreeFiles.write(
         systemKnowledge,
         fresh

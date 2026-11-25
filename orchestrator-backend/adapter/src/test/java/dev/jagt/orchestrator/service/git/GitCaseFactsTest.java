@@ -28,7 +28,8 @@ class GitCaseFactsTest {
       GitRepos.git(runner, repo, "branch", "-D", "topic");
     }
     GitRepos.git(runner, repo, "push", "-q", "origin", "dev");
-    GitCaseFacts facts = new GitCaseFacts(GitRepos.commands(runner), mock(GitDeploy.class));
+    GitCaseFacts facts =
+        new GitCaseFacts(GitRepos.commands(runner), mock(GitDeploy.class), mock(GitRevert.class));
 
     List<GitCaseFacts.Candidate> found = facts.mergeCandidates(repo, "dev", "ABC-1");
 

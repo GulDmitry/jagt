@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +44,10 @@ public record AgentStatusMessage(
 
     public Request {
       reviewRequestUrl = absent(reviewRequestUrl);
-      reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
+      reviewRequests =
+          reviewRequests == null
+              ? Map.of()
+              : Collections.unmodifiableMap(new LinkedHashMap<>(reviewRequests));
     }
   }
 
@@ -346,10 +351,11 @@ public record AgentStatusMessage(
     Map<String, String> reviewRequests = request.reviewRequests();
     String reviewRequestUrl = request.reviewRequestUrl();
     if (!reviewRequests.isEmpty()) {
-      if (!projectsOnTask.isEmpty() && reviewRequests.containsKey(projectsOnTask.get(0))) {
-        return reviewRequests.get(projectsOnTask.get(0));
-      }
-      return reviewRequests.values().iterator().next();
+      return projectsOnTask.stream()
+          .filter(reviewRequests::containsKey)
+          .findFirst()
+          .map(reviewRequests::get)
+          .orElseGet(() -> new ArrayList<>(reviewRequests.values()).getFirst());
     }
     if (reviewRequestUrl != null && !reviewRequestUrl.isBlank()) {
       return reviewRequestUrl.strip();

@@ -10,8 +10,7 @@ A project SHALL keep every dependency pointing inward and every package on the m
 #### Scenario: An inner ring imports an outer one
 - **WHEN** a class imports from a ring outside its own **THEN** `rings` fails naming it; board JS: `import-x/no-cycle`, five imports a module
 #### Scenario: A package is on no kind
-- **WHEN** a package sits on no kind of the map or holds three of a kind with no sub-package
-- **THEN** `PackagesTest` fails; `KindsTest` holds each kind's one job
+- **WHEN** a package sits on no kind or holds three of a kind with no sub-package **THEN** `PackagesTest` fails; `KindsTest` holds each kind's one job
 
 ### Requirement: Complexity and size are bounded
 A method SHALL read at cognitive complexity 12 at most, a class five collaborators at most, and no block of 75 tokens SHALL repeat.
@@ -165,18 +164,12 @@ A dependency with a known vulnerability SHALL fail the `test` job of CI, found b
 - **WHEN** the scan finds a known vulnerability in a dependency **THEN** the job fails naming it; board JS: `npm audit`
 - **AND** a base image's scan fails only on a finding with a published fix; the image upgrades its packages when built
 
-### Requirement: Spotless formats every source set
-Spotless SHALL format every source set of every module, tests included, before it compiles.
+### Requirement: Every source set is formatted, linted and analysed
+Spotless, Checkstyle and Error Prone with NullAway SHALL cover every source set of every module, tests included, with no warning allowed.
 #### Scenario: Code is unformatted
 - **WHEN** a source set is not in google-java-format **THEN** `spotlessApply` rewrites it before `compileJava`; board JS: Prettier
-
-### Requirement: Checkstyle gates every source set
-Checkstyle SHALL gate every source set of every module, tests included, with no warning allowed.
 #### Scenario: Code breaks a style rule
 - **WHEN** a source set breaks a Checkstyle rule **THEN** `test` waits for the check and fails; board JS: ESLint, `tsc`
-
-### Requirement: Error Prone compiles every source set
-Error Prone with NullAway SHALL compile every source set of every module, tests included, with warnings as errors.
 #### Scenario: Code breaks an analysis
 - **WHEN** any source set breaks Error Prone or NullAway **THEN** its compile fails; `unmarked-packages` holds every package marked
 
@@ -192,6 +185,13 @@ Every test run SHALL end in mutants on the diff, each survivor judged. The same 
 #### Scenario: The same diff runs again
 - **WHEN** `pitestDiff` runs on a diff it already judged **THEN** `pitestDiffSurvivors` is UP-TO-DATE and prints the stored survivors
 - **AND** a changed line or class bytecode mutates again
+
+### Requirement: The classes the fixes return to are named
+`hotSpots` SHALL name the ten main classes most fixed in 30 days and fail when the top count differs from `hotSpots.max`.
+#### Scenario: The top count moves or the history is short
+- **WHEN** a main class holds more fix commits (`Defect-family:` but `L`) than `hotSpots.max` **THEN** `hotSpots` fails naming it and its count
+- **AND** a top count below `hotSpots.max` fails asking to lower it
+- **AND** a checkout holding less than 30 days of history fails naming the missing history
 
 ### Requirement: An open gap is listed by what is missing
 A gate no stack meets yet SHALL be listed here by what is missing, never silent, each gap once. The work closing it SHALL write the gate above.

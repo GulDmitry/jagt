@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.RoleSettings;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -37,7 +38,8 @@ class TicketScenariosTest {
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 config,
                 new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+                    OrchestratorProperties.defaults().withRoot(root.toString()),
+                    FakeHost.machine())));
   }
 
   @Test
@@ -50,6 +52,20 @@ class TicketScenariosTest {
     String line = scenarios.briefingLine("ABC-42");
 
     assertThat(line).contains(file.toString(), "`## Acceptance criteria`");
+  }
+
+  @Test
+  void namesTheTicketsScenariosFileInTheFolderTheRoleFolderMaps() throws Exception {
+    Path file = root.resolve("roles/acceptance/workspace/drafts/ABC-42.md");
+    Files.createDirectories(file.getParent());
+    Files.writeString(file, "- WHEN a THEN b `from-ticket`\n");
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "workspace:\n  path: workspace\n  scenarios: drafts\n");
+
+    String line = scenarios.briefingLine("ABC-42");
+
+    assertThat(line).contains(file.toString());
   }
 
   @Test

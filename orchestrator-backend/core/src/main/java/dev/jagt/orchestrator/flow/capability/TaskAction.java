@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow.capability;
 
+import dev.jagt.orchestrator.task.TaskState;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -263,6 +264,14 @@ public enum TaskAction {
 
   public String hint() {
     return hint;
+  }
+
+  /** The hint of this press on {@code task}: the plan verb says which plan waits. */
+  public String hint(TaskState task) {
+    if (this != APPROVE_PLAN) {
+      return hint;
+    }
+    return (task.gate().planApproved() ? "a later plan waits: " : "the first plan waits: ") + hint;
   }
 
   /** What a human types: the verb and its argument, not prose. */

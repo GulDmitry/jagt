@@ -55,7 +55,13 @@ class DeployCheckJobAcceptanceTest {
             taskStops().withRoot(root).build(state, new FakeClock()))
         .runOn(state.tasks());
 
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            any(StepRelay.Delivery.class),
+            any(Standing.class));
     assertThat(
             Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                 .askedDigest())

@@ -1,16 +1,18 @@
 package dev.jagt.orchestrator.notify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig;
 import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.ChannelDef;
@@ -18,7 +20,6 @@ import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.RouteDef;
 import dev.jagt.orchestrator.service.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,10 +36,6 @@ class ChannelsCheckTest {
   private final ChannelDriver command = mock(ChannelDriver.class);
   private final ChannelDriver teams = mock(ChannelDriver.class);
   private final StandardEnvironment environment = new StandardEnvironment();
-  private final OrchestratorPaths paths =
-      new OrchestratorPaths(
-          OrchestratorProperties.defaults()
-              .withConfigFile(Path.of("build.gradle").toAbsolutePath().toString()));
 
   private ChannelsCheck check;
 
@@ -49,7 +46,10 @@ class ChannelsCheckTest {
     when(teams.kind()).thenReturn("teams");
     when(teams.needsSecret()).thenReturn(true);
     when(roles.points()).thenReturn(Points.builtIn());
-    check = new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment, paths);
+    when(config.fileExists()).thenReturn(true);
+    check =
+        new ChannelsCheck(
+            config, roles, List.of(desktop, command, teams), new DroppedChannels(environment));
   }
 
   @Test
@@ -145,7 +145,9 @@ class ChannelsCheckTest {
   }
 
   @Test
-  void refusesCommandChannelWithNoArgv() {
+  void refusesWhatTheDriverOfTheKindFindsWrongWithTheChannel() {
+    when(command.faults(new ChannelAddress("ops", "command", "", List.of())))
+        .thenReturn(List.of(new ChannelDriver.Fault("command", "is empty, so nothing is run")));
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -159,18 +161,98 @@ class ChannelsCheckTest {
   }
 
   @Test
-  void refusesChannelWhoseWebhookEnvIsNotSet() {
+  void asksOnlyTheDriverOfTheChannelsKindForFaults() {
+    when(command.faults(any()))
+        .thenReturn(List.of(new ChannelDriver.Fault("command", "is empty, so nothing is run")));
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
                 .withNotifications(
                     new NotificationsConfig(
-                        Map.of("ops", new ChannelDef("command", "ABC_HOOK", List.of("cat"))),
-                        Map.of())));
+                        Map.of("desk", new ChannelDef("desktop", null, null)), Map.of())));
 
-    assertThat(check.problems())
-        .extracting(Problem::key)
-        .containsExactly("orchestrator.notifications.channels.ops.webhookEnv");
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void startsWithoutChannelWhoseWebhookEnvIsNotSet() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("team", new ChannelDef("teams", "ABC_HOOK", null)),
+                        Map.of("deployed", List.of(new RouteDef("team", "t", "x"))))));
+
+    assertThat(check.problems()).isEmpty();
+    assertThat(check.notes())
+        .extracting(Problem::text)
+        .singleElement()
+        .asString()
+        .contains("orchestrator.notifications.channels.team.webhookEnv")
+        .contains("'ABC_HOOK'")
+        .contains("told nowhere: [deployed]");
+  }
+
+  @Test
+  void namesForEachDroppedChannelOnlyThePointsRoutedToIt() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of(
+                            "team", new ChannelDef("teams", "ABC_HOOK", null),
+                            "ops", new ChannelDef("teams", "OPS_HOOK", null)),
+                        Map.of(
+                            "deployed", List.of(new RouteDef("team", "t", "x")),
+                            "merged", List.of(new RouteDef("ops", "t", "x"))))));
+
+    assertThat(check.notes())
+        .extracting(Problem::text)
+        .containsExactly(
+            "orchestrator.notifications.channels.ops.webhookEnv names the environment variable"
+                + " 'OPS_HOOK', which is not set, so ops tells nothing; told nowhere: [merged]",
+            "orchestrator.notifications.channels.team.webhookEnv names the environment variable"
+                + " 'ABC_HOOK', which is not set, so team tells nothing; told nowhere: [deployed]");
+  }
+
+  @Test
+  void marksChannelWhoseWebhookEnvIsNotSet() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("team", new ChannelDef("teams", "ABC_HOOK", null)), Map.of())));
+
+    assertThat(check.marks())
+        .extracting(ReachLost::host, ReachLost::said)
+        .containsExactly(
+            tuple("team", "team tells nothing: the environment variable ABC_HOOK is not set"));
+  }
+
+  @Test
+  void namesNoPointToldNowhereWhereAnotherChannelStillTellsIt() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of(
+                            "team", new ChannelDef("teams", "ABC_HOOK", null),
+                            "desktop", new ChannelDef("desktop", null, null)),
+                        Map.of(
+                            "deployed",
+                            List.of(
+                                new RouteDef("team", "t", "x"),
+                                new RouteDef("desktop", "t", "x"))))));
+
+    assertThat(check.notes())
+        .extracting(Problem::text)
+        .singleElement()
+        .asString()
+        .doesNotContain("told nowhere");
   }
 
   @Test
@@ -274,7 +356,8 @@ class ChannelsCheckTest {
                         Map.of("acceptance-passed", List.of(new RouteDef("desktop", "t", "x")))))
                 .withRoles(Map.of("acceptance", new RoleConfig(false, null))));
     when(desktop.kind()).thenReturn("desktop");
-    ChannelsCheck check = new ChannelsCheck(config, roles, List.of(desktop), environment, paths);
+    ChannelsCheck check =
+        new ChannelsCheck(config, roles, List.of(desktop), new DroppedChannels(environment));
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -289,7 +372,8 @@ class ChannelsCheckTest {
   void notesOnceThatNothingWillBeToldWhereNoNotificationsBlockIsWritten() {
     when(roles.points()).thenReturn(Points.builtIn());
     when(config.load()).thenReturn(ConfigFile.defaults());
-    ChannelsCheck check = new ChannelsCheck(config, roles, List.of(desktop), environment, paths);
+    ChannelsCheck check =
+        new ChannelsCheck(config, roles, List.of(desktop), new DroppedChannels(environment));
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())

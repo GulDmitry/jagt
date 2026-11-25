@@ -107,6 +107,21 @@ class ArchUnitEngineMembersTest {
   }
 
   @Test
+  void listsTheCallsToEveryMethodOfACommaSeparatedList() {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("calls", "java.time.ZoneId.systemDefault, java.time.LocalDate.now")
+                .build(),
+            new Project(root, "fitness", List.of("all"), Map.of()));
+
+    assertThat(found.items())
+        .hasSize(2)
+        .anyMatch(item -> item.contains("Clocked.zone"))
+        .anyMatch(item -> item.contains("Clocked.today"));
+  }
+
+  @Test
   void listsTheCallsToAMethodOfAPackageThatTakeNoClock() {
     Measurement found =
         engine.measure(
@@ -143,5 +158,31 @@ class ArchUnitEngineMembersTest {
             new Project(root, "fitness", List.of("all"), Map.of()));
 
     assertThat(found.items()).isEmpty();
+  }
+
+  @Test
+  void keepsTheClassesNotNamedInExcept() {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("calls", "java.time.ZoneId.systemDefault")
+                .select("except", "Counting,Other")
+                .build(),
+            new Project(root, "fitness", List.of("all"), Map.of()));
+
+    assertThat(found.items()).singleElement().asString().contains("Clocked.zone");
+  }
+
+  @Test
+  void keepsTheClassesOfAPackageNotNamedInExcept() {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("calls", "java.time.ZoneId.systemDefault")
+                .select("except", "elsewhere..")
+                .build(),
+            new Project(root, "fitness", List.of("all"), Map.of()));
+
+    assertThat(found.items()).singleElement().asString().contains("Clocked.zone");
   }
 }

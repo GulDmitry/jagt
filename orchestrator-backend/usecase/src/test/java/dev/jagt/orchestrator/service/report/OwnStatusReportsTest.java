@@ -37,6 +37,7 @@ import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -96,7 +97,8 @@ class OwnStatusReportsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withData(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     realDoor =
         new CaseDoor(
             new SessionCases(paths),

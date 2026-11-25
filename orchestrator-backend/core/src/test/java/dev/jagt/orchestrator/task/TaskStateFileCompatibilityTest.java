@@ -264,4 +264,28 @@ class TaskStateFileCompatibilityTest {
     assertThat(task.standing().history().getFirst().role()).isNull();
     assertThat(mapper.writeValueAsString(task)).doesNotContain("\"role\"");
   }
+
+  @Test
+  void stateFileWrittenBeforeLaterPlansLoadsWithNoPlanApprovedYet() {
+    String json =
+        """
+        {"status":"PLAN_PENDING","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+         "repos":[{"project":"proj","worktreePath":"/wt"}]}
+        """;
+
+    TaskState task = new JsonMapper().readValue(json, TaskState.class);
+
+    assertThat(task.gate().planApproved()).isFalse();
+  }
+
+  @Test
+  void planApprovedSurvivesWriteAndRead() {
+    TaskState task =
+        TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).planApproved(true).build();
+    JsonMapper mapper = new JsonMapper();
+
+    TaskState read = mapper.readValue(mapper.writeValueAsString(task), TaskState.class);
+
+    assertThat(read.gate().planApproved()).isTrue();
+  }
 }

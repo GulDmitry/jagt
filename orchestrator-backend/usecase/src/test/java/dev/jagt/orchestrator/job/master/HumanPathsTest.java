@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,11 +33,11 @@ class HumanPathsTest {
           .thenReturn(
               new ProjectConfig(
                   new ProjectConfig.Repository(
-                      "/repo", List.of(), null, List.of("**/auth/**"), null, null),
+                      "/repo", List.of(), null, List.of("**/auth/**"), null, null, null),
                   new ProjectConfig.Branches("origin/main", "dev", null),
                   ProjectConfig.CodeHost.defaults(),
                   new ProjectConfig.Verify(List.of(), null),
-                  new ProjectConfig.Setup(List.of(), null, List.of())));
+                  new ProjectConfig.Setup(List.of(), null, List.of(), List.of())));
     }
 
     @Test
@@ -77,6 +78,16 @@ class HumanPathsTest {
 
     assertThat(touched).isEmpty();
     verifyNoInteractions(changes);
+  }
+
+  @Test
+  void keepsTheStepWithTheHumanWhereOneRepositoryOfTheTaskNamesNoProject() {
+    TaskState unnamed =
+        TaskState.builder(List.of(TaskRepo.of(null, "/wt")), TaskStatus.REVIEWED).build();
+
+    Optional<String> touched = new HumanPaths(configService, changes).touched(unnamed);
+
+    assertThat(touched).contains(HumanPaths.UNREAD);
   }
 
   @Test

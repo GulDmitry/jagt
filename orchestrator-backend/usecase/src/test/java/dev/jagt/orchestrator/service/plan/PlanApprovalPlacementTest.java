@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +57,8 @@ class PlanApprovalPlacementTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()),
             reducer,
             event -> {});
     state.putTask("ABC-1", planned);
@@ -66,20 +68,35 @@ class PlanApprovalPlacementTest {
 
   @Test
   void startsFreshSessionInTheNewPrimaryOfTaskItsApprovalPlaced() {
-    when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(Standing.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.PLAN),
+            anyString(),
+            eq(StepRelay.Delivery.UNDER_FRESH),
+            any(Standing.class)))
         .thenReturn(true);
 
     boolean told =
         new PlanApproval(state, relay, door, plan).approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            eq(StepRelay.Delivery.CONTEXT),
+            any(Standing.class));
   }
 
   @Test
   void startsFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask() {
-    when(relay.relayUnder(
-            eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.PLAN),
+            anyString(),
+            eq(StepRelay.Delivery.UNDER_FRESH),
+            any(StepRelay.Claim.class)))
         .thenReturn(true);
     boolean told =
         new PlanApproval(state, relay, door, plan)
@@ -87,7 +104,12 @@ class PlanApprovalPlacementTest {
 
     assertThat(told).isTrue();
     verify(relay, never())
-        .relay(anyString(), any(Step.class), anyString(), any(StepRelay.Claim.class));
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            eq(StepRelay.Delivery.CONTEXT),
+            any(StepRelay.Claim.class));
   }
 
   @Test
@@ -99,12 +121,23 @@ class PlanApprovalPlacementTest {
         .isInstanceOf(Unplaceable.class);
 
     assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .relay(
+            anyString(),
+            any(Step.class),
+            anyString(),
+            any(StepRelay.Delivery.class),
+            any(Standing.class));
   }
 
   @Test
   void tellsTheCallerWhereTheFreshSessionWasNotToldTheStartOnThePlan() {
-    when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(Standing.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.PLAN),
+            anyString(),
+            eq(StepRelay.Delivery.UNDER_FRESH),
+            any(Standing.class)))
         .thenReturn(false);
 
     boolean told =
@@ -115,8 +148,12 @@ class PlanApprovalPlacementTest {
 
   @Test
   void tellsTheMasterWhereTheFreshSessionWasNotToldTheStartOnThePlan() {
-    when(relay.relayUnder(
-            eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class)))
+    when(relay.relay(
+            eq("ABC-1"),
+            eq(Step.PLAN),
+            anyString(),
+            eq(StepRelay.Delivery.UNDER_FRESH),
+            any(StepRelay.Claim.class)))
         .thenReturn(false);
     boolean told =
         new PlanApproval(state, relay, door, plan)

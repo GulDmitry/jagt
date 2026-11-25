@@ -34,7 +34,8 @@ public class ReviewDrafts {
    * status. {@code status} is the one the task is being MOVED to, which is not always the one it
    * still carries.
    */
-  public static boolean pending(TaskState task, TaskStatus status, boolean shipPostsEveryDraft) {
+  public static boolean pending(TaskState task, TaskStatus status, CodeReviewConfig config) {
+    boolean shipPostsEveryDraft = config.shipPostsEveryDraft();
     if (shipPostsEveryDraft && !FlowRules.handsBack(status)) {
       return false;
     }
@@ -44,7 +45,7 @@ public class ReviewDrafts {
 
   /** The same for a caller with no configuration in hand. */
   public boolean pending(TaskState task, TaskStatus status) {
-    return pending(task, status, configService.load().codeReview().shipPostsEveryDraft());
+    return pending(task, status, configService.load().codeReview());
   }
 
   /** When the replies file was last written; 0 where there is none or its time cannot be read. */

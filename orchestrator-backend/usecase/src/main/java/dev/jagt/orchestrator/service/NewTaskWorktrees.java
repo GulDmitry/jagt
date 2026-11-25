@@ -126,7 +126,7 @@ public class NewTaskWorktrees {
   /** Every repository of {@code request}, each worktree cut; a refusal comes before anything is. */
   public List<NewRepo> cut(NewTask request, ConfigFile config, BranchStrategy strategy) {
     requireOpenable(request, config);
-    List<NewRepo> repos = resolveRepos(request, config, strategy);
+    List<NewRepo> repos = resolveRepos(withCompanions(request, config), config, strategy);
     cutWorktrees(request, repos, strategy);
     return repos;
   }
@@ -138,7 +138,7 @@ public class NewTaskWorktrees {
    */
   public List<NewRepo> place(
       NewTask request, ConfigFile config, Consumer<List<NewRepo>> registration) {
-    Map<String, BranchStrategy> strategies = strategies(request, config);
+    Map<String, BranchStrategy> strategies = strategies(withCompanions(request, config), config);
     List<NewRepo> repos = new ArrayList<>();
     strategies.forEach((key, strategy) -> {
       NewRepo resolved =
@@ -173,6 +173,18 @@ public class NewTaskWorktrees {
       throw e;
     }
     return repos;
+  }
+
+  /** The named projects first, then each one's companions; a companion's own are not followed. */
+  private static NewTask withCompanions(NewTask request, ConfigFile config) {
+    return request.withProjectKeys(
+        Stream.concat(
+                request.projectKeys().stream(),
+                request.projectKeys().stream()
+                    .map(config.projects()::get)
+                    .filter(Objects::nonNull)
+                    .flatMap(project -> project.companions().stream()))
+            .toList());
   }
 
   private Map<String, BranchStrategy> strategies(NewTask request, ConfigFile config) {

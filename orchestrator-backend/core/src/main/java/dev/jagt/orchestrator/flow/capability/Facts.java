@@ -74,10 +74,14 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
    * task's session cannot start, null where nothing holds it.
    */
   @With
-  public record Reach(boolean scenarios, boolean shellEscape, @Nullable String sessionHeld) {
+  public record Reach(
+      boolean scenarios,
+      boolean shellEscape,
+      boolean requireApproval,
+      @Nullable String sessionHeld) {
 
     public static Reach defaults() {
-      return new Reach(false, false, null);
+      return new Reach(false, false, false, null);
     }
   }
 

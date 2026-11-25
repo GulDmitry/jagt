@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,8 @@ class MergedReadJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()),
             reducer,
             event -> {});
     state.putTask(

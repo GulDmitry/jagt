@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class StopReadJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()),
             reducer,
             event -> {});
   }

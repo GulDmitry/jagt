@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +23,8 @@ class StepCheckTest {
   @BeforeEach
   void checkOverTheTempRoot() throws Exception {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     Files.createDirectories(root.resolve("roles/session"));
     check = new StepCheck(new SessionCases(paths), new SessionBrief(paths));
   }

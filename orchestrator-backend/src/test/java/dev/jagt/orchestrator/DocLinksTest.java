@@ -106,4 +106,34 @@ class DocLinksTest {
 
     assertThat(DocFiles.namesIn(Path.of("../.claude/rules"))).isSubsetOf(sources);
   }
+
+  @Test
+  void everySpecHasPathScopedPointerOrExemption() {
+    assertThat(DocFiles.specsWithoutPointer(Path.of("src/test/resources/pointerless-specs.txt")))
+        .isEmpty();
+  }
+
+  @Test
+  void everyPointerGlobMatchesTrackedFile() {
+    List<String> tracked = DocFiles.trackedFiles();
+    List<String> dead =
+        DocFiles.markdownIn(Path.of("../.claude/rules")).stream()
+            .flatMap(pointer ->
+                DocFiles.pointerGlobs(pointer).stream()
+                    .filter(glob -> !DocFiles.matchesAnyFile(glob, tracked))
+                    .map(glob -> pointer.getFileName() + " -> " + glob))
+            .toList();
+
+    assertThat(dead).isEmpty();
+  }
+
+  @Test
+  void everyPointerLinksOnlyItsOwnSpec() {
+    List<String> foreign =
+        DocFiles.markdownIn(Path.of("../.claude/rules")).stream()
+            .flatMap(pointer -> DocFiles.foreignSpecLinks(pointer).stream())
+            .toList();
+
+    assertThat(foreign).isEmpty();
+  }
 }

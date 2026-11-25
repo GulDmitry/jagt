@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.project;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class ProjectRemoval {
     List<String> using =
         state.tasks().entrySet().stream()
             .filter(task ->
-                task.getValue().standing().status() != TaskStatus.DONE
+                !FlowRules.finished(task.getValue().standing().status())
                     && task.getValue().projects().contains(key))
             .map(Map.Entry::getKey)
             .sorted()

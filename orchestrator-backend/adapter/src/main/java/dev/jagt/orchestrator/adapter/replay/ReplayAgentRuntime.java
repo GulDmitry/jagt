@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.replay;
 
 import dev.jagt.orchestrator.adapter.agent.AbstractAgentRuntime;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ public class ReplayAgentRuntime extends AbstractAgentRuntime {
   }
 
   @Override
-  public String launchCommand(Path worktree, boolean planMode) {
+  public String launchCommand(Path worktree, LaunchMode mode) {
     sessions.launched(worktree);
     return "exec cat >/dev/null";
   }

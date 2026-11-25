@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.testing.FakeHost;
 import lombok.With;
 
 @With
@@ -20,7 +21,8 @@ public record TestOpenCodeRuntimeBuilder(
   public OpenCodeAgentRuntime build(ConfigService config) {
     return new OpenCodeAgentRuntime(
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(briefRoot))),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(briefRoot), FakeHost.machine())),
         properties,
         new McpEndpoint(mcpUrl),
         config);

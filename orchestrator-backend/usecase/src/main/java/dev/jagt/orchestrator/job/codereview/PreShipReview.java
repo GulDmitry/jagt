@@ -17,14 +17,13 @@ import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * A task's diff against its base, read once per tree state while the session has handed back, a
- * request or none, each finding relayed to the session as a review round. A clean read relays
+ * A task's diff against its base, read once per distinct change while the session has handed back,
+ * a request or none, each finding relayed to the session as a review round. A clean read relays
  * nothing.
  */
 @Service
@@ -50,15 +49,15 @@ public class PreShipReview {
     if (!PreShipRead.due(task)) {
       return;
     }
-    Optional<String> tree = changes.state(task);
-    if (tree.isEmpty() || task.round().toldOrNone().said(ToldOnce.Kind.PRE_SHIP_TREE, tree.get())) {
+    String tree = changes.reviewKey(task);
+    if (task.round().toldOrNone().said(ToldOnce.Kind.PRE_SHIP_TREE, tree)) {
       return;
     }
     String diff = changes.diff(task);
     if (diff.isBlank()) {
-      told(taskId, ToldOnce.Kind.PRE_SHIP_TREE, tree.get());
+      told(taskId, ToldOnce.Kind.PRE_SHIP_TREE, tree);
     } else {
-      read(taskId, task, tree.get(), diff, model);
+      read(taskId, task, tree, diff, model);
     }
   }
 

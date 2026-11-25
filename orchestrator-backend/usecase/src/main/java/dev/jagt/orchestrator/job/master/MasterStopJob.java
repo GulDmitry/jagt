@@ -99,7 +99,7 @@ public class MasterStopJob implements TaskJob {
       TaskState task, MasterStopAnswer answer, ConfigFile.ArbiterConfig config) {
     return switch (answer.kind()) {
       case LIFT -> true;
-      case ESCALATE -> !config.profile().keeps(TaskAction.ESCALATE);
+      case ESCALATE -> !config.profile().keeps(TaskAction.ESCALATE, task);
       case RETURN -> !FlowRules.holdsPlan(task.standing().status());
       case HUMAN -> false;
     };

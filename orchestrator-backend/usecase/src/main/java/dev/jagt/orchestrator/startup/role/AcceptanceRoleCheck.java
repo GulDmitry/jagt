@@ -1,12 +1,10 @@
 package dev.jagt.orchestrator.startup.role;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import java.nio.file.Files;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,7 +18,6 @@ public class AcceptanceRoleCheck implements StartupCheck {
 
   private final InstalledRoles roles;
   private final ConfigService config;
-  private final OrchestratorPaths paths;
 
   @Override
   public List<Problem> problems() {
@@ -43,8 +40,7 @@ public class AcceptanceRoleCheck implements StartupCheck {
   }
 
   private boolean enabled() {
-    return Files.exists(paths.configFile())
-        && config.load().role(Checkers.ACCEPTANCE).enabledOrDefault();
+    return config.fileExists() && config.load().role(Checkers.ACCEPTANCE).enabledOrDefault();
   }
 
   private Problem why() {

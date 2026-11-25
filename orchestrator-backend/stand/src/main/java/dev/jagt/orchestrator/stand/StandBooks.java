@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.CaseBook;
@@ -28,7 +29,9 @@ public final class StandBooks {
 
   public static StandBooks at(Path root) {
     return new StandBooks(
-        root, new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+        root,
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), new SystemHost()));
   }
 
   public SessionBrief brief() {

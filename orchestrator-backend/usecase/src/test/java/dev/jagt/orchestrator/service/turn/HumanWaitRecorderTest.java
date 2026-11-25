@@ -11,16 +11,17 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.review.ReachOffers;
 import dev.jagt.orchestrator.service.review.Rounds;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.HumanWait;
 import dev.jagt.orchestrator.task.turn.HumanWait.Why;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -63,7 +64,8 @@ class HumanWaitRecorderTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
     when(config.load())
         .thenReturn(
@@ -76,7 +78,7 @@ class HumanWaitRecorderTest {
                 new Rounds(
                     config,
                     ignored -> false,
-                    () -> Facts.Reach.defaults(),
+                    new ReachOffers(() -> false, () -> false),
                     unheld -> null,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 clock,

@@ -22,11 +22,12 @@ class ProjectConfigTest {
                 "the PDF parser behind the intake form",
                 List.of(),
                 null,
+                null,
                 null),
             new ProjectConfig.Branches("origin/main", "release", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.aboutOrPath()).isEqualTo("the PDF parser behind the intake form");
   }
@@ -77,26 +78,27 @@ class ProjectConfigTest {
     var declared =
         new ProjectConfig(
             new ProjectConfig.Repository(
-                "/repos/parser", List.of(), null, List.of("db/migration/**"), null, null),
+                "/repos/parser", List.of(), null, List.of("db/migration/**"), null, null, null),
             new ProjectConfig.Branches("main", "dev", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
     var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
 
-    assertThat(declared.humanPathsOrNone()).containsExactly("db/migration/**");
-    assertThat(undeclared.humanPathsOrNone()).isEmpty();
+    assertThat(declared.humanPaths()).containsExactly("db/migration/**");
+    assertThat(undeclared.humanPaths()).isEmpty();
   }
 
   @Test
   void readsTheBaseBranchWithoutTheProjectsOwnRemotePrefix() {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/repos/parser", List.of(), null, List.of(), null, null, null),
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.baseBranchName()).isEqualTo("main");
   }
@@ -105,11 +107,12 @@ class ProjectConfigTest {
   void refusesToDeployIntoTheBaseBranchWhereTheRepositoryHasNoRemote() {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/repos/parser", List.of(), null, List.of(), null, null, null),
             new ProjectConfig.Branches("main", "main", "none"),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.deploysIntoTheBaseBranch()).isTrue();
   }
@@ -119,11 +122,12 @@ class ProjectConfigTest {
   void limitsVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/repos/parser", List.of(), null, List.of(), null, null, null),
             new ProjectConfig.Branches("main", "dev", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), written),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.verifyTimeoutOrDefault()).isEqualTo(Duration.ofMinutes(20));
   }

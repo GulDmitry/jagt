@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -13,14 +14,14 @@ class StubAgentRuntimeTest {
   void launchesAnImmediatelyExitingCommandWhereNoScriptIsGiven() {
     var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
 
-    assertThat(runtime.launchCommand(Path.of("/w/task"), false)).isEqualTo("true");
+    assertThat(runtime.launchCommand(Path.of("/w/task"), LaunchMode.WORK)).isEqualTo("true");
   }
 
   @Test
   void launchesTheScriptWithTheWorktreeQuoted() {
     var runtime = new StubAgentRuntime(new StubAgentProperties("/s/it's.sh"));
 
-    assertThat(runtime.launchCommand(Path.of("/w/task"), false))
+    assertThat(runtime.launchCommand(Path.of("/w/task"), LaunchMode.WORK))
         .isEqualTo("'/s/it'\\''s.sh' '/w/task'");
   }
 
@@ -28,7 +29,7 @@ class StubAgentRuntimeTest {
   void appendsPlanToTheScriptInPlanMode() {
     var runtime = new StubAgentRuntime(new StubAgentProperties("/s/run.sh"));
 
-    assertThat(runtime.launchCommand(Path.of("/w/task"), true))
+    assertThat(runtime.launchCommand(Path.of("/w/task"), LaunchMode.PLAN))
         .isEqualTo("'/s/run.sh' '/w/task' plan");
   }
 

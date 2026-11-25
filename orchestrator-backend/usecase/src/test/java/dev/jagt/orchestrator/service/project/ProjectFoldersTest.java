@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class ProjectFoldersTest {
     Files.createDirectories(root.resolve(".cache"));
     Files.writeString(root.resolve("todo.txt"), "");
 
-    assertThat(new ProjectFolders().under(root + "/"))
+    assertThat(new ProjectFolders(FakeHost.machine()).under(root + "/"))
         .containsExactly(
             new ProjectFolders.Folder("billing", true), new ProjectFolders.Folder("notes", false));
   }
@@ -29,22 +30,22 @@ class ProjectFoldersTest {
     Files.createDirectories(root.resolve("Billboard"));
     Files.createDirectories(root.resolve("notes"));
 
-    assertThat(new ProjectFolders().under(root + "/bil"))
+    assertThat(new ProjectFolders(FakeHost.machine()).under(root + "/bil"))
         .extracting(ProjectFolders.Folder::name)
         .containsExactly("Billboard", "billing");
   }
 
   @Test
   void listsNothingWhereTheTypedFolderDoesNotExistOrNoSlashWasTyped() {
-    assertThat(new ProjectFolders().under(root + "/missing/x")).isEmpty();
-    assertThat(new ProjectFolders().under("wor")).isEmpty();
+    assertThat(new ProjectFolders(FakeHost.machine()).under(root + "/missing/x")).isEmpty();
+    assertThat(new ProjectFolders(FakeHost.machine()).under("wor")).isEmpty();
   }
 
   @Test
   void listsHiddenFoldersOnlyWhereTheTypedPrefixStartsWithDot() throws Exception {
     Files.createDirectories(root.resolve(".config"));
 
-    assertThat(new ProjectFolders().under(root + "/.c"))
+    assertThat(new ProjectFolders(FakeHost.machine()).under(root + "/.c"))
         .extracting(ProjectFolders.Folder::name)
         .containsExactly(".config");
   }

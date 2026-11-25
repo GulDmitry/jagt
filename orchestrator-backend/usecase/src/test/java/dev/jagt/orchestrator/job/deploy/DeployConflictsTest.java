@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
@@ -30,6 +31,7 @@ class DeployConflictsTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final GitDeploy git = mock(GitDeploy.class);
+  private final GitRevert revert = mock(GitRevert.class);
   private final Deployment.Target web = Deployment.Target.of("web", "dev");
   private StateService state;
   private DeployConflicts service;
@@ -42,7 +44,7 @@ class DeployConflictsTest {
             ConfigFile.defaults()
                 .withProjects(
                     Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
-    service = new DeployConflicts(new DeployTargets(config), git);
+    service = new DeployConflicts(new DeployTargets(config), git, revert);
   }
 
   @Test
@@ -160,11 +162,11 @@ class DeployConflictsTest {
                     0,
                     null))
             .build());
-    when(git.hasRevertWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
-    when(git.revertWorktreePath(Path.of("/src/web"), "ABC-1"))
+    when(revert.hasRevertWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+    when(revert.revertWorktreePath(Path.of("/src/web"), "ABC-1"))
         .thenReturn(Path.of("/data/worktrees/web/ABC-1-revert"));
-    when(git.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);
-    when(git.revertProgress(Path.of("/src/web"), "ABC-1"))
+    when(revert.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+    when(revert.revertProgress(Path.of("/src/web"), "ABC-1"))
         .thenReturn(new Conflict.Progress(0, 1, "r"));
 
     var conflicts = service.waiting("ABC-1", state.task("ABC-1").orElseThrow());

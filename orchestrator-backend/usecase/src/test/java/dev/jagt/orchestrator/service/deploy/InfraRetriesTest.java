@@ -224,7 +224,7 @@ class InfraRetriesTest {
                         3)))
             .build());
 
-    retries.clear("ABC-42", false);
+    retries.clearArmed("ABC-42");
 
     assertThat(state.task("ABC-42").orElseThrow().checks().infraRetries()).containsExactly(sent);
   }

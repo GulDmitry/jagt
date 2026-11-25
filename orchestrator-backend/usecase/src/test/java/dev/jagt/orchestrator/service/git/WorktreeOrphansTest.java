@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +58,8 @@ class WorktreeOrphansTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withData(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     orphans = new WorktreeOrphans(config, state, git, paths, folders);
     registered = root.resolve("ABC-48-demo");
@@ -412,6 +414,20 @@ class WorktreeOrphansTest {
   void leavesTheDeployDirectoryOfLiveTaskWhileItHoldsRealCheckout() throws IOException {
     Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
     Files.createDirectories(root.resolve("ABC-41-deploy").resolve(".git"));
+    state.putTask(
+        "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+
+    assertThat(orphans.scan()).isEmpty();
+  }
+
+  @Test
+  void leavesTheDeployDirectoryOfLiveTaskWhoseCheckoutPointerCannotBeRead() throws IOException {
+    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    Path pointer =
+        Files.writeString(
+            Files.createDirectories(root.resolve("ABC-41-deploy")).resolve(".git"),
+            "gitdir: " + repo.resolve(".git/worktrees/ABC-41-deploy") + "\n");
+    Files.setPosixFilePermissions(pointer, PosixFilePermissions.fromString("---------"));
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
 

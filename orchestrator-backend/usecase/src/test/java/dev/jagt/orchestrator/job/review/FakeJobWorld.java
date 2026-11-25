@@ -20,7 +20,6 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
@@ -30,6 +29,7 @@ import dev.jagt.orchestrator.job.session.RestartAskJob;
 import dev.jagt.orchestrator.job.verdict.MasterReviewJob;
 import dev.jagt.orchestrator.job.verdict.MasterRuling;
 import dev.jagt.orchestrator.notify.ChannelPosts;
+import dev.jagt.orchestrator.notify.DroppedChannels;
 import dev.jagt.orchestrator.notify.FakeChannelDriver;
 import dev.jagt.orchestrator.notify.Messages;
 import dev.jagt.orchestrator.notify.NextMove;
@@ -66,6 +66,7 @@ import dev.jagt.orchestrator.service.master.RoleYields;
 import dev.jagt.orchestrator.service.master.RoundFacts;
 import dev.jagt.orchestrator.service.master.RoundQuotes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.review.ReachOffers;
 import dev.jagt.orchestrator.service.review.ReviewSweepService;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.service.review.Rounds;
@@ -86,6 +87,7 @@ import dev.jagt.orchestrator.testing.FakeAgentRuntime;
 import dev.jagt.orchestrator.testing.FakeAssistants;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeProcesses;
 import dev.jagt.orchestrator.testing.FakeReach;
 import dev.jagt.orchestrator.testing.FakeSessionHost;
@@ -102,6 +104,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.core.env.StandardEnvironment;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -257,7 +260,8 @@ public final class FakeJobWorld implements AutoCloseable {
                 .withRoot(root.toString())
                 .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
     FakeAgentRuntime runtime = new FakeAgentRuntime(sessionLog);
     FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
     ConfigService config =
@@ -280,13 +284,13 @@ public final class FakeJobWorld implements AutoCloseable {
             new Rounds(
                 config,
                 ignored -> false,
-                () -> Facts.Reach.defaults(),
+                new ReachOffers(() -> false, () -> false),
                 unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             config);
     Notifications notifications =
         new Notifications(
-            new Routes(config),
+            new Routes(config, new DroppedChannels(new StandardEnvironment())),
             new Messages(new BoardUrl("8290", ""), new NextMove(handBack, rules)),
             new ChannelPosts(List.of(driver), new FakeReach(), Runnable::run, retries),
             state);
@@ -300,7 +304,10 @@ public final class FakeJobWorld implements AutoCloseable {
     MasterPanel panel =
         new MasterPanel(
             new ChargedReviews(
-                models, usage, new TrustedGitState(state, new GitWorktrees(git)), config),
+                models,
+                usage,
+                new TrustedGitState(state, new GitWorktrees(git, FakeHost.machine())),
+                List::of),
             new MasterBriefs(paths, new SessionBrief(paths)),
             new RoundQuotes(
                 new RoundFacts(

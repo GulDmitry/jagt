@@ -9,11 +9,11 @@ export function node() {
     "legend",
     "",
     span("legend-head", t("legend.head")),
-    ...[...cardRows(), ...pageRows()].flatMap((samples, row) => {
-      const key = Object.assign(make("div", "legend-key", "", ...samples), {
+    ...[...cardRows(), ...pageRows()].flatMap(({ key, samples }) => {
+      const sample = Object.assign(make("div", "legend-key", "", ...samples), {
         inert: true,
       });
-      return [key, span("legend-says", t(`legend.row.${row}`))];
+      return [sample, span("legend-says", t(`legend.row.${key}`))];
     }),
   );
 }

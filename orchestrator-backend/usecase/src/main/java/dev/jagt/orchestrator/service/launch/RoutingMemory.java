@@ -272,6 +272,6 @@ public class RoutingMemory {
   }
 
   private Path file() {
-    return paths.memory().resolve(FILE);
+    return paths.layout().memory().resolve(FILE);
   }
 }

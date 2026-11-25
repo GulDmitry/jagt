@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Processes;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -17,6 +18,11 @@ class AssistantProcess {
 
   private final Processes runner;
   private final AssistantBreaker breaker;
+  private final Host host;
+
+  Path scratchDir() {
+    return host.temp();
+  }
 
   Processes.Result run(Path cwd, Duration timeout, List<String> command) {
     breaker.admit();

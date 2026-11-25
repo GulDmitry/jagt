@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.deploy.DeployTargets.Target;
-import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class RevertService {
   private final StateService stateService;
   private final DeployTargets deployTargets;
   private final RevertRunner runner;
-  private final GitDeploy gitDeploy;
+  private final GitRevert gitRevert;
   private final GitCaseFacts facts;
 
   private TaskState requireTask(String taskId) {
@@ -58,13 +58,13 @@ public class RevertService {
 
   /** A revert conflict is finished from a resolution, never over the paths still unmerged. */
   private void requireResolved(String taskId, Target at) {
-    String unmerged = gitDeploy.revertUnmerged(at.path(), taskId);
+    String unmerged = gitRevert.revertUnmerged(at.path(), taskId);
     if (!unmerged.isBlank()) {
       throw Refusal.byState(
           "revert "
               + taskId
               + " waits on the conflict in "
-              + gitDeploy.revertWorktreePath(at.path(), taskId)
+              + gitRevert.revertWorktreePath(at.path(), taskId)
               + ": still unmerged: "
               + unmerged.replace('\n', ' ')
               + ". Resolve and `git add` them, then revert again.");

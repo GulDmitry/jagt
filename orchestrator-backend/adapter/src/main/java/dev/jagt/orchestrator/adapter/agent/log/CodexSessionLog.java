@@ -20,6 +20,11 @@ import tools.jackson.databind.json.JsonMapper;
 public class CodexSessionLog implements SessionLog {
 
   private final JsonMapper mapper = new JsonMapper();
+  private final UnpricedModels unpriced;
+
+  public CodexSessionLog(UnpricedModels unpriced) {
+    this.unpriced = unpriced;
+  }
 
   @Override
   public Spent spent(Path log, long from, long limit) {
@@ -55,6 +60,7 @@ public class CodexSessionLog implements SessionLog {
       if (!"token_count".equals(payload.path("type").asString("")) || !last.isObject()) {
         return TokenUsage.NONE;
       }
+      unpriced.warnOnce("codex", "a Codex price row");
       long cached = last.path("cached_input_tokens").asLong(0);
       return TokenUsage.ofUnpricedCall(
           last.path("input_tokens").asLong(0) - cached,

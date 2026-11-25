@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.log.PressLog.Interaction;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,9 +31,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     presses.record(
@@ -57,9 +57,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     presses.record(List.of(new Interaction(NOW, "action:deploy", "APPROVED")), NOW);
@@ -83,9 +82,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     assertThatThrownBy(() ->
@@ -104,9 +102,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     assertThatThrownBy(
@@ -120,9 +117,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     presses.record(Collections.nCopies(50, new Interaction(NOW, "flag", null)), NOW);
@@ -136,9 +132,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     presses.record(List.of(new Interaction(NOW - 24L * 60 * 60 * 1000, "flag", null)), NOW);
@@ -153,9 +148,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             false);
 
     presses.record(List.of(new Interaction(NOW, "action:ship", null)), NOW);
@@ -169,9 +163,8 @@ class PressLogTest {
         new PressLog(
             new JsonMapper(),
             new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withData(dir.toString())),
+                OrchestratorProperties.defaults().withRoot(dir.toString()).withData(dir.toString()),
+                FakeHost.machine()),
             true);
 
     assertThatThrownBy(() ->

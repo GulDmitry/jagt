@@ -150,8 +150,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 - **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out
   first (`capability/done/FinishedArtifacts`) and never read back, so changing their format migrates nothing.
 - **The chain is readable while the task lives** — `code <alias>` opens the worktree holding all of it.
-- **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch,
-  and lands in `task_context.md`.
+- **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch, and lands in `task_context.md`.
 
 ## Ports and who answers them
 
@@ -174,7 +173,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Reach` | `service/reach/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `ChannelDriver` | `adapter/channel/{DesktopNotifier,CommandChannel,TeamsWorkflowChannel}` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
-| `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
+| `Host` | `adapter/host/SystemHost` — OS name, home, temp and working directory, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
 | `ReadScope` | `adapter/tmux/TmuxReads` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
 | `SessionLog` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did |
@@ -322,6 +321,7 @@ on a package of more than ten classes and on one of a single class ([0166](docs/
 | `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
 | `adapter/replay` | adapter | a stand recording played back: runtime, sessions, moves, reads |
 | `adapter/process` | adapter | the one owner of child processes: spawn, end each tree, reap; exposed to `stand` |
+| `adapter/host` | adapter | the machine jagt runs on: `SystemHost`, the one reader of host properties, and `Executables`; exposed to `stand` |
 | `adapter/release` | adapter | the release feed drivers: GitHub releases, none |
 | `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
 | `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
@@ -495,6 +495,6 @@ Eight Gradle modules under `orchestrator-backend/`, the compiler holding the dep
 - `build-logic/` and `fitness/` are included builds: one plugin per concern, never build logic in a build file.
 - `./gradlew test e2eTest boardTest` runs everything runnable here; `./gradlew build stageJar && java -jar build/libs/jagt-run.jar` starts the board.
 - **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
-  a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`constructors-called-from-main`).
+  a collaborator that `RuntimeWiring` or `adapter/host/SystemHost` supplies (`constructors-called-from-main`).
 - **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job` (`post-construct-hooks`).
-- `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names `adapter/Executables`.
+- `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names `adapter/host/Executables`.

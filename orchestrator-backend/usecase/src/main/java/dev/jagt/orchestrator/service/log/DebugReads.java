@@ -24,11 +24,11 @@ public class DebugReads {
   private final AgentRuntime runtime;
 
   public String stops(int lines) {
-    return tail(paths.stops(), lines);
+    return tail(paths.layout().stops(), lines);
   }
 
   public String stopsReviewed(int lines) {
-    return tail(paths.stopsReviewed(), lines);
+    return tail(paths.layout().stopsReviewed(), lines);
   }
 
   /** Empty where the file does not exist yet. */

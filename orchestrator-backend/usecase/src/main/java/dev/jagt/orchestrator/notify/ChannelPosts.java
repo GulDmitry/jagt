@@ -53,16 +53,17 @@ public class ChannelPosts {
     if (pending.put(key, new Pending(address, message)) != null) {
       return;
     }
+    submit(key, 0);
+  }
+
+  private void submit(Key key, int attempt) {
     try {
-      delivery.execute(() -> attempt(key, 0));
+      delivery.execute(() -> attempt(key, attempt));
     } catch (RejectedExecutionException e) {
-      pending.remove(key);
-      log.atWarn()
-          .setMessage("notification dropped")
-          .addKeyValue("channel", address.name())
-          .addKeyValue("point", message.point())
-          .addKeyValue("cause", "channel backed up")
-          .log();
+      Pending current = pending.get(key);
+      if (current != null) {
+        failed(key, current, attempt, "channel backed up");
+      }
     }
   }
 
@@ -80,7 +81,7 @@ public class ChannelPosts {
       return;
     }
     if (!pending.remove(key, current)) {
-      delivery.execute(() -> attempt(key, 0));
+      submit(key, 0);
     }
     reach.reached(DRIVER, hostOf(address, message));
     log.atInfo()
@@ -118,11 +119,7 @@ public class ChannelPosts {
             hostOf(address, message),
             List.of(),
             address.name() + " cannot tell " + message.point() + ": " + cause));
-    var _ =
-        retries.schedule(
-            () -> delivery.execute(() -> attempt(key, attempt + 1)),
-            backoff(attempt),
-            TimeUnit.SECONDS);
+    var _ = retries.schedule(() -> submit(key, attempt + 1), backoff(attempt), TimeUnit.SECONDS);
   }
 
   static long backoff(int attempt) {

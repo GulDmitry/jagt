@@ -25,6 +25,8 @@ its numbers move from `complexity-ceilings.json` into `fitness.yml`.
   start triggers, task statuses, capabilities, ports, startup checks, roles, spec capabilities, rule docs, public surface.
 - The count ratchet is own code: no library counts CI jobs, triggers or kinds.
 - Zero rules stay where they are; a scanner finding a violation of one fixes it, never freezes it.
+- `reducer-zero-time` is a zero rule: `TaskReducer` passes no literal time; a timeless door uses `step(task, move)`,
+  which refuses an effect that reads one.
 - The refresh reviews each number against what the kind is for.
 
 ## Rejected

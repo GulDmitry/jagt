@@ -26,6 +26,9 @@ class HumanPaths {
 
   /** The first such path as {@code project/path}, or {@link #UNREAD}; empty where none is kept. */
   Optional<String> touched(TaskState task) {
+    if (task.repos().stream().anyMatch(repo -> repo.project() == null)) {
+      return Optional.of(UNREAD);
+    }
     Map<String, List<String>> kept;
     try {
       kept =
@@ -35,9 +38,8 @@ class HumanPaths {
               .distinct()
               .collect(
                   Collectors.toMap(
-                      project -> project,
-                      project -> configService.project(project).humanPathsOrNone()));
-    } catch (RuntimeException unknownProject) {
+                      project -> project, project -> configService.project(project).humanPaths()));
+    } catch (IllegalArgumentException unknownProject) {
       return Optional.of(UNREAD);
     }
     if (kept.values().stream().allMatch(List::isEmpty)) {

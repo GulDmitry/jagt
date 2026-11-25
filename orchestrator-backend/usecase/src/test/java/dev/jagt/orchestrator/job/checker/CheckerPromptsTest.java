@@ -9,6 +9,8 @@ import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.testing.FakeHost;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +35,9 @@ class CheckerPromptsTest {
         new CheckerPrompts(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             new RoleFiles(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()),
+                    FakeHost.machine()),
                 "acceptance"));
   }
 
@@ -197,5 +201,23 @@ class CheckerPromptsTest {
         prompts.accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt()).doesNotContain("Workspace:");
+  }
+
+  @Test
+  void runOpensTheIndexTheRoleFolderMapsWithTheShippedBrief() throws Exception {
+    Path shipped = root.resolve("roles/acceptance/brief.md.dist");
+    Files.createDirectories(shipped.getParent());
+    Files.copy(Path.of("../../roles/acceptance/brief.md.dist"), shipped);
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "workspace:\n  path: ws\n  index: wiki/index.md\n");
+    RoleOptions acceptance = RoleOptions.read(root.resolve("roles/acceptance"));
+
+    CheckerReader.Run run =
+        prompts.accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.shared())
+        .contains("Read its `wiki/index.md` first")
+        .doesNotContain("{workspace.");
   }
 }

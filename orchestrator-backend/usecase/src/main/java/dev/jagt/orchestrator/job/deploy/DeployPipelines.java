@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.RedCauses;
-import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.Shas;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.deploy.DeployRedLine;
 import dev.jagt.orchestrator.task.deploy.Deployment;
@@ -131,7 +131,7 @@ public class DeployPipelines {
     String commit = Objects.requireNonNull(landed.tip());
     String project = landed.project();
     String remoteUrl = task.repo(project).map(TaskRepo::remoteUrl).orElse(null);
-    String label = project + " " + GitDeploy.shortSha(commit);
+    String label = project + " " + Shas.shortSha(commit);
     String at = label + ": pipeline ";
     if (remoteUrl == null || remoteUrl.isBlank()) {
       return withoutPipeline(taskId, label, "no remote recorded");
@@ -145,7 +145,7 @@ public class DeployPipelines {
       log.atWarn()
           .setMessage("deploy pipeline unreadable")
           .addKeyValue("project", project)
-          .addKeyValue("commit", GitDeploy.shortSha(commit))
+          .addKeyValue("commit", Shas.shortSha(commit))
           .addKeyValue("cause", read.failure())
           .addKeyValue("effect", "the deploy stays open")
           .log();

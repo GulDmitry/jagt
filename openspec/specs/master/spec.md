@@ -53,7 +53,7 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 
 #### Scenario: What it presses in act
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
-- **THEN** the Master deploys it, never reverts, unless `mine: [deploy]`, as unset (`mine: [plan, deploy, revert]`); `mine: []` hands it the press
+- **THEN** the Master deploys it, never reverts, unless `mine: [deploy]`; unset is `mine: [plan, replan, deploy, revert]`, `[]` hands it the press
 - **WHEN** the press is refused, as a deploy of ABC-42 with no commit beyond dev
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
 - **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
@@ -63,9 +63,8 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 
 ### Requirement: The human keeps what mine and humanPaths name
 `roles.master.mine` SHALL name the steps (`task/master/MasterRight`) and verbs the human keeps, any `TaskAction` or `GlobalCommand` id.
-`humanPaths` keeps a
-task's ship and deploy where it changes a path they name (`HumanPaths`). The Master SHALL press every other verb through `press_task` and
-`run_command` as a human's press, held to a Master case. A command declares `whyNotTheMaster` where the Master never runs it, whatever `mine` says.
+`humanPaths` keeps a task's ship and deploy where it changes a path they name (`HumanPaths`). The Master SHALL press every other verb through
+`press_task` and `run_command` as a human's press, held to a Master case. A command's `whyNotTheMaster` bars it, whatever `mine` says.
 
 #### Scenario: A ship, a reply or a path kept for you
 - **WHEN** a round is `ready` and `mine: [ship]`, or the Master ships and `mine: [reply]`
@@ -83,8 +82,7 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 
 #### Scenario: A session asks for a repository, or it is kept for you
 - **WHEN** a session names a configured project it lacks and the Master holds `repo`
-- **THEN** it presses `add-repo` once per request, answers in no prose and pings nobody
-- **AND** with `mine: [repo]` it presses and answers nothing; you are pinged once and `add-repo` is yours
+- **THEN** it presses `add-repo` once per request, answers in no prose, pings nobody; with `mine: [repo]` it presses nothing, you are pinged once
 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
@@ -93,8 +91,10 @@ task's ship and deploy where it changes a path they name (`HumanPaths`). The Mas
 - **AND** asked which of the ticket's own routes to take, it picks the one needing no right the session lacks, and says why
 
 #### Scenario: A plan in act
-- **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
+- **WHEN** `mine` is unset, the task opened in `plan` mode, or `mine` holds the plan's right (`plan` a task's first, `replan` each later)
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
+- **WHEN** a later plan holds and `mine: [plan]`, or a first plan and `mine: [replan]`
+- **THEN** the Master approves it and no press is asked of you
 
 #### Scenario: A plan handed back with a question
 - **WHEN** a session hands back `PLAN_PENDING` with a question, whatever `mine` holds

@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +49,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
+                    .withStateFile(worktree.resolve("state.json").toString()),
+                FakeHost.machine()),
             new TaskReducer(new TaskChart(Composition.builtIn())),
             event -> {});
     reviews = new MasterReview(state);

@@ -49,7 +49,8 @@ class FlowEngineTest {
           id -> Optional.empty(),
           id -> false,
           () -> ActionOrigin.BOARD,
-          id -> Optional.empty());
+          id -> Optional.empty(),
+          () -> false);
   private final TaskState shipping = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build();
   private final Capabilities neverRunShip =
       new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of());
@@ -706,6 +707,40 @@ class FlowEngineTest {
   }
 
   @Test
+  void refusesDeployOfReviewedRequestNamingTheKeyWhereApprovalIsRequired() {
+    TaskState reviewed =
+        TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://host/1").build();
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewed));
+    FactSources required =
+        new FactSources(
+            sessions,
+            ignored -> false,
+            id -> Optional.empty(),
+            id -> false,
+            () -> ActionOrigin.BOARD,
+            id -> Optional.empty(),
+            () -> true);
+    FlowEngine engine =
+        new FlowEngine(
+            stateService,
+            new Capabilities(
+                List.of(new FixedCapability(TaskAction.DEPLOY, Outcome.ok("deployed", null))),
+                List.of()),
+            required,
+            CLOCK,
+            rules);
+
+    assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.DEPLOY))
+        .asInstanceOf(type(Refusal.class))
+        .satisfies(refusal -> {
+          assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE);
+          assertThat(refusal.getMessage()).contains("deploy.requireApproval");
+        });
+    verify(stateService, never()).reduce(any(), any());
+  }
+
+  @Test
   void refusesShipNamingTheFindingsAwaitingAnAnswerWhileNoRequestExists() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
@@ -716,7 +751,8 @@ class FlowEngineTest {
             id -> Optional.empty(),
             id -> false,
             () -> ActionOrigin.BOARD,
-            id -> Optional.of("2 finding(s) await your block"));
+            id -> Optional.of("2 finding(s) await your block"),
+            () -> false);
     FlowEngine engine = new FlowEngine(stateService, neverRunShip, open, CLOCK, rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))

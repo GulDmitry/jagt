@@ -2,6 +2,7 @@ package dev.jagt.orchestrator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -111,6 +112,53 @@ final class DocFiles {
 
   static String withoutCodeBlocks(Path document) {
     return read(document).replaceAll("(?s)```.*?```", "");
+  }
+
+  static List<String> trackedFiles() {
+    try {
+      Process tracked = new ProcessBuilder("git", "-C", "..", "ls-files").start();
+      try (Stream<String> files = tracked.inputReader().lines()) {
+        return files.toList();
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  static List<String> pointerGlobs(Path pointer) {
+    return read(pointer)
+        .lines()
+        .map(line -> Pattern.compile("^\\s+- \"(.+)\"$").matcher(line))
+        .filter(Matcher::matches)
+        .map(found -> found.group(1))
+        .toList();
+  }
+
+  static List<String> foreignSpecLinks(Path pointer) {
+    String own = pointer.getFileName().toString().replaceFirst("\\.md$", "");
+    return Pattern.compile("openspec/specs/([a-z-]+)/spec\\.md")
+        .matcher(read(pointer))
+        .results()
+        .map(link -> link.group(1))
+        .filter(spec -> !spec.equals(own))
+        .map(spec -> pointer.getFileName() + " -> " + spec)
+        .toList();
+  }
+
+  static boolean matchesAnyFile(String glob, List<String> files) {
+    var matcher = FileSystems.getDefault().getPathMatcher("glob:" + glob);
+    return files.stream()
+        .anyMatch(file -> matcher.matches(Path.of(file)) || matcher.matches(Path.of("/" + file)));
+  }
+
+  static List<String> specsWithoutPointer(Path exemptList) {
+    List<String> exempt =
+        read(exemptList).lines().map(line -> line.replaceFirst(":.*", "")).toList();
+    List<String> pointers = namesIn(Path.of("../.claude/rules"));
+    return specDirectories().stream()
+        .filter(spec -> !pointers.contains(spec + ".md"))
+        .filter(spec -> !exempt.contains(spec))
+        .toList();
   }
 
   static List<String> specDirectories() {

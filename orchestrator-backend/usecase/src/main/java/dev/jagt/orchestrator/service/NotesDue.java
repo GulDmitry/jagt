@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.worktree.FileStamps;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -26,7 +26,7 @@ public class NotesDue {
    * {@code every} is zero.
    */
   public Optional<String> reminder(TaskState task, Duration every) {
-    if (every.isZero() || task.standing().status() != TaskStatus.IN_PROGRESS) {
+    if (every.isZero() || !FlowRules.inProgress(task.standing().status())) {
       return Optional.empty();
     }
     Path worktree = Path.of(task.worktreePath());

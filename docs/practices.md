@@ -126,7 +126,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | Configuration layered by env keys (Boot externalised, 12F III, I) | [components](rules/components.md), 0120, 0168 | `ConfigResolverTest` | n.a. | `ConfigResolverTest` |
 | Metrics and build info answer to the owner (Boot metrics, info) | [board-security](../openspec/specs/board-security/spec.md#requirement-metrics-and-build-info-answer-the-owner) | `BoardOnTomcatTest` | `BoardHeaderAndFiltersTest` | `BoardOnTomcatTest` |
 | Start-to-ready and latency stay under a measured budget (25010 time behaviour) | [engineering](../openspec/specs/engineering/spec.md) | `ServerStandTest`: start 15 s, `/state` p95 100 ms | n.a. | `ServerStandTest` |
-| Upgrade, backup and rollback of data are documented (25010 replaceability) | [server](server.md) | `StateServiceCompatibilityTest` | n.a. | `StateServiceCompatibilityTest` |
+| Upgrade, backup and rollback of data are documented (25010 replaceability) | [server-upgrade](server-upgrade.md) | `StateServiceCompatibilityTest` | n.a. | `StateServiceCompatibilityTest` |
 | Scale out (12F VIII) and stateless processes (12F VI) | 0179 | rejected: one replica, state on `/data` | n.a. | none |
 
 ## Supply chain

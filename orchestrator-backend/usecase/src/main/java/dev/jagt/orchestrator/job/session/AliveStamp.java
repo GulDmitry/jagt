@@ -25,7 +25,7 @@ public class AliveStamp implements Job {
   private final long lastAliveBeforeStart;
 
   public AliveStamp(OrchestratorPaths paths, Clock clock) {
-    this.file = paths.alive();
+    this.file = paths.layout().alive();
     this.clock = clock;
     this.lastAliveBeforeStart = read(file);
   }

@@ -169,7 +169,7 @@ class DashboardLineTest {
     TaskState stalled = reducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
     assertThat(DashboardLine.forTask(stalled, null, null).text()).contains("stopped moving");
 
-    TaskState left = reducer.repoLeft(stalled, "beta");
+    TaskState left = reducer.repoLeft(stalled, "beta", 1_300_000);
 
     assertThat(DashboardLine.forTask(left, null, null).text()).doesNotContain("stopped moving");
   }

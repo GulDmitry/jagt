@@ -38,6 +38,47 @@ class TestsForTest {
   }
 
   @Test
+  void runsThePropertyTestTaskNamingTheJqwikClassWhenMainClassChanges(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/core/src/main/java/c/Reducer.java", "class Reducer {}")
+            .file(
+                "orchestrator-backend/core/src/test/java/c/ReducerProperties.java",
+                "import net.jqwik.api.Property;\nclass ReducerProperties {}")
+            .tracked();
+
+    TestsFor.Plan plan =
+        testsFor.plan(List.of("orchestrator-backend/core/src/main/java/c/Reducer.java"));
+
+    assertThat(plan.lines())
+        .contains(
+            GRADLE
+                + "900 ./gradlew :core:propertyTest --tests '*ReducerProperties' -x pitestDiff")
+        .noneMatch(line -> line.contains(":core:test "));
+  }
+
+  @Test
+  void runsThePropertyTestTaskWhenTheJqwikClassItselfChanges(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                "orchestrator-backend/core/src/test/java/c/ReducerProperties.java",
+                "import net.jqwik.api.Property;\nclass ReducerProperties {}")
+            .tracked();
+
+    TestsFor.Plan plan =
+        testsFor.plan(
+            List.of("orchestrator-backend/core/src/test/java/c/ReducerProperties.java"));
+
+    assertThat(plan.lines())
+        .contains(
+            GRADLE
+                + "900 ./gradlew :core:propertyTest --tests '*ReducerProperties' -x pitestDiff")
+        .noneMatch(line -> line.contains(":core:test "));
+  }
+
+  @Test
   void selectsTestOfDependentModuleThatNamesTheChangedClass(@TempDir Path repo) throws Exception {
     TestsFor testsFor =
         TestRepoBuilder.in(repo)
@@ -210,5 +251,85 @@ class TestsForTest {
     String stripped = testsFor.stripRoot(repo.toRealPath() + "/board/app.js");
 
     assertThat(stripped).isEqualTo("board/app.js");
+  }
+
+  @Test
+  void failsNamingThePathWhenAnEntryNamesNoFileAndNoDeletion(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/src/main/java/a/Foo.java", "x")
+            .committed();
+
+    assertThatThrownBy(
+            () ->
+                testsFor.resolve(
+                    List.of("../orchestrator-backend/src/main/java/a/Gone.java"), "HEAD"))
+        .isInstanceOf(UnknownPathException.class)
+        .hasMessageContaining("orchestrator-backend/src/main/java/a/Gone.java");
+  }
+
+  @Test
+  void resolvesDotDotEntriesAgainstTheBackendWhenTheFileExists(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/src/main/java/a/Foo.java", "x")
+            .committed();
+
+    List<String> resolved =
+        testsFor.resolve(List.of("../orchestrator-backend/src/main/java/a/Foo.java"), "HEAD");
+
+    assertThat(resolved).containsExactly("orchestrator-backend/src/main/java/a/Foo.java");
+  }
+
+  @Test
+  void readsThePointersTargetWhenChangedPathMatchesItsGlob(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                ".claude/rules/board.md",
+                "---\npaths:\n  - \"board/**\"\n---\n\n"
+                    + "Read [`b`](../../openspec/specs/board/spec.md).\n")
+            .file("board/app.js", "x")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of("board/app.js"));
+
+    assertThat(plan.reads()).containsExactly("openspec/specs/board/spec.md");
+  }
+
+  @Test
+  void readsNothingWhenNoPointerGlobMatchesTheChangedPath(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                ".claude/rules/board.md",
+                "---\npaths:\n  - \"board/**\"\n---\n\n"
+                    + "Read [`b`](../../openspec/specs/board/spec.md).\n")
+            .file("docs/x.md", "x")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of("docs/x.md"));
+
+    assertThat(plan.reads()).isEmpty();
+  }
+
+  @Test
+  void readsTheTargetOnceWhenTwoChangedPathsMatchOnePointer(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                ".claude/rules/board.md",
+                "---\npaths:\n  - \"board/**\"\n---\n\n"
+                    + "Read [`b`](../../openspec/specs/board/spec.md).\n")
+            .file("board/a.js", "x")
+            .file("board/b.js", "x")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of("board/a.js", "board/b.js"));
+
+    assertThat(plan.reads()).containsExactly("openspec/specs/board/spec.md");
   }
 }

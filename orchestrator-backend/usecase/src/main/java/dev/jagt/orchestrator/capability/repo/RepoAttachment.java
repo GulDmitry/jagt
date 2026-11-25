@@ -61,7 +61,7 @@ class RepoAttachment {
   private String told(String taskId, NewRepo added, Standing read) {
     String where = added.project() + " is at " + added.worktreePath();
     try {
-      relay.relayUnder(
+      relay.relay(
           taskId,
           Step.REPO,
           "jagt added the repository you asked for: "
@@ -71,7 +71,7 @@ class RepoAttachment {
               + ", cut from "
               + added.baseBranch()
               + ".",
-          false,
+          StepRelay.Delivery.UNDER,
           read);
       return "add-repo " + taskId + ": " + where + "; the session was told";
     } catch (RuntimeException unheard) {

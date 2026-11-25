@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;
@@ -29,6 +30,7 @@ class CodeProjectTest {
   private final EditorDriver editor = mock(EditorDriver.class);
   private final ConfigService config = mock(ConfigService.class);
   private final GitDeploy deploys = mock(GitDeploy.class);
+  private final GitRevert revert = mock(GitRevert.class);
 
   @Test
   void opensTheDeployWorktreeOfTheRepositoryThatActuallyOwnsTheConflict(@TempDir Path root)
@@ -66,7 +68,7 @@ class CodeProjectTest {
     when(deploys.deployWorktreePath(web, "ABC-1"))
         .thenReturn(Path.of("/data/worktrees/web/ABC-1-deploy"));
 
-    new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/data/worktrees/web/ABC-1-deploy"));
     verify(editor, never()).open(Path.of("/data/worktrees/api/ABC-1-deploy"));
@@ -95,7 +97,8 @@ class CodeProjectTest {
                         new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
     when(deploys.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
 
-    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out =
+        new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     assertThat(out).contains("deploy worktree");
   }
@@ -108,7 +111,8 @@ class CodeProjectTest {
         TaskState.builder("gone", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT).build();
     when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of()));
 
-    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out =
+        new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     verify(editor).open(taskWorktree);
     assertThat(out).contains("as a project in the editor");
@@ -118,7 +122,7 @@ class CodeProjectTest {
   void showsTheHumanTheTasksOwnWorktreeAsProject() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
-    new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/wt"));
   }
@@ -131,7 +135,7 @@ class CodeProjectTest {
                 TaskStatus.REVIEW_PENDING)
             .build();
 
-    new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/api-wt"));
     verify(editor).open(Path.of("/web-wt"));
@@ -160,11 +164,12 @@ class CodeProjectTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
-    when(deploys.hasRevertWorktree(repo, "ABC-1")).thenReturn(true);
-    when(deploys.revertWorktreePath(repo, "ABC-1"))
+    when(revert.hasRevertWorktree(repo, "ABC-1")).thenReturn(true);
+    when(revert.revertWorktreePath(repo, "ABC-1"))
         .thenReturn(Path.of("/data/worktrees/proj/ABC-1-revert"));
 
-    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out =
+        new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     verify(editor).open(Path.of("/data/worktrees/proj/ABC-1-revert"));
     assertThat(out).contains("revert worktree", "`revert ABC-1` again");
@@ -175,7 +180,8 @@ class CodeProjectTest {
     when(editor.absent()).thenReturn(true);
     TaskState task = TaskState.builder("proj", "/work/ABC-1-demo", TaskStatus.IN_PROGRESS).build();
 
-    String out = new CodeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
+    String out =
+        new CodeProject(new DeployTargets(config), deploys, revert, editor).open("ABC-1", task);
 
     verify(editor, never()).open(Path.of("/work/ABC-1-demo"));
     assertThat(out).contains("code viewer");

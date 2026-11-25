@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,7 +26,11 @@ import tools.jackson.databind.json.JsonMapper;
 public class ClaudeSessionLog implements SessionLog {
 
   private final JsonMapper mapper = new JsonMapper();
-  private final Set<String> warned = ConcurrentHashMap.newKeySet();
+  private final UnpricedModels unpriced;
+
+  public ClaudeSessionLog(UnpricedModels unpriced) {
+    this.unpriced = unpriced;
+  }
 
   @Override
   public Spent spent(Path log, long from, long limit) {
@@ -124,9 +126,10 @@ public class ClaudeSessionLog implements SessionLog {
       TokenUsage turn =
           priceOf(model, usage, input, cacheRead, output)
               .map(cost -> TokenUsage.ofCall(input + cacheWrite, cacheRead, output, cost))
-              .orElseGet(() ->
-                  unpriced(
-                      model, TokenUsage.ofUnpricedCall(input + cacheWrite, cacheRead, output)));
+              .orElseGet(() -> {
+                unpriced.warnOnce(model, "ClaudePrices");
+                return TokenUsage.ofUnpricedCall(input + cacheWrite, cacheRead, output);
+              });
       return firstTurn && usage.has("cache_read_input_tokens") ? turn.asStart() : turn;
     } catch (RuntimeException unreadable) {
       return TokenUsage.NONE;
@@ -146,17 +149,5 @@ public class ClaudeSessionLog implements SessionLog {
             : split.path("ephemeral_5m_input_tokens").asLong(0);
     return ClaudePrices.of(model)
         .map(prices -> prices.costOf(input, write5m, write1h, cacheRead, output));
-  }
-
-  private TokenUsage unpriced(@Nullable String model, TokenUsage turn) {
-    if (!turn.isNone() && warned.add(String.valueOf(model))) {
-      log.atWarn()
-          .setMessage("model unpriced")
-          .addKeyValue("model", model)
-          .addKeyValue("effect", "cost counted as a lower bound")
-          .addKeyValue("fix", "ClaudePrices")
-          .log();
-    }
-    return turn;
   }
 }

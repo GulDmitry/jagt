@@ -106,6 +106,7 @@ stateDiagram-v2
     %% data shipped without request
     %% data revert conflict
     %% data scenarios ready
+    %% data approval required
     %% data shell escape
     %% data git distrusted
     %% data merged now

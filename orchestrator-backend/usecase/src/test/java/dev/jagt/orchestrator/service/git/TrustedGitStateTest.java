@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,8 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()),
             reducer,
             event -> {});
     trusted = new TrustedGitState(state, git);

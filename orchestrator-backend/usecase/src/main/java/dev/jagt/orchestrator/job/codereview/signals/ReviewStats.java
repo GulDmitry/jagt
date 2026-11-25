@@ -50,7 +50,7 @@ public class ReviewStats {
 
   public synchronized void append(
       String request, String note, String kind, Rating rating, String brief) {
-    Path file = paths.codeReviewStats();
+    Path file = paths.layout().codeReviewStats();
     Line line = new Line(Instant.now(clock).toString(), request, note, kind, rating, brief);
     try {
       Files.createDirectories(file.getParent());

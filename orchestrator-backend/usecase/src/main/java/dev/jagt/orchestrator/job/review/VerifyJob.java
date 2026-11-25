@@ -150,7 +150,7 @@ public class VerifyJob implements TaskJob {
       String taskId, TaskState read, Optional<String> key, Step step, String facts, String said) {
     boolean told;
     try {
-      told = relay.relayRound(taskId, step, facts, Standing.of(read));
+      told = relay.relay(taskId, step, facts, StepRelay.Delivery.ROUND, Standing.of(read));
     } catch (TaskMovedOn dropped) {
       return;
     }

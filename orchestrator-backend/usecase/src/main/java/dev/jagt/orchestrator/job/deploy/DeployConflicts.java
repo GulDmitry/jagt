@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.service.deploy.DeployTargets;
 import dev.jagt.orchestrator.service.git.GitDeploy;
+import dev.jagt.orchestrator.service.git.GitRevert;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Path;
@@ -18,6 +19,7 @@ public class DeployConflicts {
 
   private final DeployTargets deployTargets;
   private final GitDeploy gitDeploy;
+  private final GitRevert gitRevert;
 
   /** The worktree {@code task} waits in, where it was handed back from a deploy conflict. */
   public Optional<WaitingConflict> waiting(String taskId, TaskState task) {
@@ -30,16 +32,16 @@ public class DeployConflicts {
 
   private boolean holds(TaskState task, String taskId, DeployTargets.Target target) {
     return Facts.revertConflicted(task)
-        ? gitDeploy.hasRevertWorktree(target.path(), taskId)
+        ? gitRevert.hasRevertWorktree(target.path(), taskId)
         : gitDeploy.hasDeployWorktree(target.path(), taskId);
   }
 
   private WaitingConflict conflict(String taskId, TaskState task, DeployTargets.Target target) {
     if (Facts.revertConflicted(task)) {
       return new WaitingConflict(
-          gitDeploy.revertWorktreePath(target.path(), taskId),
-          gitDeploy.revertResolved(target.path(), taskId),
-          gitDeploy.revertProgress(target.path(), taskId),
+          gitRevert.revertWorktreePath(target.path(), taskId),
+          gitRevert.revertResolved(target.path(), taskId),
+          gitRevert.revertProgress(target.path(), taskId),
           null,
           true,
           Standing.of(task));

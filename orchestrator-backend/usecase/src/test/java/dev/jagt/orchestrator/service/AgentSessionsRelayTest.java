@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
@@ -19,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
@@ -209,7 +209,7 @@ class AgentSessionsRelayTest {
 
     verify(tmux, never())
         .openTaskWindow(
-            anyString(), anyString(), anyString(), any(), any(), eq(false), anyString());
+            anyString(), anyString(), anyString(), any(), any(), eq(LaunchMode.WORK), anyString());
   }
 
   @Test
@@ -237,8 +237,7 @@ class AgentSessionsRelayTest {
 
     verify(tmux).nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString());
     verify(tmux, times(1))
-        .openTaskWindow(
-            anyString(), anyString(), eq("ABC-1"), any(), any(), anyBoolean(), anyString());
+        .openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), any(), anyString());
   }
 
   @Test
@@ -264,7 +263,7 @@ class AgentSessionsRelayTest {
         "ABC-42",
         TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
 
-    sessions.relayUnder("ABC-42", "Keep both imports.", false);
+    sessions.relayUnder("ABC-42", "Keep both imports.");
 
     assertThat(Files.readString(worktree.resolve("task_context.md")))
         .contains("Resolve the conflict in /src/ABC-42-deploy.", "Keep both imports.");
@@ -278,9 +277,9 @@ class AgentSessionsRelayTest {
     state.putTask(
         "ABC-42",
         TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
-    sessions.relayUnder("ABC-42", "Keep both imports.", false);
+    sessions.relayUnder("ABC-42", "Keep both imports.");
 
-    sessions.relayUnder("ABC-42", "Drop the old import.", false);
+    sessions.relayUnder("ABC-42", "Drop the old import.");
 
     assertThat(Files.readString(worktree.resolve("task_context.md")))
         .contains("Resolve the conflict in /src/ABC-42-deploy.", "Drop the old import.")
@@ -425,7 +424,7 @@ class AgentSessionsRelayTest {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).build());
 
-    String answer = sessions.relayUnder("ABC-1", "Keep both imports.", false);
+    String answer = sessions.relayUnder("ABC-1", "Keep both imports.");
 
     assertThat(answer).contains("was down, so it was re-entered");
   }
@@ -461,8 +460,7 @@ class AgentSessionsRelayTest {
 
     assertThat(answer).isEqualTo("Said to the agent.");
     verify(tmux, never())
-        .openTaskWindow(
-            anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+        .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
   }
 
   @Test
@@ -638,8 +636,7 @@ class AgentSessionsRelayTest {
 
     verify(tmux).nudgeTaskWindow("jagt", "ABC-1", "!ls");
     verify(tmux, never())
-        .openTaskWindow(
-            anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+        .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
     assertThat(root.resolve("task_context.md")).doesNotExist();
   }
 

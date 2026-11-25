@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.port.CurrentOrigin;
 import dev.jagt.orchestrator.port.GitDistrust;
 import dev.jagt.orchestrator.port.MergedRefresh;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.UnansweredFindings;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.stop.TaskStops;
@@ -76,8 +77,16 @@ public class FlowWiring {
       GitDistrust trust,
       MergedRefresh merged,
       CurrentOrigin origin,
-      UnansweredFindings findings) {
-    return new FactSources(agents, requestless, trust, merged, origin, findings::awaiting);
+      UnansweredFindings findings,
+      ConfigService config) {
+    return new FactSources(
+        agents,
+        requestless,
+        trust,
+        merged,
+        origin,
+        findings::awaiting,
+        () -> config.load().deploy().requireApprovalOrDefault());
   }
 
   @Bean

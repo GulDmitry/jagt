@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,8 +41,10 @@ class RoleConfigOriginsTest {
     Files.writeString(root.resolve("jagt.yml"), "");
     Files.writeString(root.resolve("roles/acceptance/role.yml"), "");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     origins = new RoleConfigOrigins(new InstalledRoles(paths), config, paths);
+    when(config.fileExists()).thenReturn(true);
   }
 
   static Stream<Arguments> origins() {
@@ -101,6 +104,7 @@ class RoleConfigOriginsTest {
   @Test
   void everyValueIsDefaultedWhereNoJagtYmlExistsYet() throws Exception {
     Files.delete(root.resolve("jagt.yml"));
+    when(config.fileExists()).thenReturn(false);
 
     try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
       origins.logAtStart();

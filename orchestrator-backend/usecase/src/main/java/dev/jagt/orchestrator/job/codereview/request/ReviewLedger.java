@@ -33,7 +33,7 @@ public class ReviewLedger {
   private final OrchestratorPaths paths;
 
   public synchronized List<LedgerRow> rows() {
-    Path file = paths.codeReviewLedger();
+    Path file = paths.layout().codeReviewLedger();
     if (!Files.isRegularFile(file)) {
       return List.of();
     }
@@ -70,7 +70,7 @@ public class ReviewLedger {
   private void write(List<LedgerRow> rows) {
     try {
       AtomicFiles.write(
-          paths.codeReviewLedger(),
+          paths.layout().codeReviewLedger(),
           MAPPER.writeValueAsString(rows).getBytes(StandardCharsets.UTF_8));
     } catch (IOException unwritten) {
       throw new UncheckedIOException(unwritten);

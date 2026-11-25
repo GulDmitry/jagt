@@ -16,7 +16,11 @@ class ShipRecord {
   private final ShipContent content;
 
   void pressedOn(String taskId, TaskState task) {
-    content.of(task).ifPresent(shipped -> turns.mark(taskId, TaskTurns.PRESSED_SHIP, shipped));
-    changes.state(task).ifPresent(tree -> turns.shippedOn(taskId, tree));
+    changes
+        .state(task)
+        .ifPresent(tree -> {
+          turns.mark(taskId, TaskTurns.PRESSED_SHIP, content.with(task, tree));
+          turns.shippedOn(taskId, tree);
+        });
   }
 }

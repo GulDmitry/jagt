@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,8 @@ class LoopbackOrRootTokenTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
-                        .withData(root.toString()))));
+                        .withData(root.toString()),
+                    FakeHost.machine())));
 
     assertThat(door.authorize(() -> null, new RequestAuthorizationContext(request)).isGranted())
         .isFalse();
@@ -47,7 +49,8 @@ class LoopbackOrRootTokenTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withData(root.toString())));
+                    .withData(root.toString()),
+                FakeHost.machine()));
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
     request.setRemoteAddr("192.168.1.20");
     request.addHeader(MasterToken.HEADER, Files.readString(root.resolve("jagt/master-token")));
@@ -71,7 +74,8 @@ class LoopbackOrRootTokenTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
-                        .withData(root.toString()))));
+                        .withData(root.toString()),
+                    FakeHost.machine())));
 
     assertThat(door.authorize(() -> null, new RequestAuthorizationContext(request)).isGranted())
         .isTrue();

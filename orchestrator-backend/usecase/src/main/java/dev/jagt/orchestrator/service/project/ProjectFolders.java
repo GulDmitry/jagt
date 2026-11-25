@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.project;
 
+import dev.jagt.orchestrator.port.host.Host;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -8,14 +9,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ProjectFolders {
 
   private static final int LIMIT = 50;
+
+  private final Host host;
 
   public record Folder(String name, boolean repository) {}
 
@@ -24,7 +29,7 @@ public class ProjectFolders {
    * it, repositories first.
    */
   public List<Folder> under(String typed) {
-    String expanded = ProjectSetup.expand(typed);
+    String expanded = ProjectSetup.expand(host, typed);
     int slash = expanded.lastIndexOf('/');
     if (slash < 0) {
       return List.of();

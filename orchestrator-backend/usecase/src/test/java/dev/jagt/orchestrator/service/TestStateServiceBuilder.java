@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.StateEvents;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import lombok.With;
 import tools.jackson.databind.json.JsonMapper;
@@ -28,7 +29,8 @@ public record TestStateServiceBuilder(Path root) {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withData(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine()),
         new TaskReducer(new TaskChart(Composition.builtIn())),
         events);
   }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,8 @@ class InstalledRolesTest {
     Files.writeString(root.resolve("roles/checker/brief.md.dist"), "a brief\n");
     Files.writeString(root.resolve("roles/checker/role.yml.dist"), "id: checker\n");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     InstalledRoles installed = new InstalledRoles(paths);
 
@@ -34,7 +36,8 @@ class InstalledRolesTest {
   void composesChartEvenWhereNoRoleFileStands(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/bare"));
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     InstalledRoles installed = new InstalledRoles(paths);
 

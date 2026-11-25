@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.git;
 
+import dev.jagt.orchestrator.port.host.Host;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +43,7 @@ final class GitStates {
       Pattern.compile("branch\\..+\\.(remote|merge|rebase|pushremote|description)");
 
   private final GitCommands git;
+  private final Host host;
   private final Form form;
 
   /** Throws where a worktree's git cannot be read. */
@@ -118,10 +120,10 @@ final class GitStates {
    * Git resolves a relative path where it runs; the human's checkout is where every task's git
    * meets.
    */
-  private static Path hooksDir(Path common, String hooksPath) {
+  private Path hooksDir(Path common, String hooksPath) {
     Path named =
         hooksPath.startsWith("~/")
-            ? Path.of(System.getProperty("user.home"), hooksPath.substring(2))
+            ? host.home().resolve(hooksPath.substring(2))
             : Path.of(hooksPath);
     Path checkout = common.getParent() == null ? common : common.getParent();
     return checkout.resolve(named).normalize();

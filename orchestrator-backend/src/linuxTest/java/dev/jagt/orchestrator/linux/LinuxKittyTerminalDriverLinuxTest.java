@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
@@ -31,7 +32,10 @@ class LinuxKittyTerminalDriverLinuxTest {
   private final ProcessRunner runner = new ProcessRunner();
   private final LinuxKittyTerminalDriver driver =
       new LinuxKittyTerminalDriver(
-          runner, new KittyOptions("kitty", ""), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
+          runner,
+          new KittyOptions("kitty", ""),
+          Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
+          new SystemHost());
 
   @AfterEach
   void leaveNoWindowsOrSessionsBehind() {

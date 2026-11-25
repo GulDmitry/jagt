@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.channel;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
@@ -37,6 +37,15 @@ public class CommandChannel implements ChannelDriver {
   @Override
   public String kind() {
     return "command";
+  }
+
+  @Override
+  public List<Fault> faults(ChannelAddress address) {
+    List<String> command = address.command();
+    if (command.isEmpty() || command.getFirst().isBlank()) {
+      return List.of(new Fault("command", "is empty, so nothing is run"));
+    }
+    return List.of();
   }
 
   @Override

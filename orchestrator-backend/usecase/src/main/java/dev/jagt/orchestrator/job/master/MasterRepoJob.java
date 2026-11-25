@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job.master;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.MasterRight;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,7 @@ public class MasterRepoJob implements Job {
           }
           // Once per request, kept on the task: a refused press is not repeated, nor after a
           // restart.
-          if (task.standing().status() == TaskStatus.DONE
+          if (FlowRules.finished(task.standing().status())
               || task.work().stopped()
               || request.equals(pressed)) {
             return;

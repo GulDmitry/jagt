@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -30,6 +29,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +68,11 @@ class RepoAttachmentTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(properties, FakeHost.machine()),
+            reducer,
+            event -> {});
     attachment = new RepoAttachment(config, state, worktrees, relay);
     when(config.load()).thenReturn(ConfigFile.defaults());
   }
@@ -86,11 +90,11 @@ class RepoAttachmentTest {
     String said = attachment.attach("ABC-7");
 
     verify(relay)
-        .relayUnder(
+        .relay(
             eq("ABC-7"),
             eq(Step.REPO),
             contains("/wt/ABC-7-registry"),
-            eq(false),
+            eq(StepRelay.Delivery.UNDER),
             any(Standing.class));
     assertThat(said).contains("the session was told");
   }
@@ -106,7 +110,7 @@ class RepoAttachmentTest {
     when(worktrees.attach(eq("ABC-7"), eq("registry"), any())).thenReturn(registry);
     doThrow(new IllegalStateException("no window"))
         .when(relay)
-        .relayUnder(any(), any(), any(), anyBoolean(), any(Standing.class));
+        .relay(any(), any(), any(), eq(StepRelay.Delivery.UNDER), any(Standing.class));
 
     String said = attachment.attach("ABC-7");
 

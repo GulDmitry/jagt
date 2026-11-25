@@ -1,9 +1,18 @@
 package dev.jagt.orchestrator.service.git;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +20,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -19,6 +29,29 @@ public final class GitRepos {
   public static final Duration TIMEOUT = Duration.ofSeconds(30);
 
   private GitRepos() {}
+
+  public static DeployWorktreePaths worktreePaths(Path root) {
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "repo", configured(root, "repo"),
+                        "api", configured(root, "api"),
+                        "web", configured(root, "web"))));
+    return new DeployWorktreePaths(
+        config,
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(root.resolve("data").toString()),
+            FakeHost.machine()));
+  }
+
+  private static ProjectConfig configured(Path root, String name) {
+    return new ProjectConfig(root.resolve(name).toString(), "origin/main", "dev", List.of());
+  }
 
   public static GitCommands commands(Processes runner) {
     return new GitCommands(
@@ -177,7 +210,7 @@ public final class GitRepos {
   }
 
   public static void freshWorktree(Processes runner, Path repo, Path worktree) {
-    new GitWorktrees(commands(runner))
+    new GitWorktrees(commands(runner), FakeHost.machine())
         .createWorktree(repo, worktree, "ABC-1", "origin/main", BranchStrategy.FRESH);
   }
 

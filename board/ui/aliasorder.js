@@ -7,7 +7,7 @@
  */
 export const compare = (a, b) =>
   (a.alias ? 0 : 1) - (b.alias ? 0 : 1) ||
-  (a.alias || "").localeCompare(b.alias || "", undefined, { numeric: true });
+  (a.alias || "").localeCompare(b.alias || "", "en", { numeric: true });
 
 /** @param {Task[]} tasks */
 export const byAlias = (tasks) => [...tasks].sort(compare);

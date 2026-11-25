@@ -43,7 +43,7 @@ public final class RoleConfigOrigins {
   public void logAtStart() {
     for (RoleDefinition role : roles.definitions()) {
       RoleConfig written =
-          Files.exists(paths.configFile()) ? config.load().role(role.id()) : RoleConfig.defaults();
+          config.fileExists() ? config.load().role(role.id()) : RoleConfig.defaults();
       Path folder = paths.root().resolve("roles").resolve(role.id());
       RoleOptions options = RoleOptions.read(folder);
       report(

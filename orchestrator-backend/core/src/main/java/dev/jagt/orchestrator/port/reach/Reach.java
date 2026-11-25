@@ -20,6 +20,9 @@ public interface Reach {
   /** As {@link #lost(ReachLost)} for a caller that has logged the loss itself. */
   void marked(ReachLost lost);
 
+  /** As {@link #lost(ReachLost, BooleanSupplier)} for a caller that has logged the loss itself. */
+  void marked(ReachLost lost, BooleanSupplier stands);
+
   /** A read through {@code driver} on {@code host} succeeded: whatever stood for that pair ends. */
   void reached(String driver, String host);
 

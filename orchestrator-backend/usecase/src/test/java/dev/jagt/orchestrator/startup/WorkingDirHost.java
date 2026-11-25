@@ -18,6 +18,11 @@ record WorkingDirHost(Path workingDir) implements Host {
   }
 
   @Override
+  public Path temp() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Optional<String> env(String name) {
     throw new UnsupportedOperationException();
   }

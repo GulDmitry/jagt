@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
-import dev.jagt.orchestrator.service.session.ColdPrompts;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class PromptGate {
       "This session sat idle past its cache lifetime: your message went to a fresh"
           + " session, which carries the notes and the end of this conversation.";
 
-  private final ColdPrompts coldPrompts;
+  private final AgentSessions sessions;
   private final AgentRuntime runtime;
   private final ConfigService configService;
 
@@ -40,7 +40,7 @@ public class PromptGate {
       return "";
     }
     try {
-      coldPrompts.relay(taskId, prompt);
+      sessions.relayUnderCold(taskId, prompt);
     } catch (RuntimeException e) {
       log.atWarn()
           .setMessage("cold prompt not relayed")

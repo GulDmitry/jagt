@@ -92,7 +92,8 @@ public class MasterVerdicts {
     MasterMove returning = plan ? MasterMove.PLAN_NOT_READY : MasterMove.ROUND_NOT_READY;
     StepRelay.Claim claim =
         claims.reporting(taskId, task, AgentReport.PLAIN, "reviewer: not ready; relayed");
-    if (!relay.relayRound(taskId, returning.step(), String.join("\n", findings), claim)) {
+    if (!relay.relay(
+        taskId, returning.step(), String.join("\n", findings), StepRelay.Delivery.ROUND, claim)) {
       return false;
     }
     decisions.returned(task, verdict.round(), verdict.findings());
@@ -124,6 +125,7 @@ public class MasterVerdicts {
         taskId,
         MasterMove.ASKED_HUMAN.step(),
         "The reviewer asked the human: " + question,
+        StepRelay.Delivery.CONTEXT,
         claim)) {
       return false;
     }
@@ -202,9 +204,10 @@ public class MasterVerdicts {
 
   private boolean tell(String taskId, TaskState task, String text, StepRelay.Claim claim) {
     if (FlowRules.awaitsItsInstruction(task.standing().status())) {
-      return relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.step(), text, false, claim);
+      return relay.relay(
+          taskId, MasterMove.ANSWERED_UNDER.step(), text, StepRelay.Delivery.UNDER, claim);
     }
-    return relay.relay(taskId, MasterMove.ANSWERED.step(), text, claim);
+    return relay.relay(taskId, MasterMove.ANSWERED.step(), text, StepRelay.Delivery.CONTEXT, claim);
   }
 
   public int answersOverThisTree(TaskState task) {

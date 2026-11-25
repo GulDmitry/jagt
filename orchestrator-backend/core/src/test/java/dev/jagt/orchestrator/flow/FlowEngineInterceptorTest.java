@@ -102,7 +102,8 @@ class FlowEngineInterceptorTest {
           id -> Optional.empty(),
           id -> false,
           () -> ActionOrigin.BOARD,
-          id -> Optional.empty());
+          id -> Optional.empty(),
+          () -> false);
   private final TaskState inProgress =
       TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build();
 

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.port.host;
 
+import dev.jagt.orchestrator.port.reach.ReachLost;
 import java.util.List;
 
 /**
@@ -17,6 +18,13 @@ public interface StartupCheck {
 
   /** What is not there but does not stop the start: said once, never thrown. */
   default List<Problem> notes() {
+    return List.of();
+  }
+
+  /**
+   * What the board's head shows while the start goes on without it, until a read lists it no more.
+   */
+  default List<ReachLost> marks() {
     return List.of();
   }
 

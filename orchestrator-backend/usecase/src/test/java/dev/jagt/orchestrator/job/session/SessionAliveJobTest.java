@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -43,7 +44,8 @@ class SessionAliveJobTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     state = stateService().withRoot(root).build();
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     stops =

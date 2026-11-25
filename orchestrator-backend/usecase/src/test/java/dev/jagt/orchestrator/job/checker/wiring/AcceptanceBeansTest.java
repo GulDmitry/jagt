@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.RoleKit;
 import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.role.RoleSettings;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,8 @@ class AcceptanceBeansTest {
   @Test
   void acceptanceFilesAndSettingsAreThoseOfTheAcceptanceKit(@TempDir Path root) {
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     RoleDefinition absent = RoleDefinition.absent(Checkers.ACCEPTANCE);
     RoleKits kits =
         new RoleKits(

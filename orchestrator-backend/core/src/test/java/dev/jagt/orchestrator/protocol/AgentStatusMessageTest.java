@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -609,5 +610,29 @@ class AgentStatusMessageTest {
     var said = mapper.readValue(flat, AgentStatusMessage.class);
 
     assertThat(mapper.readTree(mapper.writeValueAsString(said))).isEqualTo(mapper.readTree(flat));
+  }
+
+  @Test
+  void linksTheFirstRequestInTheTasksRepositoryOrderWhenNoneIsOnThePrimaryRepository() {
+    Map<String, String> requests = new LinkedHashMap<>();
+    requests.put("auth", "https://host/auth/mr/6");
+    requests.put("queue", "https://host/queue/mr/5");
+    requests.put("cache", "https://host/cache/mr/4");
+    requests.put("web", "https://host/web/mr/3");
+    requests.put("db", "https://host/db/mr/2");
+    requests.put("api", "https://host/api/mr/1");
+    var said =
+        AgentStatusMessage.of("CI_POLLING", "shipped")
+            .withRequest(new AgentStatusMessage.Request(null, requests));
+
+    assertThat(
+            said.accepted(
+                    new MessageContext(
+                        List.of("main", "api", "db", "web", "cache", "queue", "auth"),
+                        false,
+                        java.util.List.of()))
+                .orElseThrow()
+                .link())
+        .isEqualTo("https://host/api/mr/1");
   }
 }

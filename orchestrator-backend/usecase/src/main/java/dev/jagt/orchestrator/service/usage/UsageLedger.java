@@ -49,7 +49,7 @@ public class UsageLedger {
 
   public UsageLedger(ObjectMapper mapper, OrchestratorPaths paths, Clock clock) {
     this.mapper = mapper;
-    this.file = paths.usageByDay();
+    this.file = paths.layout().usageByDay();
     this.clock = clock;
   }
 

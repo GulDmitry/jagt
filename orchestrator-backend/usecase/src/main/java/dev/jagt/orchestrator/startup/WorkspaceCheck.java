@@ -31,26 +31,30 @@ public class WorkspaceCheck implements StartupCheck {
               "orchestrator.root",
               "orchestrator.root " + paths.root() + " is not a directory (ORCHESTRATOR_ROOT)."));
     }
-    if (!Files.isDirectory(paths.data())) {
+    if (!Files.isDirectory(paths.layout().data())) {
       problems.add(
           new Problem(
               DATA,
               DATA
                   + " "
-                  + paths.data()
+                  + paths.layout().data()
                   + " is not a directory and could not be created (ORCHESTRATOR_DATA)."));
-    } else if (!Files.isWritable(paths.data())) {
+    } else if (!Files.isWritable(paths.layout().data())) {
       problems.add(
           new Problem(
-              DATA, DATA + " " + paths.data() + " is not writable, so jagt could write nothing."));
+              DATA,
+              DATA
+                  + " "
+                  + paths.layout().data()
+                  + " is not writable, so jagt could write nothing."));
     }
-    Path stateDir = paths.stateFile().getParent();
+    Path stateDir = paths.layout().stateFile().getParent();
     if (stateDir != null && !Files.isDirectory(stateDir)) {
       problems.add(
           new Problem(
               STATE_FILE,
               "orchestrator.state-file "
-                  + paths.stateFile()
+                  + paths.layout().stateFile()
                   + ": "
                   + stateDir
                   + " is not a directory."));
@@ -59,14 +63,16 @@ public class WorkspaceCheck implements StartupCheck {
           new Problem(
               STATE_FILE,
               "orchestrator.state-file "
-                  + paths.stateFile()
+                  + paths.layout().stateFile()
                   + ": "
                   + stateDir
                   + " is not writable, so no task could ever be recorded."));
-    } else if (Files.exists(paths.stateFile()) && !Files.isWritable(paths.stateFile())) {
+    } else if (Files.exists(paths.layout().stateFile())
+        && !Files.isWritable(paths.layout().stateFile())) {
       problems.add(
           new Problem(
-              STATE_FILE, "orchestrator.state-file " + paths.stateFile() + " is not writable."));
+              STATE_FILE,
+              "orchestrator.state-file " + paths.layout().stateFile() + " is not writable."));
     }
     return problems;
   }

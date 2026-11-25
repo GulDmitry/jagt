@@ -58,7 +58,7 @@ public class FinishedTasks {
     this.stateService = stateService;
     this.verdicts = verdicts;
     this.clock = clock;
-    this.file = paths.finished();
+    this.file = paths.layout().finished();
   }
 
   /**

@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.flow.role;
 
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.statechart.InvalidConfiguration;
+import dev.jagt.statechart.StatechartInvalid;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +20,7 @@ public final class Roles {
     try {
       new TaskChart(Composition.of(List.of(checker)));
       return Optional.empty();
-    } catch (RuntimeException refused) {
+    } catch (StatechartInvalid | InvalidConfiguration | IllegalArgumentException refused) {
       return Optional.of(String.valueOf(refused.getMessage()));
     }
   }

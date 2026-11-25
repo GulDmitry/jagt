@@ -3,10 +3,8 @@ package dev.jagt.orchestrator.capability.ship;
 import dev.jagt.orchestrator.flow.capability.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
-import dev.jagt.orchestrator.port.worktree.Specs;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.repo.TaskRepo;
-import java.nio.file.Path;
+import dev.jagt.orchestrator.service.worktree.TaskSpecs;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class SpecFold implements CapabilityInterceptor {
 
   private final StateService stateService;
-  private final Specs specs;
+  private final TaskSpecs specs;
 
   @Override
   public TaskAction action() {
@@ -29,12 +27,7 @@ public class SpecFold implements CapabilityInterceptor {
 
   @Override
   public Outcome around(String taskId, Supplier<Outcome> work) {
-    stateService
-        .task(taskId)
-        .ifPresent(task ->
-            task.repos().stream()
-                .map(TaskRepo::worktreePath)
-                .forEach(worktree -> specs.fold(Path.of(worktree), taskId)));
+    stateService.task(taskId).ifPresent(task -> specs.fold(taskId, task));
     return work.get();
   }
 }

@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,8 @@ class RoleSettingsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
 
     String loaded =
         new RoleSettings(
@@ -80,7 +82,8 @@ class RoleSettingsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
     RoleSettings settings =
         new RoleSettings(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),

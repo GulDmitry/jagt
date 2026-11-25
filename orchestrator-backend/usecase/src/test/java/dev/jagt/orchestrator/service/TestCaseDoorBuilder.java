@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.service.log.MissLog;
 import dev.jagt.orchestrator.service.stop.TaskStops;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Clock;
 import lombok.With;
@@ -21,7 +22,8 @@ public record TestCaseDoorBuilder(Path root) {
   public CaseDoor build(StateService state, TaskStops stops, Clock clock) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()));
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()),
+            FakeHost.machine());
     return new CaseDoor(
         new SessionCases(paths),
         new MasterCases(paths),

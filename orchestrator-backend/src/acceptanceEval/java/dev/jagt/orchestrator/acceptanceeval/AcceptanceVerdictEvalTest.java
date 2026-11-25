@@ -192,7 +192,7 @@ abstract class AcceptanceVerdictEvalTest {
             scripted,
             List.of(),
             deployed.workspace().held() ? workspace.toString() : "",
-            false,
+            RoleOptions.Layout.defaults(),
             List.of());
     CheckerReader.Run run =
         deployed.declines()

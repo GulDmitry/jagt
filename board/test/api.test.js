@@ -96,7 +96,7 @@ SENDS.forEach(([name, send, url, body]) =>
 test("theViewIsSaidToBeCurrent whenTheTaskIsGone", () => {
   const gone = Object.assign(new Error("no task"), { code: "NO_SUCH_TASK" });
 
-  assert.equal(refusal(gone), "no task\n\nThe board is up to date now.");
+  assert.equal(refusal(gone), "no task\n\nrefusal.current");
 });
 
 test("theMessageIsShown whenTheCodeIsNotStale", () => {

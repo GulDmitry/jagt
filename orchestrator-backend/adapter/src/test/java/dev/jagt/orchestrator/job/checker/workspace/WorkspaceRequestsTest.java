@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.service.git.GitRepos;
 import dev.jagt.orchestrator.service.git.GitWorktrees;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -66,8 +67,9 @@ class WorkspaceRequestsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withData(dir.resolve("data").toString())),
-            new GitWorktrees(commands),
+                    .withData(dir.resolve("data").toString()),
+                FakeHost.machine()),
+            new GitWorktrees(commands, FakeHost.machine()),
             host);
     when(host.openRequest(eq("repo"), any(), any()))
         .thenReturn(
@@ -285,7 +287,7 @@ class WorkspaceRequestsTest {
                         "repo",
                         new ProjectConfig(
                             new ProjectConfig.Repository(
-                                repo.toString(), List.of(), null, List.of(), null, null),
+                                repo.toString(), List.of(), null, List.of(), null, null, null),
                             new ProjectConfig.Branches("main", null, "none"),
                             ProjectConfig.CodeHost.defaults(),
                             new ProjectConfig.Verify(List.of(), null),

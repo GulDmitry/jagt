@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.service.gate.ReadScopes;
 import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,7 +38,8 @@ class OpenCodeGateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withData(root.toString())),
+                    .withData(root.toString()),
+                FakeHost.machine()),
             tools,
             hooks);
 
@@ -55,7 +57,8 @@ class OpenCodeGateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withData(root.toString())),
+                    .withData(root.toString()),
+                FakeHost.machine()),
             tools,
             hooks);
 
@@ -72,7 +75,8 @@ class OpenCodeGateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withData(root.toString())),
+                    .withData(root.toString()),
+                FakeHost.machine()),
             tools,
             hooks);
     gate.open("fence-1", new ReadScope(List.of(root), List.of(), true));

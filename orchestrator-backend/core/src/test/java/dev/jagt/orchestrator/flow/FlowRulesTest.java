@@ -78,6 +78,23 @@ class FlowRulesTest {
   }
 
   @ParameterizedTest
+  @CsvSource({
+    "REVIEWED,true,false",
+    "APPROVED,true,true",
+    "REVIEWED,false,true",
+    "APPROVED,false,true"
+  })
+  void offersDeployOnReviewedRequestOnlyWhereNoApprovalIsRequired(
+      TaskStatus status, boolean requireApproval, boolean offered) {
+    Facts facts =
+        Facts.defaults()
+            .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true))
+            .withReach(Facts.Reach.defaults().withRequireApproval(requireApproval));
+
+    assertThat(rules.allows(status, TaskAction.DEPLOY, facts)).isEqualTo(offered);
+  }
+
+  @ParameterizedTest
   @CsvSource({"SHIPPING,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
   void awaitsAnInstructionOnlyWhereJagtRelayedOne(TaskStatus status, boolean awaits) {
     assertThat(FlowRules.awaitsItsInstruction(status)).isEqualTo(awaits);
@@ -938,5 +955,29 @@ class FlowRulesTest {
                     .withFindingsOpen(() -> Optional.of("2 finding(s) await your block")));
 
     assertThat(rules.declined(TaskAction.SHIP, facts, ActionOrigin.BOARD)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"DONE,true", "REVIEWED,false", "NEW,false"})
+  void finishesTaskOnlyAtDone(TaskStatus status, boolean finished) {
+    assertThat(FlowRules.finished(status)).isEqualTo(finished);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"REVIEW_PENDING,true", "CI_FAILED,false", "IN_PROGRESS,false"})
+  void awaitsReviewOnlyAtReviewPending(TaskStatus status, boolean awaits) {
+    assertThat(FlowRules.awaitsReview(status)).isEqualTo(awaits);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"IN_PROGRESS,true", "NEW,false", "SHIPPING,false"})
+  void isInProgressOnlyAtInProgress(TaskStatus status, boolean working) {
+    assertThat(FlowRules.inProgress(status)).isEqualTo(working);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"SHIPPING,true", "IN_PROGRESS,false", "REVIEW_PENDING,false"})
+  void isShippingOnlyAtShipping(TaskStatus status, boolean shipping) {
+    assertThat(FlowRules.shipping(status)).isEqualTo(shipping);
   }
 }

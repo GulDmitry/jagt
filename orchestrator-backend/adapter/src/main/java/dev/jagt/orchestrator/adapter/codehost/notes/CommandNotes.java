@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.adapter.codehost.notes;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
 import dev.jagt.orchestrator.adapter.codehost.cli.HostCli;
 import dev.jagt.orchestrator.adapter.codehost.command.CommandPipeline;
 import dev.jagt.orchestrator.adapter.codehost.command.CommandRun;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.NoteDraft;

@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.role.CheckerRole;
 import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -28,7 +29,9 @@ class CaseCheckTest {
 
   @BeforeEach
   void checkOverTheTempRoot() throws Exception {
-    paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     Files.createDirectories(root.resolve("roles/session"));
     check =
         new CaseCheck(

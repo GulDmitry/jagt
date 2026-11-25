@@ -63,13 +63,13 @@ public class IntakeHistory {
 
   private List<String> kept() {
     try {
-      return Files.isRegularFile(paths.intakeTurnedAway())
-          ? Files.readAllLines(paths.intakeTurnedAway())
+      return Files.isRegularFile(paths.layout().intakeTurnedAway())
+          ? Files.readAllLines(paths.layout().intakeTurnedAway())
           : List.of();
     } catch (IOException e) {
       log.atWarn()
           .setMessage("intake turned-away keys unread")
-          .addKeyValue("file", paths.intakeTurnedAway())
+          .addKeyValue("file", paths.layout().intakeTurnedAway())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "they are told again")
           .log();
@@ -79,11 +79,11 @@ public class IntakeHistory {
 
   private void keep() {
     try {
-      Files.writeString(paths.intakeTurnedAway(), String.join("\n", told) + "\n");
+      Files.writeString(paths.layout().intakeTurnedAway(), String.join("\n", told) + "\n");
     } catch (IOException e) {
       log.atWarn()
           .setMessage("intake turned-away keys not kept")
-          .addKeyValue("file", paths.intakeTurnedAway())
+          .addKeyValue("file", paths.layout().intakeTurnedAway())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "a restart tells them again")
           .log();

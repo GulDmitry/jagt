@@ -43,9 +43,15 @@ tools:
 #   mergeRequest: true = after a check that changed a workspace inside a project of jagt.yml, jagt commits its files git does not
 #   ignore on `jagt/acceptance-<role>`, pushes it and opens or updates the one request for it against the project's base branch;
 #   never the base branch itself, and a project with codeHost none gets the push alone
+#   index, scenarios, steps, flows: where the workspace keeps each, relative to it; brief.md names them as
+#   {workspace.index}, {workspace.scenarios}, {workspace.steps} and {workspace.flows}, so an existing suite keeps its layout
 workspace:
   path: workspace
   mergeRequest: false
+  index: index.md
+  scenarios: scenarios
+  steps: steps
+  flows: flows
 answer:
   - required: failure
   - records: rows
