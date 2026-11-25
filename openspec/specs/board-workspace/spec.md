@@ -145,10 +145,13 @@ router is asked only where no label matched and several projects are configured;
 - **THEN** the router reads the item and places it in one project, or in none
 
 ### Requirement: The open task has its six tabs
-The open task SHALL have the tabs Overview, Drafted review, Artifacts, Code, Diff and Session, in that order. Overview shows its status
-history, newest first. Session is the session's live terminal (`session-stream`), and the Keys row. Drafted review shows its drafted replies, or
-that none are drafted. Artifacts lists the task's documents (`Artifact`) in its worktree now, in declared order, the one picked rendered. Code
-reads its worktree, Diff the task's change (`board-diff`).
+The open task SHALL have the tabs Overview, Drafted review, Artifacts, Code, Diff and Session, in that order, in one row.
+The selected one is underlined, the card's verbs apart. Overview: status history, newest first. Session: the live terminal
+(`session-stream`) and the Keys row. Drafted review: drafted replies, or that none are. Artifacts: the worktree's
+documents (`Artifact`) now, in declared order, the picked one rendered. Code: the worktree. Diff: the change (`board-diff`).
+#### Scenario: The views read as tabs
+- **WHEN** ABC-42's pane is open
+- **THEN** the six tabs stand in one row under the card, the selected one underlined
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
 - **THEN** the session's terminal streams there, with the one message line under it and no second form

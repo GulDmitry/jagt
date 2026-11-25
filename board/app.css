@@ -304,20 +304,6 @@ input[role="switch"]:checked::after {
   gap: 16px;
   padding: 12px 16px;
 }
-.tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.tabs button {
-  border: 0;
-  text-align: left;
-  padding: 6px 10px;
-}
-.tabs button[aria-selected="true"] {
-  background: var(--chip-bg);
-  font-weight: 600;
-}
 #settings-body section[hidden] {
   display: none;
 }
@@ -382,6 +368,19 @@ input[role="switch"]:checked::after {
 .tabs button.you {
   color: var(--you);
   border-bottom-color: var(--you);
+}
+#settings-body .tabs {
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 0;
+}
+#settings-body .tabs button {
+  text-align: left;
+  padding: 6px 10px;
+}
+#settings-body .tabs button[aria-selected="true"] {
+  background: var(--chip-bg);
+  font-weight: 600;
 }
 .screen {
   margin: 0;

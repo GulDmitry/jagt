@@ -468,6 +468,17 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
+  void theOpenTaskViewsReadAsOneRowOfTabsWithTheSelectedOneMarked() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
+
+    assertThat(page.locator("#pane .tabs")).hasCSS("flex-direction", "row");
+    assertThat(page.locator("#pane .tabs button[aria-selected=true]")).hasCount(1);
+    assertThat(page.locator("#pane .tabs button[aria-selected=true]"))
+        .hasCSS("border-bottom-width", "2px");
+  }
+
+  @Test
   void codeTabShowsOneFileOfTheWorktreeHighlighted() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-6-alpha"));
     Files.writeString(worktree.resolve("A.java"), "public class A {}\n");
