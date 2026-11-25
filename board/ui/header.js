@@ -15,15 +15,16 @@ const autoReviewChip = /** @type {HTMLElement} */ (
 /**
  * @param {import("../core/store.js").Task[]} tasks
  * @param {number} showing
+ * @param {boolean} logStands
  */
-export function render(tasks, showing) {
+export function render(tasks, showing, logStands) {
   const waiting = tasks.filter((task) => task.attention === "REQUIRED").length;
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = t("header.waiting", { n: waiting });
   autoReviewChip.hidden = store.autoReview().enabled;
   autoReviewChip.textContent = store.autoReview().summary || "";
   chips.render();
-  phasebar.render(tasks, showing);
+  phasebar.render(tasks, showing, logStands);
 }
 
 export async function showVersion() {

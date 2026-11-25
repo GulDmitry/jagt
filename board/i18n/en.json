@@ -75,6 +75,7 @@
   "header.role-log.tip": "show or hide the {role} log here",
   "legend.role": "role",
   "rolelog.label": "{role} log",
+  "rolelog.back": "‹ all tasks · {role} log",
   "rolelog.empty": "nothing logged by {role} yet",
   "header.acting": "Master: act",
   "header.acting.tip": "the Master presses the buttons you would; the Master report says what it may do",

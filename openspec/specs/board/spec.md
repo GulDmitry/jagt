@@ -77,8 +77,7 @@ The line under a card SHALL carry news only: NEEDS INPUT, ANSWERED, PROBLEM, NEE
 in a tooltip; a stopped poll, failed job or stopped `act` gets its own mark. A status says itself in words; the
 highlighted button says what to do. A badge is the human's move; a quiet "you can …" can wait.
 #### Scenario: A deployed task
-- **WHEN** a task is deployed
-- **THEN** it wears no badge: `done` is its only move
+- **WHEN** a task is deployed; **THEN** it wears no badge: `done` is its only move
 - **AND** while no job's last run failed, no jobs chip shows
 
 ### Requirement: Components ship as the files that run
@@ -176,9 +175,10 @@ A disabled role, or one a human holds, has no chip. jagt opens no tmux window fo
 #### Scenario: A role's log
 - **WHEN** the human presses the Master's chip; **THEN** its log stands in the pane, newest entry on top, and follows new entries
 - **WHEN** the human presses the chip of the open log; **THEN** the pane hides it and the Master keeps working
+- **WHEN** a role's log stands; **THEN** the pane's back row reads `‹ all tasks · <role> log`
 #### Scenario: An empty log on an empty board
 - **WHEN** the human opens the Master's log on a board with no tasks and nothing logged
-- **THEN** the empty line stands, in the log's style, where the newest entry would; no task filter, count or key hint shows
+- **THEN** the empty line stands, in the log's style, where the newest entry would; no task filter, count, key hint, `No tasks yet` or phase bar shows
 - **WHEN** the Master logs its first entry; **THEN** it replaces the empty line at the top
 #### Scenario: A role that does not run
 - **WHEN** a role is disabled, or a human holds it; **THEN** the head shows no chip for it

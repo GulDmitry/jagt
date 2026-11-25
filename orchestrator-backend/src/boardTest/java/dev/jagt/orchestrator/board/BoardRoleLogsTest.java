@@ -5,6 +5,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.ui.log.RoleFeeds.RoleFeedWritten;
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,6 +128,8 @@ class BoardRoleLogsTest extends BoardPageContext {
         .hasText("nothing logged by master yet");
     assertThat(page.locator("#phases")).isHidden();
     assertThat(page.locator("#tasks")).hasCount(0);
+    assertThat(page.locator("#empty")).isHidden();
+    assertThat(page.locator("#pane.role-log .back")).hasText("‹ all tasks · master log");
 
     page.route(
         Pattern.compile(".*/api/roles/master/log.*"),
@@ -141,6 +144,16 @@ class BoardRoleLogsTest extends BoardPageContext {
     assertThat(page.locator("#pane.role-log .log-lines > *")).hasCount(1);
     assertThat(page.locator("#pane.role-log .log-lines > :first-child"))
         .hasText(Pattern.compile("first step"));
+  }
+
+  @Test
+  void phaseBarHidesBesideTheLogWhileTheFilterLeavesNoTaskShowing() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openRoleLog("master", "{\"lines\":[],\"next\":0}");
+
+    page.locator("#filter").fill("nothing matches this");
+
+    assertThat(page.locator("#phases")).isHidden();
   }
 
   @Test

@@ -9,7 +9,7 @@ export const RoleLog = ({ role, lines }) =>
     class="role-log"
     aria-label=${t("rolelog.label", { role })}
   >
-    <button class="back" data-back="">${t("pane.back")}</button>
+    <button class="back" data-back="">${t("rolelog.back", { role })}</button>
     <div class="log-scroll">
       <${LogLines}
         said=${lines.join("\n")}
