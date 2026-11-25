@@ -136,4 +136,23 @@ class HandBackDueTest {
 
     assertThat(due.owed("ABC-1", task)).isEmpty();
   }
+
+  @Test
+  void owesBlockWhenShipHappenedAtTheRoundsOwnInstant(@TempDir Path root) throws Exception {
+    Files.writeString(root.resolve("task_notes.md"), "notes");
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING)
+            .trail(
+                RoundTrail.none()
+                    .withRound(new RoundTrail.Round(1_000, 2, "unit-tests", "a", "t1 note_1")))
+            .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER)))
+            .build();
+    WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
+    when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
+    HandBackDue due =
+        new HandBackDue(worktreeChanges, mock(Specs.class), mock(OfferedModels.class));
+
+    assertThat(due.owed("ABC-1", task))
+        .hasValueSatisfying(owed -> assertThat(owed).contains("2 thread(s) were relayed"));
+  }
 }
