@@ -209,9 +209,8 @@ jobs:
       id-token: write
       attestations: write
       actions: read
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      new: ${{ steps.version.outputs.new }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -333,6 +332,19 @@ jobs:
         if: steps.version.outputs.new == 'true'
         with:
           path: site
+
+  pages:
+    name: pages
+    needs: release
+    if: needs.release.outputs.new == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
-        if: steps.version.outputs.new == 'true'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
