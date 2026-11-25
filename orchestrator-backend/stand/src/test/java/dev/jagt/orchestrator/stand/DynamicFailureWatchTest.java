@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.DynamicTestInvocationContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor.Invocation;
+import org.opentest4j.TestAbortedException;
 
 class DynamicFailureWatchTest {
 
@@ -35,6 +36,19 @@ class DynamicFailureWatchTest {
 
     watch.interceptDynamicTest(passing, dynamic, context);
 
+    assertThat(watch.failed()).isFalse();
+  }
+
+  @Test
+  void reportsNotFailedAndRethrowsWhenOneDynamicTestIsSkipped() {
+    DynamicFailureWatch watch = new DynamicFailureWatch();
+    Invocation<@Nullable Void> skipped =
+        () -> {
+          throw new TestAbortedException("budgets are off");
+        };
+
+    assertThatThrownBy(() -> watch.interceptDynamicTest(skipped, dynamic, context))
+        .isInstanceOf(TestAbortedException.class);
     assertThat(watch.failed()).isFalse();
   }
 }
