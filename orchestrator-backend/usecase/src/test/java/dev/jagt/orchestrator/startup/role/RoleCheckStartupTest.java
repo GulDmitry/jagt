@@ -64,8 +64,7 @@ class RoleCheckStartupTest {
                 agents,
                 actStops,
                 checkers,
-                new KeptNumbers(new ReachLedger())),
-            paths);
+                new KeptNumbers(new ReachLedger())));
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
         .singleElement()
@@ -170,8 +169,7 @@ class RoleCheckStartupTest {
                 agents,
                 actStops,
                 checkers,
-                new KeptNumbers(new ReachLedger())),
-            paths);
+                new KeptNumbers(new ReachLedger())));
 
     assertThat(check.notes()).isEmpty();
   }
@@ -200,7 +198,7 @@ class RoleCheckStartupTest {
             checkers,
             new KeptNumbers(new ReachLedger()));
 
-    RoleCheck check = new RoleCheck(new InstalledRoles(paths), config, paths);
+    RoleCheck check = new RoleCheck(new InstalledRoles(paths), config);
 
     assertThat(check.notes())
         .singleElement()

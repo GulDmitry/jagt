@@ -1,12 +1,10 @@
 package dev.jagt.orchestrator.startup.role;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +20,11 @@ public class AcceptanceCaseCheck implements StartupCheck {
 
   private final RoleFiles files;
   private final ConfigService config;
-  private final OrchestratorPaths paths;
   private final Checkers checkers;
 
   @Override
   public List<Problem> problems() {
-    if (!Files.exists(paths.configFile())
-        || !config.load().role(Checkers.ACCEPTANCE).enabledOrDefault()) {
+    if (!config.fileExists() || !config.load().role(Checkers.ACCEPTANCE).enabledOrDefault()) {
       return List.of();
     }
     return Stream.concat(

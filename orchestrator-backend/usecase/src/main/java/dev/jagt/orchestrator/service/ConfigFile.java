@@ -139,6 +139,12 @@ public record ConfigFile(
   public record ViewerConfig(
       @Nullable String tmuxSession, @Nullable String viewMode, @Nullable Boolean keepViewer) {
 
+    public static final List<String> VIEW_MODES = List.of("shared", "tab-per-task");
+
+    public static boolean knowsViewMode(String mode) {
+      return VIEW_MODES.stream().anyMatch(known -> known.equalsIgnoreCase(mode));
+    }
+
     public static ViewerConfig defaults() {
       return new ViewerConfig(null, null, null);
     }

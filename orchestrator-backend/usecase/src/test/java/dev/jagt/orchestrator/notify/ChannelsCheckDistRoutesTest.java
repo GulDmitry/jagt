@@ -46,7 +46,7 @@ class ChannelsCheckDistRoutesTest {
     ChannelDriver desktop = mock(ChannelDriver.class);
     when(desktop.kind()).thenReturn("desktop");
     ChannelsCheck check =
-        new ChannelsCheck(config, roles, List.of(desktop), new StandardEnvironment(), paths);
+        new ChannelsCheck(config, roles, List.of(desktop), new StandardEnvironment());
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes()).isEmpty();

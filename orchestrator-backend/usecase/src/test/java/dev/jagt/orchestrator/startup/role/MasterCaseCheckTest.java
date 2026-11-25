@@ -39,7 +39,8 @@ class MasterCaseCheckTest {
                 .withConfigFile(
                     Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()),
             FakeHost.machine());
-    check = new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config, paths);
+    check = new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config);
+    when(config.fileExists()).thenReturn(true);
   }
 
   @Nested

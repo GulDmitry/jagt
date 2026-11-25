@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
@@ -12,7 +12,6 @@ import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.ChannelDef;
 import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.RouteDef;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,30 +30,26 @@ public class ChannelsCheck implements StartupCheck {
   private static final String NOTIFICATIONS = "orchestrator.notifications.";
   private static final String CHANNELS = NOTIFICATIONS + "channels.";
   private static final String POINTS = NOTIFICATIONS + "points.";
-  private static final String COMMAND_KIND = "command";
 
   private final ConfigService config;
   private final InstalledRoles roles;
   private final List<ChannelDriver> drivers;
   private final Environment environment;
-  private final OrchestratorPaths paths;
 
   public ChannelsCheck(
       ConfigService config,
       InstalledRoles roles,
       List<ChannelDriver> drivers,
-      Environment environment,
-      OrchestratorPaths paths) {
+      Environment environment) {
     this.config = config;
     this.roles = roles;
     this.drivers = List.copyOf(drivers);
     this.environment = environment;
-    this.paths = paths;
   }
 
   @Override
   public List<Problem> problems() {
-    if (!Files.exists(paths.configFile())) {
+    if (!config.fileExists()) {
       return List.of();
     }
     NotificationsConfig notifications = config.load().notifications();
@@ -69,7 +64,7 @@ public class ChannelsCheck implements StartupCheck {
 
   @Override
   public List<Problem> notes() {
-    if (!Files.exists(paths.configFile())) {
+    if (!config.fileExists()) {
       return List.of();
     }
     Set<String> routed = config.load().notifications().routeDefs().keySet();
@@ -101,9 +96,14 @@ public class ChannelsCheck implements StartupCheck {
               key + ".kind is '" + kind + "'; the kinds jagt can tell through are " + kinds()));
     }
     List<Problem> problems = new ArrayList<>();
-    if (COMMAND_KIND.equals(kind) && !hasArgv(def)) {
-      problems.add(new Problem(key + ".command", key + ".command is empty, so nothing is run"));
-    }
+    drivers.stream()
+        .filter(driver -> driver.kind().equals(kind))
+        .flatMap(driver -> driver.faults(addressOf(name, kind, def)).stream())
+        .forEach(fault ->
+            problems.add(
+                new Problem(
+                    key + "." + fault.setting(),
+                    key + "." + fault.setting() + " " + fault.problem())));
     if (needsSecret(kind) && def.webhookEnv() == null) {
       problems.add(
           new Problem(key + ".webhookEnv", key + ".webhookEnv is missing, so nothing is posted"));
@@ -211,8 +211,12 @@ public class ChannelsCheck implements StartupCheck {
     return value != null && !value.isBlank();
   }
 
-  private static boolean hasArgv(ChannelDef def) {
+  private static ChannelAddress addressOf(String name, String kind, ChannelDef def) {
     List<String> command = def.command();
-    return command != null && !command.isEmpty() && !command.getFirst().isBlank();
+    return new ChannelAddress(
+        name,
+        kind,
+        def.webhookEnv() == null ? "" : def.webhookEnv(),
+        command == null ? List.of() : command);
   }
 }

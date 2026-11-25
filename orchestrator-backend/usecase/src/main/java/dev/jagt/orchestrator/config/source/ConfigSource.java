@@ -47,9 +47,13 @@ public class ConfigSource {
 
   private record Parsed(FileVersion version, Resolution resolution, @Nullable Object section) {}
 
+  public boolean fileExists() {
+    return Files.exists(paths.configFile());
+  }
+
   public @Nullable Object section() {
     Path file = paths.configFile();
-    if (!Files.exists(file)) {
+    if (!fileExists()) {
       return rootOf(resolver.resolve(new java.util.LinkedHashMap<>()));
     }
     FileVersion version = FileVersion.of(file);

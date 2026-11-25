@@ -47,7 +47,6 @@ class AcceptanceCaseCheckTest {
         new AcceptanceCaseCheck(
             new RoleFiles(paths, "acceptance"),
             config,
-            paths,
             new Checkers(new TaskChart(Composition.builtIn())));
   }
 

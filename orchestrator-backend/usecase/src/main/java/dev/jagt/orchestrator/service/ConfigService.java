@@ -41,6 +41,10 @@ public class ConfigService implements LoopBreaker.Current {
   private final Checkers checkers;
   private final KeptNumbers kept;
 
+  public boolean fileExists() {
+    return source.fileExists();
+  }
+
   public boolean anyCheckerEnabled() {
     return load().anyCheckerEnabled(checkers.withJobs());
   }

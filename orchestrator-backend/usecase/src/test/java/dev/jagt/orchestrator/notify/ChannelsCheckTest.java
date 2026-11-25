@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.notify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
+import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -18,8 +18,6 @@ import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.RouteDef;
 import dev.jagt.orchestrator.service.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import dev.jagt.orchestrator.testing.FakeHost;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +34,6 @@ class ChannelsCheckTest {
   private final ChannelDriver command = mock(ChannelDriver.class);
   private final ChannelDriver teams = mock(ChannelDriver.class);
   private final StandardEnvironment environment = new StandardEnvironment();
-  private final OrchestratorPaths paths =
-      new OrchestratorPaths(
-          OrchestratorProperties.defaults()
-              .withConfigFile(Path.of("build.gradle").toAbsolutePath().toString()),
-          FakeHost.machine());
 
   private ChannelsCheck check;
 
@@ -51,7 +44,8 @@ class ChannelsCheckTest {
     when(teams.kind()).thenReturn("teams");
     when(teams.needsSecret()).thenReturn(true);
     when(roles.points()).thenReturn(Points.builtIn());
-    check = new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment, paths);
+    when(config.fileExists()).thenReturn(true);
+    check = new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment);
   }
 
   @Test
@@ -147,7 +141,9 @@ class ChannelsCheckTest {
   }
 
   @Test
-  void refusesCommandChannelWithNoArgv() {
+  void refusesWhatTheDriverOfTheKindFindsWrongWithTheChannel() {
+    when(command.faults(new ChannelAddress("ops", "command", "", List.of())))
+        .thenReturn(List.of(new ChannelDriver.Fault("command", "is empty, so nothing is run")));
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -158,6 +154,20 @@ class ChannelsCheckTest {
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.notifications.channels.ops.command");
+  }
+
+  @Test
+  void asksOnlyTheDriverOfTheChannelsKindForFaults() {
+    when(command.faults(any()))
+        .thenReturn(List.of(new ChannelDriver.Fault("command", "is empty, so nothing is run")));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desk", new ChannelDef("desktop", null, null)), Map.of())));
+
+    assertThat(check.problems()).isEmpty();
   }
 
   @Test
@@ -276,7 +286,7 @@ class ChannelsCheckTest {
                         Map.of("acceptance-passed", List.of(new RouteDef("desktop", "t", "x")))))
                 .withRoles(Map.of("acceptance", new RoleConfig(false, null))));
     when(desktop.kind()).thenReturn("desktop");
-    ChannelsCheck check = new ChannelsCheck(config, roles, List.of(desktop), environment, paths);
+    ChannelsCheck check = new ChannelsCheck(config, roles, List.of(desktop), environment);
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -291,7 +301,7 @@ class ChannelsCheckTest {
   void notesOnceThatNothingWillBeToldWhereNoNotificationsBlockIsWritten() {
     when(roles.points()).thenReturn(Points.builtIn());
     when(config.load()).thenReturn(ConfigFile.defaults());
-    ChannelsCheck check = new ChannelsCheck(config, roles, List.of(desktop), environment, paths);
+    ChannelsCheck check = new ChannelsCheck(config, roles, List.of(desktop), environment);
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())

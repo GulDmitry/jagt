@@ -5,12 +5,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.channel.ChannelAddress;
+import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class CommandChannelTest {
 
@@ -52,5 +56,25 @@ class CommandChannelTest {
 
     assertThatThrownBy(() -> new CommandChannel(new ProcessRunner()).deliver(address, DEPLOYED))
         .isInstanceOf(RuntimeException.class);
+  }
+
+  @ParameterizedTest
+  @MethodSource("emptyCommands")
+  void faultsChannelWhoseCommandRunsNothing(List<String> command) {
+    ChannelAddress address = new ChannelAddress("ops", "command", "", command);
+
+    assertThat(new CommandChannel(new ProcessRunner()).faults(address))
+        .containsExactly(new ChannelDriver.Fault("command", "is empty, so nothing is run"));
+  }
+
+  static Stream<List<String>> emptyCommands() {
+    return Stream.of(List.of(), List.of(" "));
+  }
+
+  @Test
+  void findsNothingWrongWithChannelWhoseCommandNamesProgram() {
+    ChannelAddress address = new ChannelAddress("ops", "command", "", List.of("cat"));
+
+    assertThat(new CommandChannel(new ProcessRunner()).faults(address)).isEmpty();
   }
 }

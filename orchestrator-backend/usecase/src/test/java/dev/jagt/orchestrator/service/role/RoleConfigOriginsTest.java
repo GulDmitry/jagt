@@ -44,6 +44,7 @@ class RoleConfigOriginsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     origins = new RoleConfigOrigins(new InstalledRoles(paths), config, paths);
+    when(config.fileExists()).thenReturn(true);
   }
 
   static Stream<Arguments> origins() {
@@ -103,6 +104,7 @@ class RoleConfigOriginsTest {
   @Test
   void everyValueIsDefaultedWhereNoJagtYmlExistsYet() throws Exception {
     Files.delete(root.resolve("jagt.yml"));
+    when(config.fileExists()).thenReturn(false);
 
     try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
       origins.logAtStart();

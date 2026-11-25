@@ -40,6 +40,15 @@ public class CommandChannel implements ChannelDriver {
   }
 
   @Override
+  public List<Fault> faults(ChannelAddress address) {
+    List<String> command = address.command();
+    if (command.isEmpty() || command.getFirst().isBlank()) {
+      return List.of(new Fault("command", "is empty, so nothing is run"));
+    }
+    return List.of();
+  }
+
+  @Override
   public void deliver(ChannelAddress address, ChannelMessage message) {
     List<String> command = new ArrayList<>(address.command());
     command.set(0, Executables.resolve(command.get(0)));

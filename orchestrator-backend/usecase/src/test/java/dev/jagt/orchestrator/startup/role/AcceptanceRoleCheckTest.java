@@ -42,8 +42,7 @@ class AcceptanceRoleCheckTest {
         new AcceptanceRoleCheck(
             roles,
             new ConfigService(
-                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers, kept),
-            paths);
+                new ConfigSource(paths, new FakeConfigInputs()), agents, actStops, checkers, kept));
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -76,8 +75,7 @@ class AcceptanceRoleCheckTest {
                         agents,
                         actStops,
                         checkers,
-                        kept),
-                    paths)
+                        kept))
                 .problems())
         .singleElement()
         .satisfies(problem -> {

@@ -1,12 +1,10 @@
 package dev.jagt.orchestrator.startup.role;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -20,7 +18,6 @@ public class RoleCheck implements StartupCheck {
 
   private final InstalledRoles roles;
   private final ConfigService config;
-  private final OrchestratorPaths paths;
 
   @Override
   public List<Problem> problems() {
@@ -40,7 +37,7 @@ public class RoleCheck implements StartupCheck {
   }
 
   private List<Problem> unknownKeys() {
-    if (!Files.exists(paths.configFile())) {
+    if (!config.fileExists()) {
       return List.of();
     }
     List<String> installed = roles.definitions().stream().map(RoleDefinition::id).toList();
