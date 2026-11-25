@@ -159,4 +159,30 @@ class ArchUnitEngineMembersTest {
 
     assertThat(found.items()).isEmpty();
   }
+
+  @Test
+  void keepsTheClassesNotNamedInExcept() {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("calls", "java.time.ZoneId.systemDefault")
+                .select("except", "Counting,Other")
+                .build(),
+            new Project(root, "fitness", List.of("all"), Map.of()));
+
+    assertThat(found.items()).singleElement().asString().contains("Clocked.zone");
+  }
+
+  @Test
+  void keepsTheClassesOfAPackageNotNamedInExcept() {
+    Measurement found =
+        engine.measure(
+            new TestFitnessFunctionBuilder()
+                .select("calls", "java.time.ZoneId.systemDefault")
+                .select("except", "elsewhere..")
+                .build(),
+            new Project(root, "fitness", List.of("all"), Map.of()));
+
+    assertThat(found.items()).singleElement().asString().contains("Clocked.zone");
+  }
 }

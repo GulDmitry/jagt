@@ -541,6 +541,15 @@ class AgentSessionsTest {
   }
 
   @Test
+  void tellsTheCallerFreshSessionWasStartedForRoundRelayedBelowPendingInstruction() {
+    state.putTask("ABC-1", reviewPending);
+
+    String answer = sessions.relayUnderFresh("ABC-1", "Review round for http://mr/1.");
+
+    assertThat(answer).contains("a fresh session was started");
+  }
+
+  @Test
   void logsThatFreshSessionWasStartedBecauseTheRoundWasAlreadyHandedBack() {
     state.putTask("ABC-1", reviewPending);
     try (FakeLogCapture log = new FakeLogCapture(FreshStarts.class)) {

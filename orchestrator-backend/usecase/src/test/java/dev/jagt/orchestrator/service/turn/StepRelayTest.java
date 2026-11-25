@@ -45,6 +45,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.event.KeyValuePair;
 
 class StepRelayTest {
 
@@ -396,6 +398,29 @@ class StepRelayTest {
           .anyMatch(pair ->
               "effect".equals(pair.key)
                   && "the claim undone, the task stopped for the human".equals(pair.value));
+    }
+  }
+
+  @Test
+  void announcesTheTurnTheClaimOpened() {
+    when(door.opens("ABC-42", Step.DEPLOY))
+        .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    StepRelay.Claim claim =
+        new StepRelay.Claim(
+            admittingRelay.standing("ABC-42"), opens -> FlowReports.Claimed.LANDED, opened -> true);
+
+    try (FakeLogCapture log = new FakeLogCapture(TaskTurns.class)) {
+      admittingRelay.relay(
+          "ABC-42", Step.DEPLOY, "ABC-42 is deployed", StepRelay.Delivery.CONTEXT, claim);
+
+      assertThat(log.events())
+          .filteredOn(event -> "turn opened".equals(event.getMessage()))
+          .singleElement()
+          .extracting(ILoggingEvent::getKeyValuePairs)
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .contains(
+              new KeyValuePair("step", "deploy"), new KeyValuePair("status", TaskStatus.REVIEWED));
     }
   }
 

@@ -408,6 +408,41 @@ class MasterVerdictsTest {
   }
 
   @Test
+  void answersTrueWhenTheAnswerWentBelowThePendingInstruction() throws Exception {
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+    state.putTask("ABC-42", task);
+
+    boolean moved =
+        verdicts.answered(
+            "ABC-42",
+            task,
+            "keep both imports?",
+            new MasterPanel.Decision("keep both imports", ""));
+
+    assertThat(moved).isTrue();
+  }
+
+  @Test
+  void answersFalseWhenTheSessionAlreadyHoldsTheAnswerGivenBelowThePendingInstruction()
+      throws Exception {
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+    state.putTask("ABC-42", task);
+    verdicts.answered(
+        "ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
+
+    boolean moved =
+        verdicts.answered(
+            "ABC-42",
+            state.task("ABC-42").orElseThrow(),
+            "keep both imports?",
+            new MasterPanel.Decision("keep both imports", ""));
+
+    assertThat(moved).isFalse();
+  }
+
+  @Test
   void keepsTheSessionOfStageCheckAnsweredAgainOverTheSameTree() throws Exception {
     state.putTask("ABC-1", reviewPending);
 
