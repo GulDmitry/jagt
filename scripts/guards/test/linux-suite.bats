@@ -133,7 +133,25 @@ EOF
 
 @test "the nightly stand job runs its three runs on compose" {
   run "$script" nightly-stand-compose
-  grep -q -- '-Pengine=compose -PstandRuns=3 --rerun-tasks' "$DOCKER_LOG"
+  grep -q -- '-Pengine=compose -PstandRuns=3' "$DOCKER_LOG"
+}
+
+@test "each job's line carries only the flags that pay off" {
+  run "$script" test heavy stand stand-kind install audit boardTest nightly-stand-compose nightly-stand-kind nightly-e2e nightly-properties nightly-scan
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"==> test: ./gradlew --no-daemon gateTest"$'\n'* ]]
+  [[ "$output" == *"==> heavy: scripts/with-linux-desktop.sh ./gradlew --no-daemon gateHeavy"$'\n'* ]]
+  [[ "$output" == *"==> stand: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose"$'\n'* ]]
+  [[ "$output" == *"==> stand-kind: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind"$'\n'* ]]
+  [[ "$output" == *"==> install: ./gradlew --no-daemon gateInstall"$'\n'* ]]
+  [[ "$output" == *"==> audit: ./gradlew --no-daemon gateScan -Paudit.base=origin/main"$'\n'* ]]
+  [[ "$output" == *"==> boardTest: ./gradlew --no-daemon boardInstall boardTest"$'\n'* ]]
+  [[ "$output" == *"==> nightly-stand-compose: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose -PstandRuns=3"$'\n'* ]]
+  [[ "$output" == *"==> nightly-stand-kind: ./gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind -PstandRuns=3"$'\n'* ]]
+  [[ "$output" == *"==> nightly-e2e: ./gradlew --no-daemon gateRepeat"$'\n'* ]]
+  [[ "$output" == *"==> nightly-properties: ./gradlew --no-daemon gateProperties -PjqwikTries=1000 --rerun-tasks"$'\n'* ]]
+  [[ "$output" == *"==> nightly-scan: ./gradlew --no-daemon gateScan"* ]]
+  [ "$(grep -c -- '--rerun-tasks' "$DOCKER_LOG")" -eq 1 ]
 }
 
 @test "the runner delegates the cgroup controllers by moby's retry loop before dockerd starts" {

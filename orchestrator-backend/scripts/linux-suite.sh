@@ -29,9 +29,9 @@ gate() {
         install) echo './gradlew --no-daemon gateInstall' ;;
         audit) echo './gradlew --no-daemon gateScan -Paudit.base=origin/main' ;;
         boardTest) echo './gradlew --no-daemon boardInstall boardTest' ;;
-        nightly-stand-compose) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose -PstandRuns=3 --rerun-tasks' ;;
-        nightly-stand-kind) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind -PstandRuns=3 --rerun-tasks' ;;
-        nightly-e2e) echo './gradlew --no-daemon gateRepeat --rerun-tasks' ;;
+        nightly-stand-compose) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose -PstandRuns=3' ;;
+        nightly-stand-kind) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind -PstandRuns=3' ;;
+        nightly-e2e) echo './gradlew --no-daemon gateRepeat' ;;
         nightly-properties) echo './gradlew --no-daemon gateProperties -PjqwikTries=1000 --rerun-tasks' ;;
         nightly-scan) echo './gradlew --no-daemon gateScan' ;;
         *) echo "linux-suite: no job $1; jobs: test heavy stand stand-kind install audit boardTest nightly-*" >&2; return 2 ;;
