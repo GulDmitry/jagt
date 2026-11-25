@@ -184,6 +184,8 @@ class PasswordLoginRefusalOnTomcatTest {
         "POST|/api/interactions|*/*|/",
         "GET|/api/tasks|*/*|/",
         "GET|/state|application/json|/",
+        "GET|/state|*/*|/",
+        "GET|/favicon.ico|image/avif,image/webp,*/*;q=0.8|/",
         "GET|/state|text/html,*/*;q=0.8|/state?continue"
       })
   void loginReturnsOnlyToPageTheLoggedOutBrowserAsked(
