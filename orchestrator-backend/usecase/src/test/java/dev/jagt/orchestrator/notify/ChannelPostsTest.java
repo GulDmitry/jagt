@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -142,17 +143,35 @@ class ChannelPostsTest {
   }
 
   @Test
-  void dropsThePostWhenTheDeliveryBacklogIsFull() {
-    new ChannelPosts(
+  void triesAgainAndMarksTheBoardWhenTheDeliveryBacklogIsFull() {
+    ArgumentCaptor<Runnable> retry = ArgumentCaptor.forClass(Runnable.class);
+    AtomicBoolean full = new AtomicBoolean(true);
+    ChannelPosts backedUp =
+        new ChannelPosts(
             List.of(driver),
             reach,
             task -> {
-              throw new RejectedExecutionException("full");
+              if (full.get()) {
+                throw new RejectedExecutionException("full");
+              }
+              task.run();
             },
-            retries)
-        .post(TEAM, DEPLOYED);
+            retries);
 
-    verify(driver, never()).deliver(any(), any());
+    backedUp.post(TEAM, DEPLOYED);
+    verify(retries).schedule(retry.capture(), eq(10L), eq(TimeUnit.SECONDS));
+    verify(reach)
+        .marked(
+            new ReachLost(
+                "notification",
+                "team/deployed",
+                List.of(),
+                "team cannot tell deployed: channel backed up"));
+    full.set(false);
+    retry.getValue().run();
+
+    verify(driver).deliver(TEAM, DEPLOYED);
+    verify(reach).reached("notification", "team/deployed");
   }
 
   @Test
