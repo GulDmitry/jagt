@@ -939,4 +939,28 @@ class FlowRulesTest {
 
     assertThat(rules.declined(TaskAction.SHIP, facts, ActionOrigin.BOARD)).isEmpty();
   }
+
+  @ParameterizedTest
+  @CsvSource({"DONE,true", "REVIEWED,false", "NEW,false"})
+  void finishesTaskOnlyAtDone(TaskStatus status, boolean finished) {
+    assertThat(FlowRules.finished(status)).isEqualTo(finished);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"REVIEW_PENDING,true", "CI_FAILED,false", "IN_PROGRESS,false"})
+  void awaitsReviewOnlyAtReviewPending(TaskStatus status, boolean awaits) {
+    assertThat(FlowRules.awaitsReview(status)).isEqualTo(awaits);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"IN_PROGRESS,true", "NEW,false", "SHIPPING,false"})
+  void isInProgressOnlyAtInProgress(TaskStatus status, boolean working) {
+    assertThat(FlowRules.inProgress(status)).isEqualTo(working);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"SHIPPING,true", "IN_PROGRESS,false", "REVIEW_PENDING,false"})
+  void isShippingOnlyAtShipping(TaskStatus status, boolean shipping) {
+    assertThat(FlowRules.shipping(status)).isEqualTo(shipping);
+  }
 }

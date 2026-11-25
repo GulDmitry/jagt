@@ -103,6 +103,22 @@ final class StatusSets {
     return WAITING_ON_THE_HOST.contains(status);
   }
 
+  static boolean finished(TaskStatus status) {
+    return status == DONE;
+  }
+
+  static boolean awaitsReview(TaskStatus status) {
+    return status == REVIEW_PENDING;
+  }
+
+  static boolean inProgress(TaskStatus status) {
+    return status == IN_PROGRESS;
+  }
+
+  static boolean shipping(TaskStatus status) {
+    return status == SHIPPING;
+  }
+
   static boolean handedOver(TaskStatus status) {
     return HANDED_OVER.contains(status);
   }

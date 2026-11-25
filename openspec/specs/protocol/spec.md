@@ -45,6 +45,8 @@ CI_POLLING with no request, a request filed under a project the task does not ha
 #### Scenario: CI_POLLING without a request, a question without a message
 - **WHEN** a message reports CI_POLLING without one, or `outcome=question` with no message
 - **THEN** it is refused, naming `reviewRequestUrl` or `message`, and nothing reaches the board or the Master
+- **WHEN** a CI_POLLING report links only requests outside the repository's remote
+- **THEN** the task stays at the status it holds, and a status that may not be reported again refuses the report
 
 ### Requirement: A session may declare that no plan comes first
 `update_agent_status` SHALL take `outcome=no_plan` with status `IN_PROGRESS`, its message the reason; the report opens the
@@ -63,8 +65,7 @@ task's `PERMISSION` report, which nothing standing in for the human answers ([ma
 - **THEN** the card reads `NEEDS INPUT: permission: …` and the Master leaves it to you
 
 ### Requirement: Every violation at once
-Validation SHALL report every violation at once, never first-failure, each naming the field and what was expected.
-`startup/StartupValidation` refuses a bad install the same way.
+Validation SHALL report every violation at once, each naming the field and what was expected; `startup/StartupValidation` does the same.
 
 #### Scenario: Several wrong fields
 - **WHEN** a required field is missing and another is out of its enum
@@ -89,8 +90,7 @@ what comes next off what the handler threw: `validation`, a wrong argument, is f
 - **THEN** it is refused as `business`, not `validation`
 
 ### Requirement: A hook's post is filtered, not refused
-`protocol/SessionHookReport` SHALL accept what a hook posts without correction, since the hook throws the answer away:
-what jagt cannot believe is dropped and logged once.
+`protocol/SessionHookReport` SHALL filter what a hook posts, never refuse it: what jagt cannot believe is dropped, logged once.
 
 #### Scenario: A relative log path
 - **WHEN** a hook posts one

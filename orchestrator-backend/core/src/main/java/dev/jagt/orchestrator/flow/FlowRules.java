@@ -184,6 +184,26 @@ public final class FlowRules {
     return StatusSets.waitsOnTheHost(status);
   }
 
+  /** Whether the task is closed for good. */
+  public static boolean finished(TaskStatus status) {
+    return StatusSets.finished(status);
+  }
+
+  /** Whether the agent has handed the change over and the review is the next step. */
+  public static boolean awaitsReview(TaskStatus status) {
+    return StatusSets.awaitsReview(status);
+  }
+
+  /** Whether the agent is working on the change. */
+  public static boolean inProgress(TaskStatus status) {
+    return StatusSets.inProgress(status);
+  }
+
+  /** Whether the agent is shipping the change. */
+  public static boolean shipping(TaskStatus status) {
+    return StatusSets.shipping(status);
+  }
+
   /**
    * Whether a read of the review round leaves this report standing: only the session or a human
    * answers it.

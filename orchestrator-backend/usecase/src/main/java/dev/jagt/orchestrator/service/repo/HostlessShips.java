@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service.repo;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class HostlessShips implements RequestlessShip {
 
   @Override
   public boolean stands(TaskState task) {
-    if (task.standing().status() != TaskStatus.REVIEW_PENDING || task.repos().isEmpty()) {
+    if (!FlowRules.awaitsReview(task.standing().status()) || task.repos().isEmpty()) {
       return false;
     }
     ConfigFile config = configService.load();

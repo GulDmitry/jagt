@@ -37,6 +37,19 @@ public class FlowReports {
   /** The status a report found the task in, and the one it left it in. */
   public record Landed(TaskStatus previous, TaskStatus now) {}
 
+  /**
+   * Whether a report of an open request, none of whose links the repository's remote owns, ships
+   * nothing.
+   */
+  public static boolean missedShip(TaskStatus said, boolean everyLinkForeign) {
+    return everyLinkForeign && said == TaskStatus.CI_POLLING;
+  }
+
+  /** The status such a report lands on: a missed ship leaves the task where it stands. */
+  public static TaskStatus landing(TaskStatus said, TaskStatus standing, boolean everyLinkForeign) {
+    return missedShip(said, everyLinkForeign) ? standing : said;
+  }
+
   public TaskStatus verified(boolean passed) {
     return rules.verified(passed);
   }

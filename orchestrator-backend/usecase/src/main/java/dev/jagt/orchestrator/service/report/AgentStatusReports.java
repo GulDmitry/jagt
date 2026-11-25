@@ -201,7 +201,7 @@ public class AgentStatusReports {
     if (judged.foreign().isEmpty()) {
       return said;
     }
-    boolean missedShip = judged.refusedAll() && said.status() == TaskStatus.CI_POLLING;
+    boolean missedShip = FlowReports.missedShip(said.status(), judged.refusedAll());
     if (missedShip && !flow.reportable(task.standing().status(), task.standing().status())) {
       throw Refusal.byState(
           "jagt refuses this report: "
@@ -211,7 +211,8 @@ public class AgentStatusReports {
               + task.standing().status()
               + ".");
     }
-    TaskStatus stays = missedShip ? task.standing().status() : said.status();
+    TaskStatus stays =
+        FlowReports.landing(said.status(), task.standing().status(), judged.refusedAll());
     return new Reported(
         stays,
         said.claimed(),

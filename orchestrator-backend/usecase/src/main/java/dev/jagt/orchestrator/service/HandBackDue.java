@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.worktree.Specs;
 import dev.jagt.orchestrator.service.session.OfferedModels;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import dev.jagt.orchestrator.task.review.RoundTrail;
 import java.io.IOException;
@@ -53,7 +53,7 @@ public class HandBackDue {
         .filter(round -> round.threads() > 0)
         .filter(round ->
             task.standing().history().stream()
-                .noneMatch(step -> step.status() == TaskStatus.SHIPPING && step.at() > round.at()))
+                .noneMatch(step -> FlowRules.shipping(step.status()) && step.at() > round.at()))
         .filter(round ->
             olderThan(
                 round.at(), Path.of(task.worktreePath()).resolve(Artifact.REPLIES.fileName())));
