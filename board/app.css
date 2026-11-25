@@ -1,4 +1,4 @@
-/* One stylesheet, no imports, no fonts to fetch: the board must work with the machine offline. */
+/* One stylesheet, no imports, no fonts to fetch: the board must work offline. */
 :root {
   color-scheme: light dark;
   --bg: light-dark(#f6f7f9, #14171a);
@@ -888,13 +888,10 @@ main#board:empty {
     flex-direction: column;
     height: 100dvh;
   }
-  main#board {
-    flex: 1 1 auto;
+  main#board:not(:empty) {
+    flex: auto;
     min-height: 0;
     grid-template-rows: minmax(0, 1fr);
-  }
-  main#board:empty {
-    flex: none;
   }
   #tasks {
     max-height: 100%;
