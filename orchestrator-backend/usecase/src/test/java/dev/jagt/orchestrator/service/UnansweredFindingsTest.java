@@ -57,7 +57,7 @@ class UnansweredFindingsTest {
     when(state.task("ABC-42")).thenReturn(Optional.of(task));
     when(handBackDue.unanswered(task)).thenReturn(Optional.empty());
     when(settings.load()).thenReturn(CodeReviewSettings.Settings.defaults());
-    when(changes.state(task)).thenReturn(Optional.of("t1"));
+    when(changes.reviewKey(task)).thenReturn("t1");
 
     assertThat(findings.awaiting("ABC-42"))
         .hasValueSatisfying(sentence -> assertThat(sentence).contains("has not read this change"));
@@ -68,7 +68,7 @@ class UnansweredFindingsTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(state.task("ABC-42")).thenReturn(Optional.of(task));
     when(settings.load()).thenReturn(CodeReviewSettings.Settings.defaults());
-    when(changes.state(task)).thenReturn(Optional.of("t1"));
+    when(changes.reviewKey(task)).thenReturn("t1");
 
     assertThat(findings.awaiting("ABC-42"))
         .hasValueSatisfying(sentence -> assertThat(sentence).contains("has not read this change"));
@@ -95,7 +95,7 @@ class UnansweredFindingsTest {
     when(state.task("ABC-42")).thenReturn(Optional.of(task));
     when(handBackDue.unanswered(task)).thenReturn(Optional.empty());
     when(settings.load()).thenReturn(new CodeReviewSettings.Settings(enabled, false, 5000, 1.0));
-    when(changes.state(task)).thenReturn(Optional.of(currentTree));
+    when(changes.reviewKey(task)).thenReturn(currentTree);
 
     assertThat(findings.awaiting("ABC-42").isPresent()).isEqualTo(declined);
   }

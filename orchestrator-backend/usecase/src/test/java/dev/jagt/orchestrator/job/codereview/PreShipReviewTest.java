@@ -23,7 +23,6 @@ import dev.jagt.orchestrator.task.review.ReviewFacts;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -44,7 +43,7 @@ class PreShipReviewTest {
   @Test
   void relaysEachFindingToTheSessionAsReviewRoundWhenItHandsBack() {
     when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
-    when(changes.state(handedBack)).thenReturn(Optional.of("t1"));
+    when(changes.reviewKey(handedBack)).thenReturn("t1");
     when(changes.diff(handedBack)).thenReturn("+line1\n");
     when(panel.review(any(), any(), any(), anyString()))
         .thenReturn(new Judgement("", "ready", List.of(leak, taste), "", List.of(), ""));
@@ -64,7 +63,7 @@ class PreShipReviewTest {
   @Test
   void relaysNothingAndMarksTheTreeReadWhenTheDiffIsClean() {
     when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
-    when(changes.state(handedBack)).thenReturn(Optional.of("t2"));
+    when(changes.reviewKey(handedBack)).thenReturn("t2");
     when(changes.diff(handedBack)).thenReturn("+line2\n");
     when(panel.review(any(), any(), any(), anyString()))
         .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
@@ -82,7 +81,7 @@ class PreShipReviewTest {
             .told(ToldOnce.none().with(ToldOnce.Kind.PRE_SHIP_TREE, "t3"))
             .build();
     when(state.tasks()).thenReturn(Map.of("ABC-42", read));
-    when(changes.state(read)).thenReturn(Optional.of("t3"));
+    when(changes.reviewKey(read)).thenReturn("t3");
 
     review.run("");
 
@@ -96,7 +95,7 @@ class PreShipReviewTest {
             .mrUrl("https://host/mr/9")
             .build();
     when(state.tasks()).thenReturn(Map.of("ABC-42", shipped));
-    when(changes.state(shipped)).thenReturn(Optional.of("t9"));
+    when(changes.reviewKey(shipped)).thenReturn("t9");
     when(changes.diff(shipped)).thenReturn("+line9\n");
     when(panel.review(any(), any(), any(), anyString()))
         .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
@@ -119,7 +118,7 @@ class PreShipReviewTest {
   @Test
   void marksTheTreeReadWhenItsDiffIsEmpty() {
     when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
-    when(changes.state(handedBack)).thenReturn(Optional.of("t8"));
+    when(changes.reviewKey(handedBack)).thenReturn("t8");
     when(changes.diff(handedBack)).thenReturn("");
 
     review.run("");
@@ -131,7 +130,7 @@ class PreShipReviewTest {
   @Test
   void recordsTheFailureSoNoShipWaitsOnItAndReadsTheTreeAgain() {
     when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
-    when(changes.state(handedBack)).thenReturn(Optional.of("t6"));
+    when(changes.reviewKey(handedBack)).thenReturn("t6");
     when(changes.diff(handedBack)).thenReturn("+line6\n");
     when(panel.review(any(), any(), any(), anyString())).thenReturn(Judgement.failed("no model"));
 
@@ -144,7 +143,7 @@ class PreShipReviewTest {
   @Test
   void readsTheTreeAgainWhenTheRoundWasNotRelayed() {
     when(state.tasks()).thenReturn(Map.of("ABC-42", handedBack));
-    when(changes.state(handedBack)).thenReturn(Optional.of("t7"));
+    when(changes.reviewKey(handedBack)).thenReturn("t7");
     when(changes.diff(handedBack)).thenReturn("+line7\n");
     when(panel.review(any(), any(), any(), anyString()))
         .thenReturn(new Judgement("", "ready", List.of(leak), "", List.of(), ""));
