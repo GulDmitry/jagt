@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # jagt's own image, as CI and a laptop run it: `up` builds it from build/libs, starts it with compose and a stub project,
-# checks jagt.yml on its volume survives a recreate and writes the board's URL and password to build/container-suite/board.env;
+# checks a first start creates TMPDIR on an empty volume and jagt.yml there survives a recreate,
+# and writes the board's URL and password to build/container-suite/board.env;
 # `down` removes every container, volume, network and image `up` made. The Gradle task boardContainerTest runs between them.
 # Needs docker. Usage: scripts/container-suite.sh up|down      (from any directory)
 # shellcheck disable=SC2016 # the config template and the image's shell expand their own variables
@@ -56,9 +57,10 @@ up() {
 
     image=$(compose images --quiet jagt)
     docker volume create "$VOLUME" >/dev/null
-    start() { docker run --rm -v "$VOLUME":/data -e JAGT_JAVA_OPTIONS=-version --entrypoint /app/entrypoint.sh "$image" >/dev/null 2>&1; }
+    start() { docker run --rm -v "$VOLUME":/data "$@" -e JAGT_JAVA_OPTIONS=-version --entrypoint /app/entrypoint.sh "$image" >/dev/null 2>&1; }
     inside() { docker run --rm -v "$VOLUME":/data --entrypoint sh "$image" -c "$1"; }
-    start
+    start -e TMPDIR=/data/tmp -e XDG_CACHE_HOME=/data/cache
+    inside 'test -d /data/tmp && test -d /data/cache'
     inside 'echo "# added from the board" >>"$ORCHESTRATOR_CONFIG_FILE"'
     start
     inside 'grep -q "added from the board" "$ORCHESTRATOR_CONFIG_FILE"'

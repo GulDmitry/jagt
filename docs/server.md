@@ -147,6 +147,7 @@ a service account without a token, one optional PVC, Secrets
 |------|-------|---------|
 | JVM options | `JAGT_JAVA_OPTIONS`, jagt's JVM alone | heap `-Xmx512m`, serial GC, exit on out-of-memory, dump to `/data/dumps` |
 | memory, CPU | `resources` | 2Gi requested, 4Gi limit, 1 CPU requested, 4 limited, small ephemeral storage (estimates) |
+| temporary files, caches | `TMPDIR`, `XDG_CACHE_HOME` | unset; with a tight ephemeral-storage quota set them under `/data`, and each start creates them |
 | shutdown | `terminationGracePeriodSeconds` | 60: preStop 5 s, `spring.lifecycle.timeout-per-shutdown-phase` 20 s twice |
 | probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min, liveness 3 misses |
 | egress | `NetworkPolicy` | DNS, then HTTPS and SSH to public addresses; add acceptance environments |

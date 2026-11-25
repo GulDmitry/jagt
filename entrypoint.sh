@@ -16,6 +16,10 @@ if ! whoami >/dev/null 2>&1; then
   echo "jagt:x:$(id -u):0::$HOME:/bin/bash" >>/etc/passwd
 fi
 mkdir -p /data/dumps "$HOME"
+# A volume starts empty, and tools fail on a temporary or cache folder that does not exist.
+for dir in "$TMPDIR" "$XDG_CACHE_HOME"; do
+  case "$dir" in "$ORCHESTRATOR_DATA"/?*) mkdir -p "$dir" ;; esac
+done
 # The configuration the board edits lives on the volume; the image's copy only seeds a first start.
 if [ -n "$ORCHESTRATOR_CONFIG_FILE" ] && [ ! -e "$ORCHESTRATOR_CONFIG_FILE" ]; then
   mkdir -p "$(dirname "$ORCHESTRATOR_CONFIG_FILE")"

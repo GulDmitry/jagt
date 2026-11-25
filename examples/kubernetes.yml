@@ -84,6 +84,11 @@ spec:
             - name: JAGT_MCP_CONFIG
               value: /run/secrets/jagt/mcp.json
             # JAGT_JAVA_OPTIONS overrides the image's JVM options (docs/server.md); the image's heap is fixed at 512m.
+            # Under a tight ephemeral-storage quota, temporary files and caches go on the volume (docs/server.md):
+            # - name: TMPDIR
+            #   value: /data/tmp
+            # - name: XDG_CACHE_HOME
+            #   value: /data/cache
           # Estimates: a 512m heap, the agent CLIs of at most 4 open tasks and one verify run; measure and adjust.
           # An explicit CPU limit: a missing one becomes the namespace's LimitRange default.
           resources:
