@@ -5,7 +5,7 @@ paths:
   - "**/flow/view/Attention.java"
   - "**/flow/view/TaskView.java"
   - "**/service/task/TaskViews.java"
-  - "board/ui/card.js"
+  - "board/components/Card.js"
   - "board/ui/header.js"
 ---
 

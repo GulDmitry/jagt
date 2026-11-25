@@ -1,8 +1,7 @@
 ---
 paths:
   - "**/dev/jagt/orchestrator/adapter/tmux/**"
-  - "**/adapter/*Terminal*.java"
-  - "**/adapter/*Kitty*.java"
+  - "**/dev/jagt/orchestrator/adapter/terminal/**"
   - "**/adapter/macos/**"
   - "**/adapter/linux/**"
   - "**/adapter/ProcessRunner.java"
