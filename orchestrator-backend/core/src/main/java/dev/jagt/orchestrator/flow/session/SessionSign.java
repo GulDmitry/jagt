@@ -155,7 +155,7 @@ public sealed interface SessionSign {
             .withWindow(windowAfter(session, now));
       }
       long last = Math.max(later, halt == null ? 0 : halt.at());
-      if (halt == null && printedAt > last) {
+      if (halt == null && session.halt() == null && printedAt > last) {
         last = printedAt;
       }
       boolean stale = halt == null || halt.kind() == Session.Halt.Kind.IDLE;
