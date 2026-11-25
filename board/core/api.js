@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+
 /**
  * @param {Response} response
  * @param {{ error?: string, code?: string }} refused
@@ -78,7 +80,7 @@ export const refusal = (e) => {
   const code =
     "code" in failure && typeof failure.code === "string" ? failure.code : "";
   return STALE_VIEW.includes(code)
-    ? `${failure.message}\n\nThe board is up to date now.`
+    ? `${failure.message}\n\n${t("refusal.current")}`
     : failure.message;
 };
 

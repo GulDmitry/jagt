@@ -29,6 +29,11 @@ class BoardAssetsTest {
               + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)"
               + "?//[^\"]*\\.m?js\"");
 
+  private static final Pattern LOCALE_FROM_BROWSER =
+      Pattern.compile(
+          "\\.localeCompare\\(\\s*[^,()]*(\\([^()]*\\))?[^,()]*(\\)|,\\s*+(?![\"']))"
+              + "|Intl\\.(Collator|NumberFormat|PluralRules|RelativeTimeFormat)\\(\\s*+(?![\"'])");
+
   @ParameterizedTest
   @CsvSource({
     "preact.mjs, bdcbd9abdf2c77c5c45326eab42191e949222d479d0d5f69467387a77040cb55",
@@ -208,7 +213,7 @@ class BoardAssetsTest {
   }
 
   @Test
-  void noBoardScriptFormatsTimeInTheBrowsersLocaleOrZone() throws IOException {
+  void noBoardScriptSortsOrFormatsInTheBrowsersLocaleOrZone() throws IOException {
     List<Path> scripts;
     try (Stream<Path> files = Files.walk(STATIC)) {
       scripts =
@@ -221,6 +226,8 @@ class BoardAssetsTest {
 
     assertThat(scripts)
         .isNotEmpty()
+        .allSatisfy(
+            script -> assertThat(script).content().doesNotContainPattern(LOCALE_FROM_BROWSER))
         .allSatisfy(script -> assertThat(script).content().doesNotContain("toLocale"))
         .allSatisfy(script ->
             assertThat(script)
