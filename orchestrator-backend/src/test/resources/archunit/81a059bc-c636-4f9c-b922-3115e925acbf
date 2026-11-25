@@ -28,6 +28,7 @@ dev.jagt.orchestrator.eval.EvalShards
 dev.jagt.orchestrator.eval.EvalSpend
 dev.jagt.orchestrator.eval.EvalStalled
 dev.jagt.orchestrator.eval.EvalStats
+dev.jagt.orchestrator.eval.HandedBackSession
 dev.jagt.orchestrator.eval.MasterCase
 dev.jagt.orchestrator.eval.MasterCases
 dev.jagt.orchestrator.eval.MasterVerdictReport

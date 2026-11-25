@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
 import dev.jagt.orchestrator.eval.EvalGit;
 import dev.jagt.orchestrator.eval.EvalShards;
+import dev.jagt.orchestrator.eval.HandedBackSession;
 import dev.jagt.orchestrator.eval.MasterCase;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -120,7 +121,10 @@ final class MasterEvalWorkspace {
     if (!round.plan().isBlank()) {
       Files.writeString(worktree.resolve("plan.md"), round.plan());
     }
-    Files.writeString(repo.resolve(".git/info/exclude"), "task_request.md\nplan.md\n");
+    HandedBackSession.files(worktree, round.instructions());
+    Files.writeString(
+        repo.resolve(".git/info/exclude"),
+        "task_request.md\nplan.md\ntask_context.md\ntask_notes.md\n");
     MasterEvalTranscripts.nothingTypedIn(worktree);
     return worktree;
   }

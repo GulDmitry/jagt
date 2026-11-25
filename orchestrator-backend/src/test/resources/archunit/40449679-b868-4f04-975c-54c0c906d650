@@ -75,6 +75,8 @@ Method <dev.jagt.orchestrator.eval.EvalShards.claim(java.lang.Class)> does not s
 Method <dev.jagt.orchestrator.eval.EvalShards.claimed()> does not satisfy be called from main in (EvalShards.java:41)
 Method <dev.jagt.orchestrator.eval.EvalShards.release()> does not satisfy be called from main in (EvalShards.java:58)
 Method <dev.jagt.orchestrator.eval.EvalShards.under(java.nio.file.Path, int)> does not satisfy be called from main in (EvalShards.java:30)
+Method <dev.jagt.orchestrator.eval.HandedBackSession.files(java.nio.file.Path, java.lang.String)> does not satisfy be called from main in (HandedBackSession.java:20)
+Method <dev.jagt.orchestrator.eval.HandedBackSession.record(java.nio.file.Path, java.util.List)> does not satisfy be called from main in (HandedBackSession.java:26)
 Method <dev.jagt.orchestrator.eval.MasterCase.answers()> does not satisfy be called from main in (MasterCase.java:28)
 Method <dev.jagt.orchestrator.eval.MasterCases.all()> does not satisfy be called from main in (MasterCases.java:15)
 Method <dev.jagt.orchestrator.eval.MasterVerdictReport.of(java.lang.String, java.nio.file.Path)> does not satisfy be called from main in (MasterVerdictReport.java:22)
