@@ -130,6 +130,10 @@ Sessions check their work in your image, built `FROM` jagt's: [spec](../openspec
 [0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md).
 `examples/agent-image.Dockerfile` adds the agent CLI, `gh` and `glab` as optional blocks; for Kubernetes build it with
 `docker build -f examples/agent-image.Dockerfile --build-arg BASE=jagt-base -t my-jagt .` after `docker build -t jagt-base .`.
+A cluster that forbids image builds inside it needs the image built elsewhere. Build it there and push it to a registry the cluster pulls from:
+`docker buildx build --platform linux/amd64 --ssh default -f examples/agent-image.Dockerfile --build-arg BASE=<registry>/jagt-base \
+-t <registry>/my-jagt --push .`.
+The `--ssh default` flag lets the build clone a private marketplace through your SSH agent, so no token enters the build.
 
 **Compose** mounts one volume, `jagt-data`, at `/data`: state, artifacts, repositories, worktrees and the CLI login.
 **`/data` must be persistent** — a compose volume, or a PersistentVolumeClaim under

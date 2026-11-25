@@ -35,10 +35,22 @@ USER root
 
 # Your organisation's agent settings, plugins and skills, from its plugin marketplace repository (docs/server.md).
 # The seed folder is baked here; entrypoint.sh lays it over JAGT_AGENT_HOME on every start. Names are examples.
-# The token is a build secret (docker build --secret id=marketplace_token,env=MARKETPLACE_TOKEN), never an ARG or ENV.
-# ENV JAGT_AGENT_SEED=/opt/agent-seed JAGT_AGENT_HOME=/data/home/.agent
+# HOME is /data/home, so the agent CLI finds its login and settings in that folder.
+# ENV JAGT_AGENT_SEED=/opt/agent-seed JAGT_AGENT_HOME=/data/home
+# Token variant: a build secret (docker build --secret id=marketplace_token,env=MARKETPLACE_TOKEN), never an ARG or ENV.
 # RUN --mount=type=secret,id=marketplace_token \
 #     git clone "https://x-access-token:$(cat /run/secrets/marketplace_token)@git.example.com/ABC/plugin-marketplace.git" /tmp/marketplace \
+#  && git -C /tmp/marketplace rev-parse HEAD > /tmp/marketplace.commit \
+#  && git -C /tmp/marketplace remote remove origin \
+#  && mkdir -p "$JAGT_AGENT_SEED" \
+#  && <your agent CLI> plugin install --config-dir "$JAGT_AGENT_SEED" /tmp/marketplace \
+#  && cp /tmp/marketplace.commit "$JAGT_AGENT_SEED/marketplace.commit" \
+#  && rm -rf /tmp/marketplace /tmp/marketplace.commit
+# SSH-agent variant, no token: docker buildx build --ssh default, with the host's keys in ./marketplace_known_hosts.
+# The file is bind-mounted from the build context and the key stays in the builder's agent, so no layer holds either.
+# RUN --mount=type=ssh --mount=type=bind,source=marketplace_known_hosts,target=/run/known_hosts \
+#     GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/run/known_hosts -o StrictHostKeyChecking=yes" \
+#     git clone git@git.example.com:ABC/plugin-marketplace.git /tmp/marketplace \
 #  && git -C /tmp/marketplace rev-parse HEAD > /tmp/marketplace.commit \
 #  && git -C /tmp/marketplace remote remove origin \
 #  && mkdir -p "$JAGT_AGENT_SEED" \
