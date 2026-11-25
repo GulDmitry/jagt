@@ -139,7 +139,7 @@ orchestrator:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks
     # mcpConfig: /path/to/servers.json   # a session loads jagt's server and these alone, none of yours
     outputStyle: ""       # a Claude output style to start every sub-agent with; read at startup
-    # disabledPlugins:    # Claude plugin ids; dropping an LSP plugin buys memory and costs the agent its code intelligence
+    # disabledPlugins:    # Claude plugin ids, off for sessions and for reads that inherit your servers
     #   - jdtls-lsp@claude-plugins-official
   # codex:
   #   command: codex

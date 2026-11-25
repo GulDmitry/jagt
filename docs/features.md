@@ -135,7 +135,7 @@
   [spec](../openspec/specs/shutdown/spec.md)
 - **Cold prompts** — Past the cache lifetime, a typed prompt starts fresh. [spec](../openspec/specs/cold-prompts/spec.md)
 - **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/platform/spec.md#requirement-the-editor-is-a-launcher)
-- **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
+- **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Keys: `claude.mcpConfig`, `disabledPlugins`.
   [spec](../openspec/specs/runtime/spec.md#requirement-a-sessions-servers-can-be-pinned)
 
 ## Session brief · [spec](../openspec/specs/session-brief/spec.md)

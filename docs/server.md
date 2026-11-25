@@ -116,6 +116,8 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
   settings, MCP config and plugins are replaced, conversations and logins kept; with either variable unset nothing is copied.
 - `claude.mcpConfig` or `assistant.mcpConfig` naming a file the container lacks is one mark on the board's head, until the file is there.
   A value holding the JSON itself is not a file and is not checked.
+- A plugin server needing a browser login cannot sign in here: list its plugin (`name@marketplace`) under `claude.disabledPlugins`
+  and no session or read loads it. Any other server not connected is one head mark, probed every ten minutes.
 
 ## Git reaches the code host
 

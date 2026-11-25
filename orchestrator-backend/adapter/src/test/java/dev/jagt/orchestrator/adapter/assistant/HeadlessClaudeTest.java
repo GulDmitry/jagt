@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
@@ -255,6 +256,50 @@ class HeadlessClaudeTest {
     List<String> command = runner.command();
     assertThat(command).containsSequence("--setting-sources", "user,project,local");
     assertThat(command).doesNotContain("--strict-mcp-config");
+  }
+
+  @Test
+  void switchesOffTheDisabledPluginsWhenTheReadInheritsTheHumansServers() {
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+    var claude =
+        headlessClaude()
+            .withClaude(
+                new ClaudeProperties(
+                    "", "", "", List.of("acme-tracker@market", " ", "acme-host@market")))
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
+    claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(runner.command())
+        .containsSequence(
+            "--settings",
+            "{\"enabledPlugins\":{\"acme-tracker@market\":false,\"acme-host@market\":false}}");
+  }
+
+  @Test
+  void passesNoPluginSettingWhenNoPluginIsDisabled() {
+
+    claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(runner.command()).doesNotContain("--settings");
+  }
+
+  @Test
+  void leavesPluginsToThePinnedServersWhenTheInstallDeclaresThem() {
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+    var claude =
+        headlessClaude()
+            .withClaude(new ClaudeProperties("", "", "", List.of("acme-tracker@market")))
+            .withProperties(AssistantProperties.empty().withMcpConfig("/etc/servers.json"))
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
+    claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(runner.command()).doesNotContain("--settings");
   }
 
   @Test

@@ -75,6 +75,8 @@ public class HeadlessClaudeCheckerReader {
     }
     if (mcpReads.isEmpty()) {
       cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
+    } else {
+      cmd.addAll(claude.disabledPluginArguments());
     }
     if (!run.model().isBlank()) {
       cmd.addAll(List.of("--model", run.model()));
