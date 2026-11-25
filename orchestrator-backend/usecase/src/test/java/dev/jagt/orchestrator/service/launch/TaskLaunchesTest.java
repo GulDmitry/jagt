@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
-import dev.jagt.orchestrator.port.assistant.BranchNamer;
+import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
@@ -34,7 +34,8 @@ class TaskLaunchesTest {
   private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
   private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
   private final TicketPlacement placement = mock(TicketPlacement.class);
-  private final BranchNamer namer = mock(BranchNamer.class, invocation -> Answer.unavailable());
+  private final CommandAssistant namer =
+      mock(CommandAssistant.class, invocation -> Answer.unavailable());
   private final UsageTracker usage = mock(UsageTracker.class);
   private final TaskLaunches launches =
       new TaskLaunches(provisioning, worktrees, placement, new WrittenTaskNames(namer, usage));

@@ -11,4 +11,9 @@ record FakeProposingCommandAssistant(CommandProposal proposal) implements Comman
   public Answer<CommandProposal> mapCommand(String text, Menu menu) {
     return new Answer<>(Optional.of(proposal), TokenUsage.NONE);
   }
+
+  @Override
+  public Answer<String> nameBranch(String prompt) {
+    return Answer.unavailable();
+  }
 }

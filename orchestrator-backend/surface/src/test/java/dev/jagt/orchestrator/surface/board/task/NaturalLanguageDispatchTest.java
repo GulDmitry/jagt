@@ -26,9 +26,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
-import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,9 +112,7 @@ class NaturalLanguageDispatchTest {
   @Test
   void refusesTaskTheModelInventedInsteadOfActingOnSomethingNear() {
     CommandAssistant assistant =
-        (text, tasks) ->
-            new Answer<>(
-                Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE);
+        new FakeProposingCommandAssistant(new CommandProposal("ship", "ABC-99", "", "guessed"));
     NaturalLanguageDispatch dispatch =
         new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
@@ -129,8 +125,7 @@ class NaturalLanguageDispatchTest {
   @Test
   void refusesVerbThatIsNotInTheGrammar() {
     CommandAssistant assistant =
-        (text, tasks) ->
-            new Answer<>(Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE);
+        new FakeProposingCommandAssistant(new CommandProposal("rm-rf", "a1", "", ""));
     NaturalLanguageDispatch dispatch =
         new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
@@ -228,7 +223,7 @@ class NaturalLanguageDispatchTest {
 
   @Test
   void saysSoWhenTheAssistantIsUnavailableInsteadOfFailingSilently() {
-    CommandAssistant assistant = (text, tasks) -> Answer.unavailable();
+    CommandAssistant assistant = mock(CommandAssistant.class, invocation -> Answer.unavailable());
     NaturalLanguageDispatch dispatch =
         new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
@@ -250,7 +245,8 @@ class NaturalLanguageDispatchTest {
             + " yours to do with git."
       })
   void answersInputThatNeedsNoModelWithoutSpendingCall(String typed, String answer) {
-    CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
+    CommandAssistant assistant =
+        mock(CommandAssistant.class, invocation -> fail("the model was asked"));
     NaturalLanguageDispatch dispatch =
         new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 

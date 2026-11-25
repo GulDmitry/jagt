@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.launch;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
-import dev.jagt.orchestrator.port.assistant.BranchNamer;
+import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WrittenTaskNames {
 
-  private final BranchNamer namer;
+  private final CommandAssistant namer;
   private final UsageTracker usage;
 
   /** {@code name} is null where nothing in {@code written} can name a branch. */

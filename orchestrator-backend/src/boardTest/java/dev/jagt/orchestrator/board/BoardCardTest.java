@@ -14,7 +14,7 @@ import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -22,6 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardCardTest extends BoardPageContext {
+
+  private final List<StatusChange> longHistory =
+      Collections.nCopies(
+          60, new StatusChange(TaskStatus.IN_PROGRESS, System.currentTimeMillis() - 60_000, null));
 
   @Autowired
   BoardCardTest(BreakableJob breakable, StateService state) {
@@ -347,19 +351,9 @@ class BoardCardTest extends BoardPageContext {
         .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
   }
 
-  private static List<StatusChange> longHistory() {
-    long now = System.currentTimeMillis();
-    List<StatusChange> steps = new ArrayList<>();
-    for (int i = 0; i < 60; i++) {
-      steps.add(new StatusChange(TaskStatus.IN_PROGRESS, now - 120_000 + i * 1_000L, null));
-    }
-    return steps;
-  }
-
   @Test
   void answerRowStaysInViewWhenTheHistoryIsTallerThanThePane() {
-    state.putTask(
-        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).history(longHistory()).build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).history(longHistory).build());
 
     Page page = openLiveBoard();
     page.locator("#tasks .row .pick").click();
@@ -371,8 +365,7 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void answerRowStaysInViewWhenTheHistoryIsScrolledToItsTop() {
-    state.putTask(
-        "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).history(longHistory()).build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).history(longHistory).build());
 
     Page page = openLiveBoard();
     page.locator("#tasks .row .pick").click();

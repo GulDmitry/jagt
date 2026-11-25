@@ -70,4 +70,34 @@ class HeadlessClaudeCommandAssistantTest {
                 .contains("<request>send ABC-5 out for review</request>")
                 .contains("ship <task>\nresume <url>"));
   }
+
+  @Test
+  void namesNoBranchWhereThePromptIsBlank() {
+    var answer = assistant.nameBranch("  ");
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(runner.issued()).isEmpty();
+  }
+
+  @Test
+  void namesTheBranchInTheWordsTheAnswerGives() {
+    runner.answering(
+        new Processes.Result(0, "{\"structured_output\":{\"words\":\"upgrade linter\"}}", ""));
+
+    var answer = assistant.nameBranch("the linter was updated, fix the warnings");
+
+    assertThat(answer.facts()).contains("upgrade linter");
+  }
+
+  @Test
+  void putsThePromptInTheBranchQuestion() {
+    runner.answering(new Processes.Result(0, "{\"structured_output\":{\"words\":\"x\"}}", ""));
+
+    assistant.nameBranch("the linter was updated, fix the warnings");
+
+    assertThat(runner.command())
+        .anySatisfy(argument ->
+            assertThat(argument)
+                .contains("<request>the linter was updated, fix the warnings</request>"));
+  }
 }
