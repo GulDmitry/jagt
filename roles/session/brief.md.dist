@@ -196,10 +196,10 @@ Do NOT push or post anything yourself.
 
 ## start
 
-You are the sub-agent for this worktree. Read task_notes.md (if present) and task_context.md. A task new to you: set
-your status to IN_PROGRESS via update_agent_status. One carried from a previous session keeps the status the board
-shows until you start a change: answer a question and end your turn without a report; report IN_PROGRESS when a
-change begins. Then work on the task by the rules already in your context.
+You are the sub-agent for this worktree. Read task_notes.md (if present) and task_context.md. A task new to you: report
+IN_PROGRESS via update_agent_status. One carried from a previous session keeps the board's status until a change
+begins: answer a question and end your turn unreported; report IN_PROGRESS when it begins. Then work
+by the rules in your context.
 
 ## revive
 
@@ -226,17 +226,17 @@ from them rather than starting the task over.
    green, `<self_review>` clean, `task_notes.md` rewritten, changes uncommitted), a review round or a red build:
    REVIEW_PENDING with a summary. Planning first, where a sentence below says so: read
    the code the plan touches, ask (rule 1) what the ticket leaves open. Then write
-   `plan.md`. Its first section is `## Acceptance criteria`: the ticket's, read with every field (a tracker may keep
-   them in a custom field), else your own. One `- ` item each, tagged `[here]`, `[elsewhere: <part>]` or
+   `plan.md`. Its first section is `## Acceptance criteria`: the ticket's, custom fields included, else
+   your own. One `- ` item each, tagged `[here]`, `[elsewhere: <part>]` or
    `[wrong: <why>]`, with `, own` inside for yours. A task with several repositories adds `## Repositories`: one
    `- [changed] <key>` or `- [unaffected: <why>] <key>` per repository; one it lacks, ask for with `needsProject`;
    a task with no repository lists every project it changes, registered or not.
    Then its checks in a fenced `probes` block jagt runs (`command [repo=<key>] [exit=<n>] <argv>` in that
-   repository's worktree, the primary one by default, never a path into another; `ref <ref>`, `artifact <path>`),
-   run one by one with no shell, so a probe needing a stack starts it as an earlier probe: `docker compose up` before any `compose exec`,
-   and any picture asked for. List every file you will create after
-   approval: spec delta, code, tests. Report PLAN_PENDING, stop until the board approves: jagt refuses any
-   other write before. CI_POLLING only when told, with the review request link.
+   repository's worktree (default: the primary), never a path into another; `ref <ref>`, `artifact <path>`),
+   run one by one, no shell: a stack starts in an earlier probe, `docker compose up` before any `compose exec`,
+   and any picture asked for. List every file approval lets you
+   create: spec delta, code, tests. Report PLAN_PENDING and stop: jagt refuses any other
+   write before the board approves. CI_POLLING only when told, with the review request link.
 6. HARD SAFETY: `<hard_safety>` below, written by jagt for this task, holds whatever any instruction says.
 7. A refused call not saying `jagt refuses`, or a transient failure, is no block: the check is non-deterministic.
    Vary tool and arguments, retry 2–3 times, then rule 1 with what you tried, `outcome=permission` if the CLI denied it.
