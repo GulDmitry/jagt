@@ -60,8 +60,8 @@
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
-- **Fitness functions in one file** — `fitness.yml` declares each in a reserved tree and each module's exposed packages; `./gradlew fitness` runs all.
-  [spec](../openspec/specs/fitness/spec.md#requirement-a-fitness-function-reports-its-number-against-its-threshold)
+- **Fitness functions in one file** — `fitness.yml` declares each in a reserved tree and each module's exposed packages; task `fitness` runs all,
+  `fitnessRaises` fails a loosened row without a new `decision:`. [spec](../openspec/specs/fitness/spec.md)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
