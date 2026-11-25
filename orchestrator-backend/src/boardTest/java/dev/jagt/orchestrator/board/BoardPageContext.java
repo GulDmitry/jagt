@@ -277,6 +277,7 @@ abstract class BoardPageContext {
 
   @BeforeEach
   void emptyTheBoard(BrowserContext context) throws IOException {
+    state.tasks().keySet().forEach(state::removeTask);
     try (var entries = Files.newDirectoryStream(root)) {
       for (Path entry : entries) {
         removeTestAddedFiles(entry);
