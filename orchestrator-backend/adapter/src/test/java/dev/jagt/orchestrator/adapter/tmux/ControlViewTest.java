@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
+import dev.jagt.orchestrator.adapter.FakeSink;
 import dev.jagt.orchestrator.adapter.ProcessRunnerTest;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;

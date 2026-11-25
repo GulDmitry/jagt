@@ -91,6 +91,10 @@ orchestrator:
   # kittyFontSize: 13     # blank keeps kitty.conf's own
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs
   # tmuxSocket: jagt      # a named tmux server (-L): jagt's sessions stay apart from yours; empty = the default server
+  # sessionHost: tmux     # tmux | herdr: what keeps every agent session running; herdr needs its binary, startup names herdr.command when it is missing
+  # herdr:
+  #   command: herdr      # a bare name is resolved on PATH and in the usual install dirs
+  #   home: ~/.config/herdr   # the folder holding herdr's sessions/<name>/herdr.sock; empty = ~/.config/herdr
   # notifier: desktop     # desktop | none: banners through the platform's notifier; `none` shows no banner, startup says so
   # terminalNotifierCommand: terminal-notifier   # macOS: clickable banners; falls back to osascript
   # notifySendCommand: notify-send               # Linux: the libnotify sender

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
+import dev.jagt.orchestrator.adapter.FakeSink;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import org.junit.jupiter.api.Test;

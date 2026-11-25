@@ -36,8 +36,7 @@
 - **Board as its own app** — `board/` from the jar or `orchestrator.board.dir`; coupled by `contracts/`. [spec](../openspec/specs/board-app/spec.md)
 - **Accessible board** — axe-core checks every view. [spec](../openspec/specs/board-app/spec.md#requirement-the-board-passes-an-accessibility-check)
 - **Board access** — Loopback, `password` or `oidc`; refuses foreign writes; own-origin CSP, login back-off, audit line, owner-only metrics.
-  [spec](../openspec/specs/board/spec.md)
-  [spec](../openspec/specs/board-security/spec.md)
+  [spec](../openspec/specs/board/spec.md) [spec](../openspec/specs/board-security/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
@@ -125,8 +124,9 @@
   [spec](../openspec/specs/infra-wait/spec.md#requirement-a-session-waits-out-a-dependency-that-is-down)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
-- **Sessions in tmux** — Each agent runs in a tmux window, viewed in kitty or Ghostty (`orchestrator.terminal`),
-  on `orchestrator.agent.model` where the notes name none. [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
+- **Sessions in tmux or herdr** — Each agent runs in a tmux window or a herdr tab (`orchestrator.session-host`), viewed in kitty
+  or Ghostty (`orchestrator.terminal`), on `orchestrator.agent.model` where the notes name none.
+  [spec](../openspec/specs/session-host/spec.md#requirement-the-session-host-is-chosen-by-a-key-tmux-the-default)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
 - **Revive after a restart** — Sessions return where they were; one that wrote while jagt was down is asked once to repeat its report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)

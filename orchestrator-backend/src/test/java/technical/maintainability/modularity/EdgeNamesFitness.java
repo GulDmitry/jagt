@@ -33,6 +33,7 @@ public final class EdgeNamesFitness implements Fitness {
           "codex",
           "kitty",
           "tmux",
+          "herdr",
           "intellij",
           "jetbrains",
           "jira",

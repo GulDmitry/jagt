@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter.tmux;
+package dev.jagt.orchestrator.adapter.terminal;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.host.Host;
@@ -19,16 +19,16 @@ public class SessionEnvironment {
   private final Host host;
 
   /** Where jagt's own session starts. */
-  Path root() {
+  public Path root() {
     return paths.root();
   }
 
   /** A stable folder no worktree removal reaps. */
-  Path viewerDir() {
+  public Path viewerDir() {
     return host.home();
   }
 
-  String prefix(Path worktree) {
+  public String prefix(Path worktree) {
     String stacks =
         containers.environment(worktree).entrySet().stream()
             .map(variable -> variable.getKey() + "=" + quoted(variable.getValue()) + " ")

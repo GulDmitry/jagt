@@ -74,8 +74,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no static mutable field in any ring (`static-state`).
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
-- it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, keys naming a vendor by design; renaming one a human already
-  wrote is the owner's call.
+- it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, vendor-named keys by design; renaming one a human wrote is the owner's call.
 
 ## The flow machine
 
@@ -174,8 +173,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `ChannelDriver` | `adapter/channel/{DesktopNotifier,CommandChannel,TeamsWorkflowChannel}` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/host/SystemHost` — OS name, home, temp and working directory, environment, executables on PATH, the running jar |
-| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
-| `ReadScope` | `adapter/tmux/TmuxReads` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
+| `SessionHost` | `adapter/{tmux/TmuxSessionHost,herdr/HerdrSessionHost}` by `session-host`; `openCommandWindow` runs a command as a window's process |
+| `ReadScope` | `adapter/{tmux/TmuxReads,herdr/HerdrReads}` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
 | `SessionLog` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `BuildTools` | `adapter/worktree/RepositoryBuildTools` |
@@ -323,9 +322,10 @@ on a package of more than ten classes and on one of a single class ([0166](docs/
 | `adapter/process` | adapter | the one owner of child processes: spawn, end each tree, reap; exposed to `stand` |
 | `adapter/host` | adapter | the machine jagt runs on: `SystemHost`, the one reader of host properties, and `Executables`; exposed to `stand` |
 | `adapter/release` | adapter | the release feed drivers: GitHub releases, none |
-| `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
+| `adapter/terminal` | adapter | the kitty base, editor driver, kitty options and the session-host base |
 | `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
 | `adapter/tmux` | adapter | the tmux session host and its reads |
+| `adapter/herdr` | adapter | the herdr session host, its reads, socket and window stream |
 | `adapter/tracker` | adapter | tracker drivers: file and Jira workflows |
 | `adapter/worktree` | adapter | worktree-facing drivers: line diff, containers, processes, build tools, OpenSpec |
 | `surface/agent` | surface | what a session calls into: hooks, prompts, gates, reports |

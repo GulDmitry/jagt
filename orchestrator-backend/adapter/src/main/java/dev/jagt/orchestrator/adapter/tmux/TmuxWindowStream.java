@@ -4,10 +4,15 @@ import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.WindowStream;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /** Views of a tmux window, each read through a control-mode client of its own. */
 @Service
+@ConditionalOnProperty(
+    name = "orchestrator.session-host",
+    havingValue = "tmux",
+    matchIfMissing = true)
 @RequiredArgsConstructor
 public class TmuxWindowStream implements WindowStream {
 
