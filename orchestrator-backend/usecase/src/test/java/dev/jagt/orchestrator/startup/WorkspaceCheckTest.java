@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,8 @@ class WorkspaceCheckTest {
             .withData(root.toString())
             .withStateFile(root.resolve("state.json").toString());
 
-    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems()).isEmpty();
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties, FakeHost.machine())).problems())
+        .isEmpty();
   }
 
   @Test
@@ -32,7 +34,7 @@ class WorkspaceCheckTest {
             .withData(root.toString())
             .withStateFile(root.resolve("gone").resolve("state.json").toString());
 
-    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties, FakeHost.machine())).problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.state-file");
   }
@@ -45,7 +47,7 @@ class WorkspaceCheckTest {
             .withData(root.toString())
             .withStateFile(root.resolve("state.json").toString());
 
-    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties, FakeHost.machine())).problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.root");
   }
@@ -61,7 +63,7 @@ class WorkspaceCheckTest {
             .withStateFile(stateDir.resolve("state.json").toString());
     assertThat(stateDir.toFile().setWritable(false)).isTrue();
 
-    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties, FakeHost.machine())).problems())
         .extracting(Problem::key, Problem::text)
         .containsExactly(
             tuple(
@@ -83,7 +85,7 @@ class WorkspaceCheckTest {
             .withStateFile(state.toString());
     assertThat(state.toFile().setWritable(false)).isTrue();
 
-    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties, FakeHost.machine())).problems())
         .extracting(Problem::key, Problem::text)
         .containsExactly(
             tuple(
@@ -100,7 +102,7 @@ class WorkspaceCheckTest {
             .withData(data.toString())
             .withStateFile(root.resolve("state.json").toString());
 
-    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
+    assertThat(new WorkspaceCheck(new OrchestratorPaths(properties, FakeHost.machine())).problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.data");
   }

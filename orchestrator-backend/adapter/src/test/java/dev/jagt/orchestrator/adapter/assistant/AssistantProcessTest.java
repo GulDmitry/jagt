@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.port.assistant.AssistantUnavailable;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -79,7 +80,8 @@ class AssistantProcessTest {
           new AssistantBreaker(
               AssistantProperties.empty().withBreakerFailures(3),
               new FakeClock(),
-              new ReachLedger()));
+              new ReachLedger()),
+          FakeHost.machine());
 
   @Test
   void startsNoProcessOnceThreeProviderFailuresInRowOpenedIt() {
@@ -117,7 +119,8 @@ class AssistantProcessTest {
                     .withBreakerFailures(3)
                     .withBreakerCooldown(Duration.ofMinutes(5)),
                 clock,
-                new ReachLedger()));
+                new ReachLedger()),
+            FakeHost.machine());
 
     @BeforeEach
     void opened() {

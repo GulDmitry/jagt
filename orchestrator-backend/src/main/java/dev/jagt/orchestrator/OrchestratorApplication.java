@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.home.ShippedFiles;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.surface.ui.FailurePage;
 import dev.jagt.orchestrator.surface.ui.log.LogFileRoll;
 import dev.jagt.orchestrator.surface.ui.log.LogTarget;
@@ -20,19 +22,20 @@ public class OrchestratorApplication {
   public static void main(String[] args) {
     Locale.setDefault(Locale.ENGLISH);
     TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
-    OrchestratorPaths.installedRootOutside(args)
+    Host host = new SystemHost();
+    OrchestratorPaths.installedRootOutside(args, host)
         .ifPresent(
             home -> ShippedFiles.placeInto(home, OrchestratorApplication.class.getClassLoader()));
-    String[] launch = withConfigFile(args);
-    new StartRetry(given -> application().run(given), FailurePage::listen).run(launch);
+    String[] launch = withConfigFile(args, host);
+    new StartRetry(given -> application().run(given), FailurePage::listen, host).run(launch);
   }
 
   /**
    * A launch is the only place that knows where `jagt.yml` is before a context exists. Not the
    * packaged {@code application.yml}: an import written there is loaded by every test context too.
    */
-  static String[] withConfigFile(String[] args) {
-    String resolved = OrchestratorPaths.configFileOutside(args).toString();
+  static String[] withConfigFile(String[] args, Host host) {
+    String resolved = OrchestratorPaths.configFileOutside(args, host).toString();
     // Pinned as well as imported: `root` inside that file would otherwise send the bean to a second
     // jagt.yml.
     // Spring joins a repeated argument with a comma, so the human's own is replaced, not repeated.
@@ -42,7 +45,7 @@ public class OrchestratorApplication {
             java.util.stream.Stream.of(
                 "--spring.config.additional-location=optional:file:" + resolved,
                 "--orchestrator.config-file=" + resolved,
-                "--orchestrator.default-data=" + OrchestratorPaths.dataOutside(args)))
+                "--orchestrator.default-data=" + OrchestratorPaths.dataOutside(args, host)))
         .toArray(String[]::new);
   }
 

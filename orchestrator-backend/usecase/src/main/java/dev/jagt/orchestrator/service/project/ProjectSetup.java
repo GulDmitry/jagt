@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.project;
 
 import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.BuildTools;
@@ -71,6 +72,7 @@ public class ProjectSetup {
   private final ConfigWriter writer;
   private final Processes processes;
   private final BuildTools buildTools;
+  private final Host host;
 
   /** What the path is, and what its entry would most likely say. Writes nothing. */
   public Reading read(String rawPath) {
@@ -81,7 +83,7 @@ public class ProjectSetup {
    * The same for the project {@code own}, which does not count as another one pointing at the path.
    */
   public Reading read(String rawPath, @Nullable String own) {
-    Path path = Path.of(expand(rawPath)).toAbsolutePath().normalize();
+    Path path = Path.of(expand(host, rawPath)).toAbsolutePath().normalize();
     String key =
         path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
     Optional<String> notRepositoryRoot = problemWith(path);
@@ -176,7 +178,7 @@ public class ProjectSetup {
         .filter(project -> !project.getKey().equals(own))
         .anyMatch(project ->
             ConfigWriter.real(
-                    Path.of(expand(project.getValue().path())).toAbsolutePath().normalize())
+                    Path.of(expand(host, project.getValue().path())).toAbsolutePath().normalize())
                 .equals(real));
   }
 
@@ -266,8 +268,8 @@ public class ProjectSetup {
         null, file -> ProjectBlocks.removed(file, key), "Removed " + key + " from jagt.yml");
   }
 
-  private static Path normalized(Entry entry) {
-    return Path.of(expand(entry.path())).toAbsolutePath().normalize();
+  private Path normalized(Entry entry) {
+    return Path.of(expand(host, entry.path())).toAbsolutePath().normalize();
   }
 
   private void check(Entry entry) {
@@ -278,7 +280,7 @@ public class ProjectSetup {
     if (entry.baseBranch() == null || entry.baseBranch().isBlank()) {
       throw new IllegalArgumentException("A project names the branch tasks are cut from");
     }
-    Path normalized = Path.of(expand(entry.path())).toAbsolutePath().normalize();
+    Path normalized = Path.of(expand(host, entry.path())).toAbsolutePath().normalize();
     List<Problem> refused =
         ProjectProblems.of(
             entry.key(),
@@ -315,8 +317,8 @@ public class ProjectSetup {
     return end < 0 ? stripped : stripped.substring(0, end);
   }
 
-  static String expand(String path) {
-    String home = System.getProperty("user.home");
+  static String expand(Host host, String path) {
+    String home = host.home().toString();
     String typed = path == null ? "" : path.strip();
     return typed.equals("~") || typed.startsWith("~/") ? home + typed.substring(1) : typed;
   }

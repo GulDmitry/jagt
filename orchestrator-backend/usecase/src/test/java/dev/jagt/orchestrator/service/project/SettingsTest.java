@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.master.MasterSettings;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -59,7 +60,8 @@ class SettingsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
+                .withConfigFile(configFile.toString()),
+            FakeHost.machine());
     source = new ConfigSource(paths, new FakeConfigInputs());
     ConfigService config =
         new ConfigService(

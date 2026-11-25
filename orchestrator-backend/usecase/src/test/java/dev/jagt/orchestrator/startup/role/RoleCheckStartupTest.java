@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,7 +50,8 @@ class RoleCheckStartupTest {
         outcomes: []
         """);
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     InstalledRoles roles = new InstalledRoles(paths);
 
@@ -80,7 +82,8 @@ class RoleCheckStartupTest {
         Path.of("../../roles/acceptance/role.yml.dist"),
         root.resolve("roles/acceptance/role.yml.dist"));
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     InstalledRoles roles = new InstalledRoles(paths);
 
@@ -104,7 +107,8 @@ class RoleCheckStartupTest {
         root.resolve("roles/acceptance/role.yml"),
         "model: opus\ntrigger: [deployed]\ntools:\n  git: false\n");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     RoleDefinition acceptance = new InstalledRoles(paths).find("acceptance").orElseThrow();
 
@@ -124,7 +128,8 @@ class RoleCheckStartupTest {
         root.resolve("roles/acceptance/role.yml.dist"));
     Files.writeString(root.resolve("roles/acceptance/role.yml"), "outcomes: []\n");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     InstalledRoles roles = new InstalledRoles(paths);
 
@@ -154,7 +159,8 @@ class RoleCheckStartupTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
 
     RoleCheck check =
         new RoleCheck(
@@ -183,7 +189,8 @@ class RoleCheckStartupTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
 
     ConfigService config =
         new ConfigService(

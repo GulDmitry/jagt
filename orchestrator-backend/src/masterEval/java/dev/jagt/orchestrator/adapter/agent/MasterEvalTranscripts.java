@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.eval.HandedBackSession;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ public final class MasterEvalTranscripts {
 
   public static void typedIn(Path worktree, List<String> said) throws IOException {
     HandedBackSession.record(
-        ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)), said);
+        ClaudeTranscripts.projectsDir(new SystemHost()).resolve(ClaudeTranscripts.slug(worktree)),
+        said);
   }
 }

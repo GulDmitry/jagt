@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.log.StopLog;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Clock;
 import lombok.With;
@@ -32,7 +33,8 @@ public record TestTaskStopsBuilder(Path root, Arbiter.Profile profile) {
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
-                            .withData(root.toString()))))),
+                            .withData(root.toString()),
+                        FakeHost.machine())))),
         state,
         clock,
         new FlowRules(new TaskChart(Composition.builtIn())));

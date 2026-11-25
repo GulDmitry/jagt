@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +30,8 @@ class DebugReadsTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withData(root.toString())
-                            .withStateFile(root.resolve("state.json").toString())),
+                            .withStateFile(root.resolve("state.json").toString()),
+                        FakeHost.machine()),
                     mock(StateService.class),
                     mock(AgentRuntime.class))
                 .stops(2))
@@ -51,7 +53,8 @@ class DebugReadsTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withData(root.toString())
-                            .withStateFile(root.resolve("state.json").toString())),
+                            .withStateFile(root.resolve("state.json").toString()),
+                        FakeHost.machine()),
                     mock(StateService.class),
                     mock(AgentRuntime.class))
                 .stops(3))
@@ -69,7 +72,8 @@ class DebugReadsTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withData(root.toString())
-                            .withStateFile(root.resolve("state.json").toString())),
+                            .withStateFile(root.resolve("state.json").toString()),
+                        FakeHost.machine()),
                     mock(StateService.class),
                     mock(AgentRuntime.class))
                 .stopsReviewed(5))
@@ -85,7 +89,8 @@ class DebugReadsTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withData(root.toString())
-                        .withStateFile(root.resolve("state.json").toString())),
+                        .withStateFile(root.resolve("state.json").toString()),
+                    FakeHost.machine()),
                 mock(StateService.class),
                 mock(AgentRuntime.class))
             .stops(5);
@@ -108,7 +113,8 @@ class DebugReadsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withData(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                FakeHost.machine()),
             state,
             runtime);
 

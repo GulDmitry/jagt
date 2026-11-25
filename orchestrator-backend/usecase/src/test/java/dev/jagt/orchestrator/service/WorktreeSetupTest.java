@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -45,8 +46,11 @@ class WorktreeSetupTest {
   void setUp() throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()));
-    setup = new WorktreeSetup(runtime, paths, config, new FreshWorktree(briefing, processes));
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(root.toString()),
+            FakeHost.machine());
+    setup =
+        new WorktreeSetup(
+            runtime, paths, config, new FreshWorktree(briefing, processes), FakeHost.machine());
     project = Files.createDirectories(root.resolve("repo"));
     worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     knowledge = worktree.resolve("AGENTS.md");

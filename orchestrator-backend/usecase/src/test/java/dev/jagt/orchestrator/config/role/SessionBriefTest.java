@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,8 @@ class SessionBriefTest {
         root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.section(Step.DEPLOY)).contains("check it in a browser");
   }
@@ -36,7 +38,8 @@ class SessionBriefTest {
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     String ship = brief.section(Step.SHIP).orElseThrow();
 
@@ -55,7 +58,8 @@ class SessionBriefTest {
         root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
   }
@@ -67,7 +71,8 @@ class SessionBriefTest {
         root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
   }
@@ -80,7 +85,8 @@ class SessionBriefTest {
         root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.section(Step.DEPLOY)).contains("");
   }
@@ -93,7 +99,8 @@ class SessionBriefTest {
         "## ship\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.section(Step.SHIP)).contains("shape:\n## <thread link>\nFIXED");
   }
@@ -105,7 +112,8 @@ class SessionBriefTest {
         root.resolve("roles/session/brief.md"), "## start\n\nRead the notes,\n  then work.\n");
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.line(Step.START)).isEqualTo("Read the notes, then work.");
   }
@@ -124,7 +132,8 @@ class SessionBriefTest {
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
     SessionBrief brief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
     assertThat(brief.line(Step.START)).contains(instruction);
   }

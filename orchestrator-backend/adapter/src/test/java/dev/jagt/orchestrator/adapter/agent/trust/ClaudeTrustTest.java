@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.agent.trust;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ class ClaudeTrustTest {
 
   @Test
   void suiteRunTrustsItsWorktreesInsideTheBuildNeverInTheHumansConfig() {
-    Path configFile = ClaudeTrust.configFile();
+    Path configFile = ClaudeTrust.configFile(FakeHost.machine());
 
     assertThat(configFile).startsWithRaw(Path.of("").toAbsolutePath());
   }

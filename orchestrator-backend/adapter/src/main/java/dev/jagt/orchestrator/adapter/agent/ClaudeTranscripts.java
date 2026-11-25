@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.agent.trust.ClaudeConfigDir;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.service.worktree.FileStamps;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -36,10 +37,8 @@ final class ClaudeTranscripts {
    * Relocating the whole directory is supported, so a human who did must not silently lose the
    * answer.
    */
-  static Path projectsDir() {
-    return ClaudeConfigDir.of(
-            Optional.ofNullable(System.getenv(ClaudeConfigDir.VARIABLE)),
-            Path.of(System.getProperty("user.home"), ".claude"))
+  static Path projectsDir(Host host) {
+    return ClaudeConfigDir.of(host.env(ClaudeConfigDir.VARIABLE), host.home().resolve(".claude"))
         .resolve("projects");
   }
 

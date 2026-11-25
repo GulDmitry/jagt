@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.channel;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,8 @@ class RoleFilesTest {
     Files.writeString(
         root.resolve("roles/acceptance/brief.md"), "mine\n\n## accept\n\nmy accept\n");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     RoleFiles files = new RoleFiles(paths, "acceptance");
 
@@ -35,7 +37,8 @@ class RoleFilesTest {
     Files.writeString(
         root.resolve("roles/acceptance/brief.md.dist"), "shipped\n\n## accept\n\nshipped accept\n");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     RoleFiles files = new RoleFiles(paths, "acceptance");
 

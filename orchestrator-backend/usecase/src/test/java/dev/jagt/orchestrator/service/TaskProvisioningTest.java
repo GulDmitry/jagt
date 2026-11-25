@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.Remote;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,11 @@ class TaskProvisioningTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(properties, FakeHost.machine()),
+            reducer,
+            event -> {});
     provisioning = new TaskProvisioning(config, state, worktrees, sessions, new FakeClock());
     when(config.load()).thenReturn(ConfigFile.defaults());
     when(worktrees.cut(any(), any(), any())).thenReturn(List.of(TestNewRepoBuilder.proj().build()));

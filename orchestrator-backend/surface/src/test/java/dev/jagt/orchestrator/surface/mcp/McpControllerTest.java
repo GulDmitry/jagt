@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.mcp.refusal.MasterToken;
 import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,8 @@ class McpControllerTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     realProtocolMvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(

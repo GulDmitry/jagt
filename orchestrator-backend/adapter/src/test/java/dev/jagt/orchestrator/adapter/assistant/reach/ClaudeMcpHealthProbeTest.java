@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -41,7 +42,11 @@ class ClaudeMcpHealthProbeTest {
 
     var broken =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken)
@@ -62,7 +67,11 @@ class ClaudeMcpHealthProbeTest {
     Reach reach = mock(Reach.class);
 
     new ClaudeMcpHealthProbe(
-            runner, ClaudeProperties.defaults(), AssistantProperties.empty(), reach)
+            runner,
+            ClaudeProperties.defaults(),
+            AssistantProperties.empty(),
+            reach,
+            FakeHost.machine())
         .brokenServers();
 
     verify(reach)
@@ -83,7 +92,11 @@ class ClaudeMcpHealthProbeTest {
     Reach reach = mock(Reach.class);
 
     new ClaudeMcpHealthProbe(
-            runner, ClaudeProperties.defaults(), AssistantProperties.empty(), reach)
+            runner,
+            ClaudeProperties.defaults(),
+            AssistantProperties.empty(),
+            reach,
+            FakeHost.machine())
         .brokenServers();
 
     verify(reach).reached("claude-mcp", "mcp");
@@ -97,7 +110,11 @@ class ClaudeMcpHealthProbeTest {
 
     var broken =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken).isEmpty();
@@ -113,7 +130,11 @@ class ClaudeMcpHealthProbeTest {
 
     var broken =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken).isEmpty();
@@ -126,7 +147,8 @@ class ClaudeMcpHealthProbeTest {
               mock(ProcessRunner.class),
               ClaudeProperties.defaults(),
               AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json"),
-              mock(Reach.class))
+              mock(Reach.class),
+              FakeHost.machine())
           .brokenServers();
 
       assertThat(log.events())
@@ -150,7 +172,8 @@ class ClaudeMcpHealthProbeTest {
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty()
                     .withMcpConfig("{\"mcpServers\":{\"acme\":{\"command\":\"x\"}}}"),
-                mock(Reach.class))
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken).isEmpty();
@@ -172,7 +195,11 @@ class ClaudeMcpHealthProbeTest {
 
     var servers =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .servers();
 
     assertThat(servers).contains(List.of("context7", "acme tracker"));
@@ -192,7 +219,11 @@ class ClaudeMcpHealthProbeTest {
 
     var broken =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken).contains(List.of("acme tracker (Failed to connect)"));
@@ -211,7 +242,11 @@ class ClaudeMcpHealthProbeTest {
                 ""));
     var probe =
         new ClaudeMcpHealthProbe(
-            runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class));
+            runner,
+            ClaudeProperties.defaults(),
+            AssistantProperties.empty(),
+            mock(Reach.class),
+            FakeHost.machine());
 
     probe.brokenServers();
     var servers = probe.servers();
@@ -241,7 +276,11 @@ class ClaudeMcpHealthProbeTest {
 
     var broken =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken)
@@ -280,7 +319,11 @@ class ClaudeMcpHealthProbeTest {
 
     var broken =
         new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(Reach.class))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                mock(Reach.class),
+                FakeHost.machine())
             .brokenServers();
 
     assertThat(broken)

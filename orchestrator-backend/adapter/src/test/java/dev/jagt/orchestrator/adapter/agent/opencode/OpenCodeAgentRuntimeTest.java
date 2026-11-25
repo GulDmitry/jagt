@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigFile.SandboxConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -34,7 +35,8 @@ class OpenCodeAgentRuntimeTest {
 
     new OpenCodeAgentRuntime(
             new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot("/no-brief"), FakeHost.machine())),
             OpenCodeProperties.defaults(),
             new McpEndpoint("http://127.0.0.1:9111/mcp"),
             config)
@@ -119,7 +121,9 @@ class OpenCodeAgentRuntimeTest {
     var runtime =
         new OpenCodeAgentRuntime(
             new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()),
+                    FakeHost.machine())),
             OpenCodeProperties.defaults(),
             new McpEndpoint("http://127.0.0.1:8290/mcp"),
             mock(ConfigService.class));

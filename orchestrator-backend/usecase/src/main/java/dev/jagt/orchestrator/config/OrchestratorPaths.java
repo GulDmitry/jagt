@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.config;
 
 import dev.jagt.orchestrator.config.home.InstalledJar;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Layout;
 import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.repo.NewRepo;
@@ -28,11 +29,11 @@ public class OrchestratorPaths {
   private final Path configFile;
   private final Layout layout;
 
-  public OrchestratorPaths(OrchestratorProperties properties) {
+  public OrchestratorPaths(OrchestratorProperties properties, Host host) {
     this.root =
         properties.root() != null && !properties.root().isBlank()
             ? Path.of(properties.root()).toAbsolutePath().normalize()
-            : findRoot();
+            : findRoot(host);
     this.configFile = resolve(properties.configFile(), "jagt.yml");
     Path data =
         properties.data() != null && !properties.data().isBlank()
@@ -260,14 +261,14 @@ public class OrchestratorPaths {
   /**
    * Answered WITHOUT a Spring context: a launch has to hand Spring that file before there is one.
    */
-  public static Path configFileOutside(String[] args) {
+  public static Path configFileOutside(String[] args, Host host) {
     String named = named(args, "--orchestrator.config-file=");
     String env = System.getenv("ORCHESTRATOR_CONFIG_FILE");
     String override = named != null ? named : env;
     if (override != null && !override.isBlank()) {
       return Path.of(override).toAbsolutePath().normalize();
     }
-    return rootOutside(args).resolve("jagt.yml");
+    return rootOutside(args, host).resolve("jagt.yml");
   }
 
   private static @Nullable String named(String[] args, String flag) {
@@ -280,14 +281,16 @@ public class OrchestratorPaths {
   }
 
   /** Answered WITHOUT a Spring context, as {@link #configFileOutside}. */
-  public static Path dataOutside(String[] args) {
-    return rootOutside(args).resolve("data");
+  public static Path dataOutside(String[] args, Host host) {
+    return rootOutside(args, host).resolve("data");
   }
 
   /** The install home, where the jar's own files are placed; empty when the root is named. */
-  public static Optional<Path> installedRootOutside(String[] args) {
+  public static Optional<Path> installedRootOutside(String[] args, Host host) {
     return installedRoot(
-        args, System.getenv("ORCHESTRATOR_ROOT"), System.getProperty("java.class.path", ""));
+        args,
+        host.env("ORCHESTRATOR_ROOT").orElse(null),
+        host.jar().map(Path::toString).orElse(""));
   }
 
   public static Optional<Path> installedRoot(
@@ -297,25 +300,25 @@ public class OrchestratorPaths {
     return chosen ? Optional.empty() : InstalledJar.onClassPath(classPath).map(InstalledJar::root);
   }
 
-  private static Path rootOutside(String[] args) {
+  private static Path rootOutside(String[] args, Host host) {
     String named = named(args, "--orchestrator.root=");
-    String env = System.getenv("ORCHESTRATOR_ROOT");
+    String env = host.env("ORCHESTRATOR_ROOT").orElse(null);
     String root = named != null ? named : env;
     return root != null && !root.isBlank()
         ? Path.of(root).toAbsolutePath().normalize()
-        : findRoot();
+        : findRoot(host);
   }
 
-  private static Path findRoot() {
-    String env = System.getenv("ORCHESTRATOR_ROOT");
+  private static Path findRoot(Host host) {
+    String env = host.env("ORCHESTRATOR_ROOT").orElse(null);
     if (env != null && !env.isBlank()) {
       return Path.of(env).toAbsolutePath().normalize();
     }
-    Optional<InstalledJar> installed = InstalledJar.running();
+    Optional<InstalledJar> installed = host.jar().flatMap(InstalledJar::at);
     if (installed.isPresent()) {
       return installed.get().root();
     }
-    Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+    Path start = host.workingDir().toAbsolutePath().normalize();
     for (Path dir = start; dir != null; dir = dir.getParent()) {
       for (String marker : ROOT_MARKERS) {
         if (Files.exists(dir.resolve(marker))) {

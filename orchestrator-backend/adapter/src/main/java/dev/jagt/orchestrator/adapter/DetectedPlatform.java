@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +27,7 @@ public class DetectedPlatform implements EnvironmentPostProcessor {
   @Override
   public void postProcessEnvironment(
       ConfigurableEnvironment environment, SpringApplication application) {
-    of(System.getProperty("os.name", ""))
+    of(new SystemHost().osName())
         .ifPresent(platform ->
             environment
                 .getPropertySources()

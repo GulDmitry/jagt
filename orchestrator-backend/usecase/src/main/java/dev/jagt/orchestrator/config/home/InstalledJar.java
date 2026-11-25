@@ -24,11 +24,6 @@ public record InstalledJar(String version, Path versions, Path root) {
     return Optional.of(new InstalledJar(String.valueOf(folder.getFileName()), versions, root));
   }
 
-  /** The one jar {@code java -jar} puts on the class path; none for any other launch. */
-  public static Optional<InstalledJar> running() {
-    return onClassPath(System.getProperty("java.class.path", ""));
-  }
-
   public static Optional<InstalledJar> onClassPath(String classPath) {
     return classPath.isBlank() || classPath.contains(File.pathSeparator)
         ? Optional.empty()

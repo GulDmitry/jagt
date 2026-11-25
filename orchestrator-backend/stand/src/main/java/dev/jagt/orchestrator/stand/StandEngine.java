@@ -45,7 +45,7 @@ public final class StandEngine {
 
   public static StandEngine configured() {
     return new StandEngine(
-        System.getProperty("stand.engine", COMPOSE),
+        StandInputs.of("stand.engine", COMPOSE),
         StandEngine::toolRuns,
         System::getenv,
         Map.of(

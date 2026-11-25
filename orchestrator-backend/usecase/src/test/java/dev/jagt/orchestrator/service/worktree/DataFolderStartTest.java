@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +41,8 @@ class DataFolderStartTest {
             .withRoot(root.toString())
             .withData(root.resolve("vault").toString());
 
-    new DataFolderStart(new OrchestratorPaths(properties), processes, "").prepare();
+    new DataFolderStart(new OrchestratorPaths(properties, FakeHost.machine()), processes, "")
+        .prepare();
 
     assertThat(root.resolve("vault/jagt")).isDirectory();
     assertThat(root.resolve("vault/projects")).isDirectory();
@@ -60,7 +62,11 @@ class DataFolderStartTest {
             .withRoot(root.toString())
             .withData(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    new StateService(new JsonMapper(), new OrchestratorPaths(older), reducer, event -> {})
+    new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(older, FakeHost.machine()),
+            reducer,
+            event -> {})
         .putTask(
             "ABC-1",
             TaskState.builder("demo", recorded.toString(), TaskStatus.IN_PROGRESS).build());
@@ -69,7 +75,8 @@ class DataFolderStartTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withData(root.resolve("vault").toString()));
+                .withData(root.resolve("vault").toString()),
+            FakeHost.machine());
 
     new DataFolderStart(paths, processes, "").prepare();
 
@@ -98,7 +105,8 @@ class DataFolderStartTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withData(root.resolve("data").toString()));
+                .withData(root.resolve("data").toString()),
+            FakeHost.machine());
 
     new DataFolderStart(paths, processes, previous.toString()).prepare();
 
@@ -118,7 +126,8 @@ class DataFolderStartTest {
     Files.writeString(data.resolve("stops.jsonl"), "s");
     OrchestratorPaths paths =
         new OrchestratorPaths(
-            OrchestratorProperties.defaults().withRoot(root.toString()).withData(data.toString()));
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(data.toString()),
+            FakeHost.machine());
 
     new DataFolderStart(paths, processes, "").prepare();
 
@@ -137,7 +146,8 @@ class DataFolderStartTest {
             .withRoot(root.toString())
             .withData(root.resolve("vault").toString());
 
-    new DataFolderStart(new OrchestratorPaths(properties), processes, "").prepare();
+    new DataFolderStart(new OrchestratorPaths(properties, FakeHost.machine()), processes, "")
+        .prepare();
 
     assertThat(root.resolve("vault/jagt/state.json")).hasContent("current");
     assertThat(root.resolve("state.json")).hasContent("old");
@@ -152,7 +162,8 @@ class DataFolderStartTest {
             .withData(root.resolve("vault").toString())
             .withStateFile(root.resolve("state.json").toString());
 
-    new DataFolderStart(new OrchestratorPaths(properties), processes, "").prepare();
+    new DataFolderStart(new OrchestratorPaths(properties, FakeHost.machine()), processes, "")
+        .prepare();
 
     assertThat(root.resolve("state.json")).hasContent("old");
   }
@@ -171,7 +182,8 @@ class DataFolderStartTest {
     Files.writeString(root.resolve("memory/routing.md"), "m");
     Files.writeString(root.resolve("unrelated.txt"), "u");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     new DataFolderStart(paths, processes, "").prepare();
 
@@ -190,7 +202,8 @@ class DataFolderStartTest {
     Files.writeString(root.resolve("state.json"), "tasks");
     Files.writeString(root.resolve("master-token"), "t");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     try (FakeLogCapture log = new FakeLogCapture(DataFolderStart.class)) {
       new DataFolderStart(paths, processes, "").prepare();
@@ -210,7 +223,8 @@ class DataFolderStartTest {
     Files.createDirectories(root.resolve("data/records"));
     Files.writeString(root.resolve("data/records/misses.jsonl"), "current");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     try (FakeLogCapture log = new FakeLogCapture(DataFolderStart.class)) {
       new DataFolderStart(paths, processes, "").prepare();
@@ -231,7 +245,8 @@ class DataFolderStartTest {
   void movesNothingFromFolderHoldingNoState() throws Exception {
     Files.writeString(root.resolve("finished.jsonl"), "f");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     new DataFolderStart(paths, processes, "").prepare();
 
@@ -246,7 +261,8 @@ class DataFolderStartTest {
     Files.writeString(root.resolve("state.json"), "tasks");
     Files.writeString(root.resolve("misses.jsonl"), "root");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     new DataFolderStart(paths, processes, previous.toString()).prepare();
 
@@ -263,7 +279,8 @@ class DataFolderStartTest {
     Files.createDirectories(root.resolve("data/records"));
     Files.writeString(root.resolve("data/records/misses.jsonl"), "current");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     new DataFolderStart(paths, processes, "").prepare();
 
@@ -277,7 +294,8 @@ class DataFolderStartTest {
     Files.writeString(root.resolve("state.json"), "tasks");
     Files.writeString(root.resolve("misses.jsonl"), "m");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     new DataFolderStart(paths, processes, "").prepare();
     Files.writeString(root.resolve("misses.jsonl"), "new at the root");
 
@@ -310,7 +328,8 @@ class DataFolderStartTest {
             clone, Duration.ofSeconds(30), List.of("git", "worktree", "repair", kept.toString())))
         .thenReturn(new Processes.Result(0, "", ""));
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     try (FakeLogCapture log = new FakeLogCapture(DataFolderStart.class)) {
       new DataFolderStart(paths, processes, "").prepare();
@@ -336,7 +355,8 @@ class DataFolderStartTest {
             List.of("git", "worktree", "repair")))
         .thenReturn(new Processes.Result(1, "", "boom"));
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
 
     try (FakeLogCapture log = new FakeLogCapture(DataFolderStart.class)) {
       new DataFolderStart(paths, processes, "").prepare();

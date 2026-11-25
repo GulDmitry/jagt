@@ -27,6 +27,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.Turn;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,7 +78,8 @@ class MasterPanelTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(stateRoot.toString())
-                    .withStateFile(stateRoot.resolve("state.json").toString())),
+                    .withStateFile(stateRoot.resolve("state.json").toString()),
+                FakeHost.machine()),
             reducer,
             event -> {});
     stored = new MasterReview(state);

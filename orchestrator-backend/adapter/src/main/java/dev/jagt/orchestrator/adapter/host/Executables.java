@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter;
+package dev.jagt.orchestrator.adapter.host;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,11 @@ class SessionPresenceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(properties, FakeHost.machine()),
+            reducer,
+            event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
   }
 

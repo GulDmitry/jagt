@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,9 @@ class CheckerPromptsTest {
         new CheckerPrompts(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             new RoleFiles(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()),
+                    FakeHost.machine()),
                 "acceptance"));
   }
 

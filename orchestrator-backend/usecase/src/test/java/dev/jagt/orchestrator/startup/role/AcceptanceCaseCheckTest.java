@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ class AcceptanceCaseCheckTest {
             .withRoot(root.toString())
             .withConfigFile(root.resolve("jagt.yml").toString())
             .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
+    OrchestratorPaths paths = new OrchestratorPaths(properties, FakeHost.machine());
     ConfigService config =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),

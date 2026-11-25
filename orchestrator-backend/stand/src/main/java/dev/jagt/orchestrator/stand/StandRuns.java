@@ -15,8 +15,8 @@ public final class StandRuns {
   public static Stream<Arguments> of(String scenario) {
     return selected(
             scenario,
-            System.getProperty("stand.scenario", ""),
-            System.getProperty("stand.modes", ""),
+            StandInputs.of("stand.scenario", ""),
+            StandInputs.of("stand.modes", ""),
             Integer.getInteger("stand.runs", 1))
         .stream()
         .map(run -> Arguments.of(run.mode(), run.index()));

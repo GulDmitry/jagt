@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter;
+package dev.jagt.orchestrator.adapter.host;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,6 +70,11 @@ class SystemHostTest {
   @Test
   void worksInTheDirectoryTheProcessWasStartedIn() {
     assertThat(new SystemHost().workingDir()).isEqualTo(Path.of(System.getProperty("user.dir")));
+  }
+
+  @Test
+  void keepsTemporaryFilesWhereTheMachineKeepsThem() {
+    assertThat(new SystemHost().temp()).isEqualTo(Path.of(System.getProperty("java.io.tmpdir")));
   }
 
   @Test

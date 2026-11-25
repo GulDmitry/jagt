@@ -13,8 +13,8 @@ import org.jspecify.annotations.Nullable;
 public final class KindEngine implements UnitEngine {
 
   private static final Path MANIFEST =
-      Path.of(System.getProperty("stand.repo", "../..")).resolve("examples/kubernetes.yml");
-  private static final @Nullable String ARCHIVE = System.getProperty("stand.imageArchive");
+      Path.of(StandInputs.of("stand.repo", "../..")).resolve("examples/kubernetes.yml");
+  private static final @Nullable String ARCHIVE = StandInputs.of("stand.imageArchive");
   private static final int JAGT_PORT = 8290;
   private static final String BUILT = "jagt-stand";
   private static final String RUN = "jagt-stand:run";

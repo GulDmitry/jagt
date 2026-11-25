@@ -86,6 +86,7 @@ import dev.jagt.orchestrator.testing.FakeAgentRuntime;
 import dev.jagt.orchestrator.testing.FakeAssistants;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeProcesses;
 import dev.jagt.orchestrator.testing.FakeReach;
 import dev.jagt.orchestrator.testing.FakeSessionHost;
@@ -257,7 +258,8 @@ public final class FakeJobWorld implements AutoCloseable {
                 .withRoot(root.toString())
                 .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
+                .withConfigFile(root.resolve("jagt.yml").toString()),
+            FakeHost.machine());
     FakeAgentRuntime runtime = new FakeAgentRuntime(sessionLog);
     FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
     ConfigService config =
@@ -300,7 +302,10 @@ public final class FakeJobWorld implements AutoCloseable {
     MasterPanel panel =
         new MasterPanel(
             new ChargedReviews(
-                models, usage, new TrustedGitState(state, new GitWorktrees(git)), config),
+                models,
+                usage,
+                new TrustedGitState(state, new GitWorktrees(git, FakeHost.machine())),
+                List::of),
             new MasterBriefs(paths, new SessionBrief(paths)),
             new RoundQuotes(
                 new RoundFacts(

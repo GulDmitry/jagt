@@ -30,6 +30,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.review.AutoReviewWatch;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,8 @@ class BoardApiControllerTest {
           new OrchestratorPaths(
               OrchestratorProperties.defaults()
                   .withRoot("/state")
-                  .withStateFile("/state/state.json")),
+                  .withStateFile("/state/state.json"),
+              FakeHost.machine()),
           new FakeClock());
   private final BoardApiController api =
       new BoardApiController(

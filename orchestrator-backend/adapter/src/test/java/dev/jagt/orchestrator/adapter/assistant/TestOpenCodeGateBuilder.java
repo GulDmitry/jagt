@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.service.gate.ReadScopes;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import lombok.With;
 
@@ -19,9 +20,8 @@ public record TestOpenCodeGateBuilder(Path state) {
   public OpenCodeGate build(McpHealth health, ReadScopes scopes) {
     return new OpenCodeGate(
         new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(state.toString())
-                .withData(state.toString())),
+            OrchestratorProperties.defaults().withRoot(state.toString()).withData(state.toString()),
+            FakeHost.machine()),
         new ReadOnlyTools(
             health,
             AssistantProperties.empty(),

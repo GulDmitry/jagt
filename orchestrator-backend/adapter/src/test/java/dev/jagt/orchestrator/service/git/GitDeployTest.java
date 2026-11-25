@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -56,7 +57,8 @@ class GitDeployTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withData(dir.resolve("data").toString())));
+                    .withData(dir.resolve("data").toString()),
+                FakeHost.machine()));
     git = new GitDeploy(GitRepos.commands(runner), worktreePaths);
   }
 

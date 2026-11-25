@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import org.junit.jupiter.api.Test;
 
 class LinuxKittyTerminalDriverTest {
@@ -17,7 +18,10 @@ class LinuxKittyTerminalDriverTest {
   void refusesToStartWhenNothingWouldShowTheAgentsSessions() {
     var driver =
         new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class), new KittyOptions("no-such-kitty", ""), new FakeClock());
+            mock(ProcessRunner.class),
+            new KittyOptions("no-such-kitty", ""),
+            new FakeClock(),
+            FakeHost.machine());
 
     assertThat(driver.problems())
         .extracting(Problem::key)
@@ -28,7 +32,10 @@ class LinuxKittyTerminalDriverTest {
   void addsNoneOfTheMacOnlyKeyboardWorkaroundToTheViewer() {
     var driver =
         new LinuxKittyTerminalDriver(
-            mock(ProcessRunner.class), new KittyOptions("kitty", ""), new FakeClock());
+            mock(ProcessRunner.class),
+            new KittyOptions("kitty", ""),
+            new FakeClock(),
+            FakeHost.machine());
 
     assertThat(driver.platformOptions()).isEmpty();
   }
@@ -38,7 +45,8 @@ class LinuxKittyTerminalDriverTest {
     ProcessRunner runner = mock(ProcessRunner.class);
 
     assertThatCode(() ->
-            new LinuxKittyTerminalDriver(runner, new KittyOptions("kitty", ""), new FakeClock())
+            new LinuxKittyTerminalDriver(
+                    runner, new KittyOptions("kitty", ""), new FakeClock(), FakeHost.machine())
                 .bringToFront())
         .doesNotThrowAnyException();
     verifyNoInteractions(runner);

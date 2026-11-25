@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.adapter.terminal;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.host.Executables;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
@@ -30,14 +31,16 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
   protected final String kittyCommand;
   private final String kittyFontSize;
   private final Clock clock;
+  private final Host host;
   private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
 
   protected AbstractKittyTerminalDriver(
-      ProcessRunner processRunner, KittyOptions options, Clock clock) {
+      ProcessRunner processRunner, KittyOptions options, Clock clock, Host host) {
     this.processRunner = processRunner;
     this.kittyCommand = Executables.resolve(options.command());
     this.kittyFontSize = options.fontSize();
     this.clock = clock;
+    this.host = host;
   }
 
   @Override
@@ -191,6 +194,6 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
   }
 
   private String socketPath(String dedicatedTitle) {
-    return Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-" + dedicatedTitle).toString();
+    return host.temp().resolve("jagt-kitty-" + dedicatedTitle).toString();
   }
 }

@@ -28,6 +28,7 @@ import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class CheckerReadsTest {
+
+  private final FakeHost host = FakeHost.machine();
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
@@ -74,7 +77,8 @@ class CheckerReadsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                host),
             reducer,
             event -> {});
     state.putTask("ABC-42", DEPLOYED);
@@ -122,7 +126,8 @@ class CheckerReadsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                host),
             reducer,
             event -> {});
     state.putTask("ABC-42", DEPLOYED);
@@ -169,7 +174,8 @@ class CheckerReadsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                host),
             reducer,
             event -> {});
     state.putTask("ABC-42", DEPLOYED);
@@ -200,7 +206,8 @@ class CheckerReadsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+                    .withStateFile(root.resolve("state.json").toString()),
+                host),
             reducer,
             event -> {});
     state.putTask("ABC-42", DEPLOYED);

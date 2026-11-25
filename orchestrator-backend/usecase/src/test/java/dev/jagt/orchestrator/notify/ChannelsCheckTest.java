@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.ConfigFile.NotificationsConfig.RouteDef;
 import dev.jagt.orchestrator.service.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,8 @@ class ChannelsCheckTest {
   private final OrchestratorPaths paths =
       new OrchestratorPaths(
           OrchestratorProperties.defaults()
-              .withConfigFile(Path.of("build.gradle").toAbsolutePath().toString()));
+              .withConfigFile(Path.of("build.gradle").toAbsolutePath().toString()),
+          FakeHost.machine());
 
   private ChannelsCheck check;
 

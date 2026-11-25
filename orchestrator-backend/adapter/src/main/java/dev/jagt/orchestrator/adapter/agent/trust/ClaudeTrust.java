@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent.trust;
 
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.task.text.AtomicFiles;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -8,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Optional;
 import java.util.function.BinaryOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -43,10 +43,8 @@ public final class ClaudeTrust {
    * Relocating the whole directory is supported, so a human who did must not silently lose the
    * answer.
    */
-  public static Path configFile() {
-    return ClaudeConfigDir.of(
-            Optional.ofNullable(System.getenv(ClaudeConfigDir.VARIABLE)),
-            Path.of(System.getProperty("user.home")))
+  public static Path configFile(Host host) {
+    return ClaudeConfigDir.of(host.env(ClaudeConfigDir.VARIABLE), host.home())
         .resolve(".claude.json");
   }
 

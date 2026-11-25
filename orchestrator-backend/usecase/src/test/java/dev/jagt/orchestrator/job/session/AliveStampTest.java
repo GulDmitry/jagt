@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -21,7 +22,8 @@ class AliveStampTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     new AliveStamp(paths, Clock.fixed(Instant.parse("2026-11-05T07:00:00Z"), ZoneOffset.UTC)).run();
 
     long lastAlive = new AliveStamp(paths, new FakeClock()).lastAliveBeforeStart();
@@ -36,7 +38,8 @@ class AliveStampTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
 
     long lastAlive = new AliveStamp(paths, new FakeClock()).lastAliveBeforeStart();
 

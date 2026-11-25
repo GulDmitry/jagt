@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.testing.FakeHost;
 import lombok.With;
 
 @With
@@ -21,7 +22,9 @@ public record TestTmuxHostBuilder(ToolchainProperties toolchain) {
         processes,
         new TmuxReads(processes, toolchain),
         new SessionEnvironment(
-            new OrchestratorPaths(OrchestratorProperties.defaults()), new NoWorktreeContainers()),
+            new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()),
+            new NoWorktreeContainers(),
+            FakeHost.machine()),
         terminal,
         agent);
   }
@@ -32,7 +35,9 @@ public record TestTmuxHostBuilder(ToolchainProperties toolchain) {
         processes,
         reads,
         new SessionEnvironment(
-            new OrchestratorPaths(OrchestratorProperties.defaults()), new NoWorktreeContainers()),
+            new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()),
+            new NoWorktreeContainers(),
+            FakeHost.machine()),
         terminal,
         agent);
   }

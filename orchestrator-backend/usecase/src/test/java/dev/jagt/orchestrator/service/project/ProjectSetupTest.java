@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,6 +37,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class ProjectSetupTest {
+
+  private final FakeHost host = FakeHost.machine();
 
   @TempDir Path root;
 
@@ -65,7 +68,8 @@ class ProjectSetupTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
+                .withConfigFile(configFile.toString()),
+            host);
     config =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),
@@ -79,9 +83,11 @@ class ProjectSetupTest {
     doReturn(new Processes.Result(0, repo + "\n", ""))
         .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    setup = new ProjectSetup(config, new ConfigWriter(config, paths), git, checkout -> List.of());
+    setup =
+        new ProjectSetup(config, new ConfigWriter(config, paths), git, checkout -> List.of(), host);
     bareSetup =
-        new ProjectSetup(config, new ConfigWriter(config, paths), bareGit, checkout -> List.of());
+        new ProjectSetup(
+            config, new ConfigWriter(config, paths), bareGit, checkout -> List.of(), host);
   }
 
   @AfterEach
@@ -292,7 +298,7 @@ class ProjectSetupTest {
     ConfigService spied = spy(config);
     doThrow(new IllegalStateException("bad yaml")).when(spied).project("billing");
     ProjectSetup spying =
-        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of());
+        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of(), host);
 
     assertThatThrownBy(() -> spying.add(billingEntry))
         .isInstanceOfSatisfying(
@@ -315,10 +321,10 @@ class ProjectSetupTest {
             })
         .when(spied)
         .project("billing");
-    ProjectSetup spying =
-        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of());
+    ProjectSetup stranded =
+        new ProjectSetup(spied, new ConfigWriter(spied, paths), git, checkout -> List.of(), host);
 
-    assertThatThrownBy(() -> spying.add(billingEntry))
+    assertThatThrownBy(() -> stranded.add(billingEntry))
         .isInstanceOfSatisfying(
             ConfigWriteFailed.class,
             failure ->
@@ -457,7 +463,8 @@ class ProjectSetupTest {
             config,
             new ConfigWriter(config, paths),
             bareGit,
-            checkout -> List.of("./gradlew", "test"));
+            checkout -> List.of("./gradlew", "test"),
+            host);
 
     ProjectSetup.Reading reading = scripted.read(repo.toString());
 

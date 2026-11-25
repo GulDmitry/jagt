@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand.mutation;
 
+import dev.jagt.orchestrator.stand.StandInputs;
 import dev.jagt.orchestrator.stand.StandMode;
 import dev.jagt.orchestrator.stand.StandRuns;
 import java.util.List;
@@ -14,15 +15,15 @@ public final class MutationRuns {
   private MutationRuns() {}
 
   public static Stream<Arguments> of(String scenario) {
-    if (!StandRuns.chosen(scenario, System.getProperty("stand.scenario", ""))) {
+    if (!StandRuns.chosen(scenario, StandInputs.of("stand.scenario", ""))) {
       return Stream.of();
     }
-    String seed = System.getProperty("stand.seed", "");
+    String seed = StandInputs.of("stand.seed", "");
     return selected(
             MutationBook.shipped(),
-            System.getProperty("stand.mutations", ""),
+            StandInputs.of("stand.mutations", ""),
             seed.isBlank() ? System.nanoTime() : Long.parseLong(seed),
-            System.getProperty("stand.modes", ""),
+            StandInputs.of("stand.modes", ""),
             Integer.getInteger("stand.runs", 1))
         .stream()
         .map(run -> Arguments.of(run.mutation().name(), run.seed(), run.mode(), run.index()));

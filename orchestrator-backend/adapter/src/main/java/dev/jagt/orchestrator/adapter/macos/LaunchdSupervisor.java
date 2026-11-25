@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.macos;
 
-import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.host.Supervisor;

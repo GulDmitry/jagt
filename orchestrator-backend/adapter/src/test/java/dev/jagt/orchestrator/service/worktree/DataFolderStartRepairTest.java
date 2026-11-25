@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -50,7 +51,8 @@ class DataFolderStartRepairTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withData(root.resolve("vault").toString()));
+                .withData(root.resolve("vault").toString()),
+            FakeHost.machine());
 
     new DataFolderStart(paths, runner, "").prepare();
 

@@ -30,6 +30,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +69,11 @@ class RepoAttachmentTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     state =
-        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(properties, FakeHost.machine()),
+            reducer,
+            event -> {});
     attachment = new RepoAttachment(config, state, worktrees, relay);
     when(config.load()).thenReturn(ConfigFile.defaults());
   }

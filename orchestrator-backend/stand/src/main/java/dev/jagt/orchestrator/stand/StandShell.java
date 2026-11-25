@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.adapter.process.ChildProcesses;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -97,8 +98,7 @@ public final class StandShell {
 
   public static Optional<Process> holdAwake(Path root) {
     Optional<List<String>> command =
-        awakeCommand(
-            System.getProperty("os.name", ""), ProcessHandle.current().pid(), StandShell::onPath);
+        awakeCommand(new SystemHost().osName(), ProcessHandle.current().pid(), StandShell::onPath);
     String run = "stand run " + root.getFileName();
     if (command.isEmpty()) {
       StandConsole.line(

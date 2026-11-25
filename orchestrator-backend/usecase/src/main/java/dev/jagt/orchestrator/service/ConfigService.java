@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.source.ConfigSource;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.reach.SessionReach;
 import dev.jagt.orchestrator.service.stop.ActHalt;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
@@ -29,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @Service
 @RequiredArgsConstructor
-public class ConfigService implements LoopBreaker.Current, SessionReach {
+public class ConfigService implements LoopBreaker.Current {
 
   private static final String MASTER = Arbiter.ID;
 
@@ -143,18 +142,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   @Override
   public LoopBreaker current() {
     return load().loopBreakerOrDefault();
-  }
-
-  @Override
-  public List<Path> beside() {
-    return load()
-        .agent()
-        .sandboxOrDefault()
-        .allowWritePaths(Path.of(System.getProperty("user.home")))
-        .stream()
-        .filter(Files::isDirectory)
-        .map(WorktreeSandbox::real)
-        .toList();
   }
 
   /**

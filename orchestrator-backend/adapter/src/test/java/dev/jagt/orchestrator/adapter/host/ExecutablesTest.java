@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter;
+package dev.jagt.orchestrator.adapter.host;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

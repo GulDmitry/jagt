@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -177,7 +178,7 @@ public final class GitRepos {
   }
 
   public static void freshWorktree(Processes runner, Path repo, Path worktree) {
-    new GitWorktrees(commands(runner))
+    new GitWorktrees(commands(runner), FakeHost.machine())
         .createWorktree(repo, worktree, "ABC-1", "origin/main", BranchStrategy.FRESH);
   }
 

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter;
+package dev.jagt.orchestrator.adapter.host;
 
 import dev.jagt.orchestrator.port.host.Host;
 import java.io.File;
@@ -26,6 +26,11 @@ public class SystemHost implements Host {
   @Override
   public Path workingDir() {
     return Path.of(System.getProperty("user.dir"));
+  }
+
+  @Override
+  public Path temp() {
+    return Path.of(System.getProperty("java.io.tmpdir"));
   }
 
   @Override

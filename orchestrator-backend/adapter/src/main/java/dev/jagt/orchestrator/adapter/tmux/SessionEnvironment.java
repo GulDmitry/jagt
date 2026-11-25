@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import java.nio.file.Path;
@@ -15,10 +16,16 @@ public class SessionEnvironment {
 
   private final OrchestratorPaths paths;
   private final WorktreeContainers containers;
+  private final Host host;
 
   /** Where jagt's own session starts. */
   Path root() {
     return paths.root();
+  }
+
+  /** A stable folder no worktree removal reaps. */
+  Path viewerDir() {
+    return host.home();
   }
 
   String prefix(Path worktree) {

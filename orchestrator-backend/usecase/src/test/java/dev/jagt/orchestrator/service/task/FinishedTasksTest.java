@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,7 +41,8 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withData(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     state = new StateService(mapper, paths, reducer, event -> {});
     finished = new FinishedTasks(mapper, state, paths, mock(Verdicts.class), new FakeClock());
   }

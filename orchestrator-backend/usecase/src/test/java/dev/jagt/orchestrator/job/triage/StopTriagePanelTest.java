@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.stop.StopTriage;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,7 +53,8 @@ class StopTriagePanelTest {
     panel =
         new StopTriagePanel(
             reviews,
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
   }
 
   @Test

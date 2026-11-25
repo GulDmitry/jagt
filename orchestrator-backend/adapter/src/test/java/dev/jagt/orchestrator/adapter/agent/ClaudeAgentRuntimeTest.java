@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -61,7 +62,8 @@ class ClaudeAgentRuntimeTest {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         Files.createDirectories(
-                ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
+                ClaudeTranscripts.projectsDir(FakeHost.machine())
+                    .resolve(ClaudeTranscripts.slug(worktree)))
             .resolve("s.jsonl"),
         "{}\n");
     var runtime = claudeRuntime().withBriefRoot(root.toString()).build(new FakeClock());
@@ -106,7 +108,7 @@ class ClaudeAgentRuntimeTest {
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     boolean trusted =
         new JsonMapper()
-            .readTree(Files.readString(ClaudeTrust.configFile()))
+            .readTree(Files.readString(ClaudeTrust.configFile(FakeHost.machine())))
             .path("projects")
             .path(key)
             .path("hasTrustDialogAccepted")
@@ -114,7 +116,7 @@ class ClaudeAgentRuntimeTest {
     runtime.retireWorktree(worktree);
     boolean remembered =
         new JsonMapper()
-            .readTree(Files.readString(ClaudeTrust.configFile()))
+            .readTree(Files.readString(ClaudeTrust.configFile(FakeHost.machine())))
             .path("projects")
             .has(key);
 
@@ -128,13 +130,13 @@ class ClaudeAgentRuntimeTest {
     Path worktree = Files.createDirectories(root.resolve("ABC-8-proj"));
     var runtime = claudeRuntime().build(new FakeClock());
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
-    ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
+    ClaudeTrust.forget(ClaudeTrust.configFile(FakeHost.machine()), worktree);
 
     runtime.beforeLaunch(worktree);
 
     boolean trusted =
         new JsonMapper()
-            .readTree(Files.readString(ClaudeTrust.configFile()))
+            .readTree(Files.readString(ClaudeTrust.configFile(FakeHost.machine())))
             .path("projects")
             .path(worktree.toRealPath().toString())
             .path("hasTrustDialogAccepted")
@@ -512,7 +514,8 @@ class ClaudeAgentRuntimeTest {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         Files.createDirectories(
-                ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
+                ClaudeTranscripts.projectsDir(FakeHost.machine())
+                    .resolve(ClaudeTranscripts.slug(worktree)))
             .resolve("s.jsonl"),
         "{}\n");
     var runtime =
@@ -631,7 +634,8 @@ class ClaudeAgentRuntimeTest {
       @TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
-            ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+            ClaudeTranscripts.projectsDir(FakeHost.machine())
+                .resolve(ClaudeTranscripts.slug(worktree)));
     Path log =
         Files.writeString(
             logs.resolve("s.jsonl"),
@@ -653,7 +657,8 @@ class ClaudeAgentRuntimeTest {
   void readsTheHumansQuestionAsTheNewestPromptOfWorktree(@TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
-            ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+            ClaudeTranscripts.projectsDir(FakeHost.machine())
+                .resolve(ClaudeTranscripts.slug(worktree)));
     Files.writeString(
         logs.resolve("s.jsonl"),
         """
@@ -668,7 +673,8 @@ class ClaudeAgentRuntimeTest {
   void readsLineJagtTypedAsNoHumanPromptOfWorktree(@TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
-            ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+            ClaudeTranscripts.projectsDir(FakeHost.machine())
+                .resolve(ClaudeTranscripts.slug(worktree)));
     Files.writeString(
         logs.resolve("s.jsonl"),
         """

@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,11 @@ class ClaudeMcpReachTest {
     ReachLedger reach = new ReachLedger();
     ClaudeMcpHealthProbe probe =
         new ClaudeMcpHealthProbe(
-            runner, ClaudeProperties.defaults(), AssistantProperties.empty(), reach);
+            runner,
+            ClaudeProperties.defaults(),
+            AssistantProperties.empty(),
+            reach,
+            FakeHost.machine());
     probe.brokenServers();
 
     new ClaudeMcpReach(reach, probe).run();
@@ -47,7 +52,11 @@ class ClaudeMcpReachTest {
     new ClaudeMcpReach(
             reach,
             new ClaudeMcpHealthProbe(
-                runner, ClaudeProperties.defaults(), AssistantProperties.empty(), reach))
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                reach,
+                FakeHost.machine()))
         .run();
 
     verifyNoInteractions(runner);

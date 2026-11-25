@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.linux;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;

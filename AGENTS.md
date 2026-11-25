@@ -143,7 +143,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
   asserted what nothing promised. Never to turn a red run green ([`testing`](docs/rules/testing.md#every-test-pins-a-business-case)).
 - A suite that opens a window leaves no trace: `--orchestrator.terminal=none`, a throwaway tmux session, cleanup.
-- **No absolute paths in defaults**: an external binary is a bare name, resolved by `adapter/Executables`.
+- **No absolute paths in defaults**: an external binary is a bare name, resolved by `adapter/host/Executables`.
 
 ## Writing
 

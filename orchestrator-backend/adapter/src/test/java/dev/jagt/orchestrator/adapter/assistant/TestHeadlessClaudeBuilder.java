@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -25,7 +26,8 @@ public record TestHeadlessClaudeBuilder(
             new AssistantBreaker(
                 breaker,
                 Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
-                new ReachLedger())),
+                new ReachLedger()),
+            FakeHost.machine()),
         ClaudeProperties.defaults(),
         properties,
         usage,

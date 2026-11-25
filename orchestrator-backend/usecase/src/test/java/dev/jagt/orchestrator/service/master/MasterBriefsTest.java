@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -17,12 +18,10 @@ class MasterBriefsTest {
   void readsTheBriefTheHumanCopiedBesideTheConfig(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "judge hard");
-    MasterBriefs briefs =
-        new MasterBriefs(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            new SessionBrief(
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
+    MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
     assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).contains("judge hard");
   }
@@ -31,12 +30,10 @@ class MasterBriefsTest {
   void readsTheShippedBriefWhereNoneWasNamedOrCopied(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md.dist"), "judge by default");
-    MasterBriefs briefs =
-        new MasterBriefs(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            new SessionBrief(
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
+    MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
     assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).contains("judge by default");
   }
@@ -44,12 +41,10 @@ class MasterBriefsTest {
   @Test
   void readsNoBriefLeftBesideTheConfig(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("master-brief.md"), "judge hard");
-    MasterBriefs briefs =
-        new MasterBriefs(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            new SessionBrief(
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
+    MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
     assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).isEmpty();
   }
@@ -58,12 +53,10 @@ class MasterBriefsTest {
   void readsNoShippedBriefInPlaceOfOneTheHumanNamedAndMisspelled(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("mine.md.dist"), "judge by default");
-    MasterBriefs briefs =
-        new MasterBriefs(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            new SessionBrief(
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
+    MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
     assertThat(briefs.master("ABC-1", new ArbiterConfig("act", "mine.md", null, null, null)))
         .isEmpty();
@@ -71,12 +64,10 @@ class MasterBriefsTest {
 
   @Test
   void readsNothingWhereNoBriefExistsAtAll(@TempDir Path root) {
-    MasterBriefs briefs =
-        new MasterBriefs(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            new SessionBrief(
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
+    MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
     assertThat(briefs.master("ABC-1", ArbiterConfig.defaults())).isEmpty();
   }
@@ -86,12 +77,10 @@ class MasterBriefsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md.dist"), "## context\n\nnever commit unasked\n");
-    MasterBriefs briefs =
-        new MasterBriefs(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            new SessionBrief(
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
+    MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
     assertThat(briefs.author()).isEqualTo("never commit unasked");
   }

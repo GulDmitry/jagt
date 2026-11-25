@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import lombok.With;
 
@@ -17,6 +18,7 @@ public record TestConfigPathsBuilder(Path root) {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString())
-            .withConfigFile(root.resolve("jagt.yml").toString()));
+            .withConfigFile(root.resolve("jagt.yml").toString()),
+        FakeHost.machine());
   }
 }

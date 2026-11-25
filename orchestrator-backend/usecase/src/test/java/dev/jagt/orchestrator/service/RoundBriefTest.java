@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,7 +39,8 @@ class RoundBriefTest {
     Files.createDirectories(root.resolve("roles/session"));
     sessionBrief =
         new SessionBrief(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
   }
 
   @Test

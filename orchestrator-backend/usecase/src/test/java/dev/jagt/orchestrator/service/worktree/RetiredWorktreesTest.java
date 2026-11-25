@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -176,7 +177,8 @@ class RetiredWorktreesTest {
   @Test
   void deletesTheScratchFolderOfTaskThatNeverLeftIt(@TempDir Path root) throws Exception {
     OrchestratorPaths real =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     Path folder = Files.createDirectories(real.scratch("ABC-1"));
     Files.writeString(folder.resolve("plan.md"), "plan");
 
@@ -192,7 +194,8 @@ class RetiredWorktreesTest {
   void deletesTheScratchFolderTheStateRecordsWhereAnOlderVersionCutIt(@TempDir Path root)
       throws Exception {
     OrchestratorPaths real =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     Path folder = Files.createDirectories(root.resolve("older/scratch/ABC-1"));
     Files.writeString(folder.resolve("plan.md"), "plan");
 
@@ -206,7 +209,8 @@ class RetiredWorktreesTest {
   void keepsFolderOutsideTheScratchRootThatStateFileNamedAsScratchFolder(@TempDir Path root)
       throws Exception {
     OrchestratorPaths real =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     Path elsewhere = Files.createDirectories(root.resolve("elsewhere"));
 
     new RetiredWorktrees(git, sessions, real)

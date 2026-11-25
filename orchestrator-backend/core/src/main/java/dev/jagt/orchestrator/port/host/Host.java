@@ -14,6 +14,9 @@ public interface Host {
   /** The directory the JVM was started in. */
   Path workingDir();
 
+  /** The directory the machine keeps its temporary files in. */
+  Path temp();
+
   Optional<String> env(String name);
 
   boolean onPath(String name);

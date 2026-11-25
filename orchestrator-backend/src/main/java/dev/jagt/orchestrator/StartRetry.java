@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.surface.ui.Console;
 import dev.jagt.orchestrator.surface.ui.FailureListener;
 import dev.jagt.orchestrator.surface.ui.ServedFailure;
@@ -14,10 +15,12 @@ final class StartRetry {
 
   private final Consumer<String[]> application;
   private final FailureListener failurePages;
+  private final Host host;
 
-  StartRetry(Consumer<String[]> application, FailureListener failurePages) {
+  StartRetry(Consumer<String[]> application, FailureListener failurePages, Host host) {
     this.application = application;
     this.failurePages = failurePages;
+    this.host = host;
   }
 
   void run(String[] launch) {
@@ -42,7 +45,7 @@ final class StartRetry {
   private boolean servedUntilSaved(String[] launch, String problems) {
     Optional<? extends ServedFailure> page =
         failurePages.listen(
-            boardPort(launch), OrchestratorPaths.configFileOutside(launch), problems);
+            boardPort(launch), OrchestratorPaths.configFileOutside(launch, host), problems);
     if (page.isEmpty()) {
       return false;
     }

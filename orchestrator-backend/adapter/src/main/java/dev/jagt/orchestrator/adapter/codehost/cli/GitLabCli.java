@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.codehost.cli;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.codehost.CodeHostDriver;
 import dev.jagt.orchestrator.adapter.codehost.HostSettings;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;

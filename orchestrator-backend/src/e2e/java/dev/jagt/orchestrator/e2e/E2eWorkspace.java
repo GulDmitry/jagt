@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.e2e;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 
-import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.task.repo.GitRemote;

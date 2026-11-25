@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +34,7 @@ class GitWorktreesTest {
 
   @TempDir Path dir;
   private final Processes runner = new ProcessRunner();
-  private final GitWorktrees git = new GitWorktrees(GitRepos.commands(runner));
+  private final GitWorktrees git = new GitWorktrees(GitRepos.commands(runner), FakeHost.machine());
 
   @Test
   void refusesWorktreeCreationWhenTicketBranchSurvivedPreviousRun() throws Exception {
@@ -55,7 +56,7 @@ class GitWorktreesTest {
         ScriptedProcesses.answering(
             List.of("git", "worktree", "add"),
             new Processes.Result(128, "", "fatal: invalid reference: origin/gone"));
-    GitWorktrees failingGit = new GitWorktrees(GitRepos.commands(failing));
+    GitWorktrees failingGit = new GitWorktrees(GitRepos.commands(failing), FakeHost.machine());
     Path worktree = dir.resolve("wt");
 
     assertThatThrownBy(() ->
@@ -139,7 +140,8 @@ class GitWorktreesTest {
                 runner,
                 mock(WorktreeProcesses.class),
                 path -> java.util.Optional.empty(),
-                containers));
+                containers),
+            FakeHost.machine());
 
     git.removeWorktree(dir.resolve("repo"), dir.resolve("alpha-wt"), null);
 
@@ -761,8 +763,8 @@ class GitWorktreesTest {
 
   @Test
   void discardsTheDiffCheckoutsOfRepositoryNobodyCanNameAnyMore() throws Exception {
-    Path first = DiffCheckouts.diffWorktreePaths("ABC-5", "gone").getFirst();
-    Path last = DiffCheckouts.diffWorktreePaths("ABC-5", "gone").getLast();
+    Path first = DiffCheckouts.diffWorktreePaths(FakeHost.machine(), "ABC-5", "gone").getFirst();
+    Path last = DiffCheckouts.diffWorktreePaths(FakeHost.machine(), "ABC-5", "gone").getLast();
     Files.createDirectories(first);
     Files.writeString(first.resolve("f.txt"), "base");
     Files.createDirectories(last);
@@ -853,7 +855,8 @@ class GitWorktreesTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> Optional.of(dev.jagt.orchestrator.task.repo.Remote.LOCAL),
-                new NoWorktreeContainers()));
+                new NoWorktreeContainers()),
+            FakeHost.machine());
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
 
@@ -876,7 +879,8 @@ class GitWorktreesTest {
                 runner,
                 new LsofWorktreeProcesses(runner),
                 path -> Optional.of(new dev.jagt.orchestrator.task.repo.Remote("upstream")),
-                new NoWorktreeContainers()));
+                new NoWorktreeContainers()),
+            FakeHost.machine());
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "upstream/main", BranchStrategy.FRESH);
 

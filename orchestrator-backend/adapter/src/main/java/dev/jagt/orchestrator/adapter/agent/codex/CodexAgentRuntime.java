@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.agent.codex;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.agent.AbstractAgentRuntime;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;

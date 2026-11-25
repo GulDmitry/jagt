@@ -1,13 +1,12 @@
 package dev.jagt.orchestrator.job.usage;
 
+import static dev.jagt.orchestrator.service.TestConfigPathsBuilder.configPaths;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
@@ -41,10 +40,7 @@ class UsageLimitsJobTest {
             new UsageLimits(Optional.of(usage)),
             notifications,
             UsageLimitsProperties.defaults(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+            configPaths().withRoot(root).build(),
             CLOCK)
         .run();
 
@@ -64,10 +60,7 @@ class UsageLimitsJobTest {
             new UsageLimits(Optional.of(usage)),
             notifications,
             UsageLimitsProperties.defaults(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
+            configPaths().withRoot(root).build(),
             CLOCK)
         .run();
 

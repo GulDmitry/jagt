@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.SessionHost.WindowState;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
@@ -656,8 +657,9 @@ class TmuxSessionHostTest {
             processes,
             new TmuxReads(processes, ToolchainProperties.defaults()),
             new SessionEnvironment(
-                new OrchestratorPaths(OrchestratorProperties.defaults()),
-                new DockerComposeContainers(processes)),
+                new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()),
+                new DockerComposeContainers(processes),
+                FakeHost.machine()),
             terminal,
             agent);
 
@@ -674,12 +676,13 @@ class TmuxSessionHostTest {
   void stopsGitClimbingOutOfScratchFolderWhereTheSessionRuns() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
     ToolchainProperties properties = ToolchainProperties.defaults();
-    OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults());
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
             new TmuxReads(processes, properties),
-            new SessionEnvironment(paths, new NoWorktreeContainers()),
+            new SessionEnvironment(paths, new NoWorktreeContainers(), FakeHost.machine()),
             terminal,
             agent);
 

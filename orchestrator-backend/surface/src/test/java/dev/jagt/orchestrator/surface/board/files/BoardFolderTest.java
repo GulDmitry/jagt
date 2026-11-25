@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,8 @@ class BoardFolderTest {
     Files.createDirectory(root.resolve("my-board"));
     Files.writeString(root.resolve("my-board").resolve("probe.html"), "<p>edited</p>");
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine());
     GenericWebApplicationContext context =
         new GenericWebApplicationContext(new MockServletContext());
     AnnotationConfigUtils.registerAnnotationConfigProcessors(context);

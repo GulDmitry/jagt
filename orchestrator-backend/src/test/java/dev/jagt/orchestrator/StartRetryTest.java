@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.jagt.orchestrator.adapter.host.SystemHost;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +14,10 @@ class StartRetryTest {
     IllegalStateException refused = new IllegalStateException("no projects");
     FakeApplicationRun run = new FakeApplicationRun().failing(refused);
     StartRetry retry =
-        new StartRetry(run, (port, file, problems) -> Optional.of(new FakeServedFailure(false)));
+        new StartRetry(
+            run,
+            (port, file, problems) -> Optional.of(new FakeServedFailure(false)),
+            new SystemHost());
 
     assertThatThrownBy(() -> retry.run(new String[] {"--server.port=8291"})).isSameAs(refused);
 
@@ -26,7 +30,10 @@ class StartRetryTest {
     FakeApplicationRun run =
         new FakeApplicationRun().failing(new IllegalStateException("no projects"));
     StartRetry retry =
-        new StartRetry(run, (port, file, problems) -> Optional.of(new FakeServedFailure(true)));
+        new StartRetry(
+            run,
+            (port, file, problems) -> Optional.of(new FakeServedFailure(true)),
+            new SystemHost());
 
     retry.run(new String[] {"--server.port=8291"});
 
@@ -37,7 +44,8 @@ class StartRetryTest {
   void rethrowsTheFailure_whenNoFailurePageCanOpen() {
     IllegalStateException refused = new IllegalStateException("port taken");
     FakeApplicationRun run = new FakeApplicationRun().failing(refused);
-    StartRetry retry = new StartRetry(run, (port, file, problems) -> Optional.empty());
+    StartRetry retry =
+        new StartRetry(run, (port, file, problems) -> Optional.empty(), new SystemHost());
 
     assertThatThrownBy(() -> retry.run(new String[] {"--server.port=8291"})).isSameAs(refused);
 
@@ -48,7 +56,8 @@ class StartRetryTest {
   void rethrowsTheError_whenTheRunThrowsAnError() {
     NoClassDefFoundError broken = new NoClassDefFoundError("rewritten jar");
     FakeApplicationRun run = new FakeApplicationRun().failing(broken);
-    StartRetry retry = new StartRetry(run, (port, file, problems) -> Optional.empty());
+    StartRetry retry =
+        new StartRetry(run, (port, file, problems) -> Optional.empty(), new SystemHost());
 
     assertThatThrownBy(() -> retry.run(new String[] {"--server.port=8291"})).isSameAs(broken);
 

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,8 +28,8 @@ class DiffCheckoutsTest {
     project = "p" + dir.getFileName();
     repo = GitRepos.clone(runner, dir, "repo", "base");
     GitCommands commands = GitRepos.commands(runner);
-    git = new GitWorktrees(commands);
-    diffs = new DiffCheckouts(commands);
+    git = new GitWorktrees(commands, FakeHost.machine());
+    diffs = new DiffCheckouts(commands, FakeHost.machine());
   }
 
   @Test
@@ -96,7 +97,7 @@ class DiffCheckoutsTest {
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-6", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("f.txt"), "task change");
-    Path leftover = DiffCheckouts.diffWorktreePaths("ABC-6", project).getLast();
+    Path leftover = DiffCheckouts.diffWorktreePaths(FakeHost.machine(), "ABC-6", project).getLast();
     Files.createDirectories(leftover);
     Files.writeString(leftover.resolve("stale.txt"), "from a snapshot nobody removed");
 

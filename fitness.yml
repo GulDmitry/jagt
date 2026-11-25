@@ -8,7 +8,7 @@ project:
     statechart: { exposes: ["dev.jagt.statechart.."] }
     core: { exposes: [".."] }
     usecase: { exposes: [".."] }
-    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay", "dev.jagt.orchestrator.adapter.agent.trust", "dev.jagt.orchestrator.adapter.process"] }
+    adapter: { exposes: ["dev.jagt.orchestrator.adapter.replay", "dev.jagt.orchestrator.adapter.agent.trust", "dev.jagt.orchestrator.adapter.process", "dev.jagt.orchestrator.adapter.host"] }
     surface: { exposes: [] }
     stand: { exposes: [] }
 technical:
@@ -23,6 +23,7 @@ technical:
       module-isolation: { engine: archunit, set: all, measure: module-isolation, governs: count, max: 0, decision: "0211" }
       spawn-owner: { engine: archunit, set: main, calls: java.lang.ProcessBuilder.start, except: "ChildProcesses,Git", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone: its owner kills and reaps every live child at stop" }
       spawn-owner-exec: { engine: archunit, set: main, calls: java.lang.Runtime.exec, except: "ChildProcesses", governs: class-dependency, max: 0, hint: "a child process is spawned by ChildProcesses alone" }
+      host-properties-owner: { engine: archunit, set: main, calls: java.lang.System.getProperty, except: "SystemHost,Executables,StandInputs", governs: class-dependency, max: 0, decision: "0248", hint: "a host property (home, temp, working directory, OS) is read through Host alone; the stand reads its own -D inputs through StandInputs" }
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }

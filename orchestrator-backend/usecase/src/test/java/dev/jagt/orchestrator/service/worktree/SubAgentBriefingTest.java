@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SubAgentBriefingTest {
+
+  private final FakeHost host = FakeHost.machine();
 
   private final TicketScenarios scenarios = mock(TicketScenarios.class, call -> "");
   private final NewRepo web =
@@ -56,9 +59,11 @@ class SubAgentBriefingTest {
     agent =
         new SubAgentBriefing(
             new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()), host)),
             scenarios,
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), host));
   }
 
   @Test
@@ -114,12 +119,13 @@ class SubAgentBriefingTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withData(root.resolve("data").toString()));
+                .withData(root.resolve("data").toString()),
+            host);
     String withBlank =
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(blank.toString()))),
+                        OrchestratorProperties.defaults().withRoot(blank.toString()), host)),
                 scenarios,
                 sharedPaths)
             .of(
@@ -133,7 +139,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(absent.toString()))),
+                        OrchestratorProperties.defaults().withRoot(absent.toString()), host)),
                 scenarios,
                 sharedPaths)
             .of(
@@ -441,9 +447,10 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                        OrchestratorProperties.defaults().withRoot(root.toString()), host)),
                 scenarios,
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()), host))
             .ofScratch(
                 NewTask.unplacedBuilder("ABC-42").mode("plan").build(),
                 ConfigFile.AutoplanConfig.defaults(),
@@ -474,9 +481,10 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                        OrchestratorProperties.defaults().withRoot(root.toString()), host)),
                 found,
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()), host))
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -493,13 +501,10 @@ class SubAgentBriefingTest {
     TicketScenarios found = mock(TicketScenarios.class);
     when(found.briefingLine("ABC-42")).thenReturn("\n\n<scenarios>rows</scenarios>");
 
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()), host);
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))),
-                found,
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))
+        new SubAgentBriefing(new SessionBrief(paths), found, paths)
             .ofScratch(
                 NewTask.builder("ABC-42", "web").build(),
                 ConfigFile.AutoplanConfig.defaults(),

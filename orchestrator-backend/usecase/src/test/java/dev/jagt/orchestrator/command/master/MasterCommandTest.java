@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +26,8 @@ class MasterCommandTest {
   private final MasterRecord record = mock(MasterRecord.class);
   private final UsageTracker usage = mock(UsageTracker.class);
   private final OrchestratorPaths paths =
-      new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/root"));
+      new OrchestratorPaths(
+          OrchestratorProperties.defaults().withRoot("/root"), FakeHost.machine());
   private final MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
   private ConfigFile.ArbiterConfig master =
       new ConfigFile.ArbiterConfig("judge", null, null, null, null);

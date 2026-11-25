@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -177,7 +178,8 @@ class ClaudeTranscriptsTest {
 
   @Test
   void suiteRunReadsSessionLogsFromInsideTheBuildNeverFromTheHumansHome() {
-    assertThat(ClaudeTranscripts.projectsDir()).startsWithRaw(Path.of("").toAbsolutePath());
+    assertThat(ClaudeTranscripts.projectsDir(FakeHost.machine()))
+        .startsWithRaw(Path.of("").toAbsolutePath());
   }
 
   @Test

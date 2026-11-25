@@ -30,7 +30,7 @@ public record StandTimings(String runner, String engine) {
 
   public static StandTimings standard() {
     return new StandTimings(
-        System.getProperty("stand.runner", "local"), System.getProperty("stand.engine", "compose"));
+        StandInputs.of("stand.runner", "local"), StandInputs.of("stand.engine", "compose"));
   }
 
   public void write(Path file, double startupSeconds, double stateP95Millis) throws IOException {

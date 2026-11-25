@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,7 +32,8 @@ class ChannelsCheckDistRoutesTest {
   void shippedExampleRoutesTodaysBannersAndPassesTheStartCheck() {
     Path dist = Path.of("../../jagt.desktop.yml.dist").toAbsolutePath().normalize();
     OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withConfigFile(dist.toString()));
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withConfigFile(dist.toString()), FakeHost.machine());
     ConfigService config =
         new ConfigService(
             new ConfigSource(paths, new FakeConfigInputs()),

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.task.text.Ansi;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.io.IOException;
@@ -59,9 +60,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   private final SessionBrief brief;
   private final ClaudeProperties claude;
-  private final McpEndpoint mcp;
-  private final HookEndpoint hooks;
+  private final ClaudeEndpoints endpoints;
   private final Clock clock;
+  private final Host host;
 
   @Override
   public String displayName() {
@@ -143,7 +144,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   @Override
   public Optional<String> conversationTail(Path worktree, int maxChars, Set<String> typedByJagt) {
     return ClaudeTranscripts.tail(
-        ClaudeTranscripts.projectsDir(), worktree, maxChars, withBriefLines(typedByJagt));
+        ClaudeTranscripts.projectsDir(host), worktree, maxChars, withBriefLines(typedByJagt));
   }
 
   @Override
@@ -158,7 +159,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   @Override
   public java.util.Optional<Path> sessionLogOf(Path worktree) {
-    return ClaudeTranscripts.newestLog(ClaudeTranscripts.projectsDir(), worktree);
+    return ClaudeTranscripts.newestLog(ClaudeTranscripts.projectsDir(host), worktree);
   }
 
   /**
@@ -198,13 +199,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   @Override
   public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
     return ClaudeTranscripts.humanSaid(
-        ClaudeTranscripts.projectsDir(), worktree, withBriefLines(typedByJagt));
+        ClaudeTranscripts.projectsDir(host), worktree, withBriefLines(typedByJagt));
   }
 
   @Override
   public boolean humanExchangeOpen(Path worktree, Set<String> typedByJagt) {
     return ClaudeTranscripts.humanExchangeOpen(
-        ClaudeTranscripts.projectsDir(), worktree, withBriefLines(typedByJagt));
+        ClaudeTranscripts.projectsDir(host), worktree, withBriefLines(typedByJagt));
   }
 
   private Set<String> withBriefLines(Set<String> typedByJagt) {
@@ -222,7 +223,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   @Override
   public OptionalLong lastSessionActivity(Path worktree) {
     return OptionalLong.of(
-        ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(), worktree));
+        ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(host), worktree));
   }
 
   @Override
@@ -272,7 +273,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   protected void wireAgent(AgentWorktree worktree) {
     write(
         worktree.path().resolve(".mcp.json"),
-        mcpJson(mcp.url(), McpEndpoint.callerHeaderValue(worktree.path())));
+        mcpJson(endpoints.mcp().url(), McpEndpoint.callerHeaderValue(worktree.path())));
     if (rootNamesFree(worktree.path())) {
       symlink(
           worktree.path().resolve(CLAUDE_MEMORY_FILE),
@@ -285,7 +286,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
             claude.disabledPlugins(),
             Stream.concat(worktree.allowedTools().stream(), editRules(worktree.sandbox())).toList(),
             hooksJson(worktree.path()) + sandboxJson(worktree.sandbox())));
-    ClaudeTrust.accept(ClaudeTrust.configFile(), worktree.path());
+    ClaudeTrust.accept(ClaudeTrust.configFile(host), worktree.path());
   }
 
   /**
@@ -435,12 +436,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   @Override
   public void beforeLaunch(Path worktree) {
-    ClaudeTrust.reaccept(ClaudeTrust.configFile(), worktree);
+    ClaudeTrust.reaccept(ClaudeTrust.configFile(host), worktree);
   }
 
   @Override
   public void retireWorktree(Path worktree) {
-    ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
+    ClaudeTrust.forget(ClaudeTrust.configFile(host), worktree);
   }
 
   @Override
@@ -524,19 +525,21 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     String events =
         Stream.of(
                 SessionHooks.of("claude").entrySet().stream()
-                    .map(event -> hook(event.getKey(), hooks.command(worktree, event.getValue()))),
+                    .map(event ->
+                        hook(
+                            event.getKey(), endpoints.hooks().command(worktree, event.getValue()))),
                 SessionHooks.turnEnd("claude").stream()
-                    .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
+                    .map(event -> hook(event, endpoints.hooks().command(worktree, "turn-end"))),
                 SessionHooks.promptGate("claude").stream()
                     .map(event ->
                         hook(
                             event,
-                            hooks.promptCommand(worktree),
+                            endpoints.hooks().promptCommand(worktree),
                             HookEndpoint.PROMPT_GATE_SECONDS + 5)),
                 SessionHooks.turnFailure("claude").stream()
-                    .map(event -> hook(event, hooks.command(worktree, "turn-failure"))),
+                    .map(event -> hook(event, endpoints.hooks().command(worktree, "turn-failure"))),
                 SessionHooks.permissionRequest("claude").stream()
-                    .map(event -> hook(event, hooks.command(worktree, "permission"))),
+                    .map(event -> hook(event, endpoints.hooks().command(worktree, "permission"))),
                 // Scoped to the tools that can push or write a file: a hook on all of them would
                 // sit in
                 // front of every step the agent takes.
@@ -546,7 +549,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                         %s: [{"matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": %s,\
                          "timeout": 5}]}]\
                         """
-                            .formatted(quoted(event), quoted(hooks.gateCommand(worktree)))))
+                            .formatted(
+                                quoted(event), quoted(endpoints.hooks().gateCommand(worktree)))))
             .flatMap(stream -> stream)
             .collect(Collectors.joining(",\n    "));
     return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";

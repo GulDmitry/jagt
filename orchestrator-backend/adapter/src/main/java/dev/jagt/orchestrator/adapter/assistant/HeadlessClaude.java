@@ -203,12 +203,7 @@ class HeadlessClaude {
     List<String> tools = new ArrayList<>(allowed);
     tools.add(STRUCTURED_OUTPUT);
     return run(
-        Path.of(System.getProperty("java.io.tmpdir")),
-        timeout,
-        cmd,
-        new ReadScope(List.of(), tools, false),
-        kind,
-        label);
+        process.scratchDir(), timeout, cmd, new ReadScope(List.of(), tools, false), kind, label);
   }
 
   /**

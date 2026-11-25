@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.service.review.ReviewSweepService;
 import dev.jagt.orchestrator.service.stop.StopAnnouncements;
 import dev.jagt.orchestrator.service.stop.StopPolicy;
 import dev.jagt.orchestrator.service.stop.TaskStops;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -40,7 +41,8 @@ public record TestAutoReviewSchedulerBuilder(Path root) {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withData(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+                .withStateFile(root.resolve("state.json").toString()),
+            FakeHost.machine());
     return new AutoReviewScheduler(
         state,
         config,

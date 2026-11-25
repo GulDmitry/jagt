@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,12 +50,13 @@ class ConfigCheckTest {
     check =
         new ConfigCheck(
             new ConfigService(
-                new ConfigSource(new OrchestratorPaths(properties), new FakeConfigInputs()),
+                new ConfigSource(
+                    new OrchestratorPaths(properties, FakeHost.machine()), new FakeConfigInputs()),
                 mock(AgentRuntime.class),
                 mock(ActStops.class),
                 new Checkers(new TaskChart(Composition.builtIn())),
                 new KeptNumbers(new ReachLedger())),
-            new OrchestratorPaths(properties),
+            new OrchestratorPaths(properties, FakeHost.machine()),
             sessions,
             new WorkingDirHost(root));
   }

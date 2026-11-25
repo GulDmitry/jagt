@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.task.repo.GitTrust;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -31,7 +32,7 @@ class GitStatesTest {
   void startFromRepositoryWithEmptyCommit() {
     repo = GitRepos.emptyRepo(runner, dir);
     worktree = dir.resolve("wt");
-    git = new GitWorktrees(GitRepos.commands(runner));
+    git = new GitWorktrees(GitRepos.commands(runner), FakeHost.machine());
   }
 
   @Test
