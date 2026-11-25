@@ -116,4 +116,30 @@ class RoleOptionsTest {
     assertThat(options.workspaceMergeRequest()).isTrue();
     assertThat(options.workspacePath()).contains(folder.toAbsolutePath().resolve("ws"));
   }
+
+  @Test
+  void workspaceLayoutTheFolderMapsStandsOverTheShippedOne(@TempDir Path folder) throws Exception {
+    Files.writeString(
+        folder.resolve("role.yml.dist"),
+        "workspace:\n  path: ws\n  index: index.md\n  steps: steps\n  flows: flows\n");
+    Files.writeString(
+        folder.resolve("role.yml"), "workspace:\n  index: wiki/index.md\n  steps: lib\n");
+
+    RoleOptions.Layout layout = RoleOptions.read(folder).layout();
+
+    assertThat(layout)
+        .isEqualTo(new RoleOptions.Layout(false, "wiki/index.md", "lib", "flows", "scenarios"));
+  }
+
+  @Test
+  void layoutNamesEachWorkspacePlaceholderOfTheBrief() {
+    RoleOptions.Layout layout =
+        new RoleOptions.Layout(false, "wiki/index.md", "lib", "e2e", "drafts");
+
+    String brief =
+        layout.fill(
+            "{workspace.index} {workspace.steps}/ {workspace.flows}/ {workspace.scenarios}/");
+
+    assertThat(brief).isEqualTo("wiki/index.md lib/ e2e/ drafts/");
+  }
 }

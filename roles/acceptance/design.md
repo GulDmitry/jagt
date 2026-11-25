@@ -47,7 +47,8 @@ jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environment
 - The workspace is `roles/acceptance/workspace/` by default, or a repository of the user's; `setup.md` asks the
   technology the project has, the path and the layout. A path inside a project of `jagt.yml` can be proposed by request
   (`workspace.mergeRequest`).
-- Layout: `index.md` read first (environments, roles and how each signs in, scenarios known), `scenarios/`, `steps/`, `flows/`.
+- Layout: `index.md` read first (environments, roles and how each signs in, scenarios known), `scenarios/`, `steps/`, `flows/`;
+  `workspace.index`, `scenarios`, `steps` and `flows` move each, and the brief names them by placeholder.
 
 ## Guards
 

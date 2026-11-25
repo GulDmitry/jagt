@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.role.RoleSettings;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,22 @@ class ScenarioSessionsTest {
             "alpha",
             "",
             "the brief\n\nProject: alpha",
+            new CheckerReader.Workspace(root, List.of()));
+  }
+
+  @Test
+  void theScenariosSectionNamesTheIndexTheRoleFolderMaps(@TempDir Path root) throws Exception {
+    Files.writeString(root.resolve("role.yml"), "workspace:\n  path: .\n  index: wiki/index.md\n");
+    when(settings.load()).thenReturn(RoleOptions.read(root).withEnabled(true));
+    when(brief.section("scenarios")).thenReturn("Read `{workspace.index}` first.");
+
+    sessions.open("alpha", "");
+
+    verify(windows)
+        .open(
+            "alpha",
+            "",
+            "Read `wiki/index.md` first.\n\nProject: alpha",
             new CheckerReader.Workspace(root, List.of()));
   }
 

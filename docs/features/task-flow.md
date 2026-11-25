@@ -17,7 +17,8 @@
   [spec](../../openspec/specs/deploy-on-approval/spec.md)
 - **More checkers** — A folder `roles/<id>/role.yml` declaring `jobs: true` runs its own check at deploy beside acceptance.
   [spec](../../openspec/specs/acceptance/spec.md#requirement-a-checker-declares-its-jobs-and-its-read-steps)
-- **Acceptance workspace** — Acceptance keeps scenarios in its own folder, writes only there, and asks one question per ticket gap in a session.
+- **Acceptance workspace** — Acceptance keeps scenarios in its own folder, laid out as `role.yml` maps it, writes only there,
+  and asks one question per ticket gap in a session.
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-keeps-its-checks-in-its-workspace)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-analyses-a-ticket-before-its-plan)
   [spec](../../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-has-an-interactive-session)

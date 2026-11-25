@@ -55,6 +55,20 @@ class TicketScenariosTest {
   }
 
   @Test
+  void namesTheTicketsScenariosFileInTheFolderTheRoleFolderMaps() throws Exception {
+    Path file = root.resolve("roles/acceptance/workspace/drafts/ABC-42.md");
+    Files.createDirectories(file.getParent());
+    Files.writeString(file, "- WHEN a THEN b `from-ticket`\n");
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "workspace:\n  path: workspace\n  scenarios: drafts\n");
+
+    String line = scenarios.briefingLine("ABC-42");
+
+    assertThat(line).contains(file.toString());
+  }
+
+  @Test
   void namesNothingWhereTheTicketHasNoScenariosFile() throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance/workspace/scenarios"));
     Files.writeString(root.resolve("roles/acceptance/role.yml"), "workspace: workspace\n");

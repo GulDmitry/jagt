@@ -26,7 +26,7 @@ public record RoleOptions(
     Flows flows,
     List<String> mcp,
     String workspace,
-    @With(AccessLevel.NONE) boolean workspaceMergeRequest,
+    @With(AccessLevel.NONE) Layout layout,
     List<String> unread) {
 
   private static final String NONE = "none";
@@ -38,7 +38,40 @@ public record RoleOptions(
   }
 
   public static RoleOptions defaults() {
-    return new RoleOptions(false, "", List.of(), Flows.defaults(), List.of(), "", false, List.of());
+    return new RoleOptions(
+        false, "", List.of(), Flows.defaults(), List.of(), "", Layout.defaults(), List.of());
+  }
+
+  /** Where the workspace keeps each kind of file, relative to it, and whether jagt proposes it. */
+  public record Layout(
+      boolean mergeRequest, String index, String steps, String flows, String scenarios) {
+
+    public static Layout defaults() {
+      return new Layout(false, "index.md", "steps", "flows", "scenarios");
+    }
+
+    /** Each {@code {workspace.<key>}} of a brief, named by this layout. */
+    public String fill(String brief) {
+      return brief
+          .replace("{workspace.index}", index)
+          .replace("{workspace.steps}", steps)
+          .replace("{workspace.flows}", flows)
+          .replace("{workspace.scenarios}", scenarios);
+    }
+
+    private static Layout of(Map<?, ?> workspace) {
+      Layout shipped = defaults();
+      return new Layout(
+          Boolean.parseBoolean(text(workspace, "mergeRequest")),
+          or(text(workspace, "index"), shipped.index()),
+          or(text(workspace, "steps"), shipped.steps()),
+          or(text(workspace, "flows"), shipped.flows()),
+          or(text(workspace, "scenarios"), shipped.scenarios()));
+    }
+
+    private static String or(String written, String shipped) {
+      return written.isEmpty() ? shipped : written;
+    }
   }
 
   /** {@code landed} answers once the change is up, where the host reports no deploy job. */
@@ -74,6 +107,10 @@ public record RoleOptions(
     }
   }
 
+  public boolean workspaceMergeRequest() {
+    return layout.mergeRequest();
+  }
+
   public Optional<Path> workspacePath() {
     return workspace.isEmpty() ? Optional.empty() : Optional.of(Path.of(workspace));
   }
@@ -107,7 +144,7 @@ public record RoleOptions(
                 ? text(workspace, "path")
                 : text(document, "workspace"),
             folder),
-        Boolean.parseBoolean(mergeRequest),
+        Layout.of(workspace),
         Stream.of(
                 timeout.isEmpty() || parsed.isPresent()
                     ? ""

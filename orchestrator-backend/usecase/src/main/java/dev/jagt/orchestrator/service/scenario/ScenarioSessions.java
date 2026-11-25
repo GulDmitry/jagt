@@ -34,12 +34,12 @@ public class ScenarioSessions {
             .orElseThrow(() ->
                 Refusal.byState(
                     "acceptance holds no workspace: `workspace: none` in " + settings.file()));
-    return windows.open(project, options.model(), prompt(project, loaded), workspace);
+    return windows.open(project, options.model(), prompt(options, project, loaded), workspace);
   }
 
-  private String prompt(String project, String loaded) {
+  private String prompt(RoleOptions options, String project, String loaded) {
     String section = brief.section(SCENARIOS);
-    return (section.isBlank() ? brief.text() : section)
+    return options.layout().fill(section.isBlank() ? brief.text() : section)
         + "\n\nProject: "
         + project
         + (loaded.isBlank() ? "" : "\n" + loaded);

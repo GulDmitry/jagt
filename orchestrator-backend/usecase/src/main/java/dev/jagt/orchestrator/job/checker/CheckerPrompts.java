@@ -29,8 +29,8 @@ public class CheckerPrompts {
             + flowsLine(acceptance)
             + workspaceLine(acceptance, worktree, sha);
     return new CheckerReader.Run(
-        brief.text(),
-        brief.section(step) + "\n\n" + facts,
+        acceptance.layout().fill(brief.text()),
+        acceptance.layout().fill(brief.section(step)) + "\n\n" + facts,
         Path.of(worktree),
         sha,
         acceptance.model(),
@@ -63,8 +63,8 @@ public class CheckerPrompts {
             + "\nCheck on:\n"
             + environments;
     return new CheckerReader.Run(
-        brief.text(),
-        brief.section(role.checking().declineStep()) + "\n\n" + facts,
+        acceptance.layout().fill(brief.text()),
+        acceptance.layout().fill(brief.section(role.checking().declineStep())) + "\n\n" + facts,
         Path.of(worktree),
         sha,
         acceptance.model(),
