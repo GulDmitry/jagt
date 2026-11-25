@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.Remote;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -151,7 +152,7 @@ public class TaskProvisioning {
         request.taskId(),
         reducer ->
             reducer.planAsked(
-                autoplan(config) ? reducer.autoplanned(born) : born,
+                autoplan(config) || openedOutside() ? reducer.autoplanned(born) : born,
                 AgentSessions.launchMode(request.mode()) == LaunchMode.PLAN));
   }
 
@@ -174,6 +175,11 @@ public class TaskProvisioning {
         + (launch == LaunchMode.PLAN
             ? " Plan mode: read plan.md, then approve-plan " + alias + "."
             : "");
+  }
+
+  private static boolean openedOutside() {
+    ActionOrigin origin = OriginContext.current();
+    return origin != null && origin.outside();
   }
 
   private static boolean autoplan(ConfigFile config) {

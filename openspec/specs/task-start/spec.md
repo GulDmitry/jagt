@@ -2,8 +2,7 @@
 
 ## Purpose
 
-How a task starts: its branch and worktree, the plan gate, and what a start never loses. What follows is
-[task-flow](../task-flow/spec.md)'s.
+How a task starts: its branch and worktree, the plan gate, and what a start never loses. What follows is [task-flow](../task-flow/spec.md)'s.
 
 ## Requirements
 
@@ -40,6 +39,13 @@ While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`
 - **THEN** the write is refused with `plan first`, and `plan.md` and `task_visual.md` are still written
 - **WHEN** a session on a closed gate asks a question and the Master does not hold `plan`
 - **THEN** the question waits for the human and the Master writes no answer
+- **WHEN** intake or a code host opens ABC-42 with autoplan off
+- **THEN** its plan gate is closed and no source file is written before the plan is approved
+- **AND** its session judges the ticket first: `plan.md` opens with `verdict: sound` or `verdict: unsound — <why>`
+- **WHEN** the session judges ABC-42 unsound
+- **THEN** it reports a question naming why; the Master in act neither answers nor approves, the plan waits for you
+- **WHEN** the session judges ABC-42 sound
+- **THEN** the Master in act approves the plan as for any plan-first task
 
 #### Scenario: A plan lists its files
 - **WHEN** a session plans first
@@ -167,10 +173,9 @@ A clone is fetched before a task is cut from it.
 - **THEN** the task's branch is cut from the base including that commit
 
 ### Requirement: A project's setup command runs in every new worktree
-A project's `setupCommand`, an argv list, SHALL run once in every new worktree of that project.
+A project's `setupCommand`, an argv list, SHALL run once in every new worktree of that project. Unset, nothing runs.
 It runs after `worktree.copyGlobs` and before the session starts, with `{branch}` and `{worktree}` filled, within `setupMinutes` (20 where unset).
 A non-zero exit or the limit MUST fail the start naming the project, the exit and the output's tail; every cut is unwound and no session starts.
-Unset, nothing runs.
 #### Scenario: A setup command
 - **WHEN** a project names `setupCommand` and a task starts in it
 - **THEN** it runs once in the new worktree with the branch and the worktree path filled, before the session starts
@@ -181,10 +186,8 @@ Unset, nothing runs.
 ### Requirement: A start the server never finished is kept
 A start SHALL be recorded, with its request, in `pending-starts.json` beside `state.json` before its first read or cut.
 The record SHALL end once the task's state is written, and on every refusal.
-A restart SHALL log `task start interrupted` with `key` and `cause` per leftover and keep it.
-It SHALL log it once, on the first read of the record.
-It ends on `resume <key>`, which runs the saved request again, on `resume <key> discard`, or once a task has that key.
-No task status exists for it.
+A restart SHALL log `task start interrupted` with `key` and `cause` per leftover and keep it, once, on the first read of the record.
+It ends on `resume <key>`, which runs the saved request again, on `resume <key> discard`, or once a task has that key. No task status exists for it.
 #### Scenario: The server stops while the ticket is read
 - **WHEN** jagt restarts after `do ABC-42 tighten the parser` was cut short at the ticket read
 - **THEN** no task exists, the record holds `ABC-42` and the words, and the head shows one mark with them in its hover

@@ -8,10 +8,12 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -289,6 +291,36 @@ class SubAgentBriefingTest {
             diagnose);
 
     assertThat(briefing).doesNotContain("PLAN FIRST");
+  }
+
+  @Test
+  void asksTheSessionOfTrackerTasksToJudgeTheTicketFirstAndNeverToSkipThePlan() throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+
+    String briefing =
+        OriginContext.as(
+            ActionOrigin.TRACKER,
+            () -> agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose));
+
+    assertThat(briefing)
+        .contains("JUDGE FIRST", "`verdict: unsound — <what is wrong>`", "`outcome=question`")
+        .contains("never `no_plan`");
+  }
+
+  @Test
+  void asksNoJudgementOfTasksHumansOpen() throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+
+    String briefing =
+        OriginContext.as(
+            ActionOrigin.BOARD,
+            () -> agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose));
+
+    assertThat(briefing).doesNotContain("JUDGE FIRST");
   }
 
   @Test

@@ -87,6 +87,10 @@ rest is advice. What earlier rounds settled is not reopened for less. `ready` me
 question is the one thing the human must decide: a ticket that reads two ways, where one reading removes what
 callers rely on, is that question. Neither reading is provable, so a finding on one is a guess.
 
+A plan whose head says `verdict: unsound` or `verdict: unclear`, or whose session asked a question, is never `ready`:
+a ticket that outside system opened and its own session found wrong is the human's. The verdict is a question naming
+what the session found wrong, and you approve and answer nothing. `verdict: sound` is read as any plan is.
+
 ## A stop for a suspected loop
 
 One line: `lift: <why>` where the loop is not one, `escalate: <why>` where the session needs the next model tier, `return: <instruction>` where it must change its approach, else `human: <why>`.

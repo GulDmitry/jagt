@@ -3,10 +3,12 @@ package dev.jagt.orchestrator.service.worktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigFile;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.scenario.TicketScenarios;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import dev.jagt.orchestrator.task.repo.NewRepo;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Step;
 import java.nio.file.Path;
 import java.util.List;
@@ -81,7 +83,7 @@ public class SubAgentBriefing {
       ConfigFile.VisualizeConfig visualize,
       ConfigFile.DiagnoseConfig diagnose) {
     return planFirstSentence(request.mode())
-        + autoplanSentence(autoplan)
+        + (openedOutside() ? judgeSentence() : autoplanSentence(autoplan))
         + visualizeSentence(visualize)
         + diagnoseSentence(diagnose)
         + judgementSentence(
@@ -169,6 +171,20 @@ public class SubAgentBriefing {
             + String.join(", ", on)
             + " `yes — <why>` or `no — <why>`, whether you judged it needed after reading the"
             + " task.";
+  }
+
+  private static boolean openedOutside() {
+    ActionOrigin origin = OriginContext.current();
+    return origin != null && origin.outside();
+  }
+
+  private static String judgeSentence() {
+    return " JUDGE FIRST: a system outside jagt opened this task, so its ticket may be wrong. Before"
+        + " your first edit, judge it: clear, consistent with itself and with the code, worth"
+        + " doing. Write the verdict at the head of `plan.md` as `verdict: sound` or `verdict:"
+        + " unsound — <what is wrong>`, never `no_plan`. Sound: plan as above and report"
+        + " PLAN_PENDING. Unsound or unclear: report `outcome=question` naming what is wrong,"
+        + " and the plan waits for the human.";
   }
 
   private static String autoplanSentence(ConfigFile.AutoplanConfig autoplan) {

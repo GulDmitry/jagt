@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.task.repo.BranchStrategy;
 import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import dev.jagt.orchestrator.task.repo.Remote;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
@@ -250,6 +251,33 @@ class TaskProvisioningTest {
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
     assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
+
+  @Test
+  void closesThePlanGateWhenTheTrackerOpensTheTaskWhateverAutoplanSays() {
+    OriginContext.as(
+        ActionOrigin.TRACKER,
+        () -> provisioning.initializeTask(NewTask.builder("ABC-42", "proj").mode("auto").build()));
+
+    assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
+
+  @Test
+  void closesThePlanGateWhenTheCodeHostOpensTheTaskWhateverAutoplanSays() {
+    OriginContext.as(
+        ActionOrigin.CODE_HOST,
+        () -> provisioning.initializeTask(NewTask.builder("ABC-42", "proj").mode("auto").build()));
+
+    assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
+
+  @Test
+  void leavesThePlanGateOpenOfAnAutoModeTaskTheBoardOpensWhenAutoplanIsOff() {
+    OriginContext.as(
+        ActionOrigin.BOARD,
+        () -> provisioning.initializeTask(NewTask.builder("ABC-42", "proj").mode("auto").build()));
+
+    assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test

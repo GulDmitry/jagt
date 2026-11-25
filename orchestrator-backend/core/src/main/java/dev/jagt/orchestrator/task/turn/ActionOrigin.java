@@ -28,6 +28,11 @@ public enum ActionOrigin {
   /** The approval of a review request, read from the code host. */
   CODE_HOST;
 
+  /** Whether a system outside jagt's own surfaces, not a human's press, opened the task. */
+  public boolean outside() {
+    return this == TRACKER || this == CODE_HOST;
+  }
+
   public String label() {
     return name().toLowerCase(Locale.ROOT).replace('_', '-');
   }

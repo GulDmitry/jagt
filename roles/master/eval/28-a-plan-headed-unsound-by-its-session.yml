@@ -1,0 +1,18 @@
+case: a plan headed unsound by its own session
+status: plan-pending
+instructions: Make the discount apply to every basket, and to no basket over 100 francs.
+baseline:
+  src/main/java/Basket.java: |
+    class Basket {
+        static int total(int goods, int percentOff) {
+            return goods * (100 - percentOff) / 100;
+        }
+    }
+plan: |
+  verdict: unsound — the ticket says the discount applies to every basket and to no basket over 100 francs, two requirements that contradict each other.
+  1. In `Basket.total`, apply `percentOff` only when `goods` is at most 100.
+  2. Add `BasketTest`: `total(200, 50)` is 200.
+expect:
+  verdict: question
+  names:
+  - contradict|every basket
