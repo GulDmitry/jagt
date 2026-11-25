@@ -62,7 +62,25 @@ public class ConfigCheck implements StartupCheck {
     problems.addAll(numberProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
     projects.forEach((key, project) -> problems.addAll(ProjectProblems.of(key, project)));
+    problems.addAll(companionProblems(projects));
     return problems;
+  }
+
+  private static List<Problem> companionProblems(Map<String, ProjectConfig> projects) {
+    return projects.entrySet().stream()
+        .flatMap(entry ->
+            entry.getValue().companions().stream()
+                .filter(companion -> !projects.containsKey(companion))
+                .map(companion -> {
+                  String key = "orchestrator.projects." + entry.getKey() + ".companions";
+                  return new Problem(
+                      key,
+                      key
+                          + " names '"
+                          + companion
+                          + "', which is not a project. Add it under projects, or remove it.");
+                }))
+        .toList();
   }
 
   /**

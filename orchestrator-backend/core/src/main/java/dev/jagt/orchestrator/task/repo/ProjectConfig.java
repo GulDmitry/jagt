@@ -111,19 +111,22 @@ public record ProjectConfig(
   /**
    * {@code command}: run once in every new worktree of the project before its session starts, empty
    * = nothing; {@code minutes}: null, zero or negative = 20. {@code credentialChecks}: read before
-   * a session of the project starts.
+   * a session of the project starts. {@code companions}: the projects every task started on this
+   * one also works in.
    */
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record Setup(
       @JsonProperty("setupCommand") List<String> command,
       @JsonProperty("setupMinutes") @Nullable Integer minutes,
-      List<CredentialCheck> credentialChecks) {
+      List<CredentialCheck> credentialChecks,
+      List<String> companions) {
 
-    public static final Setup NONE = new Setup(List.of(), null, List.of());
+    public static final Setup NONE = new Setup(List.of(), null, List.of(), List.of());
 
     public Setup {
       command = command == null ? List.of() : command;
       credentialChecks = credentialChecks == null ? List.of() : credentialChecks;
+      companions = companions == null ? List.of() : companions;
     }
   }
 
@@ -240,6 +243,10 @@ public record ProjectConfig(
 
   public List<CredentialCheck> credentialChecks() {
     return setup.credentialChecks();
+  }
+
+  public List<String> companions() {
+    return setup.companions();
   }
 
   public Duration setupTimeoutOrDefault() {

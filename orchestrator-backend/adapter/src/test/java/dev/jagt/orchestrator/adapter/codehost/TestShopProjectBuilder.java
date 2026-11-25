@@ -32,6 +32,6 @@ public record TestShopProjectBuilder(
             List.of(),
             new ProjectConfig.Review(List.of(), List.of(), postCommand, List.of())),
         new ProjectConfig.Verify(verifyCommand, null),
-        new ProjectConfig.Setup(setupCommand, null, credentialChecks));
+        new ProjectConfig.Setup(setupCommand, null, credentialChecks, List.of()));
   }
 }

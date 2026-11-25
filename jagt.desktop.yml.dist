@@ -31,6 +31,7 @@ orchestrator:
                                                # `worktree.copyGlobs` and before the session starts; {branch} and {worktree} are filled;
                                                # a non-zero exit or the limit fails the start, no session opens
       # setupMinutes: 20    # minutes the setup command may run before jagt stops it; 20 where you write none
+      # companions: [specs] # projects every task started on this one also works in, one worktree and one request each
       # credentialChecks:   # read-only commands, run at start, daily and before a session of this project starts; only the exit
       #   - name: npm registry   # code is read, never a credential; a failing one marks the board's head and holds the project's sessions
       #     command: ["npm", "view", "@scope/package", "version"]   # run in the project's folder, so its own .npmrc applies

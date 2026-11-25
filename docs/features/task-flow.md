@@ -32,6 +32,8 @@
 - **Setup in a new worktree** — A project's `setupCommand` runs once in every new worktree before its session starts.
   A failure or `setupMinutes` ends the start, naming the project and the output's tail.
   [spec](../../openspec/specs/task-start/spec.md#requirement-a-projects-setup-command-runs-in-every-new-worktree)
+- **Companion projects** — A project's `companions` join every task started on it, one worktree and one request each.
+  [spec](../../openspec/specs/repo-attach/spec.md#requirement-a-projects-companions-join-every-task-started-on-it)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../../openspec/specs/task-start/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
 - **Plan before a project** — `plan first`, no project ticked: plans in a scratch folder; approval cuts each `[changed]` project's worktree.

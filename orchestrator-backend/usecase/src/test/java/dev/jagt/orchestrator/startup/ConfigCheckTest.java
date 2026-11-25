@@ -78,6 +78,21 @@ class ConfigCheckTest {
   }
 
   @Test
+  void acceptsCompanionThatIsConfiguredProject() throws Exception {
+    Files.createDirectories(root.resolve("repo").resolve(".git"));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        """
+        orchestrator:
+          projects:
+            demo: { path: "%1$s", baseBranch: origin/main, companions: [specs] }
+            specs: { path: "%1$s", baseBranch: origin/main }
+        """
+            .formatted(root.resolve("repo")));
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
   void acceptsProjectNamedByUrlWhoseCloneIsNotCutYet() throws Exception {
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -171,6 +186,13 @@ class ConfigCheckTest {
                 demo: { path: $ROOT/repo, baseBranch: origin/main, deployBranch: main }
             """,
             "orchestrator.projects.demo.deployBranch"),
+        Arguments.of(
+            """
+            orchestrator:
+              projects:
+                demo: { path: $ROOT/repo, baseBranch: origin/main, companions: [specs] }
+            """,
+            "orchestrator.projects.demo.companions"),
         Arguments.of(
             """
             orchestrator:

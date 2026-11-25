@@ -26,7 +26,7 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("origin/main", "release", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.aboutOrPath()).isEqualTo("the PDF parser behind the intake form");
   }
@@ -81,7 +81,7 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("main", "dev", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
     var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
 
     assertThat(declared.humanPaths()).containsExactly("db/migration/**");
@@ -96,7 +96,7 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.baseBranchName()).isEqualTo("main");
   }
@@ -109,7 +109,7 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("main", "main", "none"),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.deploysIntoTheBaseBranch()).isTrue();
   }
@@ -123,7 +123,7 @@ class ProjectConfigTest {
             new ProjectConfig.Branches("main", "dev", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), written),
-            new ProjectConfig.Setup(List.of(), null, List.of()));
+            new ProjectConfig.Setup(List.of(), null, List.of(), List.of()));
 
     assertThat(project.verifyTimeoutOrDefault()).isEqualTo(Duration.ofMinutes(20));
   }
