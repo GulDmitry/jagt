@@ -10,19 +10,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // empty' | \"$(git rev-parse --show-toplevel)/scripts/guards/no-poll-loop.sh\""
+            "command": "jq -r '.tool_input.command // empty' | \"$(git -C \"$CLAUDE_PROJECT_DIR\" rev-parse --show-toplevel)/scripts/guards/no-poll-loop.sh\""
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // empty' | \"$(git rev-parse --show-toplevel)/scripts/guards/no-shared-kill.sh\""
+            "command": "jq -r '.tool_input.command // empty' | \"$(git -C \"$CLAUDE_PROJECT_DIR\" rev-parse --show-toplevel)/scripts/guards/no-shared-kill.sh\""
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // empty' | \"$(git rev-parse --show-toplevel)/scripts/guards/push-after-local-ci.sh\""
+            "command": "jq -r '.tool_input.command // empty' | \"$(git -C \"$CLAUDE_PROJECT_DIR\" rev-parse --show-toplevel)/scripts/guards/push-after-local-ci.sh\""
           },
           {
             "type": "command",
-            "command": "jq -r 'select(.agent_type == \"jagt-reviewer\") | .tool_input.command // empty' | \"$(git rev-parse --show-toplevel)/scripts/guards/reviewer-read-only.sh\""
+            "command": "jq -r 'select(.agent_type == \"jagt-reviewer\") | .tool_input.command // empty' | \"$(git -C \"$CLAUDE_PROJECT_DIR\" rev-parse --show-toplevel)/scripts/guards/reviewer-read-only.sh\""
           }
         ]
       }
