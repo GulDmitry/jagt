@@ -896,6 +896,9 @@ main#board:empty {
     min-height: 0;
     grid-template-rows: minmax(0, 1fr);
   }
+  main#board:empty {
+    flex: none;
+  }
   #tasks {
     max-height: 100%;
     overflow: auto;

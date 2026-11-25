@@ -9,6 +9,7 @@ import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
@@ -130,6 +131,7 @@ abstract class BoardPageContext {
   @MockitoBean OpenedWindows windows;
   @MockitoBean SessionStreams streams;
   @MockitoBean SessionHost sessionHost;
+  @MockitoBean McpHealth mcpHealth;
   @MockitoSpyBean ReviewRepliesReport replies;
 
   BrowserContext session;

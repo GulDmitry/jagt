@@ -337,7 +337,11 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
     @BeforeEach
     void theAgentHandsBackAndThePushedRoundOpensItsRequest() throws Exception {
       provisioning.initializeTask(
-          NewTask.builder(TASK, "proj").instructions("Fix the widget").title(TITLE).build());
+          NewTask.builder(TASK, "proj")
+              .instructions("Fix the widget")
+              .title(TITLE)
+              .ticketUrl("https://tracker.example/" + TASK)
+              .build());
       Files.writeString(flow.worktree().resolve("widget.txt"), "fixed\n");
       Files.writeString(flow.worktree().resolve("task_notes.md"), "widget fixed\n");
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");
