@@ -14,7 +14,7 @@ public final class SuitesTapNobodyFitness implements Fitness {
   private static final Pattern MOCKS_THE_NOTIFIER =
       Pattern.compile(
           "(?s).*(@MockitoBean\\s+(private\\s+)?UserNotifier\\b"
-              + "|@MockitoBean\\(types\\s*=\\s*\\{[^}]*\\bUserNotifier\\.class).*");
+              + "|@MockitoBean\\(\\s*types\\s*=\\s*\\{[^}]*\\bUserNotifier\\.class).*");
 
   @Override
   public Measurement measure(FitnessFunction function, Project project) {

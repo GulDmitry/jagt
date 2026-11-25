@@ -7,6 +7,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
+import dev.jagt.orchestrator.e2e.FakeRefusingProcesses;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.agent.McpHealth;
@@ -54,8 +55,8 @@ import org.springframework.util.FileSystemUtils;
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
     })
-@Import(BoardPageContext.BreakableJob.class)
-@ExtendWith(BoardBrowser.class)
+@Import({BoardPageContext.BreakableJob.class, FakeRefusingProcesses.Wiring.class})
+@ExtendWith({BoardBrowser.class, FakeRefusingProcesses.Check.class})
 abstract class BoardPageContext {
 
   @MockitoBean UserNotifier userNotifier;

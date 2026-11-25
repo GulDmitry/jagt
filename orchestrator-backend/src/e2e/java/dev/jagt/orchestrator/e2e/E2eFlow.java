@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
@@ -11,6 +12,7 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -18,7 +20,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Tag("e2e")
-@ExtendWith(FakeAssistantDefaults.class)
+@ExtendWith({FakeAssistantDefaults.class, FakeRefusingProcesses.Check.class})
+@Import(FakeRefusingProcesses.Wiring.class)
 @SpringBootTest(
     properties = {
       "spring.config.import=",
@@ -26,7 +29,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "orchestrator.terminal=none",
       "orchestrator.startup-checks=false"
     })
-@MockitoBean(types = {TerminalDriver.class, EditorDriver.class, UserNotifier.class})
+@MockitoBean(
+    types = {UserNotifier.class, TerminalDriver.class, EditorDriver.class, McpHealth.class})
 @interface E2eFlow {
 
   @AliasFor(annotation = SpringBootTest.class, attribute = "webEnvironment")

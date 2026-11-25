@@ -74,8 +74,8 @@ sourceSets {
 sourceSets {
     boardTest {
         java.srcDirs = ['src/boardTest/java']
-        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
-        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        compileClasspath += sourceSets.main.output + sourceSets.e2e.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.e2e.output + configurations.testRuntimeClasspath
     }
 }
 

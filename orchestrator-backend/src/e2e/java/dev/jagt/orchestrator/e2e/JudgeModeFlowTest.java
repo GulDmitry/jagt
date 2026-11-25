@@ -8,7 +8,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
@@ -39,7 +38,6 @@ class JudgeModeFlowTest extends FlowHarness.World {
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
 
-  @MockitoBean private McpHealth mcp;
   private final TaskProvisioning provisioning;
   private final FlowHarness flow;
 

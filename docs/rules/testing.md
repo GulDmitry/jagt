@@ -62,8 +62,8 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
 - `boardTest` drives `board/` on the real backend in headless Chromium: grid, buttons, repaint; `boardCoverage` never skips on CI.
 - Its own track in `board/`: `npm run lint`, `npm test` in CI's `test` job, `npm run mutate` nightly; [gates](../decisions/0229-board-test-floor.md).
 - Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its `@MockitoBean`s stub
-  whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`,
-  a `ReviewRepliesReport` spy; e2e's stub only ports. Geometry is an element in a sized viewport, never a screenshot.
+  whole-app seams only: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`, a `ReviewRepliesReport`
+  spy; e2e's only ports. An unstubbed host command fails both (`FakeRefusingProcesses`). Geometry: an element in a sized viewport, never a screenshot.
 
 ### The e2e matrix and the model evals
 
@@ -77,12 +77,12 @@ to copy. A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../de
   a `TaskAction`'s hint, the task-list shape or the model; `-PevalParallelism` (6) rows at once.
 - `roleEval -Prole=master` hands the real session a known-verdict round (`roles/master/eval/*.yml`) judged by `roles/master/brief.md.dist`,
   asserting what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 6 JVMs.
+  It reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
 - `roleEval -Prole=<checker>` hands the real reader a deploy of known answer (`roles/<id>/eval/*.yml`); `-ProleBrief`, `-ProleModel`. Bar (estimate):
   false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; an acceptance step stays only if cutting it
   loses more than it costs. Cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), recording seconds, cost and stalls in `eval-stats.jsonl`.
 - `roleEval -Prole=triage` hands the stop reader a stop of known who, lift and family (`roles/triage/eval/*.yml`), one JVM. Bar (estimate): a lift
   advised safe where unsafe 0, who right on >= 80% of answered runs; the family is recorded, not asserted.
-- `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
 - `standTest`: real sessions on invariants, in jagt's container (skipped naming docker); `-Pengine=host|compose|kind`; `-Pmodelfree` no tokens.
 - `StandSlots` caps runs at 6, kicks jobs per second; a run's `recording.jsonl` (model moves) and `build/stand/failed` reach the host at teardown.
 - `ReplayStandTest` replays a recording, no model: a turn it never answered is a divergence.

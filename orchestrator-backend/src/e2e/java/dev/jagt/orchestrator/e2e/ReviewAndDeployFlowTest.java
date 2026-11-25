@@ -15,7 +15,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.job.deploy.DeployOnApprovalJob;
-import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -64,7 +63,6 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
 
-  @MockitoBean private McpHealth mcp;
   private final TaskProvisioning provisioning;
   private final StateService stateService;
   private final TaskStops stops;
