@@ -34,6 +34,45 @@ class BoardSettingsTest extends BoardPageContext {
   }
 
   @Test
+  void dialogAndSectionTabsKeepTheirBoxWhicheverSectionIsOpen() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+    assertThat(page.locator("#settings-body .tabs")).isVisible();
+    String dialogBox =
+        "document.querySelector('#settings-dialog').getBoundingClientRect().toJSON()";
+    String tabsBox =
+        "document.querySelector('#settings-body .tabs').getBoundingClientRect().toJSON()";
+    Object dialogOnProjects = page.evaluate(dialogBox);
+    Object tabsOnProjects = page.evaluate(tabsBox);
+
+    page.locator("#settings-tab-review").click();
+
+    org.assertj.core.api.Assertions.assertThat(page.evaluate(dialogBox))
+        .isEqualTo(dialogOnProjects);
+    org.assertj.core.api.Assertions.assertThat(page.evaluate(tabsBox)).isEqualTo(tabsOnProjects);
+  }
+
+  @Test
+  void longSectionScrollsInsideTheDialogWhileTabsAndCloseStayInView() {
+    Page page = openLiveBoard();
+    page.setViewportSize(1000, 360);
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+    page.locator("#settings-tab-review").click();
+
+    page.locator("#settings-body section[data-section=review]")
+        .evaluate("pane => pane.scrollTo(0, pane.scrollHeight)");
+
+    org.assertj.core.api.Assertions.assertThat(
+            page.locator("#settings-body section[data-section=review]")
+                .evaluate("pane => pane.scrollHeight > pane.clientHeight"))
+        .isEqualTo(true);
+    assertThat(page.locator("#settings-tab-review")).isInViewport();
+    assertThat(page.locator("#close-settings")).isInViewport();
+  }
+
+  @Test
   void projectEditButtonNamesItsProject() {
     Page page = openLiveBoard();
     page.locator("#gear").click();

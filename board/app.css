@@ -299,9 +299,17 @@ input[role="switch"]:checked::after {
 .hint:empty {
   display: none;
 }
+#settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  height: min(640px, 90vh);
+}
 #settings-body {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 170px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
   gap: 16px;
   padding: 12px 16px;
 }
@@ -309,6 +317,8 @@ input[role="switch"]:checked::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
 }
 #settings-dialog .dialog-foot {
   padding: 10px 16px;
