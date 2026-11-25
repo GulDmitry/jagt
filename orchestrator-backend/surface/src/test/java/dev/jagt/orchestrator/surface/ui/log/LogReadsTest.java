@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.surface.ui.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Logger;
@@ -123,5 +125,15 @@ class LogReadsTest {
             .read(new RecordTail("stops-reviewed", 3));
 
     assertThat(read).isEqualTo("reviewed");
+  }
+
+  @Test
+  void refusesRecordWithNoReader() {
+    DebugReads reads = mock(DebugReads.class);
+    LogReads logs = new LogReads(new LoggerContext(), new MockEnvironment(), reads, List.of());
+
+    assertThatThrownBy(() -> logs.read(new RecordTail("unknown-log", 3)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(reads);
   }
 }

@@ -81,7 +81,7 @@ Every release SHALL attach `install.sh` and `install.ps1` under those names, so 
 - **THEN** the release holds `install.sh` and `install.ps1`
 
 ### Requirement: A running jagt keeps a newer release verified beside it
-Run from `<root>/versions/<v>/`, jagt SHALL hourly keep the feed's newer release under `versions/` once its jar matches its sha256.
+Run from `<root>/versions/<v>/`, the `releasecheck` job SHALL hourly keep the feed's newer release under `versions/` once its jar matches its sha256.
 The feed is `orchestrator.releaseFeed.kind` (`github` default, `none`) at `orchestrator.releaseFeed.url`.
 `current` is never changed, and every network call has a timeout.
 #### Scenario: A newer release is kept verified beside the running one

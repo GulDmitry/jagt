@@ -27,14 +27,17 @@ public class LogReads {
   public String read(RecordTail request) {
     int lines = request.count();
     String record = request.record();
-    if (record.equals("backend-log")) {
-      return of("logging.file.name", lines);
-    }
-    return roleLogs.stream()
-        .filter(log -> log.record().equals(record))
-        .findFirst()
-        .map(log -> of(log.fileKey(), lines))
-        .orElseGet(() -> record.equals("stops") ? reads.stops(lines) : reads.stopsReviewed(lines));
+    return switch (record) {
+      case "backend-log" -> of("logging.file.name", lines);
+      case "stops" -> reads.stops(lines);
+      case "stops-reviewed" -> reads.stopsReviewed(lines);
+      default ->
+          roleLogs.stream()
+              .filter(log -> log.record().equals(record))
+              .findFirst()
+              .map(log -> of(log.fileKey(), lines))
+              .orElseThrow(() -> new IllegalArgumentException("No reader for record " + record));
+    };
   }
 
   private String of(String fileKey, int lines) {

@@ -36,7 +36,7 @@ The colour legend SHALL be a section of the `help` report (`board/ui/legend.js`)
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `TaskEventStream` forwards `StateWritten` as payload-free SSE at
 `/api/events`, and a role's new log line as `role-log` naming the role, beside a 20s beat. Each connect reads the board once.
-A periodic tick survives for the ACTIVE clock. A card carries `data-action`, never a closure, so a rebuilt card cannot act for its old task.
+A card carries `data-action`, never a closure, so a rebuilt card cannot act for its old task.
 #### Scenario: The backend goes away
 - **WHEN** the push connection drops, or misses two beats; **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 
@@ -118,13 +118,6 @@ go through a press's batch and switch. A sighting is logged once per change, nev
 - **WHEN** a task's attention turns REQUIRED, or the hidden failed-jobs chip appears, on a board already painted
 - **THEN** one line holds `shown:required` and its status, or `shown:jobs-failed` and null; further renders add none
 
-### Requirement: Every window jagt opens is on the Session tab
-A window jagt opens SHALL show on the Session tab and take `say`, whether a task's session or not: a login and the
-acceptance scenarios session. The tab lists the open task's session first, then every such window by name.
-#### Scenario: A window that is no task's
-- **WHEN** jagt opens a login or the scenarios window
-- **THEN** the Session tab lists it, streams its terminal live, and a line typed under it reaches that window
-
 ### Requirement: Loopback, or behind a password login
 `orchestrator.auth` SHALL be `none` (default: loopback, no login), `password` (a bcrypt hash, never logged) or `oidc` (`oidc-login`).
 `none` with a `server.address` beyond loopback, `auth.allowedHosts` or a non-loopback `server.publicUrl` refuses the start naming `auth`.
@@ -198,3 +191,10 @@ The legend has a row for the muted time and one for a danger entry. The session 
 - **WHEN** the human opens the Master's log holding a refusal, a move and a note
 - **THEN** the newest entry is on top, a visible gap separates entries, the refusal is `--danger` and each time is muted
 - **WHEN** entries arrive while the human has scrolled down; **THEN** the entries being read stay in view
+
+### Requirement: Three timers remain
+Three timers SHALL remain, counted by `board-timers`. `ui/controls.js` repaints every 15s, for the ACTIVE clock. `ui/tabs.js` re-reads the
+peek and the Session tab's window list every 5s. `ui/followup.js` repaints an open report every 3s, for 5 minutes at most after a typed line.
+#### Scenario: A typed line gets no answer
+- **WHEN** a line typed at an open report gets no answer within 5 minutes
+- **THEN** the board stops repainting and a toast says the session is silent

@@ -84,7 +84,7 @@ Every press starts the merge over unless the human's own work sits there
 #### Scenario: Blocked path
 - **WHEN** `deploy` keeps refusing over the deploy directory
 - **THEN** names what is in the way; a sibling's worktree by name
-- **AND** editor residue is **deleted** (`clearEditorResidue`); anything else is left and named (`StaleDeployPathException`)
+- **AND** editor residue is **deleted** (`requireOnlyEditorResidue`); anything else is left and named (`StaleDeployPathException`)
 
 #### Scenario: Where a deploy cuts
 - **WHEN** a deploy or revert conflicts in a project at any path

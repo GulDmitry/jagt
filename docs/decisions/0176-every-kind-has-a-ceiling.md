@@ -22,7 +22,7 @@ its numbers move from `complexity-ceilings.json` into `fitness.yml`.
 - Above the stored number fails; below it fails too, asking to lower the number: the ratchet only tightens.
 - Raising a number needs a decision record in the same commit.
 - Counted: CI jobs and triggers, source sets, Gradle modules, build-logic files, declared dependency lines,
-  start triggers, task statuses, capabilities, ports, startup checks, roles, spec capabilities, rule docs, public surface.
+  start triggers, task statuses, capabilities, ports, startup checks, roles, spec capabilities, rule docs, public surface, board timers.
 - The count ratchet is own code: no library counts CI jobs, triggers or kinds.
 - Zero rules stay where they are; a scanner finding a violation of one fixes it, never freezes it.
 - `reducer-zero-time` is a zero rule: `TaskReducer` passes no literal time; a timeless door uses `step(task, move)`,

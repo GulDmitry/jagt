@@ -157,7 +157,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | port | implemented by |
 |------|----------------|
 | `TaskStore` | `service/StateService` |
-| `AgentPresence` | `service/AgentSessions` |
+| `AgentPresence` | `service/presence/SessionPresence` |
 | `flow/capability/TaskCapability` | one per verb under `capability/` |
 | `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/stop/DeployLiftsStop`; an install may add its own step |
 | `Specs` | `adapter/worktree/OpenSpec` |
