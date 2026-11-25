@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class HandBackDueTest {
 
@@ -119,40 +121,23 @@ class HandBackDueTest {
             owed -> assertThat(owed).contains("2 thread(s) were relayed", "review_replies.md"));
   }
 
-  @Test
-  void owesNoBlockOnceShipPostedTheRepliesAndRemovedTheFile(@TempDir Path root) throws Exception {
+  @ParameterizedTest
+  @CsvSource({"2000, false", "1000, true"})
+  void owesBlockUnlessShipPostedTheRepliesAfterTheRound(
+      long shippedAt, boolean owed, @TempDir Path root) throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING)
             .trail(
                 RoundTrail.none()
                     .withRound(new RoundTrail.Round(1_000, 2, "unit-tests", "a", "t1 note_1")))
-            .history(List.of(new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER)))
+            .history(List.of(new StatusChange(TaskStatus.SHIPPING, shippedAt, ActionOrigin.MASTER)))
             .build();
     WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
     HandBackDue due =
         new HandBackDue(worktreeChanges, mock(Specs.class), mock(OfferedModels.class));
 
-    assertThat(due.owed("ABC-1", task)).isEmpty();
-  }
-
-  @Test
-  void owesBlockWhenShipHappenedAtTheRoundsOwnInstant(@TempDir Path root) throws Exception {
-    Files.writeString(root.resolve("task_notes.md"), "notes");
-    TaskState task =
-        TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING)
-            .trail(
-                RoundTrail.none()
-                    .withRound(new RoundTrail.Round(1_000, 2, "unit-tests", "a", "t1 note_1")))
-            .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER)))
-            .build();
-    WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
-    when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
-    HandBackDue due =
-        new HandBackDue(worktreeChanges, mock(Specs.class), mock(OfferedModels.class));
-
-    assertThat(due.owed("ABC-1", task))
-        .hasValueSatisfying(owed -> assertThat(owed).contains("2 thread(s) were relayed"));
+    assertThat(due.owed("ABC-1", task).isPresent()).isEqualTo(owed);
   }
 }
