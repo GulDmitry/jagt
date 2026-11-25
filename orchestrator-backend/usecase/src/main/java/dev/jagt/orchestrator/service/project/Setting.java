@@ -9,7 +9,12 @@ import org.jspecify.annotations.Nullable;
  * restart} key is read once at startup; any other is read again on every access.
  */
 public record Setting(
-    String key, String section, Kind kind, List<String> options, boolean restart) {
+    String key,
+    String section,
+    Kind kind,
+    List<String> options,
+    @Nullable String fallback,
+    boolean restart) {
 
   public enum Kind {
     BOOLEAN,
@@ -23,15 +28,16 @@ public record Setting(
   private static final Pattern DOT = Pattern.compile("\\.");
 
   public static Setting of(String section, String key, Kind kind) {
-    return new Setting(key, section, kind, List.of(), false);
+    return new Setting(key, section, kind, List.of(), null, false);
   }
 
-  public static Setting choice(String section, String key, String... options) {
-    return new Setting(key, section, Kind.CHOICE, List.of(options), false);
+  /** A choice; {@code fallback} is the option that applies while the file leaves the key out. */
+  public static Setting choice(String section, String key, String fallback, String... options) {
+    return new Setting(key, section, Kind.CHOICE, List.of(options), fallback, false);
   }
 
   public Setting needingRestart() {
-    return new Setting(key, section, kind, options, true);
+    return new Setting(key, section, kind, options, fallback, true);
   }
 
   /** The key's names, outermost first. */

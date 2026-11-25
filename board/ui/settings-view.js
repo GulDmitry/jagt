@@ -2,7 +2,7 @@ import { make } from "../core/dom.js";
 import { t } from "../core/i18n.js";
 import { choice } from "./choice.js";
 
-/** @typedef {{ key: string, section: string, kind: string, options: string[], restart: boolean }} Setting */
+/** @typedef {{ key: string, section: string, kind: string, options: string[], fallback: string | null, restart: boolean }} Setting */
 /** @typedef {{ setting: Setting, value: unknown }} View */
 
 /** @type {{ tab: string }} */
@@ -69,7 +69,7 @@ const row =
         choice(
           setting.key,
           setting.options.map((option) => ({ value: option, label: option })),
-          String(value ?? ""),
+          String(value ?? setting.fallback),
           (picked) => change(setting, picked),
         ),
         hint,
