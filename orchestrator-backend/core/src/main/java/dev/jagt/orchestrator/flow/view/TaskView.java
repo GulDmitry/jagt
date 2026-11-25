@@ -340,7 +340,7 @@ public record TaskView(
                 new ActionView(
                     action.id(),
                     action.label(),
-                    action.hint(),
+                    action.hint(task),
                     action.key(),
                     new ActionView.Emphasis(
                         action == move.primary() && move.owner() == Owner.YOU,

@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.service.plan.PlanApproval;
 import dev.jagt.orchestrator.service.plan.Unplaceable;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
@@ -42,7 +41,7 @@ class MasterPlanVerdicts {
     return OriginContext.as(
         ActionOrigin.MASTER,
         () ->
-            config.may(MasterRight.PLAN)
+            config.mayApprovePlan(task)
                 && !task.gate().planGate().keptForTheHuman()
                 && go(taskId, task, verdict));
   }

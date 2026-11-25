@@ -139,7 +139,7 @@ public final class TaskReducer {
 
   /** {@code task} with the plan the human approved, its gate open. */
   public TaskState planApproved(TaskState task) {
-    return step(task, new TaskMove.PlanApproved(), 0);
+    return step(task, new TaskMove.PlanApproved(), 0).withPlanApproved(true);
   }
 
   /** {@code task} whose session declared it needs no plan; a gate the human asked for stays. */

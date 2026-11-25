@@ -94,7 +94,7 @@ The Master: a model reading every round before you, by the roles in its brief.
 | `deploy` | yours | yours | yours, or once green when `mine` leaves it out |
 | costs | nothing | one heavy read per role, per round | the same |
 
-In `act` a task reaches you ready to deploy; `roles.master.mine` keeps any step or verb yours, `[plan, deploy, revert]` unset.
+In `act` a task reaches you ready to deploy; `roles.master.mine` keeps any step or verb yours, `[plan, replan, deploy, revert]` unset.
 
 ## First run
 

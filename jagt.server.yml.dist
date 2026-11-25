@@ -25,7 +25,7 @@ orchestrator:
     code-reviewer:
       enabled: true                            # roles: reads each request's change and posts notes; idle until a code host is chosen
     master:
-      mode: act                                # roles: the Master presses what a human would; `mine` keeps its default: plan and deploy stay yours
+      mode: act                                # roles: the Master presses what a human would; `mine` keeps its default: plan, replan and deploy stay yours
   codeReview:
     repliesToPeopleUnasked: true               # codeReview: the Master replies to every note, people's included, each asking for a rating
   # releaseFeed:

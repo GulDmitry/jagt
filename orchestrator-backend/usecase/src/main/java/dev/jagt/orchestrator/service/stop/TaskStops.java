@@ -206,7 +206,7 @@ public class TaskStops {
   public boolean arbiterKeeps(String taskId, TaskAction action) {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
-        .filter(task -> policy.profiles().at(task).keeps(action))
+        .filter(task -> policy.profiles().at(task).keeps(action, task))
         .isPresent();
   }
 

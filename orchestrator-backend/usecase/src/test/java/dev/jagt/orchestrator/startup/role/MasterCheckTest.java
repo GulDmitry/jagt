@@ -177,8 +177,8 @@ class MasterCheckTest {
                         .withMode("act")
                         .withMine(
                             List.of(
-                                "ship", "deploy", "revert", "reply", "answer", "plan", "repo",
-                                "lift"))));
+                                "ship", "deploy", "revert", "reply", "answer", "plan", "replan",
+                                "repo", "lift"))));
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.roles.master.mine");

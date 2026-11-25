@@ -44,6 +44,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class MasterPlanVerdictsTest {
 
@@ -259,6 +261,41 @@ class MasterPlanVerdictsTest {
                 1,
                 ""),
             actingWithoutKeepList);
+
+    assertThat(moved).isFalse();
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "plan, replan, false, false",
+    "plan, replan, true, false",
+    "plan, none, true, true",
+    "plan, none, false, false",
+    "none, replan, false, true",
+    "none, replan, true, false"
+  })
+  void approvesPlanOnlyWhereMineKeepsTheRightOfThePlanThatWaits(
+      String first, String later, boolean laterPlan, boolean moved) throws Exception {
+    TaskState planned =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .planApproved(laterPlan)
+            .build();
+    state.putTask("ABC-1", planned);
+    ConfigFile.ArbiterConfig mine =
+        new ConfigFile.ArbiterConfig("act", null, null, List.of(first, later), null);
+
+    assertThat(verdicts.holds("ABC-1", planned, planHolds, mine)).isEqualTo(moved);
+  }
+
+  @Test
+  void leavesLaterPlanForTheHumanWhileMineIsUnset() throws Exception {
+    TaskState later =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .planApproved(true)
+            .build();
+    state.putTask("ABC-1", later);
+
+    boolean moved = verdicts.holds("ABC-1", later, planHolds, actingWithoutKeepList);
 
     assertThat(moved).isFalse();
   }

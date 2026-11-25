@@ -122,7 +122,7 @@ A reader between the session and you, on by default.
 | `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a green request; any other verb `mine` does not keep, only where it is asked | the same |
 
 It judges by the shipped brief; to edit one, copy `roles/master/brief.md.dist` and set `roles.master.brief`.
-`roles.master.mine` keeps named steps and verbs yours in `act`, `[plan, deploy, revert]` unset; what you type to a session overrules it.
+`roles.master.mine` keeps named steps and verbs yours in `act`, `[plan, replan, deploy, revert]` unset; what you type to a session overrules it.
 Each step is a line in the Master's log, opened from its chip on the board.
 
 ## The code reviewer

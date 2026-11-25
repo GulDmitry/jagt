@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.plan.SwitchJudgements;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.launch.TrackerMode;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.master.MasterRight;
@@ -475,7 +476,11 @@ public record ConfigFile(
      */
     public List<String> mineOrDefault() {
       return mine == null
-          ? List.of(MasterRight.PLAN.id(), MasterRight.DEPLOY.id(), MasterRight.REVERT.id())
+          ? List.of(
+              MasterRight.PLAN.id(),
+              MasterRight.REPLAN.id(),
+              MasterRight.DEPLOY.id(),
+              MasterRight.REVERT.id())
           : mine;
     }
 
@@ -490,6 +495,11 @@ public record ConfigFile(
     /** Whether the session may do this, which in any mode but `act` is never. */
     public boolean may(MasterRight right) {
       return profile().may(right);
+    }
+
+    /** Whether the Master may approve the plan that waits on this task, first or later. */
+    public boolean mayApprovePlan(TaskState task) {
+      return profile().mayApprovePlan(task);
     }
 
     /** The file it judges by. Named here so an install that copied the shipped one sets nothing. */

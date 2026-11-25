@@ -95,7 +95,7 @@ public class MasterAnswerJob implements Job {
     if (task.work().asksForRepository()) {
       return Optional.of("a repository jagt attaches");
     }
-    if (task.gate().planGate().closed() && !config.may(MasterRight.PLAN)) {
+    if (task.gate().planGate().closed() && !config.mayApprovePlan(task)) {
       return Optional.of("a plan approval only the human grants");
     }
     return FlowRules.holdsPlan(task.standing().status())

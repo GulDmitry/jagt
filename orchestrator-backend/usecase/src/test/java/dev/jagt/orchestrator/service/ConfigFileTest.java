@@ -114,9 +114,9 @@ class ConfigFileTest {
   }
 
   @Test
-  void keepsThePlanAndTheDeployTheHumansWhenNoStepIsNamedAsTheirs() {
+  void keepsBothPlansAndTheDeployTheHumansWhenNoStepIsNamedAsTheirs() {
     assertThat(ArbiterConfig.defaults().mineOrDefault())
-        .containsExactly("plan", "deploy", "revert");
+        .containsExactly("plan", "replan", "deploy", "revert");
   }
 
   @ParameterizedTest

@@ -315,6 +315,14 @@ class TaskReducerTest {
   }
 
   @Test
+  void marksThePlanApprovedSoTheNextOneIsLater() {
+    TaskState planned = TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).build();
+
+    assertThat(planned.gate().planApproved()).isFalse();
+    assertThat(reducer.planApproved(planned).gate().planApproved()).isTrue();
+  }
+
+  @Test
   void keepsThePlanGateWhenTaskOpensInPlanModePastTheCode() {
     TaskState past =
         TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).planGate(PlanGate.CLOSED).build();

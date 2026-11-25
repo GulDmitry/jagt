@@ -96,6 +96,7 @@ public record TaskState(
         .infraRetries(checks.infraRetries())
         .pipelineUrl(checks.pipelineUrl())
         .planGate(gate.planGate())
+        .planApproved(gate.planApproved())
         .probes(gate.probes())
         .switches(gate.switches())
         .gitTrust(gate.gitTrust())
@@ -382,6 +383,7 @@ public record TaskState(
     return withStatus(read.standing.status(), read.standing.message(), now).toBuilder()
         .deployment(read.work.deployment())
         .planGate(read.gate.planGate())
+        .planApproved(read.gate.planApproved())
         .report(read.standing.report())
         .build();
   }
@@ -580,6 +582,10 @@ public record TaskState(
     return withGate(gate.withPlanGate(planGate));
   }
 
+  public TaskState withPlanApproved(boolean planApproved) {
+    return withGate(gate.withPlanApproved(planApproved));
+  }
+
   /** Does NOT touch lastActiveTimestamp: metering is not agent activity. */
   public TaskState withUsageAdded(TokenUsage added) {
     return withGate(gate.withUsageAdded(added));
@@ -621,6 +627,7 @@ public record TaskState(
     private List<InfraRetry> infraRetries = List.of();
     private @Nullable String pipelineUrl;
     private PlanGate planGate = PlanGate.OPEN;
+    private boolean planApproved;
     private List<Probe> probes = List.of();
     private Map<String, String> switches = Map.of();
     private @Nullable GitTrust gitTrust;
@@ -756,6 +763,11 @@ public record TaskState(
       return this;
     }
 
+    public TaskStateBuilder planApproved(boolean planApproved) {
+      this.planApproved = planApproved;
+      return this;
+    }
+
     public TaskStateBuilder probes(List<Probe> probes) {
       this.probes = probes;
       return this;
@@ -846,7 +858,8 @@ public record TaskState(
           new Ticket(alias, title, ticketUrl, baseBranch),
           new Round(mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, trail),
           new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries, pipelineUrl),
-          new Holds(planGate, probes, switches, gitTrust, refusals, usage, agentSpend),
+          new Holds(
+              planGate, probes, switches, gitTrust, refusals, usage, agentSpend, planApproved),
           new Work(session, turn, waits, stop, repoRequest, deployment, roles, master));
     }
   }
