@@ -111,8 +111,8 @@ spec:
               path: /actuator/health/liveness
               port: 8290
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
