@@ -57,7 +57,7 @@ class OpenSpecTest {
   void owesNothingWhereTheRepositoryKeepsNoSpecs(@TempDir Path worktree) {
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-    assertThat(specs.owed(worktree, "ABC-42")).isEmpty();
+    assertThat(specs.owed(worktree, null, "ABC-42")).isEmpty();
   }
 
   @Test
@@ -65,7 +65,7 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/archive"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-    assertThat(specs.owed(worktree, "ABC-42"))
+    assertThat(specs.owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("openspec new change abc-42", "openspec instructions specs --change abc-42");
@@ -76,7 +76,7 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/archive/2026-10-06-abc-42"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-    assertThat(specs.owed(worktree, "ABC-42")).isEmpty();
+    assertThat(specs.owed(worktree, null, "ABC-42")).isEmpty();
   }
 
   @Test
@@ -86,7 +86,7 @@ class OpenSpecTest {
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
         .thenReturn(INVALID);
 
-    assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
+    assertThat(new OpenSpec(processes, host).owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("Change must have at least one delta");
@@ -106,7 +106,7 @@ class OpenSpecTest {
                 """,
                 ""));
 
-    assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
+    assertThat(new OpenSpec(processes, host).owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("INFO board/spec.md: Archive would refuse this delta");
@@ -120,7 +120,7 @@ class OpenSpecTest {
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
         .thenReturn(new Processes.Result(1, "", "unknown option"));
 
-    assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
+    assertThat(new OpenSpec(processes, host).owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("unknown option");
@@ -135,7 +135,7 @@ class OpenSpecTest {
         .thenReturn(
             new Processes.Result(1, "{\"items\":[{\"valid\":false,\"issues\":[]}]}", "crashed"));
 
-    assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
+    assertThat(new OpenSpec(processes, host).owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("crashed");
@@ -148,7 +148,7 @@ class OpenSpecTest {
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
         .thenReturn(INVALID);
 
-    assertThatThrownBy(() -> new OpenSpec(processes, host).fold(worktree, "ABC-42"))
+    assertThatThrownBy(() -> new OpenSpec(processes, host).fold(worktree, null, "ABC-42"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Change must have at least one delta");
     verify(processes, never()).run(any(), any(), anyMap(), eq(ARCHIVE));
@@ -160,7 +160,7 @@ class OpenSpecTest {
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(VALID);
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
 
-    new OpenSpec(processes, host).fold(worktree, "ABC-42");
+    new OpenSpec(processes, host).fold(worktree, null, "ABC-42");
 
     verify(processes)
         .run(
@@ -176,7 +176,7 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(VALID);
 
-    new OpenSpec(processes, host).fold(worktree, "ABC-42");
+    new OpenSpec(processes, host).fold(worktree, null, "ABC-42");
 
     verify(processes)
         .run(
@@ -193,7 +193,7 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(VALID);
 
-    new OpenSpec(processes, host).fold(worktree, "ABC-42");
+    new OpenSpec(processes, host).owed(worktree, null, "ABC-42");
 
     verify(processes, atLeastOnce())
         .run(
@@ -208,7 +208,7 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/xyz-7"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-    assertThat(specs.owed(worktree, "ABC-42"))
+    assertThat(specs.owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("openspec new change abc-42");
@@ -220,7 +220,7 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/archive/2026-10-06-xyz-7"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-    assertThat(specs.owed(worktree, "ABC-42"))
+    assertThat(specs.owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("openspec new change abc-42");
@@ -233,7 +233,7 @@ class OpenSpecTest {
     Files.writeString(worktree.resolve("openspec/changes/abc-42"), "notes");
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-    assertThat(specs.owed(worktree, "ABC-42"))
+    assertThat(specs.owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("openspec new change abc-42");
@@ -246,10 +246,58 @@ class OpenSpecTest {
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42-2"));
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(INVALID);
 
-    assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
+    assertThat(new OpenSpec(processes, host).owed(worktree, null, "ABC-42"))
         .get()
         .asString()
         .contains("openspec/changes/abc-42-2 does not validate");
+  }
+
+  @Test
+  void validatesChangeNamedAfterTheKeyInUpperCaseUnderTheNamedSpecRoot(@TempDir Path worktree)
+      throws IOException {
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
+    Files.createDirectories(worktree.resolve("specs/openspec/changes/ABC-42-login"));
+    when(processes.run(
+            eq(worktree.resolve("specs")),
+            any(Duration.class),
+            anyMap(),
+            eq(
+                List.of(
+                    "/bin/openspec",
+                    "validate",
+                    "ABC-42-login",
+                    "--type",
+                    "change",
+                    "--strict",
+                    "--no-interactive",
+                    "--json"))))
+        .thenReturn(INVALID);
+
+    assertThat(new OpenSpec(processes, host).owed(worktree, "specs/openspec", "ABC-42"))
+        .get()
+        .asString()
+        .contains("specs/openspec/changes/ABC-42-login does not validate");
+  }
+
+  @Test
+  void owesNothingOnceTheChangeArchivedUnderTheKeyInUpperCase(@TempDir Path worktree)
+      throws IOException {
+    Files.createDirectories(
+        worktree.resolve("specs/openspec/changes/archive/2026-10-06-ABC-42-login"));
+    OpenSpec specs = new OpenSpec(mock(Processes.class), host);
+
+    assertThat(specs.owed(worktree, "specs/openspec", "ABC-42")).isEmpty();
+  }
+
+  @Test
+  void refusesSpecRootTheCliCannotRead(@TempDir Path worktree) throws IOException {
+    Files.createDirectories(worktree.resolve("specs/changes"));
+    OpenSpec specs = new OpenSpec(mock(Processes.class), host);
+
+    assertThat(specs.owed(worktree, "specs", "ABC-42"))
+        .get()
+        .asString()
+        .contains("specs is not a folder named openspec");
   }
 
   @Test
@@ -259,7 +307,7 @@ class OpenSpecTest {
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
     Files.setPosixFilePermissions(changes, java.util.Set.of());
     try {
-      assertThat(specs.owed(worktree, "ABC-42"))
+      assertThat(specs.owed(worktree, null, "ABC-42"))
           .get()
           .asString()
           .startsWith("could not read openspec/changes");

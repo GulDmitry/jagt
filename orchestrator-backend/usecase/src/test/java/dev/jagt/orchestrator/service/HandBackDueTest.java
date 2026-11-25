@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.worktree.Specs;
 import dev.jagt.orchestrator.service.session.OfferedModels;
+import dev.jagt.orchestrator.service.worktree.TaskSpecs;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -28,7 +28,8 @@ class HandBackDueTest {
   void owesNotesWhenNoneWereWritten(@TempDir Path root) {
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     HandBackDue due =
-        new HandBackDue(mock(WorktreeChanges.class), mock(Specs.class), mock(OfferedModels.class));
+        new HandBackDue(
+            mock(WorktreeChanges.class), mock(TaskSpecs.class), mock(OfferedModels.class));
 
     assertThat(due.owed("ABC-1", task))
         .contains("write task_notes.md before handing the round back");
@@ -40,9 +41,9 @@ class HandBackDueTest {
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
-    Specs specs = mock(Specs.class);
-    when(specs.owed(root, "ABC-1"))
-        .thenReturn(Optional.of("openspec/changes/abc-1 does not validate"));
+    TaskSpecs specs = mock(TaskSpecs.class);
+    when(specs.owed("ABC-1", task))
+        .thenReturn(Optional.of("[proj] openspec/changes/abc-1 does not validate"));
     HandBackDue due = new HandBackDue(worktreeChanges, specs, mock(OfferedModels.class));
 
     assertThat(due.owed("ABC-1", task)).contains("[proj] openspec/changes/abc-1 does not validate");
@@ -53,7 +54,8 @@ class HandBackDueTest {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     HandBackDue due =
-        new HandBackDue(mock(WorktreeChanges.class), mock(Specs.class), mock(OfferedModels.class));
+        new HandBackDue(
+            mock(WorktreeChanges.class), mock(TaskSpecs.class), mock(OfferedModels.class));
 
     assertThat(due.owed("ABC-1", task))
         .contains("jagt could not count the lines this task added to the project's agent file");
@@ -66,7 +68,7 @@ class HandBackDueTest {
     OfferedModels models = mock(OfferedModels.class);
     when(models.names()).thenReturn(List.of("opus", "sonnet"));
     when(models.agentName()).thenReturn("Claude");
-    HandBackDue due = new HandBackDue(mock(WorktreeChanges.class), mock(Specs.class), models);
+    HandBackDue due = new HandBackDue(mock(WorktreeChanges.class), mock(TaskSpecs.class), models);
 
     assertThat(due.invalid(task))
         .contains(
@@ -80,7 +82,7 @@ class HandBackDueTest {
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     OfferedModels models = mock(OfferedModels.class);
     when(models.names()).thenReturn(List.of("opus", "sonnet"));
-    HandBackDue due = new HandBackDue(mock(WorktreeChanges.class), mock(Specs.class), models);
+    HandBackDue due = new HandBackDue(mock(WorktreeChanges.class), mock(TaskSpecs.class), models);
 
     assertThat(due.invalid(task)).isEmpty();
   }
@@ -93,7 +95,7 @@ class HandBackDueTest {
     WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(1));
     HandBackDue due =
-        new HandBackDue(worktreeChanges, mock(Specs.class), mock(OfferedModels.class));
+        new HandBackDue(worktreeChanges, mock(TaskSpecs.class), mock(OfferedModels.class));
 
     assertThat(due.owed("ABC-1", task))
         .contains(
@@ -114,7 +116,7 @@ class HandBackDueTest {
     WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
     HandBackDue due =
-        new HandBackDue(worktreeChanges, mock(Specs.class), mock(OfferedModels.class));
+        new HandBackDue(worktreeChanges, mock(TaskSpecs.class), mock(OfferedModels.class));
 
     assertThat(due.owed("ABC-1", task))
         .hasValueSatisfying(
@@ -136,7 +138,7 @@ class HandBackDueTest {
     WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
     HandBackDue due =
-        new HandBackDue(worktreeChanges, mock(Specs.class), mock(OfferedModels.class));
+        new HandBackDue(worktreeChanges, mock(TaskSpecs.class), mock(OfferedModels.class));
 
     assertThat(due.owed("ABC-1", task).isPresent()).isEqualTo(owed);
   }

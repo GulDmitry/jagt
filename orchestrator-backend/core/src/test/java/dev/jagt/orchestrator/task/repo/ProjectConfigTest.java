@@ -22,6 +22,7 @@ class ProjectConfigTest {
                 "the PDF parser behind the intake form",
                 List.of(),
                 null,
+                null,
                 null),
             new ProjectConfig.Branches("origin/main", "release", null),
             ProjectConfig.CodeHost.defaults(),
@@ -77,7 +78,7 @@ class ProjectConfigTest {
     var declared =
         new ProjectConfig(
             new ProjectConfig.Repository(
-                "/repos/parser", List.of(), null, List.of("db/migration/**"), null, null),
+                "/repos/parser", List.of(), null, List.of("db/migration/**"), null, null, null),
             new ProjectConfig.Branches("main", "dev", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
@@ -92,7 +93,8 @@ class ProjectConfigTest {
   void readsTheBaseBranchWithoutTheProjectsOwnRemotePrefix() {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/repos/parser", List.of(), null, List.of(), null, null, null),
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
@@ -105,7 +107,8 @@ class ProjectConfigTest {
   void refusesToDeployIntoTheBaseBranchWhereTheRepositoryHasNoRemote() {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/repos/parser", List.of(), null, List.of(), null, null, null),
             new ProjectConfig.Branches("main", "main", "none"),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null),
@@ -119,7 +122,8 @@ class ProjectConfigTest {
   void limitsVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
     var project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/repos/parser", List.of(), null, List.of(), null, null, null),
             new ProjectConfig.Branches("main", "dev", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), written),

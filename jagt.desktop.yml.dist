@@ -38,6 +38,9 @@ orchestrator:
       #     renewedBy: "npm login --scope=@scope"   # what renews the credential, shown on the mark
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
       #                             # name is shipped and deployed by you alone; the Master's log names the path
+      # specs:                      # where the hand-back gate and the ship read this repository's OpenSpec changes
+      #   path: specs/openspec      # a folder named openspec, relative to its repository; blank = openspec
+      #   project: my-specs         # the project whose repository holds it, which a task must hold a worktree of; blank = this one
 
   # ── The code host ──────────────────────────────────────────────────────────────────────────────────────────
   # What jagt reads a deploy's pipeline through; never guessed from a host name. The CLI or command holds the credential.

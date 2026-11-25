@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.port.worktree.Specs;
 import dev.jagt.orchestrator.service.session.OfferedModels;
+import dev.jagt.orchestrator.service.worktree.TaskSpecs;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 public class HandBackDue {
 
   private final WorktreeChanges worktreeChanges;
-  private final Specs specs;
+  private final TaskSpecs specs;
   private final OfferedModels offeredModels;
 
   public Optional<String> invalid(TaskState task) {
@@ -33,7 +33,7 @@ public class HandBackDue {
   }
 
   public Optional<String> owed(String taskId, TaskState task) {
-    return notesOwed(task).or(() -> repliesOwed(task)).or(() -> specsOwed(taskId, task));
+    return notesOwed(task).or(() -> repliesOwed(task)).or(() -> specs.owed(taskId, task));
   }
 
   private Optional<String> repliesOwed(TaskState task) {
@@ -86,15 +86,5 @@ public class HandBackDue {
                     Optional.of(
                         "jagt could not count the lines this task added to the project's agent"
                             + " file")));
-  }
-
-  private Optional<String> specsOwed(String taskId, TaskState task) {
-    return task.repos().stream()
-        .map(repo ->
-            specs
-                .owed(Path.of(repo.worktreePath()), taskId)
-                .map(owed -> "[" + repo.project() + "] " + owed))
-        .flatMap(Optional::stream)
-        .findFirst();
   }
 }

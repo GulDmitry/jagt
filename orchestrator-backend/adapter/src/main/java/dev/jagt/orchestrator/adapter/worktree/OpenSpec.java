@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -49,39 +50,50 @@ public class OpenSpec implements Specs {
   }
 
   @Override
-  public Optional<String> owed(Path worktree, String taskId) {
-    if (!keepsSpecs(worktree)) {
+  public Optional<String> owed(Path worktree, @Nullable String root, String taskId) {
+    Home home = Home.of(worktree, root);
+    if (!home.keepsSpecs()) {
       return Optional.empty();
+    }
+    if (home.misnamed()) {
+      return Optional.of(home.misnamedRefusal());
     }
     String change = changeName(taskId);
     try {
-      List<String> open = open(worktree, change);
+      List<String> open = open(home, change);
       if (open.isEmpty()) {
-        return archived(worktree, change) ? Optional.empty() : Optional.of(howToOpen(change));
+        return archived(home, change) ? Optional.empty() : Optional.of(howToOpen(home, change));
       }
       String refused =
           open.stream()
-              .map(name -> refusal(worktree, name))
+              .map(name -> refusal(home, name))
               .flatMap(Optional::stream)
               .collect(Collectors.joining("\n"));
       return refused.isEmpty() ? Optional.empty() : Optional.of(refused);
     } catch (UncheckedIOException e) {
       return Optional.of(
-          "could not read openspec/changes: " + Objects.requireNonNull(e.getCause()).getMessage());
+          "could not read "
+              + home.shown()
+              + "/changes: "
+              + Objects.requireNonNull(e.getCause()).getMessage());
     }
   }
 
   @Override
-  public void fold(Path worktree, String taskId) {
-    if (!keepsSpecs(worktree)) {
+  public void fold(Path worktree, @Nullable String root, String taskId) {
+    Home home = Home.of(worktree, root);
+    if (!home.keepsSpecs()) {
       return;
     }
-    for (String name : open(worktree, changeName(taskId))) {
-      refusal(worktree, name)
+    if (home.misnamed()) {
+      throw new IllegalStateException(home.misnamedRefusal());
+    }
+    for (String name : open(home, changeName(taskId))) {
+      refusal(home, name)
           .ifPresent(refused -> {
             throw new IllegalStateException(refused);
           });
-      run(worktree, List.of("archive", name, "-y")).expectSuccess("openspec archive " + name);
+      run(home, List.of("archive", name, "-y")).expectSuccess("openspec archive " + name);
     }
   }
 
@@ -89,18 +101,43 @@ public class OpenSpec implements Specs {
     return taskId.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
   }
 
-  private static boolean keepsSpecs(Path worktree) {
-    return Files.isDirectory(worktree.resolve(HOME));
+  /** The CLI reads the specs only from an `openspec` folder of the directory it runs in. */
+  private record Home(Path folder, String shown) {
+
+    static Home of(Path worktree, @Nullable String root) {
+      String shown = root == null || root.isBlank() ? HOME : Path.of(root).normalize().toString();
+      return new Home(worktree.resolve(shown), shown);
+    }
+
+    boolean keepsSpecs() {
+      return Files.isDirectory(folder);
+    }
+
+    boolean misnamed() {
+      return !Objects.requireNonNull(folder.getFileName()).toString().equals(HOME);
+    }
+
+    String misnamedRefusal() {
+      return shown + " is not a folder named " + HOME + ", the only one the openspec CLI reads";
+    }
+
+    Path directory() {
+      return Objects.requireNonNull(folder.getParent());
+    }
+
+    Path changes() {
+      return folder.resolve("changes");
+    }
   }
 
   /**
    * `archive -y` folds a change it never validated; a delta it would refuse is an INFO issue at
    * exit 0, so any issue refuses.
    */
-  private Optional<String> refusal(Path worktree, String name) {
+  private Optional<String> refusal(Home home, String name) {
     Processes.Result result =
         run(
-            worktree,
+            home,
             List.of(
                 "validate", name, "--type", "change", "--strict", "--no-interactive", "--json"));
     JsonNode item;
@@ -110,7 +147,7 @@ public class OpenSpec implements Specs {
       item = MissingNode.getInstance();
     }
     if (item.isMissingNode()) {
-      return Optional.of(refusalHeader(name) + raw(result));
+      return Optional.of(refusalHeader(home, name) + raw(result));
     }
     List<String> issues = new ArrayList<>();
     for (JsonNode issue : item.path("issues")) {
@@ -125,27 +162,28 @@ public class OpenSpec implements Specs {
       return Optional.empty();
     }
     return Optional.of(
-        refusalHeader(name) + (issues.isEmpty() ? raw(result) : String.join("\n", issues)));
+        refusalHeader(home, name) + (issues.isEmpty() ? raw(result) : String.join("\n", issues)));
   }
 
   private static String raw(Processes.Result result) {
     return (result.stdout() + "\n" + result.stderr()).strip();
   }
 
-  private static String refusalHeader(String name) {
-    return "openspec/changes/"
+  private static String refusalHeader(Home home, String name) {
+    return home.shown()
+        + "/changes/"
         + name
         + " does not validate — fix every line and hand back again:\n";
   }
 
-  private Processes.Result run(Path worktree, List<String> arguments) {
+  private Processes.Result run(Home home, List<String> arguments) {
     if (Executables.unresolved(binary)) {
       throw new IllegalStateException(
           "this repository keeps openspec/ and jagt finds no `openspec` CLI: install it (npm i -g"
               + " @fission-ai/openspec) — ask the human, this is not yours to fix");
     }
     return processes.run(
-        worktree,
+        home.directory(),
         LIMIT,
         environment(),
         Stream.concat(Stream.of(binary), arguments.stream()).toList());
@@ -162,22 +200,24 @@ public class OpenSpec implements Specs {
     return Map.of("OPENSPEC_TELEMETRY", "0", "PATH", path);
   }
 
-  private static List<String> open(Path worktree, String change) {
-    return names(
-        worktree.resolve(HOME).resolve("changes"),
-        name -> !name.equals("archive") && isOf(name, change));
+  private static List<String> open(Home home, String change) {
+    return names(home.changes(), name -> !name.equals("archive") && isOf(name, change));
   }
 
-  private static boolean archived(Path worktree, String change) {
+  private static boolean archived(Home home, String change) {
     return !names(
-            worktree.resolve(HOME).resolve("changes").resolve("archive"),
+            home.changes().resolve("archive"),
             name -> name.length() > ARCHIVE_DATE && isOf(name.substring(ARCHIVE_DATE), change))
         .isEmpty();
   }
 
-  /** A later round opens `<change>-2`, since the first is archived under its own name. */
+  /**
+   * A later round opens `<change>-2`, since the first is archived under its own name; a change may
+   * carry a slug and the key in any case.
+   */
   private static boolean isOf(String name, String change) {
-    return name.equals(change) || name.startsWith(change + "-");
+    String lower = name.toLowerCase(Locale.ROOT);
+    return lower.equals(change) || lower.startsWith(change + "-");
   }
 
   private static List<String> names(Path directory, Predicate<String> wanted) {
@@ -196,13 +236,18 @@ public class OpenSpec implements Specs {
     }
   }
 
-  private static String howToOpen(String change) {
-    return "this repository records its behaviour in openspec/specs, and your hand-back carries no"
-        + " change: run `openspec new change "
+  private static String howToOpen(Home home, String change) {
+    return "this repository records its behaviour in "
+        + home.shown()
+        + "/specs, and your hand-back carries no change: in "
+        + home.directory()
+        + " run `openspec new change "
         + change
         + "`, read `openspec instructions specs --change "
         + change
-        + "` for the delta format and rules, then write its delta under openspec/changes/"
+        + "` for the delta format and rules, then write its delta under "
+        + home.shown()
+        + "/changes/"
         + change
         + "/specs/, or set"
         + " `skip_specs: true` in its .openspec.yaml when no behaviour changes";

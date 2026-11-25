@@ -33,7 +33,7 @@ class HumanPathsTest {
           .thenReturn(
               new ProjectConfig(
                   new ProjectConfig.Repository(
-                      "/repo", List.of(), null, List.of("**/auth/**"), null, null),
+                      "/repo", List.of(), null, List.of("**/auth/**"), null, null, null),
                   new ProjectConfig.Branches("origin/main", "dev", null),
                   ProjectConfig.CodeHost.defaults(),
                   new ProjectConfig.Verify(List.of(), null),

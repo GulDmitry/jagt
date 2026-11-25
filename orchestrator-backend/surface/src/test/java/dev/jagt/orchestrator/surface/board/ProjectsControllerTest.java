@@ -27,7 +27,8 @@ class ProjectsControllerTest {
         new ProjectCards.Card(
             "demo",
             "code.example:acme/demo",
-            new ProjectConfig.Repository("/work/demo", List.of("web"), null, List.of(), null, null),
+            new ProjectConfig.Repository(
+                "/work/demo", List.of("web"), null, List.of(), null, null, null),
             new ProjectConfig.Branches("origin/main", "staging", null),
             ProjectConfig.CodeHost.defaults(),
             new ProjectConfig.Verify(List.of(), null));

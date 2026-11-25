@@ -13,7 +13,7 @@ public record TestClonedProjectBuilder(String url, String path) {
 
   public ProjectConfig build() {
     return new ProjectConfig(
-        new ProjectConfig.Repository(path, List.of(), null, List.of(), url, null),
+        new ProjectConfig.Repository(path, List.of(), null, List.of(), url, null, null),
         new ProjectConfig.Branches("origin/main", null, null),
         ProjectConfig.CodeHost.defaults(),
         new ProjectConfig.Verify(List.of(), null),

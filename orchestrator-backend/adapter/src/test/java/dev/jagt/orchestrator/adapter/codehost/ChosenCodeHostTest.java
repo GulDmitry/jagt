@@ -124,7 +124,7 @@ class ChosenCodeHostTest {
                         "shop",
                         new ProjectConfig(
                             new ProjectConfig.Repository(
-                                "/repo/shop", List.of(), null, List.of(), null, null),
+                                "/repo/shop", List.of(), null, List.of(), null, null, null),
                             new ProjectConfig.Branches("main", "dev", "none"),
                             ProjectConfig.CodeHost.defaults(),
                             new ProjectConfig.Verify(List.of(), null),
