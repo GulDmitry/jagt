@@ -7,12 +7,14 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.repo.Remote;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 /**
  * A project's remote is one its repository lists, and a repository with none has no code host; read
@@ -33,7 +35,7 @@ public class RemoteCheck implements StartupCheck {
     ConfigFile config;
     try {
       config = configService.load();
-    } catch (RuntimeException unreadable) {
+    } catch (JacksonException | UncheckedIOException | IllegalStateException unreadable) {
       return List.of();
     }
     List<Problem> problems = new ArrayList<>();
@@ -95,7 +97,7 @@ public class RemoteCheck implements StartupCheck {
           ? java.util.Optional.of(
               result.stdout().lines().map(String::strip).filter(name -> !name.isEmpty()).toList())
           : java.util.Optional.empty();
-    } catch (RuntimeException unreadable) {
+    } catch (IllegalStateException unreadable) {
       return java.util.Optional.empty();
     }
   }

@@ -2,16 +2,19 @@ package dev.jagt.orchestrator.adapter.agent.codex;
 
 import dev.jagt.orchestrator.service.worktree.FileStamps;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * One {@code rollout-*.jsonl} per session under {@code <home>/sessions/YYYY/MM/DD}; the newest is
  * the one going.
  */
+@Slf4j
 final class CodexRollouts {
 
   private CodexRollouts() {}
@@ -25,7 +28,13 @@ final class CodexRollouts {
       return files
           .filter(CodexRollouts::isRollout)
           .max(Comparator.comparingLong(FileStamps::modified));
-    } catch (IOException | RuntimeException unreadable) {
+    } catch (IOException | UncheckedIOException unreadable) {
+      log.atWarn()
+          .setMessage("rollouts unreadable")
+          .addKeyValue("path", sessions)
+          .addKeyValue("cause", unreadable.toString())
+          .addKeyValue("effect", "no rollout is followed")
+          .log();
       return Optional.empty();
     }
   }

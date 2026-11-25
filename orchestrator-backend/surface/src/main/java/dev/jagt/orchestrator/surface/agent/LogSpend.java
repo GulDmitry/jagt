@@ -4,14 +4,17 @@ import dev.jagt.orchestrator.port.agent.SessionLog;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Reading a growing log from where the last read stopped. Bounded and repeatable, so a log of any
  * size costs one bounded read and the rest waits for the next; where the reader keeps its mark is
  * the caller's business.
  */
+@Slf4j
 public final class LogSpend {
 
   /** One read takes at most this much, so a log of any size costs a bounded read. */
@@ -27,11 +30,19 @@ public final class LogSpend {
    * SHORTER than its own mark was rewritten under jagt — what was counted cannot be told, so the
    * mark follows the file and nothing is added.
    */
-  public static Optional<Advance> since(SessionLog sessionLog, Path log, long mark) {
+  public static Optional<Advance> since(SessionLog sessionLog, Path logFile, long mark) {
     long size;
     try {
-      size = Files.size(log);
-    } catch (IOException | RuntimeException gone) {
+      size = Files.size(logFile);
+    } catch (NoSuchFileException gone) {
+      return Optional.empty();
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("log unreadable")
+          .addKeyValue("path", logFile)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "nothing is counted")
+          .log();
       return Optional.empty();
     }
     if (size < mark) {
@@ -40,7 +51,7 @@ public final class LogSpend {
     if (size == mark) {
       return Optional.empty();
     }
-    SessionLog.Spent spent = sessionLog.spent(log, mark, Math.min(size - mark, WINDOW));
+    SessionLog.Spent spent = sessionLog.spent(logFile, mark, Math.min(size - mark, WINDOW));
     return spent.upTo() <= mark
         ? Optional.empty()
         : Optional.of(new Advance(spent.usage(), spent.upTo()));

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Supervisor;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +76,7 @@ public class RunningJarWatch implements Job {
     this.notifications = notifications;
     this.supervisor = supervisor;
     this.jar = host.jar().orElse(null);
-    this.atStartup = stamp(jar);
+    this.atStartup = startupStamp(jar);
   }
 
   /** The name {@code bootJar} writes, and the one a build in this tree overwrites in place. */
@@ -115,7 +116,18 @@ public class RunningJarWatch implements Job {
     if (jar == null || atStartup == null || reported) {
       return;
     }
-    Stamp now = stamp(jar);
+    Stamp now;
+    try {
+      now = stamp(jar);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("running jar unreadable")
+          .addKeyValue("jar", jar)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "no rewrite judged this minute")
+          .log();
+      return;
+    }
     if (!rewritten(atStartup, now)) {
       return;
     }
@@ -142,13 +154,28 @@ public class RunningJarWatch implements Job {
         || now.size() != atStartup.size();
   }
 
-  private static @Nullable Stamp stamp(@Nullable Path jar) {
+  private static @Nullable Stamp startupStamp(@Nullable Path jar) {
+    try {
+      return stamp(jar);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("running jar unreadable")
+          .addKeyValue("jar", jar)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "the jar is not watched")
+          .log();
+      return null;
+    }
+  }
+
+  /** Null where the file is gone; any other failure to read it is thrown. */
+  private static @Nullable Stamp stamp(@Nullable Path jar) throws IOException {
     if (jar == null) {
       return null;
     }
     try {
       return new Stamp(Files.getLastModifiedTime(jar).toMillis(), Files.size(jar));
-    } catch (IOException e) {
+    } catch (NoSuchFileException vanished) {
       return null;
     }
   }

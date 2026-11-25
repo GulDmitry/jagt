@@ -62,6 +62,12 @@ public final class FailurePage implements ServedFailure {
       server.start();
       return Optional.of(page);
     } catch (IOException e) {
+      log.atWarn()
+          .setMessage("failure page bind failed")
+          .addKeyValue("port", port)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "no page is served")
+          .log();
       return Optional.empty();
     }
   }

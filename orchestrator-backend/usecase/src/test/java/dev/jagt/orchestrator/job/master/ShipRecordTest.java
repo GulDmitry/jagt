@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.master;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -28,6 +29,16 @@ class ShipRecordTest {
 
     verify(turns).mark("ABC-1", TaskTurns.PRESSED_SHIP, "tree-1;");
     verify(turns).shippedOn("ABC-1", "tree-1;");
+  }
+
+  @Test
+  void readsTheTreeOnceSoWhatItMarksIsWhatItShipped() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(changes.state(task)).thenReturn(Optional.of("tree-1;"));
+
+    new ShipRecord(turns, changes, new ShipContent(changes, drafts)).pressedOn("ABC-1", task);
+
+    verify(changes, times(1)).state(task);
   }
 
   @Test

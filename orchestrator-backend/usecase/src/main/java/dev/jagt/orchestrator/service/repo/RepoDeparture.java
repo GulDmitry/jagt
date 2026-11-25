@@ -64,7 +64,7 @@ public class RepoDeparture {
   private boolean agentRuns(String taskId) {
     try {
       return sessions.windowState(taskId) == SessionHost.WindowState.AGENT_RUNNING;
-    } catch (RuntimeException unknown) {
+    } catch (SessionHost.WindowsUnreadable unknown) {
       return true;
     }
   }

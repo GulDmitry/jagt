@@ -112,7 +112,7 @@ class RepoDepartureTest {
   void keepsThePrimaryRepositoryWhereTheSessionsWindowCannotBeRead() {
     TaskRepo primary = TaskRepo.of("api", "/api-wt");
     state.putTask("ABC-42", TaskState.builder(List.of(primary, web), TaskStatus.REVIEWED).build());
-    when(sessions.windowState("ABC-42")).thenThrow(new IllegalStateException("no tmux"));
+    when(sessions.windowState("ABC-42")).thenThrow(new SessionHost.WindowsUnreadable("no tmux"));
 
     boolean left = departure.leaveWorkless("ABC-42", primary, "it holds no work");
 

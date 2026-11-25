@@ -421,6 +421,20 @@ class WorktreeOrphansTest {
   }
 
   @Test
+  void leavesTheDeployDirectoryOfLiveTaskWhoseCheckoutPointerCannotBeRead() throws IOException {
+    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    Path pointer =
+        Files.writeString(
+            Files.createDirectories(root.resolve("ABC-41-deploy")).resolve(".git"),
+            "gitdir: " + repo.resolve(".git/worktrees/ABC-41-deploy") + "\n");
+    Files.setPosixFilePermissions(pointer, PosixFilePermissions.fromString("---------"));
+    state.putTask(
+        "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+
+    assertThat(orphans.scan()).isEmpty();
+  }
+
+  @Test
   void stillFindsLeftoverWhenLiveTaskHasNotCutWorktreeInOneOfItsRepositories() throws IOException {
     Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
     state.putTask(

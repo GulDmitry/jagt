@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.task.repo.TaskRepo;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
@@ -154,7 +155,7 @@ public class WorktreeOrphans {
             directoryNames(parent),
             projectKey,
             owned,
-            name -> holdsCheckout(parent.resolve(name)))) {
+            name -> checkoutIn(parent.resolve(name)) != Checkout.ABSENT)) {
       Path path = parent.resolve(name);
       if (!path.equals(projectPath) && !somebodyElses(name, path)) {
         found.putIfAbsent(
@@ -227,7 +228,7 @@ public class WorktreeOrphans {
   private static boolean somebodyElses(String name, Path path) {
     return !name.endsWith("-deploy")
         && !name.endsWith("-revert")
-        && holdsCheckout(path)
+        && checkoutIn(path) == Checkout.PRESENT
         && WorktreeFiles.OWN_FILES.stream().noneMatch(file -> Files.exists(path.resolve(file)));
   }
 
@@ -239,31 +240,47 @@ public class WorktreeOrphans {
       List<String> directoryNames,
       String projectKey,
       Set<String> ownedNames,
-      java.util.function.Predicate<String> holdsCheckout) {
+      java.util.function.Predicate<String> mayHoldCheckout) {
     return directoryNames.stream()
         .filter(name ->
             name.endsWith("-" + projectKey) || name.endsWith("-deploy") || name.endsWith("-revert"))
         .filter(name ->
-            !ownedNames.contains(name) || (name.endsWith("-deploy") && !holdsCheckout.test(name)))
+            !ownedNames.contains(name) || (name.endsWith("-deploy") && !mayHoldCheckout.test(name)))
         .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+  }
+
+  private enum Checkout {
+    PRESENT,
+    ABSENT,
+    UNREADABLE
   }
 
   /**
    * A linked worktree's {@code .git} is a POINTER and outlives the registration it names, so a
    * removal that unregistered and then failed to delete leaves one behind, checkout and copied
-   * secrets and all.
+   * secrets and all. A pointer that cannot be read is neither present nor absent.
    */
-  private static boolean holdsCheckout(Path directory) {
+  private static Checkout checkoutIn(Path directory) {
     Path marker = directory.resolve(".git");
     if (Files.isDirectory(marker)) {
-      return true;
+      return Checkout.PRESENT;
     }
     try {
       String pointer = Files.readString(marker).strip();
       return pointer.startsWith("gitdir:")
-          && Files.exists(directory.resolve(pointer.substring("gitdir:".length()).strip()));
+              && Files.exists(directory.resolve(pointer.substring("gitdir:".length()).strip()))
+          ? Checkout.PRESENT
+          : Checkout.ABSENT;
+    } catch (NoSuchFileException absent) {
+      return Checkout.ABSENT;
     } catch (IOException e) {
-      return false;
+      log.atWarn()
+          .setMessage("checkout pointer unreadable")
+          .addKeyValue("path", marker)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "the folder is not counted an orphan")
+          .log();
+      return Checkout.UNREADABLE;
     }
   }
 

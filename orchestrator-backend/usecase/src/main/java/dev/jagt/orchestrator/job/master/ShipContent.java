@@ -19,8 +19,11 @@ class ShipContent {
   private final ReviewDrafts drafts;
 
   Optional<String> of(TaskState task) {
-    return changes
-        .state(task)
-        .map(tree -> tree + drafts.unspentDigest(task).map(d -> "|drafts:" + d).orElse(""));
+    return changes.state(task).map(tree -> with(task, tree));
+  }
+
+  /** The content for a tree the caller has read already. */
+  String with(TaskState task, String tree) {
+    return tree + drafts.unspentDigest(task).map(d -> "|drafts:" + d).orElse("");
   }
 }
