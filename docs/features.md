@@ -31,6 +31,7 @@
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-shows-in-the-boards-head)
+- **Cut-short starts** — A restart keeps one on the head until `resume <key>` or `resume <key> discard`. [spec](../openspec/specs/task-start/spec.md)
 - **Settings dialog on the gear** — Theme, language, `jagt.yml` in sections. [spec](../openspec/specs/board-settings/spec.md)
 - **Board as its own app** — `board/` from the jar or `orchestrator.board.dir`; coupled by `contracts/`. [spec](../openspec/specs/board-app/spec.md)
 - **Accessible board** — axe-core checks every view. [spec](../openspec/specs/board-app/spec.md#requirement-the-board-passes-an-accessibility-check)
@@ -54,8 +55,7 @@
   [who](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
 
 ## Cases · [spec](../openspec/specs/cases/spec.md) · [debug reads](../openspec/specs/debug-reads/spec.md)
-- **Your own cases** — A case sends a step and opens a turn, or lets the Master move.
-  [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
+- **Your own cases** — A case sends a step and opens a turn, or lets the Master move. [spec](../openspec/specs/cases/spec.md)
 - **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 

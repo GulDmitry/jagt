@@ -82,9 +82,7 @@ export const cardRows = () => [
   ),
   row(
     "checks",
-    span("checks red", ""),
-    span("checks green", ""),
-    span("checks running", ""),
+    ...["red", "green", "running"].map((s) => span(`checks ${s}`, "")),
   ),
   row("repos", requestChip("mr-age", "alpha 2d"), repositories()),
   row("drafted", draftedTab()),
@@ -93,8 +91,9 @@ export const cardRows = () => [
     "stalled",
     requestChip("mr-age stalled", `${t("request")} 9d`),
     aged("status stalled", "out for review", "9d"),
-    span("chip stalled", t("act-stopped")),
-    span("chip stalled", t("board-stopped")),
+    ...["act-stopped", "board-stopped", "start-interrupted"].map((k) =>
+      span("chip stalled", t(k)),
+    ),
   ),
   row(
     "detail",

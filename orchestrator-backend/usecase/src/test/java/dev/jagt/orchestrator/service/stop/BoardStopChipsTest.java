@@ -19,7 +19,8 @@ class BoardStopChipsTest {
 
     var chips = new BoardStopChips(new BoardStop(paths, new FakeClock())).chips();
 
-    assertThat(chips).containsExactly(new HeaderChip("board-stopped", "unstop", false, 1000L));
+    assertThat(chips)
+        .containsExactly(new HeaderChip("board-stopped", "unstop", false, 1000L, null));
   }
 
   @Test

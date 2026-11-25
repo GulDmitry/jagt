@@ -26,9 +26,9 @@ public class MasterChips implements HeaderChips {
       return List.of();
     }
     if (stops.standing().filter(stop -> stop.cause() == Cause.STRIKES).isPresent()) {
-      return List.of(new HeaderChip("act-stopped", "act", true, null));
+      return List.of(new HeaderChip("act-stopped", "act", true, null, null));
     }
-    return acting() ? List.of(new HeaderChip("header.acting", null, false, null)) : List.of();
+    return acting() ? List.of(new HeaderChip("header.acting", null, false, null, null)) : List.of();
   }
 
   private boolean acting() {

@@ -10,7 +10,13 @@ public interface HeaderChips {
 
   /**
    * One mark in the board's head. {@code key} is its catalog word, {@code key + ".tip"} its hover;
-   * {@code verb}, where set, is what pressing it runs; {@code at} is epoch millis.
+   * {@code verb}, where set, is what pressing it runs; {@code at} is epoch millis; {@code detail},
+   * where set, is appended to the hover.
    */
-  record HeaderChip(String key, @Nullable String verb, boolean broken, @Nullable Long at) {}
+  record HeaderChip(
+      String key,
+      @Nullable String verb,
+      boolean broken,
+      @Nullable Long at,
+      @Nullable String detail) {}
 }

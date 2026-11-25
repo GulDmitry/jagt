@@ -137,6 +137,11 @@ public class Layout {
     return beside("board-stopped");
   }
 
+  /** The starts begun and not yet finished; a restart finds what it cut short. */
+  public Path pendingStarts() {
+    return beside("pending-starts.json");
+  }
+
   /**
    * The tasks counted toward stopping `act`, one per line, present while the count is above zero.
    */

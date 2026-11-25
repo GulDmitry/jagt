@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.service.launch.PendingStarts;
 import dev.jagt.orchestrator.service.master.ActStops;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.List;
@@ -155,7 +156,8 @@ class MasterPressesTest {
     MasterPresses presses =
         new MasterPresses(
             commands,
-            new GlobalCommands(List.of(new ResumeCommand(mock(TaskLauncher.class)))),
+            new GlobalCommands(
+                List.of(new ResumeCommand(mock(TaskLauncher.class), mock(PendingStarts.class)))),
             config);
 
     assertThatThrownBy(() -> presses.run("resume", "https://host/x/-/merge_requests/1"))

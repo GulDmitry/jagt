@@ -16,7 +16,7 @@ public class BoardStopChips implements HeaderChips {
   public List<HeaderChip> chips() {
     return board
         .standing()
-        .map(standing -> new HeaderChip("board-stopped", "unstop", false, standing.at()))
+        .map(standing -> new HeaderChip("board-stopped", "unstop", false, standing.at(), null))
         .stream()
         .toList();
   }

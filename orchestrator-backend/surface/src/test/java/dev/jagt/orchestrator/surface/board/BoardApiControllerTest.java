@@ -170,8 +170,8 @@ class BoardApiControllerTest {
   @Test
   void servesTheMarksEverySourceAddsToTheHead() {
     when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
-    var acting = new HeaderChip("header.acting", null, false, null);
-    var stopped = new HeaderChip("board-stopped", "unstop", false, 7L);
+    var acting = new HeaderChip("header.acting", null, false, null, null);
+    var stopped = new HeaderChip("board-stopped", "unstop", false, 7L, null);
     BoardApiController board =
         new BoardApiController(
             taskViews,

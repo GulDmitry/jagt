@@ -59,11 +59,14 @@ function renderReach() {
 const roleChip = (one) => {
   const node = make(
     one.verb ? "button" : "span",
-    one.verb ? "chip stalled" : "chip",
+    one.verb || one.broken ? "chip stalled" : "chip",
     t(one.key),
   );
   if (one.verb) node.dataset.verb = one.verb;
-  node.dataset.tip = t(`${one.key}.tip`, one.at ? { since: full(one.at) } : {});
+  node.dataset.tip = t(`${one.key}.tip`, {
+    since: one.at ? full(one.at) : "",
+    detail: one.detail,
+  });
   return node;
 };
 

@@ -29,7 +29,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 
 | kind | its one job | state | standard it follows · check pinning it |
 |------|-------------|-------|------|
-| `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` | ISO/IEC 25010 recoverability: atomic writes, state read across a minor · `StateServiceCompatibilityTest` |
+| `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json`; `service/launch/PendingStarts` keeps a start in `pending-starts.json` until its task is written | ISO/IEC 25010 recoverability: atomic writes, state read across a minor, a cut-short start kept · `StateServiceCompatibilityTest`, `TaskLauncherPendingStartTest` |
 | `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsFitness`, `FlowDoorsFitness` |
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
@@ -280,7 +280,7 @@ on a package of more than ten classes and on one of a single class ([0166](docs/
 | `service/deploy` | usecase | deploy targets and infra retries |
 | `service/gate` | usecase | the tool gate: read lines, scopes and the verdict on a command |
 | `service/git` | usecase | git commands, states, worktrees, deploys and diffs |
-| `service/launch` | usecase | starting a task: routing, placement, resume |
+| `service/launch` | usecase | starting a task: routing, placement, resume, the start's pending record |
 | `service/log` | usecase | jagt's own logs: rolling files, press, stop and miss logs |
 | `service/master` | usecase | what the Master reads: panels, briefs, decisions, brake |
 | `service/plan` | usecase | plan approval, baseline, placement and probes |

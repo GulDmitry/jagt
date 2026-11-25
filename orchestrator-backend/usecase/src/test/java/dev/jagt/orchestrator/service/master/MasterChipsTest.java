@@ -50,7 +50,8 @@ class MasterChipsTest {
     when(config.load())
         .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
-    assertThat(chips.chips()).containsExactly(new HeaderChip("header.acting", null, false, null));
+    assertThat(chips.chips())
+        .containsExactly(new HeaderChip("header.acting", null, false, null, null));
   }
 
   @Test
@@ -65,7 +66,8 @@ class MasterChipsTest {
   void offersActBackAsBrokenWhenThreeBadEndingsStoppedIt() {
     when(stops.standing()).thenReturn(Optional.of(new ActStop(Cause.STRIKES, null)));
 
-    assertThat(chips.chips()).containsExactly(new HeaderChip("act-stopped", "act", true, null));
+    assertThat(chips.chips())
+        .containsExactly(new HeaderChip("act-stopped", "act", true, null, null));
   }
 
   @Test
