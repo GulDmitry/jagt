@@ -16,7 +16,7 @@ F unbounded loop. G prose routing. H a guard. I vendor CLI behaviour. J git and 
 **A new test's run is predicted first**, outcome and message; a surprise is a stop to understand, never a blind retry.
 **Every new install requirement goes in `docs/installation.md`**. **Leave no trace** (AGENTS.md "Tests"): a suite uses a throwaway tmux session plus
 `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the
-task), so no test reaches the human's. Shared test code (AGENTS.md "Tests"): `SourceRoots` is a scanner, `ScriptedProcesses` a fake.
+task), so no test reaches the human's. Shared test code: `SourceRoots` a scanner, `ScriptedProcesses` a fake, `NoChildLeftBehind` a suite guard.
 A test builder ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)) is a record with `@With`, `<thing>()` setting fixed valid
 defaults and `build()` calling production's constructor or builder; it holds no branch, loop, mock, assertion, clock or random value; one of outside
 state (a git repo) may write. A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example

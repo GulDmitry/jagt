@@ -38,5 +38,7 @@ while :; do
     echo "gradle-slot: no slot free after ${wait_max}s" >&2
     exit 75
   fi
+  [ -n "${announced:-}" ] || echo "gradle-slot: waiting for a free slot (up to ${wait_max}s)" >&2
+  announced=1
   sleep "$poll"
 done

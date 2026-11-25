@@ -46,5 +46,4 @@ dev.jagt.orchestrator.service.git.ScriptedProcesses
 dev.jagt.orchestrator.startup.WorkingDirHost
 dev.jagt.orchestrator.surface.mcp.AnsweringMcpTools
 dev.jagt.orchestrator.surface.mcp.ThrowingMcpTools
-dev.jagt.orchestrator.testing.LoggingReadyFirst
 dev.jagt.statechart.Lamp
