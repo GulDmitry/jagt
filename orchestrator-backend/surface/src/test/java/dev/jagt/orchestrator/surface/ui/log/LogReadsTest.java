@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.protocol.debug.RecordTail;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.log.DebugReads;
+import dev.jagt.orchestrator.service.log.ThreadDump;
 import dev.jagt.orchestrator.service.role.RoleLog;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -75,7 +76,8 @@ class LogReadsTest {
                 new DebugReads(
                     mock(OrchestratorPaths.class),
                     mock(StateService.class),
-                    mock(AgentRuntime.class)),
+                    mock(AgentRuntime.class),
+                    new ThreadDump()),
                 List.of())
             .read(new RecordTail("backend-log", 2));
 
@@ -125,6 +127,18 @@ class LogReadsTest {
             .read(new RecordTail("stops-reviewed", 3));
 
     assertThat(read).isEqualTo("reviewed");
+  }
+
+  @Test
+  void readsTheThreadDumpForThreads() {
+    DebugReads reads = mock(DebugReads.class);
+    when(reads.threads()).thenReturn("a thread");
+
+    String read =
+        new LogReads(new LoggerContext(), new MockEnvironment(), reads, List.of())
+            .read(new RecordTail("threads", 3));
+
+    assertThat(read).isEqualTo("a thread");
   }
 
   @Test

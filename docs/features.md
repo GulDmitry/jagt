@@ -56,7 +56,7 @@
 
 ## Cases · [spec](../openspec/specs/cases/spec.md) · [debug reads](../openspec/specs/debug-reads/spec.md)
 - **Your own cases** — A case sends a step and opens a turn, or lets the Master move. [spec](../openspec/specs/cases/spec.md)
-- **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
+- **Debug reads** — A CLI reads the log, stops, a transcript, the Master's feed and threads through `/mcp` or `/api/debug`, changing nothing.
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)

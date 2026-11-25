@@ -191,10 +191,10 @@ The board is the person's view and needs a browser login: it has no view of the 
 | what a session said and did | `read_transcript` with the task id |
 | what a session shows now | `kubectl exec <pod> -- tmux ls`, then `tmux capture-pane -p -t <session>`; never `send-keys` |
 | is the JVM alive, how loaded | `curl -s localhost:8290/actuator/health/liveness`; `/actuator/metrics/jvm.threads.live`, `jvm.memory.used` (login, else loopback) |
-| a JVM hang | `kubectl exec <pod> -- sh -c 'kill -3 $(pgrep -f "[j]agt.jar")'`, then `kubectl logs <pod>`: the thread dump |
+| a JVM hang | `read_record` `threads`, or `GET /api/debug/records/threads`: every thread's name, state, lock and stack |
 | a JVM out of memory | the heap dump in `/data/dumps` (`kubectl cp`); the JVM exits and the loop starts it again |
 
 - `read_record` returns the last `lines` (at most 1000); `read_transcript` the newest `maxChars`. Ask for a tail, then widen.
-- The image has a JRE, so no `jcmd`, `jfr` or `jstack`; `kill -3` is the standard fallback (unverified in this image).
+- The image has a JRE, so no `jcmd`, `jfr` or `jstack`. `read_record` `threads` needs none of them.
 - Never open a JDWP port: a debugger port is remote code execution in the pod, which holds the Master token.
 - `kubectl exec` runs as the pod's one OS user; do not read `env` or `.env`: they hold the bot's keys.

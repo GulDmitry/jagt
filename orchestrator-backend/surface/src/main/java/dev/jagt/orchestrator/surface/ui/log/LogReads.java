@@ -31,6 +31,7 @@ public class LogReads {
       case "backend-log" -> of("logging.file.name", lines);
       case "stops" -> reads.stops(lines);
       case "stops-reviewed" -> reads.stopsReviewed(lines);
+      case "threads" -> reads.threads();
       default ->
           roleLogs.stream()
               .filter(log -> log.record().equals(record))
