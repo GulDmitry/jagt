@@ -155,46 +155,37 @@ a service account without a token, one optional PVC, Secrets
 
 ## Upgrade, back up, roll back
 
-What `/data` (`ORCHESTRATOR_DATA`) holds that outlives an image:
-
-| path | what | when it changes |
-|------|------|-----------------|
-| `jagt.yml` | the configuration, seeded from the image on a first start | when you or the board edit it |
-| `jagt/state.json` | every task, written atomically | every mutation |
-| `jagt/state.json.bak` | the version before the last write | every mutation |
-| `jagt/state.json.corrupt` | an unreadable primary, set aside while `.bak` stood in | on that recovery |
-| `tasks/`, `projects/` | task worktrees (unpushed commits live here), clones | while sessions work |
-| `jagt/master-token`, `logs/` | the Master's token (drawn at each start), logs | each start |
-
-- **Read across minors**: a newer jar reads an older `state.json` as it stands: unknown keys are ignored, a missing number or flag
-  reads 0 or false; the next mutation rewrites it in the newer shape and keeps the old one as `.bak`
-  (`StateServiceCompatibilityTest` holds a fixture of every shipped minor, 0.9 to 0.23).
-- **Unreadable state**: `.bak` takes over and the log says so; with no usable `.bak` jagt refuses to start, never starts empty.
-- **Older jar, newer file**: untested, unknown. Roll back from a copy, never by pointing the old jar at the new file.
-
-Before an upgrade, stop jagt, then copy the folder (with sessions running only `state.json` is a consistent copy):
-
-```sh
-docker compose stop                    # or: kubectl scale deployment/<name> --replicas=0
-docker run --rm -v <volume>:/data -v "$PWD":/backup alpine tar czf /backup/jagt-data.tgz -C /data .   # <volume>: docker volume ls
-cp "$ORCHESTRATOR_DATA"/jagt/state.json* ~/backup/    # a jar install: the same files in its data folder
-```
-
-Roll back: stop, put the previous image tag (or jar) back, restore the copy over `/data`, start, and check readiness and the task list.
-Keep the running minor's image tag before pulling the next one; worktrees made after the copy are not in it.
+What `/data` holds, what a newer jar reads and the stop-copy-restore steps: [server-upgrade](server-upgrade.md).
 
 ## Debug from a local CLI
 
-A running jagt is read, never changed, through `read_record` and `read_transcript` on its MCP server and `GET /api/debug/…`
+A session reads a running server, never changes it. Its way in is jagt's own debug reads on `/mcp`, through a port-forward
 ([debug-reads](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)).
-State and reports: `list_tasks`, `GET /state`.
+They answer from the records and the state, so the session needs no shell in the pod for most questions.
+The board is the person's view and needs a browser login: it has no view of the debug records.
 
-```sh
-kubectl port-forward <pod> 8290:8290
-curl -s -H "X-Jagt-Master: $(cat <token file>)" -H 'Content-Type: application/json' localhost:8290/mcp \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"read_record","arguments":{"record":"stops"}}}'
-```
+1. **Forward the port.** `kubectl port-forward <pod> 8290:8290`. Under compose the published port is already `localhost:8290`.
+2. **Read the token into a variable.** `TOKEN=$(kubectl exec <pod> -- cat /data/jagt/master-token)`; compose:
+   `docker compose exec -T jagt cat /data/jagt/master-token`. Never print it or write it into a file; it makes its holder the Master and
+   changes at each start.
+3. **Call a tool.** Point the CLI's MCP config at `http://localhost:8290/mcp` with the header `X-Jagt-Master: <the token>`, or use `curl`:
+   ```sh
+   curl -s -H "X-Jagt-Master: $TOKEN" -H 'Content-Type: application/json' localhost:8290/mcp \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"read_record","arguments":{"record":"stops"}}}'
+   ```
 
-- `<token file>` is `master-token` beside `jagt/state.json`; point a CLI's MCP config at `http://localhost:8290/mcp` with that header.
-  `/api/debug/…` needs the login session, `/mcp` the token.
-- Records: `backend-log`, `master-log`, `stops`, `stops-reviewed`; under `orchestrator.logging: console` the two logs are what stdout carried.
+| question | command |
+|----------|---------|
+| what is stuck, what is every task doing | `list_tasks`; with a login, `GET /state` |
+| why a task stopped | `read_record` `stops`, then `stops-reviewed`; the cause of a failure is in `backend-log` |
+| what jagt itself did or failed at | `read_record` `backend-log`, `master-log` (under `logging: console` the two are what stdout carried) |
+| what a session said and did | `read_transcript` with the task id |
+| what a session shows now | `kubectl exec <pod> -- tmux ls`, then `tmux capture-pane -p -t <session>`; never `send-keys` |
+| is the JVM alive, how loaded | `curl -s localhost:8290/actuator/health/liveness`; `/actuator/metrics/jvm.threads.live`, `jvm.memory.used` (login, else loopback) |
+| a JVM hang | `kubectl exec <pod> -- sh -c 'kill -3 $(pgrep -f "[j]agt.jar")'`, then `kubectl logs <pod>`: the thread dump |
+| a JVM out of memory | the heap dump in `/data/dumps` (`kubectl cp`); the JVM exits and the loop starts it again |
+
+- `read_record` returns the last `lines` (at most 1000); `read_transcript` the newest `maxChars`. Ask for a tail, then widen.
+- The image has a JRE, so no `jcmd`, `jfr` or `jstack`; `kill -3` is the standard fallback (unverified in this image).
+- Never open a JDWP port: a debugger port is remote code execution in the pod, which holds the Master token.
+- `kubectl exec` runs as the pod's one OS user; do not read `env` or `.env`: they hold the bot's keys.
