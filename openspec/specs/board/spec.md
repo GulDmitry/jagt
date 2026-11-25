@@ -23,8 +23,7 @@ The colour legend SHALL be a section of the `help` report (`board/ui/legend.js`)
 - **WHEN** the human presses New task or `t`
 - **THEN** a dialog offers ticket, a box per project, base branch, `plan first / project unknown`, notes, branch strategy, Start
 #### Scenario: A project is hovered in the launch row
-- **WHEN** the human hovers a project's name or box
-- **THEN** its hover shows the project's whole `jagt.yml` entry and the address of its repository's remote
+- **WHEN** the human hovers a project's name or box; **THEN** its hover shows the whole `jagt.yml` entry and the remote's address
 #### Scenario: Start with no project
 - **WHEN** the human presses Start with no box ticked and `plan first / project unknown` unticked
 - **THEN** the form says "Choose a project, or start with plan first" and sends nothing
@@ -38,7 +37,8 @@ The board SHALL NOT poll: `TaskEventStream` forwards `StateWritten` as payload-f
 `/api/events`, and a role's new log line as `role-log` naming the role, beside a 20s beat. Each connect reads the board once.
 A card carries `data-action`, never a closure, so a rebuilt card cannot act for its old task.
 #### Scenario: The backend goes away
-- **WHEN** the push connection drops, or misses two beats; **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
+- **WHEN** the push connection drops, or misses two beats; **THEN** the board dims and says `backend unreachable` until it reconnects
+- **AND** every control that writes to the backend is inert; the filter, theme and language, local to the browser, still answer
 
 ### Requirement: A banner leads to its task
 A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend on it.
@@ -95,7 +95,7 @@ import map resolves them. A page SHALL load nothing from outside the jar, and th
 
 ### Requirement: The styleguide draws every state
 `styleguide.html` SHALL render each component in each state its `styleguide/` fixtures name, with the modules the
-board renders. A component reads no module state: everything it shows arrives in its props.
+board renders. A component reads no module state and imports nothing from `ui/`: everything it shows arrives in its props.
 #### Scenario: Opening the styleguide
 - **WHEN** a human opens `/styleguide.html`; **THEN** every card state stands as one card under its name, and the page throws nothing
 

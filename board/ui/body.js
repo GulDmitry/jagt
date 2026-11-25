@@ -1,6 +1,5 @@
-import { render as paint } from "preact";
-
 import { list } from "./list.js";
+import { paint } from "./paint.js";
 import * as rolelogpane from "./rolelogpane.js";
 import * as selection from "./selection.js";
 import { hideStaleTip } from "./tips.js";

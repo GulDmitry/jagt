@@ -267,6 +267,10 @@
     "lines": 100,
     "branches": 100
   },
+  "ui/paint.js": {
+    "lines": 100,
+    "branches": 100
+  },
   "ui/parts.js": {
     "lines": 100,
     "branches": 100

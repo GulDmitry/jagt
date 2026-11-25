@@ -14,7 +14,7 @@ disagree**: APPROVED wears both — the approval landed, the deploy is yours.
 Fourteen tokens, each defined once at the top of `app.css` as `light-dark(light, dark)`: the gear's theme choice
 (`data-theme` on `<html>`) and `prefers-color-scheme` both only set `color-scheme`, so a token cannot be in one
 theme only. `--on-accent` is `button.primary`'s label (`#fff`, `#10131a` dark): accent text on the accent fill is
-illegible. A hex outside `:root` is a bug, but the translucent blacks (four shadows, the dialog backdrop).
+illegible. A hex outside `:root` is a bug (`css-hex-outside-root`); the translucent blacks are not hex: six shadows, two backdrops.
 
 - `--you` `#92400e` / `#fbbf24` — **your move**: nothing advances without you.
 - `--agent` `#1d4ed8` / `#93b4ff` — **an agent is working**.
@@ -84,7 +84,7 @@ buttons, legend heads.
 
 Radii climb with size: `999px` pills, `50%` dots, `6px` a control, `8px` a
 card or toast, `10px` the report dialog. Grid gap 12px, card padding 10px, dialog padding 14px, meta gap 8px.
-Shadow lifts a thing OFF the page and nothing else (report dialog, log button, toast, tip); its one exception
+Shadow lifts a thing OFF the page and nothing else (reports menu, the dialogs, log button, toast, tip); its one exception
 is not depth: the 2px `--ok` ring on a primary deploy button.
 
 **No build step** (AGENTS.md): every mark is a border, a background or a character in the jar.

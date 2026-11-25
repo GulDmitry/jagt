@@ -160,10 +160,7 @@ dialog#project-dialog {
   color: var(--text);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
-dialog#launch-dialog::backdrop,
-dialog#gear-dialog::backdrop,
-dialog#settings-dialog::backdrop,
-dialog#project-dialog::backdrop {
+dialog:not(#report)::backdrop {
   background: rgba(16, 19, 26, 0.35);
 }
 dialog form {
