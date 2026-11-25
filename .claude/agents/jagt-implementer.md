@@ -14,6 +14,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    its regression test and trailer.
 5. The inner loop is `./gradlew -q testsFor --paths=<a,b>` from `orchestrator-backend` on the files you changed (no `--paths`: the branch):
    run its lines in order, each in the background into a log, each under its `timeout`, stop at the first red.
+   Its trailing `read:` lines name the specs and rules governing those files: read them before you change anything.
    A review round or a one-line fix re-runs it only on the files it touched.
    `./gradlew pitestDiff -PpitestDiff=release` runs once, at the done step; the brief's done command runs once, after the last round.
    The full suite is never run: the session that launched you runs its batch's modules as AGENTS.md "Tests" says.

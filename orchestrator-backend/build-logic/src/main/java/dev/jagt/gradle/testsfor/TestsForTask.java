@@ -37,5 +37,6 @@ public abstract class TestsForTask extends DefaultTask {
     TestsFor.Plan plan = testsFor.plan(paths);
     plan.dropped().forEach(note -> getLogger().error(note));
     plan.lines().forEach(line -> getLogger().quiet(line));
+    plan.reads().forEach(file -> getLogger().quiet("read: " + file));
   }
 }

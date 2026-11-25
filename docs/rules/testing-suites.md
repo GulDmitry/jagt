@@ -11,6 +11,8 @@
 | T5 weekly and release gate | `standTest` live, `promptEval`, `roleEval -Prole=master`, base images, Scorecard; jqwik at 200 tries (`-PjqwikTries`) | locally: docker, an agent login, tokens | before a minor release |
 
 Windows and macOS install run in T2 only: the one job without a local twin.
+`testsFor` ends with one `read: <file>` line per spec or rule whose path-scoped pointer matches a changed path.
+
 GitLab runs compose alone: kind needs a privileged runner. Absolute stand budgets need `-Pbudgets=true` on the idle reference machine.
 CI sets no time ceiling; the ceilings below and `suite-minutes` run locally.
 A `schedule` run starts late under GitHub load and runs the default branch's latest commit

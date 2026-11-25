@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 public final class TestsFor {
 
-  public record Plan(List<String> lines, List<String> dropped) {}
+  public record Plan(List<String> lines, List<String> dropped, List<String> reads) {}
 
   private static final List<String> OTHER_SETS =
       List.of(
@@ -111,7 +111,8 @@ public final class TestsFor {
     if (selection.board) {
       lines.add("cd board && timeout 600 sh -c 'npm run lint && npm test'");
     }
-    return new Plan(lines, dropped);
+    return new Plan(
+        lines, dropped, new Pointers(repo.top().resolve(".claude/rules")).readsFor(paths));
   }
 
   private void addGradle(List<String> lines, int seconds, String tasks) {
