@@ -590,7 +590,7 @@ class BoardCardTest extends BoardPageContext {
 
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     assertThat(page.locator("article .mr-age")).isVisible();
-    page.locator("article .mr-age").hover();
+    page.locator("article .mr-age").focus();
 
     assertThat(page.locator("#tip")).hasClass("scrolls");
   }
