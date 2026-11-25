@@ -19,7 +19,10 @@ export function body(view, repaint) {
   board.classList.toggle("open", selection.isOpen() || role);
   paint(
     open || role
-      ? [list({ ...view, open }), rolelogpane.stand({ ...view, open }, repaint)]
+      ? [
+          view.shown.length ? list({ ...view, open }) : null,
+          rolelogpane.stand({ ...view, open }, repaint),
+        ]
       : null,
     board,
   );

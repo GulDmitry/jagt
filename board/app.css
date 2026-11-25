@@ -26,6 +26,10 @@
 * {
   box-sizing: border-box;
 }
+/* A display set by any other rule would outrank the attribute's default. */
+[hidden] {
+  display: none !important;
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -100,9 +104,6 @@ header .waiting {
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
-}
-#reports[hidden] {
-  display: none;
 }
 #reports button {
   border: 0;
@@ -304,16 +305,10 @@ input[role="switch"]:checked::after {
   gap: 16px;
   padding: 12px 16px;
 }
-#settings-body section[hidden] {
-  display: none;
-}
 #settings-body section {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-#settings-dialog .dialog-foot[hidden] {
-  display: none;
 }
 #settings-dialog .dialog-foot {
   padding: 10px 16px;
@@ -609,10 +604,6 @@ body.stale #report-line {
   flex: 1;
   min-width: 260px;
 }
-/* An id rule outranks [hidden]: a toggled form stayed on screen. */
-#palette[hidden] {
-  display: none;
-}
 button[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
@@ -693,9 +684,6 @@ button[aria-pressed="true"] {
   align-items: center;
   padding: 8px 14px;
   border-top: 1px solid var(--line);
-}
-#report-line[hidden] {
-  display: none;
 }
 #report-line input {
   flex: 1;
@@ -886,6 +874,9 @@ main#board {
 }
 main#board:empty {
   padding: 0;
+}
+main#board > #pane:only-child {
+  grid-column: 1 / -1;
 }
 #pane {
   display: flex;
@@ -1269,10 +1260,6 @@ a {
   border-radius: 50%;
   display: inline-block;
   align-self: center;
-}
-/* A class display outranks [hidden]: a waiting ring stayed on screen. */
-.checks[hidden] {
-  display: none;
 }
 .checks.red {
   background: var(--danger);

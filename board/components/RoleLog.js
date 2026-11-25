@@ -11,10 +11,9 @@ export const RoleLog = ({ role, lines }) =>
   >
     <button class="back" data-back="">${t("pane.back")}</button>
     <div class="log-scroll">
-      ${
-        lines.length
-          ? html`<${LogLines} said=${lines.join("\n")} />`
-          : t("rolelog.empty", { role })
-      }
+      <${LogLines}
+        said=${lines.join("\n")}
+        empty=${t("rolelog.empty", { role })}
+      />
     </div>
   </section>`;

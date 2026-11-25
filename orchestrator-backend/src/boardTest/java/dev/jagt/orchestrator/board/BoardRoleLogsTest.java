@@ -120,6 +120,30 @@ class BoardRoleLogsTest extends BoardPageContext {
   }
 
   @Test
+  void emptyLogStandsWhereItsFirstEntryWillWithNoTaskFilterOrListOnAnEmptyBoard() {
+    Page page = openRoleLog("master", "{\"lines\":[],\"next\":0}");
+
+    assertThat(page.locator("#pane.role-log .log-lines > :first-child"))
+        .hasText("nothing logged by master yet");
+    assertThat(page.locator("#phases")).isHidden();
+    assertThat(page.locator("#tasks")).hasCount(0);
+
+    page.route(
+        Pattern.compile(".*/api/roles/master/log.*"),
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setContentType("application/json")
+                    .setBody(
+                        "{\"lines\":[\"2026-11-25 09:00:01Z INFO first step\"]," + "\"next\":1}")));
+    events.publishEvent(new RoleFeedWritten("master"));
+
+    assertThat(page.locator("#pane.role-log .log-lines > *")).hasCount(1);
+    assertThat(page.locator("#pane.role-log .log-lines > :first-child"))
+        .hasText(Pattern.compile("first step"));
+  }
+
+  @Test
   void refusalIsDangerWhileMoveAndNoteKeepQuietColours() {
     Page page =
         openRoleLog(
