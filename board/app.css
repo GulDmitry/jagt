@@ -590,7 +590,8 @@ button.primary:hover:not(:disabled) {
 }
 body.stale #board,
 body.stale #phases,
-body.stale #report-line {
+body.stale #report-line,
+.legend-key .stale {
   opacity: 0.5;
 }
 

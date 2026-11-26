@@ -51,8 +51,10 @@ const draftedTab = () => {
     span("badge required", t("tab.round.new")),
   );
   tab.setAttribute("role", "tab");
+  tab.setAttribute("aria-selected", "false");
   const plain = make("button", "", t("tab.overview"));
   plain.setAttribute("role", "tab");
+  plain.setAttribute("aria-selected", "true");
   return make("span", "tabs", "", plain, tab);
 };
 
@@ -71,7 +73,7 @@ export const cardRows = () => [
     "badges",
     span("badge required", "ship it"),
     span("badge optional", "read the round"),
-    span("badge problem", "NEEDS YOU"),
+    span("badge problem", "retry the run"),
     span("badge required stop", "lift the stop"),
     span("badge optional paused", "you can lift the pause"),
   ),

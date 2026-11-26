@@ -22,7 +22,7 @@ Text clears 4.5:1 and a control's edge 3:1 on `--panel` in both themes (`Palette
 - `--ci` `#6d28d9` / `#c4b5fd` — **the reviewers own it**: out of your hands, not blocked.
 - `--ok` `#166534` / `#86efac` — **nothing wrong here**: a step taken, or a thing working.
 - `--danger` `#b42318` / `#fca5a5` — **broken**: a failed run, a refused command, an outside condition holding a task.
-- `--accent` `#1d4ed8` / `#93b4ff` — **pressable / pressed**: hover, a primary button, a pressed filter, the open tab.
+- `--accent` `#1d4ed8` / `#93b4ff` — **pressable / pressed**: hover, a primary button, a pressed filter, `button.link`, the open tab.
 - `--muted` `#5f6672` / `#9aa3ad` — **not news**: labels, ages, a verdict with nothing wrong, a pause you made.
 - `--text` / `--line` / `--panel` / `--bg` / `--chip-bg` / `--you-bg` — structure, never meaning. A control's edge
   (input, select, switch, button) is `color-mix(in srgb, var(--text) 55%, var(--panel))`: `--line` is 1.4:1.
@@ -38,24 +38,24 @@ Text clears 4.5:1 and a control's edge 3:1 on `--panel` in both themes (`Palette
 |-----|-------|-------|-----------------------|
 | a plan or round to read, a verb to press | `.badge.required`, no glyph | `.status` | yes |
 | broken: a red run, an outside condition (`BROKEN`) | `.badge.problem` `!` in `--danger` | `.status`, no ring: a read ends it | yes |
-| jagt stopped it (`GUARD`) | `.badge.required.stop` `■` | `.status.stalled`, `--you` ring | yes |
-| you paused it (`PAUSE`) | `.badge.optional.paused` `‖` | `.status.paused`, dashed `--muted` | no |
+| jagt stopped it (`GUARD`) | `.badge.stop` `■` | `.status.stalled`, `--you` ring | yes |
+| you paused it (`PAUSE`) | `.badge.paused` `‖` | `.status.paused`, dashed `--muted` | no |
 | header | `.chip.bad`: a start cut short, a job failed, reach lost | `.chip.stalled` `■`: `act` stopped | `.chip.paused` `‖`: the board |
 
-- card edge, 3px — `article.you` / `.agent` / `.ci` / none; `.optional`, the quiet tier, drops the colour.
+- card edge, 3px — `article.you` / `.agent` / `.ci` / none, a `.row`'s own left border; `.optional`, the quiet tier, drops the colour.
 - `.status` chip — the state in words, its age inside it; `.status.live` green: the work is on a shared branch.
 - `--you` ring, also `.mr-age.stalled` / `.repos.stalled` — nothing will look again on its own: a poll ended, or a guard.
 - `button.again` `↻` after its label, `--ok` border (a ring on the primary): it ran and what it did is live.
 - `button.quiet` dashed `--muted` — pressed and changed nothing; ends when the card moves or it is pressed again.
-- dotted underline — `a.id`, `a.mr-age`: the text opens something.
+- dotted underline — `a.id`, `a.mr-age`, `a.task-link`: the text opens something.
 - `.checks`, 9px — `.green` a filled disc, `.red` a filled square, `.running` a hollow ring carrying the board's one
   `@keyframes` (`prefers-reduced-motion` safe); hollow means waiting everywhere, a said line or a retry pending.
-- `✓` on the request, or `.tick` closing `.repos`: approved.
+- `✓` on `.mr-age.approved`, or `.tick` closing `.repos`: approved.
 - in a round's replies — `.block` head, its `.verdict` word green FIXED / `--you` a question / grey pushed back; `.quote` muted.
 - `.tabs` — an `--accent` underline means open, nothing else; a `.badge.required` `new` pill on the Drafted tab:
   replies since you last opened it.
 - `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
-- `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.
+- `.group.yours .group-head` on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open.
 - `.doc .changed` bold with a left bar, `.doc .removed` muted struck — a plan line new, changed or gone since your approval.
 - `button.row-verb`, a terminal glyph — a row's `onRow` verb, `primary` filled only where it is your move.
@@ -64,7 +64,7 @@ Text clears 4.5:1 and a control's edge 3:1 on `--panel` in both themes (`Palette
 - `button.chip.log` — a running model role, a `▸` before its name; `.on` in `--accent` while its log stands in the pane.
 - `.badge.required` on `--you-bg` — the act waiting on you now; `.badge.optional` on `--chip-bg`, whenever you like.
 - `.log-time` in `--muted`, UTC, newest first, `.log-line` blocks 6px apart, a wrapped line hanging 9ch under its time;
-  `<UTC time> <level> <message> <fields>`, the level `--muted`; `.log-line.danger` a WARN or ERROR entry in `--danger`.
+  `<UTC time> <level> <message> <fields>`, `.log-level` `--muted`; `.log-line.danger` a WARN or ERROR entry in `--danger`.
 - `td.last.failed` in `--danger` — a job's last run failed.
 - toast edge, 3px — `.toast` `--ok`, `.toast.error` `--danger`: the verb ran, or was refused.
 - a verb's key drawn after its name (`data-key`); `button.apart` muted at the row's end until hovered.

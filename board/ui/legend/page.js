@@ -118,6 +118,8 @@ export const pageRows = () => [
     span("chip bad", t("assistant")),
     span("chip bad", "code host CLI not logged in"),
   ),
+  row("links", make("button", "link", "edit"), make("a", "task-link", "alpha")),
+  row("stale", span("stale", "board")),
   row("gear", gearButton(), checkedChoice()),
   row("logentry", logEntry("log-line", "INFO", t("sample.done"))),
   row("logfailure", logEntry("log-line danger", "ERROR", t("sample.refused"))),
