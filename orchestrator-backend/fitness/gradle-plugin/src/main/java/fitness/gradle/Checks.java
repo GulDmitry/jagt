@@ -193,6 +193,10 @@ final class Checks {
               task.getOptional().set(function.optional());
               task.getDirection().set(function.threshold().direction().name());
               task.getLimit().set(function.threshold().limit());
+              task.getGoverns().set(function.governs());
+              if (function.selectors().get("ratchet") instanceof Boolean ratchet) {
+                task.getRatchet().set(ratchet);
+              }
               Object hint = function.selectors().get("hint");
               if (hint != null) {
                 task.getHint().set(hint.toString());

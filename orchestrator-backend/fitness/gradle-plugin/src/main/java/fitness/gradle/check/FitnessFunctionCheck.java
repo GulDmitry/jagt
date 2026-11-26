@@ -31,8 +31,15 @@ public abstract class FitnessFunctionCheck extends DefaultTask {
   public abstract Property<Long> getLimit();
 
   @Input
+  public abstract Property<String> getGoverns();
+
+  @Input
   @Optional
   public abstract Property<String> getHint();
+
+  @Input
+  @Optional
+  public abstract Property<Boolean> getRatchet();
 
   @Input
   public abstract Property<Boolean> getOptional();
@@ -52,14 +59,19 @@ public abstract class FitnessFunctionCheck extends DefaultTask {
       return;
     }
     lastValues().record(getFitnessFunctionId().get(), measurement.value());
-    Map<String, Object> selectors =
-        getHint().isPresent() ? Map.of("hint", getHint().get()) : Map.of();
+    Map<String, Object> selectors = new java.util.LinkedHashMap<>();
+    if (getHint().isPresent()) {
+      selectors.put("hint", getHint().get());
+    }
+    if (getRatchet().isPresent()) {
+      selectors.put("ratchet", getRatchet().get());
+    }
     FitnessFunction function =
         new FitnessFunction(
             getFitnessFunctionId().get(),
             "",
             FitnessFunction.TOOL_ENGINE,
-            "count",
+            getGoverns().get(),
             new Threshold(Direction.valueOf(getDirection().get()), getLimit().get()),
             selectors,
             null,

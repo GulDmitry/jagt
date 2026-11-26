@@ -40,6 +40,7 @@ public final class FitnessFunctionReader {
           "per",
           "measure");
   private static final String HINT = "hint";
+  private static final String RATCHET = "ratchet";
   private static final String EXCEPTION = "exception";
   private static final String OPTIONAL = "optional";
   private static final Set<String> BOOLEANS = Set.of("interface", "static", "mutable");
@@ -92,7 +93,7 @@ public final class FitnessFunctionReader {
 
   private static Set<String> keys() {
     Set<String> keys = new HashSet<>(SELECTORS);
-    keys.addAll(List.of("engine", "fitness", "governs", "max", "min", "decision", "axes", OPTIONAL, HINT, EXCEPTION));
+    keys.addAll(List.of("engine", "fitness", "governs", "max", "min", "decision", "axes", OPTIONAL, HINT, EXCEPTION, RATCHET));
     return Set.copyOf(keys);
   }
 
@@ -162,6 +163,9 @@ public final class FitnessFunctionReader {
     }
     if (map.containsKey(OPTIONAL)) {
       selectors.put(OPTIONAL, Types.bool(key + "." + OPTIONAL, map.get(OPTIONAL)));
+    }
+    if (map.containsKey(RATCHET)) {
+      selectors.put(RATCHET, Types.bool(key + "." + RATCHET, map.get(RATCHET)));
     }
     if (map.containsKey(HINT)) {
       selectors.put(HINT, Types.string(key + "." + HINT, map.get(HINT)));

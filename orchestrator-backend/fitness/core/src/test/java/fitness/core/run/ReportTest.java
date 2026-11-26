@@ -48,6 +48,25 @@ class ReportTest {
     assertThat(failure).contains("lower max to 4");
   }
 
+  @Test
+  void aToolMeasuredCountBelowItsNumberAsksToLowerIt() {
+    FitnessFunction function = new TestFitnessFunctionBuilder().engine("tool").threshold(Direction.MAX, 8).build();
+    Report report = new Report(function, new Measurement(3, List.of()));
+
+    String failure = report.failure().orElseThrow();
+
+    assertThat(failure).contains("ports", "lower max to 3");
+  }
+
+  @Test
+  void aCountedKindMarkedNotToRatchetPassesBelowItsNumber() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder().engine("tool").selector("ratchet", false).threshold(Direction.MAX, 4).build();
+    Report report = new Report(function, new Measurement(3, List.of()));
+
+    assertThat(report.failure()).isEmpty();
+  }
+
   @ParameterizedTest(name = "{0} {1} {2} measured {3} passes: {4}")
   @CsvSource({
     "count, MAX, 5, 5, true",

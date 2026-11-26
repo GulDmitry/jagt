@@ -21,7 +21,7 @@ public record FitnessFunction(
     return COUNT.equals(governs)
         && threshold.direction() == Direction.MAX
         && threshold.limit() > 0
-        && !measuredByTool();
+        && !Boolean.FALSE.equals(selectors.get("ratchet"));
   }
 
   public boolean optional() {

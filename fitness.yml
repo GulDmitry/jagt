@@ -148,8 +148,8 @@ operational:
       gate-minutes-heavy: { engine: tool, tool: gradle, task: "boardTest,e2eTest,linuxDriverTest", per: gate, measure: minutes, governs: size, max: 10, decision: "0139", axes: { scope: holistic } }
       gate-minutes-stand: { engine: tool, tool: gradle, task: standTest, per: gate, measure: minutes, governs: size, max: 10, decision: "0139", axes: { scope: holistic } }
       ci-jobs-without-timeout: { fitness: CiJobTimeoutsFitness, governs: count, max: 0, decision: "0139", axes: { scope: holistic } }
-      unlimited-runs: { engine: tool, tool: gradle, task: pitest, kind: test-or-gate, measure: runs-without-time-limit, governs: count, max: 8 }
+      unlimited-runs: { engine: tool, tool: gradle, task: pitest, kind: test-or-gate, measure: runs-without-time-limit, governs: count, max: 8, decision: "0258" }
     resource-utilisation:
-      contexts-test: { engine: tool, tool: gradle, task: test, per: suite, measure: contexts, governs: count, max: 2, decision: "0187" }
-      contexts-board-test: { engine: tool, tool: gradle, task: boardTest, per: suite, measure: contexts, governs: count, max: 2, decision: "0187" }
-      contexts-e2e-test: { engine: tool, tool: gradle, task: e2eTest, per: suite, measure: contexts, governs: count, max: 4, decision: "0187" }
+      contexts-test: { engine: tool, tool: gradle, task: test, per: suite, measure: contexts, governs: count, max: 2, ratchet: false, decision: "0187" }
+      contexts-board-test: { engine: tool, tool: gradle, task: boardTest, per: suite, measure: contexts, governs: count, max: 2, ratchet: false, decision: "0187" }
+      contexts-e2e-test: { engine: tool, tool: gradle, task: e2eTest, per: suite, measure: contexts, governs: count, max: 4, ratchet: false, decision: "0187" }
