@@ -8,11 +8,16 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class FixedBugCommits {
 
   static final String CUTOFF = "ae9b1f0b758e615aea5a57006f1f4d089db18a49";
 
+  static final String POSTMORTEM_CUTOFF = "6969ccdd07149e212560f8c6e741721251380db1";
+
+  private static final List<String> POSTMORTEM_TRAILERS = List.of("Written", "Uncaught", "Unseen");
   private static final String RECORD = "\u001e";
   private static final String FIELD = "\u001f";
   private static final Pattern DEFECT_FAMILY = Pattern.compile("(?m)^Defect-family: [A-M]$");
@@ -26,10 +31,23 @@ public final class FixedBugCommits {
   record Commit(String sha, String message, List<String> files) {}
 
   public static List<String> defects() {
-    return commitsAfterCutoff().stream()
-        .map(FixedBugCommits::defect)
+    return Stream.concat(
+            commitsAfter(CUTOFF).stream().map(FixedBugCommits::defect),
+            commitsAfter(POSTMORTEM_CUTOFF).stream().map(FixedBugCommits::postmortem))
         .filter(defect -> !defect.isEmpty())
         .toList();
+  }
+
+  static String postmortem(Commit commit) {
+    if (!DEFECT_FAMILY.matcher(commit.message()).find()) {
+      return "";
+    }
+    return POSTMORTEM_TRAILERS.stream()
+        .filter(trailer ->
+            !Pattern.compile("(?m)^" + trailer + ": \\S.*$").matcher(commit.message()).find())
+        .map(trailer ->
+            commit.sha().substring(0, 9) + " carries Defect-family and no " + trailer + " trailer")
+        .collect(Collectors.joining("; "));
   }
 
   static String defect(Commit commit) {
@@ -60,7 +78,7 @@ public final class FixedBugCommits {
         .toList();
   }
 
-  private static List<Commit> commitsAfterCutoff() {
+  private static List<Commit> commitsAfter(String cutoff) {
     try {
       Process log =
           new ProcessBuilder(
@@ -68,7 +86,7 @@ public final class FixedBugCommits {
                   "-C",
                   "..",
                   "log",
-                  CUTOFF + "..HEAD",
+                  cutoff + "..HEAD",
                   "--name-only",
                   "--format=" + RECORD + "%H" + FIELD + "%B" + FIELD)
               .redirectError(Redirect.DISCARD)

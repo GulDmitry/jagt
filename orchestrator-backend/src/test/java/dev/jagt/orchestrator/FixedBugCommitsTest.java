@@ -96,4 +96,47 @@ class FixedBugCommitsTest {
         .extracting(Commit::files)
         .containsExactly(List.of("a.txt", "b/c.txt"), List.of("d.txt"));
   }
+
+  @Test
+  void defectFamilyCommitWithAllPostmortemTrailersPasses() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nWritten: abc1234\nUncaught: no rule test\nUnseen: no log\n",
+            List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.postmortem(fix)).isEmpty();
+  }
+
+  @Test
+  void defectFamilyCommitWithoutUncaughtTrailerNamesIt() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nWritten: abc1234\nUnseen: no log\n",
+            List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.postmortem(fix))
+        .isEqualTo("012345678 carries Defect-family and no Uncaught trailer");
+  }
+
+  @Test
+  void defectFamilyCommitWithEmptyWrittenAndNoUnseenNamesBoth() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nWritten: \nUncaught: no rule test\n",
+            List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.postmortem(fix))
+        .contains("no Written trailer")
+        .contains("no Unseen trailer");
+  }
+
+  @Test
+  void commitWithoutDefectFamilyNeedsNoPostmortem() {
+    Commit feature = new Commit(SHA, "A feature\n", List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.postmortem(feature)).isEmpty();
+  }
 }
