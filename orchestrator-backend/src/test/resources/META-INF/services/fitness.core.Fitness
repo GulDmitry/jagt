@@ -30,3 +30,4 @@ technical.maintainability.testability.TestNamingFitness
 technical.maintainability.testability.TestRootKindsFitness
 operational.performanceefficiency.timebehaviour.CiJobTimeoutsFitness
 technical.maintainability.testability.FixedBugCaseFitness
+technical.maintainability.testability.InstanceStateFitness

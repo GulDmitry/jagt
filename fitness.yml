@@ -126,6 +126,7 @@ technical:
       guard-is-the-statecharts: { engine: scan, set: all, glob: "**/*Guard.java", except: "**/flow/**,**/dev/jagt/statechart/**", per: name, governs: count, max: 0, hint: "guard is the statechart's transition condition (flow/, dev.jagt.statechart): name a precondition, a check or a boundary (docs/rules/glossary.md)" }
     testability:
       autowired-fields: { engine: archunit, set: all, kind: field, annotated: org.springframework.beans.factory.annotation.Autowired, governs: annotation, max: 0 }
+      instance-state-of-components: { fitness: InstanceStateFitness, governs: count, max: 43 }
       static-state: { engine: archunit, set: all, kind: field, static: true, mutable: true, except: "TaskAliasLogFilter,AbortedConnectionFilter", governs: count, max: 0 }
       post-construct-hooks: { engine: archunit, set: all, kind: method, annotated: jakarta.annotation.PostConstruct, except: AbortedConnectionFilter, governs: annotation, max: 0 }
       # StandClockTest reads real time (0055)
