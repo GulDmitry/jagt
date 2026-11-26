@@ -52,10 +52,12 @@ teardown() {
 }
 
 @test "a waiting call starts once the holder ends" {
-  "$script" sleep 1 &
-  sleep 0.3
-  GRADLE_SLOT_WAIT=10 run "$script" echo after
-  wait
+  export GRADLE_SLOTS=1
+  sleep 1 &
+  mkdir "$dir/1"
+  echo $! > "$dir/1/pid"
+  echo /elsewhere > "$dir/1/tree"
+  GRADLE_SLOT_WAIT=10 GRADLE_SLOT_POLL=0.2 run "$script" echo after
   [ "$status" -eq 0 ]
   [[ "$output" == *"after"* ]]
 }
@@ -68,13 +70,15 @@ teardown() {
   [[ "$output" == *"slot 2"* ]]
 }
 
-@test "a second call from the same tree waits while the first holds a slot" {
+# bats test_tags=exit:76
+@test "a second call from the same tree is refused naming the holder while the first holds a slot" {
   export GRADLE_SLOTS=2
   mkdir "$dir/1"
   echo $$ > "$dir/1/pid"
-  pwd -P > "$dir/1/tree"
-  GRADLE_SLOT_WAIT=1 run "$script" true
-  [ "$status" -eq 75 ]
+  git rev-parse --show-toplevel 2>/dev/null > "$dir/1/tree" || pwd -P > "$dir/1/tree"
+  run "$script" true
+  [ "$status" -eq 76 ]
+  [[ "$output" == *"pid $$"* ]]
 }
 
 @test "a call from another tree takes a free slot beside a held one" {
