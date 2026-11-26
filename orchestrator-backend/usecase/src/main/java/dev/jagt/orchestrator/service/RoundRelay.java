@@ -46,13 +46,15 @@ public class RoundRelay {
       checked = admission.status();
     }
     String brief =
-        RoundBrief.of(
-            mrUrl,
-            r,
-            told,
-            stops.sinceLast(taskId, r),
-            authors.lines(taskId, source, mrUrl, r.discussion().threads()),
-            sessionBrief);
+        RoundBrief.named(
+            RoundBrief.of(
+                mrUrl,
+                r,
+                told,
+                stops.sinceLast(taskId, r),
+                authors.lines(taskId, source, mrUrl, r.discussion().threads()),
+                sessionBrief),
+            stops.tag(r, tip));
     return switch (stops.round(taskId, r, brief, tip)) {
       case STOPPED -> stopped(read, said);
       case UNCHANGED -> unchanged(read, said);
@@ -88,6 +90,6 @@ public class RoundRelay {
         read
             + ", checks "
             + said
-            + " — unchanged since the last relay, so the agent was left alone");
+            + " — unchanged since the last round the agent answered, so it was left alone");
   }
 }

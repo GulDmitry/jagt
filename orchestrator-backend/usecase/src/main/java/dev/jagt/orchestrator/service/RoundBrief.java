@@ -69,6 +69,11 @@ final class RoundBrief {
     return brief.toString().stripTrailing();
   }
 
+  /** The brief asking the session to name {@code tag}; unchanged where there is none. */
+  static String named(String brief, String tag) {
+    return tag.isBlank() ? brief : brief + "\nName `round " + tag + "` in your report's message.";
+  }
+
   private static String section(SessionBrief sessionBrief, Step step) {
     return sessionBrief
         .section(step)

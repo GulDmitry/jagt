@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.review.Untaken;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
@@ -252,6 +253,22 @@ class AgentSessionsRelayTest {
     assertThat(Files.readString(worktree.resolve("task_context.md")))
         .isEqualTo("NEW ROUND: fix the pipeline")
         .doesNotContain("STALE");
+  }
+
+  @Test
+  void carriesAnUntakenReviewRoundBesideTheInstructionThatFollowsIt() throws Exception {
+    Path worktree = Files.createDirectories(root.resolve("ABC-42-demo"));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING)
+            .untaken(
+                new Untaken("a1b2c3d4e5f60718", List.of("105840"), "ROUND: answer note 105840"))
+            .build());
+
+    sessions.writeTaskContext("ABC-42", "SHIP: commit and push");
+
+    assertThat(Files.readString(worktree.resolve("task_context.md")))
+        .contains("SHIP: commit and push", "ROUND: answer note 105840");
   }
 
   @Test

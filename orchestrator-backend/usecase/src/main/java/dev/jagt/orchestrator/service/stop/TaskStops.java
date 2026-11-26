@@ -13,11 +13,13 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.review.LoopBreaker;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import dev.jagt.orchestrator.task.review.RoundTrail;
+import dev.jagt.orchestrator.task.review.Untaken;
 import dev.jagt.orchestrator.task.stop.StopTriage;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Clock;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -119,14 +121,24 @@ public class TaskStops {
   }
 
   /**
-   * A round identical to the last one relayed, bringing no new note on green checks, or met by a
-   * standing question, is not news.
+   * The name a report gives the round it answers; blank where a fact the round turns on is unknown,
+   * which no report can then name.
+   */
+  public String tag(ReviewFacts facts, String tip) {
+    String key = factKey(facts, failing(facts), facts.noteFingerprint(), tip);
+    return key.isEmpty() ? "" : new Untaken(Turn.digestOf(key), List.of(), "").tag();
+  }
+
+  /**
+   * A round identical to the last one the session answered, bringing no new note on green checks,
+   * or met by a standing question, is not news; one the session never named is relayed again.
    */
   public Relay round(String taskId, ReviewFacts facts, String brief, String tip) {
     String notes = facts.noteFingerprint();
     String failing = failing(facts);
     String key = factKey(facts, failing, notes, tip);
     String digest = Turn.digestOf(key.isEmpty() ? brief : key);
+    Untaken untaken = key.isEmpty() ? null : new Untaken(digest, facts.noteKey().facts(), brief);
     AtomicReference<Relay> verdict = new AtomicReference<>(Relay.RELAY);
     LoopBreaker breaker = policy.breakers().current();
     Optional<TaskStop> stop =
@@ -136,16 +148,7 @@ public class TaskStops {
               verdict.set(verdictOn(task, digest, notes, failing));
               return verdict.get() != Relay.RELAY
                   ? task
-                  : task.withTrail(
-                      task.round()
-                          .trailOrNone()
-                          .withRound(
-                              new RoundTrail.Round(
-                                  clock.millis(),
-                                  facts.discussion().threads().size(),
-                                  failing,
-                                  digest,
-                                  notes)));
+                  : task.withTrail(grown(task, facts, failing, digest, notes)).withUntaken(untaken);
             },
             task ->
                 verdict.get() != Relay.RELAY
@@ -155,8 +158,19 @@ public class TaskStops {
     return stop.isPresent() ? Relay.STOPPED : verdict.get();
   }
 
-  private static Relay verdictOn(TaskState task, String digest, String notes, String failing) {
+  private RoundTrail grown(
+      TaskState task, ReviewFacts facts, String failing, String digest, String notes) {
     RoundTrail trail = task.round().trailOrNone();
+    boolean again = task.round().untaken() != null && trail.relayed(digest);
+    return again
+        ? trail
+        : trail.withRound(
+            new RoundTrail.Round(
+                clock.millis(), facts.discussion().threads().size(), failing, digest, notes));
+  }
+
+  private static Relay verdictOn(TaskState task, String digest, String notes, String failing) {
+    RoundTrail trail = task.round().answeredTrail();
     if (task.standing().report().asks() && !trail.newNotes(notes)) {
       return Relay.ASKING;
     }
@@ -178,7 +192,7 @@ public class TaskStops {
   public String sinceLast(String taskId, ReviewFacts facts) {
     return stateService
         .task(taskId)
-        .map(task -> task.round().trailOrNone().sinceLast(facts))
+        .map(task -> task.round().answeredTrail().sinceLast(facts))
         .orElse("");
   }
 

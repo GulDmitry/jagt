@@ -21,7 +21,8 @@ public record Round(
     @Nullable Boolean approved,
     // Null until an auto-review ping was sent.
     @Nullable ToldOnce told,
-    @Nullable RoundTrail trail) {
+    @Nullable RoundTrail trail,
+    @Nullable Untaken untaken) {
 
   /** An unset (null) per-task flag follows the config default. */
   public boolean autoReviewEnabled(boolean configDefault) {
@@ -32,6 +33,11 @@ public record Round(
     return trail == null ? RoundTrail.none() : trail;
   }
 
+  /** The trail without a round the session has not answered yet. */
+  public RoundTrail answeredTrail() {
+    return untaken == null ? trailOrNone() : trailOrNone().withoutLast();
+  }
+
   public ToldOnce toldOrNone() {
     return told == null ? ToldOnce.none() : told;
   }
@@ -40,20 +46,33 @@ public record Round(
   public Round withRequestOpenedAt(long openedAt) {
     return openedAt <= 0
         ? this
-        : new Round(mrCreatedAt, openedAt, lastPolledAt, autoReview, approved, told, trail);
+        : new Round(
+            mrCreatedAt, openedAt, lastPolledAt, autoReview, approved, told, trail, untaken);
   }
 
   public Round withLastPolledAt(long polledAt) {
-    return new Round(mrCreatedAt, requestOpenedAt, polledAt, autoReview, approved, told, trail);
+    return new Round(
+        mrCreatedAt, requestOpenedAt, polledAt, autoReview, approved, told, trail, untaken);
   }
 
   public Round withApproved(@Nullable Boolean verdict) {
-    return new Round(mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, verdict, told, trail);
+    return new Round(
+        mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, verdict, told, trail, untaken);
   }
 
   public Round withTrail(RoundTrail changed) {
     return new Round(
-        mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, changed);
+        mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, changed, untaken);
+  }
+
+  public Round withUntaken(@Nullable Untaken changed) {
+    return new Round(
+        mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, trail, changed);
+  }
+
+  /** A report naming the untaken round ends it. */
+  public Round answeredBy(@Nullable String report) {
+    return untaken != null && untaken.namedBy(report) ? withUntaken(null) : this;
   }
 
   public Round withTold(ToldOnce changed) {
@@ -64,6 +83,7 @@ public record Round(
         autoReview,
         approved,
         changed.isEmpty() ? null : changed,
-        trail);
+        trail,
+        untaken);
   }
 }

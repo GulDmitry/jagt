@@ -88,14 +88,15 @@ public class AgentStatusReports {
                 shortMessage,
                 (was, next) ->
                     closed(
-                        signed(
-                            stateService
-                                .reducer()
-                                .repoAsked(
-                                    planned(was, linked(was, next, url, requestsByProject)),
-                                    said.needsProject())
-                                .judged(said.switches())),
-                        closesTurn),
+                            signed(
+                                stateService
+                                    .reducer()
+                                    .repoAsked(
+                                        planned(was, linked(was, next, url, requestsByProject)),
+                                        said.needsProject())
+                                    .judged(said.switches())),
+                            closesTurn)
+                        .roundAnsweredBy(closesTurn ? said.detail() : null),
                 verificationOwed)
             .orElseThrow(() -> Refusal.noSuchTask(taskId));
     if (url != null && FlowRules.outForReview(written.now())) {

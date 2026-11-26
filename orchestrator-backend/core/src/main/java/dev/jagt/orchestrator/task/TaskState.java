@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.review.Round;
 import dev.jagt.orchestrator.task.review.RoundTrail;
+import dev.jagt.orchestrator.task.review.Untaken;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.session.Work;
 import dev.jagt.orchestrator.task.stop.RefusalKind;
@@ -90,6 +91,7 @@ public record TaskState(
         .approved(round.approved())
         .told(round.told())
         .trail(round.trail())
+        .untaken(round.untaken())
         .pipelineStatus(checks.pipelineStatus())
         .checksUnread(checks.checksUnread())
         .checksTip(checks.checksTip())
@@ -462,13 +464,24 @@ public record TaskState(
   }
 
   /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
+  public TaskState withUntaken(@Nullable Untaken untaken) {
+    return withRound(round.withUntaken(untaken));
+  }
+
+  /** The untaken round, unless {@code report} names it. */
+  public TaskState roundAnsweredBy(@Nullable String report) {
+    return withRound(round.answeredBy(report));
+  }
+
+  /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
   public TaskState withStop(TaskStop stop) {
     return withWork(work.withStop(stop));
   }
 
   /** The stop cleared and the trail counting anew from {@code now}. */
   public TaskState lifted(long now) {
-    return withRound(round.withTrail(RoundTrail.liftedAt(now))).withWork(work.lifted());
+    return withRound(round.withTrail(RoundTrail.liftedAt(now)).withUntaken(null))
+        .withWork(work.lifted());
   }
 
   /** The conflict this task stands in now, as its deployment records it. */
@@ -622,6 +635,7 @@ public record TaskState(
     private @Nullable Boolean approved;
     private @Nullable ToldOnce told;
     private @Nullable RoundTrail trail;
+    private @Nullable Untaken untaken;
     private @Nullable String pipelineStatus;
     private List<ChecksUnread> checksUnread = List.of();
     private @Nullable String checksTip;
@@ -732,6 +746,11 @@ public record TaskState(
 
     public TaskStateBuilder trail(@Nullable RoundTrail trail) {
       this.trail = trail;
+      return this;
+    }
+
+    public TaskStateBuilder untaken(@Nullable Untaken untaken) {
+      this.untaken = untaken;
       return this;
     }
 
@@ -863,7 +882,15 @@ public record TaskState(
           repos,
           new Standing(status, lastActiveTimestamp, message, report, opened),
           new Ticket(alias, title, ticketUrl, baseBranch, openedBy),
-          new Round(mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, trail),
+          new Round(
+              mrCreatedAt,
+              requestOpenedAt,
+              lastPolledAt,
+              autoReview,
+              approved,
+              told,
+              trail,
+              untaken),
           new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries, pipelineUrl),
           new Holds(
               planGate, probes, switches, gitTrust, refusals, usage, agentSpend, planApproved),

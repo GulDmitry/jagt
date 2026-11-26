@@ -55,6 +55,10 @@ public record RoundTrail(List<Round> rounds, long since) {
     return new RoundTrail(List.of(), now);
   }
 
+  public RoundTrail withoutLast() {
+    return rounds.isEmpty() ? this : new RoundTrail(rounds.subList(0, rounds.size() - 1), since);
+  }
+
   public RoundTrail withRound(Round round) {
     List<Round> grown = new ArrayList<>(rounds);
     grown.add(round);

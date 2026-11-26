@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.service.session.LinkRefusals;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.review.Untaken;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
@@ -269,6 +270,28 @@ class AgentStatusReportsTest {
     String answer = reports.verified(true, "checks green", "ABC-1");
 
     assertThat(answer).startsWith("Task ABC-1 -> REVIEW_PENDING (checks green)");
+  }
+
+  @Test
+  void answersTheUntakenRoundOnlyWhereTheSessionsReportNamesItsTag() {
+    TaskState working =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .untaken(new Untaken("a1b2c3d4e5f60718", List.of(), "ROUND"))
+            .build();
+    state.putTask("ABC-1", working);
+    state.putTask("ABC-2", working);
+    when(configService.load()).thenReturn(ConfigFile.defaults());
+
+    reports.report(
+        new AgentStatusMessage("IN_PROGRESS", "answered the previous round", null, null, Map.of()),
+        "ABC-1");
+    reports.report(
+        new AgentStatusMessage("IN_PROGRESS", "done, round a1b2c3d4", null, null, Map.of()),
+        "ABC-2");
+
+    assertThat(state.task("ABC-1").orElseThrow().round().untaken()).isNotNull();
+    assertThat(state.task("ABC-2").orElseThrow().round().untaken()).isNull();
   }
 
   @Test

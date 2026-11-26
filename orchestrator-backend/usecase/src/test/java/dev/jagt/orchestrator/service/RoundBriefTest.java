@@ -352,4 +352,18 @@ class RoundBriefTest {
 
     assertThat(brief).contains("</outside>\nAuthor lines").contains("\nAuthor: bot review-bot\n");
   }
+
+  @Test
+  void asksTheSessionToNameTheRoundWhereItHasTheTag() {
+    String named = RoundBrief.named("Review round for http://mr/1.", "a1b2c3d4");
+
+    assertThat(named).endsWith("Name `round a1b2c3d4` in your report's message.");
+  }
+
+  @Test
+  void leavesTheBriefAsItIsWhereTheRoundHasNoTag() {
+    String named = RoundBrief.named("Review round for http://mr/1.", "");
+
+    assertThat(named).isEqualTo("Review round for http://mr/1.");
+  }
 }

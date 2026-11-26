@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.worktree.FileStamps;
 import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.review.Untaken;
 import dev.jagt.orchestrator.task.text.Ansi;
 import dev.jagt.orchestrator.task.usage.ModelTier;
 import java.nio.file.Path;
@@ -348,6 +349,16 @@ public class AgentSessions implements SessionLines {
     }
   }
 
+  private static String withUntakenRound(TaskState task, String instructions) {
+    Untaken untaken = task.round().untaken();
+    return untaken == null || instructions.contains(untaken.brief())
+        ? instructions
+        : instructions + UNTAKEN + untaken.brief();
+  }
+
+  private static final String UNTAKEN =
+      "\n\n--- a review round the session has not answered yet ---\n\n";
+
   private static final String UNDER =
       "\n\n--- added by jagt; the instruction above still stands ---\n\n";
 
@@ -407,7 +418,8 @@ public class AgentSessions implements SessionLines {
         + " re-entered to read and follow them.";
   }
 
-  private void write(String taskId, TaskState task, String instructions) {
+  private void write(String taskId, TaskState task, String given) {
+    String instructions = withUntakenRound(task, given);
     Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
     // One relay at a time per task: interleaving two writes to one file loses an instruction.
     synchronized (windows.contextLock(taskId)) {

@@ -83,6 +83,7 @@ class RoundRelayTest {
     when(relayingStops.round(anyString(), any(), anyString(), anyString()))
         .thenReturn(TaskStops.Relay.RELAY);
     when(relayingStops.sinceLast(anyString(), any())).thenReturn("");
+    when(relayingStops.tag(any(), anyString())).thenReturn("");
   }
 
   @Test
@@ -239,7 +240,7 @@ class RoundRelayTest {
         relay.relay("ABC-42", RoundSource.REQUEST, "http://mr/1", round, "success", "");
 
     assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
-    assertThat(again.message()).contains("unchanged since the last relay");
+    assertThat(again.message()).contains("unchanged since the last round the agent answered");
   }
 
   @Test

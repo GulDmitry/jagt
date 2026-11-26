@@ -153,7 +153,8 @@ record StoredTask(
         round.autoReview(),
         round.approved(),
         LegacyTold.of(round.told(), work.turn()),
-        Loop.trail(round.trail(), unmigrated.loop()));
+        Loop.trail(round.trail(), unmigrated.loop()),
+        round.untaken());
   }
 
   private Checks migratedChecks() {

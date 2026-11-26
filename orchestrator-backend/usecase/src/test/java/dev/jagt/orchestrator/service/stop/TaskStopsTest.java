@@ -250,6 +250,28 @@ class TaskStopsTest {
     assertThat(state.task("ABC-42").orElseThrow().round().trailOrNone().rounds()).hasSize(1);
   }
 
+  @ParameterizedTest
+  @CsvSource({
+    "answered the previous round, RELAY",
+    "fixed note_105840, UNCHANGED",
+  })
+  void relaysTheRoundAgainUnlessTheSessionsReportNamedIt(String report, TaskStops.Relay expected) {
+    state.putTask("ABC-42", polling);
+    ReviewFacts round =
+        new ReviewFacts(
+            openRequest,
+            new ReviewFacts.Pipeline("success", "", ""),
+            new ReviewFacts.Discussion(
+                List.of("https://host/mr/1#note_1"), List.of(), List.of("note_105840")));
+    stops.round("ABC-42", round, "brief", "");
+    state.updateTask("ABC-42", task -> task.roundAnsweredBy(report));
+
+    TaskStops.Relay again = stops.round("ABC-42", round, "brief", "");
+
+    assertThat(again).isEqualTo(expected);
+    assertThat(state.task("ABC-42").orElseThrow().round().trailOrNone().rounds()).hasSize(1);
+  }
+
   @Test
   void recordsTheFirstLineOfTheFailureOnlyForRedRound() {
     state.putTask("ABC-42", polling);
@@ -297,6 +319,7 @@ class TaskStopsTest {
                 List.of("note_7")));
 
     stops.round("ABC-42", first, "brief with one copy", "");
+    state.updateTask("ABC-42", task -> task.roundAnsweredBy("answered note_7"));
     TaskStops.Relay again = stops.round("ABC-42", second, "brief with another copy", "");
 
     assertThat(again).isEqualTo(TaskStops.Relay.UNCHANGED);
@@ -342,6 +365,8 @@ class TaskStopsTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
     stops.round("ABC-42", first, "brief worded one way", "api=a1b2c3");
+    state.updateTask(
+        "ABC-42", task -> task.roundAnsweredBy("round " + stops.tag(first, "api=a1b2c3")));
     TaskStops.Relay again = stops.round("ABC-42", second, "brief worded another way", "api=a1b2c3");
 
     assertThat(again).isEqualTo(TaskStops.Relay.UNCHANGED);
@@ -612,6 +637,7 @@ class TaskStopsTest {
                 List.of("https://host/mr/1#note_1"), List.of(), List.of("note_1"))),
         "brief 1",
         "");
+    state.updateTask("ABC-42", task -> task.roundAnsweredBy("answered note_1"));
     ReviewFacts next =
         new ReviewFacts(
             openRequest,
