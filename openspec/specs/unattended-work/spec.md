@@ -151,9 +151,9 @@ closes a task whose item reached `doneStatus`.
 - **THEN** it reads none; a failed read is asked again only in the next stint
 
 ### Requirement: A task has a ceiling of unattended moves an hour
-jagt SHALL count, per task, its unasked moves in the last hour since its last `lift`: history steps by the Master, auto-review, the tracker or a
-retry. A board press or a session's own report SHALL NOT count. At `loopBreaker.perHour` (default 20) the next Master press, conflict deploy,
-auto-review poll or round SHALL NOT be made. The task SHALL stop, its status kept, as `PACE`. A human press SHALL never be refused.
+jagt SHALL count, per task, the moves of the last hour since its last `lift` whose `ActionOrigin` is `unattended()`; a board press,
+palette command, root session or report is none. At `loopBreaker.perHour` (default 20) the next Master press, conflict deploy, auto-review
+poll or round SHALL NOT be made. The task SHALL stop as `PACE`, its status kept. A human press SHALL never be refused.
 
 #### Scenario: Too many moves in an hour
 - **WHEN** ABC-42 made 20 unattended moves in the last hour

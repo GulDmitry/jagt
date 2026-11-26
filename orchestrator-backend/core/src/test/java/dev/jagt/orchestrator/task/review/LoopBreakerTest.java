@@ -366,7 +366,7 @@ class LoopBreakerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(names = {"MASTER", "AUTO_REVIEW", "TRACKER", "JAGT"})
+  @EnumSource(names = {"MASTER", "ACCEPTANCE", "AUTO_REVIEW", "TRACKER", "JAGT", "CODE_HOST"})
   void countsTheMovesOfEveryUnattendedOrigin(ActionOrigin origin) {
     List<StatusChange> history =
         java.util.stream.IntStream.range(0, 20)
@@ -379,7 +379,7 @@ class LoopBreakerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(names = {"BOARD", "PALETTE", "MCP"})
+  @EnumSource(names = {"BOARD", "PALETTE", "MCP", "ROOT"})
   void countsNoMoveSessionOrTheHumanMade(ActionOrigin origin) {
     List<StatusChange> history =
         java.util.stream.IntStream.range(0, 20)

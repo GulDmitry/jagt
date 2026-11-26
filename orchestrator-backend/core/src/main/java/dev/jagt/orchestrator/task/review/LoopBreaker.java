@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.task.review;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
-import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Duration;
@@ -10,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.jspecify.annotations.Nullable;
 
 /**
  * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that
@@ -56,7 +54,9 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour,
   public Optional<TaskStop> beforeMove(List<StatusChange> history, RoundTrail trail, long now) {
     long from = Math.max(trail.since(), now - MOVE_WINDOW.toMillis());
     long moved =
-        history.stream().filter(move -> move.at() > from && unattended(move.origin())).count();
+        history.stream()
+            .filter(move -> move.at() > from && move.origin() != null && move.origin().unattended())
+            .count();
     return moved < perHour
         ? Optional.empty()
         : Optional.of(
@@ -64,15 +64,6 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour,
                 TaskStop.Trigger.PACE,
                 now,
                 moved + " unattended moves in 1h; the next one was not made"));
-  }
-
-  private static boolean unattended(@Nullable ActionOrigin origin) {
-    return origin == ActionOrigin.MASTER
-        || origin == ActionOrigin.ACCEPTANCE
-        || origin == ActionOrigin.AUTO_REVIEW
-        || origin == ActionOrigin.TRACKER
-        || origin == ActionOrigin.JAGT
-        || origin == ActionOrigin.CODE_HOST;
   }
 
   public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {

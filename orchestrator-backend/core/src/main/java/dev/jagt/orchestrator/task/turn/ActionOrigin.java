@@ -5,28 +5,39 @@ import java.util.Locale;
 
 /** Who asked for a status change. */
 public enum ActionOrigin {
-  BOARD,
+  BOARD(false),
   /** Free text a model mapped to a command, whichever surface it was typed into. */
-  PALETTE,
+  PALETTE(false),
   /** An MCP call from a task's own session, reporting its progress. */
-  MCP,
+  MCP(false),
   /** The root session, holding the Master token, acting on a task it does not run. */
-  ROOT,
-  AUTO_REVIEW,
+  ROOT(false),
+  AUTO_REVIEW(true),
   /** The Master session acting where a human would have. */
-  MASTER,
+  MASTER(true),
   /** The acceptance check sending the rows it did not meet back to the session. */
   @JsonAlias("QA")
-  ACCEPTANCE,
+  ACCEPTANCE(true),
   /** A stage the tracker itself reports, which is nobody's judgement and so nobody's to hold. */
-  TRACKER,
+  TRACKER(true),
   /**
    * jagt's own deterministic move on the code host: the re-run of a pipeline that died on
    * infrastructure.
    */
-  JAGT,
+  JAGT(true),
   /** The approval of a review request, read from the code host. */
-  CODE_HOST;
+  CODE_HOST(true);
+
+  private final boolean unattended;
+
+  ActionOrigin(boolean unattended) {
+    this.unattended = unattended;
+  }
+
+  /** Whether a move of this origin was made without a human asking for it. */
+  public boolean unattended() {
+    return unattended;
+  }
 
   /** Whether a system outside jagt's own surfaces, not a human's press, opened the task. */
   public boolean outside() {
