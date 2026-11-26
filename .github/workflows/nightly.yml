@@ -1,7 +1,7 @@
 # What a pull request's CI and the local gate leave out: repeated, cold, long, live. Every job but install runs its line through
 # scripts/linux-suite.sh <job>, the local twin, online; the cache only speeds it up, the Central mirror (decision 0235) absorbs
 # the rate limit.
-# A red opens one issue (the report job); nothing here reruns. docs/rules/ci.md, tier T4.
+# A red opens one issue (the report job), a green closes every open one (the close job); nothing here reruns. docs/rules/ci.md, tier T4.
 name: nightly
 
 on:
@@ -185,3 +185,24 @@ jobs:
           else
             gh issue create --repo "$GITHUB_REPOSITORY" --label nightly --title "nightly red" --body "Red: $RUN"
           fi
+
+  close:
+    name: close the night's issues on a green night
+    if: success()
+    needs: [stand, e2e, properties, scan, install]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: close every open nightly issue, naming this run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for issue in $(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label nightly --json number -q '.[].number'); do
+            gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Green again: $RUN"
+          done

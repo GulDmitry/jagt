@@ -12,7 +12,7 @@ A local green predicts a CI green. CI adds no check the local gate lacks and tak
 | T1 local gate | every job a pull request runs, in CI's image, online, time ceilings on | `ci-local.sh`, jobs by name | the session, before a push | fix before the push |
 | T2 pull request | T1's commands, Windows and macOS install, CodeQL; a job timeout and no other limit | one `./gradlew` line or script per job | GitHub, per push to a request | a divergence when T1 was green |
 | T3 main | publish the tree T2 proved: the version read and tree equality with the request head | `release` job | GitHub, on a merge | a publish failure |
-| T4 nightly | what the default T1 run leaves out: long, repeated, cold, live | `nightly.yml` jobs, each with a local twin | GitHub, once a night | an issue opens (`nightly` label), never a rerun |
+| T4 nightly | what the default T1 run leaves out: long, repeated, cold, live | `nightly.yml` jobs, each with a local twin | GitHub, once a night | an issue opens (`nightly` label), the next green night closes it, never a rerun |
 | T5 weekly and release gate | base images, Scorecard, live stand, `promptEval`, `roleEval` | named workflows, `standTest` | schedule, the release | a task opens before the release |
 
 ## The stability policy

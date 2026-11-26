@@ -240,7 +240,7 @@ class CiWorkflowTest {
                 CiWorkflow.jobs().entrySet().stream()
                     .filter(job -> Set.of("test", "heavy", "stand").contains(job.getKey())),
                 CiWorkflow.nightlyJobs().entrySet().stream()
-                    .filter(job -> !Set.of("install", "report").contains(job.getKey())))
+                    .filter(job -> !Set.of("install", "report", "close").contains(job.getKey())))
             .flatMap(
                 job -> ((List<?>) Objects.requireNonNull(job.getValue().get("steps"))).stream())
             .map(step -> ((Map<?, ?>) step).get("run"))
@@ -365,7 +365,8 @@ class CiWorkflowTest {
   @Test
   void runsOnlyWhatTheLocalGateCannotInTheNightly() {
     assertThat(CiWorkflow.nightlyJobs().keySet())
-        .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install", "report");
+        .containsExactlyInAnyOrder(
+            "stand", "e2e", "properties", "scan", "install", "report", "close");
   }
 
   @Test
@@ -442,8 +443,10 @@ class CiWorkflowTest {
             .collect(Collectors.toSet());
 
     assertThat(nightly.get("permissions")).isEqualTo(Map.of("contents", "read"));
-    assertThat(widened).containsExactly("report");
+    assertThat(widened).containsExactlyInAnyOrder("report", "close");
     assertThat(Objects.requireNonNull(CiWorkflow.nightlyJobs().get("report")).get("permissions"))
+        .isEqualTo(Map.of("issues", "write"));
+    assertThat(Objects.requireNonNull(CiWorkflow.nightlyJobs().get("close")).get("permissions"))
         .isEqualTo(Map.of("issues", "write"));
   }
 
@@ -455,6 +458,18 @@ class CiWorkflowTest {
     assertThat(report.get("needs"))
         .asInstanceOf(list(String.class))
         .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install");
+  }
+
+  @Test
+  void closesTheOpenNightlyIssuesNamingTheRunWhenEveryNightlyJobIsGreen() {
+    Map<String, Object> close = Objects.requireNonNull(CiWorkflow.nightlyJobs().get("close"));
+
+    assertThat(close.get("if")).isEqualTo("success()");
+    assertThat(close.get("needs"))
+        .asInstanceOf(list(String.class))
+        .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install");
+    assertThat(String.valueOf(close.get("steps")))
+        .contains("gh issue close", "--label nightly", "github.run_id");
   }
 
   @Test
