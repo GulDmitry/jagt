@@ -2,7 +2,8 @@
 # The local twin of .github/workflows/codeql.yml: the CodeQL CLI of the bundle the pinned action downloads, over the same
 # databases (java-kotlin traced over gateCodeql, javascript-typescript without a build), config and default query suite,
 # ending in the same severity-error rule (codeql-errors.sh). Runs in CI's image from ci-local.sh; the bundle is cached
-# under the Gradle home and verified by checksum.
+# under the Gradle home and verified by checksum. It scans a clone of HEAD, as CI scans its checkout: never an
+# ignored or untracked file of the working tree.
 # Usage: scripts/codeql-local.sh      (from orchestrator-backend)
 # exits: 0 1
 set -euo pipefail
@@ -42,12 +43,15 @@ analyse() {
         --output="$work/$1.sarif"
 }
 
-cd "$root/orchestrator-backend"
-"$codeql" database create "$work/java-kotlin" --language=java-kotlin --build-mode=manual --source-root="$root" \
+src="$work/src"
+git clone --quiet --shared --no-checkout "$root" "$src"
+git -C "$src" checkout --quiet --detach "$(git -C "$root" rev-parse HEAD)"
+cd "$src/orchestrator-backend"
+"$codeql" database create "$work/java-kotlin" --language=java-kotlin --build-mode=manual --source-root="$src" \
     --codescanning-config="$config" --threads=0 \
-    --command="$root/orchestrator-backend/gradlew -p $root/orchestrator-backend --no-daemon --no-build-cache --rerun-tasks gateCodeql"
+    --command="$src/orchestrator-backend/gradlew -p $src/orchestrator-backend --no-daemon --no-build-cache --rerun-tasks gateCodeql"
 analyse java-kotlin
 "$codeql" database create "$work/javascript-typescript" --language=javascript-typescript --build-mode=none \
-    --source-root="$root" --codescanning-config="$config" --threads=0
+    --source-root="$src" --codescanning-config="$config" --threads=0
 analyse javascript-typescript
 "$here/codeql-errors.sh" "$work"/*.sarif

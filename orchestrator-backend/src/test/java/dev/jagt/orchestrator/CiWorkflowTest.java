@@ -845,11 +845,20 @@ class CiWorkflowTest {
         .contains("sha256sum -c")
         .contains("--codescanning-config=\"$config\"")
         .contains(
-            "-p $root/orchestrator-backend --no-daemon --no-build-cache --rerun-tasks gateCodeql\"")
+            "-p $src/orchestrator-backend --no-daemon --no-build-cache --rerun-tasks gateCodeql\"")
         .contains("--language=javascript-typescript --build-mode=none")
         .contains("codeql-errors.sh");
     assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
         .contains("codeql) echo 'scripts/codeql-local.sh' ;;");
+  }
+
+  @Test
+  void scansCodeqlLocallyOverTheCommittedHeadNeverTheWorkingTreesIgnoredFiles() {
+    String script = SourceRoots.read(Path.of("scripts/codeql-local.sh"));
+
+    assertThat(script)
+        .contains("git clone --quiet --shared --no-checkout \"$root\" \"$src\"")
+        .doesNotContain("--source-root=\"$root\"");
   }
 
   @Test
