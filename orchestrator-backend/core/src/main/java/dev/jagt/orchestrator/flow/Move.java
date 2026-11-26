@@ -61,6 +61,16 @@ public record Move(
         && round.arbiter().may(MasterRight.LIFT)) {
       return arbiterDecidesStop(rules, status, facts);
     }
+    if (facts.hold().paused()) {
+      return new Move(
+          phaseOf(status),
+          Owner.YOU,
+          Attention.OPTIONAL,
+          "you can lift the pause",
+          rules.allowed(status, facts),
+          TaskAction.LIFT,
+          "you paused this task; lift your pause to let jagt move it again");
+    }
     if (facts.hold().stopped()) {
       return new Move(
           phaseOf(status),

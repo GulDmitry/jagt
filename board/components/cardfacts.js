@@ -6,6 +6,8 @@ import { t } from "../core/i18n.js";
  * @typedef {import("../core/store.js").Action} Action
  */
 
+export { badgeClass } from "./facts.js";
+
 export const flagTexts = () => ({
   label: t("card.flag"),
   tip: t("card.flag.tip"),

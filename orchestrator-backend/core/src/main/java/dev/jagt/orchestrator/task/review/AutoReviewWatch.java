@@ -39,7 +39,11 @@ public record AutoReviewWatch(
   }
 
   public static AutoReviewWatch stopped(TaskStop stop) {
-    return new AutoReviewWatch(State.LOOP_STOPPED, 0, stop.reading(), "jagt stopped");
+    return new AutoReviewWatch(
+        State.LOOP_STOPPED,
+        0,
+        stop.reading(),
+        stop.trigger().kind() == TaskStop.Trigger.Kind.PAUSE ? "you paused it" : "jagt stopped");
   }
 
   public static AutoReviewWatch none() {

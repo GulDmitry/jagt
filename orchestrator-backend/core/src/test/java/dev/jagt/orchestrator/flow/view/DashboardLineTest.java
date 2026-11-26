@@ -200,7 +200,7 @@ class DashboardLineTest {
             .build();
 
     assertThat(DashboardLine.forTask(task, null, null).text())
-        .isEqualTo("NEEDS YOU: agent stopped: the session ended: waiting for input");
+        .isEqualTo("NEEDS YOU: session silent: the session ended: waiting for input");
   }
 
   @Test
@@ -212,7 +212,7 @@ class DashboardLineTest {
 
     assertThat(DashboardLine.forTask(task, null, null).text())
         .isEqualTo(
-            "NEEDS YOU: agent stopped: the agent never reported — check that the CLI started");
+            "NEEDS YOU: session silent: the agent never reported — check that the CLI started");
   }
 
   @Test
@@ -225,7 +225,7 @@ class DashboardLineTest {
             .build();
 
     assertThat(DashboardLine.forTask(task, null, null).text())
-        .isEqualTo("NEEDS YOU: agent stopped: the session ended: waiting for input");
+        .isEqualTo("NEEDS YOU: session silent: the session ended: waiting for input");
   }
 
   @Test
@@ -236,7 +236,7 @@ class DashboardLineTest {
             .build();
 
     assertThat(DashboardLine.forTask(task, null, null).text())
-        .isEqualTo("NEEDS YOU: agent stopped: nothing has moved in its session");
+        .isEqualTo("NEEDS YOU: session silent: nothing has moved in its session");
   }
 
   @Test

@@ -762,11 +762,31 @@ class TaskViewTest {
     assertThat(view.stop())
         .isEqualTo(
             new TaskView.Stop(
+                TaskStop.Trigger.Kind.GUARD,
                 "ships with no new note",
                 "a ship asked past 3 without a new note",
                 "Check a new note or commit waits to ship; if one does, report a jagt defect",
                 1_700_000_000_000L,
                 ""));
+  }
+
+  @Test
+  void tellsYourPauseApartFromJagtStop() {
+    TaskState paused =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1_700_000_000_000L, "you paused it"))
+            .build();
+
+    TaskView view =
+        TaskView.of(
+            rules, "ABC-42", paused, RoundState.NONE, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+    assertThat(view.attention()).isEqualTo(Attention.OPTIONAL);
+    assertThat(view.ask()).isEqualTo("you can lift the pause");
+    assertThat(view.asking().hint()).contains("you paused this task", "lift your pause");
+    assertThat(view.statusLabel()).isEqualTo("‖ paused");
+    assertThat(view.stop()).extracting(TaskView.Stop::kind).isEqualTo(TaskStop.Trigger.Kind.PAUSE);
+    assertThat(view.history().getLast().label()).isEqualTo("‖ paused");
   }
 
   @Test

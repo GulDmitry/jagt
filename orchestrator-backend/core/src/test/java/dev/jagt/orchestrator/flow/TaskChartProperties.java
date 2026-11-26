@@ -623,7 +623,7 @@ class TaskChartProperties {
       Facts every =
           new Facts(
               new Facts.Delivery(true, true, true, true, true, () -> true),
-              new Facts.Hold(true, true, true, true, () -> true),
+              new Facts.Hold(true, true, true, true, true, () -> true),
               new Facts.Workspace(true, true, true, Optional::empty, Optional::empty),
               new Facts.Reach(true, true, false, null));
       List<Facts> variants =

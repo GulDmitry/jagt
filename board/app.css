@@ -1108,6 +1108,12 @@ a.mr-age.approved,
   border-radius: 999px;
   padding: 0 6px;
 }
+.status.paused {
+  border: 1px dashed var(--muted);
+  border-radius: 999px;
+  padding: 0 6px;
+  color: var(--muted);
+}
 .chip.stalled {
   border-color: var(--you);
 }
@@ -1358,6 +1364,18 @@ button.quiet:hover:not(:disabled) {
 .badge.problem {
   background: var(--chip-bg);
   color: var(--danger);
+}
+.badge.problem::before {
+  content: "! ";
+}
+.badge.stop {
+  box-shadow: 0 0 0 1px var(--you);
+}
+.badge.stop::before {
+  content: "■ ";
+}
+.badge.paused::before {
+  content: "‖ ";
 }
 #tasks .keys {
   margin: 0;

@@ -114,7 +114,7 @@ public final class DashboardLine {
               ? "the agent never reported — check that the CLI started"
               : "nothing has moved in its session";
     }
-    return new Line(Kind.YOURS, "NEEDS YOU: agent stopped: " + because);
+    return new Line(Kind.YOURS, "NEEDS YOU: session silent: " + because);
   }
 
   private static Line heldOrSilent(TaskState task, @Nullable String held) {

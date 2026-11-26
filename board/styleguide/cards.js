@@ -279,7 +279,7 @@ export const cards = [
   }),
   card("awaiting approval past the poll window: still the reviewers' move", {
     id: "ABC-84",
-    alias: "a9",
+    alias: "c1",
     title: "Trim the audit export",
     owner: "CI",
     status: "REVIEWED",
@@ -334,10 +334,34 @@ export const cards = [
     status: "CI_POLLING",
     statusLabel: "out for review",
     stop: {
+      kind: "GUARD",
       reason: "ships with no new note",
       at: now - 20 * MINUTE,
       evidence: "a ship asked past 3 without a new note in 24h",
       next: "Check a new note or commit waits to ship; if one does, report a jagt defect",
+    },
+    actions: [
+      verb("lift", "Lift stop", "flow", { primary: true }),
+      verb("done", "Done", "flow"),
+      ...tools,
+    ],
+  }),
+  card("paused by you: its own mark, never a jagt stop", {
+    id: "ABC-84",
+    alias: "a9",
+    title: "Retry budget, held for a look",
+    owner: "YOU",
+    attention: "OPTIONAL",
+    ask: "you can lift the pause",
+    hint: "you paused this task; lift your pause to let jagt move it again",
+    status: "IN_PROGRESS",
+    statusLabel: "‖ paused",
+    stop: {
+      kind: "PAUSE",
+      reason: "you paused it",
+      at: now - 20 * MINUTE,
+      evidence: "you paused it",
+      next: "Look at what you paused it for",
     },
     actions: [
       verb("lift", "Lift stop", "flow", { primary: true }),

@@ -36,69 +36,88 @@ public record TaskStop(
   @RequiredArgsConstructor
   public enum Trigger {
     STALLED(
+        Kind.GUARD,
         "rounds bring nothing new",
         "Give the session what the rounds lacked; if nothing was missing, report a jagt defect",
         Ends.LIFT,
         true),
     SHIPS(
+        Kind.GUARD,
         "ships with no new note",
         "Check a new note or commit waits to ship; if one does, report a jagt defect",
         Ends.LIFT,
         true),
     MISS(
+        Kind.GUARD,
         "no case for this step",
         "Set off by jagt or the Master: report a jagt defect; by a session: add a case if one"
             + " should send it",
         Ends.LIFT,
         false),
     ROUNDS(
+        Kind.GUARD,
         "same round sent too often",
         "Answer the session's question, or give it what it lacked",
         Ends.LIFT,
         false),
     PACE(
+        Kind.GUARD,
         "too many unattended moves in an hour",
         "Read the last hour's moves: say what each one changed",
         Ends.LIFT,
         false),
     CHECKS(
+        Kind.BROKEN,
         "checks cannot be read",
         "Check that the code host's MCP can list the pipelines",
         Ends.HOST_READ,
         true),
     UNDELIVERED(
+        Kind.BROKEN,
         "a step never landed",
         "Check that the session's window is running",
         Ends.SESSION_ALIVE,
         false),
     UNCHANGED_FAILURE(
+        Kind.GUARD,
         "same failure again",
         "Change the tree, or fix the check itself: its access, a file it needs, or a probe that"
             + " execs into a stack no earlier probe starts",
         Ends.LIFT,
         true),
     INFRA(
+        Kind.BROKEN,
         "checks failed on infrastructure",
         "Re-run the job or fix the runner, then lift",
         Ends.HOST_READ,
         true),
     WAIT(
+        Kind.BROKEN,
         "a dependency stayed down",
         "Bring up what the session named, then lift",
         Ends.SESSION_REPORT,
         false),
     @JsonAlias("QA_FAILED")
     ACCEPTANCE_FAILED(
+        Kind.BROKEN,
         "the acceptance check failed",
         "Fix what the check needs, then lift: the same check runs once more",
         Ends.LIFT,
         false),
     DEPLOY_UNREAD(
+        Kind.BROKEN,
         "deploy pipeline cannot be read",
         "Check that the code host's CLI can list the deploy commit's pipelines",
         Ends.DEPLOY_READ,
         false),
-    PAUSE("you paused it", "Look at what you paused it for", Ends.PAUSE, false);
+    PAUSE(Kind.PAUSE, "you paused it", "Look at what you paused it for", Ends.PAUSE, false);
+
+    /** Whose stop it is to read: the human's own pause, a guard jagt holds, or a failure. */
+    public enum Kind {
+      PAUSE,
+      GUARD,
+      BROKEN
+    }
 
     /**
      * What ends a stop: a human's lift, a read of the checks that shows the outside condition gone,
@@ -114,10 +133,15 @@ public record TaskStop(
       PAUSE
     }
 
+    private final Kind kind;
     private final String reason;
     private final String next;
     private final Ends ends;
     private final boolean countedOnRequest;
+
+    public Kind kind() {
+      return kind;
+    }
 
     public Ends ends() {
       return ends;

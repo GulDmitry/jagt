@@ -36,6 +36,41 @@ export const marked = (task) =>
 /** @param {...(string | false | null | undefined)} names */
 export const classes = (...names) => names.filter(Boolean).join(" ");
 
+/** @param {CardTask} task */
+export const paused = (task) => task.stop?.kind === "PAUSE";
+
+/** @param {CardTask} task */
+const ringless = (task) => paused(task) || task.stop?.kind === "BROKEN";
+
+/**
+ * @param {CardTask} task
+ * @param {unknown} stalled
+ */
+export const ringed = (task, stalled) => Boolean(stalled) && !ringless(task);
+
+/**
+ * @param {CardTask} task
+ * @param {unknown} stalled
+ * @param {boolean} [live]
+ */
+export const statusClass = (task, stalled, live = false) =>
+  classes(
+    "status",
+    ringed(task, stalled) && "stalled",
+    paused(task) && "paused",
+    live && "live",
+  );
+
+/** @param {CardTask} task */
+export const badgeClass = (task) => {
+  const kind = task.stop?.kind;
+  if (kind === "PAUSE") return "badge optional paused";
+  if (kind === "BROKEN" || task.detailKind === "PROBLEM")
+    return "badge problem";
+  if (kind === "GUARD") return "badge required stop";
+  return `badge ${task.attention.toLowerCase()}`;
+};
+
 /**
  * @param {CardTask} task
  * @param {number} openedAt
