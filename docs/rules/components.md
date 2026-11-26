@@ -63,7 +63,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   starts; anyone else is refused. A tool taking a taskId gets a `McpToolScopeTest` row. A sub-agent is listed and
   answered `update_agent_status`, `notify_user` and `open_code` alone, the rest being `Audience.ROOT`; its every call
   bumps `lastActiveTimestamp`. Byte budgets (`WholeApplicationWiringTest`): `tools/list` 14 KB Master, 5 KB sub-agent, launch text 9 KB.
-  The debug reads (`read_record`, `read_transcript`, `/api/debug`) are `Audience.ROOT` and write nothing ([server](../server.md)).
+  The debug reads (`read_record`, `read_transcript`, `read_screen`, `/api/debug`) are `Audience.ROOT` and write nothing ([server](../server.md)).
 - **A task id is any name git accepts as a branch** (`core/task/launch/TaskName`): a task IS its branch, and every
   directory, tmux session, socket and temp file goes through `TaskName.slug`.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a

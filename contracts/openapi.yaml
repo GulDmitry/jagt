@@ -424,6 +424,13 @@ paths:
         - {name: maxChars, in: query, schema: {type: integer}}
       responses:
         '200': {$ref: '#/components/responses/Text'}
+  /api/debug/screen:
+    get:
+      parameters:
+        - {name: taskId, in: query, required: true, schema: {type: string}}
+        - {name: lines, in: query, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Text'}
 components:
   parameters:
     task: {name: task, in: query, required: true, schema: {type: string}}

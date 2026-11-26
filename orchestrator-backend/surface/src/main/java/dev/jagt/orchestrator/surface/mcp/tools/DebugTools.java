@@ -2,8 +2,10 @@ package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.debug.RecordTail;
+import dev.jagt.orchestrator.protocol.debug.ScreenRead;
 import dev.jagt.orchestrator.protocol.debug.TranscriptRead;
 import dev.jagt.orchestrator.service.log.DebugReads;
+import dev.jagt.orchestrator.service.log.ScreenReads;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
@@ -18,6 +20,7 @@ public class DebugTools implements McpTools {
 
   private final LogReads logs;
   private final DebugReads reads;
+  private final ScreenReads screens;
 
   @Override
   public void declare(McpToolRegistry tools) {
@@ -38,5 +41,14 @@ public class DebugTools implements McpTools {
         TranscriptRead.class,
         (said, caller) -> MessageContext.NONE,
         (said, caller) -> reads.transcript(said.taskId(), said.count()));
+
+    tools.tool(
+        "read_screen",
+        Audience.ROOT,
+        Effect.REPORTS,
+        ScreenRead.SCHEMA,
+        ScreenRead.class,
+        (said, caller) -> MessageContext.NONE,
+        (said, caller) -> screens.screen(said));
   }
 }
