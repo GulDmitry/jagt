@@ -12,8 +12,6 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,8 +26,7 @@ public class DeployOnApprovalJob implements TaskJob {
   private final CommandService commands;
   private final StateService stateService;
 
-  /** A refused deploy is not pressed again for the same arrival. */
-  private final Map<String, Long> pressed = new ConcurrentHashMap<>();
+  private static final String MARK = "deploy-on-approval";
 
   @Override
   public String id() {
@@ -58,18 +55,17 @@ public class DeployOnApprovalJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    boolean stillApproved =
+    String arrival = String.valueOf(task.standing().statusSince());
+    boolean unpressed =
         stateService
             .task(taskId)
-            .map(taskState -> taskState.standing().status())
-            .filter(TaskStatus.APPROVED::equals)
+            .filter(current -> TaskStatus.APPROVED.equals(current.standing().status()))
+            .filter(current -> !current.work().turnOrNone().marked(MARK, arrival))
             .isPresent();
-    if (!configService.load().deploy().onApprovalOrDefault()
-        || !stillApproved
-        || Long.valueOf(task.standing().statusSince())
-            .equals(pressed.put(taskId, task.standing().statusSince()))) {
+    if (!configService.load().deploy().onApprovalOrDefault() || !unpressed) {
       return;
     }
+    stateService.updateTask(taskId, current -> current.withMark(MARK, arrival));
     try {
       OriginContext.as(ActionOrigin.CODE_HOST, () -> commands.execute(taskId, TaskAction.DEPLOY));
     } catch (IllegalArgumentException | IllegalStateException refused) {
