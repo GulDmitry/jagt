@@ -177,6 +177,7 @@ class CodeReviewRoundTest {
                         "A.java", "null here", "p", "wrong", "int x = null;", "npe")),
                 "",
                 List.of(),
+                "",
                 ""));
     when(poster.post(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(NotePoster.Outcome.POSTED);

@@ -88,7 +88,15 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **WHEN** a session asks a question
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours; the same words asked again are a new question
 - **AND** a ticket the question names is read from the tracker and answered by its status; unreadable, the question is yours
-- **AND** asked which of the ticket's own routes to take, it picks the one needing no right the session lacks, and says why
+- **AND** asked which of the ticket's own routes to take, it picks the one needing no right the session lacks, and says why.
+  Where it could mean "switch" or "add beside", it decides as you would, sent back as a finding.
+- **AND** at `SHIPPING` or `DEPLOY_CONFLICT` the answer goes under the ship or hand-off in `task_context.md`, which still stands
+
+#### Scenario: The answer is a move the Master holds
+- **WHEN** the answer is `ship` or `deploy`, `mine` keeps neither it nor its step, and the tree and drafts are as the Master read them
+- **THEN** it presses the move as a human's press, through `FlowRules` and the pace count, relaying no text; a refused press leaves the question yours
+- **WHEN** the answer is any other move, one `mine` keeps, or the tree or drafts changed since the Master read them
+- **THEN** nothing is pressed and the answer is relayed; after a change the next hand-back is read anew
 
 #### Scenario: A plan in act
 - **WHEN** `mine` is unset, the task opened in `plan` mode, or `mine` holds the plan's right (`plan` a task's first, `replan` each later)
@@ -101,18 +109,10 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **THEN** the Master reviews the plan; the question is answered by that review, not by an answer without the plan
 - **AND** a `ready` verdict sends its findings first, then approves only where it may
 
-#### Scenario: An answer while jagt's instruction waits
-- **WHEN** it answers at `SHIPPING` or `DEPLOY_CONFLICT`
-- **THEN** the answer goes under the ship or hand-off in `task_context.md`, which still stands
-
 #### Scenario: A session asks for a permission
 - **WHEN** it reports `outcome=permission`, stopped on a call its CLI denied
 - **THEN** the Master never answers: no model grants a right, so the question is yours
 - **AND** when they repeat, after three an answer that changes the approach, in the same session; the ninth is a runaway, yours
-
-#### Scenario: It is unsure what the ticket asks
-- **WHEN** the ticket could mean "switch" or "add beside"
-- **THEN** it decides as you would, sent back as a finding
 
 ### Requirement: Instructions never land inside your line
 A nudge SHALL wait while the human types in the window; one left in the input SHALL get Enter again, three times

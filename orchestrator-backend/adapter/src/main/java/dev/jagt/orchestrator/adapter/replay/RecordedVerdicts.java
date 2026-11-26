@@ -97,6 +97,6 @@ public class RecordedVerdicts {
       return Optional.empty();
     }
     Finding decided = new Finding("", answers.removeFirst().decision(), "", "", "", "");
-    return Optional.of(new Judgement("", "ready", List.of(decided), "", List.of(), ""));
+    return Optional.of(new Judgement("", "ready", List.of(decided), "", List.of(), "", ""));
   }
 }

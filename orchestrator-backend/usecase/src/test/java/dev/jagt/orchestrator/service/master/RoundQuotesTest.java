@@ -115,6 +115,7 @@ class RoundQuotesTest {
                         List.of(new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")),
                         "",
                         List.of(),
+                        "",
                         "")))),
         "");
     TaskState task = state.task("a1").orElseThrow();

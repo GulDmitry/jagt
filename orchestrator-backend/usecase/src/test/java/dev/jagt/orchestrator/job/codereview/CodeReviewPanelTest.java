@@ -51,7 +51,7 @@ class CodeReviewPanelTest {
     when(reviewer.review(any()))
         .thenReturn(
             new Answer<>(
-                Optional.of(new Judgement("", "ready", List.of(), "", List.of(), "")),
+                Optional.of(new Judgement("", "ready", List.of(), "", List.of(), "", "")),
                 new TokenUsage(1, 10, 0, 5, 0.75)));
     CodeReviewPanel panel =
         new CodeReviewPanel(
@@ -79,7 +79,7 @@ class CodeReviewPanelTest {
     Finding leak = new Finding("A.java", "leaks", "", "wrong", "close()", "resource");
     Finding gap = new Finding("B.java", "no test", "", "unproven", "run()", "test");
     when(charged.review(any(), any()))
-        .thenReturn(new Judgement("", "changes", List.of(leak, gap), "", List.of(), ""));
+        .thenReturn(new Judgement("", "changes", List.of(leak, gap), "", List.of(), "", ""));
     StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-42", TaskState.builder("shop", "/wt", TaskStatus.REVIEW_PENDING).build());
     PreShipCoverage coverage = new PreShipCoverage(state);

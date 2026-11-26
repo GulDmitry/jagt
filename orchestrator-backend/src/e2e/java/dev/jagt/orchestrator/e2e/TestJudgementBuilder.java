@@ -13,6 +13,6 @@ public record TestJudgementBuilder(String verdict, List<Finding> findings, Strin
   }
 
   public Judgement build() {
-    return new Judgement("", verdict, findings, question, List.of(), "");
+    return new Judgement("", verdict, findings, question, List.of(), "", "");
   }
 }

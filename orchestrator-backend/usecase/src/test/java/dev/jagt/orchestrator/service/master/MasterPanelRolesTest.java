@@ -61,7 +61,7 @@ class MasterPanelRolesTest {
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), "", ""));
   }
 
   @Test

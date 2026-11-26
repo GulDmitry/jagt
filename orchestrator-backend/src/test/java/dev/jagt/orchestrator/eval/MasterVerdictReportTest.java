@@ -35,6 +35,7 @@ class MasterVerdictReportTest {
                                 "A.java", "leaks the caller", "", "blocking", "run", "leak")),
                         "",
                         List.of(new Premise("A names its caller", "grep: A.kt:3")),
+                        "",
                         "")),
                 new Read(
                     "acceptance",
@@ -44,6 +45,7 @@ class MasterVerdictReportTest {
                         List.of(),
                         "which test pins it?",
                         List.of(new Premise("no test", "")),
+                        "",
                         "")),
                 new Read("designer", Judgement.failed("no reply"))));
 
@@ -75,7 +77,8 @@ class MasterVerdictReportTest {
             "",
             "",
             List.of(
-                new Read("developer", new Judgement("", "ready", List.of(), "", List.of(), ""))));
+                new Read(
+                    "developer", new Judgement("", "ready", List.of(), "", List.of(), "", ""))));
     new JsonMapper().writeValue(worktree.resolve(".jagt/master-review.json").toFile(), review);
 
     String report = MasterVerdictReport.of("NOT_READY", worktree);

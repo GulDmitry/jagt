@@ -66,20 +66,26 @@ class MasterAnswerJobTest {
     TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
+        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", "", ""));
 
     job.run();
 
     verify(verdicts)
-        .answered("ABC-1", asking, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
+        .decided(
+            eq("ABC-1"),
+            eq(asking),
+            eq("keep v2?"),
+            eq(new MasterPanel.Decision("keep v2 beside v3", "", "")),
+            any(),
+            any());
   }
 
   @Test
   void marksNothingUnansweredOnTaskWhoseTurnMovedOnWhileTheMasterRead() {
     state.putTask("ABC-1", askingTask().build());
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
-    when(verdicts.answered(anyString(), any(), anyString(), any()))
+        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", "", ""));
+    when(verdicts.decided(anyString(), any(), anyString(), any(), any(), any()))
         .thenThrow(new TaskMovedOn("ABC-1"));
 
     job.run();
@@ -254,8 +260,8 @@ class MasterAnswerJobTest {
     TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Decision("keep v2", ""));
-    when(verdicts.answered(anyString(), any(), anyString(), any())).thenReturn(false);
+        .thenReturn(new MasterPanel.Decision("keep v2", "", ""));
+    when(verdicts.decided(anyString(), any(), anyString(), any(), any(), any())).thenReturn(false);
     job.run();
     job.run();
 

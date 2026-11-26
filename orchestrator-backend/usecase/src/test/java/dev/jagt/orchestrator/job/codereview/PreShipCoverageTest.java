@@ -37,7 +37,7 @@ class PreShipCoverageTest {
 
     Judgement unseen =
         coverage.unseen(
-            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), ""));
+            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), "", ""));
 
     assertThat(unseen.findings()).containsExactly(gap);
   }
@@ -46,7 +46,7 @@ class PreShipCoverageTest {
   void keepsEveryFindingForTaskNothingWasRaisedFor() {
     Judgement unseen =
         coverage.unseen(
-            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), ""));
+            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), "", ""));
 
     assertThat(unseen.findings()).containsExactly(leak, gap);
   }
@@ -58,7 +58,7 @@ class PreShipCoverageTest {
 
     Judgement unseen =
         coverage.unseen(
-            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), ""));
+            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), "", ""));
 
     assertThat(unseen.findings()).isEmpty();
   }

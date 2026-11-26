@@ -18,6 +18,10 @@ public final class Arbiter {
   private static final Map<TaskAction, MasterRight> STEPS =
       Map.of(TaskAction.ADD_REPO, MasterRight.REPO);
 
+  /** The moves an answer to a session's question may be, each under the step that grants it. */
+  private static final Map<TaskAction, MasterRight> ANSWERS =
+      Map.of(TaskAction.SHIP, MasterRight.SHIP, TaskAction.DEPLOY, MasterRight.DEPLOY);
+
   /** {@code mine} are the words the human keeps even where the Master acts: steps and verb ids. */
   public record Profile(MasterMode mode, Set<String> mine) {
 
@@ -42,6 +46,13 @@ public final class Arbiter {
 
     public boolean keeps(String verb) {
       return mine.contains(verb.strip().toLowerCase(Locale.ROOT));
+    }
+
+    /** The move {@code id} names where the Master holds it, else none. */
+    public Optional<TaskAction> holds(String id, TaskState task) {
+      return TaskAction.byId(id.strip().toLowerCase(Locale.ROOT))
+          .filter(action -> Optional.ofNullable(ANSWERS.get(action)).filter(this::may).isPresent())
+          .filter(action -> !keeps(action, task));
     }
 
     /** Whether the Master may approve the plan that waits on {@code task}. */

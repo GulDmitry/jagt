@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class MasterVerdictFileTest {
 
-  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "");
+  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "", "");
 
   private static final List<MasterPanel.Role> TWO =
       List.of(
@@ -38,6 +38,7 @@ class MasterVerdictFileTest {
                                 "")),
                         "",
                         List.of(),
+                        "",
                         ""),
                     ready)),
             List.of());
@@ -60,6 +61,7 @@ class MasterVerdictFileTest {
                         List.of(),
                         "",
                         List.of(new Premise("tests pass", "gradle test: 2 passed")),
+                        "",
                         ""),
                     ready)),
             List.of());
@@ -88,6 +90,7 @@ class MasterVerdictFileTest {
                                 "")),
                         "",
                         List.of(),
+                        "",
                         ""),
                     ready)),
             List.of());
@@ -111,6 +114,7 @@ class MasterVerdictFileTest {
                         List.of(),
                         "",
                         List.of(new Premise("v2 and v3 cannot be told apart", "")),
+                        "",
                         ""),
                     ready)),
             List.of());
@@ -135,6 +139,7 @@ class MasterVerdictFileTest {
                             new Finding("Foo.java", "rename present", "naming", "noise", "", "")),
                         "",
                         List.of(),
+                        "",
                         ""),
                     ready)),
             List.of());
@@ -158,6 +163,7 @@ class MasterVerdictFileTest {
                         List.of(),
                         "Add v3 beside v2, or replace it?",
                         List.of(),
+                        "",
                         ""),
                     ready)),
             List.of());
@@ -191,8 +197,10 @@ class MasterVerdictFileTest {
             MasterVerdictFile.reads(
                 TWO,
                 List.of(
-                    new Judgement("", "question", List.of(), "Add v3 beside v2?", List.of(), ""),
-                    new Judgement("", "question", List.of(), "Drop the old keys?", List.of(), ""))),
+                    new Judgement(
+                        "", "question", List.of(), "Add v3 beside v2?", List.of(), "", ""),
+                    new Judgement(
+                        "", "question", List.of(), "Drop the old keys?", List.of(), "", ""))),
             List.of());
 
     assertThat(file)
@@ -213,6 +221,7 @@ class MasterVerdictFileTest {
                         List.of(),
                         "",
                         List.of(new Premise("tests pass", "")),
+                        "",
                         ""),
                     ready)),
             List.of());

@@ -55,7 +55,8 @@ public interface RoundReviewer {
 
   /**
    * {@code failure} non-blank means nothing else in it was read. {@code newTask} is work the reader
-   * would open as a task of its own, blank where none.
+   * would open as a task of its own, blank where none. {@code press} is the id of the move an
+   * answer to a question is, blank where it is words.
    */
   record Judgement(
       String failure,
@@ -63,10 +64,11 @@ public interface RoundReviewer {
       List<Finding> findings,
       String question,
       List<Premise> premises,
-      String newTask) {
+      String newTask,
+      String press) {
 
     public static Judgement failed(String failure) {
-      return new Judgement(failure, "", List.of(), "", List.of(), "");
+      return new Judgement(failure, "", List.of(), "", List.of(), "", "");
     }
   }
 

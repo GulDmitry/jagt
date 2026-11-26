@@ -33,7 +33,8 @@ public class PreShipCoverage {
         judged.findings().stream().filter(finding -> !raised.contains(key(finding))).toList(),
         judged.question(),
         judged.premises(),
-        judged.newTask());
+        judged.newTask(),
+        judged.press());
   }
 
   public void raise(String taskId, List<Finding> findings) {

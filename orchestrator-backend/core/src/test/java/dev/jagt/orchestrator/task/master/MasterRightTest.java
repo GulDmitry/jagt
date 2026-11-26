@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,5 +83,27 @@ class MasterRightTest {
     assertThat(
             new Arbiter.Profile(MasterMode.ACT, Set.of(mine)).keeps(TaskAction.APPROVE_PLAN, task))
         .isEqualTo(keeps);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "ACT, none, ship, SHIP",
+    "ACT, none, ' Ship ', SHIP",
+    "ACT, ship, deploy, DEPLOY",
+    "ACT, deploy, ship, SHIP",
+    "ACT, none, deploy, DEPLOY",
+    "ACT, deploy, deploy, ",
+    "ACT, ship, ship, ",
+    "ACT, none, lift, ",
+    "ACT, none, 'keep v2', ",
+    "JUDGE, none, ship, ",
+    "OFF, none, deploy, "
+  })
+  void masterHoldsShipAndDeployAsAnAnswerOnlyInActAndWhereTheHumanKeptNeither(
+      MasterMode mode, String mine, String id, TaskAction held) {
+    TaskState task = TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).build();
+
+    assertThat(new Arbiter.Profile(mode, Set.of(mine)).holds(id, task))
+        .isEqualTo(Optional.ofNullable(held));
   }
 }

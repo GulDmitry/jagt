@@ -33,7 +33,7 @@ class MasterStopPanelTest {
     when(briefs.master("ABC-1", config)).thenReturn(Optional.of("the brief"));
     Finding said = new Finding("", "lift: each round answered a new report", "", "", "", "");
     when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(said), "", List.of(), ""));
+        .thenReturn(new Judgement("", "ready", List.of(said), "", List.of(), "", ""));
 
     Optional<MasterStopAnswer> answer = panel.ask("ABC-1", stopped, config);
 

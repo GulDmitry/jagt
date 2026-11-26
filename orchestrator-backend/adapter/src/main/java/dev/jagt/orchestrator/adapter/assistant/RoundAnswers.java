@@ -54,6 +54,7 @@ final class RoundAnswers {
         findings,
         answer.path("question").asString(""),
         premises,
-        answer.path("newTask").asString(""));
+        answer.path("newTask").asString(""),
+        answer.path("press").asString(""));
   }
 }

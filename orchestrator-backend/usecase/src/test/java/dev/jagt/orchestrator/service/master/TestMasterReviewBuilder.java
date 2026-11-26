@@ -25,6 +25,6 @@ public record TestMasterReviewBuilder(
         inputs,
         List.of(
             new MasterReview.Read(
-                "acceptance", new Judgement("", "ready", List.of(), "", List.of(), ""))));
+                "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "", ""))));
   }
 }

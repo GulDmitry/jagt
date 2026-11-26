@@ -75,6 +75,8 @@ final class MasterPrompts {
         + " why.\n"
         + "- newTask: blank, unless the decision is work outside this task: that work in one line."
         + " jagt opens no task.\n"
+        + "- press: blank, unless the decision is to ship or deploy this task: then `ship` or"
+        + " `deploy`. jagt presses it where the human lets you and sends the session no words.\n"
         + "- premises: what it rests on, each with provenBy — the file:line or read-only command"
         + " that shows it.\n"
         + "- failure: blank unless something stopped you reading, then what.\n"

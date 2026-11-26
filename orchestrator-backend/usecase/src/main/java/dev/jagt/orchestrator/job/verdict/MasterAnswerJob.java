@@ -135,12 +135,13 @@ public class MasterAnswerJob implements Job {
         .addKeyValue("alias", task.ticket().alias())
         .log();
     String question = Objects.requireNonNull(task.standing().message());
+    Optional<String> read = verdicts.standing(task);
     try {
       switch (panel.answer(taskId, task, question, config, stuck)) {
         case MasterPanel.Undecided undecided -> unusable(taskId, undecided.cause());
         case MasterPanel.Decision decision -> {
-          if (!verdicts.answered(taskId, task, question, decision)) {
-            unusable(taskId, "the session could not be told the decision");
+          if (!verdicts.decided(taskId, task, question, decision, read, config)) {
+            unusable(taskId, "the decision was refused or the session could not be told it");
           }
         }
       }

@@ -92,10 +92,10 @@ class MasterReviewTest {
             "",
             List.of(
                 new MasterReview.Read(
-                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "", "")),
                 new MasterReview.Read(
                     "developer",
-                    new Judgement("", "not ready", List.of(inverted), "", List.of(), "")))),
+                    new Judgement("", "not ready", List.of(inverted), "", List.of(), "", "")))),
         "");
 
     var verdict = reviews.of(state.task("a1").orElseThrow()).orElseThrow();

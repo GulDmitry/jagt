@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.task.master.MasterRight;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class MasterVerdicts {
   private final MasterShip ship;
   private final MasterClaims claims;
   private final MasterDecisions decisions;
+  private final MasterAnswerPress answerPress;
 
   private static final String REVIEWER = "reviewer: ";
 
@@ -136,6 +138,46 @@ public class MasterVerdicts {
         .addKeyValue("question", OneLine.clipped(question))
         .log();
     return true;
+  }
+
+  /** The tree and the drafts as the Master reads them for an answer. */
+  public Optional<String> standing(TaskState task) {
+    return answerPress.standing(task);
+  }
+
+  /**
+   * An answer that is a move the Master holds is pressed and no word is relayed; false where the
+   * press was refused or nothing could be told. {@code read} is {@link #standing} before the Master
+   * read.
+   */
+  public boolean decided(
+      String taskId,
+      TaskState task,
+      String question,
+      MasterPanel.Decision decision,
+      Optional<String> read,
+      ConfigFile.ArbiterConfig config) {
+    MasterAnswerPress.Result result =
+        OriginContext.as(
+            ActionOrigin.MASTER,
+            () -> answerPress.press(taskId, task, decision.press(), read, config));
+    return switch (result) {
+      case WORDS -> answered(taskId, task, question, decision);
+      case REFUSED -> false;
+      case PRESSED -> {
+        decisions.record(
+            task, "- asked: " + question + " — decided: pressed " + decision.press().strip());
+        decisions.answered(task);
+        log.atInfo()
+            .setMessage("master answered by pressing")
+            .addKeyValue("task", taskId)
+            .addKeyValue("alias", task.ticket().alias())
+            .addKeyValue("question", OneLine.clipped(question))
+            .addKeyValue("cmd", decision.press().strip())
+            .log();
+        yield true;
+      }
+    };
   }
 
   /** The Master's answer to a question, and the task back at work on it. */

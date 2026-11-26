@@ -220,8 +220,11 @@ public class MasterPanel {
   /** What a question came back with: a decision, or why none came. */
   public sealed interface Answer permits Decision, Undecided {}
 
-  /** {@code newTask} is work the decision would open as a task of its own, blank where none. */
-  public record Decision(String text, String newTask) implements Answer {}
+  /**
+   * {@code newTask} is work the decision would open as a task of its own, blank where none. {@code
+   * press} is the move the decision is, blank where it is words.
+   */
+  public record Decision(String text, String newTask, String press) implements Answer {}
 
   public record Undecided(String cause) implements Answer {}
 
@@ -273,7 +276,8 @@ public class MasterPanel {
         judged.findings().stream()
             .map(f -> OneLine.of(f.issue()))
             .collect(Collectors.joining("\n")),
-        judged.newTask().strip());
+        judged.newTask().strip(),
+        judged.press().strip());
   }
 
   private static List<Path> worktrees(TaskState task) {

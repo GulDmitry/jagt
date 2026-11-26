@@ -73,7 +73,7 @@ public final class FakeAssistants {
           public Answer<Judgement> review(Round round) {
             reviewed.add(round.worktrees().getFirst().getFileName().toString());
             return new Answer<>(
-                Optional.of(new Judgement("", "ready", List.of(), "", List.of(), "")),
+                Optional.of(new Judgement("", "ready", List.of(), "", List.of(), "", "")),
                 TokenUsage.NONE);
           }
 

@@ -24,7 +24,8 @@ public final class RoundRead {
               Map.of("severity", SEVERITIES, "kind", KINDS))
           .text("question", null)
           .records("premises", null, List.of("claim", "provenBy"))
-          .text("newTask", null);
+          .text("newTask", null)
+          .text("press", null);
 
   private RoundRead() {}
 }

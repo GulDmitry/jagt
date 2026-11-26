@@ -134,6 +134,7 @@ class StopTriagePanelTest {
                 List.of(
                     new RoundReviewer.Premise("tree changed", ""),
                     new RoundReviewer.Premise("tests green", "")),
+                "",
                 ""));
 
     StopTriage read = panel.read("ABC-42", stopped, trail, "haiku");

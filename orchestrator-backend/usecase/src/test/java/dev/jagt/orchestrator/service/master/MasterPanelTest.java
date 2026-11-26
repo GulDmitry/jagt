@@ -61,7 +61,7 @@ class MasterPanelTest {
       new ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final MasterPanel.RoundRead emptyRead =
       new MasterPanel.RoundRead("", "", "", List.of(), "");
-  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "");
+  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "", "");
 
   private StateService state;
   private MasterReview stored;
@@ -404,20 +404,42 @@ class MasterPanelTest {
                 List.of(new Finding("", "keep v2 beside v3", "", "blocking", "", "")),
                 "",
                 List.of(),
-                "do proj drop the old keys"));
+                "do proj drop the old keys",
+                ""));
 
     MasterPanel.Answer decision =
         panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
 
     assertThat(decision)
-        .isEqualTo(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys"));
+        .isEqualTo(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys", ""));
+  }
+
+  @Test
+  void answersWithTheMoveTheReviewerNamedTrimmed() {
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
+    when(reviews.review(eq("ABC-1"), any()))
+        .thenReturn(
+            new Judgement(
+                "",
+                "ready",
+                List.of(new Finding("", "ship it, the tree is green", "", "noise", "", "")),
+                "",
+                List.of(),
+                "",
+                " ship "));
+
+    MasterPanel.Answer decision =
+        panel.answer("ABC-1", inProgress, "outcome=question — ship to push?", act, false);
+
+    assertThat(decision)
+        .isEqualTo(new MasterPanel.Decision("ship it, the tree is green", "", "ship"));
   }
 
   @Test
   void answersNothingWhereTheReviewerNamedNothing() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
     when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "answer", List.of(), "", List.of(), ""));
+        .thenReturn(new Judgement("", "answer", List.of(), "", List.of(), "", ""));
 
     MasterPanel.Answer decision =
         panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
@@ -436,6 +458,7 @@ class MasterPanelTest {
                 List.of(new Finding("", "keep v2", "", "blocking", "", "")),
                 "",
                 List.of(),
+                "",
                 ""));
 
     MasterPanel.Answer decision =

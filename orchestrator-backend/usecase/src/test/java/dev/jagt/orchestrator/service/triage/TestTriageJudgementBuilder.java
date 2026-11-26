@@ -20,6 +20,7 @@ public record TestTriageJudgementBuilder(String verdict, String issue, String pa
         List.of(new Finding("-", issue, pattern, "noise", "-", "scope")),
         "",
         List.of(new RoundReviewer.Premise("the trail shows one tree", "")),
+        "",
         "");
   }
 }

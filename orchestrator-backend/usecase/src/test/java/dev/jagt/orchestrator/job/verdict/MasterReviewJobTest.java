@@ -37,7 +37,8 @@ class MasterReviewJobTest {
   private final MasterPanel panel = mock(MasterPanel.class);
   private final MasterRuling verdicts = mock(MasterRuling.class);
   private final MasterReview.Read acceptanceReady =
-      new MasterReview.Read("acceptance", new Judgement("", "ready", List.of(), "", List.of(), ""));
+      new MasterReview.Read(
+          "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "", ""));
   @TempDir Path root;
   private StateService state;
   private MasterReview reviews;
