@@ -32,6 +32,16 @@
         "event": {"const": "changed"},
         "data": {"const": "changed"}
       }
+    },
+    {
+      "title": "role-log",
+      "description": "A role's log gained a line; data is the role id, the page reads what is new from GET /api/roles/{id}/log.",
+      "type": "object",
+      "required": ["event", "data"],
+      "properties": {
+        "event": {"const": "role-log"},
+        "data": {"type": "string", "minLength": 1}
+      }
     }
   ]
 }

@@ -646,7 +646,7 @@ components:
         label: {type: string}
     Task:
       type: object
-      required: [id, status, statusLabel, statusSince, history, actions, confirmations, repos, deployed]
+      required: [id, status, statusLabel, statusSince, history, stop, actions, confirmations, pipeline, autoReview, repos, deployed]
       properties:
         id: {type: string}
         alias: {type: [string, 'null']}
@@ -660,11 +660,14 @@ components:
         owner: {type: string}
         attention: {type: string}
         statusSince: {type: integer}
-        history: {type: array, items: {type: object}}
-        stop: {type: [object, 'null']}
+        history: {type: array, items: {$ref: '#/components/schemas/TaskStep'}}
+        stop:
+          oneOf:
+            - {type: 'null'}
+            - {$ref: '#/components/schemas/TaskStop'}
         ask: {type: [string, 'null']}
         hint: {type: string}
-        actions: {type: array, items: {type: object}}
+        actions: {type: array, items: {$ref: '#/components/schemas/TaskAction'}}
         confirmations:
           type: object
           additionalProperties: {type: string}
@@ -674,13 +677,61 @@ components:
         reviewRequestUrl: {type: [string, 'null']}
         requestOpenedAt: {type: integer}
         approved: {type: [boolean, 'null']}
-        pipeline: {type: object}
+        pipeline: {enum: [RED, RUNNING, UNKNOWN, NONE, GREEN]}
         pipelineSaid: {type: [string, 'null']}
         pipelineUnread: {type: boolean}
         repliesWrittenAt: {type: integer}
-        autoReview: {type: object}
+        autoReview: {$ref: '#/components/schemas/TaskAutoReview'}
         switches:
           type: object
           additionalProperties: {type: string}
-        repos: {type: array, items: {type: object}}
+        repos: {type: array, items: {$ref: '#/components/schemas/TaskRepo'}}
         deployed: {type: boolean}
+    TaskStep:
+      type: object
+      required: [status, label, at]
+      properties:
+        status: {type: string}
+        label: {type: string}
+        at: {type: integer}
+        origin: {type: [string, 'null']}
+        why: {type: [string, 'null']}
+        role: {type: [string, 'null']}
+    TaskStop:
+      type: object
+      required: [kind, reason, evidence, next, at, triage]
+      properties:
+        kind: {enum: [PAUSE, GUARD, BROKEN]}
+        reason: {type: string}
+        evidence: {type: string}
+        next: {type: string}
+        at: {type: integer}
+        triage: {type: string}
+    TaskAction:
+      type: object
+      required: [id, label, hint, key, primary, again, readOnly, group, onRow, apart]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        hint: {type: string}
+        key: {type: string}
+        primary: {type: boolean}
+        again: {type: boolean}
+        readOnly: {type: boolean}
+        group: {type: string}
+        onRow: {type: boolean}
+        apart: {type: boolean}
+    TaskAutoReview:
+      type: object
+      required: [state, nextPollAt]
+      properties:
+        state: {enum: [NONE, WATCHING, WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND, LOOP_STOPPED]}
+        nextPollAt: {type: integer}
+        note: {type: [string, 'null']}
+        label: {type: [string, 'null']}
+    TaskRepo:
+      type: object
+      required: [project, reviewRequestUrl]
+      properties:
+        project: {type: [string, 'null']}
+        reviewRequestUrl: {type: [string, 'null']}
