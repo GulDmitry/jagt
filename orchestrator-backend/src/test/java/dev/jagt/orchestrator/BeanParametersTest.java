@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaParameterizedType;
 import java.util.Collection;
@@ -40,11 +41,16 @@ class BeanParametersTest {
             .toList();
 
     List<String> unprovided =
-        MainClasses.CODE.stream()
-            .filter(owner -> owner.isMetaAnnotatedWith(Component.class))
-            .flatMap(owner -> owner.getConstructors().stream())
-            .flatMap(constructor ->
-                constructor.getParameters().stream()
+        Stream.concat(
+                MainClasses.CODE.stream()
+                    .filter(owner -> owner.isMetaAnnotatedWith(Component.class))
+                    .flatMap(owner -> owner.getConstructors().stream())
+                    .map(JavaCodeUnit.class::cast),
+                MainClasses.CODE.stream()
+                    .flatMap(owner -> owner.getMethods().stream())
+                    .filter(method -> method.isAnnotatedWith(Bean.class)))
+            .flatMap(unit ->
+                unit.getParameters().stream()
                     .filter(parameter -> !parameter.isAnnotatedWith(Value.class))
                     .map(parameter ->
                         parameter.getType() instanceof JavaParameterizedType generic
@@ -60,7 +66,7 @@ class BeanParametersTest {
                         providers.stream()
                             .noneMatch(provider -> provider.isAssignableTo(type.getName())))
                     .map(type ->
-                        constructor.getOwner().getName()
+                        unit.getOwner().getName()
                             + " takes "
                             + type.getName()
                             + " no bean provides"))
