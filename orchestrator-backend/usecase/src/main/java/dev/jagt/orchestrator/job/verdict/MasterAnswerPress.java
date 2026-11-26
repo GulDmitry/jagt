@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.master.MasterShip;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.TaskState;
 import java.util.Optional;
@@ -36,10 +37,10 @@ public class MasterAnswerPress {
   public Result press(
       String taskId,
       TaskState task,
-      String move,
+      Press move,
       Optional<String> read,
       ConfigFile.ArbiterConfig config) {
-    Optional<TaskAction> held = config.profile().holds(move, task);
+    Optional<TaskAction> held = config.profile().holds(move.id(), task);
     if (held.isEmpty() || read.isEmpty() || !read.equals(standing(task))) {
       return Result.WORDS;
     }

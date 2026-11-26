@@ -60,7 +60,7 @@ class OpenCodeRoundReviewerTest {
     Answer<RoundReviewer.Judgement> answer =
         reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(worktree), "opus"));
 
-    assertThat(answer.facts().orElseThrow().verdict()).isEqualTo("not ready");
+    assertThat(answer.facts().orElseThrow().verdict()).isEqualTo(RoundReviewer.Verdict.NOT_READY);
     assertThat(answer.facts().orElseThrow().findings())
         .extracting(RoundReviewer.Finding::severity)
         .containsExactly("wrong");

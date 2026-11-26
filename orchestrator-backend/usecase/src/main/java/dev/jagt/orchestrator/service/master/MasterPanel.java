@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OneLine;
@@ -222,9 +223,9 @@ public class MasterPanel {
 
   /**
    * {@code newTask} is work the decision would open as a task of its own, blank where none. {@code
-   * press} is the move the decision is, blank where it is words.
+   * press} is the move the decision is, or words.
    */
-  public record Decision(String text, String newTask, String press) implements Answer {}
+  public record Decision(String text, String newTask, Press press) implements Answer {}
 
   public record Undecided(String cause) implements Answer {}
 
@@ -277,7 +278,7 @@ public class MasterPanel {
             .map(f -> OneLine.of(f.issue()))
             .collect(Collectors.joining("\n")),
         judged.newTask().strip(),
-        judged.press().strip());
+        judged.press());
   }
 
   private static List<Path> worktrees(TaskState task) {

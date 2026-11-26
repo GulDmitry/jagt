@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
+import dev.jagt.orchestrator.protocol.read.RoundRead;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,11 +51,11 @@ final class RoundAnswers {
                 new Premise(p.path("claim").asString(""), p.path("provenBy").asString(""))));
     return new Judgement(
         answer.path("failure").asString(""),
-        answer.path("verdict").asString(""),
+        RoundRead.verdictOf(answer.path("verdict").asString("")),
         findings,
         answer.path("question").asString(""),
         premises,
         answer.path("newTask").asString(""),
-        answer.path("press").asString(""));
+        RoundRead.pressOf(answer.path("press").asString("")));
   }
 }

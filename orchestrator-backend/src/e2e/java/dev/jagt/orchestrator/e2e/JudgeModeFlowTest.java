@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -100,7 +101,7 @@ class JudgeModeFlowTest extends FlowHarness.World {
     void sendsNotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
       flow.judges(
           judgement()
-              .withVerdict("not ready")
+              .withVerdict(Verdict.NOT_READY)
               .withFindings(
                   List.of(
                       new Finding(
@@ -124,7 +125,8 @@ class JudgeModeFlowTest extends FlowHarness.World {
 
     @Test
     void putsTheReviewersQuestionToTheHumanRatherThanAnsweringIt() throws Exception {
-      flow.judges(judgement().withVerdict("question").withQuestion("keep v2 beside v3?").build());
+      flow.judges(
+          judgement().withVerdict(Verdict.QUESTION).withQuestion("keep v2 beside v3?").build());
 
       flow.agentReports("REVIEW_PENDING", "widget fixed", "");
 

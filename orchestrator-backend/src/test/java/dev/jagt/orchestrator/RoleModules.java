@@ -39,6 +39,7 @@ public final class RoleModules {
                   "service.scenario.",
                   "service.reach.CheckerReach",
                   "port.assistant.CheckerReader",
+                  "protocol.read.RowStatusRead",
                   "command.ScenarioCommand",
                   "capability.ScenariosCapability",
                   "job.session.ScenarioEndingJob")

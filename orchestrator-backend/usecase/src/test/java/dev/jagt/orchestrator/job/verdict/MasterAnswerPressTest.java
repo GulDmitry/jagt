@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.job.master.MasterShip;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -33,7 +34,7 @@ class MasterAnswerPressTest {
     when(ship.press("ABC-42", task, TaskAction.SHIP)).thenReturn(true);
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, "ship", Optional.of("tree"), acting);
+        answers.press("ABC-42", task, new Press.Move("ship"), Optional.of("tree"), acting);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.PRESSED);
   }
@@ -46,7 +47,7 @@ class MasterAnswerPressTest {
     when(ship.press("ABC-42", task, TaskAction.DEPLOY)).thenReturn(true);
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, "deploy", Optional.of("tree"), holdingDeploy);
+        answers.press("ABC-42", task, new Press.Move("deploy"), Optional.of("tree"), holdingDeploy);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.PRESSED);
   }
@@ -57,7 +58,7 @@ class MasterAnswerPressTest {
     when(ship.press("ABC-42", task, TaskAction.SHIP)).thenReturn(false);
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, "ship", Optional.of("tree"), acting);
+        answers.press("ABC-42", task, new Press.Move("ship"), Optional.of("tree"), acting);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.REFUSED);
   }
@@ -68,7 +69,7 @@ class MasterAnswerPressTest {
     when(ship.standing(task)).thenReturn(Optional.of("tree"));
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, move, Optional.of("tree"), acting);
+        answers.press("ABC-42", task, Press.ofId(move), Optional.of("tree"), acting);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.WORDS);
     verify(ship, never()).press(any(), any(), any());
@@ -81,7 +82,7 @@ class MasterAnswerPressTest {
     when(ship.standing(task)).thenReturn(Optional.of("tree"));
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, "ship", Optional.of("tree"), keepingShip);
+        answers.press("ABC-42", task, new Press.Move("ship"), Optional.of("tree"), keepingShip);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.WORDS);
     verify(ship, never()).press(any(), any(), any());
@@ -92,7 +93,7 @@ class MasterAnswerPressTest {
     when(ship.standing(task)).thenReturn(Optional.of("tree and new drafts"));
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, "ship", Optional.of("tree"), acting);
+        answers.press("ABC-42", task, new Press.Move("ship"), Optional.of("tree"), acting);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.WORDS);
     verify(ship, never()).press(any(), any(), any());
@@ -103,7 +104,7 @@ class MasterAnswerPressTest {
     when(ship.standing(task)).thenReturn(Optional.empty());
 
     MasterAnswerPress.Result result =
-        answers.press("ABC-42", task, "ship", Optional.empty(), acting);
+        answers.press("ABC-42", task, new Press.Move("ship"), Optional.empty(), acting);
 
     assertThat(result).isEqualTo(MasterAnswerPress.Result.WORDS);
     verify(ship, never()).press(any(), any(), any());

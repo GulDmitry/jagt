@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -66,7 +67,7 @@ class MasterAnswerJobTest {
     TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", "", ""));
+        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE));
 
     job.run();
 
@@ -75,7 +76,7 @@ class MasterAnswerJobTest {
             eq("ABC-1"),
             eq(asking),
             eq("keep v2?"),
-            eq(new MasterPanel.Decision("keep v2 beside v3", "", "")),
+            eq(new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE)),
             any(),
             any());
   }
@@ -84,7 +85,7 @@ class MasterAnswerJobTest {
   void marksNothingUnansweredOnTaskWhoseTurnMovedOnWhileTheMasterRead() {
     state.putTask("ABC-1", askingTask().build());
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", "", ""));
+        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE));
     when(verdicts.decided(anyString(), any(), anyString(), any(), any(), any()))
         .thenThrow(new TaskMovedOn("ABC-1"));
 
@@ -260,7 +261,7 @@ class MasterAnswerJobTest {
     TaskState asking = askingTask().build();
     state.putTask("ABC-1", asking);
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(new MasterPanel.Decision("keep v2", "", ""));
+        .thenReturn(new MasterPanel.Decision("keep v2", "", Press.NONE));
     when(verdicts.decided(anyString(), any(), anyString(), any(), any(), any())).thenReturn(false);
     job.run();
     job.run();

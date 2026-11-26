@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.OneLine;
@@ -309,12 +310,12 @@ public class MasterReview {
         return;
       }
       said.findings().forEach(f -> (f.stops() ? findings : advice).add(new Said(read.role(), f)));
-      if (said.verdict().equals("question")) {
+      if (said.verdict() == RoundReviewer.Verdict.QUESTION) {
         questions.add(
             said.question().isBlank()
                 ? "The " + read.role() + " asks, naming no question"
                 : String.valueOf(OneLine.of(said.question())));
-      } else if (!said.verdict().equals("ready") && said.findings().isEmpty()) {
+      } else if (said.verdict() != RoundReviewer.Verdict.READY && said.findings().isEmpty()) {
         findings.add(new Said(read.role(), NAMING_NOTHING));
       }
     }

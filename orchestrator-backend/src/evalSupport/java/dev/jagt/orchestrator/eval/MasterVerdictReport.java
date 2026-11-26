@@ -45,7 +45,7 @@ public final class MasterVerdictReport {
       lines.add("- " + read.role() + ": could not read the round: " + said.failure());
       return lines;
     }
-    lines.add("- " + read.role() + ": " + said.verdict());
+    lines.add("- " + read.role() + ": " + said.verdict().word());
     said.findings().forEach(finding -> lines.add("    " + finding(finding)));
     said.premises().forEach(premise -> lines.add("    " + premise(premise)));
     if (!said.question().isBlank()) {

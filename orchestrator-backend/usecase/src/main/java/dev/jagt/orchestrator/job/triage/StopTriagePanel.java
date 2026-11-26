@@ -104,7 +104,9 @@ public class StopTriagePanel {
         StopTriage.Who.valueOf(said.group(1).toUpperCase(Locale.ROOT)),
         said.group(2),
         FAMILY.matcher(letter).matches() ? letter : StopTriage.UNKNOWN_FAMILY,
-        judged.verdict().equals("ready") ? StopTriage.Lift.SAFE : StopTriage.Lift.UNSAFE,
+        judged.verdict() == RoundReviewer.Verdict.READY
+            ? StopTriage.Lift.SAFE
+            : StopTriage.Lift.UNSAFE,
         judged.premises().stream()
             .map(RoundReviewer.Premise::claim)
             .reduce((first, second) -> first + "; " + second)

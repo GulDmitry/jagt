@@ -25,7 +25,26 @@ public interface CheckerReader {
       String model,
       Reach reach,
       String schema,
-      String role) {}
+      String role) {
+
+    /** The same read asked again, told what the last answer got wrong. */
+    public Run correcting(List<String> corrections) {
+      return corrections.isEmpty()
+          ? this
+          : new Run(
+              shared,
+              prompt
+                  + "\n<correction>Your last answer was refused: "
+                  + String.join("; ", corrections)
+                  + "</correction>",
+              worktree,
+              sha,
+              model,
+              reach,
+              schema,
+              role);
+    }
+  }
 
   /**
    * The only URLs the read may fetch and the extra roots it may read; a {@code workspace} is also

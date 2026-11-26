@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.service.CodeReviewSettings;
-import dev.jagt.orchestrator.service.assistant.Assistants;
+import dev.jagt.orchestrator.service.assistant.RoundReader;
 import dev.jagt.orchestrator.service.master.ChargedReviews;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 public class CodeReviewPanel {
 
   private final ChargedReviews charged;
-  private final Assistants assistants;
+  private final RoundReader rounds;
   private final OrchestratorPaths paths;
   private final ReviewLedger ledger;
   private final PreShipCoverage coverage;
@@ -79,7 +79,7 @@ public class CodeReviewPanel {
     if (subject.own()) {
       return charged.review(subject.taskId(), round);
     }
-    Answer<Judgement> read = assistants.reviewer().review(round);
+    Answer<Judgement> read = rounds.read(round);
     ledger.update(
         subject.url(),
         subject.project(),

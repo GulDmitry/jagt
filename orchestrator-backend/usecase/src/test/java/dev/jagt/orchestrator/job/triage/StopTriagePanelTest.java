@@ -14,6 +14,8 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.master.ChargedReviews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -84,7 +86,7 @@ class StopTriagePanelTest {
     when(reviews.review(eq("ABC-42"), any()))
         .thenReturn(
             triageJudgement()
-                .withVerdict("not ready")
+                .withVerdict(Verdict.NOT_READY)
                 .withIssue("session: same tree handed back")
                 .withPattern("F")
                 .build());
@@ -128,14 +130,14 @@ class StopTriagePanelTest {
         .thenReturn(
             new Judgement(
                 "",
-                "ready",
+                Verdict.READY,
                 List.of(new Finding("-", "none: the work moved", "unknown", "noise", "-", "scope")),
                 "",
                 List.of(
                     new RoundReviewer.Premise("tree changed", ""),
                     new RoundReviewer.Premise("tests green", "")),
                 "",
-                ""));
+                Press.NONE));
 
     StopTriage read = panel.read("ABC-42", stopped, trail, "haiku");
 

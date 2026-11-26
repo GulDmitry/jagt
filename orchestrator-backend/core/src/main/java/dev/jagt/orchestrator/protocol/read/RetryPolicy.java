@@ -17,6 +17,10 @@ public record RetryPolicy(int attempts, Duration between, Duration budget) {
   public static final RetryPolicy PAID_READ =
       new RetryPolicy(3, Duration.ofSeconds(2), Duration.ofMinutes(2));
 
+  /** A round read runs up to its own 15 minute timeout, so the budget outlasts one attempt. */
+  public static final RetryPolicy ROUND_READ =
+      new RetryPolicy(2, Duration.ofSeconds(2), Duration.ofMinutes(40));
+
   public RetryPolicy {
     if (attempts < 1) {
       throw new IllegalArgumentException("A policy that sends nothing is not a retry policy");

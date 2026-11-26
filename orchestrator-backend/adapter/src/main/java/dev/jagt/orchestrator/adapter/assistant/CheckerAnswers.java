@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.protocol.read.RowStatusRead;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.io.IOException;
@@ -66,12 +67,10 @@ final class CheckerAnswers {
     }
     List<AcceptanceVerdict.Row> rows = new ArrayList<>();
     for (JsonNode row : answer.path("rows")) {
-      Optional<AcceptanceVerdict.Status> status =
-          AcceptanceVerdict.Status.of(row.path("status").asString(""));
       rows.add(
           new AcceptanceVerdict.Row(
               row.path("criterion").asString(""),
-              status.orElse(AcceptanceVerdict.Status.UNPROVABLE),
+              RowStatusRead.statusOf(row.path("status").asString("")),
               row.path("evidence").asString("")));
     }
     return new AcceptanceVerdict(

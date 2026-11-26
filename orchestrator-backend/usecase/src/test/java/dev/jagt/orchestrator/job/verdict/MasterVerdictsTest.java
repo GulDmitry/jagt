@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.job.master.MasterShip;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -275,7 +276,7 @@ class MasterVerdictsTest {
                 "ABC-1",
                 reviewPending,
                 "keep v2?",
-                new MasterPanel.Decision("keep v2 beside v3", "", "")))
+                new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE)))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
@@ -379,7 +380,7 @@ class MasterVerdictsTest {
             "ABC-1",
             reviewPending,
             "keep v2?",
-            new MasterPanel.Decision("keep v2 beside v3", "", ""));
+            new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE));
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
@@ -390,7 +391,8 @@ class MasterVerdictsTest {
   @Test
   void relaysNoAnswerTextWhereTheAnswerIsMovePressedByTheMaster() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    when(answerPress.press(eq("ABC-1"), eq(reviewPending), eq("ship"), any(), eq(acting)))
+    when(answerPress.press(
+            eq("ABC-1"), eq(reviewPending), eq(new Press.Move("ship")), any(), eq(acting)))
         .thenReturn(MasterAnswerPress.Result.PRESSED);
 
     boolean decided =
@@ -398,7 +400,7 @@ class MasterVerdictsTest {
             "ABC-1",
             reviewPending,
             "ship to push?",
-            new MasterPanel.Decision("ship it", "", "ship"),
+            new MasterPanel.Decision("ship it", "", new Press.Move("ship")),
             Optional.of("tree"),
             acting);
 
@@ -421,7 +423,8 @@ class MasterVerdictsTest {
   @Test
   void relaysTheAnswerTextWhereTheAnswerIsNoMoveTheMasterHolds() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    when(answerPress.press(eq("ABC-1"), eq(reviewPending), eq("ship"), any(), eq(acting)))
+    when(answerPress.press(
+            eq("ABC-1"), eq(reviewPending), eq(new Press.Move("ship")), any(), eq(acting)))
         .thenReturn(MasterAnswerPress.Result.WORDS);
 
     boolean decided =
@@ -429,7 +432,7 @@ class MasterVerdictsTest {
             "ABC-1",
             reviewPending,
             "ship to push?",
-            new MasterPanel.Decision("ship it", "", "ship"),
+            new MasterPanel.Decision("ship it", "", new Press.Move("ship")),
             Optional.of("tree"),
             acting);
 
@@ -440,7 +443,8 @@ class MasterVerdictsTest {
   @Test
   void keepsTheQuestionForTheHumanWhereTheMoveTheMasterHoldsWasRefused() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    when(answerPress.press(eq("ABC-1"), eq(reviewPending), eq("ship"), any(), eq(acting)))
+    when(answerPress.press(
+            eq("ABC-1"), eq(reviewPending), eq(new Press.Move("ship")), any(), eq(acting)))
         .thenReturn(MasterAnswerPress.Result.REFUSED);
 
     boolean decided =
@@ -448,7 +452,7 @@ class MasterVerdictsTest {
             "ABC-1",
             reviewPending,
             "ship to push?",
-            new MasterPanel.Decision("ship it", "", "ship"),
+            new MasterPanel.Decision("ship it", "", new Press.Move("ship")),
             Optional.of("tree"),
             acting);
 
@@ -478,7 +482,7 @@ class MasterVerdictsTest {
         "ABC-42",
         task,
         "keep both imports?",
-        new MasterPanel.Decision("keep both imports", "", ""));
+        new MasterPanel.Decision("keep both imports", "", Press.NONE));
 
     verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"));
     verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
@@ -495,7 +499,7 @@ class MasterVerdictsTest {
             "ABC-42",
             task,
             "keep both imports?",
-            new MasterPanel.Decision("keep both imports", "", ""));
+            new MasterPanel.Decision("keep both imports", "", Press.NONE));
 
     assertThat(moved).isTrue();
   }
@@ -510,14 +514,14 @@ class MasterVerdictsTest {
         "ABC-42",
         task,
         "keep both imports?",
-        new MasterPanel.Decision("keep both imports", "", ""));
+        new MasterPanel.Decision("keep both imports", "", Press.NONE));
 
     boolean moved =
         verdicts.answered(
             "ABC-42",
             state.task("ABC-42").orElseThrow(),
             "keep both imports?",
-            new MasterPanel.Decision("keep both imports", "", ""));
+            new MasterPanel.Decision("keep both imports", "", Press.NONE));
 
     assertThat(moved).isFalse();
   }
@@ -530,7 +534,7 @@ class MasterVerdictsTest {
         "ABC-1",
         reviewPending,
         "override the gate?",
-        new MasterPanel.Decision("refactor the shared block", "", ""));
+        new MasterPanel.Decision("refactor the shared block", "", Press.NONE));
 
     verify(sessions).writeTaskContext(eq("ABC-1"), contains("refactor the shared block"));
     verify(sessions, never()).relayFresh(anyString(), anyString());
@@ -844,7 +848,10 @@ class MasterVerdictsTest {
     state.putTask("ABC-1", reviewPending);
 
     verdicts.answered(
-        "ABC-1", reviewPending, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", "", ""));
+        "ABC-1",
+        reviewPending,
+        "keep v2?",
+        new MasterPanel.Decision("keep v2\nbeside v3", "", Press.NONE));
 
     verify(decisions).record(reviewPending, "- asked: keep v2? — decided: keep v2 beside v3");
     verify(decisions).answered(reviewPending);
@@ -868,7 +875,7 @@ class MasterVerdictsTest {
             "ABC-1",
             state.task("ABC-1").orElseThrow(),
             "keep v2?",
-            new MasterPanel.Decision("keep v2 beside v3", "", ""));
+            new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE));
 
     assertThat(moved).isFalse();
     verify(decisions, never()).record(any(), anyString());
@@ -883,7 +890,7 @@ class MasterVerdictsTest {
         reviewPending,
         "a second request?",
         new MasterPanel.Decision(
-            "drop the old keys here", "do proj drop the old keys from main", ""));
+            "drop the old keys here", "do proj drop the old keys from main", Press.NONE));
 
     verify(sessions)
         .writeTaskContext(eq("ABC-1"), contains("Not opened: only the human opens a task."));
@@ -905,7 +912,7 @@ class MasterVerdictsTest {
             "ABC-1",
             reviewPending,
             "keep v2?",
-            new MasterPanel.Decision("keep v2 beside v3", "", ""));
+            new MasterPanel.Decision("keep v2 beside v3", "", Press.NONE));
 
     assertThat(moved).isFalse();
   }

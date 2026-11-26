@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.RoundRelay;
 import dev.jagt.orchestrator.service.RoundSource;
 import dev.jagt.orchestrator.service.StateService;
@@ -46,7 +48,8 @@ class PreShipReviewTest {
     when(changes.reviewKey(handedBack)).thenReturn("t1");
     when(changes.diff(handedBack)).thenReturn("+line1\n");
     when(panel.review(any(), any(), any(), anyString()))
-        .thenReturn(new Judgement("", "ready", List.of(leak, taste), "", List.of(), "", ""));
+        .thenReturn(
+            new Judgement("", Verdict.READY, List.of(leak, taste), "", List.of(), "", Press.NONE));
     when(relay.relay(any(), any(), any(), any(), any(), any()))
         .thenReturn(new SweepResult(SweepResult.Kind.RELAYED, "relayed"));
 
@@ -66,7 +69,7 @@ class PreShipReviewTest {
     when(changes.reviewKey(handedBack)).thenReturn("t2");
     when(changes.diff(handedBack)).thenReturn("+line2\n");
     when(panel.review(any(), any(), any(), anyString()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), "", ""));
+        .thenReturn(new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE));
 
     review.run("");
 
@@ -98,7 +101,7 @@ class PreShipReviewTest {
     when(changes.reviewKey(shipped)).thenReturn("t9");
     when(changes.diff(shipped)).thenReturn("+line9\n");
     when(panel.review(any(), any(), any(), anyString()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), "", ""));
+        .thenReturn(new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE));
 
     review.run("");
 
@@ -146,7 +149,7 @@ class PreShipReviewTest {
     when(changes.reviewKey(handedBack)).thenReturn("t7");
     when(changes.diff(handedBack)).thenReturn("+line7\n");
     when(panel.review(any(), any(), any(), anyString()))
-        .thenReturn(new Judgement("", "ready", List.of(leak), "", List.of(), "", ""));
+        .thenReturn(new Judgement("", Verdict.READY, List.of(leak), "", List.of(), "", Press.NONE));
     when(relay.relay(any(), any(), any(), any(), any(), any()))
         .thenReturn(new SweepResult(SweepResult.Kind.STOPPED, "stopped"));
 

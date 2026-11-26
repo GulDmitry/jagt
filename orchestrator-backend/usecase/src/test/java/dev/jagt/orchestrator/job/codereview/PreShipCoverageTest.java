@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -37,7 +39,8 @@ class PreShipCoverageTest {
 
     Judgement unseen =
         coverage.unseen(
-            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), "", ""));
+            "ABC-42",
+            new Judgement("", Verdict.READY, List.of(leak, gap), "", List.of(), "", Press.NONE));
 
     assertThat(unseen.findings()).containsExactly(gap);
   }
@@ -46,7 +49,8 @@ class PreShipCoverageTest {
   void keepsEveryFindingForTaskNothingWasRaisedFor() {
     Judgement unseen =
         coverage.unseen(
-            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), "", ""));
+            "ABC-42",
+            new Judgement("", Verdict.READY, List.of(leak, gap), "", List.of(), "", Press.NONE));
 
     assertThat(unseen.findings()).containsExactly(leak, gap);
   }
@@ -58,7 +62,8 @@ class PreShipCoverageTest {
 
     Judgement unseen =
         coverage.unseen(
-            "ABC-42", new Judgement("", "ready", List.of(leak, gap), "", List.of(), "", ""));
+            "ABC-42",
+            new Judgement("", Verdict.READY, List.of(leak, gap), "", List.of(), "", Press.NONE));
 
     assertThat(unseen.findings()).isEmpty();
   }

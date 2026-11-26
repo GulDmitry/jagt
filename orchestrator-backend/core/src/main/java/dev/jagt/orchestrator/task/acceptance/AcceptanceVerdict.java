@@ -56,12 +56,14 @@ public record AcceptanceVerdict(
   public enum Status {
     MET,
     NOT_MET,
-    UNPROVABLE;
+    UNPROVABLE,
+    /** A word that names none of the others. */
+    UNREAD;
 
     public static Optional<Status> of(String written) {
       String id = written.strip().toUpperCase(Locale.ROOT).replace(' ', '_');
       return java.util.Arrays.stream(values())
-          .filter(status -> status.name().equals(id))
+          .filter(status -> status != UNREAD && status.name().equals(id))
           .findFirst();
     }
   }

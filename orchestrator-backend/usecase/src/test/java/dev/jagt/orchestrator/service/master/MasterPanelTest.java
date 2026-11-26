@@ -20,6 +20,8 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -61,7 +63,8 @@ class MasterPanelTest {
       new ConfigFile.ArbiterConfig("act", null, null, null, null);
   private final MasterPanel.RoundRead emptyRead =
       new MasterPanel.RoundRead("", "", "", List.of(), "");
-  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "", "");
+  private final Judgement ready =
+      new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE);
 
   private StateService state;
   private MasterReview stored;
@@ -400,46 +403,48 @@ class MasterPanelTest {
         .thenReturn(
             new Judgement(
                 "",
-                "answer",
+                Verdict.READY,
                 List.of(new Finding("", "keep v2 beside v3", "", "blocking", "", "")),
                 "",
                 List.of(),
                 "do proj drop the old keys",
-                ""));
+                Press.NONE));
 
     MasterPanel.Answer decision =
         panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
 
     assertThat(decision)
-        .isEqualTo(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys", ""));
+        .isEqualTo(
+            new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys", Press.NONE));
   }
 
   @Test
-  void answersWithTheMoveTheReviewerNamedTrimmed() {
+  void answersWithTheMoveTheReviewerNamed() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
     when(reviews.review(eq("ABC-1"), any()))
         .thenReturn(
             new Judgement(
                 "",
-                "ready",
+                Verdict.READY,
                 List.of(new Finding("", "ship it, the tree is green", "", "noise", "", "")),
                 "",
                 List.of(),
                 "",
-                " ship "));
+                new Press.Move("ship")));
 
     MasterPanel.Answer decision =
         panel.answer("ABC-1", inProgress, "outcome=question — ship to push?", act, false);
 
     assertThat(decision)
-        .isEqualTo(new MasterPanel.Decision("ship it, the tree is green", "", "ship"));
+        .isEqualTo(
+            new MasterPanel.Decision("ship it, the tree is green", "", new Press.Move("ship")));
   }
 
   @Test
   void answersNothingWhereTheReviewerNamedNothing() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
     when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "answer", List.of(), "", List.of(), "", ""));
+        .thenReturn(new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE));
 
     MasterPanel.Answer decision =
         panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);
@@ -454,12 +459,12 @@ class MasterPanelTest {
         .thenReturn(
             new Judgement(
                 "stopped",
-                "",
+                Verdict.NOT_READY,
                 List.of(new Finding("", "keep v2", "", "blocking", "", "")),
                 "",
                 List.of(),
                 "",
-                ""));
+                Press.NONE));
 
     MasterPanel.Answer decision =
         panel.answer("ABC-1", inProgress, "outcome=question — keep v2?", act, false);

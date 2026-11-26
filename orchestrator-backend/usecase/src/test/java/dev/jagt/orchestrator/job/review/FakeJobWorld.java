@@ -48,6 +48,7 @@ import dev.jagt.orchestrator.service.KeptNumbers;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.service.assistant.KeptTicketTexts;
+import dev.jagt.orchestrator.service.assistant.RoundReader;
 import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.git.GitCommands;
 import dev.jagt.orchestrator.service.git.GitWorktrees;
@@ -304,7 +305,7 @@ public final class FakeJobWorld implements AutoCloseable {
     MasterPanel panel =
         new MasterPanel(
             new ChargedReviews(
-                models,
+                new RoundReader(models),
                 usage,
                 new TrustedGitState(state, new GitWorktrees(git, FakeHost.machine())),
                 List::of),

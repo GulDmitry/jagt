@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.testing;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CodeHostAssistant;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.port.assistant.RoutingAssistant;
 import dev.jagt.orchestrator.port.assistant.TrackerAssistant;
 import dev.jagt.orchestrator.service.assistant.Assistants;
@@ -73,7 +75,8 @@ public final class FakeAssistants {
           public Answer<Judgement> review(Round round) {
             reviewed.add(round.worktrees().getFirst().getFileName().toString());
             return new Answer<>(
-                Optional.of(new Judgement("", "ready", List.of(), "", List.of(), "", "")),
+                Optional.of(
+                    new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE)),
                 TokenUsage.NONE);
           }
 

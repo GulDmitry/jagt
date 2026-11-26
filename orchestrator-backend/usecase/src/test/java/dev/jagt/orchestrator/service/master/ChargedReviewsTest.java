@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.assistant.Assistants;
+import dev.jagt.orchestrator.service.assistant.RoundReader;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
@@ -35,7 +36,8 @@ class ChargedReviewsTest {
     TokenUsage spent = TokenUsage.ofCall(1_000, 0, 10, 0.01);
     when(assistants.reviewer().review(round)).thenReturn(new Answer<>(Optional.empty(), spent));
 
-    new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
+    new ChargedReviews(new RoundReader(assistants), usage, trusted, List::of)
+        .review("ABC-1", round);
 
     verify(usage).chargeTask("ABC-1", spent);
   }
@@ -46,7 +48,8 @@ class ChargedReviewsTest {
     when(assistants.reviewer().review(round)).thenReturn(Answer.unavailable());
 
     Judgement judged =
-        new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
+        new ChargedReviews(new RoundReader(assistants), usage, trusted, List::of)
+            .review("ABC-1", round);
 
     assertThat(judged.failure()).isEqualTo("the review answered nothing");
   }
@@ -58,7 +61,8 @@ class ChargedReviewsTest {
         .thenReturn(Optional.of("core.fsmonitor in /r/.git/config added"));
 
     Judgement judged =
-        new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
+        new ChargedReviews(new RoundReader(assistants), usage, trusted, List::of)
+            .review("ABC-1", round);
 
     assertThat(judged.failure()).isEqualTo("core.fsmonitor in /r/.git/config added");
     verifyNoInteractions(assistants.reviewer());
@@ -72,7 +76,8 @@ class ChargedReviewsTest {
         new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1"), Path.of("/specs")), "");
     when(assistants.reviewer().review(reaching)).thenReturn(Answer.unavailable());
 
-    new ChargedReviews(assistants, usage, trusted, () -> List.of(Path.of("/specs")))
+    new ChargedReviews(
+            new RoundReader(assistants), usage, trusted, () -> List.of(Path.of("/specs")))
         .review("ABC-1", round);
 
     verify(assistants.reviewer()).review(reaching);
@@ -83,7 +88,9 @@ class ChargedReviewsTest {
   void saysWhetherTheReaderLoadsAnMcpServerAsTheReaderDoes(boolean loads) {
     when(assistants.reviewer().loadsMcpServer()).thenReturn(loads);
 
-    assertThat(new ChargedReviews(assistants, usage, trusted, List::of).loadsMcpServer())
+    assertThat(
+            new ChargedReviews(new RoundReader(assistants), usage, trusted, List::of)
+                .loadsMcpServer())
         .isEqualTo(loads);
   }
 
@@ -93,7 +100,8 @@ class ChargedReviewsTest {
     when(assistants.reviewer().review(round)).thenReturn(Answer.unavailable());
     try (FakeLogCapture log = new FakeLogCapture(ChargedReviews.class)) {
 
-      new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
+      new ChargedReviews(new RoundReader(assistants), usage, trusted, List::of)
+          .review("ABC-1", round);
 
       assertThat(log.events())
           .filteredOn(event -> event.getMessage().equals("master call charged"))

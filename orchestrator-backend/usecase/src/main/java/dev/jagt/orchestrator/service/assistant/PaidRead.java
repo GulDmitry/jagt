@@ -19,16 +19,35 @@ import org.springframework.util.backoff.FixedBackOff;
  * answer for the caller to judge.
  */
 @Slf4j
-final class PaidRead {
+public final class PaidRead {
 
   private PaidRead() {}
 
-  static <T> Answer<T> untilUsable(
+  public static <T> Answer<T> untilUsable(
       RetryPolicy policy,
       String ref,
       Function<List<String>, Answer<T>> ask,
       Function<T, List<Violation>> violations,
       Predicate<T> usable) {
+    return asked(policy, ref, ask, violations, usable, true);
+  }
+
+  /** An answer holding nothing is returned as it is: only one holding violations is asked again. */
+  public static <T> Answer<T> untilWithoutViolations(
+      RetryPolicy policy,
+      String ref,
+      Function<List<String>, Answer<T>> ask,
+      Function<T, List<Violation>> violations) {
+    return asked(policy, ref, ask, violations, facts -> violations.apply(facts).isEmpty(), false);
+  }
+
+  private static <T> Answer<T> asked(
+      RetryPolicy policy,
+      String ref,
+      Function<List<String>, Answer<T>> ask,
+      Function<T, List<Violation>> violations,
+      Predicate<T> usable,
+      boolean retryEmpty) {
     Attempts<T> attempts = new Attempts<>();
     RetryTemplate template =
         new RetryTemplate(
@@ -43,7 +62,8 @@ final class PaidRead {
         Answer<T> answer = ask.apply(attempts.corrections);
         attempts.spent = attempts.spent.plus(answer.usage());
         attempts.last = answer;
-        if (answer.facts().filter(usable).isPresent()) {
+        if (answer.facts().filter(usable).isPresent()
+            || (!retryEmpty && answer.facts().isEmpty())) {
           return answer;
         }
         attempts.corrections =

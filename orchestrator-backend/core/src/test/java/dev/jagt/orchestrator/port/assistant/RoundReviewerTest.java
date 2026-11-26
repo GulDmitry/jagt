@@ -22,6 +22,6 @@ class RoundReviewerTest {
     assertThat(failed.failure()).isEqualTo("no answer");
     assertThat(failed.findings()).isEmpty();
     assertThat(failed.premises()).isEmpty();
-    assertThat(failed.verdict()).isEmpty();
+    assertThat(failed.verdict()).isEqualTo(RoundReviewer.Verdict.NOT_READY);
   }
 }

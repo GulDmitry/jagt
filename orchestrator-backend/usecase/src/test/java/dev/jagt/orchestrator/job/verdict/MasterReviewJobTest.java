@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -38,7 +40,7 @@ class MasterReviewJobTest {
   private final MasterRuling verdicts = mock(MasterRuling.class);
   private final MasterReview.Read acceptanceReady =
       new MasterReview.Read(
-          "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "", ""));
+          "acceptance", new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE));
   @TempDir Path root;
   private StateService state;
   private MasterReview reviews;

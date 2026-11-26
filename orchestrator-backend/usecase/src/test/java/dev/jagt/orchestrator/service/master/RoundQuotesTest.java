@@ -15,6 +15,8 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -111,12 +113,12 @@ class RoundQuotesTest {
                     "acceptance",
                     new Judgement(
                         "",
-                        "not ready",
+                        Verdict.NOT_READY,
                         List.of(new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")),
                         "",
                         List.of(),
                         "",
-                        "")))),
+                        Press.NONE)))),
         "");
     TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));

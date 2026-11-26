@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.adapter.replay;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +99,7 @@ public class RecordedVerdicts {
       return Optional.empty();
     }
     Finding decided = new Finding("", answers.removeFirst().decision(), "", "", "", "");
-    return Optional.of(new Judgement("", "ready", List.of(decided), "", List.of(), "", ""));
+    return Optional.of(
+        new Judgement("", Verdict.READY, List.of(decided), "", List.of(), "", Press.NONE));
   }
 }

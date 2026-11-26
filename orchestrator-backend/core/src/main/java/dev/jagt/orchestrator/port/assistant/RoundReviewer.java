@@ -1,7 +1,11 @@
 package dev.jagt.orchestrator.port.assistant;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 /**
@@ -24,6 +28,20 @@ public interface RoundReviewer {
    * is where it runs. {@code model} blank inherits the agent CLI's own.
    */
   record Round(String shared, String prompt, List<Path> worktrees, String model) {
+
+    /** The same round asked again, told what the last answer got wrong. */
+    public Round correcting(List<String> corrections) {
+      return corrections.isEmpty()
+          ? this
+          : new Round(
+              shared,
+              prompt
+                  + "\n<correction>Your last answer was refused: "
+                  + String.join("; ", corrections)
+                  + "</correction>",
+              worktrees,
+              model);
+    }
 
     public Round reaching(List<Path> beside) {
       return new Round(
@@ -76,22 +94,79 @@ public interface RoundReviewer {
    */
   record Premise(String claim, String provenBy) {}
 
+  /** {@code UNREAD} is a word that names none of the others. */
+  enum Verdict {
+    READY("ready"),
+    NOT_READY("not ready"),
+    QUESTION("question"),
+    UNREAD("");
+
+    private final String word;
+
+    Verdict(String word) {
+      this.word = word;
+    }
+
+    @JsonValue
+    public String word() {
+      return word;
+    }
+
+    @JsonCreator
+    public static Verdict ofWord(String written) {
+      String said = written.strip().toLowerCase(Locale.ROOT);
+      return Arrays.stream(values())
+          .filter(verdict -> verdict != UNREAD && verdict.word.equals(said))
+          .findFirst()
+          .orElse(UNREAD);
+    }
+  }
+
+  /** What an answer to a question is: words, or the move whose id it names. */
+  sealed interface Press {
+
+    Press NONE = new Words();
+
+    /** Blank where the answer is words. */
+    @JsonValue
+    String id();
+
+    @JsonCreator
+    static Press ofId(String written) {
+      return written.isBlank() ? NONE : new Move(written.strip());
+    }
+
+    record Words() implements Press {
+
+      @Override
+      public String id() {
+        return "";
+      }
+    }
+
+    record Move(String id) implements Press {}
+  }
+
   /**
-   * {@code failure} non-blank means nothing else in it was read. {@code newTask} is work the reader
-   * would open as a task of its own, blank where none. {@code press} is the id of the move an
-   * answer to a question is, blank where it is words.
+   * {@code failure} non-blank means nothing else in it was read, {@code verdict} then being {@code
+   * NOT_READY}. {@code newTask} is work the reader would open as a task of its own, blank where
+   * none.
    */
   record Judgement(
       String failure,
-      String verdict,
+      Verdict verdict,
       List<Finding> findings,
       String question,
       List<Premise> premises,
       String newTask,
-      String press) {
+      Press press) {
+
+    public Judgement {
+      press = press == null ? Press.NONE : press;
+    }
 
     public static Judgement failed(String failure) {
-      return new Judgement(failure, "", List.of(), "", List.of(), "", "");
+      return new Judgement(failure, Verdict.NOT_READY, List.of(), "", List.of(), "", Press.NONE);
     }
   }
 

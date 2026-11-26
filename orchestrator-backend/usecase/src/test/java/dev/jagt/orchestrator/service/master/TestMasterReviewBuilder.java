@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import java.util.List;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
@@ -25,6 +27,7 @@ public record TestMasterReviewBuilder(
         inputs,
         List.of(
             new MasterReview.Read(
-                "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "", ""))));
+                "acceptance",
+                new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE))));
   }
 }

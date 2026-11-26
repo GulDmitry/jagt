@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.assistant.Assistants;
+import dev.jagt.orchestrator.service.assistant.RoundReader;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.reach.SessionReach;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ChargedReviews {
 
-  private final Assistants assistants;
+  private final RoundReader rounds;
   private final UsageTracker usage;
   private final TrustedGitState trusted;
   private final SessionReach reach;
@@ -31,7 +31,7 @@ public class ChargedReviews {
     if (distrusted.isPresent()) {
       return Judgement.failed(distrusted.get());
     }
-    var read = assistants.reviewer().review(round.reaching(reach.beside()));
+    var read = rounds.read(round.reaching(reach.beside()));
     usage.chargeTask(taskId, read.usage());
     log.atInfo()
         .setMessage("master call charged")
@@ -42,6 +42,6 @@ public class ChargedReviews {
   }
 
   public boolean loadsMcpServer() {
-    return assistants.reviewer().loadsMcpServer();
+    return rounds.loadsMcpServer();
   }
 }

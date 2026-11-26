@@ -11,6 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -61,7 +63,7 @@ class MasterPanelRolesTest {
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), "", ""));
+        .thenReturn(new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE));
   }
 
   @Test

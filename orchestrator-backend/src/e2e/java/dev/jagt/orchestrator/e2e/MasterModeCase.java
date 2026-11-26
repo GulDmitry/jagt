@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.stream.Stream;
@@ -8,7 +9,7 @@ record MasterModeCase(
     String name,
     String mode,
     List<String> mine,
-    String verdict,
+    Verdict verdict,
     TaskStatus expected,
     boolean read,
     String told) {
@@ -24,7 +25,7 @@ record MasterModeCase(
             "act ships a ready round",
             "act",
             List.of(),
-            "ready",
+            Verdict.READY,
             TaskStatus.SHIPPING,
             true,
             "reviewRequestUrl=<the url>"),
@@ -32,7 +33,7 @@ record MasterModeCase(
             "act with mine: [ship] leaves the ship yours",
             "act",
             List.of("ship"),
-            "ready",
+            Verdict.READY,
             TaskStatus.REVIEW_PENDING,
             true,
             "Fix the widget"),
@@ -40,7 +41,7 @@ record MasterModeCase(
             "off reads nothing",
             "off",
             List.of(),
-            "ready",
+            Verdict.READY,
             TaskStatus.REVIEW_PENDING,
             false,
             "Fix the widget"));
@@ -52,7 +53,7 @@ record MasterModeCase(
             "act starts a plan that holds",
             "act",
             List.of(),
-            "ready",
+            Verdict.READY,
             TaskStatus.IN_PROGRESS,
             true,
             "the plan holds"),
@@ -60,7 +61,7 @@ record MasterModeCase(
             "act returns a plan that misses the ticket",
             "act",
             List.of(),
-            "not ready",
+            Verdict.NOT_READY,
             TaskStatus.IN_PROGRESS,
             true,
             "Rework the plan"),
@@ -68,7 +69,7 @@ record MasterModeCase(
             "judge holds a plan for the human",
             "judge",
             List.of(),
-            "ready",
+            Verdict.READY,
             TaskStatus.PLAN_PENDING,
             true,
             "Fix the widget"),
@@ -76,7 +77,7 @@ record MasterModeCase(
             "act with mine: [plan] holds it for the human",
             "act",
             List.of("plan"),
-            "ready",
+            Verdict.READY,
             TaskStatus.PLAN_PENDING,
             true,
             "Fix the widget"),
@@ -84,7 +85,7 @@ record MasterModeCase(
             "off reads no plan",
             "off",
             List.of(),
-            "ready",
+            Verdict.READY,
             TaskStatus.PLAN_PENDING,
             false,
             "Fix the widget"));
@@ -96,7 +97,7 @@ record MasterModeCase(
             "act answers the session",
             "act",
             List.of(),
-            "",
+            Verdict.QUESTION,
             TaskStatus.IN_PROGRESS,
             true,
             "The Master answered your question"),
@@ -104,7 +105,7 @@ record MasterModeCase(
             "act with mine: [answer] leaves it for the human",
             "act",
             List.of("answer"),
-            "",
+            Verdict.QUESTION,
             TaskStatus.IN_PROGRESS,
             false,
             "Fix the widget"));
@@ -116,7 +117,7 @@ record MasterModeCase(
             "act deploys a green request",
             "act",
             List.of(),
-            "ready",
+            Verdict.READY,
             TaskStatus.DEPLOYED,
             true,
             ""),
@@ -124,7 +125,7 @@ record MasterModeCase(
             "act with mine: [deploy, revert] leaves the press yours",
             "act",
             List.of("deploy", "revert"),
-            "ready",
+            Verdict.READY,
             TaskStatus.REVIEWED,
             true,
             ""));

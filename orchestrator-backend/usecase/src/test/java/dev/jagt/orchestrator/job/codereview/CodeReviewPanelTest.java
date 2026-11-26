@@ -14,9 +14,12 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.Assistants;
+import dev.jagt.orchestrator.service.assistant.RoundReader;
 import dev.jagt.orchestrator.service.master.ChargedReviews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -51,12 +54,13 @@ class CodeReviewPanelTest {
     when(reviewer.review(any()))
         .thenReturn(
             new Answer<>(
-                Optional.of(new Judgement("", "ready", List.of(), "", List.of(), "", "")),
+                Optional.of(
+                    new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE)),
                 new TokenUsage(1, 10, 0, 5, 0.75)));
     CodeReviewPanel panel =
         new CodeReviewPanel(
             charged,
-            assistants,
+            new RoundReader(assistants),
             paths,
             ledger,
             new PreShipCoverage(stateService().withRoot(root).build()));
@@ -79,7 +83,9 @@ class CodeReviewPanelTest {
     Finding leak = new Finding("A.java", "leaks", "", "wrong", "close()", "resource");
     Finding gap = new Finding("B.java", "no test", "", "unproven", "run()", "test");
     when(charged.review(any(), any()))
-        .thenReturn(new Judgement("", "changes", List.of(leak, gap), "", List.of(), "", ""));
+        .thenReturn(
+            new Judgement(
+                "", Verdict.NOT_READY, List.of(leak, gap), "", List.of(), "", Press.NONE));
     StateService state = stateService().withRoot(root).build();
     state.putTask("ABC-42", TaskState.builder("shop", "/wt", TaskStatus.REVIEW_PENDING).build());
     PreShipCoverage coverage = new PreShipCoverage(state);
@@ -87,7 +93,7 @@ class CodeReviewPanelTest {
     Subject own = new Subject("shop", "https://h/a/b/7", "remote.example:a/b.git", "ABC-42");
 
     Judgement judged =
-        new CodeReviewPanel(charged, assistants, paths, ledger, coverage)
+        new CodeReviewPanel(charged, new RoundReader(assistants), paths, ledger, coverage)
             .review(own, RequestChange.defaults(), root, "");
 
     assertThat(judged.findings()).containsExactly(gap);

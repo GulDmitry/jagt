@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -92,10 +94,12 @@ class MasterReviewTest {
             "",
             List.of(
                 new MasterReview.Read(
-                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "", "")),
+                    "acceptance",
+                    new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE)),
                 new MasterReview.Read(
                     "developer",
-                    new Judgement("", "not ready", List.of(inverted), "", List.of(), "", "")))),
+                    new Judgement(
+                        "", Verdict.NOT_READY, List.of(inverted), "", List.of(), "", Press.NONE)))),
         "");
 
     var verdict = reviews.of(state.task("a1").orElseThrow()).orElseThrow();

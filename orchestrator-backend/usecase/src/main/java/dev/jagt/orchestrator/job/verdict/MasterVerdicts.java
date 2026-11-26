@@ -166,14 +166,14 @@ public class MasterVerdicts {
       case REFUSED -> false;
       case PRESSED -> {
         decisions.record(
-            task, "- asked: " + question + " — decided: pressed " + decision.press().strip());
+            task, "- asked: " + question + " — decided: pressed " + decision.press().id());
         decisions.answered(task);
         log.atInfo()
             .setMessage("master answered by pressing")
             .addKeyValue("task", taskId)
             .addKeyValue("alias", task.ticket().alias())
             .addKeyValue("question", OneLine.clipped(question))
-            .addKeyValue("cmd", decision.press().strip())
+            .addKeyValue("cmd", decision.press().id())
             .log();
         yield true;
       }

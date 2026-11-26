@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.master.MasterReview.Read;
 import dev.jagt.orchestrator.service.master.MasterReview.Review;
 import java.nio.file.Files;
@@ -29,24 +31,24 @@ class MasterVerdictReportTest {
                     "architect",
                     new Judgement(
                         "",
-                        "not_ready",
+                        Verdict.NOT_READY,
                         List.of(
                             new Finding(
                                 "A.java", "leaks the caller", "", "blocking", "run", "leak")),
                         "",
                         List.of(new Premise("A names its caller", "grep: A.kt:3")),
                         "",
-                        "")),
+                        Press.NONE)),
                 new Read(
                     "acceptance",
                     new Judgement(
                         "",
-                        "question",
+                        Verdict.QUESTION,
                         List.of(),
                         "which test pins it?",
                         List.of(new Premise("no test", "")),
                         "",
-                        "")),
+                        Press.NONE)),
                 new Read("designer", Judgement.failed("no reply"))));
 
     String report = MasterVerdictReport.describe("READY, naming [leak]", review);
@@ -56,7 +58,7 @@ class MasterVerdictReportTest {
             """
             expected: READY, naming [leak]
             stored verdict, round 7:
-            - architect: not_ready
+            - architect: not ready
                 finding [blocking] A.java run - leaks the caller
                 premise: A names its caller (proven by: grep: A.kt:3)
             - acceptance: question
@@ -78,7 +80,8 @@ class MasterVerdictReportTest {
             "",
             List.of(
                 new Read(
-                    "developer", new Judgement("", "ready", List.of(), "", List.of(), "", ""))));
+                    "developer",
+                    new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE))));
     new JsonMapper().writeValue(worktree.resolve(".jagt/master-review.json").toFile(), review);
 
     String report = MasterVerdictReport.of("NOT_READY", worktree);

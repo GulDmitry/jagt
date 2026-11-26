@@ -4,6 +4,7 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import dev.jagt.orchestrator.port.CurrentOrigin;
 import dev.jagt.orchestrator.port.GitDistrust;
 import dev.jagt.orchestrator.port.MergedRefresh;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -140,6 +141,8 @@ public final class RecordWithers {
               CurrentOrigin.class,
               variant ->
                   (CurrentOrigin) () -> variant == 0 ? ActionOrigin.BOARD : ActionOrigin.MASTER),
+          Map.entry(
+              Press.class, variant -> variant == 0 ? Press.NONE : new Press.Move("v" + variant)),
           Map.entry(List.class, variant -> List.of("v" + variant)),
           Map.entry(Set.class, variant -> Set.of("v" + variant)),
           Map.entry(Map.class, variant -> Map.of("v" + variant, "v" + variant)));

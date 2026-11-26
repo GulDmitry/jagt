@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -33,7 +35,7 @@ class MasterStopPanelTest {
     when(briefs.master("ABC-1", config)).thenReturn(Optional.of("the brief"));
     Finding said = new Finding("", "lift: each round answered a new report", "", "", "", "");
     when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(said), "", List.of(), "", ""));
+        .thenReturn(new Judgement("", Verdict.READY, List.of(said), "", List.of(), "", Press.NONE));
 
     Optional<MasterStopAnswer> answer = panel.ask("ABC-1", stopped, config);
 

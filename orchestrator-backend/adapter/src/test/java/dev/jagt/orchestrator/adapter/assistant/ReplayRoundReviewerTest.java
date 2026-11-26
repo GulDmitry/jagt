@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.adapter.replay.RecordedVerdicts;
 import dev.jagt.orchestrator.adapter.replay.Recording;
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Round;
 import java.nio.file.Files;
@@ -30,7 +31,7 @@ class ReplayRoundReviewerTest {
     Answer<Judgement> answer =
         reviewer.review(new Round("", "<role>You are the QA</role>", List.of(), ""));
 
-    assertThat(answer.facts().orElseThrow().verdict()).isEqualTo("ready");
+    assertThat(answer.facts().orElseThrow().verdict()).isEqualTo(RoundReviewer.Verdict.READY);
     assertThat(answer.usage().isNone()).isTrue();
   }
 

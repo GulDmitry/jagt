@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class RecordedVerdictsTest {
     Judgement read =
         verdicts.answer("<role>You are the QA of jagt's unattended reviewer</role>").orElseThrow();
 
-    assertThat(read.verdict()).isEqualTo("ready");
+    assertThat(read.verdict()).isEqualTo(Verdict.READY);
   }
 
   @Test
@@ -89,7 +90,7 @@ class RecordedVerdictsTest {
     Judgement read =
         verdicts.answer("<role>You are the QA of jagt's unattended reviewer</role>").orElseThrow();
 
-    assertThat(read.verdict()).isEqualTo("not ready");
+    assertThat(read.verdict()).isEqualTo(Verdict.NOT_READY);
   }
 
   @Test
@@ -100,7 +101,7 @@ class RecordedVerdictsTest {
         file,
         """
         {"type":"verdict","round":2,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
-        {"type":"verdict","round":2,"role":"code-reviewer","judgement":{"failure":"","verdict":"code","findings":[],"question":"","premises":[],"newTask":""}}
+        {"type":"verdict","round":2,"role":"code-reviewer","judgement":{"failure":"","verdict":"not ready","findings":[],"question":"","premises":[],"newTask":""}}
         """);
     RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
 
@@ -109,7 +110,7 @@ class RecordedVerdictsTest {
             .answer(RoundReviewer.REVIEW_LEAD + "https://h/a/b/pull/7, checked out")
             .orElseThrow();
 
-    assertThat(read.verdict()).isEqualTo("code");
+    assertThat(read.verdict()).isEqualTo(Verdict.NOT_READY);
   }
 
   @Test
@@ -118,14 +119,14 @@ class RecordedVerdictsTest {
     Files.writeString(
         file,
         """
-        {"type":"verdict","round":2,"role":"code-reviewer","judgement":{"failure":"","verdict":"code","findings":[],"question":"","premises":[],"newTask":""}}
+        {"type":"verdict","round":2,"role":"code-reviewer","judgement":{"failure":"","verdict":"not ready","findings":[],"question":"","premises":[],"newTask":""}}
         {"type":"verdict","round":2,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
         """);
     RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
 
     Judgement read = verdicts.answer("<role>You judge the plan of task ABC-1</role>").orElseThrow();
 
-    assertThat(read.verdict()).isEqualTo("ready");
+    assertThat(read.verdict()).isEqualTo(Verdict.READY);
   }
 
   @Test
@@ -134,14 +135,14 @@ class RecordedVerdictsTest {
     Files.writeString(
         file,
         """
-        {"type":"verdict","round":1,"role":"bot-answer","judgement":{"failure":"","verdict":"answer","findings":[],"question":"","premises":[],"newTask":""}}
+        {"type":"verdict","round":1,"role":"bot-answer","judgement":{"failure":"","verdict":"question","findings":[],"question":"","premises":[],"newTask":""}}
         """);
     RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
 
     Judgement read =
         verdicts.answer(RoundReviewer.ANSWER_LEAD + "https://h/a/b/pull/7. Answer").orElseThrow();
 
-    assertThat(read.verdict()).isEqualTo("answer");
+    assertThat(read.verdict()).isEqualTo(Verdict.QUESTION);
   }
 
   @Test

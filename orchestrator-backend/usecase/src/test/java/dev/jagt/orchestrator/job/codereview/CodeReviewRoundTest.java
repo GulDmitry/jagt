@@ -14,6 +14,8 @@ import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
 import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import dev.jagt.orchestrator.port.codehost.review.NoteAnchor;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
@@ -171,14 +173,14 @@ class CodeReviewRoundTest {
         .thenReturn(
             new RoundReviewer.Judgement(
                 "",
-                "findings",
+                Verdict.NOT_READY,
                 List.of(
                     new RoundReviewer.Finding(
                         "A.java", "null here", "p", "wrong", "int x = null;", "npe")),
                 "",
                 List.of(),
                 "",
-                ""));
+                Press.NONE));
     when(poster.post(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(NotePoster.Outcome.POSTED);
 

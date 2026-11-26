@@ -5,12 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Premise;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Press;
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Verdict;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class MasterVerdictFileTest {
 
-  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "", "");
+  private final Judgement ready =
+      new Judgement("", Verdict.READY, List.of(), "", List.of(), "", Press.NONE);
 
   private static final List<MasterPanel.Role> TWO =
       List.of(
@@ -27,7 +30,7 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "",
-                        "not ready",
+                        Verdict.NOT_READY,
                         List.of(
                             new Finding(
                                 "Api.java",
@@ -39,7 +42,7 @@ class MasterVerdictFileTest {
                         "",
                         List.of(),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
@@ -57,12 +60,12 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "",
-                        "ready",
+                        Verdict.READY,
                         List.of(),
                         "",
                         List.of(new Premise("tests pass", "gradle test: 2 passed")),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
@@ -79,7 +82,7 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "",
-                        "not ready",
+                        Verdict.NOT_READY,
                         List.of(
                             new Finding(
                                 "QuoteMock.java",
@@ -91,7 +94,7 @@ class MasterVerdictFileTest {
                         "",
                         List.of(),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
@@ -110,12 +113,12 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "",
-                        "ready",
+                        Verdict.READY,
                         List.of(),
                         "",
                         List.of(new Premise("v2 and v3 cannot be told apart", "")),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
@@ -134,13 +137,13 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "",
-                        "not ready",
+                        Verdict.NOT_READY,
                         List.of(
                             new Finding("Foo.java", "rename present", "naming", "noise", "", "")),
                         "",
                         List.of(),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
@@ -159,12 +162,12 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "",
-                        "question",
+                        Verdict.QUESTION,
                         List.of(),
                         "Add v3 beside v2, or replace it?",
                         List.of(),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
@@ -198,9 +201,21 @@ class MasterVerdictFileTest {
                 TWO,
                 List.of(
                     new Judgement(
-                        "", "question", List.of(), "Add v3 beside v2?", List.of(), "", ""),
+                        "",
+                        Verdict.QUESTION,
+                        List.of(),
+                        "Add v3 beside v2?",
+                        List.of(),
+                        "",
+                        Press.NONE),
                     new Judgement(
-                        "", "question", List.of(), "Drop the old keys?", List.of(), "", ""))),
+                        "",
+                        Verdict.QUESTION,
+                        List.of(),
+                        "Drop the old keys?",
+                        List.of(),
+                        "",
+                        Press.NONE))),
             List.of());
 
     assertThat(file)
@@ -217,12 +232,12 @@ class MasterVerdictFileTest {
                 List.of(
                     new Judgement(
                         "read failed",
-                        "",
+                        Verdict.NOT_READY,
                         List.of(),
                         "",
                         List.of(new Premise("tests pass", "")),
                         "",
-                        ""),
+                        Press.NONE),
                     ready)),
             List.of());
 
