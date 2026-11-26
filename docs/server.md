@@ -44,10 +44,10 @@ Work in a full jagt checkout: the image builds from it with Gradle, a download o
 
 ## Bot accounts and secrets
 
-One account per service, never your own: a code-host account that clones and pushes task branches, and the agent CLI's account or API key.
-A leaked key then costs one service.
+One account per service, never your own: a code-host account cloning and pushing task branches, and the agent CLI's; a leaked key costs one service.
 Their secrets live in `.env` for compose or a `Secret` for Kubernetes (`examples/server.env`), never in `jagt.yml` or an image.
 Verify a published image: `gh attestation verify oci://ghcr.io/guldmitry/jagt:<version> --repo GulDmitry/jagt`.
+A pinned image stays pullable 90 days at least, the latest patch of the last two minors for good: mirror the image you pin.
 
 ## Configuration
 

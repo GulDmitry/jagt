@@ -715,6 +715,23 @@ class CiWorkflowTest {
   }
 
   @Test
+  void deletesOneReleaseOnlyWhenOlderThanNinetyDaysAndNotTheLatestPatchOfTheLastTwoMinors() {
+    String release = Objects.requireNonNull(CiWorkflow.jobs().get("release")).toString();
+
+    assertThat(release)
+        .contains("keep the latest patch of the last two minors and every release under 90 days")
+        .contains("group_by(.minor) | map(max_by(.createdAt))")
+        .contains(".[:2] | map(.tagName)) as $kept")
+        .contains("now - 7776000")
+        .contains(
+            "select(.createdAt < $cutoff) | select(.tagName as $t | $kept | index($t) | not)");
+    assertThat(SourceRoots.read(Path.of("../docs/server.md")))
+        .contains("stays pullable 90 days at least")
+        .contains("latest patch of the last two minors")
+        .contains("mirror the image you pin");
+  }
+
+  @Test
   void scansTheBaseImageByDigestWithTheChecksumVerifiedScanBinary() {
     String workflow = SourceRoots.read(Path.of("../.github/workflows/base-image.yml"));
     String scan = SourceRoots.read(Path.of("scripts/vulnerability-scan.sh"));

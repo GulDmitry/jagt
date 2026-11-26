@@ -284,7 +284,7 @@ jobs:
           version=$(./gradlew --no-daemon -q printVersion)
           echo "${DIGEST#sha256:}  ghcr.io image jagt:$version" > "build/release/jagt-$version.image.sha256"
           gh release upload "$TAG" "build/release/jagt-$version.image.sha256" --clobber
-      - name: keep every patch of the last two minors
+      - name: keep the latest patch of the last two minors and every release under 90 days
         if: steps.version.outputs.new == 'true'
         id: retention
         env:
@@ -292,9 +292,9 @@ jobs:
         run: |
           tags=$(gh release list --limit 1000 --json tagName,createdAt -q '
             map(. + {minor: (.tagName | try capture("^v(?<v>[0-9]+[.][0-9]+)").v catch .)})
-            | (group_by(.minor) | map({minor: .[0].minor, at: (map(.createdAt) | max)})
-               | sort_by(.at) | reverse | .[:2] | map(.minor)) as $kept
-            | .[] | select(.minor as $m | $kept | index($m) | not) | .tagName')
+            | (group_by(.minor) | map(max_by(.createdAt)) | sort_by(.createdAt) | reverse | .[:2] | map(.tagName)) as $kept
+            | (now - 7776000 | strftime("%Y-%m-%dT%H:%M:%SZ")) as $cutoff
+            | .[] | select(.createdAt < $cutoff) | select(.tagName as $t | $kept | index($t) | not) | .tagName')
           for tag in $tags; do gh release delete "$tag" --yes; done
           echo "image-tags=$(printf '%s\n' $tags | sed 's/^v//' | paste -sd, -)" >> "$GITHUB_OUTPUT"
       - name: delete the deleted releases' images
