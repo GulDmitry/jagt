@@ -16,10 +16,10 @@ public final class FitnessRaises {
 
   /**
    * A row absent from the base is new. A loosening passes only when the row's decision changed to
-   * one {@code recordExists} confirms.
+   * one {@code recordChanged} confirms.
    */
   public static List<String> loosened(
-      String file, String baseYaml, String headYaml, Predicate<String> recordExists) {
+      String file, String baseYaml, String headYaml, Predicate<String> recordChanged) {
     Map<String, Map<?, ?>> base = rows(baseYaml);
     List<String> violations = new ArrayList<>();
     rows(headYaml)
@@ -33,7 +33,7 @@ public final class FitnessRaises {
               boolean allowed =
                   decision != null
                       && !Objects.equals(before.get("decision"), decision)
-                      && recordExists.test(decision.toString());
+                      && recordChanged.test(decision.toString());
               if (!allowed) {
                 for (String bound : List.of("max", "min")) {
                   loosening(before, head, bound)
@@ -42,6 +42,11 @@ public final class FitnessRaises {
               }
             });
     return violations;
+  }
+
+  public static Predicate<String> recordChangedIn(List<String> changedPaths) {
+    return id ->
+        changedPaths.stream().anyMatch(path -> path.startsWith("docs/decisions/" + id + "-"));
   }
 
   private static Optional<String> loosening(Map<?, ?> before, Map<?, ?> head, String bound) {

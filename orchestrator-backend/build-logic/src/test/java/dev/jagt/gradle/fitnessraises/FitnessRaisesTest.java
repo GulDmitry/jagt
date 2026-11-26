@@ -80,6 +80,32 @@ class FitnessRaisesTest {
   }
 
   @Test
+  void raisedCeilingPointingAtPreExistingUnchangedRecordIsNamed() {
+    List<String> changed = List.of("docs/decisions/0176-ports-ceiling.md");
+
+    assertThat(
+            FitnessRaises.loosened(
+                "fitness.yml",
+                PORTS_58,
+                PORTS_59_NEW_DECISION,
+                FitnessRaises.recordChangedIn(changed)))
+        .hasSize(1);
+  }
+
+  @Test
+  void raisedCeilingPointingAtRecordChangedSinceMergeBasePasses() {
+    List<String> changed = List.of("docs/decisions/0300-ports-ceiling.md");
+
+    assertThat(
+            FitnessRaises.loosened(
+                "fitness.yml",
+                PORTS_58,
+                PORTS_59_NEW_DECISION,
+                FitnessRaises.recordChangedIn(changed)))
+        .isEmpty();
+  }
+
+  @Test
   void rowAbsentFromBasePasses() {
     assertThat(FitnessRaises.loosened("fitness.yml", "technical: {}\n", PORTS_59, id -> true))
         .isEmpty();

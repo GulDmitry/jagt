@@ -6,7 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.DirectoryProperty;
@@ -29,6 +28,11 @@ public abstract class FitnessRaisesTask extends DefaultTask {
     Path root = getRepository().get().getAsFile().toPath().getParent();
     Git git = new Git(root);
     String mergeBase = mergeBase(git);
+    List<String> changed =
+        new ArrayList<>(
+            git.lines(
+                "diff", "--name-only", "--diff-filter=AMR", mergeBase, "--", "docs/decisions"));
+    changed.addAll(git.lines("ls-files", "--others", "--exclude-standard", "--", "docs/decisions"));
     List<String> violations = new ArrayList<>();
     for (String file : git.lines("ls-files", "--", "fitness.yml", "**/fitness.yml")) {
       List<String> baseLines = showAt(git, mergeBase, file);
@@ -38,7 +42,7 @@ public abstract class FitnessRaisesTask extends DefaultTask {
                 file,
                 String.join("\n", baseLines),
                 Files.readString(root.resolve(file)),
-                id -> recordExists(root, id)));
+                FitnessRaises.recordChangedIn(changed)));
       }
     }
     if (!violations.isEmpty()) {
@@ -59,14 +63,6 @@ public abstract class FitnessRaisesTask extends DefaultTask {
       return git.lines("show", commit + ":" + file);
     } catch (IllegalStateException absentInBase) {
       return List.of();
-    }
-  }
-
-  private static boolean recordExists(Path root, String id) {
-    try (Stream<Path> records = Files.list(root.resolve("docs/decisions"))) {
-      return records.anyMatch(record -> record.getFileName().toString().startsWith(id + "-"));
-    } catch (IOException unreadable) {
-      return false;
     }
   }
 }
