@@ -47,3 +47,24 @@ No board script SHALL compare, sort or format in the browser's locale: `localeCo
 #### Scenario: A key is missing
 - **WHEN** a board source asks `t()` or a `data-t*` attribute for a key `en.json` lacks
 - **THEN** the board's catalog test fails naming the key
+
+### Requirement: No mark is told apart by colour alone
+Two marks in one Help legend row SHALL differ in shape or glyph.
+A control's edge SHALL be at least 3:1 on `--panel` in both themes ([design.md](../../../docs/rules/design.md)).
+#### Scenario: The legend in greyscale
+- **WHEN** the human opens `Help`
+- **THEN** every pair of marks in a row differs in shape, glyph or text
+- **AND** a failed checks dot is a square, a passed one a disc, a deployed verb ends in `↻`, a log chip starts with `▸`
+#### Scenario: The Drafted tab
+- **WHEN** replies were drafted since the human last opened the Drafted tab
+- **THEN** the tab carries a `new` pill and no other tab wears a coloured underline
+
+### Requirement: Every mark class has a design line and a legend sample
+A class of `app.css` carrying a semantic colour, a dashed or dotted line or a glyph SHALL be named in `docs/rules/design.md`.
+It SHALL also have a sample in the Help legend. Every selector `design.md` names SHALL exist in `app.css`.
+#### Scenario: A mark class without a line or a sample
+- **WHEN** a class with a colour, border or glyph is added to `app.css` with no `design.md` line or legend sample
+- **THEN** `DesignMarksTest` fails naming the class
+#### Scenario: A selector design.md names is gone
+- **WHEN** `design.md` names a selector `app.css` no longer holds
+- **THEN** `DesignMarksTest` fails naming the selector

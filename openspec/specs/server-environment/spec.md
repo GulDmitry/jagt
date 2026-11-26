@@ -126,7 +126,8 @@ The image SHALL set `HOME` to `/data/home`, created at every start, so a session
 
 ### Requirement: The configuration is on the volume
 The image SHALL read and write `jagt.yml` at `/data/jagt.yml`.
-A start finding no file there SHALL copy the image's `jagt.server.yml.dist` to it; a start finding one SHALL leave it alone.
+A start finding no file there SHALL copy the image's `jagt.server.yml.dist` to it; a start finding one SHALL leave it alone,
+unless `JAGT_CONFIG_FROM_IMAGE` is `true`: then every start SHALL copy the image's file over it, with no key merged.
 
 #### Scenario: A project added, then a recreate
 - **WHEN** a project is added from the board and the container is recreated on the same volume
@@ -139,6 +140,14 @@ A start finding no file there SHALL copy the image's `jagt.server.yml.dist` to i
 - **WHEN** the volume holds no `jagt.yml` and one is mounted at `/app/jagt.yml`
 - **THEN** the mounted file is copied there instead of the starter
 
+#### Scenario: Image wins
+- **WHEN** `JAGT_CONFIG_FROM_IMAGE` is `true`, a new image changes a key and the pod restarts on the same volume
+- **THEN** the volume's `jagt.yml` is the new image's file and jagt runs with the new key
+
+#### Scenario: Volume wins
+- **WHEN** `JAGT_CONFIG_FROM_IMAGE` is unset or `false` and the pod restarts on a volume holding a `jagt.yml`
+- **THEN** the volume's file is kept as it was
+
 ### Requirement: A start creates the temporary and cache folders on the volume
 The entrypoint SHALL create `TMPDIR` and `XDG_CACHE_HOME` before jagt starts when either lies under `ORCHESTRATOR_DATA`.
 A folder outside it SHALL be left alone.
@@ -146,3 +155,33 @@ A folder outside it SHALL be left alone.
 #### Scenario: An empty volume
 - **WHEN** the container starts with `TMPDIR=/data/tmp` and the volume is empty
 - **THEN** the folder exists before the JVM starts
+
+### Requirement: A plugin server needing a browser login is switched off, or marked
+`claude.disabledPlugins` SHALL also be handed to every headless read that inherits the agent's own servers, as
+`enabledPlugins: {"<id>": false}`; a read with pinned servers loads those alone and is handed nothing.
+The agent's MCP servers SHALL be probed every ten minutes. A server not connected, needing a login included, SHALL be the
+head's MCP mark, naming it, with no failed read first. A server of a plugin in `disabledPlugins` SHALL be no mark.
+
+#### Scenario: A read inherits the servers
+- **WHEN** `disabledPlugins` names `acme-tracker@market`, no MCP config is pinned and a read starts
+- **THEN** the read loads no server of that plugin
+
+#### Scenario: A server needs a login
+- **WHEN** the probe finds `acme tracker` needing authentication and no read has failed
+- **THEN** the head names `acme tracker` and its status
+
+#### Scenario: Its plugin is disabled
+- **WHEN** `acme-tracker@market` is in `disabledPlugins` and the probe lists `plugin:acme-tracker:tracker` needing authentication
+- **THEN** the head shows no mark for it
+
+### Requirement: A fresh agent home starts past the first-run setup
+Provisioning a worktree SHALL set `hasCompletedOnboarding` to true in the agent's `.claude.json`, keeping every other key.
+A window still showing a phrase of the runtime's `first-run-prompt` SHALL be reported as waiting on the first-run setup.
+
+#### Scenario: An empty volume
+- **WHEN** a task starts and the agent home has no `.claude.json`, or one without the key
+- **THEN** the key is true, the other keys are kept, and the session is briefed with no key press
+
+#### Scenario: A first-run picker still shows
+- **WHEN** a session's window shows the first-run picker
+- **THEN** the session is reported as waiting on the first-run setup

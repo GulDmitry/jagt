@@ -15,6 +15,9 @@ import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 final class GuardedBoard {
 
@@ -49,14 +52,23 @@ final class GuardedBoard {
   }
 
   private static HttpSessionRequestCache pagesOnly() {
-    MediaTypeRequestMatcher json = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON);
-    json.setIgnoredMediaTypes(Set.of(MediaType.ALL));
+    MediaTypeRequestMatcher html = new MediaTypeRequestMatcher(MediaType.TEXT_HTML);
+    html.setIgnoredMediaTypes(Set.of(MediaType.ALL));
+    RequestMatcher fetchMetadata =
+        new OrRequestMatcher(
+            new RequestHeaderRequestMatcher("Sec-Fetch-Mode", "navigate"),
+            new RequestHeaderRequestMatcher("Sec-Fetch-Dest", "document"));
+    RequestMatcher noFetchMetadata =
+        new NegatedRequestMatcher(
+            new OrRequestMatcher(
+                new RequestHeaderRequestMatcher("Sec-Fetch-Mode"),
+                new RequestHeaderRequestMatcher("Sec-Fetch-Dest")));
     HttpSessionRequestCache cache = new HttpSessionRequestCache();
     cache.setRequestMatcher(
         new AndRequestMatcher(
             PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, "/**"),
             new NegatedRequestMatcher(PathPatternRequestMatcher.withDefaults().matcher("/api/**")),
-            new NegatedRequestMatcher(json)));
+            new OrRequestMatcher(fetchMetadata, new AndRequestMatcher(noFetchMetadata, html))));
     return cache;
   }
 }

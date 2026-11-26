@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 public final class TestKinds {
 
+  private static final String SUITE_GUARD = "org.junit.platform.launcher.LauncherSessionListener";
   private static final String TESTABLE = "org.junit.platform.commons.annotation.Testable";
   private static final String METHOD_SOURCE = "org.junit.jupiter.params.provider.MethodSource";
   private static final Set<String> CALLED_BY_A_FRAMEWORK =
@@ -119,6 +120,8 @@ public final class TestKinds {
         || name.endsWith("Properties")
         || (name.startsWith("Test") && name.endsWith("Builder") && type.isRecord())
         || (name.startsWith("Fake") && extendsMainType(type))
+        || type.getAllRawInterfaces().stream()
+            .anyMatch(parent -> parent.getName().equals(SUITE_GUARD))
         || location(type).contains(ROOT_TEST_SET);
   }
 

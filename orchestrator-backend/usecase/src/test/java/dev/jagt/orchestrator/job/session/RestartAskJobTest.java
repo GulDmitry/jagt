@@ -14,7 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
@@ -67,7 +67,7 @@ class RestartAskJobTest {
             "ABC-42",
             Step.RESTARTED,
             "jagt was restarted.",
-            Standing.of(state.task("ABC-42").orElseThrow()));
+            SessionStanding.of(state.task("ABC-42").orElseThrow()));
   }
 
   @Test
@@ -77,7 +77,8 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -86,7 +87,8 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -96,7 +98,8 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -106,7 +109,8 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -123,7 +127,7 @@ class RestartAskJobTest {
             "ABC-42",
             Step.RESTARTED,
             "jagt was restarted.",
-            Standing.of(state.task("ABC-42").orElseThrow()));
+            SessionStanding.of(state.task("ABC-42").orElseThrow()));
 
     job.runOn(state.tasks());
 
@@ -132,7 +136,7 @@ class RestartAskJobTest {
             "ABC-43",
             Step.RESTARTED,
             "jagt was restarted.",
-            Standing.of(state.task("ABC-43").orElseThrow()));
+            SessionStanding.of(state.task("ABC-43").orElseThrow()));
   }
 
   @Test
@@ -144,7 +148,8 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -154,7 +159,8 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 
   @Test
@@ -168,6 +174,7 @@ class RestartAskJobTest {
 
     job.runOn(state.tasks());
 
-    verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    verify(relay, never())
+        .say(anyString(), any(Step.class), anyString(), any(SessionStanding.class));
   }
 }

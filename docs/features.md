@@ -31,12 +31,12 @@
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — A lost reach (code host, MCP server) is one mark on the head, never a card's stop; its login runs on the Session tab.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-shows-in-the-boards-head)
+- **Cut-short starts** — A restart keeps one on the head until `resume <key>` or `resume <key> discard`. [spec](../openspec/specs/task-start/spec.md)
 - **Settings dialog on the gear** — Theme, language, `jagt.yml` in sections. [spec](../openspec/specs/board-settings/spec.md)
 - **Board as its own app** — `board/` from the jar or `orchestrator.board.dir`; coupled by `contracts/`. [spec](../openspec/specs/board-app/spec.md)
 - **Accessible board** — axe-core checks every view. [spec](../openspec/specs/board-app/spec.md#requirement-the-board-passes-an-accessibility-check)
 - **Board access** — Loopback, `password` or `oidc`; refuses foreign writes; own-origin CSP, login back-off, audit line, owner-only metrics.
-  [spec](../openspec/specs/board/spec.md)
-  [spec](../openspec/specs/board-security/spec.md)
+  [spec](../openspec/specs/board/spec.md) [spec](../openspec/specs/board-security/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
@@ -54,14 +54,13 @@
   [who](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
 
 ## Cases · [spec](../openspec/specs/cases/spec.md) · [debug reads](../openspec/specs/debug-reads/spec.md)
-- **Your own cases** — A case sends a step and opens a turn, or lets the Master move.
-  [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
-- **Debug reads** — A local CLI reads the log, stops, a task's transcript and the Master's feed through `/mcp` or `/api/debug`, changing nothing.
+- **Your own cases** — A case sends a step and opens a turn, or lets the Master move. [spec](../openspec/specs/cases/spec.md)
+- **Debug reads** — A CLI reads the log, stops, a transcript, a screen, the Master's feed, threads over `/mcp` or `/api/debug`, changing nothing.
   [spec](../openspec/specs/debug-reads/spec.md#requirement-a-running-jagt-is-read-never-changed-through-its-own-door)
 
 ## Fitness functions · [kinds](../ARCHITECTURE.md#the-kinds)
-- **Fitness functions in one file** — `fitness.yml` declares each in a reserved tree and each module's exposed packages; `./gradlew fitness` runs all.
-  [spec](../openspec/specs/fitness/spec.md#requirement-a-fitness-function-reports-its-number-against-its-threshold)
+- **Fitness functions in one file** — `fitness.yml` declares each in a reserved tree and each module's exposed packages; task `fitness` runs all,
+  `fitnessRaises` fails a loosened row without a new `decision:`. [spec](../openspec/specs/fitness/spec.md)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 - **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
@@ -125,8 +124,9 @@
   [spec](../openspec/specs/infra-wait/spec.md#requirement-a-session-waits-out-a-dependency-that-is-down)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
-- **Sessions in tmux** — Each agent runs in a tmux window, viewed in kitty or Ghostty (`orchestrator.terminal`),
-  on `orchestrator.agent.model` where the notes name none. [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
+- **Sessions in tmux or herdr** — Each agent runs in a tmux window or a herdr tab (`orchestrator.session-host`), viewed in kitty
+  or Ghostty (`orchestrator.terminal`), on `orchestrator.agent.model` where the notes name none.
+  [spec](../openspec/specs/session-host/spec.md#requirement-the-session-host-is-chosen-by-a-key-tmux-the-default)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
 - **Revive after a restart** — Sessions return where they were; one that wrote while jagt was down is asked once to repeat its report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
@@ -135,7 +135,7 @@
   [spec](../openspec/specs/shutdown/spec.md)
 - **Cold prompts** — Past the cache lifetime, a typed prompt starts fresh. [spec](../openspec/specs/cold-prompts/spec.md)
 - **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/platform/spec.md#requirement-the-editor-is-a-launcher)
-- **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
+- **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Keys: `claude.mcpConfig`, `disabledPlugins`.
   [spec](../openspec/specs/runtime/spec.md#requirement-a-sessions-servers-can-be-pinned)
 
 ## Session brief · [spec](../openspec/specs/session-brief/spec.md)

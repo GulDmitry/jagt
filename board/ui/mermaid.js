@@ -32,11 +32,9 @@ const load = () => {
   return state.loading;
 };
 
-/** @param {ParentNode | null | undefined} root */
+/** @param {ParentNode} root */
 export function draw(root) {
-  const fences = root
-    ? [...root.querySelectorAll("pre > code.language-mermaid")]
-    : [];
+  const fences = [...root.querySelectorAll("pre > code.language-mermaid")];
   if (!fences.length) return;
   const nodes = fences.map((code) => {
     const node = make("div", "mermaid", code.textContent ?? "");

@@ -28,6 +28,7 @@ export function view() {
     manyProjects: many,
     open,
     flagged: open ? flags.holds(open.id) : false,
+    logStands: selection.logStands(),
     now: Date.now(),
   };
 }

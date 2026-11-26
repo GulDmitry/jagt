@@ -5,6 +5,8 @@ import {
   classes,
   marked,
   requestLines,
+  ringed,
+  statusClass,
   statusTip,
   watchLine,
 } from "./facts.js";
@@ -23,7 +25,7 @@ const RequestChip = ({ url, label, openedAt = 0, task, sole, now }) => {
     href=${httpOnly(url)}
     target="_blank"
     rel="noreferrer"
-    class=${classes("mr-age", approved && "approved", sole && watch?.stalled && "stalled")}
+    class=${classes("mr-age", approved && "approved", sole && ringed(task, watch?.stalled) && "stalled")}
     data-tip=${lines.join("\n")}
     >${text}${approved ? " ✓" : ""}</a
   >`;
@@ -57,7 +59,7 @@ const ChecksDot = ({ task }) => {
 const StatusChip = ({ task, stalled, now }) => {
   const { tip, live } = statusTip(task, stalled);
   return html`<span
-    class=${classes("status", stalled && "stalled", live && "live")}
+    class=${statusClass(task, stalled, live)}
     data-tip=${tip || undefined}
     tabindex=${tip ? 0 : undefined}
     role=${live ? "img" : undefined}
@@ -70,7 +72,7 @@ const StatusChip = ({ task, stalled, now }) => {
 /** @param {{ task: CardTask, now: number }} props */
 const Repositories = ({ task, now }) =>
   html`<span
-    class=${classes("repos", watchLine(task.autoReview, now)?.stalled && "stalled")}
+    class=${classes("repos", ringed(task, watchLine(task.autoReview, now)?.stalled) && "stalled")}
     >${(task.repos || []).map(
       (repo, index) =>
         html`${index ? " + " : ""}${

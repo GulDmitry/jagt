@@ -9,7 +9,9 @@ export function status(tasks) {
     broken:
       tasks.some((task) => task.detailKind === "PROBLEM") ||
       Boolean(store.jobs()?.failing) ||
-      store.chips().some((chip) => chip.broken) ||
+      store
+        .chips()
+        .some((chip) => chip.kind === "BAD" || chip.kind === "STALLED") ||
       store.reach().length > 0,
   });
   watch(tasks, Boolean(store.jobs()?.failing));

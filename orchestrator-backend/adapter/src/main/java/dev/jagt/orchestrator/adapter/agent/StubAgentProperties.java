@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.task.text.Blank;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -11,7 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record StubAgentProperties(@Nullable String script) {
 
   public StubAgentProperties {
-    script = script == null || script.isBlank() ? null : script.strip();
+    script = Blank.toNull(script);
   }
 
   public static StubAgentProperties defaults() {

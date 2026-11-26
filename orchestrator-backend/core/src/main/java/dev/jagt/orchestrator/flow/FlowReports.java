@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -145,6 +145,21 @@ public class FlowReports {
     return Optional.ofNullable(landed.get());
   }
 
+  /** Refuses a no_plan report where jagt holds the gate; the task is written nothing else. */
+  public void requireNoPlanAllowed(String taskId) {
+    AtomicReference<String> refused = new AtomicReference<>();
+    tasks.reduce(
+        taskId,
+        (reducer, task) -> {
+          Optional<String> why = reducer.refusedNoPlan(task);
+          why.ifPresent(refused::set);
+          return why.isPresent() ? task.refused(RefusalKind.STATUS_REPORT) : task;
+        });
+    if (refused.get() != null) {
+      throw Refusal.byState(refused.get());
+    }
+  }
+
   /**
    * A question jagt itself puts about a task, which keeps its status: a status no session reports
    * cannot carry it.
@@ -232,7 +247,7 @@ public class FlowReports {
   }
 
   private static boolean standing(TaskState task, TaskState read) {
-    return Standing.of(task).equals(Standing.of(read));
+    return SessionStanding.of(task).equals(SessionStanding.of(read));
   }
 
   private TaskState declined(

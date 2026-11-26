@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import static dev.jagt.orchestrator.protocol.Wire.absent;
+import static dev.jagt.orchestrator.protocol.Wire.webLink;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
@@ -370,9 +371,7 @@ public record AgentStatusMessage(
     if (reviewRequestUrl != null && !reviewRequestUrl.isBlank()) {
       links.add(reviewRequestUrl.strip());
     }
-    return links.stream()
-        .filter(link -> !link.startsWith("http://") && !link.startsWith("https://"))
-        .toList();
+    return links.stream().filter(link -> !webLink(link)).toList();
   }
 
   private List<String> unknownProjects(List<String> projectsOnTask) {

@@ -1,4 +1,4 @@
-/* One stylesheet, no imports, no fonts to fetch: the board must work with the machine offline. */
+/* One stylesheet, no imports, no fonts to fetch: the board must work offline. */
 :root {
   color-scheme: light dark;
   --bg: light-dark(#f6f7f9, #14171a);
@@ -68,7 +68,7 @@ header .waiting {
   padding: 3px 4px 3px 10px;
   width: 320px;
   max-width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 6px;
   background: var(--bg);
   color: var(--muted);
@@ -144,7 +144,8 @@ button.apart {
   border-color: transparent;
   background: none;
 }
-button.apart:hover:not(:disabled) {
+button.apart:hover:not(:disabled),
+.chip.bad {
   color: var(--danger);
   border-color: var(--danger);
 }
@@ -160,10 +161,7 @@ dialog#project-dialog {
   color: var(--text);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
-dialog#launch-dialog::backdrop,
-dialog#gear-dialog::backdrop,
-dialog#settings-dialog::backdrop,
-dialog#project-dialog::backdrop {
+dialog:not(#report)::backdrop {
   background: rgba(16, 19, 26, 0.35);
 }
 dialog form {
@@ -190,7 +188,6 @@ dialog form .report-head {
 .field input,
 .field select {
   font-size: 14px;
-  color: var(--text);
 }
 fieldset.field legend {
   padding: 0;
@@ -232,7 +229,7 @@ fieldset.field legend {
 .choice {
   display: inline-flex;
   flex-wrap: wrap;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 6px;
   overflow: hidden;
 }
@@ -253,14 +250,17 @@ fieldset.field legend {
   margin: 0;
   cursor: pointer;
 }
-.choice label:has(input:checked) {
+.choice label:has(input:checked),
+#settings-body .tabs button[aria-selected="true"] {
   background: var(--chip-bg);
   font-weight: 600;
 }
 .choice label:has(input:checked) span::before {
   content: "✓ ";
 }
-.choice label:has(input:focus-visible) {
+.choice label:has(input:focus-visible),
+.row .pick:focus-visible,
+.row-verb:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
@@ -268,7 +268,7 @@ input[role="switch"] {
   appearance: none;
   width: 34px;
   height: 18px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 9px;
   background: var(--chip-bg);
   position: relative;
@@ -296,12 +296,17 @@ input[role="switch"]:checked::after {
   color: var(--muted);
   font-size: 11px;
 }
-.hint:empty {
-  display: none;
+#settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  height: min(640px, 90vh);
 }
 #settings-body {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 170px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
   gap: 16px;
   padding: 12px 16px;
 }
@@ -309,9 +314,14 @@ input[role="switch"]:checked::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
 }
 #settings-dialog .dialog-foot {
   padding: 10px 16px;
+}
+#settings-restart:not(.waiting) {
+  visibility: hidden;
 }
 .field-row {
   display: flex;
@@ -360,9 +370,8 @@ input[role="switch"]:checked::after {
   color: var(--text);
   border-bottom-color: var(--accent);
 }
-.tabs button.you {
-  color: var(--you);
-  border-bottom-color: var(--you);
+.tabs .badge {
+  margin-left: 6px;
 }
 #settings-body .tabs {
   flex-direction: column;
@@ -372,10 +381,6 @@ input[role="switch"]:checked::after {
 #settings-body .tabs button {
   text-align: left;
   padding: 6px 10px;
-}
-#settings-body .tabs button[aria-selected="true"] {
-  background: var(--chip-bg);
-  font-weight: 600;
 }
 .screen {
   margin: 0;
@@ -538,24 +543,26 @@ h1 {
 }
 select,
 input[type="text"],
+input[type="number"],
 input:not([type]) {
   background: var(--bg);
   color: var(--text);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 6px;
   padding: 5px 8px;
   font: inherit;
 }
 button {
   font: inherit;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   background: var(--panel);
   color: var(--text);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
 }
-button:hover:not(:disabled) {
+button:hover:not(:disabled),
+button[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -581,13 +588,10 @@ button.primary:hover:not(:disabled) {
   border-radius: 999px;
   padding: 2px 8px;
 }
-.chip.bad {
-  color: var(--danger);
-  border-color: var(--danger);
-}
 body.stale #board,
 body.stale #phases,
-body.stale #report-line {
+body.stale #report-line,
+.legend-key .stale {
   opacity: 0.5;
 }
 
@@ -603,10 +607,6 @@ body.stale #report-line {
 #palette input#ask {
   flex: 1;
   min-width: 260px;
-}
-button[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 #palette-state.ok {
   color: var(--ok);
@@ -875,6 +875,22 @@ main#board {
 main#board:empty {
   padding: 0;
 }
+@media (min-width: 1200px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+  main#board:not(:empty) {
+    flex: auto;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  #tasks {
+    max-height: 100%;
+    overflow: auto;
+  }
+}
 main#board > #pane:only-child {
   grid-column: 1 / -1;
 }
@@ -883,9 +899,7 @@ main#board > #pane:only-child {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  position: sticky;
-  top: 8px;
-  max-height: calc(100vh - 72px);
+  max-height: 100%;
   overflow: auto;
 }
 #pane article {
@@ -934,7 +948,6 @@ main#board > #pane:only-child {
     display: inline-block;
   }
   #pane {
-    position: static;
     max-height: none;
     overflow: visible;
   }
@@ -1095,12 +1108,27 @@ a.mr-age.approved,
   border-radius: 999px;
   padding: 0 6px;
 }
+.status.paused {
+  border: 1px dashed var(--muted);
+  border-radius: 999px;
+  padding: 0 6px;
+  color: var(--muted);
+}
+.status.paused .age {
+  opacity: 1;
+}
 .chip.stalled {
   border-color: var(--you);
+}
+.chip.paused {
+  border-style: dashed;
 }
 button.chip.log {
   background: none;
   cursor: pointer;
+}
+button.chip.log::before {
+  content: "▸ ";
 }
 .chip.log.on {
   color: var(--accent);
@@ -1252,8 +1280,8 @@ a {
   border-left-color: var(--danger);
 }
 
-/* A verdict is filled — red failed, green passed — and a run still going is a hollow pulsing ring, so the three
-   read apart with the animation switched off. No dot at all is a verdict nothing here can read. */
+/* A verdict is filled — a red square failed, a green disc passed — and a run still going is a hollow pulsing ring,
+   so the three read apart in greyscale and with the animation switched off. No dot at all is a verdict nothing here can read. */
 .checks {
   width: 9px;
   height: 9px;
@@ -1263,6 +1291,7 @@ a {
 }
 .checks.red {
   background: var(--danger);
+  border-radius: 0;
 }
 .checks.green {
   background: var(--ok);
@@ -1291,6 +1320,12 @@ button:not(.primary).again:hover:not(:disabled) {
 /* The highlighted move keeps its fill and takes the mark as a ring: green ON accent is legible in neither theme. */
 button.primary.again {
   box-shadow: 0 0 0 2px var(--ok);
+}
+button.again::after {
+  content: " ↻";
+}
+button.again[data-key]::after {
+  content: " ↻ " attr(data-key);
 }
 button.quiet,
 button.quiet:hover:not(:disabled) {
@@ -1346,6 +1381,18 @@ button.quiet:hover:not(:disabled) {
   background: var(--chip-bg);
   color: var(--danger);
 }
+.badge.problem::before {
+  content: "! ";
+}
+.badge.stop {
+  box-shadow: 0 0 0 1px var(--you);
+}
+.badge.stop::before {
+  content: "■ ";
+}
+.badge.paused::before {
+  content: "‖ ";
+}
 #tasks .keys {
   margin: 0;
   padding: 6px 10px;
@@ -1353,11 +1400,6 @@ button.quiet:hover:not(:disabled) {
   font-size: 11px;
   color: var(--muted);
   font-family: var(--mono);
-}
-.row .pick:focus-visible,
-.row-verb:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
 }
 table.jobs th {
   text-align: left;

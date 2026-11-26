@@ -22,9 +22,14 @@ public class DebugReads {
   private final OrchestratorPaths paths;
   private final StateService state;
   private final AgentRuntime runtime;
+  private final ThreadDump threadDump;
 
   public String stops(int lines) {
     return tail(paths.layout().stops(), lines);
+  }
+
+  public String threads() {
+    return threadDump.read();
   }
 
   public String stopsReviewed(int lines) {

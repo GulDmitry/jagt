@@ -24,13 +24,19 @@ const { clearLabel, emptyFacts, orderFacts, segments } =
   await import("../ui/phasefacts.js");
 
 test("theEmptyTextShows whenNothingIsHeld", () => {
-  const facts = emptyFacts(0, 0, 0);
+  const facts = emptyFacts(0, 0, 0, false);
 
   assert.deepEqual([facts.emptyHidden, facts.filteredHidden], [false, true]);
 });
 
+test("theEmptyTextHides whileARoleLogStandsOnAnEmptyBoard", () => {
+  const facts = emptyFacts(0, 0, 0, true);
+
+  assert.equal(facts.emptyHidden, true);
+});
+
 test("theFilteredTextShows whenEverythingIsFilteredOut", () => {
-  const facts = emptyFacts(3, 0, 1);
+  const facts = emptyFacts(3, 0, 1, false);
 
   assert.deepEqual(
     [facts.emptyHidden, facts.filteredHidden, facts.filtered],
@@ -39,7 +45,7 @@ test("theFilteredTextShows whenEverythingIsFilteredOut", () => {
 });
 
 test("neitherTextShows whenSomethingIsShown", () => {
-  const facts = emptyFacts(3, 2, 1);
+  const facts = emptyFacts(3, 2, 1, false);
 
   assert.deepEqual([facts.emptyHidden, facts.filteredHidden], [true, true]);
 });

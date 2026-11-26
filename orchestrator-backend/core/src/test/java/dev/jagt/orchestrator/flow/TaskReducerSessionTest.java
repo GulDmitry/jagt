@@ -302,6 +302,34 @@ class TaskReducerSessionTest {
   }
 
   @Test
+  void goesQuietSinceTheLogWriteWhenTheWindowOnlyRepaintedAfterLogWriteDroppedTheTurnEnd() {
+    TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+    TaskState idle = reducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+
+    TaskState quiet =
+        reducer.signed(
+            idle,
+            new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 1_500, 0, 5_000, null),
+            9_000);
+
+    assertThat(quiet.work().session().quietSince()).isEqualTo(1_500);
+  }
+
+  @Test
+  void staysWorkingWhenTheWindowPrintedRecentlyAndNoTurnEverEnded() {
+    TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+    TaskState working = reducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+
+    TaskState read =
+        reducer.signed(
+            working,
+            new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000, null),
+            9_000);
+
+    assertThat(read.work().session().quietSince()).isZero();
+  }
+
+  @Test
   void endsAnEndedSessionWhenLaterReadFindsItsAgentProcessRunning() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState ended = reducer.signed(task, new SessionSign.Ended("boom"), 1_000);

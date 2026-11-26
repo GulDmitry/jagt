@@ -27,7 +27,7 @@ public record AssistantProperties(
   public AssistantProperties {
     settingSources =
         settingSources == null || settingSources.isBlank() ? "user,project,local" : settingSources;
-    allowedTools = allowedTools == null ? List.of() : allowedTools;
+    allowedTools = allowedTools == null ? List.of() : List.copyOf(allowedTools);
     // A list would be bound by splitting a scalar on commas, which cuts a declaration written
     // inline in half.
     mcpConfig = mcpConfig == null ? "" : mcpConfig;

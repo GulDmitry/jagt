@@ -82,6 +82,7 @@ public record TaskState(
         .title(ticket.title())
         .ticketUrl(ticket.ticketUrl())
         .baseBranch(ticket.baseBranch())
+        .openedBy(ticket.openedBy())
         .mrCreatedAt(round.mrCreatedAt())
         .requestOpenedAt(round.requestOpenedAt())
         .lastPolledAt(round.lastPolledAt())
@@ -613,6 +614,7 @@ public record TaskState(
     private @Nullable String title;
     private @Nullable String ticketUrl;
     private @Nullable String baseBranch;
+    private @Nullable ActionOrigin openedBy;
     private long mrCreatedAt;
     private long requestOpenedAt;
     private long lastPolledAt;
@@ -685,6 +687,11 @@ public record TaskState(
 
     public TaskStateBuilder ticketUrl(@Nullable String ticketUrl) {
       this.ticketUrl = ticketUrl;
+      return this;
+    }
+
+    public TaskStateBuilder openedBy(@Nullable ActionOrigin openedBy) {
+      this.openedBy = openedBy;
       return this;
     }
 
@@ -855,7 +862,7 @@ public record TaskState(
       return new TaskState(
           repos,
           new Standing(status, lastActiveTimestamp, message, report, opened),
-          new Ticket(alias, title, ticketUrl, baseBranch),
+          new Ticket(alias, title, ticketUrl, baseBranch, openedBy),
           new Round(mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, trail),
           new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries, pipelineUrl),
           new Holds(

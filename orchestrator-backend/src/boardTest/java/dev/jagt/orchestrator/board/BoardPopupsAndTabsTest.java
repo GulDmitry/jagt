@@ -382,14 +382,11 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Files.writeString(replies, "## thread 1\nFIXED - Renamed it.\n");
     putReviewTask("ABC-5");
     Page page = openBoard();
-    assertThat(page.locator("#pane .tabs button[data-tab=round]"))
-        .hasClass(Pattern.compile("\\byou\\b"));
+    assertThat(page.locator("#pane .tabs button[data-tab=round] .badge.required")).hasText("new");
 
     page.locator("#pane .tabs button[data-tab=round]").click();
     page.locator("#pane .tabs button[data-tab=overview]").click();
-    assertThat(page.locator("#pane .tabs button[data-tab=round]"))
-        .not()
-        .hasClass(Pattern.compile("\\byou\\b"));
+    assertThat(page.locator("#pane .tabs button[data-tab=round] .badge")).hasCount(0);
     Files.writeString(replies, "## thread 1\nFIXED - Renamed it again.\n");
     Files.setLastModifiedTime(
         replies, java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis() + 60_000));
@@ -400,8 +397,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
             .orElseThrow()
             .withStatus(TaskStatus.REVIEW_PENDING, "answered again", System.currentTimeMillis()));
 
-    assertThat(page.locator("#pane .tabs button[data-tab=round]"))
-        .hasClass(Pattern.compile("\\byou\\b"));
+    assertThat(page.locator("#pane .tabs button[data-tab=round] .badge.required")).hasText("new");
   }
 
   @Test

@@ -15,6 +15,7 @@ public class ApprovedPlan {
   private final PlanPlacement placement;
   private final PlanBaseline baseline;
   private final UnaffectedRepos unaffected;
+  private final PlanVerdict verdict;
 
   /**
    * Whether the task had no repository and now holds the plan's; throws {@link Unplaceable} where
@@ -24,6 +25,11 @@ public class ApprovedPlan {
     boolean placed = placement.place(taskId);
     baseline.keep(taskId);
     return placed;
+  }
+
+  /** Whether the plan's head calls its ticket sound. */
+  public boolean sound(String taskId) {
+    return verdict.sound(taskId);
   }
 
   public void leave(String taskId) {

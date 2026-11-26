@@ -1,0 +1,17 @@
+case: a test-fixing ticket whose diff holds only tests
+description: |
+  ABC-43: fix the flaky `InvoiceMapperTest`: it compared a due date built from the system clock.
+diff: |
+  diff --git a/src/test/java/app/billing/InvoiceMapperTest.java b/src/test/java/app/billing/InvoiceMapperTest.java
+  --- a/src/test/java/app/billing/InvoiceMapperTest.java
+  +++ b/src/test/java/app/billing/InvoiceMapperTest.java
+  @@ -9,4 +9,4 @@ class InvoiceMapperTest {
+     @Test
+     void mapsDueDate() {
+  -    InvoiceDto dto = mapper.toDto(new Invoice("INV-1", "CHF", LocalDate.now()));
+  -    assertThat(dto.dueDate()).isEqualTo(LocalDate.now());
+  +    InvoiceDto dto = mapper.toDto(new Invoice("INV-1", "CHF", LocalDate.of(2026, 1, 10)));
+  +    assertThat(dto.dueDate()).isEqualTo(LocalDate.of(2026, 1, 10));
+     }
+expect:
+  verdict: ready

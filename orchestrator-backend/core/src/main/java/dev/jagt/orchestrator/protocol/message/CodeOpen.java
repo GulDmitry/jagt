@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -26,8 +28,8 @@ public record CodeOpen(String taskId, String mode) implements Message {
           .choice("mode", MODES, "Default: project.");
 
   public CodeOpen {
-    taskId = taskId == null || taskId.isBlank() ? null : taskId;
-    mode = mode == null || mode.isBlank() ? null : mode;
+    taskId = absent(taskId);
+    mode = absent(mode);
   }
 
   public boolean diff() {

@@ -7,7 +7,8 @@ A review judges a check against this file. The records it condenses keep the evi
 [0026](../decisions/0026-the-guards-gaps-after-round-three.md) to
 [0031](../decisions/0031-the-host-cli-is-judged-wherever-it-stands.md),
 [0040](../decisions/0040-git-runs-only-what-the-human-trusted.md),
-[0044](../decisions/0044-a-session-writes-only-inside-its-task.md).
+[0044](../decisions/0044-a-session-writes-only-inside-its-task.md),
+[0230](../decisions/0230-contributor-guards-are-tracked-shell-the-loop-the-backlog-and-the-owners-limits-stay-private.md).
 
 ## A boundary is an allow-list, a guardrail is a block-list
 
@@ -26,6 +27,19 @@ A review judges a check against this file. The records it condenses keep the evi
 
 `ToolGate` fails open, `ReadGate` closed: a stopped jagt refusing a session's every call would read as a rule.
 The CLI's `onFailure: "block"` (2.1.309) would close it, and stays off for that reason.
+
+## Contributor guards: `scripts/guards`, shell on stdin, exit 2 blocks, any other outcome passes
+
+| guard | judges | block-list | behind it | known to pass |
+|-------|--------|------------|-----------|---------------|
+| `no-poll-loop.sh` | a Bash call of any session | `until`/`while`/`for` whose body sleeps; `watch` | nothing: a wasted turn | a poll inside a script or function the line runs; one `sleep`; quoted text, heredoc bodies |
+| `no-shared-kill.sh` | a Bash call of any session | `gradle --stop`; `pkill`/`killall` of java or gradle; docker `prune`, kill/stop of `ps` output; `kill` of `$PPID` or a named pid variable | nothing: a killed run restarts | a numeric pid; a name built at runtime; other docker spellings |
+| `push-after-local-ci.sh` | a `git push` from `release`, a hotfix branch or to them | HEAD's tree (refspec source, `-C` honoured) lacking the `ci-local.ok` record | CI and the host's branch protection | a quoted or runtime-built push; a hand-written record |
+| `reviewer-read-only.sh` | a Bash call of the reviewer agent | `git` writes, `rm`, `mv`, `cp`, `touch`, `mkdir`, `ln`, `chmod`, `tee`, `sed -i`, `perl -i`, `curl -o`, any `>` (quoted too) | nothing: the reviewer reads a range | a write by `python3 -c`, `dd`, `rsync`, `install`, `truncate`, `awk`; a `git` alias; a line built at runtime |
+
+A guard parses no shell grammar ([0028](../decisions/0028-what-the-guards-still-pass-after-round-four.md)):
+a `>` inside quotes stays refused, a spelling it cannot read passes.
+Its promises are bats cases; one left without a case is a row of `contract-gaps.txt`.
 
 ## What a review reports
 

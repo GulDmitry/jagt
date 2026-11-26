@@ -26,7 +26,9 @@ public enum AssistantCallKind {
   /** One role's reading of a round handed back to the Master. */
   MASTER_REVIEW("master review"),
   /** One acceptance run checking a deployed change against its ticket. */
-  ACCEPTANCE_CHECK("acceptance check");
+  ACCEPTANCE_CHECK("acceptance check"),
+  /** Naming the branch of a task opened from a prompt — once per such task. */
+  BRANCH_NAME("branch name");
 
   private final String label;
 
@@ -34,8 +36,8 @@ public enum AssistantCallKind {
     return label;
   }
 
-  /** Only a mapping of text onto a command reads nothing outside its prompt. */
+  /** A mapping of text onto a command and a branch's name read nothing outside their prompt. */
   public boolean readsTools() {
-    return this != COMMAND_MAP;
+    return this != COMMAND_MAP && this != BRANCH_NAME;
   }
 }

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
+import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
 import dev.jagt.orchestrator.adapter.worktree.DockerComposeContainers;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;

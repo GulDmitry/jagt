@@ -13,7 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -61,7 +61,7 @@ class DeployCheckJobAcceptanceTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
     assertThat(
             Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                 .askedDigest())

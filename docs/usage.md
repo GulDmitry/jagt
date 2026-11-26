@@ -74,6 +74,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `project` | add a repository as a project, change or drop one (`project edit <key>`) |
 | `acceptance [project]` | an interactive acceptance session in its workspace, one per project: write scenarios, answer its questions |
 | `supervise` | with `supervisor: launchd`, have the machine keep the staged jar running; the jagt you started ends itself and launchd takes over |
+| `resume <key>` / `resume <key> discard` | run again, or drop, a start a restart cut short; the header's mark names it with your words |
 | `restart` | restart jagt from the staged jar, after a rebuild or a fixed `jagt.yml` |
 | `upgrade` | switch to the newer release kept beside the running one; offered only while one is kept |
 | `stop` / `unstop` | interrupt every working session and pause jobs and intake until you lift it; the mark in the header lifts too, a restart keeps it |

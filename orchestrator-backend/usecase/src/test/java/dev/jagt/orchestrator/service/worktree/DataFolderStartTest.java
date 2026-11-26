@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.port.host.Layout.OlderPlacement;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -134,6 +135,25 @@ class DataFolderStartTest {
     assertThat(data.resolve("jagt/state.json")).hasContent("tasks");
     assertThat(data.resolve("records/stops.jsonl")).hasContent("s");
     assertThat(data.resolve("state.json")).doesNotExist();
+  }
+
+  @Test
+  void movesAnEntryTheAdapterNamesFromTheOlderFolderToItsPlace() throws Exception {
+    Path data = Files.createDirectories(root.resolve("data"));
+    Files.writeString(data.resolve("state.json"), "tasks");
+    Files.createDirectories(data.resolve("plugin-folder"));
+    Files.writeString(data.resolve("plugin-folder/index.js"), "old");
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults().withRoot(root.toString()).withData(data.toString()),
+            FakeHost.machine());
+    OlderPlacement placement =
+        new OlderPlacement("plugin-folder", paths.layout().beside("plugin-folder"));
+
+    new DataFolderStart(paths, processes, "", placement).prepare();
+
+    assertThat(data.resolve("jagt/plugin-folder/index.js")).hasContent("old");
+    assertThat(data.resolve("plugin-folder")).doesNotExist();
   }
 
   @Test

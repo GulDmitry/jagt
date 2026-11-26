@@ -171,7 +171,8 @@ class ClaudeMcpHealthProbe implements McpHealth {
           .log();
       return Optional.empty();
     }
-    return Optional.of(servers);
+    return Optional.of(
+        servers.stream().filter(server -> !claude.disablesServer(server.name())).toList());
   }
 
   private static List<String> broken(List<Server> servers) {

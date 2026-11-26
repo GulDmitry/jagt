@@ -55,6 +55,8 @@ public class HeadlessClaudeRoundReviewer {
       cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
     } else if (!pinned.isBlank()) {
       cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", pinned));
+    } else {
+      cmd.addAll(claude.disabledPluginArguments());
     }
     round.worktrees().stream()
         .skip(1)

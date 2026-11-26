@@ -144,6 +144,7 @@ public class TaskProvisioning {
                     ? null
                     : request.ticketUrl())
             .baseBranch(baseBranch)
+            .openedBy(OriginContext.current())
             .autoReview(config.autoReview().enabledOrDefault())
             .gitTrust(trust)
             .build();
@@ -151,7 +152,9 @@ public class TaskProvisioning {
         request.taskId(),
         reducer ->
             reducer.planAsked(
-                autoplan(config) ? reducer.autoplanned(born) : born,
+                autoplan(config) || born.ticket().openedOutside()
+                    ? reducer.autoplanned(born)
+                    : born,
                 AgentSessions.launchMode(request.mode()) == LaunchMode.PLAN));
   }
 

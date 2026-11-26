@@ -15,6 +15,7 @@ final class Selection {
   boolean board;
   boolean fitness;
   boolean buildLogic;
+  boolean sizeRows;
 
   void rules(String... names) {
     rules.addAll(Arrays.asList(names));

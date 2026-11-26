@@ -2,42 +2,49 @@
 
 ## Purpose
 
-How a task starts: its branch and worktree, the plan gate, and what a start never loses. What follows is
-[task-flow](../task-flow/spec.md)'s.
+How a task starts: its branch and worktree, the plan gate, and what a start never loses. What follows is [task-flow](../task-flow/spec.md)'s.
 
 ## Requirements
 
 ### Requirement: Starting a task
 `do` SHALL cut a branch from the project's base into its own worktree, an agent in it; at most `maxTasks` open, 50 unless `jagt.yml` sets it.
-
+A message opening a task SHALL carry `mode` `auto` or `plan`, `branchStrategy` `fresh`, `recreate` or `resume`, an http(s) `ticketUrl`.
 #### Scenario: A task starts
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
 - **THEN** branch `ABC-42` is cut from the project's base
 - **WHEN** you run `do <project> <what to do…>`
-- **THEN** your words are the instructions and name the branch
+- **THEN** your words are the instructions; four words at most on what the work changes, a lightest-model reading, name the branch
+- **WHEN** no reading is available
+- **THEN** the task opens all the same, your opening words naming the branch
 - **WHEN** you run `do ABC-42 from <branch>`
 - **THEN** it is cut from that branch and the request targets it ([git](../git/spec.md))
-
 #### Scenario: Plan before code
 - **WHEN** you pick `plan first`
 - **THEN** the card reads `plan waiting`; `approve-plan` starts the session on it
-
 #### Scenario: A task past the cap
 - **WHEN** `maxTasks` tasks are open (50, or 10 where `jagt.yml` says 10) and you start another
 - **THEN** it is refused before anything is cut, naming the cap
+#### Scenario: A message with a value no door takes
+- **WHEN** a task is opened with `mode=fast`, `branchStrategy=copy` or `ticketUrl=ABC-42`
+- **THEN** it is refused naming `mode`, `branchStrategy` or `ticketUrl`, and nothing is cut
 
 ### Requirement: Plan first is a gate jagt holds
 A task opened or reopened in `plan` mode, or with `agent.autoplan.enabled` on, SHALL hold its plan gate closed (`TaskState.planGate`): a session's
 write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused (`PlanFirst`). `approve-plan` at `PLAN_PENDING`, and the Master's
 `go` on a gate autoplan closed, SHALL open it and start the session.
 While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`, `SHIPPING` or `CI_POLLING`.
-
 #### Scenario: A source file before approval
 - **WHEN** a session in `plan` mode writes `src/Foo.java` before its plan is approved
 - **THEN** the write is refused with `plan first`, and `plan.md` and `task_visual.md` are still written
 - **WHEN** a session on a closed gate asks a question and the Master does not hold `plan`
 - **THEN** the question waits for the human and the Master writes no answer
-
+- **WHEN** intake or a code host opens ABC-42 with autoplan off
+- **THEN** its plan gate is closed and no source file is written before the plan is approved
+- **AND** its session judges the ticket first: `plan.md` opens with `verdict: sound` or `verdict: unsound — <why>`
+- **WHEN** the session judges ABC-42 unsound
+- **THEN** it reports a question naming why; the Master in act neither answers nor approves, the plan waits for you
+- **WHEN** the session judges ABC-42 sound
+- **THEN** the Master in act approves the plan as for any plan-first task
 #### Scenario: A plan lists its files
 - **WHEN** a session plans first
 - **THEN** `plan.md` lists every file it will create after approval: spec delta, code, tests
@@ -45,98 +52,83 @@ While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`
 - **THEN** the write is not refused ([guards](../../../docs/rules/guards.md)), but its `REVIEW_PENDING` report and `ship` are, naming the plan
 - **WHEN** a review round is relayed to a task at `REVIEW_PENDING` whose gate is closed
 - **THEN** the gate opens and the session's writes are not refused as plan first
-
 #### Scenario: Approved
 - **WHEN** you press `approve-plan`, or the Master in `act` finds a plan holds
 - **THEN** the gate opens and the task is `IN_PROGRESS`; a `plan`-mode plan the Master found holding waits for you
 - **WHEN** an autoplan session reports `IN_PROGRESS` with `outcome=no_plan`
-- **THEN** the gate opens, and in `plan` mode the report is refused
-
+- **THEN** the gate opens, and in `plan` mode or on an outside-opened task the report is refused
 #### Scenario: A ratified probe is replaced
 - **WHEN** a session at `IN_PROGRESS` reports `PLAN_PENDING` with a new probes block
 - **THEN** the probes are read anew and the plan waits for approval
 - **AND** from `VERIFYING` the report is refused, naming `IN_PROGRESS` first
-
 #### Scenario: A task reopened in plan mode
 - **WHEN** a task whose gate is open is reopened with `mode=plan`
 - **THEN** its gate is closed until `approve-plan`, and the answer says the plan is approved on the board
 - **WHEN** a task at `VERIFYING`, `REVIEW_PENDING` or later is reopened with `mode=plan`
 - **THEN** it is refused as a state refusal naming the status; nothing opens and its gate stays as it was
 
+### Requirement: An outside system's plan gate is jagt's
+A task SHALL record the `ActionOrigin` that opened it. Where an outside system did, the flow MUST refuse `no_plan` while its gate is closed.
+It MUST refuse a Master approval of a plan not headed `verdict: sound`; each is a `Refusal`, and your approval is never refused.
+#### Scenario: An outside-opened plan
+- **WHEN** the session of tracker-opened ABC-42 reports `no_plan` with its gate closed
+- **THEN** the report is refused and the gate stays closed
+- **WHEN** ABC-42's plan is headed `verdict: unsound`
+- **THEN** the approval of the Master in act is refused and the plan waits for you
+- **AND** your approval opens the gate
+
 ### Requirement: A task may plan before it has a repository
 The board form's `plan first` with no project ticked SHALL start a task with no project, never routed (`ProjectRouting` is not asked).
 A typed `do <ticket>` without a project and tracker intake SHALL still go through the router.
 Its planning session SHALL run in `scratch/<slug>`, a sibling of `state.json` under jagt's work dir: no git
 (`GIT_CEILING_DIRECTORIES` set for that session, `scratch/` gitignored), no push, no ship; the plan gate holds there as anywhere.
-
 #### Scenario: Planning with no project
 - **WHEN** you press Start with `plan first` ticked, no project ticked, and notes
 - **THEN** the task is `PLAN_PENDING`-bound, its session runs in `scratch/<slug>` and no repository is cut
-
+- **WHEN** a task holds only its scratch folder
+- **THEN** it holds no worktree, branch or request, a push, `ship` and `deploy` are unavailable and `scratch/` is untracked
+- **AND** its repositories begin with `approve-plan`
 #### Scenario: A start the server refuses
 - **WHEN** a start names no project and is not `plan first`
 - **THEN** it is refused and nothing is created
-
 #### Scenario: Routing stays for typed and tracker starts
 - **WHEN** you type `do ABC-42` with no project, or intake opens ABC-42
 - **THEN** the project is chosen by routing as before
-
 #### Scenario: Done
 - **WHEN** you `done` a task that never left its scratch folder
 - **THEN** `done` deletes the folder
 
-### Requirement: A scratch folder is no repository
-A task with no repository SHALL hold no worktree, branch or request: its folder under `scratch/` is outside git for its session
-and `ship` and `deploy` are not offered. Its repositories begin with `approve-plan`.
-
-#### Scenario: A plan-only task
-- **WHEN** a task holds only its scratch folder
-- **THEN** a push, `ship` and `deploy` are unavailable and `scratch/` is untracked
-
-### Requirement: A task with no repository plans its repositories
-The brief of a task with no repository SHALL tell the session it plans in a scratch folder.
-It SHALL say the plan's `## Repositories` names every project the task changes, configured or not.
-
-#### Scenario: A plan-first session with no project
-- **WHEN** such a task's session is briefed
-- **THEN** it reads that `plan.md` needs `## Repositories` with a `- [changed] <key>` per project
-
 ### Requirement: An approved plan places the task
 `approve-plan` on a task with no repository SHALL cut a worktree per `[changed]` key of the plan's `## Repositories`, the first primary.
 The scratch folder SHALL be deleted after the state write; the session starts fresh in the primary and the task is `IN_PROGRESS`.
-
+#### Scenario: A plan-first session with no project
+- **WHEN** such a task's session is briefed
+- **THEN** it is told it plans in a scratch folder
+- **AND** it reads that `plan.md` names every project the task changes, configured or not, as a `- [changed] <key>` under `## Repositories`
 #### Scenario: Placed
 - **WHEN** you approve a plan listing `- [changed] api` and `- [changed] web`, both configured
 - **THEN** worktrees exist for both, with `plan.md` and the task's other artifacts copied into them
 - **AND** `api` runs the session fresh, the scratch folder is gone, the task is `IN_PROGRESS`
-
 #### Scenario: An existing ticket branch
 - **WHEN** the plan's repository already holds ABC-42's branch
 - **THEN** its own commits are resumed, else the branch is recreated, as the intake rule says
-
 #### Scenario: A key jagt.yml lacks
 - **WHEN** the plan lists `- [changed] billing`, not configured, or a typed base branch a named project lacks
 - **THEN** nothing is cut, the task stays `PLAN_PENDING` and the question names `billing` and the add-project form
-
 #### Scenario: The Master approves
 - **WHEN** the Master in `act` approves that plan
 - **THEN** the Master never adds a project: nothing is cut, and the session is told to revise the plan: `billing` and the registered projects
-
 #### Scenario: A cut fails
 - **WHEN** the second worktree's cut fails
 - **THEN** every cut is unwound, the first is removed, and the task keeps its scratch folder
 
 ### Requirement: An existing branch is never lost
 Nothing SHALL be freed or moved until `recreate` or `resume` is picked for a branch that exists.
-
+A branch checked out in the base repository SHALL be freed and detached in place, a warning naming it.
+Uncommitted tracked changes there, or another worktree holding it, MUST refuse naming the directory; untracked files block nothing.
 #### Scenario: Intake meets a leftover branch
 - **WHEN** intake finds the branch
 - **THEN** it resumes if the branch or its origin copy holds commits the base lacks, else recreates; neither loses work
-
-### Requirement: The base repository gives up the branch safely
-A branch checked out in the base repository SHALL be freed and detached in place, a warning naming it. Uncommitted tracked changes there, or another
-worktree holding it, MUST refuse naming the directory; untracked files block nothing.
-
 #### Scenario: Tracked changes in the way
 - **WHEN** uncommitted tracked changes or another worktree block the start
 - **THEN** commit, stash, or free it
@@ -144,7 +136,6 @@ worktree holding it, MUST refuse naming the directory; untracked files block not
 ### Requirement: A worktree carries what the project needs
 `worktree.copyGlobs` SHALL copy gitignored files (`.env`, key, cert) into every new worktree at the same path. A repository's own `CLAUDE.md`,
 `AGENTS.md`, Codex config and git hooks MUST stay untouched and in force, jagt's briefing and guard beside them.
-
 #### Scenario: A gitignored key
 - **WHEN** `worktree.copyGlobs` names `.env`
 - **THEN** every new worktree has it
@@ -153,11 +144,9 @@ worktree holding it, MUST refuse naming the directory; untracked files block not
 A request URL SHALL belong to the project whose remote path is the URL's leading path segments, whole segments only.
 The name the remote reaches the host by is no part of it. Where several projects match, the one whose remote is on the URL's host wins.
 A project with no remote is passed over.
-
 #### Scenario: A path that only starts the same
 - **WHEN** `group/api` and `group/api-shop` are two projects and the request is `https://host.test/group/api-shop/-/merge_requests/4`
 - **THEN** it belongs to `group/api-shop`
-
 #### Scenario: A remote reached by an alias
 - **WHEN** a project's remote is `git@github-work:group/api.git` and the request is `https://github.com/group/api/pull/4`
 - **THEN** it belongs to that project
@@ -167,11 +156,9 @@ A project with no remote is passed over.
 `none` SHALL mean a repository kept on this machine. Startup MUST refuse a remote `git remote` does not list, and `none` beside a `codeHost`
 that is not `none`, each naming its keys; it reads no network.
 A base branch is read with that remote's prefix dropped, and the briefs and refusals that name a push name that remote.
-
 #### Scenario: A repository kept on this machine
 - **WHEN** `remote` is `none` and ABC-42 starts
 - **THEN** its worktree is cut from the local base branch `main`, nothing is fetched or pushed, and a deploy merges into the local deploy branch
-
 #### Scenario: A remote the repository lacks
 - **WHEN** `remote` is `upstream` and `git remote` lists `origin` alone
 - **THEN** startup refuses, naming `orchestrator.projects.<key>.remote`
@@ -187,13 +174,27 @@ A clone is fetched before a task is cut from it.
 - **THEN** the task's branch is cut from the base including that commit
 
 ### Requirement: A project's setup command runs in every new worktree
-A project's `setupCommand`, an argv list, SHALL run once in every new worktree of that project.
+A project's `setupCommand`, an argv list, SHALL run once in every new worktree of that project. Unset, nothing runs.
 It runs after `worktree.copyGlobs` and before the session starts, with `{branch}` and `{worktree}` filled, within `setupMinutes` (20 where unset).
 A non-zero exit or the limit MUST fail the start naming the project, the exit and the output's tail; every cut is unwound and no session starts.
-Unset, nothing runs.
 #### Scenario: A setup command
 - **WHEN** a project names `setupCommand` and a task starts in it
 - **THEN** it runs once in the new worktree with the branch and the worktree path filled, before the session starts
 #### Scenario: A setup that fails
 - **WHEN** `setupCommand` exits non-zero or passes `setupMinutes`
 - **THEN** the start fails naming the project, the exit and the output's tail, and no session starts
+
+### Requirement: A start the server never finished is kept
+A start SHALL be recorded, with its request, in `pending-starts.json` beside `state.json` before its first read or cut.
+The record SHALL end once the task's state is written, and on every refusal.
+A restart SHALL log `task start interrupted` with `key` and `cause` per leftover and keep it, once, on the first read of the record.
+It ends on `resume <key>`, which runs the saved request again, on `resume <key> discard`, or once a task has that key. No task status exists for it.
+#### Scenario: The server stops while the ticket is read
+- **WHEN** jagt restarts after `do ABC-42 tighten the parser` was cut short at the ticket read
+- **THEN** no task exists, the record holds `ABC-42` and the words, and the head shows one mark with them in its hover
+#### Scenario: Written words are cut short
+- **WHEN** a start of your own words is cut short before its branch is named
+- **THEN** its record holds the words under a generated key
+#### Scenario: Resume or discard
+- **WHEN** you run `resume ABC-42`, or `resume ABC-42 discard`
+- **THEN** the start runs again from the saved words, or the record is deleted; either way the mark ends

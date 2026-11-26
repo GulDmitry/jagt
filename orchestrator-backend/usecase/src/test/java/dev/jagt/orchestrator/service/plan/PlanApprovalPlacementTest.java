@@ -16,7 +16,7 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
@@ -46,7 +46,7 @@ class PlanApprovalPlacementTest {
       TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).planGate(PlanGate.REQUIRED).build();
   private final StepRelay.Claim claim =
       new StepRelay.Claim(
-          Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
+          SessionStanding.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
   private StateService state;
 
   @BeforeEach
@@ -73,7 +73,7 @@ class PlanApprovalPlacementTest {
             eq(Step.PLAN),
             anyString(),
             eq(StepRelay.Delivery.UNDER_FRESH),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(true);
 
     boolean told =
@@ -86,7 +86,7 @@ class PlanApprovalPlacementTest {
             any(Step.class),
             anyString(),
             eq(StepRelay.Delivery.CONTEXT),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 
   @Test
@@ -127,7 +127,7 @@ class PlanApprovalPlacementTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
   }
 
   @Test
@@ -137,7 +137,7 @@ class PlanApprovalPlacementTest {
             eq(Step.PLAN),
             anyString(),
             eq(StepRelay.Delivery.UNDER_FRESH),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(false);
 
     boolean told =

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service.turn;
 
 import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
@@ -46,13 +46,13 @@ public class StepRelay {
    * moved on since.
    */
   public record Claim(
-      Standing read,
+      SessionStanding read,
       Function<UnaryOperator<TaskState>, FlowReports.Claimed> write,
       Predicate<Turn> undo) {}
 
   /** Where the task stands now, for a caller with no read of its own to decide on. */
-  public Standing standing(String taskId) {
-    return turns.standing(taskId).orElse(Standing.ABSENT);
+  public SessionStanding standing(String taskId) {
+    return turns.standing(taskId).orElse(SessionStanding.ABSENT);
   }
 
   /** How the session is told; every delivery opens the turn. */
@@ -70,7 +70,8 @@ public class StepRelay {
     UNDER_FRESH
   }
 
-  public boolean relay(String taskId, Step step, String facts, Delivery delivery, Standing read) {
+  public boolean relay(
+      String taskId, Step step, String facts, Delivery delivery, SessionStanding read) {
     requireStanding(taskId, step.id(), read);
     Optional<CaseDoor.Admission> admission = admitted(taskId, step, facts, delivery);
     admission.ifPresent(opened ->
@@ -117,12 +118,12 @@ public class StepRelay {
   }
 
   /** Written whatever the session already holds, as a hand-off that must land again. */
-  public boolean write(String taskId, Step step, String facts, Standing read) {
+  public boolean write(String taskId, Step step, String facts, SessionStanding read) {
     return sent(taskId, step, facts, read, told -> sessions.writeTaskContext(taskId, told));
   }
 
   /** Typed into the session's window, which takes one line. */
-  public boolean say(String taskId, Step step, String facts, Standing read) {
+  public boolean say(String taskId, Step step, String facts, SessionStanding read) {
     return sent(
         taskId,
         step,
@@ -136,7 +137,11 @@ public class StepRelay {
    * door at {@code checked}.
    */
   public boolean relayComposed(
-      String taskId, List<Step> steps, String text, @Nullable TaskStatus checked, Standing read) {
+      String taskId,
+      List<Step> steps,
+      String text,
+      @Nullable TaskStatus checked,
+      SessionStanding read) {
     String step = Step.joined(steps);
     requireStanding(taskId, step, read);
     String digest = Turn.digestOf(text);
@@ -148,7 +153,7 @@ public class StepRelay {
   }
 
   private boolean sent(
-      String taskId, Step step, String facts, Standing read, Consumer<String> send) {
+      String taskId, Step step, String facts, SessionStanding read, Consumer<String> send) {
     requireStanding(taskId, step.id(), read);
     CaseDoor.Admission admission = door.opens(taskId, step);
     if (!admission.admitted()) {
@@ -241,8 +246,8 @@ public class StepRelay {
    * it.
    */
   public void requireStanding(String taskId, Step step, Claim claim) {
-    Standing now = standing(taskId);
-    if (!now.equals(claim.read()) && !now.equals(Standing.ABSENT)) {
+    SessionStanding now = standing(taskId);
+    if (!now.equals(claim.read()) && !now.equals(SessionStanding.ABSENT)) {
       throw dropped(taskId, step.id(), claim);
     }
   }
@@ -251,8 +256,8 @@ public class StepRelay {
    * Throws where the task no longer stands where the caller read it, before any door records a miss
    * against it.
    */
-  private void requireStanding(String taskId, String step, Standing read) {
-    Standing now = standing(taskId);
+  private void requireStanding(String taskId, String step, SessionStanding read) {
+    SessionStanding now = standing(taskId);
     if (!now.equals(read)) {
       throw dropped(taskId, step, read.turn(), now.turn());
     }

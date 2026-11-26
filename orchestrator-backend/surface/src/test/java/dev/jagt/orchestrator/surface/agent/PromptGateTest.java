@@ -22,6 +22,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 class PromptGateTest {
@@ -53,6 +54,21 @@ class PromptGateTest {
     InOrder order = inOrder(sessions, runtime);
     order.verify(sessions).relayUnderCold("ABC-1", "now handle empty files");
     order.verify(runtime).blockedPrompt(anyString());
+  }
+
+  @Test
+  void tellsTheHumanTheMessageMovedToOneFreshSessionWorkingOnIt() {
+    when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
+    ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
+
+    new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "go on");
+
+    verify(runtime).blockedPrompt(reason.capture());
+    assertThat(reason.getValue())
+        .contains("fresh session", "working on it now", "idle for over 1h")
+        .doesNotContainIgnoringCase("blocked")
+        .doesNotContainIgnoringCase("refused")
+        .doesNotContainIgnoringCase("failed");
   }
 
   @Test

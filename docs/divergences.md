@@ -7,6 +7,7 @@ A CI red on a tree the local gate recorded green is a defect in the local run. E
 
 | date | run | tree | class | fix |
 |------|-----|------|-------|-----|
+| 2026-11-26 | 45750010424 | df7be30d8 | no twin: CodeQL has no local run, and its java/redos found a nested quantifier in `SpecSymbols`'s regex | JAGT-326 |
 | 2026-11-24 | 45407359631 | unknown | cache: the nightly's dependency cache lacked Spotless's detached google-java-format, and the local twin ran offline on a cache it had filled with a narrower resolve; a runner has its network | 0238 |
 | 2026-11-24 | 45407359631 | unknown | cache: npm answered ENOTCACHED for the board audit from a cache the twin never filled; a runner reads the registry | 0238 |
 | 2026-11-24 | 45338587686 | 82aac1dd5 | network: Maven Central kept answering 429 to the hosted runner past every retry; local resolves from its warm cache | 0235 |

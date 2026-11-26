@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Path;
@@ -14,7 +14,7 @@ public record TestWaitingConflictBuilder(
     Conflict.Progress progress,
     @Nullable String failure,
     boolean revert,
-    Standing standing) {
+    SessionStanding standing) {
 
   public static TestWaitingConflictBuilder waitingConflict() {
     return new TestWaitingConflictBuilder(
@@ -23,7 +23,7 @@ public record TestWaitingConflictBuilder(
         new Conflict.Progress(7, 0, "d"),
         null,
         false,
-        Standing.ABSENT);
+        SessionStanding.ABSENT);
   }
 
   public DeployConflicts.WaitingConflict build() {

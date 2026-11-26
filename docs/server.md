@@ -51,8 +51,8 @@ Verify a published image: `gh attestation verify oci://ghcr.io/guldmitry/jagt:<v
 
 ## Configuration
 
-The image keeps its `jagt.yml` at `/data/jagt.yml`, on the volume, so a project added from the board survives a recreate.
-A first start copies a mounted `/app/jagt.yml`, else `jagt.server.yml.dist`, there and later ones leave it; edit it in place or in the volume.
+The image keeps `jagt.yml` at `/data/jagt.yml` on the volume, so a board edit survives a recreate; a first start copies a mounted `/app/jagt.yml`,
+else `jagt.server.yml.dist`, there. `JAGT_CONFIG_FROM_IMAGE=true` copies the image's file over it each start: new keys apply, board edits are lost.
 
 - `jagt.server.yml.dist` opens no terminal window, needs no kitty, notifier, editor or keep-awake, and logs to the console.
   Each key is described in `jagt.desktop.yml.dist` under the same name, and nowhere else.
@@ -114,8 +114,12 @@ In a pod nobody signs in through a browser, so the organisation's image supplies
 - HOME is `/data/home`, on the volume: a revived session finds its conversation and login after a new pod. The volume hides whatever the
   image bakes under it; so on every start `entrypoint.sh` copies the seed over the agent's folder (`JAGT_AGENT_HOME`):
   settings, MCP config and plugins are replaced, conversations and logins kept; with either variable unset nothing is copied.
+- jagt marks the agent's first-run onboarding done in `<home>/.claude.json` when it provisions a worktree, keeping every other key;
+  the seed folder needs no `.claude.json`. A window still showing the first-run picker is reported as waiting on it.
 - `claude.mcpConfig` or `assistant.mcpConfig` naming a file the container lacks is one mark on the board's head, until the file is there.
   A value holding the JSON itself is not a file and is not checked.
+- A plugin server needing a browser login cannot sign in here: list its plugin (`name@marketplace`) under `claude.disabledPlugins`
+  and no session or read loads it. Any other server not connected is one head mark, probed every ten minutes.
 
 ## Git reaches the code host
 
@@ -130,6 +134,10 @@ Sessions check their work in your image, built `FROM` jagt's: [spec](../openspec
 [0175](decisions/0175-an-organisation-builds-its-toolchains-onto-jagts-image.md).
 `examples/agent-image.Dockerfile` adds the agent CLI, `gh` and `glab` as optional blocks; for Kubernetes build it with
 `docker build -f examples/agent-image.Dockerfile --build-arg BASE=jagt-base -t my-jagt .` after `docker build -t jagt-base .`.
+A cluster that forbids image builds inside it needs the image built elsewhere. Build it there and push it to a registry the cluster pulls from:
+`docker buildx build --platform linux/amd64 --ssh default -f examples/agent-image.Dockerfile --build-arg BASE=<registry>/jagt-base \
+-t <registry>/my-jagt --push .`.
+The `--ssh default` flag lets the build clone a private marketplace through your SSH agent, so no token enters the build.
 
 **Compose** mounts one volume, `jagt-data`, at `/data`: state, artifacts, repositories, worktrees and the CLI login.
 **`/data` must be persistent** — a compose volume, or a PersistentVolumeClaim under
@@ -149,10 +157,10 @@ a service account without a token, one optional PVC, Secrets
 | memory, CPU | `resources` | 2Gi requested, 4Gi limit, 1 CPU requested, 4 limited, small ephemeral storage (estimates) |
 | temporary files, caches | `TMPDIR`, `XDG_CACHE_HOME` | unset; with a tight ephemeral-storage quota set them under `/data`, and each start creates them |
 | shutdown | `terminationGracePeriodSeconds` | 60: preStop 5 s, `spring.lifecycle.timeout-per-shutdown-phase` 20 s twice |
-| probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min, liveness 3 misses |
+| probes | `/actuator/health/liveness`, `/actuator/health/readiness` | startup 5 min; liveness is the application's own state alone, 6 misses of 10 s, as a restart ends every session and only a hung JVM warrants one; readiness holds only while a clone runs (see step 5 above) |
+| ingress controller | `NetworkPolicy` `from` | namespace `ingress-nginx`; on OpenShift swap in the commented selector `policy-group.network.openshift.io/ingress` |
+| route timeout | Ingress annotation | OpenShift turns the Ingress into a Route: enable `haproxy.router.openshift.io/timeout` (the board streams); ingress-nginx has its own two |
 | egress | `NetworkPolicy` | DNS, then HTTPS and SSH to public addresses; add acceptance environments |
-
-- Liveness is the application's own state alone; readiness holds only while a clone runs (see step 5 above).
 
 ## Upgrade, back up, roll back
 
@@ -181,12 +189,12 @@ The board is the person's view and needs a browser login: it has no view of the 
 | why a task stopped | `read_record` `stops`, then `stops-reviewed`; the cause of a failure is in `backend-log` |
 | what jagt itself did or failed at | `read_record` `backend-log`, `master-log` (under `logging: console` the two are what stdout carried) |
 | what a session said and did | `read_transcript` with the task id |
-| what a session shows now | `kubectl exec <pod> -- tmux ls`, then `tmux capture-pane -p -t <session>`; never `send-keys` |
+| what a session shows now | `read_screen` with the task id, or `GET /api/debug/screen?taskId=`: no key is sent |
 | is the JVM alive, how loaded | `curl -s localhost:8290/actuator/health/liveness`; `/actuator/metrics/jvm.threads.live`, `jvm.memory.used` (login, else loopback) |
-| a JVM hang | `kubectl exec <pod> -- sh -c 'kill -3 $(pgrep -f "[j]agt.jar")'`, then `kubectl logs <pod>`: the thread dump |
+| a JVM hang | `read_record` `threads`, or `GET /api/debug/records/threads`: every thread's name, state, lock and stack |
 | a JVM out of memory | the heap dump in `/data/dumps` (`kubectl cp`); the JVM exits and the loop starts it again |
 
-- `read_record` returns the last `lines` (at most 1000); `read_transcript` the newest `maxChars`. Ask for a tail, then widen.
-- The image has a JRE, so no `jcmd`, `jfr` or `jstack`; `kill -3` is the standard fallback (unverified in this image).
+- `read_record` and `read_screen` return the last `lines` (at most 1000); `read_transcript` the newest `maxChars`. Ask for a tail, then widen.
+- The image has a JRE, so no `jcmd`, `jfr` or `jstack`. `read_record` `threads` needs none of them.
 - Never open a JDWP port: a debugger port is remote code execution in the pod, which holds the Master token.
 - `kubectl exec` runs as the pod's one OS user; do not read `env` or `.env`: they hold the bot's keys.

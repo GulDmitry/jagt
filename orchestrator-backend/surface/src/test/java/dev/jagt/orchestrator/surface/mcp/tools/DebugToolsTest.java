@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.protocol.Schema;
 import dev.jagt.orchestrator.protocol.message.Message;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.log.DebugReads;
+import dev.jagt.orchestrator.service.log.ScreenReads;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpProtocolService;
@@ -50,17 +51,22 @@ class DebugToolsTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"read_record", "read_transcript"})
+  @CsvSource({"read_record", "read_transcript", "read_screen"})
   void declaresEachDebugReadAsTheRootsAndAsChangingNothing(String tool) {
     Registered registered = new Registered();
 
-    new DebugTools(mock(LogReads.class), mock(DebugReads.class)).declare(registered);
+    new DebugTools(mock(LogReads.class), mock(DebugReads.class), mock(ScreenReads.class))
+        .declare(registered);
 
     assertThat(registered.tools).containsEntry(tool, "ROOT REPORTS");
   }
 
   @ParameterizedTest
-  @CsvSource({"read_record, '{\"record\":\"stops\"}'", "read_transcript, '{\"taskId\":\"ABC-1\"}'"})
+  @CsvSource({
+    "read_record, '{\"record\":\"stops\"}'",
+    "read_transcript, '{\"taskId\":\"ABC-1\"}'",
+    "read_screen, '{\"taskId\":\"ABC-1\"}'"
+  })
   void refusesCallOfEachDebugReadBySubAgentAsPermission(
       String tool, String arguments, @TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
@@ -76,7 +82,9 @@ class DebugToolsTest {
             mapper,
             state,
             new FakeClock(),
-            List.of(new DebugTools(mock(LogReads.class), mock(DebugReads.class))));
+            List.of(
+                new DebugTools(
+                    mock(LogReads.class), mock(DebugReads.class), mock(ScreenReads.class))));
 
     JsonNode result =
         protocol

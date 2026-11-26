@@ -29,7 +29,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 
 | kind | its one job | state | standard it follows · check pinning it |
 |------|-------------|-------|------|
-| `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` | ISO/IEC 25010 recoverability: atomic writes, state read across a minor · `StateServiceCompatibilityTest` |
+| `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json`; `service/launch/PendingStarts` keeps a start in `pending-starts.json` until its task is written | ISO/IEC 25010 recoverability: atomic writes, state read across a minor, a cut-short start kept · `StateServiceCompatibilityTest`, `TaskLauncherPendingStartTest` |
 | `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsFitness`, `FlowDoorsFitness` |
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
@@ -74,8 +74,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no static mutable field in any ring (`static-state`).
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
-- it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, keys naming a vendor by design; renaming one a human already
-  wrote is the owner's call.
+- it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, vendor-named keys by design; renaming one a human wrote is the owner's call.
 
 ## The flow machine
 
@@ -157,7 +156,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | port | implemented by |
 |------|----------------|
 | `TaskStore` | `service/StateService` |
-| `AgentPresence` | `service/AgentSessions` |
+| `AgentPresence` | `service/presence/SessionPresence` |
 | `flow/capability/TaskCapability` | one per verb under `capability/` |
 | `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/stop/DeployLiftsStop`; an install may add its own step |
 | `Specs` | `adapter/worktree/OpenSpec` |
@@ -174,8 +173,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `ChannelDriver` | `adapter/channel/{DesktopNotifier,CommandChannel,TeamsWorkflowChannel}` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/host/SystemHost` — OS name, home, temp and working directory, environment, executables on PATH, the running jar |
-| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
-| `ReadScope` | `adapter/tmux/TmuxReads` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
+| `SessionHost` | `adapter/{tmux/TmuxSessionHost,herdr/HerdrSessionHost}` by `session-host`; `openCommandWindow` runs a command as a window's process |
+| `ReadScope` | `adapter/{tmux/TmuxReads,herdr/HerdrReads}` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
 | `SessionLog` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `BuildTools` | `adapter/worktree/RepositoryBuildTools` |
@@ -280,7 +279,7 @@ on a package of more than ten classes and on one of a single class ([0166](docs/
 | `service/deploy` | usecase | deploy targets and infra retries |
 | `service/gate` | usecase | the tool gate: read lines, scopes and the verdict on a command |
 | `service/git` | usecase | git commands, states, worktrees, deploys and diffs |
-| `service/launch` | usecase | starting a task: routing, placement, resume |
+| `service/launch` | usecase | starting a task: routing, placement, resume, the start's pending record |
 | `service/log` | usecase | jagt's own logs: rolling files, press, stop and miss logs |
 | `service/master` | usecase | what the Master reads: panels, briefs, decisions, brake |
 | `service/plan` | usecase | plan approval, baseline, placement and probes |
@@ -323,9 +322,10 @@ on a package of more than ten classes and on one of a single class ([0166](docs/
 | `adapter/process` | adapter | the one owner of child processes: spawn, end each tree, reap; exposed to `stand` |
 | `adapter/host` | adapter | the machine jagt runs on: `SystemHost`, the one reader of host properties, and `Executables`; exposed to `stand` |
 | `adapter/release` | adapter | the release feed drivers: GitHub releases, none |
-| `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
+| `adapter/terminal` | adapter | the kitty base, editor driver, kitty options and the session-host base |
 | `adapter/values` | adapter | `${file:}` and `JAGT__` for the keys Spring binds |
 | `adapter/tmux` | adapter | the tmux session host and its reads |
+| `adapter/herdr` | adapter | the herdr session host, its reads, socket and window stream |
 | `adapter/tracker` | adapter | tracker drivers: file and Jira workflows |
 | `adapter/worktree` | adapter | worktree-facing drivers: line diff, containers, processes, build tools, OpenSpec |
 | `surface/agent` | surface | what a session calls into: hooks, prompts, gates, reports |

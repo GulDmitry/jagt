@@ -34,6 +34,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.testing.FakeClock;
@@ -169,6 +170,25 @@ class MasterPlanVerdictsTest {
     assertThat(state.task("ABC-1").orElseThrow())
         .returns(TaskStatus.PLAN_PENDING, taskState -> taskState.standing().status())
         .returns(PlanGate.REQUIRED, taskState -> taskState.gate().planGate());
+  }
+
+  @Test
+  void leavesPlanNotHeadedSoundOfTrackerTaskForTheHumanWhenTheMasterFindsItHolds()
+      throws Exception {
+    TaskState tracked =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .openedBy(ActionOrigin.TRACKER)
+            .build();
+    state.putTask("ABC-1", tracked);
+
+    boolean moved = verdicts.holds("ABC-1", tracked, planHolds, acting);
+
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.PLAN_PENDING, taskState -> taskState.standing().status())
+        .returns(PlanGate.CLOSED, taskState -> taskState.gate().planGate());
+    verify(sessions, never()).writeTaskContext(anyString(), anyString());
   }
 
   @Test

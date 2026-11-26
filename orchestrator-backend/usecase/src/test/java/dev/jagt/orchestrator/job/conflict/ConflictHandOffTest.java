@@ -20,7 +20,7 @@ import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.StateService;
@@ -125,7 +125,7 @@ class ConflictHandOffTest {
       handOff.handle(
           "ABC-42",
           waitingConflict()
-              .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
+              .withStanding(new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 
       verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -136,7 +136,7 @@ class ConflictHandOffTest {
     void watchesTheConflictItJustHandedToTheSessionForProgress() {
       var conflict =
           waitingConflict()
-              .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
+              .withStanding(new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build();
 
       handOff.handle("ABC-42", conflict);
@@ -153,7 +153,7 @@ class ConflictHandOffTest {
               .withFailure(
                   "red pipeline on the deploy commit: proj 01234567"
                       + " https://git.example.invalid/p/7")
-              .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
+              .withStanding(new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 
       verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -174,7 +174,7 @@ class ConflictHandOffTest {
               .withWorktree(Path.of("/src/ABC-42-revert"))
               .withProgress(new Conflict.Progress(2, 0, "r"))
               .withRevert(true)
-              .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
+              .withStanding(new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 
       verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-revert"));
@@ -193,7 +193,7 @@ class ConflictHandOffTest {
               .withFailure(
                   "red pipeline on the deploy commit: proj 01234567"
                       + " https://git.example.invalid/p/7")
-              .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
+              .withStanding(new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 
       assertThat(state.task("ABC-42").orElseThrow().work().stop()).isNull();

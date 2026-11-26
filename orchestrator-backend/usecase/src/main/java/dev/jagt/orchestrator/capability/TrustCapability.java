@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.TaskCapability;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.git.TrustedGitState;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.turn.Step;
@@ -37,7 +37,7 @@ public class TrustCapability implements TaskCapability {
   }
 
   private boolean answer(String taskId) {
-    Standing read = relay.standing(taskId);
+    SessionStanding read = relay.standing(taskId);
     return (read.status() != null && FlowRules.awaitsItsInstruction(read.status()))
         ? relay.relay(taskId, Step.ANSWERED_UNDER, TRUSTED, StepRelay.Delivery.UNDER, read)
         : relay.relay(taskId, Step.ANSWERED, TRUSTED, StepRelay.Delivery.CONTEXT, read);

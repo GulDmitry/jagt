@@ -108,7 +108,8 @@ class SessionReportsTest {
   @Test
   void recordsTurnEndAsTheSessionGoingIdleAndAnswersWithTheTurnsVerdict() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
-    when(turnEnds.answer("ABC-1", task, false, false)).thenReturn("{\"decision\": \"block\"}");
+    when(turnEnds.answer("ABC-1", task, false, false, null))
+        .thenReturn("{\"decision\": \"block\"}");
 
     String answered =
         new SessionReports(signs, runtime, turnEnds)

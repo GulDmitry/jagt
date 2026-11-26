@@ -9,6 +9,8 @@ Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-
 
 - Selected by config: `UserNotifier` by `orchestrator.notifier` (desktop default, its OS from `orchestrator.platform`, the
   machine's unless overridden). `TerminalDriver` by `orchestrator.terminal` (kitty default, ghostty on macOS only).
+  `SessionHost`, `WindowStream` and `ReadScope` by `orchestrator.session-host` (tmux default, herdr;
+  [0257](../decisions/0257-herdr-is-a-session-host-beside-tmux.md)), so the other's beans do not exist.
   `EditorDriver` by `orchestrator.editor` (cli default, run by `editor-command`). `KeepAwake` by `orchestrator.keep-awake`.
   `ReleaseFeed` by `orchestrator.release-feed.kind` (github default, none).
   `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).

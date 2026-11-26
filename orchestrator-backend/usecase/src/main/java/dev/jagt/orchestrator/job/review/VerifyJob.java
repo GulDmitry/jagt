@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job.review;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.capability.Watch;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.Verification;
@@ -150,7 +150,7 @@ public class VerifyJob implements TaskJob {
       String taskId, TaskState read, Optional<String> key, Step step, String facts, String said) {
     boolean told;
     try {
-      told = relay.relay(taskId, step, facts, StepRelay.Delivery.ROUND, Standing.of(read));
+      told = relay.relay(taskId, step, facts, StepRelay.Delivery.ROUND, SessionStanding.of(read));
     } catch (TaskMovedOn dropped) {
       return;
     }

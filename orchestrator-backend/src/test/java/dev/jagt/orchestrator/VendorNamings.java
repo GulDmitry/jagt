@@ -11,7 +11,7 @@ final class VendorNamings {
 
   private static final Pattern VENDOR =
       Pattern.compile(
-          "(?i)\\b(claude|anthropic|codex|openai|gemini|tmux|kitty|"
+          "(?i)\\b(claude|anthropic|codex|openai|gemini|tmux|herdr|kitty|"
               + "iterm2?|wezterm|ghostty|warp|intellij|osascript|gitlab|github|glab|gh|bitbucket|gi"
               + "tea|jira|gradle|gradlew|"
               + "maven|mvn|npm|fable|opus|sonnet|haiku)\\b");

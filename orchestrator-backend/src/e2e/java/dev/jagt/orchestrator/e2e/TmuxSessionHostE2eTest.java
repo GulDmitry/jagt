@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.host.SystemHost;
-import dev.jagt.orchestrator.adapter.tmux.SessionEnvironment;
+import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
 import dev.jagt.orchestrator.adapter.tmux.TmuxReads;
 import dev.jagt.orchestrator.adapter.tmux.TmuxSessionHost;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;

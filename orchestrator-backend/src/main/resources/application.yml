@@ -115,6 +115,11 @@ orchestrator:
   tmux-command: tmux
   # Empty: tmux's default server. A name: every tmux call carries -L <name>.
   tmux-socket:
+  # tmux | herdr: where every agent session lives; herdr is the alternative terminal multiplexer, tmux the default.
+  session-host: tmux
+  # herdr:
+  #   command: herdr   # resolved like tmux-command
+  #   home:            # the folder holding herdr's sessions/<name>/herdr.sock; empty = ~/.config/herdr
   # Refuse to start when a part of the installation is missing, instead of failing at the click that needs it.
   # A suite that boots the application passes false: what these check is the machine, and a runner is not one.
   startup-checks: true

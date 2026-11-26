@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.worktree;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.host.Layout.OlderPlacement;
 import dev.jagt.orchestrator.port.host.Processes;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,14 +31,17 @@ public class DataFolderStart {
 
   private final OrchestratorPaths paths;
   private final Processes processes;
+  private final List<OlderPlacement> placements;
   private final String previousData;
 
   public DataFolderStart(
       OrchestratorPaths paths,
       Processes processes,
-      @Value("${orchestrator.previous-data:}") String previousData) {
+      @Value("${orchestrator.previous-data:}") String previousData,
+      OlderPlacement... placements) {
     this.paths = paths;
     this.processes = processes;
+    this.placements = List.of(placements);
     this.previousData = previousData;
   }
 
@@ -76,6 +80,7 @@ public class DataFolderStart {
 
   private void bringIn(Path older) {
     paths.layout().placed().forEach((name, to) -> place(older.resolve(name), to));
+    placements.forEach(each -> place(older.resolve(each.name()), each.to()));
     paths
         .layout()
         .placedEntries()

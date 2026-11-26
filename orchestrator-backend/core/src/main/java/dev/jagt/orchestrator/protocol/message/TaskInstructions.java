@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -24,8 +26,8 @@ public record TaskInstructions(String taskId, String instructions) implements Me
                   + " there, so it says everything that still applies.");
 
   public TaskInstructions {
-    taskId = taskId == null || taskId.isBlank() ? null : taskId;
-    instructions = instructions == null || instructions.isBlank() ? null : instructions;
+    taskId = absent(taskId);
+    instructions = absent(instructions);
   }
 
   @Override

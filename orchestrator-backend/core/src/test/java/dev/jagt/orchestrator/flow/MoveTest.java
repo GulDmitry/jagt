@@ -35,6 +35,24 @@ class MoveTest {
   }
 
   @ParameterizedTest
+  @EnumSource(
+      value = TaskStatus.class,
+      names = {"IN_PROGRESS", "CI_POLLING", "REVIEW_PENDING"})
+  void letsYouLiftYourPauseWithoutItCountingAsNeedingYou(TaskStatus status) {
+    Move move =
+        Move.forTask(
+            rules,
+            status,
+            Facts.defaults().withHold(Facts.Hold.defaults().withStopped(true).withPaused(true)),
+            RoundState.NONE,
+            false);
+
+    assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
+    assertThat(move.ask()).isEqualTo("you can lift the pause");
+    assertThat(move.primary()).isEqualTo(TaskAction.LIFT);
+  }
+
+  @ParameterizedTest
   @EnumSource(TaskStatus.class)
   void withholdsShipWhereEveryRequestIsMerged(TaskStatus status) {
     List<TaskAction> actions =

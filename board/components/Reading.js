@@ -1,6 +1,5 @@
 import { diffLineClass, reportParts, switchLines } from "../core/format.js";
 import { t } from "../core/i18n.js";
-import { draw } from "../ui/mermaid.js";
 import { html } from "./html.js";
 import { Report } from "./Report.js";
 
@@ -57,7 +56,6 @@ export const Artifacts = ({ task, shown }) =>
               </div>
               <div
                 class="doc"
-                ref=${(/** @type {Element | null} */ root) => draw(root)}
                 dangerouslySetInnerHTML=${{ __html: shown.html }}
               ></div>`
     }

@@ -36,6 +36,11 @@ public record Setting(
     return new Setting(key, section, Kind.CHOICE, List.of(options), fallback, false);
   }
 
+  /** The value that applies while the file leaves the key out. */
+  public Setting defaulting(Object value) {
+    return new Setting(key, section, kind, options, String.valueOf(value), restart);
+  }
+
   public Setting needingRestart() {
     return new Setting(key, section, kind, options, fallback, true);
   }

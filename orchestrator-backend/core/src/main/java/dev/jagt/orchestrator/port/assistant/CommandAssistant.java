@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.port.assistant;
 import java.util.List;
 
 /**
- * Free text mapped onto ONE command of the console grammar — a PROPOSAL, never an execution. Every
- * call is booked.
+ * Free text read with no tools: mapped onto ONE command of the console grammar — a PROPOSAL, never
+ * an execution — or named in the few words of a branch. Every call is booked.
  */
 public interface CommandAssistant {
 
@@ -22,4 +22,7 @@ public interface CommandAssistant {
 
   /** Reads NOTHING from the outside, so an implementation runs with no tools at all. */
   Answer<CommandProposal> mapCommand(String text, Menu menu);
+
+  /** The few words naming what a written task does; reads NOTHING from the outside either. */
+  Answer<String> nameBranch(String prompt);
 }

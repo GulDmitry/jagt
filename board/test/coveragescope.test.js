@@ -37,3 +37,29 @@ test("everyIncludedFileExists", () => {
 
   assert.deepEqual(missing, []);
 });
+
+const BROWSER_GLOBAL =
+  /\b(document|window|localStorage|sessionStorage|navigator|location|EventSource|WebSocket|MutationObserver|ResizeObserver|IntersectionObserver|requestAnimationFrame|matchMedia|customElements|Element|HTMLElement|HTMLInputElement|HTMLFormElement|HTMLDialogElement|HTMLButtonElement|HTMLSelectElement|ParentNode|Event|KeyboardEvent|MouseEvent|CustomEvent|MessageEvent|FormData|Node|DOMParser|getComputedStyle|alert|confirm)\b/;
+
+const importsOf = (/** @type {string} */ file) =>
+  [
+    ...readFileSync(new URL(file, root), "utf8").matchAll(
+      /(?:from\s+|import\s*\(?\s*)"(\.{1,2}\/[^"]+)"/g,
+    ),
+  ].map(([, path]) =>
+    new URL(path, new URL(file, root)).pathname.slice(root.pathname.length),
+  );
+
+const RENDERER = /from\s+"(preact|htm)"/;
+
+test("noExcusedFileReachesNeitherABrowserGlobalNorAnExcusedFile", () => {
+  const needless = Object.keys(rc.excludeReasons).filter(
+    (file) =>
+      sources.includes(file) &&
+      !BROWSER_GLOBAL.test(readFileSync(new URL(file, root), "utf8")) &&
+      !RENDERER.test(readFileSync(new URL(file, root), "utf8")) &&
+      !importsOf(file).some((path) => path in rc.excludeReasons),
+  );
+
+  assert.deepEqual(needless, []);
+});

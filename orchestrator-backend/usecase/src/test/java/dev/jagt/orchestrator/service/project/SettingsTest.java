@@ -96,6 +96,25 @@ class SettingsTest {
         .satisfies(view -> assertThat(view.value()).isEqualTo(List.of("desktop")));
   }
 
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "codeReview.postReviewReplies | true",
+        "codeReview.mrTitlePattern | {ticket} {title}",
+        "autoReview.windowHours | 24",
+        "infraWait.backoff | 5m, 15m, 45m",
+        "tracker.everyMinutes | 10",
+        "loopBreaker.stalledRounds | 3",
+        "conflictStallMinutes | 20"
+      })
+  void namesTheDefaultThatAppliesWhileTheFileLeavesTheKeyOut(String key, String fallback) {
+    assertThat(settings.read())
+        .filteredOn(view -> view.setting().key().equals(key))
+        .singleElement()
+        .satisfies(view -> assertThat(view.setting().fallback()).isEqualTo(fallback));
+  }
+
   @Test
   void showsNoRoleExceptTheInstalledMastersModeAndNoModelOrAgentSetting() {
     assertThat(settings.read())

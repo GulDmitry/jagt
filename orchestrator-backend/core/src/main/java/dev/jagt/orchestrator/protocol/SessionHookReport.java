@@ -39,7 +39,7 @@ public record SessionHookReport(
     public Turn {
       prompt = absent(prompt);
       toolName = absent(toolName);
-      backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
+      backgroundTasks = backgroundTasks == null ? List.of() : List.copyOf(backgroundTasks);
     }
   }
 
@@ -83,24 +83,23 @@ public record SessionHookReport(
 
   /**
    * A relative path is the one thing jagt must not believe: it would resolve against the
-   * orchestrator's own directory and name a log some other process writes.
+   * orchestrator's own directory and name a log some other process writes. A NUL character is the
+   * one thing the file system refuses outright, so such a path is believed no more.
    */
   @Override
   public List<Violation> violations(MessageContext context) {
-    return transcriptPath != null && !Path.of(transcriptPath).isAbsolute()
+    return transcriptPath != null && sessionLog().isEmpty()
         ? List.of(
             new Violation(
                 "transcriptPath",
-                "an absolute path; '"
-                    + transcriptPath
-                    + "' would resolve against jagt's own directory"))
+                "an absolute path without a NUL character, not '" + transcriptPath + "'"))
         : List.of();
   }
 
   /** Where this session writes its log, or empty where the harness named none jagt can follow. */
   public Optional<Path> sessionLog() {
-    return violations(MessageContext.NONE).isEmpty() && transcriptPath != null
-        ? Optional.of(Path.of(transcriptPath))
-        : Optional.empty();
+    return transcriptPath == null || transcriptPath.contains("\0")
+        ? Optional.empty()
+        : Optional.of(Path.of(transcriptPath)).filter(Path::isAbsolute);
   }
 }

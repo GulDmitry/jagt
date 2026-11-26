@@ -14,24 +14,15 @@ Each cause has its own test.
 #### Scenario: An unknown key
 - **WHEN** a fitness function holds a key outside the fitness function keys
 - **THEN** loading fails with a `FitnessConfigException` naming that key and no fitness function runs
-#### Scenario: A wrong type
-- **WHEN** a threshold holds text instead of a number
-- **THEN** loading fails with a `FitnessConfigException` naming the key
-#### Scenario: A missing threshold
-- **WHEN** a fitness function holds neither `max` nor `min`
-- **THEN** loading fails with a `FitnessConfigException` naming the fitness function
-#### Scenario: An unknown fitness function id
-- **WHEN** a fitness function names a `fitness` id no `Fitness` class carries
-- **THEN** loading fails with a `FitnessConfigException` naming the id
-#### Scenario: An unknown selector
-- **WHEN** a fitness function holds a selector value outside its engine's grammar
-- **THEN** loading fails with a `FitnessConfigException` naming the selector
+#### Scenario: A wrong type or a missing threshold
+- **WHEN** a threshold holds text instead of a number, or a fitness function holds neither `max` nor `min`
+- **THEN** loading fails with a `FitnessConfigException` naming the key or the fitness function
+#### Scenario: An unknown fitness function id or selector
+- **WHEN** a fitness function names a `fitness` id no `Fitness` class carries, or a selector outside its engine's grammar
+- **THEN** loading fails with a `FitnessConfigException` naming the id or the selector
 #### Scenario: A scan function lacking what it measures with
 - **WHEN** a scan function is `per: line` without `regex`, holds neither `glob` nor `set`, or sizes with a `per` and `measure` that do not pair
 - **THEN** loading fails with a `FitnessConfigException` naming the missing or unsupported selector
-#### Scenario: A set naming no source set
-- **WHEN** a function holds `set: mian` and the project has no such source set
-- **THEN** loading fails with a `FitnessConfigException` naming the `set` key
 #### Scenario: A regex that does not compile
 - **WHEN** a scan function holds `regex: "("`
 - **THEN** loading fails with a `FitnessConfigException` naming the `regex` key
@@ -195,3 +186,14 @@ A named bad practice SHALL be a `max 0` function or a counted ratchet that only 
 #### Scenario: A first new use of a named practice
 - **WHEN** a change adds a `Thread.sleep` to main beyond the ratchet's number
 - **THEN** the fitness run fails naming `sleep-in-main`
+
+### Requirement: A loosened threshold names the decision that allows it
+`fitnessRaises` SHALL fail on each `fitness.yml` row whose `max` rose or `min` fell since its merge base with `main`,
+naming the row and both numbers. A row passes when its `decision:` changed to a record under `docs/decisions/`;
+so do a new row, a falling `max` and a rising `min`. The test gate runs it.
+#### Scenario: A loosening keeps its decision
+- **WHEN** a branch raises a row's `max` from 58 to 59, or lowers its `min`, and keeps `decision: "0176"`
+- **THEN** `fitnessRaises` fails naming the row and both numbers
+#### Scenario: A raise names a new record
+- **WHEN** the raise changes `decision:` to a number whose record exists
+- **THEN** `fitnessRaises` passes

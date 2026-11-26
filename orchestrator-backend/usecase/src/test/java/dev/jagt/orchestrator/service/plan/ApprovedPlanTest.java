@@ -13,12 +13,13 @@ class ApprovedPlanTest {
   private final PlanPlacement placement = mock(PlanPlacement.class);
   private final PlanBaseline baseline = mock(PlanBaseline.class);
   private final UnaffectedRepos unaffected = mock(UnaffectedRepos.class);
+  private final PlanVerdict verdict = mock(PlanVerdict.class);
 
   @Test
   void keepsThePlanAsBaselineAndSaysTheTaskWasPlacedWhereItHadNoRepository() {
     when(placement.place("ABC-1")).thenReturn(true);
 
-    boolean placed = new ApprovedPlan(placement, baseline, unaffected).settle("ABC-1");
+    boolean placed = new ApprovedPlan(placement, baseline, unaffected, verdict).settle("ABC-1");
 
     assertThat(placed).isTrue();
     verify(baseline).keep("ABC-1");
@@ -28,9 +29,23 @@ class ApprovedPlanTest {
   void keepsThePlanAsBaselineAndSaysNothingWasPlacedWhereTheTaskHeldOneRepository() {
     when(placement.place("ABC-1")).thenReturn(false);
 
-    boolean placed = new ApprovedPlan(placement, baseline, unaffected).settle("ABC-1");
+    boolean placed = new ApprovedPlan(placement, baseline, unaffected, verdict).settle("ABC-1");
 
     assertThat(placed).isFalse();
     verify(baseline).keep("ABC-1");
+  }
+
+  @Test
+  void callsThePlanSoundWhereItsHeadIsRead() {
+    when(verdict.sound("ABC-1")).thenReturn(true);
+
+    assertThat(new ApprovedPlan(placement, baseline, unaffected, verdict).sound("ABC-1")).isTrue();
+  }
+
+  @Test
+  void callsThePlanNotSoundWhereItsHeadIsNotRead() {
+    when(verdict.sound("ABC-1")).thenReturn(false);
+
+    assertThat(new ApprovedPlan(placement, baseline, unaffected, verdict).sound("ABC-1")).isFalse();
   }
 }

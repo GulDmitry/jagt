@@ -13,6 +13,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.StatusChange;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -20,6 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardCardTest extends BoardPageContext {
+
+  private final List<StatusChange> longHistory =
+      Collections.nCopies(
+          60, new StatusChange(TaskStatus.IN_PROGRESS, System.currentTimeMillis() - 60_000, null));
 
   @Autowired
   BoardCardTest(BreakableJob breakable, StateService state) {
@@ -346,6 +352,31 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
+  void answerRowStaysInViewWhenTheHistoryIsTallerThanThePane() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).history(longHistory).build());
+
+    Page page = openLiveBoard();
+    page.locator("#tasks .row .pick").click();
+    assertThat(page.locator("#pane .say input"))
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+    assertThat(page.locator("#pane .say button").first())
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+  }
+
+  @Test
+  void answerRowStaysInViewWhenTheHistoryIsScrolledToItsTop() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).history(longHistory).build());
+
+    Page page = openLiveBoard();
+    page.locator("#tasks .row .pick").click();
+    page.evaluate("document.getElementById('pane').scrollTop = 100000; window.scrollTo(0, 100000)");
+    page.evaluate("document.getElementById('pane').scrollTop = 0; window.scrollTo(0, 0)");
+
+    assertThat(page.locator("#pane .say input"))
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+  }
+
+  @Test
   void phoneShowsTheOpenTaskWithItsVerbsAndSayFormAndNoSidewaysScroll() {
     state.putTask(
         "ABC-1",
@@ -553,14 +584,13 @@ class BoardCardTest extends BoardPageContext {
             .lastPolledAt(System.currentTimeMillis())
             .build());
     Page page = session.newPage();
-    page.setViewportSize(1300, 170);
+    page.setViewportSize(1300, 190);
 
     page.navigate("http://localhost:" + port + "/");
 
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     assertThat(page.locator("article .mr-age")).isVisible();
-    var chip = page.locator("article .mr-age").boundingBox();
-    page.mouse().move(Objects.requireNonNull(chip).x + 4, chip.y + 4);
+    page.locator("article .mr-age").focus();
 
     assertThat(page.locator("#tip")).hasClass("scrolls");
   }

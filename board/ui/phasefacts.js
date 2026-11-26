@@ -4,9 +4,10 @@ import { t } from "../core/i18n.js";
  * @param {number} held
  * @param {number} showing
  * @param {number} on
+ * @param {boolean} logStands
  */
-export const emptyFacts = (held, showing, on) => ({
-  emptyHidden: held > 0,
+export const emptyFacts = (held, showing, on, logStands) => ({
+  emptyHidden: held > 0 || logStands,
   filteredHidden: !(held > 0 && showing === 0),
   filtered: t("header.filtered", { on, held }),
 });

@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.HeaderChips.Kind;
 import dev.jagt.orchestrator.service.role.model.ModelRoles;
 import dev.jagt.orchestrator.service.stop.BoardStop;
 import dev.jagt.orchestrator.service.task.TaskViews;
@@ -170,8 +171,8 @@ class BoardApiControllerTest {
   @Test
   void servesTheMarksEverySourceAddsToTheHead() {
     when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
-    var acting = new HeaderChip("header.acting", null, false, null);
-    var stopped = new HeaderChip("board-stopped", "unstop", false, 7L);
+    var acting = new HeaderChip("header.acting", null, Kind.NOTE, null, null);
+    var stopped = new HeaderChip("board-stopped", "unstop", Kind.PAUSED, 7L, null);
     BoardApiController board =
         new BoardApiController(
             taskViews,

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -33,7 +34,8 @@ class DebugReadsTest {
                             .withStateFile(root.resolve("state.json").toString()),
                         FakeHost.machine()),
                     mock(StateService.class),
-                    mock(AgentRuntime.class))
+                    mock(AgentRuntime.class),
+                    mock(ThreadDump.class))
                 .stops(2))
         .isEqualTo("two\nthree");
   }
@@ -56,7 +58,8 @@ class DebugReadsTest {
                             .withStateFile(root.resolve("state.json").toString()),
                         FakeHost.machine()),
                     mock(StateService.class),
-                    mock(AgentRuntime.class))
+                    mock(AgentRuntime.class),
+                    new ThreadDump())
                 .stops(3))
         .isEqualTo("one\ntw�\nthree");
   }
@@ -75,7 +78,8 @@ class DebugReadsTest {
                             .withStateFile(root.resolve("state.json").toString()),
                         FakeHost.machine()),
                     mock(StateService.class),
-                    mock(AgentRuntime.class))
+                    mock(AgentRuntime.class),
+                    new ThreadDump())
                 .stopsReviewed(5))
         .isEqualTo("verdict");
   }
@@ -92,7 +96,8 @@ class DebugReadsTest {
                         .withStateFile(root.resolve("state.json").toString()),
                     FakeHost.machine()),
                 mock(StateService.class),
-                mock(AgentRuntime.class))
+                mock(AgentRuntime.class),
+                new ThreadDump())
             .stops(5);
 
     try (Stream<Path> left = Files.list(root)) {
@@ -116,12 +121,29 @@ class DebugReadsTest {
                     .withStateFile(root.resolve("state.json").toString()),
                 FakeHost.machine()),
             state,
-            runtime);
+            runtime,
+            new ThreadDump());
 
     reads.stops(1);
     reads.stopsReviewed(1);
 
     assertThat(Files.readString(root.resolve("records/stops.jsonl"))).isEqualTo("one\ntwo\n");
     verifyNoInteractions(state, runtime);
+  }
+
+  @Test
+  void returnsTheThreadDumpForThreads() {
+    ThreadDump dump = mock(ThreadDump.class);
+    when(dump.read()).thenReturn("every thread");
+
+    String read =
+        new DebugReads(
+                mock(OrchestratorPaths.class),
+                mock(StateService.class),
+                mock(AgentRuntime.class),
+                dump)
+            .threads();
+
+    assertThat(read).isEqualTo("every thread");
   }
 }

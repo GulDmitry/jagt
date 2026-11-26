@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.ActStop.Cause;
 import dev.jagt.orchestrator.service.role.HeaderChips;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.HeaderChips.Kind;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,11 @@ public class MasterChips implements HeaderChips {
       return List.of();
     }
     if (stops.standing().filter(stop -> stop.cause() == Cause.STRIKES).isPresent()) {
-      return List.of(new HeaderChip("act-stopped", "act", true, null));
+      return List.of(new HeaderChip("act-stopped", "act", Kind.STALLED, null, null));
     }
-    return acting() ? List.of(new HeaderChip("header.acting", null, false, null)) : List.of();
+    return acting()
+        ? List.of(new HeaderChip("header.acting", null, Kind.NOTE, null, null))
+        : List.of();
   }
 
   private boolean acting() {

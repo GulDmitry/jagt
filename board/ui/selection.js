@@ -30,6 +30,7 @@ export const back = () => {
 };
 
 export const isOpen = () => state.opened;
+export const logStands = () => rolelog.open() !== null;
 
 const narrow = window.matchMedia("(max-width: 1199px)");
 

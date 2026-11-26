@@ -55,15 +55,26 @@ function renderReach() {
       .join("\n") + `\n${t("header.reach.clears")}`;
 }
 
+/** @type {Record<import("../core/store.js").Chip["kind"], string>} */
+const kindClass = {
+  NOTE: "chip",
+  PAUSED: "chip paused",
+  STALLED: "chip stalled",
+  BAD: "chip bad",
+};
+
 /** @param {import("../core/store.js").Chip} one */
 const roleChip = (one) => {
   const node = make(
     one.verb ? "button" : "span",
-    one.verb ? "chip stalled" : "chip",
+    kindClass[one.kind],
     t(one.key),
   );
   if (one.verb) node.dataset.verb = one.verb;
-  node.dataset.tip = t(`${one.key}.tip`, one.at ? { since: full(one.at) } : {});
+  node.dataset.tip = t(`${one.key}.tip`, {
+    since: one.at ? full(one.at) : "",
+    detail: one.detail,
+  });
   return node;
 };
 

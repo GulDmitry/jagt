@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
+import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;

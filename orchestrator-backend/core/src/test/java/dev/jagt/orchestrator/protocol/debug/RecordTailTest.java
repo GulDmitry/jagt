@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class RecordTailTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"backend-log", "master-log", "stops", "stops-reviewed"})
+  @ValueSource(strings = {"backend-log", "master-log", "stops", "stops-reviewed", "threads"})
   void acceptsEachRecordJagtKeeps(String record) {
     List<Violation> found = new RecordTail(record, null).violations(MessageContext.NONE);
 

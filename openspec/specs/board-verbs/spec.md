@@ -141,36 +141,36 @@ The Master in `act` may press `stop`; only the human's `unstop` ends it, and a s
 - **THEN** jobs and intake run again, the Master reads its configured mode, and sessions take their next prompt
 
 ### Requirement: The stop is one mark on the board's head
-The header SHALL carry one `.chip.stalled`, its hover the time of the stop in UTC; pressing it runs `unstop`. It replaces pausing each
-started task by hand and wears the colour of a stopped `act`; the legend shows it on the row of the other stopped marks.
+The header SHALL carry one `.chip.paused` `‖`, dashed, its hover the time of the stop in UTC; pressing it runs `unstop`. It replaces pausing each
+started task by hand and wears the pause's mark, for the human chose it; the legend shows it on its own row.
 #### Scenario: The mark
 - **WHEN** the board is stopped
-- **THEN** the header shows `board stopped` and every card stays readable
+- **THEN** the header shows `‖ board stopped` as a `.chip.paused` and every card stays readable
 #### Scenario: The tab icon
 - **WHEN** the board is stopped and nothing else is broken
 - **THEN** the tab icon stays unmarked, for a stop the human chose is not a break
 
 ### Requirement: The head's role marks come from the roles
-`/api/tasks` SHALL carry `chips`, each `{key, verb, broken, at}` from a `HeaderChips` bean, never a role's own field.
-The Master's `MasterChips` is empty where `roles/master` is absent; `BoardStopChips` is the board's own.
-The board draws each from the catalog, `key.tip` its hover; one with a `verb` is a `.stalled` button running it.
-The glance reads broken where any chip is `broken`.
-
+`/api/tasks` SHALL carry `chips` `{key, verb, kind, at, detail}` from `HeaderChips` beans, never a role's field.
+`MasterChips` gives none without `roles/master`; `key` is a catalog word.
+`kind` `NOTE`, `PAUSED` (you stopped it), `STALLED` (jagt did) or `BAD` draws `.chip`, `.chip.paused`, `.chip.stalled` or `.chip.bad`.
+Its hover is `key.tip`, then `detail`; a `verb` makes it a button running it; the glance reads broken on `STALLED` or `BAD`.
 #### Scenario: The Master acts
 - **WHEN** the Master is installed and its mode is `act`
-- **THEN** `chips` holds one entry without a verb, and the head shows its plain chip
-
+- **THEN** `chips` holds one `NOTE` entry without a verb, and the head shows its plain chip
 #### Scenario: The Master is not installed
 - **WHEN** `roles/master` is absent
 - **THEN** `chips` holds no Master entry and the head shows none
-
 #### Scenario: Act stopped itself
 - **WHEN** three bad endings stopped act
-- **THEN** `chips` holds an entry with verb `act` and `broken`, and pressing its button runs `act`
-
+- **THEN** `chips` holds a `STALLED` entry with verb `act`, drawn `.chip.stalled` `■`, and pressing its button runs `act`
 #### Scenario: The board is stopped
 - **WHEN** the human stopped the board
-- **THEN** `chips` holds an entry with verb `unstop` and the moment of the stop, installed Master or not
+- **THEN** `chips` holds a `PAUSED` entry with verb `unstop` and the moment of the stop, installed Master or not, drawn `.chip.paused` `‖`
+#### Scenario: A start a restart cut short
+- **WHEN** `pending-starts.json` holds `ABC-42` and `tighten the parser`, and no task has that key
+- **THEN** `chips` holds one `start-interrupted` entry, `BAD`, without a verb, its `detail` naming the key and the words, drawn `.chip.bad`
+- **AND** the entry ends once `resume ABC-42` or `resume ABC-42 discard` ran, or a task `ABC-42` exists
 
 ### Requirement: The editor verb is `code`
 The verb opening a task's worktrees in the configured editor SHALL be `code`, its MCP tool `open_code`, its capability `capability/code`.

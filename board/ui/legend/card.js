@@ -44,9 +44,18 @@ const flagButton = (on) => {
 };
 
 const draftedTab = () => {
-  const tab = make("button", "you", t("tab.round"));
+  const tab = make(
+    "button",
+    "",
+    `${t("tab.round")} `,
+    span("badge required", t("tab.round.new")),
+  );
   tab.setAttribute("role", "tab");
-  return make("span", "tabs", "", tab);
+  tab.setAttribute("aria-selected", "false");
+  const plain = make("button", "", t("tab.overview"));
+  plain.setAttribute("role", "tab");
+  plain.setAttribute("aria-selected", "true");
+  return make("span", "tabs", "", plain, tab);
 };
 
 const blockHead = () =>
@@ -64,15 +73,22 @@ export const cardRows = () => [
     "badges",
     span("badge required", "ship it"),
     span("badge optional", "read the round"),
-    span("badge required problem", "NEEDS YOU"),
+    span("badge problem", "retry the run"),
+    span("badge required stop", "lift the stop"),
+    span("badge optional paused", "you can lift the pause"),
   ),
   row("flag", flagButton(false), flagButton(true)),
   row(
     "status",
     aged("status", "in progress", "12m"),
     aged("status live", "done", "3d"),
+    aged("status paused", "‖ paused", "2m"),
   ),
-  row("deployed", make("button", "again", "Deploy")),
+  row(
+    "deployed",
+    make("button", "", "Deploy"),
+    make("button", "again", "Deploy"),
+  ),
   row("quiet", make("button", "quiet", "Check review")),
   row(
     "request",
@@ -82,9 +98,7 @@ export const cardRows = () => [
   ),
   row(
     "checks",
-    span("checks red", ""),
-    span("checks green", ""),
-    span("checks running", ""),
+    ...["red", "green", "running"].map((s) => span(`checks ${s}`, "")),
   ),
   row("repos", requestChip("mr-age", "alpha 2d"), repositories()),
   row("drafted", draftedTab()),
@@ -94,7 +108,6 @@ export const cardRows = () => [
     requestChip("mr-age stalled", `${t("request")} 9d`),
     aged("status stalled", "out for review", "9d"),
     span("chip stalled", t("act-stopped")),
-    span("chip stalled", t("board-stopped")),
   ),
   row(
     "detail",

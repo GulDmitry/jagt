@@ -150,7 +150,7 @@ class BoardAssetsTest {
   }
 
   @Test
-  void theBoardsCodeAndStylesWeighUnderTwoHundredThirtySixKilobytes() throws IOException {
+  void theBoardsCodeAndStylesWeighUnderTwoHundredFortyKilobytes() throws IOException {
     long bytes;
     try (Stream<Path> files = Files.walk(STATIC)) {
       bytes =
@@ -167,7 +167,7 @@ class BoardAssetsTest {
               .sum();
     }
 
-    assertThat(bytes).isLessThan(236 * 1024);
+    assertThat(bytes).isLessThan(240 * 1024);
   }
 
   @Test

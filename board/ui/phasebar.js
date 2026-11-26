@@ -9,9 +9,10 @@ const phaseBar = /** @type {HTMLElement} */ (document.getElementById("phases"));
 /**
  * @param {import("../core/store.js").Task[]} tasks
  * @param {number} showing
+ * @param {boolean} logStands
  */
-export function render(tasks, showing) {
-  const empty = emptyFacts(tasks.length, showing, filters.on());
+export function render(tasks, showing, logStands) {
+  const empty = emptyFacts(tasks.length, showing, filters.on(), logStands);
   /** @type {HTMLElement} */ (document.getElementById("empty")).hidden =
     empty.emptyHidden;
   const filtered = /** @type {HTMLElement} */ (
@@ -19,7 +20,7 @@ export function render(tasks, showing) {
   );
   filtered.hidden = empty.filteredHidden;
   if (!filtered.hidden) filtered.textContent = empty.filtered;
-  phaseBar.hidden = tasks.length === 0;
+  phaseBar.hidden = tasks.length === 0 || (logStands && showing === 0);
   phaseBar.replaceChildren(
     ...segments(store.phases(), filters.narrowed(tasks), filters.holds).flatMap(
       (one, index) => {

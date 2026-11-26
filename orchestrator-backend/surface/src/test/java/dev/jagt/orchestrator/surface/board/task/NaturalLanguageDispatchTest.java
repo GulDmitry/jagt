@@ -6,10 +6,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.command.DoCommand;
+import dev.jagt.orchestrator.command.GlobalCommand;
+import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.command.ResumeCommand;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.assistant.Answer;
@@ -21,14 +28,14 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.service.launch.PendingStarts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
-import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +48,9 @@ class NaturalLanguageDispatchTest {
   private final CommandService commands = mock(CommandService.class);
   private final TaskLauncher launcher = mock(TaskLauncher.class);
   private final ConfigService config = mock(ConfigService.class);
+  private final GlobalCommands globals =
+      new GlobalCommands(
+          List.of(new DoCommand(launcher), new ResumeCommand(launcher, mock(PendingStarts.class))));
 
   @TempDir Path root;
 
@@ -57,7 +67,7 @@ class NaturalLanguageDispatchTest {
             .alias("a1")
             .title("Widget layout is off")
             .build());
-    palette = paletteContext().build(state, config);
+    palette = paletteContext().build(state, config, globals);
   }
 
   @Test
@@ -66,7 +76,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("review", "a1", "", "the human said review"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
     when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
 
     String result = dispatch.interpret("what does the review say on a1");
@@ -80,7 +90,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("ship", "a1", "", "the only task about layout"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
     when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
 
     String result = dispatch.interpret("push the layout one for review");
@@ -94,7 +104,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("deploy", "a1", "", "asked to release it"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
     when(commands.execute("ABC-1", TaskAction.DEPLOY))
         .thenThrow(
             new Refusal(
@@ -114,11 +124,9 @@ class NaturalLanguageDispatchTest {
   @Test
   void refusesTaskTheModelInventedInsteadOfActingOnSomethingNear() {
     CommandAssistant assistant =
-        (text, tasks) ->
-            new Answer<>(
-                Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE);
+        new FakeProposingCommandAssistant(new CommandProposal("ship", "ABC-99", "", "guessed"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     String result = dispatch.interpret("ship the other one");
 
@@ -127,12 +135,26 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
+  void refusesGlobalCommandTheModelMayNotPropose() {
+    GlobalCommand unproposable = mock(GlobalCommand.class);
+    when(unproposable.id()).thenReturn("stats");
+    NaturalLanguageDispatch dispatch =
+        new NaturalLanguageDispatch(
+            new FakeProposingCommandAssistant(new CommandProposal("stats", "", "", "")),
+            palette,
+            commands,
+            new GlobalCommands(List.of(unproposable)));
+
+    assertThat(dispatch.interpret("show me the numbers")).contains("unknown command 'stats'");
+    verify(unproposable, never()).run(anyString());
+  }
+
+  @Test
   void refusesVerbThatIsNotInTheGrammar() {
     CommandAssistant assistant =
-        (text, tasks) ->
-            new Answer<>(Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE);
+        new FakeProposingCommandAssistant(new CommandProposal("rm-rf", "a1", "", ""));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     String result = dispatch.interpret("nuke it");
 
@@ -146,7 +168,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("none", "", "", "two tasks mention login"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     String result = dispatch.interpret("ship the login one");
 
@@ -159,7 +181,7 @@ class NaturalLanguageDispatchTest {
     CommandAssistant assistant =
         new FakeProposingCommandAssistant(new CommandProposal("do", "", "ABC-42", "a new ticket"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
     when(launcher.launch(LaunchRequest.of("ABC-42")))
         .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
@@ -173,7 +195,7 @@ class NaturalLanguageDispatchTest {
     CommandAssistant assistant =
         new FakeProposingCommandAssistant(new CommandProposal("do", "", "ABC-42", "a new ticket"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
     AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
     when(launcher.launch(LaunchRequest.of("ABC-42")))
         .thenAnswer(call -> {
@@ -192,7 +214,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("resume", "", "https://host/mr/42", "an existing merge request"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
     when(launcher.resume("https://host/mr/42"))
         .thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
@@ -206,7 +228,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("resume", "", "ABC-1", "no url given"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     assertThat(dispatch.interpret("resume that thing")).contains("no review-request URL was named");
     verifyNoInteractions(launcher);
@@ -218,7 +240,7 @@ class NaturalLanguageDispatchTest {
         new FakeProposingCommandAssistant(
             new CommandProposal("do", "", "", "no ticket in the request"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     String result = dispatch.interpret("start a new task");
 
@@ -228,9 +250,9 @@ class NaturalLanguageDispatchTest {
 
   @Test
   void saysSoWhenTheAssistantIsUnavailableInsteadOfFailingSilently() {
-    CommandAssistant assistant = (text, tasks) -> Answer.unavailable();
+    CommandAssistant assistant = mock(CommandAssistant.class, invocation -> Answer.unavailable());
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     assertThat(dispatch.interpret("do something")).contains("Could not reach the assistant");
     verifyNoInteractions(commands, launcher);
@@ -250,9 +272,10 @@ class NaturalLanguageDispatchTest {
             + " yours to do with git."
       })
   void answersInputThatNeedsNoModelWithoutSpendingCall(String typed, String answer) {
-    CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
+    CommandAssistant assistant =
+        mock(CommandAssistant.class, invocation -> fail("the model was asked"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, globals);
 
     assertThat(dispatch.interpret(typed)).isEqualTo(answer);
     verifyNoInteractions(commands, launcher);

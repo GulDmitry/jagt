@@ -51,7 +51,7 @@
 | `/api/commands`, `/api/jobs`, `/api/interpret`, `/api/interactions`, `/api/windows`, `/api/roles` | same | all | V4, V8 |
 | `/api/events` (server-sent stream) | same | all | V4, V7 |
 | `/api/session` | same | all | V7 |
-| `/api/debug` (records, transcript; read only) | same | all | V4, V8, V14 |
+| `/api/debug` (records, transcript, screen; read only) | same | all | V4, V8, V14 |
 | `/state` | same | all | V8, V14 |
 | `/login.html` and its assets, `/login`, `/logout`, `/login/oauth2` | public, a write carries Origin | all | V6, V7, V10 |
 | `/actuator/health` (liveness and readiness) | public | `NotThePage` | V13 |

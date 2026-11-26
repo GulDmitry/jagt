@@ -8,7 +8,7 @@ import { status } from "./status.js";
 export function chrome(view) {
   projects.render();
   launch.render();
-  header.render(view.tasks, view.shown.length);
+  header.render(view.tasks, view.shown.length, view.logStands);
   noted(view);
   status(view.tasks);
 }

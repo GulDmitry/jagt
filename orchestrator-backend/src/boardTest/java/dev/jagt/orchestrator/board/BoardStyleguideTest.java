@@ -48,8 +48,10 @@ class BoardStyleguideTest extends BoardPageContext {
 
     page.navigate("http://localhost:" + port + "/styleguide.html");
 
-    assertThat(page.locator("figure.state > article")).hasCount(21);
-    assertThat(page.locator("figure.state #tasks")).hasCount(3);
+    assertThat(page.locator("figure.state > article")).hasCount(22);
+    assertThat(page.locator("figure.state #tasks")).hasCount(4);
+    assertThat(page.locator("figure[data-state='a row with no row verb'] [data-place=row]"))
+        .hasCount(0);
     assertThat(page.locator("figure.state #pane article")).hasCount(6);
     assertThat(page.locator("figure.state .round .block")).hasCount(3);
     assertThat(page.locator("figure.state .round .quote")).hasCount(1);

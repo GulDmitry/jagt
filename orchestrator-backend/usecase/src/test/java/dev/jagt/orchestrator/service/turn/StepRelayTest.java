@@ -23,7 +23,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
@@ -128,7 +128,7 @@ class StepRelayTest {
     return Stream.of(
         Arguments.of(
             "relay",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relay(
                         "ABC-42",
@@ -138,7 +138,7 @@ class StepRelayTest {
                         read)),
         Arguments.of(
             "relayRound",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relay(
                         "ABC-42",
@@ -148,7 +148,7 @@ class StepRelayTest {
                         read)),
         Arguments.of(
             "relayUnder",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relay(
                         "ABC-42",
@@ -158,7 +158,7 @@ class StepRelayTest {
                         read)),
         Arguments.of(
             "relay with a claim",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relay(
                         "ABC-42",
@@ -169,7 +169,7 @@ class StepRelayTest {
                             read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "relayRound with a claim",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relay(
                         "ABC-42",
@@ -180,7 +180,7 @@ class StepRelayTest {
                             read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "relayUnder with a claim",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relay(
                         "ABC-42",
@@ -191,15 +191,15 @@ class StepRelayTest {
                             read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "write",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) -> relay.write("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
         Arguments.of(
             "say",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) -> relay.say("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
         Arguments.of(
             "relayComposed",
-            (BiFunction<StepRelay, Standing, Boolean>)
+            (BiFunction<StepRelay, SessionStanding, Boolean>)
                 (relay, read) ->
                     relay.relayComposed(
                         "ABC-42",
@@ -212,11 +212,11 @@ class StepRelayTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("entries")
   void relaysNothingWhenTheTurnMovedOnSinceTheTaskWasRead(
-      String kind, BiFunction<StepRelay, Standing, Boolean> entry) {
+      String kind, BiFunction<StepRelay, SessionStanding, Boolean> entry) {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    final Standing read = Standing.of(state.task("ABC-42").orElseThrow());
+    final SessionStanding read = SessionStanding.of(state.task("ABC-42").orElseThrow());
     turns.opened("ABC-42", "answered", "the human answered", TaskStatus.DEPLOYED);
     when(door.roundDue("ABC-42", "deploy")).thenReturn(true);
     Turn before = turns.of("ABC-42");
@@ -233,7 +233,7 @@ class StepRelayTest {
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     StepRelay.Claim claim =
         new StepRelay.Claim(
-            Standing.of(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()),
+            SessionStanding.of(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()),
             opens -> FlowReports.Claimed.MOVED_ON,
             opened -> false);
 

@@ -2,14 +2,18 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.service.launch.PendingStarts;
 import dev.jagt.orchestrator.service.launch.TaskLaunches;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
+import dev.jagt.orchestrator.task.launch.PendingStart;
+import dev.jagt.orchestrator.task.launch.PendingStart.Placement;
 import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,7 @@ public class TaskLauncher {
   private final ConfigService configService;
   private final TaskLaunches launches;
   private final TaskResume resumes;
+  private final PendingStarts pending;
 
   /**
    * Spins up a task for {@code ref}, an issue key or a URL to it in any tracker, or for the words a
@@ -37,6 +42,52 @@ public class TaskLauncher {
   }
 
   public Launched launch(LaunchRequest request) {
+    return recorded(pending.keyFor(request), request, Placement.PLACED, () -> start(request));
+  }
+
+  /** {@code read} is the item's facts already read and paid for, as intake reads them. */
+  public Launched launch(LaunchRequest request, Answer<TicketFacts> read) {
+    return recorded(
+        pending.keyFor(request),
+        request,
+        Placement.PLACED,
+        () ->
+            launches.ticket(
+                request,
+                request.project() != null ? resolveProjects(request.project()) : null,
+                read));
+  }
+
+  /**
+   * Runs an interrupted start again from its saved request; the record keeps its key, so the start
+   * is replaced, never doubled.
+   */
+  public Launched resumeStart(String key) {
+    PendingStart saved =
+        pending
+            .find(key)
+            .orElseThrow(() -> new IllegalArgumentException("no interrupted start " + key));
+    return recorded(
+        key,
+        saved.request(),
+        saved.placement(),
+        () ->
+            saved.placement() == Placement.UNPLACED
+                ? startUnplaced(saved.request())
+                : start(saved.request()));
+  }
+
+  private Launched recorded(
+      String key, LaunchRequest request, Placement placement, Supplier<Launched> start) {
+    pending.begin(key, request, placement);
+    try {
+      return start.get();
+    } finally {
+      pending.end(key);
+    }
+  }
+
+  private Launched start(LaunchRequest request) {
     return unusable(request)
         .orElseGet(() ->
             request.ref() != null
@@ -46,17 +97,16 @@ public class TaskLauncher {
                 : launches.written(request, resolveProjects(request.project())));
   }
 
-  /** {@code read} is the item's facts already read and paid for, as intake reads them. */
-  public Launched launch(LaunchRequest request, Answer<TicketFacts> read) {
-    return launches.ticket(
-        request, request.project() != null ? resolveProjects(request.project()) : null, read);
-  }
-
   /**
    * A start with no project: only a plan can come before the repository is known, and no router is
    * asked.
    */
   public Launched launchUnplaced(LaunchRequest request) {
+    return recorded(
+        pending.keyFor(request), request, Placement.UNPLACED, () -> startUnplaced(request));
+  }
+
+  private Launched startUnplaced(LaunchRequest request) {
     if (AgentSessions.launchMode(request.mode()) != LaunchMode.PLAN) {
       return Launched.refused(
           "error: no project and no plan first — choose a project, or start with plan first");

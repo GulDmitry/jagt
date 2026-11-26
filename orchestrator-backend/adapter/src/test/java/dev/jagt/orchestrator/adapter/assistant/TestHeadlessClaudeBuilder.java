@@ -13,10 +13,11 @@ import lombok.With;
 
 @With
 public record TestHeadlessClaudeBuilder(
-    AssistantProperties breaker, AssistantProperties properties) {
+    AssistantProperties breaker, AssistantProperties properties, ClaudeProperties claude) {
 
   public static TestHeadlessClaudeBuilder headlessClaude() {
-    return new TestHeadlessClaudeBuilder(AssistantProperties.empty(), AssistantProperties.empty());
+    return new TestHeadlessClaudeBuilder(
+        AssistantProperties.empty(), AssistantProperties.empty(), ClaudeProperties.defaults());
   }
 
   public HeadlessClaude build(Processes runner, UsageTracker usage, ReadOnlyTools reads) {
@@ -28,7 +29,7 @@ public record TestHeadlessClaudeBuilder(
                 Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
                 new ReachLedger()),
             FakeHost.machine()),
-        ClaudeProperties.defaults(),
+        claude,
         properties,
         usage,
         reads);

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -13,8 +15,8 @@ import java.util.List;
 public record PauseOrder(String taskId, String reason) implements Message {
 
   public PauseOrder {
-    taskId = taskId == null || taskId.isBlank() ? null : taskId;
-    reason = reason == null || reason.isBlank() ? null : reason.strip();
+    taskId = absent(taskId);
+    reason = absent(reason);
   }
 
   public static Schema schema(String description) {

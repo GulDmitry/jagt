@@ -125,6 +125,17 @@ class ArchUnitEngineTest {
   }
 
   @Test
+  void listsEachSimpleNameTwoTopLevelClassesShareAcrossPackages() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder().select("measure", "duplicate-simple-names").build();
+
+    Measurement found = engine.measure(function, project);
+
+    assertThat(found.items())
+        .containsExactly("Twin: fitness.archunit.Twin, fitness.archunit.port.Twin");
+  }
+
+  @Test
   void isNamedArchunit() {
     assertThat(engine.name()).isEqualTo("archunit");
   }
@@ -137,7 +148,8 @@ class ArchUnitEngineTest {
             "module-isolation",
             "single-implementer",
             "flag-arguments",
-            "static-helpers");
+            "static-helpers",
+            "duplicate-simple-names");
   }
 
   @Test

@@ -48,6 +48,28 @@ public class DoCommand implements GlobalCommand {
   }
 
   @Override
+  public Optional<String> modelHint() {
+    return Optional.of("start a NEW task from a ticket key or URL (the `ticket` field carries it)");
+  }
+
+  @Override
+  public String runProposed(String target, String reason) {
+    if (target.isBlank()) {
+      return "Understood as `"
+          + id()
+          + "` but no ticket was named ("
+          + reason
+          + ") — say it explicitly: `do <ticket|url> [project]`.";
+    }
+    return "understood as `"
+        + id()
+        + " "
+        + target
+        + "` — "
+        + launcher.launch(LaunchRequest.of(target)).message();
+  }
+
+  @Override
   public String part() {
     return "launch";
   }

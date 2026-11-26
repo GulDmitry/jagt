@@ -24,3 +24,23 @@ applied before the first paint. English fills any key a catalog lacks; only the 
 - **WHEN** the human chooses `dark` and Polish in the dialog and reloads the board
 - **THEN** the page is dark with no flash and reads Polish, a key Polish lacks reads English, and the dialog shows both checked
 - **AND** choosing `auto` clears the theme
+
+### Requirement: The jagt.yml settings dialog keeps one size
+The `jagt.yml` settings dialog SHALL have one size for every section, fitted to the viewport. A section longer than it scrolls in
+the dialog body; the section tabs and Close stay in view.
+#### Scenario: Another section opens
+- **WHEN** the human switches from Projects to Review and deploy
+- **THEN** the dialog's width and height and the section tabs' position stay the same
+#### Scenario: A long section
+- **WHEN** a section is longer than the dialog
+- **THEN** its body scrolls and the tabs and Close stay in view
+
+### Requirement: A saved setting leaves the dialog as it was
+The `jagt.yml` settings dialog SHALL keep its size and every field's position while a setting is saved: the restart footer holds its
+height when empty. A row's hint always takes one line: `default` while `jagt.yml` leaves the key out, `set` once it has a value.
+The row's hint repaints when a save succeeds.
+An unset field shows the default the server sends as its placeholder.
+#### Scenario: A restart-bound setting is saved
+- **WHEN** the human changes a setting that needs a restart
+- **THEN** the dialog's size and every field's position stay the same
+- **AND** the row's hint reads `set`

@@ -31,5 +31,22 @@ export default [
       ],
     },
   },
+  {
+    files: ["components/**/*.js", "core/**/*.js"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "(^|/)ui/",
+              message:
+                "A component or core module reads no ui/ module: what it needs arrives as a prop or an argument.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   { files: ["eslint.config.js"], languageOptions: { globals: globals.node } },
 ];

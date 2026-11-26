@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,6 +15,10 @@ import org.springframework.stereotype.Component;
  * release it puts that back.
  */
 @Component
+@ConditionalOnProperty(
+    name = "orchestrator.session-host",
+    havingValue = "tmux",
+    matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class ResizedWindows {

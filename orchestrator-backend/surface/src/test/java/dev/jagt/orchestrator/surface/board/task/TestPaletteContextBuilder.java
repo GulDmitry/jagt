@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board.task;
 
+import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -21,7 +22,7 @@ public record TestPaletteContextBuilder() {
     return new TestPaletteContextBuilder();
   }
 
-  public PaletteContext build(StateService state, ConfigService config) {
+  public PaletteContext build(StateService state, ConfigService config, GlobalCommands globals) {
     return new PaletteContext(
         state,
         new TaskViews(
@@ -34,6 +35,7 @@ public record TestPaletteContextBuilder() {
                 unheld -> null,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
-            new FlowRules(new TaskChart(Composition.builtIn()))));
+            new FlowRules(new TaskChart(Composition.builtIn()))),
+        globals);
   }
 }

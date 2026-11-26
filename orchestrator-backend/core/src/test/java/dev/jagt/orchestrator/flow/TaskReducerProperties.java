@@ -563,7 +563,7 @@ class TaskReducerProperties {
             Arbitraries.of(TaskStop.Trigger.Ends.class).map(TaskMove.StopEnded::new),
             flag.map(TaskMove.PlanAsked::new),
             Arbitraries.just(new TaskMove.PlanApproved()),
-            Arbitraries.just(new TaskMove.NoPlanDeclared()),
+            flag.map(TaskMove.NoPlanDeclared::new),
             Arbitraries.just(new TaskMove.Autoplanned()),
             Arbitraries.of(AgentReport.class).map(TaskMove.Said::new),
             Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new),

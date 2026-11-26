@@ -5,8 +5,6 @@ import * as rolelog from "./rolelog.js";
 
 /** @typedef {import("./view.js").View} View */
 
-export const showing = () => rolelog.open() !== null;
-
 /**
  * @param {View} view
  * @param {() => void} repaint

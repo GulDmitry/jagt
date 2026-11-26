@@ -8,8 +8,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Running a command on this machine. Declared here because the shape of "run it and wait" is the
- * same everywhere while the way a process is DETACHED — a POSIX session, a Windows process group —
- * is not.
+ * same everywhere while the way a process is DETACHED — a session, a process group — is not.
  */
 public interface Processes {
 

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -89,7 +89,7 @@ class DeployConflictsTest {
                 new Conflict.Progress(0, 2, "d"),
                 null,
                 false,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
+                new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
   }
 
   @Test
@@ -179,6 +179,6 @@ class DeployConflictsTest {
                 new Conflict.Progress(0, 1, "r"),
                 null,
                 true,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
+                new SessionStanding(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
   }
 }

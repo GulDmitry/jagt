@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.presence;
 
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 public class SessionWakes {
 
   /** A step due to be said to the session of {@code taskId}. */
-  public record Due(String taskId, Step step, Standing read) {}
+  public record Due(String taskId, Step step, SessionStanding read) {}
 
   private final StateService stateService;
   private final TaskTurns turns;
@@ -77,7 +77,8 @@ public class SessionWakes {
           }
           turns.unmark(entry.getKey(), Wake.MARK);
           if (wake.get().turn() == entry.getValue().work().turnOrNone().id()) {
-            due.add(new Due(entry.getKey(), wake.get().step(), Standing.of(entry.getValue())));
+            due.add(
+                new Due(entry.getKey(), wake.get().step(), SessionStanding.of(entry.getValue())));
           }
         });
     return due;

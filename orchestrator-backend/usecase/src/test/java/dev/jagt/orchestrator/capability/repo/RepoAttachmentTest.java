@@ -17,7 +17,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -95,7 +95,7 @@ class RepoAttachmentTest {
             eq(Step.REPO),
             contains("/wt/ABC-7-registry"),
             eq(StepRelay.Delivery.UNDER),
-            any(Standing.class));
+            any(SessionStanding.class));
     assertThat(said).contains("the session was told");
   }
 
@@ -110,7 +110,7 @@ class RepoAttachmentTest {
     when(worktrees.attach(eq("ABC-7"), eq("registry"), any())).thenReturn(registry);
     doThrow(new IllegalStateException("no window"))
         .when(relay)
-        .relay(any(), any(), any(), eq(StepRelay.Delivery.UNDER), any(Standing.class));
+        .relay(any(), any(), any(), eq(StepRelay.Delivery.UNDER), any(SessionStanding.class));
 
     String said = attachment.attach("ABC-7");
 

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,13 +15,16 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.PlanGate;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
@@ -68,7 +72,7 @@ class PlanApprovalTest {
             eq(Step.PLAN),
             anyString(),
             eq(StepRelay.Delivery.CONTEXT),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(true);
 
     boolean told =
@@ -83,7 +87,7 @@ class PlanApprovalTest {
             Step.PLAN,
             "The human read plan.md: the plan holds.",
             StepRelay.Delivery.CONTEXT,
-            Standing.of(state.task("ABC-1").orElseThrow()));
+            SessionStanding.of(state.task("ABC-1").orElseThrow()));
   }
 
   @Test
@@ -94,7 +98,7 @@ class PlanApprovalTest {
             eq(Step.PLAN),
             anyString(),
             eq(StepRelay.Delivery.CONTEXT),
-            any(Standing.class)))
+            any(SessionStanding.class)))
         .thenReturn(false);
 
     boolean told =
@@ -118,6 +122,64 @@ class PlanApprovalTest {
             any(Step.class),
             anyString(),
             any(StepRelay.Delivery.class),
-            any(Standing.class));
+            any(SessionStanding.class));
+  }
+
+  @Test
+  void refusesTheMasterApprovalOfPlanNotHeadedSoundOnTrackerTask() {
+    state.putTask(
+        "ABC-2",
+        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .openedBy(ActionOrigin.TRACKER)
+            .build());
+    when(door.presses("ABC-2", "approve-plan")).thenReturn(true);
+    when(plan.sound("ABC-2")).thenReturn(false);
+
+    assertThatThrownBy(() ->
+            OriginContext.as(
+                ActionOrigin.MASTER,
+                () -> new PlanApproval(state, relay, door, plan).approve("ABC-2", "The Master")))
+        .isInstanceOf(Refusal.class)
+        .extracting(refusal -> ((Refusal) refusal).code())
+        .isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE);
+    assertThat(state.task("ABC-2").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
+    verify(plan, never()).settle("ABC-2");
+  }
+
+  @Test
+  void letsTheMasterApprovePlanHeadedSoundOnTrackerTask() {
+    state.putTask(
+        "ABC-2",
+        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .openedBy(ActionOrigin.TRACKER)
+            .build());
+    when(door.presses("ABC-2", "approve-plan")).thenReturn(true);
+    when(plan.sound("ABC-2")).thenReturn(true);
+
+    OriginContext.as(
+        ActionOrigin.MASTER,
+        () -> new PlanApproval(state, relay, door, plan).approve("ABC-2", "The Master"));
+
+    assertThat(state.task("ABC-2").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
+  }
+
+  @Test
+  void letsTheHumanApprovePlanNotHeadedSoundOnTrackerTask() {
+    state.putTask(
+        "ABC-2",
+        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .openedBy(ActionOrigin.TRACKER)
+            .build());
+    when(door.presses("ABC-2", "approve-plan")).thenReturn(true);
+    when(plan.sound("ABC-2")).thenReturn(false);
+
+    OriginContext.as(
+        ActionOrigin.BOARD,
+        () -> new PlanApproval(state, relay, door, plan).approve("ABC-2", "The human"));
+
+    assertThat(state.task("ABC-2").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
   }
 }

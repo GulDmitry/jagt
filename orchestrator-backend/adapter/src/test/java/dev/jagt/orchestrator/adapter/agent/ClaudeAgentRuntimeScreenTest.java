@@ -113,6 +113,20 @@ class ClaudeAgentRuntimeScreenTest {
   }
 
   @Test
+  void tellsSessionWaitingOnTheFirstRunSetupFromItsScreen() {
+    var runtime = claudeRuntime().build(new FakeClock());
+    String screen =
+        """
+        Let's get started.
+        Choose the text style that looks best with your terminal
+        ❯ 1. Dark mode
+          2. Light mode
+        """;
+
+    assertThat(runtime.unansweredPrompt(screen)).contains("waiting on the first-run setup");
+  }
+
+  @Test
   void tellsSessionWaitingOnPermissionDialogFromItsScreen() {
     var runtime = claudeRuntime().build(new FakeClock());
     String screen =

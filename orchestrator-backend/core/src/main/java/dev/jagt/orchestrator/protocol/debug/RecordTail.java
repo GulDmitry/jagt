@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.debug;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -13,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 public record RecordTail(String record, @Nullable Integer lines) implements Message {
 
   public static final List<String> RECORDS =
-      List.of("backend-log", "master-log", "stops", "stops-reviewed");
+      List.of("backend-log", "master-log", "stops", "stops-reviewed", "threads");
   public static final int DEFAULT_LINES = 200;
   public static final int MAX_LINES = 1000;
 
@@ -21,7 +23,8 @@ public record RecordTail(String record, @Nullable Integer lines) implements Mess
       Schema.of(
               "Read-only: the last lines of one of jagt's own records. backend-log and master-log"
                   + " are the log and the Master's feed, the same lines stdout carries under"
-                  + " console logging; stops and stops-reviewed are the stop records.")
+                  + " console logging; stops and stops-reviewed are the stop records; threads is"
+                  + " every live thread's name, state, lock and stack, whatever lines asks.")
           .choiceRequired("record", RECORDS, "Which record.")
           .optional(
               "lines",
@@ -33,7 +36,7 @@ public record RecordTail(String record, @Nullable Integer lines) implements Mess
                   + ".");
 
   public RecordTail {
-    record = record == null || record.isBlank() ? null : record.strip();
+    record = absent(record);
   }
 
   public int count() {

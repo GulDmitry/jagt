@@ -15,7 +15,6 @@ Method <dev.jagt.orchestrator.config.AssistantProperties.withMcpConfig(java.lang
 Method <dev.jagt.orchestrator.config.AssistantProperties.withMcpConfigByKind(java.util.Map)> does not satisfy be called from main in (AssistantProperties.java:18)
 Method <dev.jagt.orchestrator.config.AssistantProperties.withModel(java.lang.String)> does not satisfy be called from main in (AssistantProperties.java:15)
 Method <dev.jagt.orchestrator.config.AssistantProperties.withSettingSources(java.lang.String)> does not satisfy be called from main in (AssistantProperties.java:14)
-Method <dev.jagt.orchestrator.config.InfraWaitProperties.defaults()> does not satisfy be called from main in (InfraWaitProperties.java:23)
 Method <dev.jagt.orchestrator.config.LocalModelProperties.off()> does not satisfy be called from main in (LocalModelProperties.java:33)
 Method <dev.jagt.orchestrator.config.LocalModelProperties.withEndpoint(java.lang.String)> does not satisfy be called from main in (LocalModelProperties.java:12)
 Method <dev.jagt.orchestrator.config.LocalModelProperties.withKinds(java.util.List)> does not satisfy be called from main in (LocalModelProperties.java:12)

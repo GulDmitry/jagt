@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class SessionBriefTest {
 
@@ -119,14 +119,17 @@ class SessionBriefTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "Read task_notes.md (if present) and task_context.md",
-        "One carried from a previous session keeps the board's status until a change begins",
-        "answer a question and end your turn unreported",
-        "report IN_PROGRESS when it begins"
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "START|Read task_notes.md (if present) and task_context.md",
+        "START|One carried from a previous session keeps the board's status until a change begins",
+        "START|answer a question and end your turn unreported",
+        "START|report IN_PROGRESS when it begins",
+        "CONTEXT|sets up and resets its own state",
+        "CONTEXT|passes twice in a row before REVIEW_PENDING"
       })
-  void startStepTellsSessionTo(String instruction, @TempDir Path root) throws Exception {
+  void briefStepTellsSessionTo(Step step, String instruction, @TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -135,6 +138,6 @@ class SessionBriefTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
 
-    assertThat(brief.line(Step.START)).contains(instruction);
+    assertThat(brief.line(step)).contains(instruction);
   }
 }

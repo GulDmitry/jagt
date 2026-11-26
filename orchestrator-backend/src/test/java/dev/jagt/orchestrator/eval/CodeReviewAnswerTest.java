@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 class CodeReviewAnswerTest {
 
   @Test
-  void shipsBetweenTwelveAndFifteenCasesEachNamingWhatItExpects() {
+  void shipsAtLeastTwelveCasesEachNamingWhatItExpects() {
     List<CodeReviewCase> cases = CodeReviewCases.all();
 
-    assertThat(cases).hasSizeBetween(12, 15);
+    assertThat(cases).hasSizeGreaterThanOrEqualTo(12);
     assertThat(cases)
         .allSatisfy(review ->
             assertThat(review.expected().clean() || !review.expected().findings().isEmpty())

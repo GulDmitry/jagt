@@ -17,7 +17,7 @@ dependencies {
     testFixturesCompileOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation "net.jqwik:jqwik:${jqwikVersion}"
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.platform:junit-platform-launcher'
 }
 
 // 0139: the jqwik properties are the slowest class of the gate; in a task of their own they run beside the other

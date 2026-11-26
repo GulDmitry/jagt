@@ -1,14 +1,20 @@
 package dev.jagt.orchestrator.service.project;
 
+import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.source.ConfigSource;
+import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.project.Setting.Kind;
 import dev.jagt.orchestrator.service.role.RoleSettingKeys;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,21 +30,32 @@ public class Settings {
   public static final String TRACKER = "tracker";
   public static final String NOTIFICATIONS = "notifications";
 
+  private static final ConfigFile DEFAULTS = ConfigFile.defaults();
+
   private static final List<Setting> BASIC =
       List.of(
           Setting.of(PROJECTS, "projects", Kind.NAMES),
-          Setting.of(REVIEW, "codeReview.postReviewReplies", Kind.BOOLEAN),
-          Setting.of(REVIEW, "codeReview.mrTitlePattern", Kind.TEXT),
-          Setting.of(REVIEW, "autoReview.enabled", Kind.BOOLEAN),
-          Setting.of(REVIEW, "autoReview.windowHours", Kind.INTEGER),
-          Setting.of(REVIEW, "autoReview.minIntervalMinutes", Kind.INTEGER),
-          Setting.of(REVIEW, "autoReview.maxIntervalMinutes", Kind.INTEGER),
-          Setting.of(REVIEW, "infraWait.backoff", Kind.LIST).needingRestart(),
+          Setting.of(REVIEW, "codeReview.postReviewReplies", Kind.BOOLEAN)
+              .defaulting(DEFAULTS.codeReview().postReviewRepliesOrDefault()),
+          Setting.of(REVIEW, "codeReview.mrTitlePattern", Kind.TEXT)
+              .defaulting(DEFAULTS.codeReview().mrTitlePatternOrDefault()),
+          Setting.of(REVIEW, "autoReview.enabled", Kind.BOOLEAN)
+              .defaulting(DEFAULTS.autoReview().enabledOrDefault()),
+          Setting.of(REVIEW, "autoReview.windowHours", Kind.INTEGER)
+              .defaulting(DEFAULTS.autoReview().windowHoursOrDefault()),
+          Setting.of(REVIEW, "autoReview.minIntervalMinutes", Kind.INTEGER)
+              .defaulting(DEFAULTS.autoReview().minIntervalMinutesOrDefault()),
+          Setting.of(REVIEW, "autoReview.maxIntervalMinutes", Kind.INTEGER)
+              .defaulting(DEFAULTS.autoReview().maxIntervalMinutesOrDefault()),
+          Setting.of(REVIEW, "infraWait.backoff", Kind.LIST)
+              .defaulting(minutes(InfraWaitProperties.defaults().backoff()))
+              .needingRestart(),
           Setting.choice(TRACKER, "tracker.mode", "off", "off", "take", "close", "both"),
           Setting.of(TRACKER, "tracker.assignee", Kind.TEXT),
           Setting.of(TRACKER, "tracker.startStatus", Kind.TEXT),
           Setting.of(TRACKER, "tracker.doneStatus", Kind.TEXT),
-          Setting.of(TRACKER, "tracker.everyMinutes", Kind.INTEGER),
+          Setting.of(TRACKER, "tracker.everyMinutes", Kind.INTEGER)
+              .defaulting(DEFAULTS.tracker().everyMinutesOrDefault()),
           Setting.of(NOTIFICATIONS, "notifications.channels", Kind.NAMES),
           Setting.of(NOTIFICATIONS, "notifications.points", Kind.NAMES));
 
@@ -71,6 +88,12 @@ public class Settings {
   private List<Setting> catalog() {
     return Stream.concat(BASIC.stream(), roles.stream().flatMap(role -> role.settings().stream()))
         .toList();
+  }
+
+  private static String minutes(List<Duration> waits) {
+    return waits.stream()
+        .map(wait -> DurationStyle.SIMPLE.print(wait, ChronoUnit.MINUTES))
+        .collect(Collectors.joining(", "));
   }
 
   private static @Nullable Object valueOf(@Nullable Object section, Setting setting) {

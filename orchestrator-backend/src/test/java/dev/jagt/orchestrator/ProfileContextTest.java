@@ -3,17 +3,22 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.channel.NoNotifier;
+import dev.jagt.orchestrator.adapter.herdr.HerdrSessionHost;
+import dev.jagt.orchestrator.adapter.herdr.HerdrWindowStream;
 import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.macos.GhosttyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.NoEditorDriver;
 import dev.jagt.orchestrator.adapter.terminal.NoTerminalDriver;
+import dev.jagt.orchestrator.adapter.tmux.TmuxSessionHost;
 import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.host.KeepAwake;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
+import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.port.terminal.WindowStream;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,6 +51,42 @@ class ProfileContextTest {
         .run(context ->
             assertThat(context.getBean(TerminalDriver.class))
                 .isInstanceOf(GhosttyTerminalDriver.class));
+  }
+
+  @Test
+  void picksTheHerdrSessionHostWhereTheSessionHostKeyNamesIt(@TempDir Path root) throws Exception {
+    ShippedRoot.copyInto(root);
+
+    shipped
+        .withPropertyValues(
+            "orchestrator.root=" + root,
+            "orchestrator.config-file=" + root.resolve("jagt.yml"),
+            "orchestrator.state-file=" + root.resolve("state.json"),
+            "orchestrator.notifier=none",
+            "orchestrator.terminal=none",
+            "orchestrator.session-host=herdr")
+        .run(context -> {
+          assertThat(context.getBean(SessionHost.class)).isInstanceOf(HerdrSessionHost.class);
+          assertThat(context.getBean(WindowStream.class)).isInstanceOf(HerdrWindowStream.class);
+          assertThat(context.getBeansOfType(TmuxSessionHost.class)).isEmpty();
+        });
+  }
+
+  @Test
+  void picksTmuxAsTheSessionHostWhereTheKeyIsUnset(@TempDir Path root) throws Exception {
+    ShippedRoot.copyInto(root);
+
+    shipped
+        .withPropertyValues(
+            "orchestrator.root=" + root,
+            "orchestrator.config-file=" + root.resolve("jagt.yml"),
+            "orchestrator.state-file=" + root.resolve("state.json"),
+            "orchestrator.notifier=none",
+            "orchestrator.terminal=none")
+        .run(context -> {
+          assertThat(context.getBean(SessionHost.class)).isInstanceOf(TmuxSessionHost.class);
+          assertThat(context.getBeansOfType(HerdrSessionHost.class)).isEmpty();
+        });
   }
 
   @Test

@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.plan.Artifact;
+import dev.jagt.orchestrator.task.text.Blank;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -164,13 +165,13 @@ public class MasterReview {
   }
 
   private static @Nullable Path storedFile(TaskState task) {
-    String worktree = task.worktreePath();
-    return worktree == null || worktree.isBlank() ? null : JagtJson.in(worktree, STORED);
+    String worktree = Blank.toNull(task.worktreePath());
+    return worktree == null ? null : JagtJson.in(worktree, STORED);
   }
 
   private static @Nullable Path file(TaskState task) {
-    String worktree = task.worktreePath();
-    return worktree == null || worktree.isBlank() ? null : Path.of(worktree).resolve(FILE);
+    String worktree = Blank.toNull(task.worktreePath());
+    return worktree == null ? null : Path.of(worktree).resolve(FILE);
   }
 
   public enum Kind {

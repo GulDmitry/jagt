@@ -1,6 +1,6 @@
 import { duration } from "../core/format.js";
 import { t } from "../core/i18n.js";
-import { marked } from "./facts.js";
+import { badgeClass, marked, statusClass } from "./facts.js";
 import { html } from "./html.js";
 import { pickFacts, quickClass, rowClass, stoppedLine } from "./rows.js";
 
@@ -14,17 +14,12 @@ export { grouped } from "./rows.js";
 
 /** @param {{ task: CardTask }} props */
 const Badge = ({ task }) =>
-  html`<span
-    class=${`badge ${task.attention.toLowerCase()}${task.detailKind === "PROBLEM" ? " problem" : ""}`}
-    >${task.ask}</span
-  >`;
+  html`<span class=${badgeClass(task)}>${task.ask}</span>`;
 
 /** @param {{ task: CardTask, stopped: string | null, project?: boolean, now: number }} props */
 const RowFacts = ({ task, stopped, project, now }) =>
   html`<span class="row-line row-facts">
-    <span
-      class=${stopped ? "status stalled" : "status"}
-      data-tip=${stopped || undefined}
+    <span class=${statusClass(task, stopped)} data-tip=${stopped || undefined}
       >${task.statusLabel}${" "}
       <span class="age">${duration(now - task.statusSince)}</span></span
     >

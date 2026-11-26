@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task.launch;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.task.repo.BranchStrategy;
+import dev.jagt.orchestrator.task.text.Blank;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -103,15 +104,11 @@ public record LaunchRequest(
    */
   public LaunchRequest normalized() {
     return new LaunchRequest(
-        blankToNull(ref),
-        blankToNull(project),
-        blankToNull(mode),
-        blankToNull(strategy),
-        blankToNull(baseBranch),
-        blankToNull(notes));
-  }
-
-  private static @Nullable String blankToNull(@Nullable String value) {
-    return value == null || value.isBlank() ? null : value.strip();
+        Blank.toNull(ref),
+        Blank.toNull(project),
+        Blank.toNull(mode),
+        Blank.toNull(strategy),
+        Blank.toNull(baseBranch),
+        Blank.toNull(notes));
   }
 }

@@ -35,6 +35,15 @@ class ClaudeHookReportMixInTest {
   }
 
   @Test
+  void bindsTheTextTheStopHookPostsAsWhatTheSessionSaid() {
+    var said =
+        mapper.readValue(
+            "{\"last_assistant_message\": \"OPEN QUESTIONS: keep v2?\"}", SessionHookReport.class);
+
+    assertThat(said.message()).isEqualTo("OPEN QUESTIONS: keep v2?");
+  }
+
+  @Test
   void readsHookThatSaidNeitherAsStopWithNothingInFlight() {
     var said = mapper.readValue("{\"stop_hook_active\": false}", SessionHookReport.class);
 

@@ -32,29 +32,31 @@ technical:
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }
       flow-doors: { fitness: FlowDoorsFitness, governs: class-dependency, max: 0, decision: "0144" }
       task-opening-doors: { fitness: TaskOpeningDoorsFitness, governs: class-dependency, max: 0, decision: "0066" }
+      command-literals-in-surface: { fitness: CommandLiteralsFitness, governs: count, max: 0, hint: "a surface reads a verb from TaskAction or a GlobalCommand bean, never spells it" }
       role-names: { fitness: RoleNamesFitness, governs: class-dependency, max: 0, decision: "0122" }
       role-names-outside: { fitness: RoleNamesOutsideFitness, governs: class-dependency, max: 0, decision: "0203" }
       collaborator-owners: { fitness: CollaboratorOwnersFitness, governs: count, max: 0 }
       classes-per-package: { fitness: PackageCeilingFitness, governs: size, max: 10, decision: "0166" }
       package-exceptions-over-ceiling: { fitness: PackageExceptionsFitness, governs: size, min: 11, decision: "0166" }
-      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 98, decision: "0176" }
+      dependency-lines-in-build-gradle: { fitness: DependencyLinesFitness, governs: count, max: 99, decision: "0252" }
     analysability:
       ci-jobs: { fitness: CiJobsFitness, governs: count, max: 12, decision: "0244" }
       ci-triggers: { fitness: CiTriggersFitness, governs: count, max: 3, decision: "0176", hint: "push, pull request, and a dispatch that runs one job alone (owner 2026-11-24)" }
       source-sets: { fitness: SourceSetsFitness, governs: count, max: 28, decision: "0176" }
       start-triggers: { fitness: StartTriggersFitness, governs: count, max: 60, decision: "0176" }
       task-statuses: { fitness: TaskStatusesFitness, governs: count, max: 14, decision: "0176" }
-      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 85, decision: "0176" }
+      public-surface: { fitness: PublicSurfaceFitness, governs: count, max: 87, decision: "0256" }
       capabilities: { engine: archunit, kind: class, interface: false, assignableTo: "flow.capability.TaskCapability", governs: count, max: 19, decision: "0176" }
-      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 34, decision: "0176" }
+      startup-checks: { engine: archunit, kind: class, interface: false, assignableTo: "port.host.StartupCheck", governs: count, max: 36, decision: "0257" }
       reducer-zero-time: { engine: scan, set: main, glob: "**/flow/TaskReducer.java", per: file, regex: "\\b(?:step|applied|stayed|apply)\\([^;]*,\\s*0L?\\)", governs: count, max: 0, decision: "0176", hint: "a door with no time of its own sends its move through step(task, move), which refuses an effect that reads one; a door whose move lands takes now" }
       first-of-unordered-map: { engine: scan, set: main, per: line, regex: "\\.(?:values|keySet|entrySet)\\(\\)(?:\\.iterator\\(\\)\\s*\\.next\\(\\)|\\.stream\\(\\)\\s*\\.(?:findFirst|findAny)\\(\\))", governs: count, max: 2, decision: "0247", hint: "a map has no first element unless it is sequenced: pick by an ordered key list, or keep a LinkedHashMap and say which entry; the floor only falls" }
       config-file-existence: { engine: scan, set: main, except: "**/service/ConfigService.java", per: line, regex: "Files\\.exists\\((?:\\w+\\.)?configFile\\(\\)\\)", governs: count, max: 1, hint: "whether jagt.yml exists is ConfigService.fileExists(), asked by every reader; the one remaining read is the source behind it" }
       broad-catches: { engine: scan, set: main, per: line, regex: "catch \\([^)]*\\b(?:RuntimeException|Exception|Throwable)\\b", governs: count, max: 147, decision: "0250", hint: "a catch names the failure it handles: its typed exception, never a broad one; the floor only falls" }
       silent-catches: { fitness: SilentCatchFitness, governs: count, max: 205, decision: "0250", hint: "a catch logs or rethrows; one that does neither hides its cause; the floor only falls" }
       status-literals-outside-flow: { engine: scan, set: main, except: "core/**,stand/**", per: line, regex: "TaskStatus\\.[A-Z_]{2,}", governs: count, max: 22, decision: "0144", hint: "a status is compared through a FlowRules predicate; the count only falls; stand/** is exempt, its invariants observe statuses from outside as tests do" }
+      vendor-words-in-core: { engine: scan, set: tracked, glob: "core/src/main/**/*.java", per: line, regex: "(?i:\\b(?:opencode|claude|codex|tmux|kitty|ghostty|macos|darwin|linux|launchd|systemd|caffeinate|osascript|libnotify|anthropic|openai)\\b)|\\bWindows\\b", governs: count, max: 0, hint: "core names no vendor and no OS, in a word as in an import: the words are the adapter's drivers; lowercase windows is English and stays; a vendor-specific name lives in the adapter" }
       roles: { engine: scan, glob: "../roles/*", kind: directory, per: name, governs: count, max: 5, decision: "0231" }
-      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 55, decision: "0241" }
+      spec-capabilities: { engine: scan, glob: "../openspec/specs/*", kind: directory, per: name, governs: count, max: 56, decision: "0257" }
       decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", per: file, measure: lines, governs: size, max: 50 }
       rule-lines: { engine: scan, glob: "../docs/rules/*.md", per: file, measure: lines, governs: size, max: 100 }
       # each exception ends when its class is cut to 1000 lines or less, at a cut of its own
@@ -68,12 +70,21 @@ technical:
       session-brief-sentence-words: { engine: scan, glob: "../roles/session/brief.md.dist", per: sentence, measure: words, governs: size, max: 25, hint: "a prompt: compress it, then run promptEval and roleEval -Prole=master (docs/rules/testing.md)" }
       rule-docs: { engine: scan, glob: "../docs/rules/*.md", per: name, governs: count, max: 9, decision: "0176" }
       left-for-later-markers: { engine: scan, set: tracked, per: file, regex: "\\b(TO[D]O|FIXM[E]|XX[X])\\b", governs: count, max: 7 }
+      blank-normalisation-copies: { engine: scan, set: main, except: "**/task/text/Blank.java", per: line, regex: "[Bb]lank\\(\\w*\\)? \\? null|isBlank\\(\\) \\? null", governs: count, max: 0, decision: "0253", hint: "a blank text reads as absent through Blank.toNull (Wire.absent for a message): one rule, never a copy" }
+      web-link-rule-copies: { engine: scan, set: main, per: file, regex: "startsWith\\(\"https?://\"\\)", governs: count, max: 1, decision: "0253", hint: "what counts as a web link is Wire.webLink alone" }
+      uncopied-record-lists: { engine: scan, set: main, per: match, regex: "(\\w+) = \\1 == null \\? (?:List|Map|Set)\\.of\\(\\) : \\1;", governs: count, max: 0, decision: "0253", hint: "a record copies the list it is given (List.copyOf), so a caller's later change never reaches it" }
+      duplicate-simple-names: { engine: archunit, set: main, measure: duplicate-simple-names, governs: count, max: 2, decision: "0253", hint: "two top-level classes of one simple name shadow each other at every import: name the second for what it holds; the floor only falls" }
       home-paths: { engine: scan, set: tracked, per: file, machine: paths, governs: count, max: 0 }
       cited-line-numbers: { engine: scan, set: tracked, per: file, regex: "\\b[Ll]ines? [0-9]+\\b|\\.(java|md|gradle|yml):[0-9]+\\b|#L[0-9]+\\b", except: "**/board/vendor/**,src/test/resources/archunit/**,**/recordings/**", governs: count, max: 0 }
       ide-names: { engine: scan, glob: "**/*.{java,js,sh,gradle,groovy,yml},../board/**/*.js,../.github/**/*.yml,../.gitlab-ci.yml", except: "../fitness.yml,**/node_modules/**", per: file, regex: "\\bIDEs?\\b|\\bIde[A-Z]|Intell[i]J|VS ?Cod[e]", governs: count, max: 0, hint: "jagt has no IDE concept: name a code viewer or a diff viewer" }
       hook-path-from-project-dir: { engine: scan, glob: "../.claude/settings.json", per: line, regex: "\\$\\(git rev-parse --show-toplevel\\)", governs: count, max: 0, hint: "a hook finds its script from $CLAUDE_PROJECT_DIR: the cwd may be another repository, where the script is missing and the guard never runs" }
       board-hidden-wins: { engine: scan, glob: "../board/app.css", per: file, regex: "(?m)^\\[hidden\\] \\{\\n  display: none !important;", governs: count, min: 1, hint: "a [hidden] element stays hidden whatever display another rule gives it" }
       board-hidden-per-selector: { engine: scan, glob: "../board/**/*.css", except: "../board/vendor/**,../board/node_modules/**", per: line, regex: "\\S\\[hidden\\]", governs: count, max: 0, hint: "the one [hidden] rule in app.css already wins over every display: a per-selector copy restates it" }
+      css-hex-outside-root: { engine: scan, glob: "../board/app.css", per: line, regex: "^(?!  --[\\w-]+: light-dark\\().*#[0-9a-fA-F]{3,8}\\b", governs: count, max: 0, decision: "0176", hint: "a colour is a token defined once in :root as light-dark(); a rule uses var(--token), never a hex" }
+      css-keyframes: { engine: scan, glob: "../board/app.css", per: match, regex: "(@keyframes)", governs: count, max: 1, decision: "0176", hint: "the checks ring's pulse is the board's one animation (docs/rules/design.md)" }
+      css-tokens: { engine: scan, glob: "../board/app.css", per: match, regex: "(?m)^  (--[\\w-]+): light-dark\\(", governs: count, max: 14, decision: "0176", hint: "a colour token is a meaning (docs/rules/design.md): a fifteenth means a meaning that exists under another name" }
+      board-timers: { engine: scan, glob: "../board/**/*.js", except: "../board/vendor/**,../board/node_modules/**", per: match, regex: "\\b(setInterval)\\(", governs: count, max: 3, decision: "0176", hint: "the board is pushed, not polled: a timer is named in the board spec's Three timers requirement, and the number only falls" }
+      shutdown-phase-bounded: { engine: scan, glob: "src/main/resources/application.yml", per: file, regex: "(?m)^\\s+timeout-per-shutdown-phase: 20s$", governs: count, min: 1, hint: "the shutdown spec names the 20 s phase bound" }
       editor-launcher-not-a-default: { engine: scan, glob: "src/main/resources/application.yml", per: file, regex: "(?m)^ *editor(-diff)?-command:\\s*\\[\\s*[^\\s\\]]", governs: count, max: 0, hint: "no editor is a default: an uncommented editor-command in application.yml stays empty" }
       suite-stats-reads-no-other-project: { engine: scan, glob: "build-logic/src/main/groovy/jagt.suite-stats.gradle", per: file, regex: "provider\\s*\\{\\s*allprojects", governs: count, max: 0 }
       spotless-push-hook-off: { engine: scan, glob: "build-logic/src/main/groovy/jagt.conventions.gradle", per: file, regex: "tasks\\.named\\('spotlessInstallGitPrePushHook'\\)\\s*\\{\\s*enabled = false", governs: count, min: 1 }
@@ -90,6 +101,7 @@ technical:
       ci-image-pinned-by-digest: { engine: scan, glob: "../.github/workflows/ci.yml", per: file, regex: "(?m)^\\s+(?:image|JAGT_CI_IMAGE): (?!\\S+@sha256:[0-9a-f]{64}$)", governs: count, max: 0, decision: "0233", hint: "the CI image is pinned by digest (docs/rules/ci.md)" }
       ci-no-sleep: { engine: scan, glob: "../.github/workflows/ci.yml,../.github/workflows/nightly.yml", per: file, regex: "\\bsleep\\b", governs: count, max: 0, decision: "0233", hint: "a wait in CI is a hang guard, never a shell sleep (docs/rules/ci.md)" }
       nightly-calls-no-pull-request-job: { engine: scan, glob: "../.github/workflows/nightly.yml", per: file, regex: "uses:\\s*\\./\\.github/workflows/ci\\.yml", governs: count, max: 0, decision: "0233", hint: "the nightly runs only what the local gate cannot: it never calls ci.yml (docs/rules/ci.md rule 10)" }
+      rules-without-check: { engine: scan, glob: "../docs/rules/*.md", per: file, regex: "none yet", governs: count, max: 0, hint: "a rule names the check that holds it; none yet is a gap (docs/rules/ci.md)" }
       nightly-dispatchable: { engine: scan, glob: "../.github/workflows/nightly.yml", per: file, regex: "(?m)^  workflow_dispatch:", governs: count, min: 1, hint: "the nightly can be started by hand" }
       skill-lines: { engine: scan, glob: "../.claude/skills/*/SKILL.md", per: file, measure: lines, governs: size, max: 500, hint: "a skill file: split into files one level deep (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)" }
       skill-name: { engine: scan, glob: "../.claude/skills/*/SKILL.md,../.claude/agents/*.md", per: file, regex: "(?sm)\\A(?!---\\n(?:(?!^---).)*?^name: [a-z0-9-]{1,64}$)", governs: count, max: 0, hint: "frontmatter name: lowercase letters, digits and hyphens, at most 64 characters" }

@@ -182,6 +182,7 @@ class HeadlessClaude {
               assistant.settingSources()));
     } else {
       cmd.addAll(List.of("--setting-sources", assistant.settingSources()));
+      cmd.addAll(claude.disabledPluginArguments());
     }
     if (assistant.model() != null && !assistant.model().isBlank()) {
       cmd.add("--model");

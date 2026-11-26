@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
@@ -23,6 +24,10 @@ import org.springframework.stereotype.Service;
  * shared.
  */
 @Service
+@ConditionalOnProperty(
+    name = "orchestrator.session-host",
+    havingValue = "tmux",
+    matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class TmuxReads implements ReadScope {

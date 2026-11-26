@@ -102,6 +102,9 @@ public final class TestsFor {
     if (!ruleEntries.isEmpty()) {
       addGradle(lines, 900, testsLine(ruleEntries, "test") + PITEST);
     }
+    if (selection.sizeRows) {
+      addGradle(lines, 600, "fitness -Pfitness.block=technical.maintainability");
+    }
     if (selection.fitness) {
       lines.add("cd " + layout.directory() + "/fitness && timeout 600 ../gradlew test");
     }

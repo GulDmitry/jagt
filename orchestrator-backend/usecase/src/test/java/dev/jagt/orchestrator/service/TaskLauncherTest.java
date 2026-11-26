@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.service.launch.PendingStarts;
 import dev.jagt.orchestrator.service.launch.TaskLaunches;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
@@ -27,7 +28,7 @@ class TaskLauncherTest {
   private final ConfigService configService = mock(ConfigService.class);
   private final TaskLaunches launches = mock(TaskLaunches.class);
   private final TaskLauncher launcher =
-      new TaskLauncher(configService, launches, mock(TaskResume.class));
+      new TaskLauncher(configService, launches, mock(TaskResume.class), mock(PendingStarts.class));
 
   private final ConfigFile groupA =
       ConfigFile.defaults()

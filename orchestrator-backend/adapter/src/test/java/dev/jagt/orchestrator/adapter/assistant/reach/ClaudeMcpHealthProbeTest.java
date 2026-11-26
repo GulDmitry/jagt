@@ -339,4 +339,31 @@ class ClaudeMcpHealthProbeTest {
                 "s8 (Failed to connect)",
                 "and 2 more"));
   }
+
+  @Test
+  void ignoresServersOfDisabledPluginSoTheyNeverMarkTheBoard() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                plugin:acme-tracker:tracker: https://mcp.example.com/mcp (HTTP) - ! Needs authentication
+                context7: npx -y @upstash/context7-mcp - ✔ Connected
+                """,
+                ""));
+    Reach reach = mock(Reach.class);
+
+    var broken =
+        new ClaudeMcpHealthProbe(
+                runner,
+                new ClaudeProperties("", "", "", List.of("acme-tracker@market")),
+                AssistantProperties.empty(),
+                reach,
+                FakeHost.machine())
+            .brokenServers();
+
+    assertThat(broken).contains(List.of());
+    verify(reach).reached("claude-mcp", "mcp");
+  }
 }

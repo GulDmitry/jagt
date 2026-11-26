@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.TaskState;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -23,9 +24,6 @@ public class PromptGate {
 
   private static final String SLASH_COMMAND = "/";
   private static final String PASTED_IMAGE = "[Image #";
-  private static final String REASON =
-      "This session sat idle past its cache lifetime: your message went to a fresh"
-          + " session, which carries the notes and the end of this conversation.";
 
   private final AgentSessions sessions;
   private final AgentRuntime runtime;
@@ -53,7 +51,17 @@ public class PromptGate {
         .setMessage("cold prompt sent to a fresh session")
         .addKeyValue("task", taskId)
         .log();
-    return runtime.blockedPrompt(REASON);
+    return runtime.blockedPrompt(
+        ("Your message moved to a fresh session of this task, which is working on it now: this one"
+                + " stood idle for over %s, so its cache had expired.")
+            .formatted(threshold()));
+  }
+
+  private String threshold() {
+    Duration lifetime = configService.load().agent().cacheLifetimeOrDefault();
+    return lifetime.toMinutes() % 60 == 0
+        ? lifetime.toHours() + "h"
+        : lifetime.toMinutes() + " min";
   }
 
   private boolean cold(TaskState task) {

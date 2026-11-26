@@ -23,8 +23,7 @@ The colour legend SHALL be a section of the `help` report (`board/ui/legend.js`)
 - **WHEN** the human presses New task or `t`
 - **THEN** a dialog offers ticket, a box per project, base branch, `plan first / project unknown`, notes, branch strategy, Start
 #### Scenario: A project is hovered in the launch row
-- **WHEN** the human hovers a project's name or box
-- **THEN** its hover shows the project's whole `jagt.yml` entry and the address of its repository's remote
+- **WHEN** the human hovers a project's name or box; **THEN** its hover shows the whole `jagt.yml` entry and the remote's address
 #### Scenario: Start with no project
 - **WHEN** the human presses Start with no box ticked and `plan first / project unknown` unticked
 - **THEN** the form says "Choose a project, or start with plan first" and sends nothing
@@ -36,9 +35,10 @@ The colour legend SHALL be a section of the `help` report (`board/ui/legend.js`)
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `TaskEventStream` forwards `StateWritten` as payload-free SSE at
 `/api/events`, and a role's new log line as `role-log` naming the role, beside a 20s beat. Each connect reads the board once.
-A periodic tick survives for the ACTIVE clock. A card carries `data-action`, never a closure, so a rebuilt card cannot act for its old task.
+A card carries `data-action`, never a closure, so a rebuilt card cannot act for its old task.
 #### Scenario: The backend goes away
-- **WHEN** the push connection drops, or misses two beats; **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
+- **WHEN** the push connection drops, or misses two beats; **THEN** the board dims and says `backend unreachable` until it reconnects
+- **AND** every control that writes to the backend is inert; the filter, theme and language, local to the browser, still answer
 
 ### Requirement: A banner leads to its task
 A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend on it.
@@ -77,13 +77,12 @@ The line under a card SHALL carry news only: NEEDS INPUT, ANSWERED, PROBLEM, NEE
 in a tooltip; a stopped poll, failed job or stopped `act` gets its own mark. A status says itself in words; the
 highlighted button says what to do. A badge is the human's move; a quiet "you can …" can wait.
 #### Scenario: A deployed task
-- **WHEN** a task is deployed
-- **THEN** it wears no badge: `done` is its only move
+- **WHEN** a task is deployed; **THEN** it wears no badge: `done` is its only move
 - **AND** while no job's last run failed, no jobs chip shows
 
 ### Requirement: Components ship as the files that run
 The board SHALL render Preact components written with `htm`, served from `board/vendor/` byte for byte as the npm registry published them. The page's
-import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 236 KB
+import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 240 KB
 (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
 - **WHEN** `vendor/preact.mjs` differs from the published 11.2.0 by one byte
@@ -95,7 +94,7 @@ import map resolves them. A page SHALL load nothing from outside the jar, and th
 
 ### Requirement: The styleguide draws every state
 `styleguide.html` SHALL render each component in each state its `styleguide/` fixtures name, with the modules the
-board renders. A component reads no module state: everything it shows arrives in its props.
+board renders. A component reads no module state and imports nothing from `ui/`: everything it shows arrives in its props.
 #### Scenario: Opening the styleguide
 - **WHEN** a human opens `/styleguide.html`; **THEN** every card state stands as one card under its name, and the page throws nothing
 
@@ -117,13 +116,6 @@ go through a press's batch and switch. A sighting is logged once per change, nev
 #### Scenario: A sighting
 - **WHEN** a task's attention turns REQUIRED, or the hidden failed-jobs chip appears, on a board already painted
 - **THEN** one line holds `shown:required` and its status, or `shown:jobs-failed` and null; further renders add none
-
-### Requirement: Every window jagt opens is on the Session tab
-A window jagt opens SHALL show on the Session tab and take `say`, whether a task's session or not: a login and the
-acceptance scenarios session. The tab lists the open task's session first, then every such window by name.
-#### Scenario: A window that is no task's
-- **WHEN** jagt opens a login or the scenarios window
-- **THEN** the Session tab lists it, streams its terminal live, and a line typed under it reaches that window
 
 ### Requirement: Loopback, or behind a password login
 `orchestrator.auth` SHALL be `none` (default: loopback, no login), `password` (a bcrypt hash, never logged) or `oidc` (`oidc-login`).
@@ -183,9 +175,10 @@ A disabled role, or one a human holds, has no chip. jagt opens no tmux window fo
 #### Scenario: A role's log
 - **WHEN** the human presses the Master's chip; **THEN** its log stands in the pane, newest entry on top, and follows new entries
 - **WHEN** the human presses the chip of the open log; **THEN** the pane hides it and the Master keeps working
+- **WHEN** a role's log stands; **THEN** the pane's back row reads `‹ all tasks · <role> log`
 #### Scenario: An empty log on an empty board
 - **WHEN** the human opens the Master's log on a board with no tasks and nothing logged
-- **THEN** the empty line stands, in the log's style, where the newest entry would; no task filter, count or key hint shows
+- **THEN** the empty line stands, in the log's style, where the newest entry would; no task filter, count, key hint, `No tasks yet` or phase bar shows
 - **WHEN** the Master logs its first entry; **THEN** it replaces the empty line at the top
 #### Scenario: A role that does not run
 - **WHEN** a role is disabled, or a human holds it; **THEN** the head shows no chip for it
@@ -198,3 +191,10 @@ The legend has a row for the muted time and one for a danger entry. The session 
 - **WHEN** the human opens the Master's log holding a refusal, a move and a note
 - **THEN** the newest entry is on top, a visible gap separates entries, the refusal is `--danger` and each time is muted
 - **WHEN** entries arrive while the human has scrolled down; **THEN** the entries being read stay in view
+
+### Requirement: Three timers remain
+Three timers SHALL remain, counted by `board-timers`. `ui/controls.js` repaints every 15s, for the ACTIVE clock. `ui/tabs.js` re-reads the
+peek and the Session tab's window list every 5s. `ui/followup.js` repaints an open report every 3s, for 5 minutes at most after a typed line.
+#### Scenario: A typed line gets no answer
+- **WHEN** a line typed at an open report gets no answer within 5 minutes
+- **THEN** the board stops repainting and a toast says the session is silent

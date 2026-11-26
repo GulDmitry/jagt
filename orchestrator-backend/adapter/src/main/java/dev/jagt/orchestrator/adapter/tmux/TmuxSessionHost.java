@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.adapter.host.Executables;
+import dev.jagt.orchestrator.adapter.terminal.AbstractSessionHost;
+import dev.jagt.orchestrator.adapter.terminal.ExitedWindow;
+import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
+import dev.jagt.orchestrator.adapter.terminal.ShellWords;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import java.nio.file.Path;
@@ -12,17 +14,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+@ConditionalOnProperty(
+    name = "orchestrator.session-host",
+    havingValue = "tmux",
+    matchIfMissing = true)
 @Slf4j
-public class TmuxSessionHost implements SessionHost {
+public class TmuxSessionHost extends AbstractSessionHost {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(20);
 
@@ -42,15 +45,25 @@ public class TmuxSessionHost implements SessionHost {
           + "\" ; set-option -w window-status-current-format \""
           + WINDOW_FORMAT
           + "\" ; set-option -w window-status-current-style \"bg=colour160,fg=colour231,bold\"";
-  private static final String EXITED = "[jagt] agent exited";
-  private static final int TAIL_LINES = 3;
 
   private final Processes processRunner;
   private final TmuxReads reads;
   private final SessionEnvironment environment;
   private final TerminalDriver terminalDriver;
-  private final AgentRuntime agentRuntime;
   private final Object lock = new Object();
+
+  public TmuxSessionHost(
+      Processes processRunner,
+      TmuxReads reads,
+      SessionEnvironment environment,
+      TerminalDriver terminalDriver,
+      AgentRuntime agentRuntime) {
+    super(agentRuntime);
+    this.processRunner = processRunner;
+    this.reads = reads;
+    this.environment = environment;
+    this.terminalDriver = terminalDriver;
+  }
 
   @Override
   public Optional<String> unaddressable(String name) {
@@ -68,54 +81,13 @@ public class TmuxSessionHost implements SessionHost {
   }
 
   @Override
-  public String sessionName(@Nullable String configured) {
-    return configured == null || configured.isBlank() ? "jagt" : configured;
-  }
-
-  @Override
-  public void openTaskWindow(
-      String session,
-      String dedicatedTitle,
-      String taskId,
-      @Nullable String alias,
-      Path worktreePath,
-      LaunchMode mode,
-      String model) {
-    taskWindow(
-        session,
-        dedicatedTitle,
-        taskId,
-        alias,
-        worktreePath,
-        model.isBlank()
-            ? agentRuntime.launchCommand(worktreePath, mode)
-            : agentRuntime.launchCommand(worktreePath, mode, model));
-  }
-
-  @Override
-  public void reviveTaskWindow(
-      String session,
-      String dedicatedTitle,
-      String taskId,
-      @Nullable String alias,
-      Path worktreePath) {
-    taskWindow(
-        session,
-        dedicatedTitle,
-        taskId,
-        alias,
-        worktreePath,
-        agentRuntime.reviveCommand(worktreePath));
-  }
-
-  private void taskWindow(
+  protected void taskWindow(
       String session,
       String dedicatedTitle,
       String taskId,
       @Nullable String alias,
       Path worktreePath,
       String command) {
-    agentRuntime.beforeLaunch(worktreePath);
     synchronized (lock) {
       ensureSession(session);
       // One task = one window: respawns must never accumulate duplicates.
@@ -141,10 +113,7 @@ public class TmuxSessionHost implements SessionHost {
       String session, String dedicatedTitle, String name, List<String> command) {
     List<String> resolved = new ArrayList<>(command);
     resolved.set(0, Executables.resolve(command.getFirst()));
-    String line =
-        resolved.stream()
-            .map(part -> "'" + part.replace("'", "'\\''") + "'")
-            .collect(Collectors.joining(" "));
+    String line = ShellWords.joined(resolved);
     shown(session, dedicatedTitle, name, environment.viewerDir(), line);
   }
 
@@ -166,13 +135,7 @@ public class TmuxSessionHost implements SessionHost {
 
   /** The window id, which is the only target immune to a name collision on a respawn. */
   private String newWindow(String session, String name, Path cwd, String command) {
-    // An interactive shell here would linger forever and read as a hung process.
-    // Exec'd, the tail holds no child process, so the window reads as exited while it shows why.
-    String ran =
-        command
-            + "; printf '\\n"
-            + EXITED
-            + " — window closes in 15s (Ctrl+C to close now)\\n'; exec sleep 15";
+    String ran = ExitedWindow.shellLine(command);
     String windowId =
         processRunner
             .run(
@@ -250,25 +213,8 @@ public class TmuxSessionHost implements SessionHost {
               .run(null, TIMEOUT, tmux("capture-pane", "-p", "-t", window.get().id()))
               .expectSuccess("tmux capture-pane " + window.get().id())
               .stdout();
-      return printedBeforeExit(shown);
+      return ExitedWindow.printedBeforeExit(shown);
     }
-  }
-
-  private static Optional<String> printedBeforeExit(String shown) {
-    List<String> lines = shown.lines().toList();
-    int exited =
-        IntStream.range(0, lines.size())
-            .filter(i -> lines.get(i).startsWith(EXITED))
-            .max()
-            .orElse(-1);
-    if (exited < 0) {
-      return Optional.empty();
-    }
-    List<String> printed =
-        lines.subList(0, exited).stream().filter(line -> !line.isBlank()).toList();
-    return Optional.of(
-        String.join(
-            "\n", printed.subList(Math.max(0, printed.size() - TAIL_LINES), printed.size())));
   }
 
   private boolean agentRunning(TmuxReads.Window window) {

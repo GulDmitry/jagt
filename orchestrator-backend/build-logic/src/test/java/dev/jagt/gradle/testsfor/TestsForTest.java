@@ -9,12 +9,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TestsForTest {
 
   private static final String ROOT_TESTS =
       "orchestrator-backend/src/test/java/dev/jagt/orchestrator/";
   private static final String ADAPTER = "orchestrator-backend/adapter/src/";
+  private static final String FITNESS_YML = "fitness.yml";
+  private static final String FITNESS_YML_TEXT =
+      """
+      technical:
+        maintainability:
+          analysability:
+            page-lines: { engine: scan, glob: "../AGENTS.md,../openspec/specs/*/spec.md", governs: size, max: 200 }
+            rule-lines: { engine: scan, glob: "../docs/rules/*.md", governs: size, max: 100 }
+            decision-lines: { engine: scan, glob: "../docs/decisions/????-*.md", governs: size, max: 50 }
+        security:
+          integrity:
+            other-lines: { engine: scan, glob: "../notes/*.md", governs: size, max: 5 }
+      """;
   private static final String GRADLE = "cd orchestrator-backend && timeout ";
 
   @Test
@@ -138,6 +152,49 @@ class TestsForTest {
     assertThat(plan.dropped()).contains("tests-for: no rule test DocLinksTest, dropped");
     assertThat(plan.lines())
         .containsExactly(GRADLE + "900 ./gradlew :test --tests '*FitnessTest' -x pitestDiff");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "openspec/specs/board/spec.md",
+        "docs/rules/ci.md",
+        "docs/decisions/0001-a.md",
+        "AGENTS.md"
+      })
+  void runsTheMaintainabilitySizeRowsWhenBudgetedMarkdownChanges(String changed, @TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(FITNESS_YML, FITNESS_YML_TEXT)
+            .file(ROOT_TESTS + "SpecLimitsTest.java", "class SpecLimitsTest {}")
+            .file(changed, "# a")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of(changed));
+
+    assertThat(plan.lines())
+        .containsExactly(
+            GRADLE + "900 ./gradlew :test --tests '*SpecLimitsTest' -x pitestDiff",
+            GRADLE + "600 ./gradlew fitness -Pfitness.block=technical.maintainability");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "notes/a.md",
+        "docs/decisions/001-a.md",
+        "docs/decisions/00001-a.md",
+        "docs/x/y.md"
+      })
+  void runsNoSizeRowsWhenMarkdownIsOutsideEverySizeRow(String changed, @TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo).file(FITNESS_YML, FITNESS_YML_TEXT).file(changed, "# a").tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of(changed));
+
+    assertThat(plan.lines()).noneMatch(line -> line.contains("technical.maintainability"));
   }
 
   @Test

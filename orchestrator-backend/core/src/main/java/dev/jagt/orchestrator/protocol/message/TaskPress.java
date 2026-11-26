@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol.message;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -25,10 +27,10 @@ public record TaskPress(String taskId, String verb, String project, String line)
   }
 
   public TaskPress {
-    taskId = taskId == null || taskId.isBlank() ? null : taskId;
-    verb = verb == null || verb.isBlank() ? null : verb.strip();
-    project = project == null || project.isBlank() ? null : project.strip();
-    line = line == null || line.isBlank() ? null : line.strip();
+    taskId = absent(taskId);
+    verb = absent(verb);
+    project = absent(project);
+    line = absent(line);
   }
 
   @Override

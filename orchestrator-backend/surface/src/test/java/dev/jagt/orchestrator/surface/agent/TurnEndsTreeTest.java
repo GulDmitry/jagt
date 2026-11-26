@@ -40,7 +40,7 @@ class TurnEndsTreeTest {
 
     String answered =
         new TurnEnds(runtime, mock(ConfigService.class), notes, turnTree, List.of())
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -56,7 +56,7 @@ class TurnEndsTreeTest {
             .build();
 
     new TurnEnds(mock(AgentRuntime.class), config, notes, turnTree, List.of())
-        .answer("ABC-1", reported, false, false);
+        .answer("ABC-1", reported, false, false, null);
 
     verify(turnTree).changedSinceLastEnd("ABC-1", reported);
   }
@@ -64,7 +64,7 @@ class TurnEndsTreeTest {
   @Test
   void turnEndTheRefusalSentOnRecordsTheTreeTheNextTurnIsMeasuredFrom() {
     new TurnEnds(mock(AgentRuntime.class), mock(ConfigService.class), notes, turnTree, List.of())
-        .answer("ABC-1", task, true, false);
+        .answer("ABC-1", task, true, false, null);
 
     verify(turnTree).changedSinceLastEnd("ABC-1", task);
   }
@@ -78,7 +78,7 @@ class TurnEndsTreeTest {
 
     String answered =
         new TurnEnds(runtime, config, notes, turnTree, List.of())
-            .answer("ABC-1", task, false, false);
+            .answer("ABC-1", task, false, false, null);
 
     assertThat(answered).isEmpty();
   }

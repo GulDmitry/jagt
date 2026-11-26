@@ -24,6 +24,8 @@ export const listSection = html`<section aria-label="Task list">
       <${TaskList} groups=${grouped(tasks, false)} selected="ABC-70" changed=${changed} now=${Date.now()}/></${State}>
     <${State} name="the keys line under the list"><${TaskList} groups=${grouped(tasks.slice(0, 2), false)} selected="ABC-42"
       changed=${() => false} now=${Date.now()} keys=${keys}/></${State}>
+    <${State} name="a row with no row verb"><${TaskList} groups=${grouped([{ ...tasks[1], actions: [] }], false)}
+      selected="ABC-51" changed=${() => false} now=${Date.now()}/></${State}>
     <${State} name="several projects"><${TaskList} groups=${grouped(tasks, true)} selected="ABC-42"
       changed=${() => false} now=${Date.now()}/></${State}>
     <${State} name="the open task, overview"><${Pane} card=${cards[0].props} tab="overview" shown=${null}/></${State}>

@@ -78,7 +78,11 @@ sealed interface TaskMove {
 
   record PlanApproved() implements TaskMove {}
 
-  record NoPlanDeclared() implements TaskMove {}
+  /** {@code outside}: an outside system opened the task, so the gate is jagt's. */
+  record NoPlanDeclared(boolean outside) implements TaskMove {}
+
+  /** Whether a press may approve the plan; no edge on it changes a state or emits an effect. */
+  record ApprovalAsked(boolean outside, boolean human, boolean sound) implements TaskMove {}
 
   record Autoplanned() implements TaskMove {}
 

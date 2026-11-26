@@ -2,6 +2,7 @@ package dev.jagt.orchestrator;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -43,6 +44,22 @@ public final class CiWorkflow {
 
   static Map<String, Map<String, Object>> nightlyJobs() {
     return jobsOf(NIGHTLY);
+  }
+
+  static Map<String, String> gateLinesByJob(Map<String, Map<String, Object>> jobs) {
+    Map<String, String> byLine = new LinkedHashMap<>();
+    for (Map.Entry<String, Map<String, Object>> job : jobs.entrySet()) {
+      for (Object step : (List<?>) job.getValue().getOrDefault("steps", List.of())) {
+        String run = String.valueOf(((Map<?, ?>) step).get("run"));
+        run.lines()
+            .map(String::strip)
+            .filter(
+                line -> line.startsWith("scripts/linux-suite.sh ") || line.startsWith("./gradlew "))
+            .forEach(
+                line -> byLine.merge(line, job.getKey(), (first, second) -> first + ", " + second));
+      }
+    }
+    return byLine;
   }
 
   private static Map<String, Map<String, Object>> jobsOf(Path file) {

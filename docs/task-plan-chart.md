@@ -11,7 +11,9 @@ stateDiagram-v2
         plan_OPEN --> plan_REQUIRED : plan mode
         plan_CLOSED --> plan_REQUIRED : plan mode
         plan_CLOSED --> plan_OPEN : no plan declared
+        plan_CLOSED --> plan_CLOSED : approval asked
         plan_CLOSED --> plan_OPEN : plan approved
+        plan_REQUIRED --> plan_REQUIRED : approval asked
         plan_REQUIRED --> plan_OPEN : plan approved
         plan_CLOSED --> plan_OPEN : round past the plan
     }

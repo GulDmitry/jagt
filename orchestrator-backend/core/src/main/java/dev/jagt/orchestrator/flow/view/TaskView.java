@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.session.SessionPhase;
-import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -20,10 +19,12 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.text.UtcTime;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -131,6 +132,9 @@ public record TaskView(
   }
 
   private static String statusLabel(TaskState task, RoundState round) {
+    if (task.work().paused()) {
+      return "‖ paused";
+    }
     if (round.arbiterReading() || StopHold.of(task, round.arbiter()) == StopHold.ARBITER) {
       return "master review";
     }
@@ -246,12 +250,19 @@ public record TaskView(
    * {@code reason} is the stop in a few words, {@code evidence} what it saw, {@code next} what a
    * human reads after, {@code triage} the read of the stop as one line, blank until made.
    */
-  public record Stop(String reason, String evidence, String next, long at, String triage) {
+  public record Stop(
+      TaskStop.Trigger.Kind kind,
+      String reason,
+      String evidence,
+      String next,
+      long at,
+      String triage) {
 
     static @Nullable Stop of(@Nullable TaskStop stop) {
       return stop == null
           ? null
           : new Stop(
+              stop.trigger().kind(),
               stop.trigger().reason(),
               stop.evidence(),
               stop.trigger().next(),
@@ -365,16 +376,7 @@ public record TaskView(
             move.owner(),
             move.attention(),
             task.standing().statusSince(),
-            task.standing().history().stream()
-                .map(change ->
-                    new Step(
-                        change.status(),
-                        change.status().label(),
-                        change.at(),
-                        change.origin(),
-                        change.why(),
-                        change.role()))
-                .toList(),
+            stepsOf(task),
             stop),
         new Ask(
             asked(move, stop),
@@ -414,8 +416,30 @@ public record TaskView(
     return awaitingRetry(task).map(InfraRetry::reading).orElse(task.checks().read());
   }
 
+  private static List<Step> stepsOf(TaskState task) {
+    List<Step> steps =
+        task.standing().history().stream()
+            .map(change ->
+                new Step(
+                    change.status(),
+                    change.status().label(),
+                    change.at(),
+                    change.origin(),
+                    change.why(),
+                    change.role()))
+            .collect(Collectors.toCollection(ArrayList::new));
+    TaskStop stop = task.work().stop();
+    if (task.work().paused() && stop != null) {
+      steps.add(
+          new Step(task.standing().status(), "‖ paused", stop.at(), null, stop.evidence(), null));
+    }
+    return steps;
+  }
+
   private static @Nullable String asked(Move move, @Nullable Stop stop) {
-    return stop != null && move.primary() == TaskAction.LIFT
+    return stop != null
+            && stop.kind() != TaskStop.Trigger.Kind.PAUSE
+            && move.primary() == TaskAction.LIFT
         ? move.ask() + " — " + stop.reason()
         : move.ask();
   }

@@ -216,6 +216,7 @@ public class FlowEngine {
         Facts.Hold.defaults()
             .withAgentLive(() -> sources.agentLive(taskId))
             .withStopped(task.work().stopped())
+            .withPaused(task.work().paused())
             .withTierAbove(Facts.tierAbove(task))
             .withPlanClosed(task.gate().planGate().closed()),
         Facts.Workspace.defaults()

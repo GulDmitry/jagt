@@ -12,7 +12,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -51,7 +50,6 @@ class MasterModeFlowTest extends FlowHarness.World {
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
 
-  @MockitoBean private McpHealth mcp;
   @MockitoSpyBean private Clock clock;
   private final UserNotifier userNotifier;
   private final TaskProvisioning provisioning;

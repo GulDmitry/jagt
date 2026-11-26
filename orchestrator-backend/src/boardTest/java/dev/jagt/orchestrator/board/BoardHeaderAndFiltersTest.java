@@ -406,6 +406,23 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
+  void reachLostWithNothingToFixIsInertAndItsHoverNamesTheNextProbe() {
+    reach.lost(
+        new ReachLost(
+            "local-model",
+            "model.example.invalid",
+            List.of(),
+            "local-model cannot reach model.example.invalid",
+            System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()));
+    Page page = openBoard();
+
+    assertThat(page.locator("#reach-lost")).isDisabled();
+    assertThat(page.locator("#reach-lost"))
+        .hasAttribute("data-tip", Pattern.compile("next read to probe: \\d+m"));
+    reach.reached("local-model", "model.example.invalid");
+  }
+
+  @Test
   void keepsTheTabIconCalmWhereTheHumanStoppedTheBoard() throws Exception {
     Files.writeString(root.resolve("board-stopped"), Long.toString(System.currentTimeMillis()));
     Page page = openBoard();
@@ -462,6 +479,38 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     page.locator("#role-chips button.chip").click();
 
     assertThat(page.locator("#role-chips button.chip")).isHidden();
+  }
+
+  @Test
+  void drawsTheBoardTheHumanStoppedAsDashedPausedChip() throws Exception {
+    Files.writeString(root.resolve("board-stopped"), Long.toString(System.currentTimeMillis()));
+
+    Page page = openBoard();
+
+    assertThat(page.locator("#role-chips button.chip.paused")).hasText("‖ board stopped");
+  }
+
+  @Test
+  void drawsActJagtDroppedAsStalledChip() throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "brief");
+    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+
+    Page page = openBoard();
+
+    assertThat(page.locator("#role-chips button.chip.stalled")).hasText("■ act stopped");
+  }
+
+  @Test
+  void drawsStartCutShortAsBadChip() throws Exception {
+    Files.writeString(
+        root.resolve("pending-starts.json"),
+        "[{\"key\":\"ABC-42\",\"request\":{\"ref\":\"ABC-42\"},\"startedAt\":1000,"
+            + "\"placement\":\"PLACED\"}]");
+
+    Page page = openBoard();
+
+    assertThat(page.locator("#role-chips span.chip.bad")).hasText("start interrupted");
   }
 
   @Test

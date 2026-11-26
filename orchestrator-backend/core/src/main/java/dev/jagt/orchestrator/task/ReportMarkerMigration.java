@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import dev.jagt.orchestrator.task.text.Blank;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -37,7 +38,6 @@ final class ReportMarkerMigration {
     if (message == null) {
       return null;
     }
-    String line = MARKER.matcher(message).replaceFirst("");
-    return line.isBlank() ? null : line;
+    return Blank.toNull(MARKER.matcher(message).replaceFirst(""));
   }
 }

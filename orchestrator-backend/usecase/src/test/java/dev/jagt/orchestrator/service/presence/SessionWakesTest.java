@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
@@ -88,7 +88,7 @@ class SessionWakesTest {
     assertThat(first)
         .containsExactly(
             new SessionWakes.Due(
-                "ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+                "ABC-42", Step.WAKE, new SessionStanding(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
     assertThat(second).isEmpty();
   }
 
@@ -105,7 +105,7 @@ class SessionWakesTest {
     assertThat(afterSending)
         .containsExactly(
             new SessionWakes.Due(
-                "ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+                "ABC-42", Step.WAKE, new SessionStanding(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
     assertThat(again).isEmpty();
   }
 
@@ -153,7 +153,7 @@ class SessionWakesTest {
     assertThat(afterRestart)
         .containsExactly(
             new SessionWakes.Due(
-                "ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+                "ABC-42", Step.WAKE, new SessionStanding(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
   }
 
   @Test
@@ -269,6 +269,8 @@ class SessionWakesTest {
     assertThat(due)
         .containsExactly(
             new SessionWakes.Due(
-                "ABC-42", Step.WAIT_OVER, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+                "ABC-42",
+                Step.WAIT_OVER,
+                new SessionStanding(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
   }
 }

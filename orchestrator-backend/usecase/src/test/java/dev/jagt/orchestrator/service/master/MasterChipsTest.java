@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.ConfigFile.ArbiterConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.master.ActStop.Cause;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.HeaderChips.Kind;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +51,8 @@ class MasterChipsTest {
     when(config.load())
         .thenReturn(ConfigFile.defaults().withArbiter(ArbiterConfig.defaults().withMode("act")));
 
-    assertThat(chips.chips()).containsExactly(new HeaderChip("header.acting", null, false, null));
+    assertThat(chips.chips())
+        .containsExactly(new HeaderChip("header.acting", null, Kind.NOTE, null, null));
   }
 
   @Test
@@ -65,7 +67,8 @@ class MasterChipsTest {
   void offersActBackAsBrokenWhenThreeBadEndingsStoppedIt() {
     when(stops.standing()).thenReturn(Optional.of(new ActStop(Cause.STRIKES, null)));
 
-    assertThat(chips.chips()).containsExactly(new HeaderChip("act-stopped", "act", true, null));
+    assertThat(chips.chips())
+        .containsExactly(new HeaderChip("act-stopped", "act", Kind.STALLED, null, null));
   }
 
   @Test

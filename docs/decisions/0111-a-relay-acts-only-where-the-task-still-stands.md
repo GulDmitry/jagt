@@ -17,9 +17,9 @@ and [0110](0110-the-task-statechart-runs-on-an-engine-of-our-own.md).
 
 ## Decision
 
-- `Standing` is where a task stands: its lifecycle status, the way its stop ends, and its turn's id and start.
+- `SessionStanding` is where a task stands: its lifecycle status, the way its stop ends, and its turn's id and start.
 - It is derived from the task and never stored. Writes that move none of the four leave it equal.
-- Every `StepRelay` entry takes the `Standing` its caller decided on, or the `Claim` carrying it.
+- Every `StepRelay` entry takes the `SessionStanding` its caller decided on, or the `Claim` carrying it.
 - An entry refuses with `TaskMovedOn` before the door when the live standing differs.
 - A site with no read of its own takes the live standing at the moment it decides.
 

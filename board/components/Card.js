@@ -2,6 +2,7 @@ import { bothNames } from "../core/format.js";
 import { httpOnly } from "../core/dom.js";
 import {
   actionRows,
+  badgeClass,
   badgeTip,
   detailClass,
   flagTexts,
@@ -72,7 +73,7 @@ export function Card({
       ${
         task.ask
           ? html`<span
-              class=${`badge ${task.attention.toLowerCase()}${task.detailKind === "PROBLEM" ? " problem" : ""}`}
+              class=${badgeClass(task)}
               data-tip=${badgeTip(task)}
               tabindex=${0}
               >${task.ask}</span

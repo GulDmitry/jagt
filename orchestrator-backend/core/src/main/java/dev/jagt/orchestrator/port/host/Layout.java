@@ -17,6 +17,12 @@ public class Layout {
   private final Path data;
   private final Path stateFile;
 
+  /**
+   * An entry an older version kept flat beside its state, by {@code name}, and where it belongs
+   * now.
+   */
+  public record OlderPlacement(String name, Path to) {}
+
   public Layout(Path data, @Nullable Path stateFile) {
     this.data = data;
     this.stateFile = stateFile != null ? stateFile : data.resolve("jagt").resolve("state.json");
@@ -137,6 +143,11 @@ public class Layout {
     return beside("board-stopped");
   }
 
+  /** The starts begun and not yet finished; a restart finds what it cut short. */
+  public Path pendingStarts() {
+    return beside("pending-starts.json");
+  }
+
   /**
    * The tasks counted toward stopping `act`, one per line, present while the count is above zero.
    */
@@ -176,10 +187,6 @@ public class Layout {
   /** The usage levels already told, with the period each was told in. */
   public Path usageAlerts() {
     return beside("usage-alerts.properties");
-  }
-
-  public Path openCodeGate() {
-    return beside("opencode-gate");
   }
 
   public Path usageByDay() {
@@ -233,7 +240,6 @@ public class Layout {
     placed.put("alive", alive());
     placed.put("intake-turned-away", intakeTurnedAway());
     placed.put("usage-alerts.properties", usageAlerts());
-    placed.put("opencode-gate", openCodeGate());
     for (Path record :
         List.of(usageByDay(), finished(), misses(), interactions(), stops(), stopsReviewed())) {
       placed.put(record.getFileName().toString(), record);
@@ -273,7 +279,8 @@ public class Layout {
     return records().resolve(name);
   }
 
-  private Path beside(String name) {
+  /** A file or folder named {@code name} in the folder holding the state file. */
+  public Path beside(String name) {
     return stateFile.resolveSibling(name);
   }
 }

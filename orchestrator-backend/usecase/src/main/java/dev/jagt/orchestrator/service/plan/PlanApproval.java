@@ -2,8 +2,10 @@ package dev.jagt.orchestrator.service.plan;
 
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
-import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.flow.session.SessionStanding;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.turn.Step;
@@ -45,8 +47,18 @@ public class PlanApproval {
     if (!door.presses(id, TaskAction.APPROVE_PLAN.id())) {
       return false;
     }
+    stateService
+        .task(id)
+        .flatMap(task ->
+            stateService
+                .reducer()
+                .refusedApproval(task, OriginContext.current(), () -> plan.sound(id)))
+        .ifPresent(why -> {
+          throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, why);
+        });
     boolean placed = plan.settle(id);
-    Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
+    SessionStanding read =
+        stateService.task(id).map(SessionStanding::of).orElse(SessionStanding.ABSENT);
     if (claim == null) {
       stateService.reduce(id, TaskReducer::planApproved);
     }
