@@ -406,6 +406,23 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
+  void reachLostWithNothingToFixIsInertAndItsHoverNamesTheNextProbe() {
+    reach.lost(
+        new ReachLost(
+            "local-model",
+            "model.example.invalid",
+            List.of(),
+            "local-model cannot reach model.example.invalid",
+            System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()));
+    Page page = openBoard();
+
+    assertThat(page.locator("#reach-lost")).isDisabled();
+    assertThat(page.locator("#reach-lost"))
+        .hasAttribute("data-tip", Pattern.compile("next read to probe: \\d+m"));
+    reach.reached("local-model", "model.example.invalid");
+  }
+
+  @Test
   void keepsTheTabIconCalmWhereTheHumanStoppedTheBoard() throws Exception {
     Files.writeString(root.resolve("board-stopped"), Long.toString(System.currentTimeMillis()));
     Page page = openBoard();
