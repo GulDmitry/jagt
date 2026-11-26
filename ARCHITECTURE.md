@@ -174,19 +174,19 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/host/SystemHost` — OS name, home, temp and working directory, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/{tmux/TmuxSessionHost,herdr/HerdrSessionHost}` by `session-host`; `openCommandWindow` runs a command as a window's process |
+| `WindowStream` | `adapter/{tmux/TmuxWindowStream,herdr/HerdrWindowStream}` by `session-host` |
 | `ReadScope` | `adapter/{tmux/TmuxReads,herdr/HerdrReads}` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
-| `SessionLog` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did |
-| `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
-| `BuildTools` | `adapter/worktree/RepositoryBuildTools` |
-| `LineDiff` | `adapter/worktree/DiffUtilsLineDiff` |
+| `SessionLog`, `SubscriptionUsage` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did; `adapter/agent/{Claude,Codex}SubscriptionUsage` |
+| `BuildTools`, `LineDiff` | `adapter/worktree/{RepositoryBuildTools,DiffUtilsLineDiff}` |
 | `RequestlessShip` | `service/repo/HostlessShips` |
-| `ToolGateEnvelope` | `adapter/agent/hook/ClaudeToolGateEnvelope` |
-| `WorktreeProcesses` | `adapter/worktree/LsofWorktreeProcesses` |
+| `ToolGateEnvelope`, `WorktreeProcesses` | `adapter/agent/hook/ClaudeToolGateEnvelope`, `adapter/worktree/LsofWorktreeProcesses` |
 | `WorktreeContainers` | `adapter/worktree/{DockerComposeContainers,NoWorktreeContainers}` — by `orchestrator.containers` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier`, `adapter/channel/NoNotifier` |
 | `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit`; none: no bean |
 | `TerminalDriver` | `adapter/terminal/AbstractKittyTerminalDriver` (+ one per platform), `NoTerminalDriver` |
 | `EditorDriver` | `adapter/terminal/{CliEditorDriver,NoEditorDriver}` |
+| `CurrentPointer`, `ReleaseFeed`, `Supervisor`, `Exit` | `adapter/release/{InstalledCurrentPointer,GithubReleaseFeed,NoReleaseFeed}`, `adapter/{macos/LaunchdSupervisor,NoSupervisor,ProcessExit}` |
+| `CurrentOrigin`, `GitDistrust`, `MergedRefresh`, `ScenarioReach`, `ShellEscapeReach`, `NotificationSink`, `StateEvents` | `service/ThreadOrigin`, `service/git/TrustedGitState`, `service/repo/MergedRequests`, `service/reach/{ScenarioReadiness,AgentShellEscape}`, `notify/Notifications` — ports only the use cases answer; `StateEvents`, a `RuntimeWiring` bean, publishes a Spring event |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
 | `AgentWorktree`, `Notification`, `Answer`, `Sandbox` | nothing: value **records** the ports pass |
 

@@ -15,6 +15,7 @@ public final class PortsMap {
   private static final Pattern CODE = Pattern.compile("`([^`]+)`");
   private static final Pattern BRACES = Pattern.compile("\\{([^{}]*)}");
   private static final String SECTION = "## Ports and who answers them";
+  private static final String PORT_PACKAGE = SourceRoots.BASE_PACKAGE + ".port";
   private static final String LEAD_ENDS = " — ";
 
   private PortsMap() {}
@@ -51,6 +52,23 @@ public final class PortsMap {
     return rows().stream()
         .flatMap(row -> row.ports().stream())
         .filter(port -> classesNamed(port).isEmpty())
+        .toList();
+  }
+
+  public static List<String> portsWithoutRow() {
+    List<String> mapped =
+        rows().stream()
+            .flatMap(row -> row.ports().stream())
+            .flatMap(port -> classesNamed(port).stream())
+            .map(JavaClass::getName)
+            .toList();
+    return MainClasses.CODE.stream()
+        .filter(type -> type.isInterface() && !type.isNestedClass())
+        .filter(type -> !type.getSimpleName().equals("package-info"))
+        .filter(type -> type.getPackageName().startsWith(PORT_PACKAGE))
+        .map(JavaClass::getName)
+        .filter(name -> !mapped.contains(name))
+        .sorted()
         .toList();
   }
 

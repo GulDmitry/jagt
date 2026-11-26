@@ -17,6 +17,11 @@ class PortsMapTest {
   }
 
   @Test
+  void everyPortInMainHasItsRowInTheMap() {
+    assertThat(PortsMap.portsWithoutRow()).isEmpty();
+  }
+
+  @Test
   void everyClassTheMapNamesExistsInMain() {
     assertThat(PortsMap.answersNotInMain()).isEmpty();
   }
