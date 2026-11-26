@@ -32,7 +32,7 @@
   "start-interrupted": "start przerwany",
   "header.review.tip": "nienadzorowane odpytywanie o review",
   "jobs-failed": "{failing} z {count} zadań cyklicznych nie powiodło się",
-  "header.jobs.tip": "ostatnie uruchomienie zadania cyklicznego nie powiodło się; kliknij, by zobaczyć zadania\nnastępne uruchomienie: {next}",
+  "header.jobs.tip": "{failed}\nostatnie uruchomienie zadania cyklicznego nie powiodło się; kliknij, by zobaczyć zadania\nnastępne uruchomienie: {next}",
   "header.reach.fix": "naprawa: {fix}",
   "header.reach.next": "następny odczyt sprawdzający: {next}",
   "header.reach.clears": "pierwszy udany odczyt to usunie",

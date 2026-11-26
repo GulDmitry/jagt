@@ -41,8 +41,11 @@ public class Jobs {
       boolean running,
       String serves) {}
 
-  /** {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled. */
-  public record Summary(int count, @Nullable Long nextRunAt, int failing) {}
+  /**
+   * {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled; {@code
+   * failing} says each job whose last run threw, with its cause.
+   */
+  public record Summary(int count, @Nullable Long nextRunAt, List<String> failing) {}
 
   /** The declared jobs and those each {@link JobSource} holds. */
   @Component
@@ -144,7 +147,10 @@ public class Jobs {
             .filter(Objects::nonNull)
             .min(Long::compareTo)
             .orElse(null),
-        (int) all.stream().filter(status -> status.lastError() != null).count());
+        all.stream()
+            .filter(status -> status.lastError() != null)
+            .map(status -> status.id() + ": " + status.lastError())
+            .toList());
   }
 
   public void runNow(String id) {

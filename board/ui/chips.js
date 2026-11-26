@@ -19,19 +19,19 @@ const left = (due) => (due > 0 ? countdown(due) : t("due"));
 
 function renderJobs() {
   const jobs = store.jobs();
-  if (!jobs || !jobs.failing) {
+  if (!jobs?.failing.length) {
     jobsChip.hidden = true;
     return;
   }
   jobsChip.hidden = false;
   // The stamp is the last change's, so it goes into the past: past means DUE.
-  const due = jobs.nextRunAt ? jobs.nextRunAt - Date.now() : null;
   jobsChip.textContent = t("jobs-failed", {
-    failing: jobs.failing,
+    failing: jobs.failing.length,
     count: jobs.count,
   });
   jobsChip.dataset.tip = t("header.jobs.tip", {
-    next: due === null ? "-" : left(due),
+    failed: jobs.failing.join("\n"),
+    next: jobs.nextRunAt ? left(jobs.nextRunAt - Date.now()) : "-",
   });
 }
 

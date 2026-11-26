@@ -69,7 +69,7 @@
   "start-interrupted": "start interrupted",
   "header.review.tip": "unattended review polling",
   "jobs-failed": "{failing} of {count} jobs failed",
-  "header.jobs.tip": "a job’s last run failed; press for the jobs\nnext run: {next}",
+  "header.jobs.tip": "{failed}\na job’s last run failed; press for the jobs\nnext run: {next}",
   "header.reach.fix": "fix: {fix}",
   "header.reach.next": "next read to probe: {next}",
   "header.reach.clears": "the next read that succeeds clears this",

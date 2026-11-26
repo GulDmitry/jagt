@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -388,18 +389,24 @@ class JobsTest {
 
     trigger.getAllValues().forEach(each -> each.nextExecution(ranAtOneSecond));
 
-    assertThat(both.summary(1_000)).isEqualTo(new Jobs.Summary(2, 61_000L, 0));
+    assertThat(both.summary(1_000)).isEqualTo(new Jobs.Summary(2, 61_000L, List.of()));
   }
 
   @Test
-  void summaryCountsJobWhoseLastRunThrew() {
+  void summaryNamesJobWhoseLastRunThrewAndItsCauseUntilItsNextCleanRun() {
     doThrow(new IllegalStateException("host unreachable")).when(job).run();
     jobs.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
 
     work.getValue().run();
 
-    assertThat(jobs.summary(1_000).failing()).isEqualTo(1);
+    assertThat(jobs.summary(1_000).failing())
+        .containsExactly("poll-reviews: java.lang.IllegalStateException: host unreachable");
+
+    doNothing().when(job).run();
+    work.getValue().run();
+
+    assertThat(jobs.summary(1_000).failing()).isEmpty();
   }
 
   @Test

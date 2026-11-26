@@ -8,11 +8,11 @@ export function status(tasks) {
     waiting: tasks.filter((task) => task.attention === "REQUIRED").length,
     broken:
       tasks.some((task) => task.detailKind === "PROBLEM") ||
-      Boolean(store.jobs()?.failing) ||
+      Boolean(store.jobs()?.failing.length) ||
       store
         .chips()
         .some((chip) => chip.kind === "BAD" || chip.kind === "STALLED") ||
       store.reach().length > 0,
   });
-  watch(tasks, Boolean(store.jobs()?.failing));
+  watch(tasks, Boolean(store.jobs()?.failing.length));
 }

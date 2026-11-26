@@ -24,7 +24,7 @@ import { bothNames } from "./format.js";
  * @typedef {{ id: string, hint: string }} BranchStrategy
  * @typedef {{ id: string, label: string }} Phase
  * @typedef {{ said: string, fix: string[], retryAt?: number }} Reach
- * @typedef {{ failing?: number, count: number, nextRunAt?: number }} Jobs
+ * @typedef {{ failing: string[], count: number, nextRunAt?: number }} Jobs
  * @typedef {{ key: string, verb: string | null, kind: "NOTE" | "PAUSED" | "STALLED" | "BAD", at: number | null, detail?: string }} Chip
  * @typedef {{ summary: string | null, enabled: boolean }} AutoReview
  * @typedef {{

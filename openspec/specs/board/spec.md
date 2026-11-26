@@ -78,7 +78,7 @@ in a tooltip; a stopped poll, failed job or stopped `act` gets its own mark. A s
 highlighted button says what to do. A badge is the human's move; a quiet "you can …" can wait.
 #### Scenario: A deployed task
 - **WHEN** a task is deployed; **THEN** it wears no badge: `done` is its only move
-- **AND** while no job's last run failed, no jobs chip shows
+- **AND** while no job's last run failed, no jobs chip shows; once one threw, its hover names it and its cause until its next clean run
 
 ### Requirement: Components ship as the files that run
 The board SHALL render Preact components written with `htm`, served from `board/vendor/` byte for byte as the npm registry published them. The page's

@@ -522,7 +522,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     jobs.runNow("breakable");
-    page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
+    page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing().size() > 0);
     state.putTask(
         "ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).lastActiveTimestamp(now).build());
     page.locator("#jobs-pulse").hover();
@@ -534,6 +534,20 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     assertThat(page.locator("#tasks .row")).hasCount(2);
     assertThat(page.locator("#tip")).containsText("next run: 6m");
+  }
+
+  @Test
+  void theJobsChipHoverNamesTheFailingJobAndItsCause() {
+    breakable.breakIt();
+    Page page = openBoard();
+    jobs.runNow("breakable");
+    page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing().size() > 0);
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+
+    page.locator("#jobs-pulse").hover();
+
+    assertThat(page.locator("#tip"))
+        .containsText("breakable: java.lang.IllegalStateException: job broken");
   }
 
   @Test

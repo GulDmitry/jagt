@@ -101,7 +101,8 @@ class BoardInteractionLogTest extends BoardPageContext {
         "**/api/interactions",
         () -> {
           jobs.runNow("breakable");
-          page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
+          page.waitForCondition(
+              () -> jobs.summary(System.currentTimeMillis()).failing().size() > 0);
           state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
         });
 
