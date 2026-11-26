@@ -58,3 +58,14 @@ acceptance scenarios session. The tab lists the open task's session first, then 
 #### Scenario: A window that is no task's
 - **WHEN** jagt opens a login or the scenarios window
 - **THEN** the Session tab lists it, streams its terminal live, and a line typed under it reaches that window
+
+### Requirement: A herdr window streams as a redrawn screen
+herdr streams no output. With `orchestrator.session-host: herdr` (`HerdrWindowStream`) the Session tab SHALL redraw
+the window's screen whenever it differs from the last one sent. The tab's size SHALL NOT change the window:
+it keeps the size herdr's own client gives it.
+#### Scenario: A herdr session's tab
+- **WHEN** the human opens the Session tab of a session held by herdr
+- **THEN** it shows the screen and redraws it when the screen changes
+#### Scenario: Resizing the tab
+- **WHEN** the human resizes the tab over a herdr window
+- **THEN** the window keeps its size

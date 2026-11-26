@@ -22,7 +22,8 @@ With `remote: none` both fast-forward the target's checkout (git refuses a push 
 - **THEN** read against the request's target, never `deployBranch`
 
 ### Requirement: Nothing rewrites what left the machine
-`GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never `--force` or `-u`;
+`GitDeploy` (`HEAD:<target>`), `GitWorktrees` (`refs/heads/x:refs/heads/x`) and `WorkspaceBranch` (`HEAD:refs/heads/<branch>`) SHALL push
+**one** branch, never `--force` or `-u`;
 no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). The one exception: a rebase of the task's own
 branch onto its request's target. The resume or the session pushes it under `--force-with-lease` when the target moved on.
 
