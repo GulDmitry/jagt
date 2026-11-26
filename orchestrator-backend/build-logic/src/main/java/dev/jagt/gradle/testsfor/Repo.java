@@ -57,6 +57,12 @@ record Repo(Git git, Path top) {
     return Files.isRegularFile(top.resolve(file)) && holds.test(read(top.resolve(file)));
   }
 
+  List<String> linesOf(String file) {
+    return Files.isRegularFile(top.resolve(file))
+        ? read(top.resolve(file)).lines().toList()
+        : List.of();
+  }
+
   List<String> filesWhoseText(Predicate<String> holds, List<String> directories) {
     return filesIn(directories).stream()
         .filter(file -> Files.isRegularFile(top.resolve(file)))

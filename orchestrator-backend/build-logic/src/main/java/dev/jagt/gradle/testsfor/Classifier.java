@@ -22,6 +22,7 @@ final class Classifier {
   private final Layout layout;
   private final Selection selection;
   private final Map<String, List<String>> named = new HashMap<>();
+  private SizeRows sizeRows;
 
   Classifier(Repo repo, Layout layout, Selection selection) {
     this.repo = repo;
@@ -42,6 +43,9 @@ final class Classifier {
           "PracticesPage",
           "EngineeringSpec");
     }
+    if (sizeRows().governs(path)) {
+      selection.sizeRows = true;
+    }
     if (like(path, ".github/*", "*/.github/*", "scripts/*", "*/scripts/*")) {
       selection.rules("CiWorkflow", "ImageJar", "QualityGates");
     }
@@ -52,6 +56,13 @@ final class Classifier {
     if (path.endsWith(".yml.dist")) {
       selection.rules("ConfigReference");
     }
+  }
+
+  private SizeRows sizeRows() {
+    if (sizeRows == null) {
+      sizeRows = SizeRows.of(repo.linesOf("fitness.yml"), layout.backend());
+    }
+    return sizeRows;
   }
 
   private void java(String path) {
