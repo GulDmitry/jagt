@@ -596,7 +596,7 @@ public final class TaskReducer {
   private TaskState step(TaskState task, TaskMove move) {
     List<TaskEffect> effects = effectsOf(task, move);
     effects.stream()
-        .filter(TaskReducer::readsTime)
+        .filter(TaskEffect::readsTime)
         .findFirst()
         .ifPresent(effect -> {
           throw new IllegalStateException(
@@ -612,20 +612,6 @@ public final class TaskReducer {
       moved = apply(moved, effect, message, event, now);
     }
     return moved;
-  }
-
-  private static boolean readsTime(TaskEffect effect) {
-    return effect instanceof TaskEffect.Lands
-        || effect instanceof TaskEffect.ClearsStop
-        || effect instanceof TaskEffect.Lifts
-        || effect instanceof TaskEffect.Escalates
-        || effect instanceof TaskEffect.OpensTurn
-        || effect instanceof TaskEffect.ClosesTurn
-        || effect instanceof TaskEffect.Deploys
-        || effect instanceof TaskEffect.LinksRequests
-        || effect instanceof TaskEffect.SendsInfra
-        || effect instanceof TaskEffect.Signs
-        || effect instanceof TaskEffect.DeclinesRound;
   }
 
   private static List<InfraRetry> sent(TaskState task) {

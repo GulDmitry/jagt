@@ -19,29 +19,74 @@ import org.jspecify.annotations.Nullable;
  */
 sealed interface TaskEffect {
 
-  record Lands(TaskStatus to) implements TaskEffect {}
+  /** Whether applying the effect reads the clock; none reading it may be applied without one. */
+  default boolean readsTime() {
+    return false;
+  }
+
+  record Lands(TaskStatus to) implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record Stops(TaskStop stop) implements TaskEffect {}
 
-  record ClearsStop() implements TaskEffect {}
+  record ClearsStop() implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
-  record Lifts() implements TaskEffect {}
+  record Lifts() implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
-  record Escalates() implements TaskEffect {}
+  record Escalates() implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record GatesPlan(PlanGate gate) implements TaskEffect {}
 
   record Reports(AgentReport report) implements TaskEffect {}
 
-  record OpensTurn(String step, String digest, String answered) implements TaskEffect {}
+  record OpensTurn(String step, String digest, String answered) implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
-  record ClosesTurn() implements TaskEffect {}
+  record ClosesTurn() implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record RestoresTurn(Turn before) implements TaskEffect {}
 
-  record Deploys(DeployStep step) implements TaskEffect {}
+  record Deploys(DeployStep step) implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
-  record Signs(SessionSign sign) implements TaskEffect {}
+  record Signs(SessionSign sign) implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record RestartsSession() implements TaskEffect {}
 
@@ -62,7 +107,12 @@ sealed interface TaskEffect {
   record LeavesRepo(String project) implements TaskEffect {}
 
   record LinksRequests(Map<String, String> byProject, String url, boolean newRound)
-      implements TaskEffect {}
+      implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record MergesRequest(String project, boolean merged) implements TaskEffect {}
 
@@ -84,7 +134,12 @@ sealed interface TaskEffect {
 
   record SendsCheckerRound(String role, String digest, String rows) implements TaskEffect {}
 
-  record DeclinesRound(String role) implements TaskEffect {}
+  record DeclinesRound(String role) implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record SeesHead(String tip) implements TaskEffect {}
 
@@ -99,7 +154,12 @@ sealed interface TaskEffect {
 
   record ClearsInfra(boolean all) implements TaskEffect {}
 
-  record SendsInfra(InfraRetry retry) implements TaskEffect {}
+  record SendsInfra(InfraRetry retry) implements TaskEffect {
+    @Override
+    public boolean readsTime() {
+      return true;
+    }
+  }
 
   record DisarmsInfra() implements TaskEffect {}
 }
