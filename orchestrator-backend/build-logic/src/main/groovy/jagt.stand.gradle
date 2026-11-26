@@ -72,8 +72,11 @@ tasks.register('standTest', Test) {
     finalizedBy 'standCleanup', 'standReport'
 }
 
-def standDocker = providers.exec { commandLine 'sh', '-c', 'docker info >/dev/null 2>&1'; ignoreExitValue = true }
-    .result.get().exitValue == 0
+// Read only when a stand task runs, and bounded: a hung daemon must not stall every build's configuration.
+def standDocker = providers.exec {
+    commandLine 'sh', '-c', 'docker info >/dev/null 2>&1 & p=$!; (sleep 5; kill $p) >/dev/null 2>&1 & k=$!; wait $p; r=$?; kill $k 2>/dev/null; exit $r'
+    ignoreExitValue = true
+}.result.map { it.exitValue == 0 }
 def standHost = (project.findProperty('engine') ?: 'compose') == 'host'
 
 // jagt's own image on the published stand base (OS layer plus the agent CLI), pinned by digest.
@@ -81,7 +84,7 @@ tasks.register('standPull', Exec) {
     description = 'Pulls the images the stand runs besides its own, so an offline run finds them.'
     group = 'verification'
     commandLine 'docker', 'pull', '-q', standPowershell
-    onlyIf { !standHost && standDocker }
+    onlyIf { !standHost && standDocker.get() }
 }
 
 tasks.register('standImage', Exec) {
@@ -92,10 +95,10 @@ tasks.register('standImage', Exec) {
         'docker build --build-context "jar=$1" --build-arg BASE=ghcr.io/guldmitry/jagt-stand-base:base@sha256:2e906fcf20b291e1eda234b5aa16f4b299a8dc3acfce8152c01874456a47199e -t jagt-stand "$0"',
         standRepo, rootProject.layout.buildDirectory.dir('libs').get().asFile.absolutePath
     onlyIf { // no Docker means no stand image
-        if (!standHost && !standDocker) {
+        if (!standHost && !standDocker.get()) {
             System.out.println('docker is absent on this machine, so the stand image is not built and the stand run is skipped; -Pengine=host runs it on the host')
         }
-        !standHost && standDocker
+        !standHost && standDocker.get()
     }
 }
 
@@ -108,14 +111,14 @@ tasks.register('standImageArchive', Exec) {
     outputs.upToDateWhen { false }
     doFirst { archive.parentFile.mkdirs() }
     commandLine 'sh', '-c', 'docker tag jagt-stand jagt-stand:run && docker save -o "$0" jagt-stand:run', archive.absolutePath
-    onlyIf { !standHost && standDocker }
+    onlyIf { !standHost && standDocker.get() }
 }
 
 tasks.register('standImageRemove', Exec) {
     description = 'Removes the jagt-stand* image tags.'
     commandLine 'sh', '-c',
         'docker image rm -f jagt-stand jagt-stand:run jagt-stand:next jagt-stand-next >/dev/null 2>&1 || true' // absent is removed
-    onlyIf { standDocker }  // nothing to remove without Docker
+    onlyIf { standDocker.get() }  // nothing to remove without Docker
 }
 
 tasks.register('standTimingGate', JavaExec) {
