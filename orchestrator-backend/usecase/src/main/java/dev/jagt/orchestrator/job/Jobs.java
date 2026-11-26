@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -64,11 +65,14 @@ public class Jobs {
     private volatile long nextAt;
     private volatile @Nullable Long startedAt;
     private volatile @Nullable String lastError;
+    private volatile long reportedAt;
+    private final AtomicInteger repeats = new AtomicInteger();
     private volatile @Nullable Duration every;
     private volatile @Nullable ScheduledFuture<?> future;
   }
 
   private static final Duration RETRY = Duration.ofSeconds(1);
+  private static final Duration REPEAT_REPORT = Duration.ofHours(1);
 
   private final Map<String, Job> jobs = new LinkedHashMap<>();
   private final Map<String, Run> runs = new LinkedHashMap<>();
@@ -238,18 +242,29 @@ public class Jobs {
   }
 
   /**
-   * A cause already reported is repeated at DEBUG: a job failing on every tick would bury the log
-   * in one line.
+   * A cause already reported is repeated at DEBUG, and at ERROR with its count once per {@link
+   * #REPEAT_REPORT}: a job failing on every tick would bury the log, one line would hide it.
    */
-  private static void fail(String id, Run run, Throwable t) {
+  private void fail(String id, Run run, Throwable t) {
     String cause = t.toString();
     boolean reported = cause.equals(run.lastError);
     run.lastError = cause;
-    (reported ? log.atDebug() : log.atError())
-        .setMessage("job failed")
-        .addKeyValue("job", id)
-        .addKeyValue("cause", cause)
-        .log();
+    long now = clock.millis();
+    if (reported) {
+      run.repeats.incrementAndGet();
+    } else {
+      run.repeats.set(0);
+      run.reportedAt = now;
+    }
+    boolean due = reported && now - run.reportedAt >= REPEAT_REPORT.toMillis();
+    var line = reported && !due ? log.atDebug() : log.atError();
+    line = line.setMessage("job failed").addKeyValue("job", id).addKeyValue("cause", cause);
+    if (due) {
+      line = line.addKeyValue("repeats", run.repeats.get());
+      run.repeats.set(0);
+      run.reportedAt = now;
+    }
+    line.log();
   }
 
   private static void recovered(String id, Run run) {

@@ -216,6 +216,75 @@ class JobsTest {
   }
 
   @Test
+  void logsJobStillFailingTheSameWayAgainAsAnErrorWithItsRepeatsOncePerHour() {
+    FakeClock clock = new FakeClock();
+    Jobs hourly =
+        new Jobs(
+            new Jobs.Catalog(List.of(job), List.of()),
+            scheduler,
+            clock,
+            state,
+            mock(BoardStop.class));
+    doThrow(new IllegalStateException("no tmux server")).when(job).run();
+    hourly.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    try (FakeLogCapture log = new FakeLogCapture(Jobs.class)) {
+      work.getValue().run();
+      clock.advance(Duration.ofMinutes(30));
+      work.getValue().run();
+      clock.advance(Duration.ofMinutes(30));
+      work.getValue().run();
+      clock.advance(Duration.ofMinutes(30));
+      work.getValue().run();
+      clock.advance(Duration.ofMinutes(30));
+      work.getValue().run();
+
+      List<ILoggingEvent> errors =
+          log.events().stream().filter(event -> event.getLevel() == Level.ERROR).toList();
+      assertThat(errors).hasSize(3);
+      assertThat(errors.get(1).getKeyValuePairs())
+          .extracting("key", "value")
+          .contains(tuple("repeats", 2));
+      assertThat(errors.get(2).getKeyValuePairs())
+          .extracting("key", "value")
+          .contains(tuple("repeats", 2));
+    }
+  }
+
+  @Test
+  void countsRepeatsOfTheNewCauseAloneWhenJobSwitchesCause() {
+    FakeClock clock = new FakeClock();
+    Jobs hourly =
+        new Jobs(
+            new Jobs.Catalog(List.of(job), List.of()),
+            scheduler,
+            clock,
+            state,
+            mock(BoardStop.class));
+    doThrow(new IllegalStateException("no tmux server"))
+        .doThrow(new IllegalStateException("no tmux server"))
+        .doThrow(new IllegalStateException("disk full"))
+        .doThrow(new IllegalStateException("disk full"))
+        .when(job)
+        .run();
+    hourly.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    try (FakeLogCapture log = new FakeLogCapture(Jobs.class)) {
+      work.getValue().run();
+      work.getValue().run();
+      work.getValue().run();
+      clock.advance(Duration.ofHours(1));
+      work.getValue().run();
+
+      List<ILoggingEvent> errors =
+          log.events().stream().filter(event -> event.getLevel() == Level.ERROR).toList();
+      assertThat(errors.getLast().getKeyValuePairs())
+          .extracting("key", "value")
+          .contains(tuple("repeats", 1));
+    }
+  }
+
+  @Test
   void reportsFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
     doThrow(new IllegalStateException("no tmux server")).doNothing().when(job).run();
     jobs.start();

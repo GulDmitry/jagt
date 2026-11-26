@@ -69,7 +69,7 @@ absolute stamp (`core/format.js`).
 ### Requirement: Unattended work is a declared kind
 Each unattended job SHALL be a `job/Job`: id, one line for the human, an interval or `null` for once at startup, `run()`. `job/Jobs` schedules each on
 the shared `TaskScheduler` once ready: never overlapping itself, the next run stamped from the start of the last, a throw booked against that job.
-
+A job failing with one cause run after run logs ERROR once, DEBUG after, and ERROR with `repeats` at most hourly.
 #### Scenario: Anything else running
 - **WHEN** you ask whether anything else runs behind your back
 - **THEN** the header shows the next unattended job, and one that failed; `jobs` has the detail
@@ -78,11 +78,13 @@ the shared `TaskScheduler` once ready: never overlapping itself, the next run st
 - **WHEN** a job declares a blank id
 - **THEN** jagt refuses to start, naming the job's class
 - **AND** a run lasting longer than the job's interval is followed the moment it ends, never beside it
+#### Scenario: A job fails every minute
+- **WHEN** a job fails with the same cause on every tick for over an hour
+- **THEN** the log holds its first ERROR and a repeat ERROR carrying the runs since
 
 ### Requirement: A restart keeps the run before
 `logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/log/LogFileRoll` SHALL roll the file into `.1` before it opens
 and keep the `.1` it replaces as a dated archive for 14 days.
-
 #### Scenario: Restart
 - **WHEN** jagt starts
 - **THEN** the log holds this run, its `.1` the run before, and the runs before that sit beside it dated
@@ -90,7 +92,6 @@ and keep the `.1` it replaces as a dated archive for 14 days.
 ### Requirement: `act` stops itself after three bad endings
 Three tasks in a row the Master moved in `act` ending silent, in a deploy conflict or reverted SHALL stop `act`
 (`MasterBrake`). A silence counts after its own last move; a deploy resets the count, a restart does not.
-
 #### Scenario: Three tasks it moved end badly in a row
 - **WHEN** the third one is stamped silent, conflicts on deploy or is reverted
 - **THEN** it only judges, across restarts, until you press the header's `act stopped`
@@ -107,7 +108,6 @@ Each start rolls `jagt-master.log` into `.1`.
 When a written rule leaves `memory/routing.md` at its ceiling, one read of the whole file SHALL name two rules placing the same items
 (`RoutingAssistant.sameRules`). jagt SHALL merge them only where both place in one project, adding their counts and dating the dropped wording
 (`RoutingMemory.merge`).
-
 #### Scenario: Two wordings place in one project
 - **WHEN** the read names two rules placing in one project
 - **THEN** the dropped one's count joins the kept one's, and it stays as a dated line
