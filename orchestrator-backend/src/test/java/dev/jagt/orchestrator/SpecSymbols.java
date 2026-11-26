@@ -16,7 +16,7 @@ public final class SpecSymbols {
   private static final Pattern CODE = Pattern.compile("`([^`\\n]+)`");
   private static final Pattern SYMBOL =
       Pattern.compile(
-          "(?:[a-z]+/)*([A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+)"
+          "(?:[a-z]+/)*([A-Z][a-z0-9]+(?:[A-Z][a-z0-9]*)+)"
               + "(?:(?:[.#]|::)([a-z]\\w*)(?:\\(\\))?)?");
   private static final Pattern TYPE =
       Pattern.compile("\\b(?:class|interface|enum|record)\\s+(\\w+)");
