@@ -36,11 +36,12 @@ class OidcLogin {
       HttpSecurity http,
       ClientRegistrationRepository registrations,
       OidcProperties oidc,
-      LoginAudit audit)
+      LoginAudit audit,
+      BoardCsp csp)
       throws Exception {
     SavedRequestAwareAuthenticationSuccessHandler redirect =
         new SavedRequestAwareAuthenticationSuccessHandler();
-    GuardedBoard.guard(http, START)
+    GuardedBoard.guard(http, START, csp)
         .oauth2Login(login ->
             login
                 .clientRegistrationRepository(registrations)

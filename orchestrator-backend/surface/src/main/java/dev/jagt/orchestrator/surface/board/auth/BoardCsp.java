@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board.auth;
 
+import dev.jagt.orchestrator.surface.board.files.BoardFolder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -13,28 +14,32 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.springframework.core.io.ClassPathResource;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.stereotype.Component;
 
 /**
  * The one origin the board loads from; vendored libraries inject style, an import map is script.
  */
-public final class BoardCsp {
+@Component
+@RequiredArgsConstructor
+public class BoardCsp {
 
   private static final Pattern IMPORT_MAP =
       Pattern.compile("<script type=\"importmap\">(.*?)</script>", Pattern.DOTALL);
-  private static final List<String> PAGES = List.of("static/index.html", "static/styleguide.html");
-  private static final String EDITOR_MAP = "static/vendor/codemirror/importmap.json";
+  private static final List<String> PAGES = List.of("index.html", "styleguide.html");
+  private static final String EDITOR_MAP = "vendor/codemirror/importmap.json";
 
-  private BoardCsp() {}
+  private final BoardFolder folder;
 
-  public static void apply(HeadersConfigurer<HttpSecurity> headers) {
+  public void apply(HeadersConfigurer<HttpSecurity> headers) {
     headers.cacheControl(cache -> cache.disable());
     headers.contentSecurityPolicy(csp -> csp.policyDirectives(policy()));
   }
 
-  static String policy() {
+  String policy() {
     Set<String> maps = new LinkedHashSet<>();
     PAGES.forEach(page -> maps.add(importMapOf(read(page))));
     maps.add(read(EDITOR_MAP));
@@ -63,8 +68,9 @@ public final class BoardCsp {
     }
   }
 
-  private static String read(String resource) {
-    try (InputStream in = new ClassPathResource(resource).getInputStream()) {
+  private String read(String path) {
+    Resource resource = folder.resource(path);
+    try (InputStream in = resource.getInputStream()) {
       return new String(in.readAllBytes(), StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new UncheckedIOException(e);

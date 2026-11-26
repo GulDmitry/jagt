@@ -18,9 +18,9 @@ import org.springframework.security.web.SecurityFilterChain;
 class OpenBoard {
 
   @Bean
-  SecurityFilterChain openChain(HttpSecurity http) throws Exception {
+  SecurityFilterChain openChain(HttpSecurity http, BoardCsp csp) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
-        .headers(BoardCsp::apply)
+        .headers(csp::apply)
         .authorizeHttpRequests(requests -> requests.anyRequest().permitAll());
     return http.build();
   }

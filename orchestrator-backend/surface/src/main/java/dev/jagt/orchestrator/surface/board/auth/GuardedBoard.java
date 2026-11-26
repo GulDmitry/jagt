@@ -23,10 +23,10 @@ final class GuardedBoard {
 
   private GuardedBoard() {}
 
-  static HttpSecurity guard(HttpSecurity http, String loginUrl) throws Exception {
+  static HttpSecurity guard(HttpSecurity http, String loginUrl, BoardCsp csp) throws Exception {
     PublicPaths contract = PublicPaths.fromContract();
     return http.csrf(AbstractHttpConfigurer::disable)
-        .headers(BoardCsp::apply)
+        .headers(csp::apply)
         .authorizeHttpRequests(requests ->
             requests
                 .requestMatchers("/error")

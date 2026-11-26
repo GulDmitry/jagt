@@ -2,11 +2,16 @@ package dev.jagt.orchestrator.surface.board.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.surface.board.auth.attempts.LoginAudit;
+import dev.jagt.orchestrator.surface.board.files.BoardFolder;
+import dev.jagt.orchestrator.surface.board.files.BoardProperties;
 import dev.jagt.orchestrator.surface.board.filter.Doors;
 import dev.jagt.orchestrator.surface.mcp.refusal.RootToken;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.net.CookieManager;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -56,6 +61,14 @@ class OidcLoginOnTomcatTest {
       return RouterFunctions.route()
           .GET("/state", request -> ServerResponse.ok().body("board"))
           .build();
+    }
+
+    @Bean
+    BoardCsp boardCsp() {
+      return new BoardCsp(
+          new BoardFolder(
+              new BoardProperties(null),
+              new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine())));
     }
 
     @Bean

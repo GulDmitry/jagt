@@ -26,14 +26,15 @@ class PasswordLogin {
 
   @Bean
   SecurityFilterChain passwordChain(
-      HttpSecurity http, PasswordLoginOutcome outcome, LoginAttempts attempts) throws Exception {
+      HttpSecurity http, PasswordLoginOutcome outcome, LoginAttempts attempts, BoardCsp csp)
+      throws Exception {
     String page = PublicPaths.fromContract().loginPage();
     SavedRequestAwareAuthenticationSuccessHandler redirect =
         new SavedRequestAwareAuthenticationSuccessHandler();
     SimpleUrlAuthenticationFailureHandler retry =
         new SimpleUrlAuthenticationFailureHandler(page + "?error");
     http.authenticationProvider(new BackedOffPeers(attempts));
-    GuardedBoard.guard(http, page)
+    GuardedBoard.guard(http, page, csp)
         .formLogin(form ->
             form.loginPage(page)
                 .loginProcessingUrl("/login")

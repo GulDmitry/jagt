@@ -45,11 +45,11 @@ public class Doors {
 
   @Bean
   @Order(1)
-  SecurityFilterChain agentDoor(HttpSecurity http, AuthProperties auth, RootToken rootToken)
-      throws Exception {
+  SecurityFilterChain agentDoor(
+      HttpSecurity http, AuthProperties auth, RootToken rootToken, BoardCsp csp) throws Exception {
     http.securityMatcher(AgentDoor.PATHS)
         .csrf(AbstractHttpConfigurer::disable)
-        .headers(BoardCsp::apply)
+        .headers(csp::apply)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(requests -> {
