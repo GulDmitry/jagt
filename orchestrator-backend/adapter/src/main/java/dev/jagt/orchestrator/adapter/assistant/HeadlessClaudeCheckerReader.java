@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
@@ -27,7 +28,7 @@ public class HeadlessClaudeCheckerReader {
   private final HeadlessClaude headless;
   private final ClaudeProperties claude;
   private final AssistantProperties assistant;
-  private final List<RoleDefinition> roles;
+  private final InstalledRoles roles;
 
   public Answer<AcceptanceVerdict> read(CheckerReader.Run run) {
     HeadlessReply reply = ask(run);
@@ -46,9 +47,8 @@ public class HeadlessClaudeCheckerReader {
 
   private HeadlessReply ask(CheckerReader.Run run) {
     RoleDefinition.Tools scope =
-        roles.stream()
-            .filter(role -> role.id().equals(run.role()))
-            .findFirst()
+        roles
+            .find(run.role())
             .orElseThrow(() -> new IllegalStateException("no installed role " + run.role()))
             .tools();
     List<String> mcpReads =

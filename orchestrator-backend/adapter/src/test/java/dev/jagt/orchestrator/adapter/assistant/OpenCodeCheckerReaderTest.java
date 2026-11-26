@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProperties;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.port.agent.McpHealth;
@@ -17,9 +19,11 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.gate.ReadScopes;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -53,7 +57,9 @@ class OpenCodeCheckerReaderTest {
               gate),
           new OpenCodeProperties(
               "opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("acceptance", "qwen-9b")),
-          List.of(ACCEPTANCE));
+          new InstalledRoles(
+              new OrchestratorPaths(
+                  OrchestratorProperties.defaults().withRoot("../.."), FakeHost.machine())));
 
   @Test
   void mapsFencedAnswerToTheAcceptanceVerdictItsRowsCarry(@TempDir Path worktree) {

@@ -12,13 +12,17 @@ import static org.mockito.Mockito.verify;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.testing.FakeHost;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +45,9 @@ class HeadlessClaudeCheckerReaderTest {
           headlessClaude().build(runner, usage, reads),
           ClaudeProperties.defaults(),
           AssistantProperties.empty(),
-          List.of(RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))));
+          new InstalledRoles(
+              new OrchestratorPaths(
+                  OrchestratorProperties.defaults().withRoot("../.."), FakeHost.machine())));
 
   private final String answerSchema =
       RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
@@ -185,26 +191,33 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void givesBrowserServerTheRoleNamesItsReadsNavigationAndLooksAndNoClick() {
+  void givesBrowserServerTheRoleNamesItsReadsNavigationAndLooksAndNoClick(@TempDir Path root)
+      throws IOException {
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        """
+        id: acceptance
+        name: acceptance
+        model: m
+        trigger: [deployed]
+        oncePer: deploy
+        outcomes: [round]
+        tools:
+          mcp: [mcp__browser]
+        answer:
+          - required: failure
+        """);
+    InstalledRoles installed =
+        new InstalledRoles(
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString()), FakeHost.machine()));
     HeadlessClaudeCheckerReader browsing =
         new HeadlessClaudeCheckerReader(
             headlessClaude().build(runner, usage, reads),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
-            List.of(
-                RoleDefinitions.compile(
-                    """
-                    id: acceptance
-                    name: acceptance
-                    model: m
-                    trigger: [deployed]
-                    oncePer: deploy
-                    outcomes: [round]
-                    tools:
-                      mcp: [mcp__browser]
-                    answer:
-                      - required: failure
-                    """)));
+            installed);
 
     browsing.read(checkerRun().withWorktree(worktree).build());
 

@@ -4,11 +4,11 @@ import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.time.Duration;
-import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -23,7 +23,7 @@ class OpenCodeCheckerReader {
 
   private final HeadlessOpenCode headless;
   private final OpenCodeProperties opencode;
-  private final List<RoleDefinition> roles;
+  private final InstalledRoles roles;
 
   Answer<AcceptanceVerdict> read(CheckerReader.Run run) {
     return CheckerAnswers.verdictOf(run, ask(run));
@@ -35,9 +35,8 @@ class OpenCodeCheckerReader {
 
   private HeadlessReply ask(CheckerReader.Run run) {
     RoleDefinition.Tools tools =
-        roles.stream()
-            .filter(role -> role.id().equals(run.role()))
-            .findFirst()
+        roles
+            .find(run.role())
             .orElseThrow(() -> new IllegalStateException("no installed role " + run.role()))
             .tools();
     String model =
