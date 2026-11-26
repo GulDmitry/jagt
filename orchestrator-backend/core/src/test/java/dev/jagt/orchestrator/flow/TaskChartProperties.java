@@ -622,7 +622,7 @@ class TaskChartProperties {
       Facts none = Facts.defaults();
       Facts every =
           new Facts(
-              new Facts.Delivery(true, true, true, true, true, () -> true),
+              new Facts.Delivery(true, true, true, true, true, true, () -> true),
               new Facts.Hold(true, true, true, true, true, () -> true),
               new Facts.Workspace(true, true, true, Optional::empty, Optional::empty),
               new Facts.Reach(true, true, false, null));
@@ -635,6 +635,7 @@ class TaskChartProperties {
               none.withDelivery(none.delivery().withLiveDeploy(true)),
               none.withDelivery(none.delivery().withRevertConflict(true)),
               none.withDelivery(none.delivery().withShippedWithoutRequest(true)),
+              none.withDelivery(none.delivery().withHasReviewRequest(true).withChecksGreen(true)),
               none.withDelivery(none.delivery().withMergedNow(() -> true)),
               none.withHold(none.hold().withStopped(true)),
               none.withHold(none.hold().withTierAbove(true)),

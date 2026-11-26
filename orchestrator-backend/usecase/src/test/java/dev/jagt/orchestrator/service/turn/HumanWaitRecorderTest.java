@@ -135,4 +135,18 @@ class HumanWaitRecorderTest {
 
     assertThat(waits).containsExactly(new HumanWait(1_000, 9_000, Why.QUESTION));
   }
+
+  @Test
+  void opensNoWaitOnApprovedRequestWhileItsChecksRun() {
+    context.refresh();
+
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+            .mrUrl("http://mr/1")
+            .pipelineStatus("running")
+            .build());
+
+    assertThat(state.task("ABC-42").orElseThrow().work().waits()).isEmpty();
+  }
 }

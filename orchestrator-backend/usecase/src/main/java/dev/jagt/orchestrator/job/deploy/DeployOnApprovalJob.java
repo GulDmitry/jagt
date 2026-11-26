@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.deploy;
 
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.job.TaskJob;
@@ -60,6 +61,7 @@ public class DeployOnApprovalJob implements TaskJob {
         stateService
             .task(taskId)
             .filter(current -> TaskStatus.APPROVED.equals(current.standing().status()))
+            .filter(Facts::checksGreen)
             .filter(current -> !current.work().turnOrNone().marked(MARK, arrival))
             .isPresent();
     if (!configService.load().deploy().onApprovalOrDefault() || !unpressed) {

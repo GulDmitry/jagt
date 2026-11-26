@@ -435,7 +435,10 @@ class MoveTest {
                             rules,
                             status,
                             Facts.defaults()
-                                .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+                                .withDelivery(
+                                    Facts.Delivery.defaults()
+                                        .withHasReviewRequest(true)
+                                        .withChecksGreen(true)),
                             RoundState.NONE,
                             false)
                         .owner()
@@ -582,6 +585,13 @@ class MoveTest {
     assertThat(move.ask()).isEqualTo("check for the approval");
   }
 
+  @Test
+  void offersToCloseApprovedTaskThatHasNoRequestToDeploy() {
+    Move move = Move.forTask(rules, TaskStatus.APPROVED, Facts.defaults(), RoundState.NONE, false);
+
+    assertThat(move.ask()).isEqualTo("you can close the task");
+  }
+
   @ParameterizedTest
   @CsvSource({
     "CI_POLLING, open the Session tab",
@@ -602,7 +612,10 @@ class MoveTest {
                     rules,
                     status,
                     Facts.defaults()
-                        .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+                        .withDelivery(
+                            Facts.Delivery.defaults()
+                                .withHasReviewRequest(true)
+                                .withChecksGreen(true)),
                     RoundState.NONE,
                     false)
                 .ask())

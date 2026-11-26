@@ -40,7 +40,8 @@ class TurnsTest {
           "act", new Arbiter.Profile(MasterMode.ACT, Set.of()));
 
   private static final Facts withReviewRequest =
-      Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true));
+      Facts.defaults()
+          .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true).withChecksGreen(true));
 
   private static final AutoReviewWatch neverExpiringWatch =
       AutoReviewWatch.watching(Long.MAX_VALUE);
@@ -245,6 +246,22 @@ class TurnsTest {
 
     assertThat(holder).isEqualTo(new Holder.Role("acceptance"));
     assertThat(move.owner()).isEqualTo(Owner.AGENT);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"REVIEWED", "APPROVED"})
+  void theHostHoldsRequestWaitingForDeployWhileItsChecksAreNotGreen(TaskStatus status) {
+    Holder holder =
+        Turns.next(
+            status,
+            AgentReport.PLAIN,
+            StopHold.NONE,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get("act")),
+            false,
+            true);
+
+    assertThat(holder).isEqualTo(Holder.CI);
   }
 
   @Test

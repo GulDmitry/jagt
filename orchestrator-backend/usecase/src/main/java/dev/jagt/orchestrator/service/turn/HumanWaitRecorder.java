@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.turn;
 
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.session.HumanWaits;
 import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.flow.view.RoundState;
@@ -77,6 +78,7 @@ public class HumanWaitRecorder {
         StopHold.of(task, round.arbiter()),
         checkers.of(task),
         round.arbiter(),
-        round.reach().requireApproval());
+        round.reach().requireApproval(),
+        task.hasReviewRequest() && !Facts.checksGreen(task));
   }
 }

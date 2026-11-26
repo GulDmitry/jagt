@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow.capability;
 
+import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.deploy.Deployment;
@@ -31,10 +32,11 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
       boolean liveDeploy,
       boolean revertConflict,
       boolean shippedWithoutRequest,
+      boolean checksGreen,
       BooleanSupplier mergedNow) {
 
     public static Delivery defaults() {
-      return new Delivery(false, false, false, false, false, () -> false);
+      return new Delivery(false, false, false, false, false, false, () -> false);
     }
   }
 
@@ -114,13 +116,23 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
         .isPresent();
   }
 
+  /**
+   * The stored checks read green on the request's head, or the host listed none there, and no read
+   * since failed.
+   */
+  public static boolean checksGreen(TaskState task) {
+    Pipeline read = Pipeline.of(task.checks().read());
+    return !task.checks().unread() && (read == Pipeline.GREEN || read == Pipeline.NONE);
+  }
+
   public static Facts projected(TaskState task) {
     return new Facts(
         Delivery.defaults()
             .withHasReviewRequest(task.hasReviewRequest())
             .withLiveDeploy(deployLive(task))
             .withRequestMerged(task.requestsMerged())
-            .withRevertConflict(revertConflicted(task)),
+            .withRevertConflict(revertConflicted(task))
+            .withChecksGreen(checksGreen(task)),
         Hold.defaults()
             .withStopped(task.work().stopped())
             .withPaused(task.work().paused())

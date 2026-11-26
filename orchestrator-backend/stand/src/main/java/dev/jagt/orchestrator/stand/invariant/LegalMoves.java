@@ -16,13 +16,14 @@ import java.util.stream.IntStream;
 public final class LegalMoves {
 
   private static final List<Facts> EVERY_FACT =
-      IntStream.range(0, 64)
+      IntStream.range(0, 128)
           .mapToObj(bits ->
               Facts.defaults()
                   .withDelivery(
                       Facts.Delivery.defaults()
                           .withHasReviewRequest(bit(bits, 0))
-                          .withLiveDeploy(bit(bits, 1)))
+                          .withLiveDeploy(bit(bits, 1))
+                          .withChecksGreen(bit(bits, 6)))
                   .withHold(
                       Facts.Hold.defaults()
                           .withAgentLive(() -> bit(bits, 2))

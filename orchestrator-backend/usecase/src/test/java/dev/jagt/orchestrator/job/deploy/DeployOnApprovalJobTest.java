@@ -40,7 +40,8 @@ class DeployOnApprovalJobTest {
   @TempDir Path root;
   private StateService state;
   private DeployOnApprovalJob job;
-  private final TaskState approved = TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build();
+  private final TaskState approved =
+      TaskState.builder("demo", "/wt", TaskStatus.APPROVED).pipelineStatus("success").build();
 
   @BeforeEach
   void setUp() {
@@ -129,6 +130,40 @@ class DeployOnApprovalJobTest {
     TaskState reviewed = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
 
     job.runOn(Map.of("ABC-1", reviewed));
+
+    verify(commands, never()).execute(anyString(), any());
+  }
+
+  @Test
+  void deploysApprovedRequestWhoseHostListsNoPipeline() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withReviewing(
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
+    TaskState bare =
+        TaskState.builder("demo", "/wt", TaskStatus.APPROVED).pipelineStatus("none").build();
+    state.putTask("ABC-1", bare);
+
+    job.runOn(Map.of("ABC-1", bare));
+
+    verify(commands, times(1)).execute("ABC-1", TaskAction.DEPLOY);
+  }
+
+  @Test
+  void leavesApprovedTaskAloneWhileItsChecksRun() {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withReviewing(
+                    new ConfigFile.Reviewing(
+                        null, null, null, new ConfigFile.DeployConfig(true, null))));
+    TaskState running =
+        TaskState.builder("demo", "/wt", TaskStatus.APPROVED).pipelineStatus("running").build();
+    state.putTask("ABC-1", running);
+
+    job.runOn(Map.of("ABC-1", running));
 
     verify(commands, never()).execute(anyString(), any());
   }

@@ -29,7 +29,9 @@ class MovePhaseTest {
         Move.forTask(
             rules,
             status,
-            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            Facts.defaults()
+                .withDelivery(
+                    Facts.Delivery.defaults().withHasReviewRequest(true).withChecksGreen(true)),
             RoundState.NONE,
             false);
 
@@ -76,12 +78,43 @@ class MovePhaseTest {
   }
 
   @Test
+  void waitsOnTheChecksWithoutBadgeWhenApprovedBeforeTheyReadGreen() {
+    Move move =
+        Move.forTask(
+            rules,
+            TaskStatus.APPROVED,
+            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            RoundState.NONE,
+            false);
+
+    assertThat(move.owner()).isEqualTo(Owner.CI);
+    assertThat(move.hint()).contains("checks to read green");
+  }
+
+  @Test
+  void offersToReadTheChecksWhenApprovedBeforeGreenAndNothingPollsTheHost() {
+    Move move =
+        Move.forTask(
+            rules,
+            TaskStatus.APPROVED,
+            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            RoundState.NONE,
+            false,
+            AutoReviewWatch.windowElapsed(24));
+
+    assertThat(move.ask()).isEqualTo("you can read the checks");
+    assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
+  }
+
+  @Test
   void waitsOnTheReviewerAfterCleanRoundThatNobodyHasApprovedYet() {
     Move move =
         Move.forTask(
             rules,
             TaskStatus.REVIEWED,
-            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            Facts.defaults()
+                .withDelivery(
+                    Facts.Delivery.defaults().withHasReviewRequest(true).withChecksGreen(true)),
             RoundState.NONE,
             false,
             AutoReviewWatch.watching(60_000));
@@ -216,7 +249,10 @@ class MovePhaseTest {
                     rules,
                     status,
                     Facts.defaults()
-                        .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(hasRequest)),
+                        .withDelivery(
+                            Facts.Delivery.defaults()
+                                .withHasReviewRequest(hasRequest)
+                                .withChecksGreen(true)),
                     RoundState.NONE,
                     false)
                 .primary())

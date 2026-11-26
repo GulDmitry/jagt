@@ -420,7 +420,10 @@ class TaskChartTest {
     Facts facts =
         Facts.defaults()
             .withDelivery(
-                Facts.Delivery.defaults().withHasReviewRequest(true).withLiveDeploy(true));
+                Facts.Delivery.defaults()
+                    .withHasReviewRequest(true)
+                    .withLiveDeploy(true)
+                    .withChecksGreen(true));
     FlowRules rules = new FlowRules(noRole);
 
     assertThat(rules.allows(TaskStatus.IN_PROGRESS, TaskAction.SHIP, facts)).isTrue();

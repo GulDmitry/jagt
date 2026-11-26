@@ -116,30 +116,19 @@ public record Move(
     }
     boolean hasReviewRequest = facts.delivery().hasReviewRequest();
     boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
-    Owner owner =
-        ownerOf(
-            status,
-            hasReviewRequest,
-            round,
-            agentSilent,
-            watch.stopped(),
-            facts.reach().requireApproval());
+    Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped(), facts);
     Attention attention = attentionOf(owner, status, round, polled);
     return new Move(
         phaseOf(status),
         owner,
         attention,
-        ask(status, hasReviewRequest, round, agentSilent, attention),
+        ask(status, hasReviewRequest, round, agentSilent, attention, checksPending(facts)),
         rules.allowed(status, facts),
-        revertLeads(status, facts, primaryOf(status, hasReviewRequest, round, polled)),
-        hint(
+        revertLeads(
             status,
-            hasReviewRequest,
-            round,
-            agentSilent,
-            polled,
-            facts.delivery().revertConflict(),
-            facts.reach().requireApproval()));
+            facts,
+            primaryOf(status, hasReviewRequest, round, polled, checksPending(facts))),
+        hint(status, hasReviewRequest, round, agentSilent, polled, facts));
   }
 
   private static Move arbiterDecidesStop(FlowRules rules, TaskStatus status, Facts facts) {
@@ -190,16 +179,16 @@ public record Move(
       RoundState round,
       boolean agentSilent,
       boolean pollStopped,
-      boolean requireApproval) {
+      Facts facts) {
     if (arbiterReading(status, round) || Checkers.reading(round.checkers()).isPresent()) {
       return Owner.AGENT;
     }
     // ASKING IS STOPPING, whatever status it was asked from: the session waits until its question
     // is answered.
     if (asking(status, round)) {
-      return turnOf(status, round, requireApproval);
+      return turnOf(status, round, facts);
     }
-    Owner owner = waitingOn(status, hasReviewRequest, round, requireApproval);
+    Owner owner = waitingOn(status, hasReviewRequest, round, facts);
     if (owner == Owner.AGENT && agentSilent && !FlowRules.awaitingVerification(status)) {
       return Owner.YOU;
     }
@@ -209,7 +198,7 @@ public record Move(
 
   /** Whose turn a status ALONE means. */
   public static Owner ownerOf(TaskStatus status) {
-    return turnOf(status, RoundState.NONE, false);
+    return turnOf(status, RoundState.NONE, Facts.defaults());
   }
 
   private static Attention attentionOf(
@@ -237,16 +226,21 @@ public record Move(
       boolean hasReviewRequest,
       RoundState round,
       boolean agentSilent,
-      Attention attention) {
+      Attention attention,
+      boolean checksPending) {
     if (attention == Attention.NONE) {
       return null;
     }
-    String act = act(status, hasReviewRequest, round, agentSilent);
+    String act = act(status, hasReviewRequest, round, agentSilent, checksPending);
     return attention == Attention.OPTIONAL ? "you can " + act : act;
   }
 
   private static @Nullable String act(
-      TaskStatus status, boolean hasReviewRequest, RoundState round, boolean agentSilent) {
+      TaskStatus status,
+      boolean hasReviewRequest,
+      RoundState round,
+      boolean agentSilent,
+      boolean checksPending) {
     if (asking(status, round)) {
       // A round already back is READ, not answered: the session that asked it has finished the
       // round.
@@ -255,11 +249,11 @@ public record Move(
     if (ownerOf(status) == Owner.AGENT && agentSilent) {
       return "check the stopped session";
     }
-    return actOf(status, hasReviewRequest, round);
+    return actOf(status, hasReviewRequest, round, checksPending);
   }
 
   private static @Nullable String actOf(
-      TaskStatus status, boolean hasReviewRequest, RoundState round) {
+      TaskStatus status, boolean hasReviewRequest, RoundState round, boolean checksPending) {
     return switch (status) {
       case REVIEW_PENDING -> reviewPendingAct(hasReviewRequest, round);
       case CI_POLLING -> hasReviewRequest ? "read the review" : "open the Session tab";
@@ -268,12 +262,19 @@ public record Move(
       // REVIEWED is already read: nothing unresolved and the checks green, so only the approval is
       // missing.
       case REVIEWED -> hasReviewRequest ? "check for the approval" : "close the task";
-      case APPROVED -> hasReviewRequest ? "deploy it" : "close the task";
+      case APPROVED -> approvedAct(hasReviewRequest, checksPending);
       case DEPLOY_CONFLICT -> "resolve the conflict";
       case PLAN_PENDING -> "read the plan";
       // Unreachable: both ways an agent gives these up are answered above.
       case NEW, IN_PROGRESS, VERIFYING, SHIPPING, DEPLOYED, DONE -> null;
     };
+  }
+
+  private static String approvedAct(boolean hasReviewRequest, boolean checksPending) {
+    if (!hasReviewRequest) {
+      return "close the task";
+    }
+    return checksPending ? "read the checks" : "deploy it";
   }
 
   private static String reviewPendingAct(boolean hasReviewRequest, RoundState round) {
@@ -288,7 +289,7 @@ public record Move(
 
   /** Whose turn it is before liveness and the poller are taken into account. */
   private static Owner waitingOn(
-      TaskStatus status, boolean hasReviewRequest, RoundState round, boolean requireApproval) {
+      TaskStatus status, boolean hasReviewRequest, RoundState round, Facts facts) {
     // The only move left hands the same threads back, so the wait belongs to whoever writes the
     // next comment.
     if (status == TaskStatus.REVIEW_PENDING
@@ -304,10 +305,10 @@ public record Move(
     if (status == TaskStatus.REVIEW_PENDING && round.report() == AgentReport.NO_CHANGES) {
       return Owner.YOU;
     }
-    return turnOf(status, round, requireApproval);
+    return turnOf(status, round, facts);
   }
 
-  private static Owner turnOf(TaskStatus status, RoundState round, boolean requireApproval) {
+  private static Owner turnOf(TaskStatus status, RoundState round, Facts facts) {
     return Owner.of(
         Turns.next(
             status,
@@ -315,7 +316,18 @@ public record Move(
             StopHold.NONE,
             round.checkers(),
             round.arbiter(),
-            requireApproval));
+            facts.reach().requireApproval(),
+            checksPending(facts)));
+  }
+
+  private static String approvedHint(Facts facts) {
+    return checksPending(facts)
+        ? "approved: deploy waits for the checks to read green on the head"
+        : "approved: deploy or done";
+  }
+
+  private static boolean checksPending(Facts facts) {
+    return facts.delivery().hasReviewRequest() && !facts.delivery().checksGreen();
   }
 
   private static boolean arbiterReading(TaskStatus status, RoundState round) {
@@ -344,7 +356,11 @@ public record Move(
   }
 
   private static @Nullable TaskAction primaryOf(
-      TaskStatus status, boolean hasReviewRequest, RoundState round, boolean polled) {
+      TaskStatus status,
+      boolean hasReviewRequest,
+      RoundState round,
+      boolean polled,
+      boolean checksPending) {
     // The answer is what unblocks the session, whatever state-changing verb the status would
     // advise.
     if (asking(status, round)) {
@@ -353,7 +369,8 @@ public record Move(
     if (arbiterReading(status, round)) {
       return null;
     }
-    return primaryOf(status, hasReviewRequest, round.report(), round.draftedReplies(), polled);
+    return primaryOf(
+        status, hasReviewRequest, round.report(), round.draftedReplies(), polled, checksPending);
   }
 
   private static @Nullable TaskAction primaryOf(
@@ -361,14 +378,15 @@ public record Move(
       boolean hasReviewRequest,
       AgentReport report,
       boolean draftedReplies,
-      boolean polled) {
+      boolean polled,
+      boolean checksPending) {
     return switch (status) {
       case NEW, PLAN_PENDING, IN_PROGRESS, VERIFYING, SHIPPING -> TaskAction.FOCUS;
       case REVIEW_PENDING -> reviewPendingPrimary(hasReviewRequest, report, draftedReplies, polled);
       case CI_POLLING, CI_FAILED -> hasReviewRequest ? TaskAction.SWEEP : TaskAction.FOCUS;
       case REVIEWED -> reviewedPrimary(hasReviewRequest, polled);
       // With no request there is nothing to land.
-      case APPROVED -> hasReviewRequest ? TaskAction.DEPLOY : TaskAction.DONE;
+      case APPROVED -> approvedPrimary(hasReviewRequest, checksPending);
       case DEPLOY_CONFLICT -> TaskAction.DEPLOY;
       case DEPLOYED -> TaskAction.DONE;
       // Not DONE: something was rolled back, so the expected next move is a fix, not a close.
@@ -391,6 +409,13 @@ public record Move(
     };
   }
 
+  private static TaskAction approvedPrimary(boolean hasReviewRequest, boolean checksPending) {
+    if (!hasReviewRequest) {
+      return TaskAction.DONE;
+    }
+    return checksPending ? TaskAction.SWEEP : TaskAction.DEPLOY;
+  }
+
   // Nothing is highlighted while a poller watches for the approval: a highlight would read as
   // approved.
   private static @Nullable TaskAction reviewedPrimary(boolean hasReviewRequest, boolean polled) {
@@ -401,7 +426,7 @@ public record Move(
   }
 
   private static String askingHint(TaskStatus status, RoundState round) {
-    if (turnOf(status, round, false) == Owner.AGENT) {
+    if (turnOf(status, round, Facts.defaults()) == Owner.AGENT) {
       return "the Master is answering the session; no action required";
     }
     // At REVIEW_PENDING the round is already back, so the answer is followed by a ship.
@@ -417,8 +442,7 @@ public record Move(
       RoundState round,
       boolean agentSilent,
       boolean polled,
-      boolean revertConflict,
-      boolean requireApproval) {
+      Facts facts) {
     if (arbiterReading(status, round)) {
       return "the Master is reading this round; no action required";
     }
@@ -439,10 +463,10 @@ public record Move(
           hasReviewRequest
               ? "sweep relays the failure to the agent"
               : "no review request to read the failure from; see the Session tab";
-      case REVIEWED -> reviewedHint(hasReviewRequest, polled, requireApproval);
-      case APPROVED -> "approved: deploy or done";
+      case REVIEWED -> reviewedHint(hasReviewRequest, polled, facts.reach().requireApproval());
+      case APPROVED -> approvedHint(facts);
       case DEPLOY_CONFLICT ->
-          revertConflict
+          facts.delivery().revertConflict()
               ? "resolve the conflict in the revert worktree, git add, then revert"
               : "resolve the conflict in the deploy worktree, git add, then deploy";
       case DEPLOYED -> "done closes the task; ship again to deploy further changes";

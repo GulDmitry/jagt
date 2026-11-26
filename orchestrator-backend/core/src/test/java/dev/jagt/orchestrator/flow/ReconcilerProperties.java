@@ -87,9 +87,6 @@ class ReconcilerProperties {
     private static final Duration BEAT = Duration.ofMinutes(1);
     private static final int SHOWN = 5;
 
-    private static final Set<Pipeline> KNOWN_UNGREEN_DEPLOYS =
-        EnumSet.of(Pipeline.RUNNING, Pipeline.UNKNOWN);
-
     record World(
         Configuration chart, Pipeline checks, Pipeline deploy, Map<ProgressStep, Integer> beats) {
 
@@ -288,7 +285,8 @@ class ReconcilerProperties {
           none.withDelivery(
                   none.delivery()
                       .withHasReviewRequest(request != RequestPhase.NONE)
-                      .withRequestMerged(request == RequestPhase.MERGED))
+                      .withRequestMerged(request == RequestPhase.MERGED)
+                      .withChecksGreen(green(at)))
               .withHold(
                   none.hold()
                       .withStopped(stop != StopKind.NONE && stop != StopKind.PAUSE)
@@ -408,6 +406,10 @@ class ReconcilerProperties {
       return chart
           .chart()
           .takes(LIFECYCLE, at.chart(), facts(at, ActionOrigin.BOARD), new TaskMove.Offers(action));
+    }
+
+    private static boolean green(World at) {
+      return at.chart().get(CHECKS) == ChecksPhase.READ && at.checks() == Pipeline.GREEN;
     }
 
     private static boolean landingOwed(World at) {
@@ -539,15 +541,11 @@ class ReconcilerProperties {
                   && ran.action() == TaskAction.DEPLOY
                   && StatusSets.WAITING_FOR_A_DEPLOY.contains(at.status())
                   && pressed.status() != at.status();
-          if (deploys && !green(at) && !KNOWN_UNGREEN_DEPLOYS.contains(at.checks())) {
+          if (deploys && !green(at)) {
             model.violation(run, at, "S3 a deploy on facts not green", label());
           }
           return pressed;
         }
-      }
-
-      private static boolean green(World at) {
-        return at.chart().get(CHECKS) == ChecksPhase.READ && at.checks() == Pipeline.GREEN;
       }
 
       record ChecksSay(Pipeline said) implements Env {

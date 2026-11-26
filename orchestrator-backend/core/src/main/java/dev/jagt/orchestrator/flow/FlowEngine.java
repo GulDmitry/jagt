@@ -212,6 +212,7 @@ public class FlowEngine {
             .withLiveDeploy(Facts.deployLive(task))
             .withRequestMerged(task.requestsMerged())
             .withRevertConflict(Facts.revertConflicted(task))
+            .withChecksGreen(Facts.checksGreen(task))
             .withShippedWithoutRequest(sources.shippedWithoutRequest(task)),
         Facts.Hold.defaults()
             .withAgentLive(() -> sources.agentLive(taskId))

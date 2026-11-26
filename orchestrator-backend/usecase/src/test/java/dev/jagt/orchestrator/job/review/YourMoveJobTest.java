@@ -157,7 +157,12 @@ class YourMoveJobTest {
         "ABC-1", yourMoveTask().withStatus(TaskStatus.CI_POLLING).withMrUrl("http://mr/1").build());
     job.run();
     state.putTask(
-        "ABC-1", yourMoveTask().withStatus(TaskStatus.APPROVED).withMrUrl("http://mr/1").build());
+        "ABC-1",
+        yourMoveTask()
+            .withStatus(TaskStatus.APPROVED)
+            .withMrUrl("http://mr/1")
+            .withPipelineStatus("success")
+            .build());
 
     job.run();
     clock.advance(Duration.ofSeconds(10));
@@ -508,6 +513,7 @@ class YourMoveJobTest {
             .withWorktree(worktree)
             .withStatus(TaskStatus.APPROVED)
             .withMrUrl("http://mr/1")
+            .withPipelineStatus("success")
             .build());
     job.run();
     clock.advance(Duration.ofSeconds(10));

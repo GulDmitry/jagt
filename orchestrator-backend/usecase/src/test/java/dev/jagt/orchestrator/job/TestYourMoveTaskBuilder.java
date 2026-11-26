@@ -13,11 +13,12 @@ public record TestYourMoveTaskBuilder(
     @Nullable String message,
     AgentReport report,
     @Nullable String mrUrl,
-    @Nullable String repoRequest) {
+    @Nullable String repoRequest,
+    @Nullable String pipelineStatus) {
 
   public static TestYourMoveTaskBuilder yourMoveTask() {
     return new TestYourMoveTaskBuilder(
-        "/wt", TaskStatus.IN_PROGRESS, null, AgentReport.PLAIN, null, null);
+        "/wt", TaskStatus.IN_PROGRESS, null, AgentReport.PLAIN, null, null, null);
   }
 
   public TaskState build() {
@@ -27,6 +28,7 @@ public record TestYourMoveTaskBuilder(
         .report(report)
         .mrUrl(mrUrl)
         .repoRequest(repoRequest)
+        .pipelineStatus(pipelineStatus)
         .build();
   }
 }

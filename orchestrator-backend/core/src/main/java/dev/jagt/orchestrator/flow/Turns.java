@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.Turn.Holder;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Who holds a task's turn once its status, its last report and whether jagt stopped it stand, under
@@ -51,6 +52,18 @@ public final class Turns {
       Map<String, CheckerPhase> checkers,
       Arbiter.Profile profile,
       boolean requireApproval) {
+    return next(status, report, stop, checkers, profile, requireApproval, false);
+  }
+
+  /** As above, where {@code checksPending} leaves a request waiting for a deploy on its checks. */
+  public static Holder next(
+      TaskStatus status,
+      AgentReport report,
+      StopHold stop,
+      Map<String, CheckerPhase> checkers,
+      Arbiter.Profile profile,
+      boolean requireApproval,
+      boolean checksPending) {
     if (FlowRules.closed(status)) {
       return Holder.NOBODY;
     }
@@ -67,14 +80,25 @@ public final class Turns {
     if (report.asks()) {
       return asked(report, profile);
     }
-    if (FlowRules.deployedByTheArbiter(status, requireApproval)
-        && profile.may(MasterRight.DEPLOY)) {
-      return Holder.ARBITER;
+    Holder deploy = deploying(status, profile, requireApproval, checksPending);
+    if (deploy != null) {
+      return deploy;
     }
     if (status == TaskStatus.REVIEW_PENDING && report == AgentReport.NO_CHANGES) {
       return Holder.CI;
     }
     return of(status);
+  }
+
+  private static @Nullable Holder deploying(
+      TaskStatus status, Arbiter.Profile profile, boolean requireApproval, boolean checksPending) {
+    if (checksPending && StatusSets.waitsForDeploy(status)) {
+      return Holder.CI;
+    }
+    return FlowRules.deployedByTheArbiter(status, requireApproval)
+            && profile.may(MasterRight.DEPLOY)
+        ? Holder.ARBITER
+        : null;
   }
 
   private static Holder asked(AgentReport report, Arbiter.Profile profile) {

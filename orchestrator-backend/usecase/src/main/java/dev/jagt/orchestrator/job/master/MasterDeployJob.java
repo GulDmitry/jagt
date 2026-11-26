@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.master;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.role.Arbiter;
@@ -61,6 +62,7 @@ public class MasterDeployJob implements TaskJob {
     // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a
     // restart.
     if (!profile.may(MasterRight.DEPLOY)
+        || !Facts.checksGreen(task)
         || !turns.next(task, profile).equals(Turn.Holder.ARBITER)
         || task.work().arbiterOrNone().pressedDeploy().equals(arrival)) {
       return;

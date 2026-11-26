@@ -41,17 +41,23 @@ class MasterDeployJobTest {
         arguments(
             "reviewed task where deploy is not kept by the human",
             masterDeployJob().withMine(List.of("revert")),
-            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build(),
+            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).pipelineStatus("success").build(),
             List.of(TaskAction.DEPLOY)),
+        arguments(
+            "reviewed task whose checks run again",
+            masterDeployJob().withMine(List.of("revert")),
+            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).pipelineStatus("running").build(),
+            List.of()),
         arguments(
             "task approved on the host before the job looked at it",
             masterDeployJob(),
-            TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build(),
+            TaskState.builder("demo", "/wt", TaskStatus.APPROVED).pipelineStatus("success").build(),
             List.of(TaskAction.DEPLOY)),
         arguments(
             "task where the master left an earlier step to the human",
             masterDeployJob(),
             TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
+                .pipelineStatus("success")
                 .build()
                 .withMaster(Master.defaults().withLeft("ship src/Login.java")),
             List.of(TaskAction.DEPLOY)),
@@ -63,7 +69,7 @@ class MasterDeployJobTest {
         arguments(
             "approved task where the host's approval is required",
             masterDeployJob().withRequireApproval(true),
-            TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build(),
+            TaskState.builder("demo", "/wt", TaskStatus.APPROVED).pipelineStatus("success").build(),
             List.of(TaskAction.DEPLOY)),
         arguments(
             "deploy the human kept",
@@ -115,7 +121,11 @@ class MasterDeployJobTest {
     stateService()
         .withRoot(root)
         .build()
-        .putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
+        .putTask(
+            "ABC-1",
+            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
+                .pipelineStatus("success")
+                .build());
     when(config.load()).thenReturn(masterDeployJob().config());
     StateService before = stateService().withRoot(root).build();
     masterDeployJob().build(config, press, before, new FakeClock()).runOn(before.tasks());
