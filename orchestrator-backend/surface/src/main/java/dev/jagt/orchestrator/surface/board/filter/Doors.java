@@ -19,9 +19,10 @@ import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 /**
- * The doors in front of the board's own chain, first match wins: what a page on another site or a
- * write without the page's Origin is refused at, then {@code /mcp} and {@code /api/agent/}. What
- * remains is the board, whose chain follows the {@code orchestrator.auth} mode.
+ * The doors in front of the board's own chain, first match wins: the OAuth paths jagt lacks, then
+ * what a page on another site or a write without the page's Origin is refused at, then {@code /mcp}
+ * and {@code /api/agent/}. What remains is the board, whose chain follows the {@code
+ * orchestrator.auth} mode.
  */
 @Slf4j
 @Configuration(proxyBeanMethods = false)
@@ -29,6 +30,18 @@ public class Doors {
 
   @Bean
   @Order(0)
+  SecurityFilterChain noOauthDoor(HttpSecurity http) throws Exception {
+    http.securityMatcher(NoOauth.PATHS)
+        .csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(requests -> requests.anyRequest().denyAll())
+        .exceptionHandling(handling -> handling.authenticationEntryPoint(new NoOauth()));
+    return http.build();
+  }
+
+  @Bean
+  @Order(1)
   SecurityFilterChain refusedDoor(HttpSecurity http, AuthProperties auth, BoardUrl boardUrl)
       throws Exception {
     NotThePage refused = new NotThePage(auth, boardUrl);
@@ -44,7 +57,7 @@ public class Doors {
   }
 
   @Bean
-  @Order(1)
+  @Order(2)
   SecurityFilterChain agentDoor(
       HttpSecurity http, AuthProperties auth, RootToken rootToken, BoardCsp csp) throws Exception {
     http.securityMatcher(AgentDoor.PATHS)
