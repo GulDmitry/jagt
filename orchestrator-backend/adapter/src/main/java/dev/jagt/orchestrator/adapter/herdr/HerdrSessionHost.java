@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.herdr;
 
-import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.adapter.terminal.AbstractSessionHost;
 import dev.jagt.orchestrator.adapter.terminal.ExitedWindow;
 import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
@@ -10,13 +9,11 @@ import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.OneLine;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -28,15 +25,13 @@ import tools.jackson.databind.JsonNode;
 @Service
 @ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
 @Slf4j
-public class HerdrSessionHost extends AbstractSessionHost {
+public class HerdrSessionHost extends AbstractSessionHost<String, HerdrReads.Window> {
 
   private static final String TYPED_LINE = "exec sh -c ";
 
   private final HerdrApi api;
   private final HerdrReads reads;
-  private final SessionEnvironment environment;
   private final TerminalDriver terminalDriver;
-  private final Object lock = new Object();
 
   public HerdrSessionHost(
       HerdrApi api,
@@ -44,64 +39,14 @@ public class HerdrSessionHost extends AbstractSessionHost {
       SessionEnvironment environment,
       TerminalDriver terminalDriver,
       AgentRuntime agentRuntime) {
-    super(agentRuntime);
+    super(agentRuntime, environment);
     this.api = api;
     this.reads = reads;
-    this.environment = environment;
     this.terminalDriver = terminalDriver;
   }
 
   @Override
-  protected void taskWindow(
-      String session,
-      String dedicatedTitle,
-      String taskId,
-      @Nullable String alias,
-      Path worktreePath,
-      String command) {
-    synchronized (lock) {
-      String workspace = ensureSession(session);
-      killTaskWindows(session, taskId);
-      HerdrReads.Window window =
-          newWindow(
-              session, workspace, taskId, worktreePath, environment.prefix(worktreePath) + command);
-      log.atInfo()
-          .setMessage("task window opened")
-          .addKeyValue("task", taskId)
-          .addKeyValue("window", window.tabId())
-          .log();
-      if (alias != null && !alias.isBlank()) {
-        api.call(session, "pane.rename", Map.of("pane_id", window.paneId(), "label", alias));
-      }
-      ensureViewer(session, dedicatedTitle);
-    }
-  }
-
-  @Override
-  public void openCommandWindow(
-      String session, String dedicatedTitle, String name, List<String> command) {
-    List<String> resolved = new ArrayList<>(command);
-    resolved.set(0, Executables.resolve(command.getFirst()));
-    shown(session, dedicatedTitle, name, environment.viewerDir(), ShellWords.joined(resolved));
-  }
-
-  @Override
-  public void openShellWindow(
-      String session, String dedicatedTitle, String name, Path cwd, String command) {
-    shown(session, dedicatedTitle, name, cwd, command);
-  }
-
-  private void shown(String session, String dedicatedTitle, String name, Path cwd, String line) {
-    synchronized (lock) {
-      String workspace = ensureSession(session);
-      killTaskWindows(session, name);
-      HerdrReads.Window window = newWindow(session, workspace, name, cwd, line);
-      api.call(session, "tab.focus", Map.of("tab_id", window.tabId()));
-      ensureViewer(session, dedicatedTitle);
-    }
-  }
-
-  private HerdrReads.Window newWindow(
+  protected HerdrReads.Window newWindow(
       String session, String workspace, String name, Path cwd, String command) {
     JsonNode created =
         api.call(
@@ -130,19 +75,6 @@ public class HerdrSessionHost extends AbstractSessionHost {
     }
     reads.started(window);
     return window;
-  }
-
-  @Override
-  public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId) {
-    synchronized (lock) {
-      Optional<HerdrReads.Window> window = find(session, taskId);
-      if (window.isEmpty()) {
-        return false;
-      }
-      api.call(session, "tab.focus", Map.of("tab_id", window.get().tabId()));
-      ensureViewer(session, dedicatedTitle);
-      return true;
-    }
   }
 
   @Override
@@ -318,7 +250,23 @@ public class HerdrSessionHost extends AbstractSessionHost {
     }
   }
 
-  private Optional<HerdrReads.Window> find(String session, String taskId) {
+  @Override
+  protected void select(String session, HerdrReads.Window window) {
+    api.call(session, "tab.focus", Map.of("tab_id", window.tabId()));
+  }
+
+  @Override
+  protected void label(String session, HerdrReads.Window window, String alias) {
+    api.call(session, "pane.rename", Map.of("pane_id", window.paneId(), "label", alias));
+  }
+
+  @Override
+  protected String windowId(HerdrReads.Window window) {
+    return window.tabId();
+  }
+
+  @Override
+  protected Optional<HerdrReads.Window> find(String session, String taskId) {
     return reads.windows(session).stream()
         .filter(window -> window.name().equals(taskId))
         .findFirst();
@@ -350,7 +298,8 @@ public class HerdrSessionHost extends AbstractSessionHost {
     return reads.starting(window);
   }
 
-  private String ensureSession(String session) {
+  @Override
+  protected String ensureSession(String session) {
     api.ensureServer(session);
     return reads
         .workspaceId(session)
@@ -369,7 +318,8 @@ public class HerdrSessionHost extends AbstractSessionHost {
         });
   }
 
-  private void ensureViewer(String session, String dedicatedTitle) {
+  @Override
+  protected void ensureViewer(String session, String dedicatedTitle) {
     if (!api.viewerAttached(session)) {
       terminalDriver.openViewer(
           api.attachCommand(session), dedicatedTitle, environment.viewerDir());

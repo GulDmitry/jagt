@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.tmux;
 
 import static dev.jagt.orchestrator.adapter.tmux.TestTmuxHostBuilder.tmuxHost;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -580,6 +581,16 @@ class TmuxSessionHostTest {
           assertThat(command).containsSequence("-n", "acceptance-alpha", "-c", "/ws");
           assertThat(command.getLast()).startsWith("agent 'p';");
         });
+  }
+
+  @Test
+  void opensShellWindowWhereTmuxRefusesToSelectIt() {
+    FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
+    processes.answering(new Processes.Result(1, "", "can't find window"), "select-window");
+    TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
+
+    assertThatCode(() -> host.openShellWindow("jagt", "jagt", "build", Path.of("/ws"), "make"))
+        .doesNotThrowAnyException();
   }
 
   @Test

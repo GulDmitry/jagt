@@ -1,18 +1,31 @@
 package dev.jagt.orchestrator.adapter.terminal;
 
+import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 
-/** What every session host does the same: names its session and launches or revives the agent. */
-public abstract class AbstractSessionHost implements SessionHost {
+/**
+ * What every session host does the same: names its session, launches or revives the agent, and
+ * shows a window in the order ensure session, replace, create, select, attach a viewer. {@code S}
+ * is what a host's ensured session hands back, {@code W} how it addresses a created window.
+ */
+@Slf4j
+public abstract class AbstractSessionHost<S, W> implements SessionHost {
 
+  protected final Object lock = new Object();
+  protected final SessionEnvironment environment;
   private final AgentRuntime agentRuntime;
 
-  protected AbstractSessionHost(AgentRuntime agentRuntime) {
+  protected AbstractSessionHost(AgentRuntime agentRuntime, SessionEnvironment environment) {
     this.agentRuntime = agentRuntime;
+    this.environment = environment;
   }
 
   @Override
@@ -64,15 +77,83 @@ public abstract class AbstractSessionHost implements SessionHost {
       Path worktreePath,
       String command) {
     agentRuntime.beforeLaunch(worktreePath);
-    taskWindow(session, dedicatedTitle, taskId, alias, worktreePath, command);
+    synchronized (lock) {
+      S ensured = ensureSession(session);
+      killTaskWindows(session, taskId);
+      W window =
+          newWindow(
+              session, ensured, taskId, worktreePath, environment.prefix(worktreePath) + command);
+      log.atInfo()
+          .setMessage("task window opened")
+          .addKeyValue("task", taskId)
+          .addKeyValue("window", windowId(window))
+          .log();
+      if (alias != null && !alias.isBlank()) {
+        label(session, window, alias);
+      }
+      ensureViewer(session, dedicatedTitle);
+    }
   }
 
-  /** Replaces the task's window with one running {@code command}, and shows it to the human. */
-  protected abstract void taskWindow(
-      String session,
-      String dedicatedTitle,
-      String taskId,
-      @Nullable String alias,
-      Path worktreePath,
-      String command);
+  @Override
+  public void openCommandWindow(
+      String session, String dedicatedTitle, String name, List<String> command) {
+    List<String> resolved = new ArrayList<>(command);
+    resolved.set(0, Executables.resolve(command.getFirst()));
+    shown(session, dedicatedTitle, name, environment.viewerDir(), ShellWords.joined(resolved));
+  }
+
+  @Override
+  public void openShellWindow(
+      String session, String dedicatedTitle, String name, Path cwd, String command) {
+    shown(session, dedicatedTitle, name, cwd, command);
+  }
+
+  private void shown(String session, String dedicatedTitle, String name, Path cwd, String line) {
+    synchronized (lock) {
+      S ensured = ensureSession(session);
+      killTaskWindows(session, name);
+      show(session, newWindow(session, ensured, name, cwd, line));
+      ensureViewer(session, dedicatedTitle);
+    }
+  }
+
+  @Override
+  public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId) {
+    synchronized (lock) {
+      Optional<W> window = find(session, taskId);
+      if (window.isEmpty()) {
+        return false;
+      }
+      select(session, window.get());
+      ensureViewer(session, dedicatedTitle);
+      return true;
+    }
+  }
+
+  /** Makes sure the session exists, with whatever options it needs. */
+  protected abstract S ensureSession(String session);
+
+  /** Creates a window named {@code name} running {@code command} in {@code cwd}, unshown. */
+  protected abstract W newWindow(String session, S ensured, String name, Path cwd, String command);
+
+  /** The window of that name, empty when there is none. */
+  protected abstract Optional<W> find(String session, String taskId);
+
+  /** Brings the window to whoever is attached; a failure throws. */
+  protected abstract void select(String session, W window);
+
+  /** Brings a window just opened for a command to whoever is attached; selects it by default. */
+  protected void show(String session, W window) {
+    select(session, window);
+  }
+
+  /** Attaches a viewer unless a human is already looking. */
+  protected abstract void ensureViewer(String session, String dedicatedTitle);
+
+  /** Shows the alias beside the window's name, which stays the task's identity. */
+  protected abstract void label(String session, W window, String alias);
+
+  /** What a log line calls the window. */
+  protected abstract String windowId(W window);
 }

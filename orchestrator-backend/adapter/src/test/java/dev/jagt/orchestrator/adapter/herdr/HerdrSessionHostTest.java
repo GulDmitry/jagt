@@ -327,6 +327,15 @@ class HerdrSessionHostTest {
   }
 
   @Test
+  void opensNoShellWindowWhereTheServerRefusesToFocusIt() {
+    herdr.refusing("tab.focus", "tab_not_found");
+
+    assertThatThrownBy(
+            () -> host.openShellWindow("jagt", "agents", "build", Path.of("/tmp"), "make"))
+        .isInstanceOf(HerdrApi.Failed.class);
+  }
+
+  @Test
   void reportsMissingWhereThePaneClosedBetweenListingAndReading() {
     herdr.withTab("ABC-1", true).refusing("pane.process_info", "pane_not_found");
 

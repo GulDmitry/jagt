@@ -1,21 +1,17 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
-import dev.jagt.orchestrator.adapter.host.Executables;
 import dev.jagt.orchestrator.adapter.terminal.AbstractSessionHost;
 import dev.jagt.orchestrator.adapter.terminal.ExitedWindow;
 import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
-import dev.jagt.orchestrator.adapter.terminal.ShellWords;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +21,7 @@ import org.springframework.stereotype.Service;
     havingValue = "tmux",
     matchIfMissing = true)
 @Slf4j
-public class TmuxSessionHost extends AbstractSessionHost {
+public class TmuxSessionHost extends AbstractSessionHost<String, String> {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(20);
 
@@ -48,9 +44,7 @@ public class TmuxSessionHost extends AbstractSessionHost {
 
   private final Processes processRunner;
   private final TmuxReads reads;
-  private final SessionEnvironment environment;
   private final TerminalDriver terminalDriver;
-  private final Object lock = new Object();
 
   public TmuxSessionHost(
       Processes processRunner,
@@ -58,10 +52,9 @@ public class TmuxSessionHost extends AbstractSessionHost {
       SessionEnvironment environment,
       TerminalDriver terminalDriver,
       AgentRuntime agentRuntime) {
-    super(agentRuntime);
+    super(agentRuntime, environment);
     this.processRunner = processRunner;
     this.reads = reads;
-    this.environment = environment;
     this.terminalDriver = terminalDriver;
   }
 
@@ -80,61 +73,10 @@ public class TmuxSessionHost extends AbstractSessionHost {
         : Optional.empty();
   }
 
-  @Override
-  protected void taskWindow(
-      String session,
-      String dedicatedTitle,
-      String taskId,
-      @Nullable String alias,
-      Path worktreePath,
-      String command) {
-    synchronized (lock) {
-      ensureSession(session);
-      // One task = one window: respawns must never accumulate duplicates.
-      killTaskWindows(session, taskId);
-      String windowId =
-          newWindow(session, taskId, worktreePath, environment.prefix(worktreePath) + command);
-      log.atInfo()
-          .setMessage("task window opened")
-          .addKeyValue("task", taskId)
-          .addKeyValue("window", windowId)
-          .log();
-      // The window name must stay the taskId; the alias rides in a window user-option.
-      if (alias != null && !alias.isBlank()) {
-        processRunner.run(
-            null, TIMEOUT, tmux("set-option", "-w", "-t", windowId, "@jagt_alias", alias));
-      }
-      ensureViewer(session, dedicatedTitle);
-    }
-  }
-
-  @Override
-  public void openCommandWindow(
-      String session, String dedicatedTitle, String name, List<String> command) {
-    List<String> resolved = new ArrayList<>(command);
-    resolved.set(0, Executables.resolve(command.getFirst()));
-    String line = ShellWords.joined(resolved);
-    shown(session, dedicatedTitle, name, environment.viewerDir(), line);
-  }
-
-  @Override
-  public void openShellWindow(
-      String session, String dedicatedTitle, String name, Path cwd, String command) {
-    shown(session, dedicatedTitle, name, cwd, command);
-  }
-
-  private void shown(String session, String dedicatedTitle, String name, Path cwd, String line) {
-    synchronized (lock) {
-      ensureSession(session);
-      killTaskWindows(session, name);
-      String windowId = newWindow(session, name, cwd, line);
-      processRunner.run(null, TIMEOUT, tmux("select-window", "-t", windowId));
-      ensureViewer(session, dedicatedTitle);
-    }
-  }
-
   /** The window id, which is the only target immune to a name collision on a respawn. */
-  private String newWindow(String session, String name, Path cwd, String command) {
+  @Override
+  protected String newWindow(
+      String session, String ensured, String name, Path cwd, String command) {
     String ran = ExitedWindow.shellLine(command);
     String windowId =
         processRunner
@@ -169,21 +111,6 @@ public class TmuxSessionHost extends AbstractSessionHost {
           .log();
     }
     return windowId;
-  }
-
-  @Override
-  public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId) {
-    synchronized (lock) {
-      var windowId = findWindowId(session, taskId);
-      if (windowId.isEmpty()) {
-        return false;
-      }
-      processRunner
-          .run(null, TIMEOUT, tmux("select-window", "-t", windowId.get()))
-          .expectSuccess("tmux select-window " + windowId.get());
-      ensureViewer(session, dedicatedTitle);
-      return true;
-    }
   }
 
   /**
@@ -224,7 +151,7 @@ public class TmuxSessionHost extends AbstractSessionHost {
   @Override
   public Optional<String> screenOf(String session, String taskId) {
     synchronized (lock) {
-      var windowId = findWindowId(session, taskId);
+      var windowId = find(session, taskId);
       if (windowId.isEmpty()) {
         return Optional.empty();
       }
@@ -237,7 +164,7 @@ public class TmuxSessionHost extends AbstractSessionHost {
   @Override
   public boolean nudgeTaskWindow(String session, String taskId, String message) {
     synchronized (lock) {
-      var windowId = findWindowId(session, taskId);
+      var windowId = find(session, taskId);
       if (windowId.isEmpty()) {
         return false;
       }
@@ -252,7 +179,7 @@ public class TmuxSessionHost extends AbstractSessionHost {
   @Override
   public boolean submitTaskWindow(String session, String taskId) {
     synchronized (lock) {
-      var windowId = findWindowId(session, taskId);
+      var windowId = find(session, taskId);
       windowId.ifPresent(id -> enter(id, taskId));
       return windowId.isPresent();
     }
@@ -261,7 +188,7 @@ public class TmuxSessionHost extends AbstractSessionHost {
   @Override
   public boolean pressTaskWindow(String session, String taskId, Key key) {
     synchronized (lock) {
-      var windowId = findWindowId(session, taskId);
+      var windowId = find(session, taskId);
       if (windowId.isEmpty()) {
         return false;
       }
@@ -348,8 +275,32 @@ public class TmuxSessionHost extends AbstractSessionHost {
     }
   }
 
-  private Optional<String> findWindowId(String session, String taskId) {
+  @Override
+  protected Optional<String> find(String session, String taskId) {
     return findWindow(session, taskId).map(TmuxReads.Window::id);
+  }
+
+  @Override
+  protected String windowId(String window) {
+    return window;
+  }
+
+  @Override
+  protected void select(String session, String windowId) {
+    processRunner
+        .run(null, TIMEOUT, tmux("select-window", "-t", windowId))
+        .expectSuccess("tmux select-window " + windowId);
+  }
+
+  @Override
+  protected void show(String session, String windowId) {
+    processRunner.run(null, TIMEOUT, tmux("select-window", "-t", windowId));
+  }
+
+  @Override
+  protected void label(String session, String windowId, String alias) {
+    processRunner.run(
+        null, TIMEOUT, tmux("set-option", "-w", "-t", windowId, "@jagt_alias", alias));
   }
 
   private Optional<TmuxReads.Window> findWindow(String session, String taskId) {
@@ -358,7 +309,8 @@ public class TmuxSessionHost extends AbstractSessionHost {
         .findFirst();
   }
 
-  private void ensureSession(String session) {
+  @Override
+  protected String ensureSession(String session) {
     var has = processRunner.run(null, TIMEOUT, tmux("has-session", "-t", "=" + session));
     if (has.exitCode() != 0) {
       processRunner
@@ -447,9 +399,11 @@ public class TmuxSessionHost extends AbstractSessionHost {
           .addKeyValue("cause", OneLine.clipped(options.stderr()))
           .log();
     }
+    return session;
   }
 
-  private void ensureViewer(String session, String dedicatedTitle) {
+  @Override
+  protected void ensureViewer(String session, String dedicatedTitle) {
     // A control client is no screen to look at.
     var clients =
         processRunner.run(
