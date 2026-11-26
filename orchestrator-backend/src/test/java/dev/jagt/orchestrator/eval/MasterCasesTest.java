@@ -13,7 +13,7 @@ class MasterCasesTest {
     var cases = MasterCases.all();
 
     assertThat(cases)
-        .hasSize(27)
+        .hasSize(29)
         .allSatisfy(
             loaded -> assertThat(loaded.expect().verdict() == null).isEqualTo(loaded.answers()));
   }
