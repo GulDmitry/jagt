@@ -77,13 +77,14 @@ Source: Cockburn, *Hexagonal Architecture* (2005).
 | adapter | the code that converts between a port and one technology |
 | ring | *jagt's own*: a Gradle module or package set at one distance from the centre ([`ARCHITECTURE.md`](../../ARCHITECTURE.md#the-rings)) |
 
-## Sagas
+## Sagas and control loops
 
-Source: Garcia-Molina, Salem, *Sagas* (1987).
+Sources: Garcia-Molina, Salem, *Sagas* (1987); the Kubernetes controller pattern.
 
 | term | definition |
 |------|------------|
 | saga | a long-lived transaction as a sequence of steps, each with a compensating step that undoes it |
+| reconciler | a control loop that reads the stored state each tick and alone decides the next move toward the goal; `supervisor` is `port/host/Supervisor`'s ([0260](../decisions/0260-one-reconciler-owns-the-progress-of-every-in-flight-step.md)) |
 
 ## Reach checks
 
