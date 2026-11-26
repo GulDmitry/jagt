@@ -31,7 +31,7 @@ class PendingStartChips implements HeaderChips {
         String.join(
             "\n", open.stream().map(start -> start.key() + ": " + instructions(start)).toList());
     return List.of(
-        new HeaderChip("start-interrupted", null, true, open.getFirst().startedAt(), detail));
+        new HeaderChip("start-interrupted", null, Kind.BAD, open.getFirst().startedAt(), detail));
   }
 
   private boolean hasTask(String key) {

@@ -55,11 +55,19 @@ function renderReach() {
       .join("\n") + `\n${t("header.reach.clears")}`;
 }
 
+/** @type {Record<import("../core/store.js").Chip["kind"], string>} */
+const kindClass = {
+  NOTE: "chip",
+  PAUSED: "chip paused",
+  STALLED: "chip stalled",
+  BAD: "chip bad",
+};
+
 /** @param {import("../core/store.js").Chip} one */
 const roleChip = (one) => {
   const node = make(
     one.verb ? "button" : "span",
-    one.verb || one.broken ? "chip stalled" : "chip",
+    kindClass[one.kind],
     t(one.key),
   );
   if (one.verb) node.dataset.verb = one.verb;

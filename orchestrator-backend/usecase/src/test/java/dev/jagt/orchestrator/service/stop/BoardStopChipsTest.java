@@ -4,6 +4,7 @@ import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchest
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.HeaderChips.Kind;
 import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ class BoardStopChipsTest {
     var chips = new BoardStopChips(new BoardStop(paths, new FakeClock())).chips();
 
     assertThat(chips)
-        .containsExactly(new HeaderChip("board-stopped", "unstop", false, 1000L, null));
+        .containsExactly(new HeaderChip("board-stopped", "unstop", Kind.PAUSED, 1000L, null));
   }
 
   @Test

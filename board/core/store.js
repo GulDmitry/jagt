@@ -25,7 +25,7 @@ import { bothNames } from "./format.js";
  * @typedef {{ id: string, label: string }} Phase
  * @typedef {{ said: string, fix: string[], retryAt?: number }} Reach
  * @typedef {{ failing?: number, count: number, nextRunAt?: number }} Jobs
- * @typedef {{ key: string, verb: string | null, broken: boolean, at: number | null, detail?: string }} Chip
+ * @typedef {{ key: string, verb: string | null, kind: "NOTE" | "PAUSED" | "STALLED" | "BAD", at: number | null, detail?: string }} Chip
  * @typedef {{ summary: string | null, enabled: boolean }} AutoReview
  * @typedef {{
  *   tasks: Task[], projects: string[], autoReview: AutoReview, jobs: Jobs | null, chips: Chip[], roleLogs: string[],

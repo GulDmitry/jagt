@@ -110,8 +110,10 @@ export const pageRows = () => [
     span("chip", t("header.acting")),
     make("button", "chip log on", t("legend.role")),
   ),
+  row("headerpaused", span("chip paused", t("board-stopped"))),
   row(
     "headerbroken",
+    span("chip bad", t("start-interrupted")),
     span("chip bad", t("offline")),
     span("chip bad", t("assistant")),
     span("chip bad", "code host CLI not logged in"),

@@ -465,6 +465,38 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
+  void drawsTheBoardTheHumanStoppedAsDashedPausedChip() throws Exception {
+    Files.writeString(root.resolve("board-stopped"), Long.toString(System.currentTimeMillis()));
+
+    Page page = openBoard();
+
+    assertThat(page.locator("#role-chips button.chip.paused")).hasText("‖ board stopped");
+  }
+
+  @Test
+  void drawsActJagtDroppedAsStalledChip() throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "brief");
+    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+
+    Page page = openBoard();
+
+    assertThat(page.locator("#role-chips button.chip.stalled")).hasText("■ act stopped");
+  }
+
+  @Test
+  void drawsStartCutShortAsBadChip() throws Exception {
+    Files.writeString(
+        root.resolve("pending-starts.json"),
+        "[{\"key\":\"ABC-42\",\"request\":{\"ref\":\"ABC-42\"},\"startedAt\":1000,"
+            + "\"placement\":\"PLACED\"}]");
+
+    Page page = openBoard();
+
+    assertThat(page.locator("#role-chips span.chip.bad")).hasText("start interrupted");
+  }
+
+  @Test
   void anOpenTipOnTheJobsChipFollowsItsCountdownThroughRepaint() {
     breakable.breakIt();
     long now = System.currentTimeMillis();

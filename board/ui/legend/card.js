@@ -94,9 +94,7 @@ export const cardRows = () => [
     "stalled",
     requestChip("mr-age stalled", `${t("request")} 9d`),
     aged("status stalled", "out for review", "9d"),
-    ...["act-stopped", "board-stopped", "start-interrupted"].map((k) =>
-      span("chip stalled", t(k)),
-    ),
+    span("chip stalled", t("act-stopped")),
   ),
   row(
     "detail",

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.role.HeaderChips.HeaderChip;
+import dev.jagt.orchestrator.service.role.HeaderChips.Kind;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.PendingStart.Placement;
@@ -38,7 +39,7 @@ class PendingStartChipsTest {
     assertThat(chips).hasSize(1);
     HeaderChip mark = chips.getFirst();
     assertThat(mark.key()).isEqualTo("start-interrupted");
-    assertThat(mark.broken()).isTrue();
+    assertThat(mark.kind()).isEqualTo(Kind.BAD);
     assertThat(mark.detail())
         .contains("ABC-42: ABC-42 tighten the parser")
         .contains("start-1: rename the widget");

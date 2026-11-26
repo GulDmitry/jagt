@@ -14,9 +14,13 @@ public interface HeaderChips {
    * where set, is appended to the hover.
    */
   record HeaderChip(
-      String key,
-      @Nullable String verb,
-      boolean broken,
-      @Nullable Long at,
-      @Nullable String detail) {}
+      String key, @Nullable String verb, Kind kind, @Nullable Long at, @Nullable String detail) {}
+
+  /** What the mark says: a plain note, a stop the human chose, a stop jagt made, or a failure. */
+  enum Kind {
+    NOTE,
+    PAUSED,
+    STALLED,
+    BAD
+  }
 }
