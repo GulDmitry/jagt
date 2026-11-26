@@ -239,6 +239,28 @@ class KindEngineTest {
   }
 
   @Test
+  void closeWaitsForTheNodeContainerToExitBeforeDeletingTheClusterAgain() {
+    boolean[] exited = {false};
+    StandShell.Runner shell =
+        (cwd, command, env) -> {
+          seen.add(command);
+          exited[0] |= command.containsAll(List.of("docker", "wait"));
+          boolean refused = command.contains("delete") && !exited[0];
+          return new StandShell.Result(
+              refused ? 1 : 0, command.contains("get") ? "jagt-stand-41-1" : "");
+        };
+
+    new KindEngine(
+            root, 9000, board, shell, (where, local) -> forwarding, manifest, Duration.ofMinutes(5))
+        .close();
+
+    assertThat(seen)
+        .contains(List.of("docker", "wait", "jagt-stand-41-1-control-plane"))
+        .last()
+        .isEqualTo(List.of("kind", "delete", "cluster", "--name", "jagt-stand-41-1"));
+  }
+
+  @Test
   void closeSucceedsWhenTheDeleteFailedButTheClusterIsGone() {
     StandShell.Runner shell =
         (cwd, command, env) -> new StandShell.Result(command.contains("delete") ? 1 : 0, "");

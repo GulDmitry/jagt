@@ -25,7 +25,6 @@ public final class KindEngine implements UnitEngine {
       List.of("jagt.yml", "password-hash", "fake-claude.sh", "origin.git");
   private static final Duration LONG = Duration.ofMinutes(10);
   private static final int DELETE_TRIES = 4;
-  private static final Duration DELETE_BACKOFF = Duration.ofSeconds(1);
   private static final Duration STARTUP = Duration.ofMinutes(5);
 
   private static final List<List<String>> PROBES =
@@ -265,7 +264,9 @@ public final class KindEngine implements UnitEngine {
   private StandShell.Result deleteCluster() {
     StandShell.Result deleted = run("kind", "delete", "cluster", "--name", cluster());
     for (int attempt = 1; deleted.exit() != 0 && attempt < DELETE_TRIES; attempt++) {
-      JagtProcess.pause(DELETE_BACKOFF);
+      // Docker stops waiting for a killed node's exit after about two seconds; a loaded one exits
+      // later.
+      run("docker", "wait", cluster() + "-control-plane");
       deleted = run("kind", "delete", "cluster", "--name", cluster());
     }
     return deleted;
