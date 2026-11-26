@@ -102,6 +102,8 @@ public final class RoleModules {
               "flow.Turns",
               "flow.TaskChart",
               "flow.Phases",
+              "flow.Reconciler",
+              "flow.StepPolicy",
               "flow.TaskMove",
               "flow.TaskEffect",
               "flow.session.StopHold",

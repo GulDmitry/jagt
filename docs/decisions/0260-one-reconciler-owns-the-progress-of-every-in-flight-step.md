@@ -18,7 +18,7 @@ Accepted 2026-11-26.
   returns STAY, LAND, RETRY, RESTART or STOP per task; "supervisor" is `port/host/Supervisor`'s (0161). Every other writer (sessions, sweep, watchdog,
   Master answers, deploy reads) records a fact or a beat.
 - **Input is stored facts alone**: the chart configuration, its regions' stamps, one `Beat(step, since, lastAt, attempts)` per step. A beat is written
-  through the reducer, so a restart changes no decision. A step is derived from facts, never stored: sealed `flow/Step`, one `StepPolicy` row each.
+  through the reducer, so a restart changes no decision. A step is derived, never stored: sealed `flow/ProgressStep`, a `StepPolicy` row each.
 - **The tick is door two** (`FlowDoorsFitness`): LAND is `FlowReports.tick`, eventless guarded edges over the CHECKS, APPROVAL, REQUEST, DEPLOY
   regions. A press stays door one; a reported status is a claim.
 
@@ -26,7 +26,7 @@ Accepted 2026-11-26.
 |------------------|-------------------------------------------|
 | SESSION_TURN (turn open, session holds it) | nudge once · relay to a woken or fresh session once per generation · SILENT |
 | VERIFICATION (status VERIFYING) | rerun a lost run · none · hand-back to the human naming the cause |
-| HOST_READ (request open) | reread · none · WAIT past `checksMinutes`; red keeps the loop guards |
+| HOST_READ (request open) | reread · none · CHECKS past `checksMinutes`, ending on the read (WAIT froze it: S3); red keeps the loop guards |
 | INFRA_RERUN (`InfraPhase` armed) | `InfraRetries` budget · none · INFRA |
 | JUDGE_ROUND (a claim open) | `undoClaim`, claim once · none · turn to the human |
 | DEPLOY (in flight until the post-merge pipeline and the acceptance check are green; the session may not leave) | finish from recorded steps; red once · none · DEPLOY_CONFLICT or DEPLOY_UNREAD |

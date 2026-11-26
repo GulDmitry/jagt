@@ -85,6 +85,7 @@ Method <dev.jagt.orchestrator.flow.Composition.builtIn()> does not satisfy be ca
 Method <dev.jagt.orchestrator.flow.FlowEngine.run(java.lang.String, dev.jagt.orchestrator.flow.capability.TaskAction)> does not satisfy be called from main in (FlowEngine.java:26)
 Method <dev.jagt.orchestrator.flow.FlowReports.report(java.lang.String, dev.jagt.orchestrator.task.TaskStatus, java.lang.String)> does not satisfy be called from main in (FlowReports.java:46)
 Method <dev.jagt.orchestrator.flow.FlowRules.reported(dev.jagt.orchestrator.task.TaskStatus, dev.jagt.orchestrator.task.TaskStatus)> does not satisfy be called from main in (FlowRules.java:130)
+Method <dev.jagt.orchestrator.flow.Reconciler.decide(dev.jagt.orchestrator.flow.Reconciler$Stored, long)> does not satisfy be called from main in (Reconciler.java:58)
 Method <dev.jagt.orchestrator.flow.TaskChart.chart()> does not satisfy be called from main in (TaskChart.java:137)
 Method <dev.jagt.orchestrator.flow.TaskMove$Checked.role()> does not satisfy be called from main in (TaskMove.java:0)
 Method <dev.jagt.orchestrator.flow.capability.Facts.withHold(dev.jagt.orchestrator.flow.capability.Facts$Hold)> does not satisfy be called from main in (Facts.java:13)

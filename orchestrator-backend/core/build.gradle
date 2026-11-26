@@ -12,6 +12,7 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation "net.jqwik:jqwik:${jqwikVersion}"
     testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.jgrapht:jgrapht-core:1.5.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
