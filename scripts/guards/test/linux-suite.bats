@@ -159,10 +159,18 @@ EOF
   grep -qE 'while ! \{[[:space:]]+xargs -rn1 </sys/fs/cgroup/cgroup.procs >/sys/fs/cgroup/init/cgroup.procs \|\| :.*cgroup.subtree_control[[:space:]]+\}; do[[:space:]]+true[[:space:]]+done.*dockerd >/tmp/dockerd.log' "$DOCKER_LOG"
 }
 
-@test "the stand's evidence is copied out of the container's build volumes to the host" {
-  run "$script" stand-kind
-  grep -q -- '-v .*/stand/build:/evidence ' "$DOCKER_LOG"
-  grep -q 'stand/failed test-results/standTest' "$DOCKER_LOG"
+@test "each job's test reports and the stand's evidence are copied out of the container's build volumes to its own host folder" {
+  run "$script" heavy stand-kind
+  grep -q -- '-v .*/orchestrator-backend/build/linux-suite/heavy:/evidence ' "$DOCKER_LOG"
+  grep -q -- '-v .*/orchestrator-backend/build/linux-suite/stand-kind:/evidence ' "$DOCKER_LOG"
+  grep -q 'for kept in test-results reports/tests stand/failed' "$DOCKER_LOG"
+  grep -q 'for log in /tmp/jagt-\*.log' "$DOCKER_LOG"
+}
+
+@test "every workflow uploads a container job's reports from the folder the job copies them to" {
+  workflows="$BATS_TEST_DIRNAME/../../../.github/workflows"
+  [ "$(grep -h -A6 'upload-artifact' "$workflows/ci.yml" "$workflows/nightly.yml" | grep -c 'path: orchestrator-backend/build/linux-suite$')" -eq 6 ]
+  ! grep -h -A6 'upload-artifact' "$workflows/ci.yml" "$workflows/nightly.yml" | grep -qE '^ +(orchestrator-backend/(stand/)?build/(reports|test-results|stand)|/tmp/)'
 }
 
 # bats test_tags=exit:2

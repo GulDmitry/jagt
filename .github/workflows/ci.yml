@@ -61,7 +61,7 @@ jobs:
         with:
           name: unit-test-report
           retention-days: 14
-          path: orchestrator-backend/build/reports/tests/test
+          path: orchestrator-backend/build/linux-suite
 
   heavy:
     name: heavy suites
@@ -87,17 +87,7 @@ jobs:
         with:
           name: heavy-test-reports
           retention-days: 14
-          path: |
-            orchestrator-backend/build/reports/tests/e2eTest
-            orchestrator-backend/build/reports/tests/linuxDriverTest
-            orchestrator-backend/build/reports/tests/boardTest
-            orchestrator-backend/build/reports/tests/boardContainerTest
-            orchestrator-backend/build/test-results/e2eTest
-            orchestrator-backend/build/test-results/linuxDriverTest
-            orchestrator-backend/build/test-results/boardTest
-            orchestrator-backend/build/test-results/boardContainerTest
-            /tmp/jagt-xvfb.log
-            /tmp/jagt-dunst.log
+          path: orchestrator-backend/build/linux-suite
 
   stand:
     name: stand (${{ matrix.engine }})
@@ -133,9 +123,7 @@ jobs:
         with:
           name: stand-${{ matrix.engine }}-evidence
           retention-days: 14
-          path: |
-            orchestrator-backend/stand/build/stand/failed
-            orchestrator-backend/stand/build/test-results/standTest
+          path: orchestrator-backend/build/linux-suite
 
   audit:
     name: dependency audit

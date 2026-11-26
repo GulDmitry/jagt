@@ -53,9 +53,7 @@ jobs:
         with:
           name: nightly-stand-${{ matrix.engine }}-evidence
           retention-days: 14
-          path: |
-            orchestrator-backend/stand/build/stand/failed
-            orchestrator-backend/stand/build/test-results/standTest
+          path: orchestrator-backend/build/linux-suite
 
   e2e:
     name: e2e round ${{ matrix.round }}
@@ -85,9 +83,7 @@ jobs:
         with:
           name: nightly-e2e-${{ matrix.round }}-reports
           retention-days: 14
-          path: |
-            orchestrator-backend/build/reports/tests/e2eTest
-            orchestrator-backend/build/test-results/e2eTest
+          path: orchestrator-backend/build/linux-suite
 
   properties:
     name: properties at 1000 tries
@@ -113,7 +109,7 @@ jobs:
         with:
           name: nightly-properties-report
           retention-days: 14
-          path: orchestrator-backend/build/reports/tests/test
+          path: orchestrator-backend/build/linux-suite
 
   scan:
     name: live vulnerability scan

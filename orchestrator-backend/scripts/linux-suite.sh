@@ -6,7 +6,8 @@
 # a Gradle home and npm cache volume only speeds it up, and an empty one never changes a result.
 #
 # Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand stand-kind install audit codeql boardTest, and one per nightly.yml job: nightly-*)
-# Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume and the image.
+# Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume, the image and each job's
+# test reports under build/linux-suite/<job>, where a workflow uploads them.
 # exits: 0 2
 set -euo pipefail
 
@@ -66,7 +67,7 @@ done
 # The engine starts as root; a job runs as RUN_UID, as on a CI runner, since root ignores file modes. Only the volumes it
 # writes are handed to it first. The cgroup block is moby's hack/dind with its retry loop: moving the root group's processes
 # can race a new one, so the delegation repeats until it holds. One engine volume holds one engine, so a second container waits.
-# The stand's evidence is copied from the container's own build volumes to the host's, where a workflow uploads it.
+# Each project's test reports and the stand's evidence are copied from the container's own build volumes to the host's.
 # shellcheck disable=SC2016 # the container's shell expands it
 AS_RUNNER='exec 8>/gradle-home/.run.lock
 flock 8
@@ -90,11 +91,15 @@ chown "$RUN_UID:$RUN_UID" /jagt/board/node_modules /jagt/orchestrator-backend/bu
     /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
 getent passwd "$RUN_UID" >/dev/null || useradd -u "$RUN_UID" -U -m jagt-runner
 setpriv --reuid="$RUN_UID" --regid="$RUN_UID" --init-groups env HOME="$(getent passwd "$RUN_UID" | cut -d: -f6)" "$@" && rc=0 || rc=$?
-for kept in stand/failed test-results/standTest; do
-    [[ ! -d /jagt/orchestrator-backend/stand/build/$kept ]] || {
-        mkdir -p "/evidence/$(dirname "$kept")" && cp -a "/jagt/orchestrator-backend/stand/build/$kept" "/evidence/$(dirname "$kept")/" \
-            && chown -R "$RUN_UID:$RUN_UID" "/evidence/$kept"; }
+for build in /jagt/orchestrator-backend/build /jagt/orchestrator-backend/*/build; do
+    for kept in test-results reports/tests stand/failed; do
+        [[ ! -d $build/$kept ]] || {
+            to="/evidence/${build#/jagt/orchestrator-backend/}/$kept"
+            mkdir -p "$(dirname "$to")" && cp -a "$build/$kept" "$to"; }
+    done
 done
+for log in /tmp/jagt-*.log; do [[ ! -f $log ]] || cp "$log" /evidence/; done
+chown -R "$RUN_UID:$RUN_UID" /evidence
 exit $rc'
 
 # On Linux a bind mount keeps the host's owner, so the job runs as the checkout's; Docker on a Mac maps it to anyone.
@@ -114,8 +119,7 @@ if [[ $(uname -s) == Darwin ]]; then
 fi
 
 # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
-mkdir -p "$BACKEND_DIR/stand/build"
-COMMON=(--rm --init --privileged -e CI=true -e ORG_GRADLE_PROJECT_timed=false -v "$BACKEND_DIR/stand/build:/evidence"
+COMMON=(--rm --init --privileged -e CI=true -e ORG_GRADLE_PROJECT_timed=false
     -w /jagt/orchestrator-backend -v "$REPO_ROOT:/jagt" "${STATE_MOUNTS[@]}" ${GIT_MOUNTS[@]+"${GIT_MOUNTS[@]}"}
     -v "$ENGINE_VOLUME:/var/lib/docker")
 
@@ -124,10 +128,12 @@ for job in "$@"; do
     line=$(gate "$job")
     cache=$CACHE
     if [[ $CACHE == /* ]]; then mkdir -p "$cache"; else cache="$CACHE-$job"; docker volume create "$cache" >/dev/null; fi
+    evidence="$BACKEND_DIR/build/linux-suite/$job"
+    rm -rf "$evidence" && mkdir -p "$evidence"
     echo "==> $job: $line"
     # shellcheck disable=SC2086 # the gate is a command line
     docker run "${COMMON[@]}" -e RUN_UID="$RUN_UID" -e KIND_TOOLS="$(kind_tools "$job")" -e GRADLE_USER_HOME=/gradle-home \
         -e PLAYWRIGHT_BROWSERS_PATH=/gradle-home/ms-playwright -e npm_config_cache=/gradle-home/npm-cache \
-        -v "$cache:/gradle-home" "$IMAGE" bash -c "$AS_RUNNER" - $line || { status=$?; echo "==> $job red (exit $status)"; }
+        -v "$cache:/gradle-home" -v "$evidence:/evidence" "$IMAGE" bash -c "$AS_RUNNER" - $line || { status=$?; echo "==> $job red (exit $status)"; }
 done
 exit "$status"
