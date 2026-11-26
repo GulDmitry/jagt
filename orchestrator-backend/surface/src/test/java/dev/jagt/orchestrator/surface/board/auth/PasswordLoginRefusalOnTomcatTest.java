@@ -141,6 +141,23 @@ class PasswordLoginRefusalOnTomcatTest {
   }
 
   @Test
+  void answersNotFoundNamingStaleRootTokenWhereClientRegistersWithoutOrigin() throws Exception {
+    HttpResponse<String> response =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/register"))
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(404);
+    assertThat(response.body())
+        .isEqualTo(
+            "jagt has no OAuth. A stale root token after a jagt restart sends a client here:"
+                + " restart the session.");
+  }
+
+  @Test
   void everyResponseCarriesContentSecurityPolicyOfItsOwnOriginOnly() throws Exception {
     HttpResponse<String> response =
         HttpClient.newHttpClient()
