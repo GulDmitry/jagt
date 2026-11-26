@@ -113,6 +113,7 @@ public final class TestsFor {
     }
     if (selection.board) {
       lines.add("cd board && timeout 600 sh -c 'npm run lint && npm test'");
+      addGradle(lines, 900, "boardTest");
     }
     return new Plan(
         lines, dropped, new Pointers(repo.top().resolve(".claude/rules")).readsFor(paths));

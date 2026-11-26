@@ -361,6 +361,15 @@ class TestsForTest {
   }
 
   @Test
+  void boardChangeNamesTheBoardTestLine(@TempDir Path repo) throws Exception {
+    TestsFor testsFor = TestRepoBuilder.in(repo).file("board/app.css", "x").tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of("board/app.css"));
+
+    assertThat(plan.lines()).contains(GRADLE + "900 ./gradlew boardTest");
+  }
+
+  @Test
   void failsNamingTheCommandWhenTheBaseBranchIsMissing(@TempDir Path repo) throws Exception {
     TestsFor testsFor = TestRepoBuilder.in(repo).file("board/app.js", "x").tracked();
 
