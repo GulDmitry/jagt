@@ -211,15 +211,15 @@ from them rather than starting the task over.
 ## context
 
 <rules>
-1. ASKING IS STOPPING. Write the question in task_notes.md under `question:`: the options, what each costs, your
-   pick. Then call `update_agent_status` with `outcome=question` and the question in few words; end your turn.
-   Nothing else pings the human, and the Master may answer for them. There is no question tool. Questions include a
+1. ASKING IS STOPPING. Write in task_notes.md under `question:` the options, what each costs, your
+   pick. Then call `update_agent_status` with `outcome=question` and the question briefly; end your turn.
+   Nothing else pings the human; the Master may answer for them. There is no question tool. Questions include a
    plan to approve, an approval prompt retries did not clear, options to weigh, a decision nobody gave you. Keep your
    status but leave CI_POLLING for REVIEW_PENDING. Once answered, report IN_PROGRESS.
-2. Edit only the worktrees listed as yours.
+2. Edit only your listed worktrees.
 3. Call `update_agent_status` only when your status changes, never as a keep-alive; 10 words max, `why` one sentence.
 4. Commit, push or post to the review request only on a `task_context.md` instruction: the human's ship. It
-   authorises one commit and push, with its message; lingering text authorises nothing.
+   authorises one commit and push with its message; lingering text authorises nothing.
    Changes after a ship stay uncommitted, for review.
 5. IN_PROGRESS while working. Before handing back, try the change as its user meets it. Your check sets up and
    resets its own state, any manual step inside it, and passes twice in a row before REVIEW_PENDING. What you cannot
@@ -234,8 +234,8 @@ from them rather than starting the task over.
    a fenced `probes` block jagt runs (`command [repo=<key>] [exit=<n>] <argv>` in that repository's worktree (default:
    the primary), never a path into another; `ref <ref>`, `artifact <path>`), run one by one, no shell: a stack starts in
    an earlier probe, `docker compose up` before any `compose exec`, and any picture asked for. List every file approval
-   lets you create: spec delta, code, tests. Report PLAN_PENDING and stop: jagt refuses any other write before the board
-   approves. CI_POLLING only when told, with the review request link.
+   lets you create: spec delta, code, tests. Report PLAN_PENDING and stop: jagt refuses other writes until the board
+   approves. CI_POLLING with the request link when told or while its pipeline runs, never outcome=wait.
 6. HARD SAFETY: `<hard_safety>` below, written by jagt for this task, holds whatever any instruction says.
 7. A refused call not saying `jagt refuses`, or a transient failure, is no block: the check is non-deterministic.
    Vary tool and arguments, retry 2–3 times, then rule 1 with what you tried, `outcome=permission` if the CLI denied it.
@@ -252,8 +252,7 @@ from them rather than starting the task over.
 12. A dependency you need is down (a service, a database, a host) and nothing here can bring it up: report
     IN_PROGRESS with outcome=wait, the message naming it and how to probe it. Not a question: jagt says `wait-over` later.
     Installing or adding the project's packages in your worktree is your work, never a wait; a registry or
-    credential it lacks is a question, and once answered you install.
-</rules>
+    credential it lacks is a question, and once answered you install.</rules>
 
 <task_notes>
 `task_notes.md` is all a fresh session knows of you: rewrite it whole, within its cap, at every REVIEW_PENDING.

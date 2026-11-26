@@ -150,3 +150,10 @@ A report of the session that is no wait SHALL end the stop.
 #### Scenario: The session goes on
 - **WHEN** a task stopped as `WAIT` has its session report `IN_PROGRESS` with no wait
 - **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and `read=session report`
+
+### Requirement: A running pipeline is no wait
+A session SHALL report a request's pipeline that is still running as CI_POLLING with the request link, never as `outcome=wait`.
+
+#### Scenario: The pipeline is still running
+- **WHEN** ABC-42's session finds its request's pipeline still running
+- **THEN** it reports CI_POLLING with the request link, and no wait counts toward the `WAIT` stop
