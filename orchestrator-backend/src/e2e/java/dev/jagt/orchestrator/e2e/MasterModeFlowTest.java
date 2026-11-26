@@ -281,7 +281,7 @@ class MasterModeFlowTest extends FlowHarness.World {
                         List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
                     .build());
 
-            Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
+            Instant later = clock.instant().plus(Duration.ofMinutes(2));
             doReturn(later).when(clock).instant();
             doReturn(later.toEpochMilli()).when(clock).millis();
             flow.awaitRun("deploy-conflict");
@@ -296,7 +296,7 @@ class MasterModeFlowTest extends FlowHarness.World {
 
           @Test
           void leavesStalledConflictToTheHumanWhenTheMastersAnswerIsUnusable() throws Exception {
-            Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
+            Instant later = clock.instant().plus(Duration.ofMinutes(2));
             doReturn(later).when(clock).instant();
             doReturn(later.toEpochMilli()).when(clock).millis();
             flow.awaitRun("deploy-conflict");
@@ -313,14 +313,14 @@ class MasterModeFlowTest extends FlowHarness.World {
           @Test
           void tellsTheHumanOnceConflictStallsAgainAfterTheMasterWasAskedAndPressesNothing()
               throws Exception {
-            Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
+            Instant later = clock.instant().plus(Duration.ofMinutes(2));
             doReturn(later).when(clock).instant();
             doReturn(later.toEpochMilli()).when(clock).millis();
             flow.awaitRun("deploy-conflict");
             flow.awaitTask(
                 task -> task.currentConflict().filter(Conflict::askedTheArbiter).isPresent());
 
-            Instant muchLater = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(4));
+            Instant muchLater = clock.instant().plus(Duration.ofMinutes(2));
             doReturn(muchLater).when(clock).instant();
             doReturn(muchLater.toEpochMilli()).when(clock).millis();
             flow.awaitRun("deploy-conflict");

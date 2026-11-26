@@ -5,9 +5,11 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.domain.PackageMatcher;
 import fitness.core.Engine;
+import fitness.core.FitnessConfigException;
 import fitness.core.FitnessFunction;
 import fitness.core.Measurement;
 import fitness.core.Project;
+import fitness.core.Reason;
 import fitness.core.run.SourceRoots;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +60,20 @@ public final class ArchUnitEngine implements Engine {
   @Override
   public void validate(FitnessFunction function, Project project) {
     SourceRoots.validate(function, project);
+    if (function.selectors().get("except") instanceof String names) {
+      JavaClasses imported =
+          directories.of(project, String.valueOf(function.selectors().getOrDefault("set", "main")));
+      Pattern.compile(",")
+          .splitAsStream(names)
+          .filter(entry -> !imported.isEmpty() && imported.stream().noneMatch(matches(entry, project.basePackage())))
+          .findFirst()
+          .ifPresent(
+              entry -> {
+                throw new FitnessConfigException(
+                    Reason.UNKNOWN_EXCEPT_ENTRY,
+                    function.section() + "." + function.id() + ".except: " + entry);
+              });
+    }
   }
 
   @Override
@@ -153,13 +169,14 @@ public final class ArchUnitEngine implements Engine {
 
   private static Predicate<JavaClass> excluded(String names, String base) {
     List<String> entries = Pattern.compile(",").splitAsStream(names).toList();
+    return type -> entries.stream().anyMatch(entry -> matches(entry, base).test(type));
+  }
+
+  private static Predicate<JavaClass> matches(String entry, String base) {
     return type ->
-        entries.stream()
-            .anyMatch(
-                entry ->
-                    entry.contains("..")
-                        ? PackageMatcher.of(qualified(base, entry)).matches(type.getPackageName())
-                        : entry.equals(type.getSimpleName()));
+        entry.contains("..")
+            ? PackageMatcher.of(qualified(base, entry)).matches(type.getPackageName())
+            : entry.equals(type.getSimpleName());
   }
 
   private static String qualified(String base, String name) {

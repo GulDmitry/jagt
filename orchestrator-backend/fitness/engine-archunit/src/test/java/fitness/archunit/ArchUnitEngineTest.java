@@ -1,6 +1,7 @@
 package fitness.archunit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import fitness.core.Direction;
@@ -8,6 +9,7 @@ import fitness.core.FitnessConfigException;
 import fitness.core.FitnessFunction;
 import fitness.core.Measurement;
 import fitness.core.Project;
+import fitness.core.Reason;
 import fitness.core.Threshold;
 import java.nio.file.Path;
 import java.util.List;
@@ -186,6 +188,28 @@ class ArchUnitEngineTest {
 
     assertThatThrownBy(() -> engine.validate(function, project))
         .isInstanceOf(FitnessConfigException.class);
+  }
+
+  @Test
+  void failsTheLoadForAnExceptEntryNamingNoClass() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder().select("except", "WidelyBuilt,GoneClass").build();
+
+    assertThatThrownBy(() -> engine.validate(function, project))
+        .isInstanceOfSatisfying(
+            FitnessConfigException.class,
+            e -> {
+              assertThat(e.reason()).isEqualTo(Reason.UNKNOWN_EXCEPT_ENTRY);
+              assertThat(e.key()).contains("technical.maintainability.testability.r.except", "GoneClass");
+            });
+  }
+
+  @Test
+  void loadsAnExceptNamingAnExistingClassAndAnExistingPackage() {
+    FitnessFunction function =
+        new TestFitnessFunctionBuilder().select("except", "WidelyBuilt,archunit..").build();
+
+    assertThatCode(() -> engine.validate(function, project)).doesNotThrowAnyException();
   }
 
   @Test
