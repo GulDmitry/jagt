@@ -56,7 +56,7 @@ It SHALL never post on a jagt task's request. On a third-party request it SHALL 
 ### Requirement: A person's note is drafted, and a draft is posted by one cell
 A person's note SHALL be relayed and drafted by the session into `review_replies.md`.
 Each block SHALL carry its author kind: person, bot, reviewer; unknown where the notes were unread. Where a ship posts it, the reply goes under
-the acting account, opening with the AI line where RPU and PRR are `true`. The Master SHALL ship a person's draft only where RPU is `true`.
+the acting account, opening with the AI line whenever PRR is `true`, whatever RPU. The Master SHALL ship a person's draft only where RPU is `true`.
 A ship SHALL never post a reviewer's or an unknown block.
 
 #### Scenario: P1 Replies are off
@@ -83,6 +83,10 @@ A ship SHALL never post a reviewer's or an unknown block.
 - **WHEN** `mine: [ship]`, or the Master is in `judge` or `off`
 - **THEN** nothing is pressed and the verdict is written
 - **AND** the human's ship follows P1 and P2
+
+#### Scenario: P6 A reply is posted whatever RPU
+- **WHEN** a ship posts a bot's draft and RPU is `false`
+- **THEN** the reply opens with the AI line
 
 ### Requirement: A bot is answered once, by one actor
 On a jagt task's request a bot's note SHALL be answered by the session alone. On a third-party request the code reviewer SHALL

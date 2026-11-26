@@ -66,8 +66,23 @@ class ShipServiceRepliesTest {
   }
 
   @Test
-  void asksForNoAiLineWhereTheMasterMayNotPostToPeople() {
-    String step = ShipService.repliesStep(ConfigFile.defaults(), true);
+  void opensEachPostedReplyWithTheAiLineWhereRepliesToPeopleAreNotUnasked() {
+    ConfigFile config =
+        ConfigFile.defaults()
+            .withCodeReview(new ConfigFile.CodeReviewConfig(null, true, null, false));
+
+    String step = ShipService.repliesStep(config, false);
+
+    assertThat(step).contains(AiLine.TEXT);
+  }
+
+  @Test
+  void asksForNoAiLineWhereNoReplyIsPosted() {
+    ConfigFile config =
+        ConfigFile.defaults()
+            .withCodeReview(ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false));
+
+    String step = ShipService.repliesStep(config, true);
 
     assertThat(step).doesNotContain(AiLine.TEXT);
   }

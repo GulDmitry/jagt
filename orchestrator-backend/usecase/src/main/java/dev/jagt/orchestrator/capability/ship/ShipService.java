@@ -136,8 +136,7 @@ public class ShipService {
 
   static String repliesStep(ConfigFile config, boolean personReplies) {
     String step = postingStep(config, personReplies);
-    return config.codeReview().repliesToPeopleUnaskedOrDefault()
-            && config.codeReview().postReviewRepliesOrDefault()
+    return config.codeReview().postReviewRepliesOrDefault()
         ? step.replace(THREADS, AI_LINE + THREADS)
         : step;
   }
