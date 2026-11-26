@@ -198,6 +198,91 @@ class TestsForTest {
   }
 
   @Test
+  void runsTheRuleTestScanningTheModuleWhenItsMainSourceChanges(@TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(ADAPTER + "main/java/a/Foo.java", "class Foo {}")
+            .file(
+                ROOT_TESTS + "AdapterPorts.java",
+                "class AdapterPorts { Path p = Path.of(\"adapter/src/main/java\"); }")
+            .file(
+                ROOT_TESTS + "SeamSelectionTest.java",
+                "class SeamSelectionTest { AdapterPorts a; }")
+            .file(ROOT_TESTS + "UnrelatedTest.java", "class UnrelatedTest {}")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of(ADAPTER + "main/java/a/Foo.java"));
+
+    assertThat(plan.lines())
+        .contains(GRADLE + "900 ./gradlew :test --tests '*SeamSelectionTest' -x pitestDiff")
+        .noneMatch(line -> line.contains("UnrelatedTest"));
+  }
+
+  @Test
+  void runsNoScanningRuleTestWhenAnotherModuleChanges(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/core/src/main/java/c/Foo.java", "class Foo {}")
+            .file(
+                ROOT_TESTS + "AdapterPorts.java",
+                "class AdapterPorts { Path p = Path.of(\"adapter/src/main/java\"); }")
+            .file(
+                ROOT_TESTS + "SeamSelectionTest.java",
+                "class SeamSelectionTest { AdapterPorts a; }")
+            .tracked();
+
+    TestsFor.Plan plan =
+        testsFor.plan(List.of("orchestrator-backend/core/src/main/java/c/Foo.java"));
+
+    assertThat(plan.lines()).noneMatch(line -> line.contains("SeamSelectionTest"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"docs/decisions/0001-a.md", ".github/workflows/ci.yml"})
+  void runsTheFitnessTestWhenFileInScanRowGlobChanges(String changed, @TempDir Path repo)
+      throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                FITNESS_YML,
+                """
+                technical:
+                  security:
+                    ci-rule: { engine: scan, glob: "../.github/workflows/ci.yml,../docs/decisions/*.md", regex: "x", governs: count, max: 0 }
+                    brace-rule: { engine: scan, glob: "**/*.{gradle,yml}", regex: "x", governs: count, max: 0 }
+                """)
+            .file(ROOT_TESTS + "FitnessTest.java", "class FitnessTest {}")
+            .file(changed, "x")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of(changed));
+
+    assertThat(plan.lines())
+        .contains(GRADLE + "900 ./gradlew :test --tests '*FitnessTest' -x pitestDiff");
+  }
+
+  @Test
+  void runsNoFitnessTestWhenFileMatchesNoScanRowGlob(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file(
+                FITNESS_YML,
+                """
+                technical:
+                  security:
+                    ci-rule: { engine: scan, glob: "../.github/workflows/ci.yml", regex: "x", governs: count, max: 0 }
+                """)
+            .file(ROOT_TESTS + "FitnessTest.java", "class FitnessTest {}")
+            .file(".github/workflows/other.yml", "x")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of(".github/workflows/other.yml"));
+
+    assertThat(plan.lines()).noneMatch(line -> line.contains("FitnessTest"));
+  }
+
+  @Test
   void ruleTestAlsoNamingTheChangedWorkflowRunsOnceWhenWorkflowChanges(@TempDir Path repo)
       throws Exception {
     TestsFor testsFor =

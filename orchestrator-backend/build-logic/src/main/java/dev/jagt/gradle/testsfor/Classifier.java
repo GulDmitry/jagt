@@ -16,13 +16,16 @@ final class Classifier {
 
   private static final String MAIN = "main";
   private static final String JQWIK = "import net.jqwik.";
+  private static final Pattern SCANNED_ROOT =
+      Pattern.compile("Path\\.of\\(\"([^\"]*src/[^\"]*)\"");
   private static final String TOMCAT = "[A-Za-z0-9]*OnTomcat";
 
   private final Repo repo;
   private final Layout layout;
   private final Selection selection;
   private final Map<String, List<String>> named = new HashMap<>();
-  private SizeRows sizeRows;
+  private ScanRows scanRows;
+  private Map<String, List<String>> scanners;
 
   Classifier(Repo repo, Layout layout, Selection selection) {
     this.repo = repo;
@@ -43,9 +46,13 @@ final class Classifier {
           "PracticesPage",
           "EngineeringSpec");
     }
-    if (sizeRows().governs(path)) {
+    if (scanRows().governsSize(path)) {
       selection.sizeRows = true;
     }
+    if (scanRows().scans(path)) {
+      selection.rules("Fitness");
+    }
+    testsScanning(path);
     if (like(path, ".github/*", "*/.github/*", "scripts/*", "*/scripts/*")) {
       selection.rules("CiWorkflow", "ImageJar", "QualityGates");
     }
@@ -58,11 +65,52 @@ final class Classifier {
     }
   }
 
-  private SizeRows sizeRows() {
-    if (sizeRows == null) {
-      sizeRows = SizeRows.of(repo.linesOf("fitness.yml"), layout.backend());
+  private ScanRows scanRows() {
+    if (scanRows == null) {
+      scanRows = ScanRows.of(repo.linesOf("fitness.yml"), layout.backend());
     }
-    return sizeRows;
+    return scanRows;
+  }
+
+  private void testsScanning(String path) {
+    layout
+        .insideBackend(path)
+        .ifPresent(
+            inside ->
+                scanners()
+                    .forEach(
+                        (type, roots) -> {
+                          if (roots.stream().anyMatch(root -> underRoot(inside, root))) {
+                            testsNaming(Layout.ROOT, type);
+                          }
+                        }));
+  }
+
+  private static String typeOf(String file) {
+    return Path.of(file).getFileName().toString().replaceFirst("\\.java$", "");
+  }
+
+  private static boolean underRoot(String path, String root) {
+    return path.equals(root) || path.startsWith(root.endsWith("/") ? root : root + "/");
+  }
+
+  private Map<String, List<String>> scanners() {
+    if (scanners == null) {
+      scanners = new HashMap<>();
+      for (String file : repo.filesIn(List.of(layout.testDirectory(Layout.ROOT)))) {
+        repo.holds(
+            file,
+            text -> {
+              List<String> roots =
+                  SCANNED_ROOT.matcher(text).results().map(m -> m.group(1)).toList();
+              if (!roots.isEmpty()) {
+                scanners.put(typeOf(file), roots);
+              }
+              return true;
+            });
+      }
+    }
+    return scanners;
   }
 
   private void java(String path) {

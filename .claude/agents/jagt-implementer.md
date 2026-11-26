@@ -16,7 +16,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    run its lines in order, each in the background into a log, each under its `timeout`, stop at the first red.
    Its trailing `read:` lines name the specs and rules governing those files: read them before you change anything.
    A review round or a one-line fix re-runs it only on the files it touched.
-   `./gradlew pitestDiff -PpitestDiff=release` runs once, at the done step; the brief's done command runs once, after the last round.
+   `./gradlew pitestDiff -PpitestDiff=release` runs once, at the done step; the brief's done command runs once, after the last round, and `:test --tests '*FitnessTest' --rerun` runs on your tree with it, never a cached green.
    The full suite is never run: the session that launched you runs its batch's modules as AGENTS.md "Tests" says.
    One Gradle run per tree at a time: a second one rewrites the class dirs the first is reading.
    Each Gradle command runs through the machine-wide Gradle slot your setup provides, if any, as the brief names it.

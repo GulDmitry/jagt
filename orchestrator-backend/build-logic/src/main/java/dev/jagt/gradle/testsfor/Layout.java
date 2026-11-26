@@ -44,6 +44,12 @@ record Layout(String backend) {
     return backend.isEmpty() ? "" : backend + "/";
   }
 
+  Optional<String> insideBackend(String path) {
+    return path.startsWith(within())
+        ? Optional.of(path.substring(within().length()))
+        : Optional.empty();
+  }
+
   Optional<Located> locate(String path) {
     String inRoot = within() + "src/";
     if (path.startsWith(inRoot) && path.indexOf('/', inRoot.length()) >= 0) {
