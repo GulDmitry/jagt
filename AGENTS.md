@@ -139,7 +139,7 @@ supply chain; a departure only by a decision record ([per kind](ARCHITECTURE.md#
   failed. **A cached green is not a run.** **A CI red after a local green** gets a row in the [divergence register](docs/divergences.md).
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. Its commit
-  carries a `Defect-family: <A–M>` trailer ([families](docs/rules/testing.md)).
+  carries a `Defect-family: <A–M>` trailer ([families](docs/rules/testing.md)) and a `Case` ([spec](openspec/specs/spec-changes/spec.md)).
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
   asserted what nothing promised. Never to turn a red run green ([`testing`](docs/rules/testing.md#every-test-pins-a-business-case)).
 - A suite that opens a window leaves no trace: `--orchestrator.terminal=none`, a throwaway tmux session, cleanup.

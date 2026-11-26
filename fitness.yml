@@ -135,6 +135,7 @@ technical:
       test-root-kinds: { fitness: TestRootKindsFitness, governs: count, max: 0 }
       test-naming: { fitness: TestNamingFitness, governs: count, max: 0 }
       log-capture: { fitness: LogCaptureFitness, governs: class-dependency, max: 0 }
+      fixed-bug-case: { fitness: FixedBugCaseFitness, governs: count, max: 0, hint: "a Defect-family commit carries Case: new|existing|none; main code needs an openspec file or Case: existing (docs/rules/testing.md)" }
       suites-tap-nobody: { fitness: SuitesTapNobodyFitness, governs: count, max: 0, decision: "0058" }
       timing-in-tests: { engine: scan, glob: "**/src/{test,testFixtures,boardTest,e2e,stand,installTest,linuxTest,evalSupport,acceptanceEval,codeReviewEval,masterEval,promptEval,triageEval}/**/*.java", per: line, regex: "^(?!import ).*(@Timeout\\b|assertTimeout|Thread\\.sleep|new Thread\\(|Thread\\.ofPlatform|Thread\\.ofVirtual|startVirtualThread|\\bExecutorService\\b|\\bExecutors\\.|CompletableFuture(?!\\.completedFuture))", governs: count, max: 0, decision: "0237", hint: "a test has no timeout, no sleep and no thread of its own, and no line is exempt: rewrite it against a fake clock, a fake process or a synchronous executor, or delete the test (docs/decisions/0237)" }
       sleep-in-tests: { engine: scan, set: test, per: file, regex: "Thread\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\(", governs: count, max: 0 }

@@ -1,0 +1,91 @@
+package dev.jagt.orchestrator;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.ProcessBuilder.Redirect;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
+public final class FixedBugCommits {
+
+  static final String CUTOFF = "ae9b1f0b758e615aea5a57006f1f4d089db18a49";
+
+  private static final String RECORD = "\u001e";
+  private static final String FIELD = "\u001f";
+  private static final Pattern DEFECT_FAMILY = Pattern.compile("(?m)^Defect-family: [A-M]$");
+  private static final Pattern CASE =
+      Pattern.compile("(?m)^Case: (new \\S.*|existing \\S.*|none)$");
+  private static final Pattern CASE_EXISTING = Pattern.compile("(?m)^Case: existing \\S.*$");
+  private static final Pattern MAIN_CODE = Pattern.compile("(?:^|/)src/main/");
+
+  private FixedBugCommits() {}
+
+  record Commit(String sha, String message, List<String> files) {}
+
+  public static List<String> defects() {
+    return commitsAfterCutoff().stream()
+        .map(FixedBugCommits::defect)
+        .filter(defect -> !defect.isEmpty())
+        .toList();
+  }
+
+  static String defect(Commit commit) {
+    if (!DEFECT_FAMILY.matcher(commit.message()).find()) {
+      return "";
+    }
+    String sha = commit.sha().substring(0, 9);
+    if (!CASE.matcher(commit.message()).find()) {
+      return sha + " carries Defect-family and no Case trailer";
+    }
+    boolean touchesMain = commit.files().stream().anyMatch(file -> MAIN_CODE.matcher(file).find());
+    boolean touchesSpec = commit.files().stream().anyMatch(file -> file.startsWith("openspec/"));
+    if (touchesMain && !touchesSpec && !CASE_EXISTING.matcher(commit.message()).find()) {
+      return sha + " fixes main code with no openspec file and no Case: existing";
+    }
+    return "";
+  }
+
+  static List<Commit> parse(String log) {
+    return Arrays.stream(log.split(RECORD))
+        .filter(record -> !record.isBlank())
+        .map(record -> record.split(FIELD, 3))
+        .map(parts ->
+            new Commit(
+                parts[0].strip(),
+                parts[1],
+                parts[2].lines().map(String::strip).filter(line -> !line.isEmpty()).toList()))
+        .toList();
+  }
+
+  private static List<Commit> commitsAfterCutoff() {
+    try {
+      Process log =
+          new ProcessBuilder(
+                  "git",
+                  "-C",
+                  "..",
+                  "log",
+                  CUTOFF + "..HEAD",
+                  "--name-only",
+                  "--format=" + RECORD + "%H" + FIELD + "%B" + FIELD)
+              .redirectError(Redirect.DISCARD)
+              .start();
+      String output = new String(log.getInputStream().readAllBytes(), UTF_8);
+      return waitFor(log) == 0 ? parse(output) : List.of();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static int waitFor(Process process) {
+    try {
+      return process.waitFor();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
+  }
+}

@@ -1,0 +1,99 @@
+package dev.jagt.orchestrator;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import dev.jagt.orchestrator.FixedBugCommits.Commit;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class FixedBugCommitsTest {
+
+  private static final String SHA = "0123456789abcdef0123456789abcdef01234567";
+
+  @Test
+  void commitWithoutDefectFamilyIsNotJudged() {
+    Commit feature =
+        new Commit(SHA, "A feature\n", List.of("orchestrator-backend/src/main/java/A.java"));
+
+    assertThat(FixedBugCommits.defect(feature)).isEmpty();
+  }
+
+  @Test
+  void defectFamilyCommitWithoutCaseTrailerFails() {
+    Commit fix = new Commit(SHA, "A fix\n\nDefect-family: B\n", List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.defect(fix))
+        .isEqualTo("012345678 carries Defect-family and no Case trailer");
+  }
+
+  @Test
+  void caseTrailerWithoutScenarioNameFails() {
+    Commit fix = new Commit(SHA, "A fix\n\nDefect-family: B\nCase: new\n", List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.defect(fix)).contains("no Case trailer");
+  }
+
+  @Test
+  void mainCodeFixWithNewCaseAndNoOpenspecFileFails() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nCase: new a stopped task resumes\n",
+            List.of("orchestrator-backend/src/main/java/A.java"));
+
+    assertThat(FixedBugCommits.defect(fix))
+        .isEqualTo("012345678 fixes main code with no openspec file and no Case: existing");
+  }
+
+  @Test
+  void mainCodeFixWithOpenspecFilePasses() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nCase: new a stopped task resumes\n",
+            List.of(
+                "orchestrator-backend/src/main/java/A.java",
+                "openspec/changes/abc/specs/board/spec.md"));
+
+    assertThat(FixedBugCommits.defect(fix)).isEmpty();
+  }
+
+  @Test
+  void mainCodeFixNamingAnExistingScenarioPasses() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nCase: existing a stopped task resumes\n",
+            List.of("orchestrator-backend/src/main/java/A.java"));
+
+    assertThat(FixedBugCommits.defect(fix)).isEmpty();
+  }
+
+  @Test
+  void buildFixWithCaseNonePasses() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: L\nCase: none\n",
+            List.of("orchestrator-backend/build.gradle"));
+
+    assertThat(FixedBugCommits.defect(fix)).isEmpty();
+  }
+
+  @Test
+  void logOutputIsSplitIntoCommitsWithTheirFiles() {
+    String log =
+        "\u001e"
+            + SHA
+            + "\u001fA fix\n\nCase: none\n\u001f\n\na.txt\nb/c.txt\n"
+            + "\u001e"
+            + SHA.replace('0', '9')
+            + "\u001fSecond\n\u001f\n\nd.txt\n";
+
+    List<Commit> commits = FixedBugCommits.parse(log);
+
+    assertThat(commits)
+        .extracting(Commit::files)
+        .containsExactly(List.of("a.txt", "b/c.txt"), List.of("d.txt"));
+  }
+}
