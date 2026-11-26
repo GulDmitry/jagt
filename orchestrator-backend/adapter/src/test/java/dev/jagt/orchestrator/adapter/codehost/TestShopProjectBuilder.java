@@ -12,10 +12,12 @@ public record TestShopProjectBuilder(
     List<String> verifyCommand,
     List<String> setupCommand,
     List<String> postCommand,
-    List<ProjectConfig.CredentialCheck> credentialChecks) {
+    List<ProjectConfig.CredentialCheck> credentialChecks,
+    List<String> reviewBots) {
 
   public static TestShopProjectBuilder shopProject() {
-    return new TestShopProjectBuilder(null, List.of(), List.of(), List.of(), List.of(), List.of());
+    return new TestShopProjectBuilder(
+        null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
   public ProjectConfig build() {
@@ -30,7 +32,7 @@ public record TestShopProjectBuilder(
             List.of(),
             List.of(),
             List.of(),
-            new ProjectConfig.Review(List.of(), List.of(), postCommand, List.of())),
+            new ProjectConfig.Review(List.of(), List.of(), postCommand, reviewBots)),
         new ProjectConfig.Verify(verifyCommand, null),
         new ProjectConfig.Setup(setupCommand, null, credentialChecks, List.of()));
   }

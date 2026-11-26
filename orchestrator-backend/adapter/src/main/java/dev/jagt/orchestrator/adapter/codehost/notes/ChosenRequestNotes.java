@@ -25,6 +25,7 @@ public class ChosenRequestNotes implements RequestNotes {
 
   private final ConfigService configService;
   private final List<NotesDriver> drivers;
+  private final UnlistedBots unlisted;
 
   @Override
   public Answer<List<ReviewRequest>> awaitingReview(String project, String remoteUrl) {
@@ -38,7 +39,9 @@ public class ChosenRequestNotes implements RequestNotes {
 
   @Override
   public Answer<List<RequestNote>> notes(String project, String requestUrl) {
-    return ask(project, (driver, host) -> driver.notes(host, requestUrl));
+    Answer<List<RequestNote>> read = ask(project, (driver, host) -> driver.notes(host, requestUrl));
+    read.facts().ifPresent(notes -> unlisted.warn(project, notes));
+    return read;
   }
 
   @Override

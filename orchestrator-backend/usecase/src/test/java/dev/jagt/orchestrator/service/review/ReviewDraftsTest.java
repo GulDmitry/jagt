@@ -326,7 +326,7 @@ class ReviewDraftsTest {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, true)));
+                .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, true, null)));
 
     boolean held =
         new ReviewDrafts(configService)
@@ -407,7 +407,8 @@ class ReviewDraftsTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withCodeReview(
-                    new ConfigFile.CodeReviewConfig(null, postReplies, authors, repliesToPeople)));
+                    new ConfigFile.CodeReviewConfig(
+                        null, postReplies, authors, repliesToPeople, null)));
 
     boolean held =
         new ReviewDrafts(configService)

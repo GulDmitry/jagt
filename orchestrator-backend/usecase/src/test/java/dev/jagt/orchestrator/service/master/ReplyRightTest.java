@@ -77,7 +77,7 @@ class ReplyRightTest {
       ActionOrigin origin, boolean unasked, boolean posted) {
     ConfigFile config =
         ConfigFile.defaults()
-            .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, unasked));
+            .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, unasked, null));
 
     boolean posts = OriginContext.as(origin, () -> right.postsPersonReplies(config));
 

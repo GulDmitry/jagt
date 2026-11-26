@@ -58,7 +58,7 @@ class ShipServiceRepliesTest {
   void opensEachPostedReplyWithTheAiLineWhereTheMasterMayPostToPeople() {
     ConfigFile config =
         ConfigFile.defaults()
-            .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, true));
+            .withCodeReview(new ConfigFile.CodeReviewConfig(null, null, null, true, null));
 
     String step = ShipService.repliesStep(config, true);
 
@@ -69,7 +69,7 @@ class ShipServiceRepliesTest {
   void opensEachPostedReplyWithTheAiLineWhereRepliesToPeopleAreNotUnasked() {
     ConfigFile config =
         ConfigFile.defaults()
-            .withCodeReview(new ConfigFile.CodeReviewConfig(null, true, null, false));
+            .withCodeReview(new ConfigFile.CodeReviewConfig(null, true, null, false, null));
 
     String step = ShipService.repliesStep(config, false);
 

@@ -200,7 +200,8 @@ class ShipDueTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withCodeReview(
-                    new ConfigFile.CodeReviewConfig(null, postReplies, null, repliesToPeople)));
+                    new ConfigFile.CodeReviewConfig(
+                        null, postReplies, null, repliesToPeople, null)));
     ReviewDrafts real = new ReviewDrafts(configService);
     TaskState task =
         TaskState.builder("demo", worktree.toString(), TaskStatus.REVIEW_PENDING).build();

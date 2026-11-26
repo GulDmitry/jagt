@@ -261,7 +261,8 @@ orchestrator:
   codeReview:
     mrTitlePattern: "{ticket} {title}"
     postReviewReplies: true    # false leaves every reply a draft that you post yourself
-    reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
+    reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all; a bot it names also goes in reviewBots
+    reviewBots: []             # accounts that are bots on every project, beside the host's own word; a project's own reviewBots adds to it
     repliesToPeopleUnasked: false # true lets the Master in act ship and post replies to people; each opens with the AI line asking for a rating
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.

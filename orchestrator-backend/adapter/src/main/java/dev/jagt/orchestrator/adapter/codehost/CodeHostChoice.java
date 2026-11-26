@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * The kind of code host a project reads, the project's key over the orchestrator's over {@link
@@ -79,6 +80,25 @@ public record CodeHostChoice(String kind, HostSettings host) {
     return new CodeHostChoice(
         kind.strip().toLowerCase(Locale.ROOT),
         new HostSettings(
-            project, selectedBy, Path.of(String.valueOf(declared.path())), declared.host()));
+            project,
+            selectedBy,
+            Path.of(String.valueOf(declared.path())),
+            withBots(declared.host(), config.codeReview().reviewBotsOrEmpty())));
+  }
+
+  private static ProjectConfig.CodeHost withBots(ProjectConfig.CodeHost host, List<String> shared) {
+    ProjectConfig.Review own = host.review();
+    List<String> bots =
+        Stream.concat(shared.stream(), own.reviewBots().stream()).distinct().toList();
+    return new ProjectConfig.CodeHost(
+        host.kind(),
+        host.name(),
+        host.pipelineCommand(),
+        host.retryCommand(),
+        host.loginCommand(),
+        host.closeCommand(),
+        host.notesCommand(),
+        new ProjectConfig.Review(
+            own.awaitingCommand(), own.changeCommand(), own.postCommand(), bots));
   }
 }

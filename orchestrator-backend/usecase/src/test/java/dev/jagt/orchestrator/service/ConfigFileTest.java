@@ -257,7 +257,7 @@ class ConfigFileTest {
   void repliesToPeopleWaitForTheHumanUnlessWhereTheHumanSwitchedItOn() {
     assertThat(ConfigFile.CodeReviewConfig.defaults().repliesToPeopleUnaskedOrDefault()).isFalse();
     assertThat(
-            new ConfigFile.CodeReviewConfig(null, null, null, true)
+            new ConfigFile.CodeReviewConfig(null, null, null, true, null)
                 .repliesToPeopleUnaskedOrDefault())
         .isTrue();
   }
@@ -270,6 +270,15 @@ class ConfigFileTest {
                 .withReviewReplyAuthors(List.of("alice"))
                 .reviewReplyAuthorsOrEmpty())
         .containsExactly("alice");
+  }
+
+  @Test
+  void sharedReviewBotsAreEmptyWhereNoneIsWrittenAndTheWrittenOnesElse() {
+    assertThat(ConfigFile.CodeReviewConfig.defaults().reviewBotsOrEmpty()).isEmpty();
+    assertThat(
+            new ConfigFile.CodeReviewConfig(null, null, null, null, List.of("scanner"))
+                .reviewBotsOrEmpty())
+        .containsExactly("scanner");
   }
 
   @Test

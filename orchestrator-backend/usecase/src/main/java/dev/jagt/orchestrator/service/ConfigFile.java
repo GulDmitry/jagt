@@ -169,10 +169,16 @@ public record ConfigFile(
       @Nullable String mrTitlePattern,
       @Nullable Boolean postReviewReplies,
       @Nullable List<String> reviewReplyAuthors,
-      @With(AccessLevel.NONE) @Nullable Boolean repliesToPeopleUnasked) {
+      @With(AccessLevel.NONE) @Nullable Boolean repliesToPeopleUnasked,
+      @With(AccessLevel.NONE) @Nullable List<String> reviewBots) {
 
     public static CodeReviewConfig defaults() {
-      return new CodeReviewConfig(null, null, null, null);
+      return new CodeReviewConfig(null, null, null, null, null);
+    }
+
+    /** Accounts that are bots on every project, beside the host's own word. */
+    public List<String> reviewBotsOrEmpty() {
+      return reviewBots == null ? List.of() : reviewBots;
     }
 
     /** False: replies to people wait for the human to post. */
