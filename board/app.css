@@ -1114,6 +1114,9 @@ a.mr-age.approved,
   padding: 0 6px;
   color: var(--muted);
 }
+.status.paused .age {
+  opacity: 1;
+}
 .chip.stalled {
   border-color: var(--you);
 }
