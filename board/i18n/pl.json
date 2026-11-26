@@ -189,7 +189,7 @@
   "legend.head": "co oznaczają kolory i znaki na tablicy",
   "legend.row.edges": "Twój ruch · agent pracuje · u recenzentów · nic nie czeka albo Twój ruch, który może poczekać",
   "legend.row.badges": "to Ty blokujesz · Twoje, kiedy zechcesz · ! czerwone: zepsute, nieudany bieg lub warunek zewnętrzny · ■ w kółku: jagt zatrzymał zadanie, zdejmij zatrzymanie · ‖ wstrzymałeś je, zdejmij wstrzymanie, kiedy zechcesz",
-  "legend.row.flag": "nieoznaczone · oznaczone przez Ciebie jako ważne, tylko w tej przeglądarce; jego wiersz otwiera grupę",
+  "legend.row.flag": "nieoznaczone · oznaczone przez Ciebie jako ważne, tylko w tej przeglądarce; jego wiersz otwiera grupę, jego alias niesie znak",
   "legend.row.status": "stan i jego wiek · zielony: już we wspólnej gałęzi · kreskowane ‖: wstrzymałeś je",
   "legend.row.deployed": "czasownik · ↻ zielony: jego ostatnie uruchomienie działa — naciśnij ponownie dla tego, co przyszło później",
   "legend.row.quiet": "naciśnięte, bez nowości: runda bez zmian albo wciąż czeka — do zmiany karty lub ponownego naciśnięcia",

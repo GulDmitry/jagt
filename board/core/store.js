@@ -14,7 +14,7 @@ import { bothNames } from "./format.js";
  *   stop?: { kind?: string, reason?: string, evidence?: string, next?: string, at: number, triage?: string },
  *   reviewRequestUrl?: string, requestOpenedAt?: number, approved?: boolean | null,
  *   pipeline: string, pipelineSaid?: string, pipelineUnread?: boolean,
- *   autoReview?: Watch | null, waiting?: string, deployed?: boolean
+ *   autoReview?: Watch | null, waiting?: string, deployed?: boolean, flagged?: boolean
  * }} CardTask
  */
 

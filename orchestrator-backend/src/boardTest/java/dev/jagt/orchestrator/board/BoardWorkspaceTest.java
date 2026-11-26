@@ -306,6 +306,21 @@ class BoardWorkspaceTest extends BoardPageContext {
     page.locator("#pane button.flag").click();
 
     assertThat(page.locator("#tasks .row .alias")).hasText(new String[] {"a2", "a1"});
+    Object mark =
+        page.locator("#tasks .row.flagged .alias")
+            .evaluate("el => getComputedStyle(el, '::after').content");
+    org.assertj.core.api.Assertions.assertThat(mark).isEqualTo("\"⚑\"");
+  }
+
+  @Test
+  void aliasChipShowsNoMarkWhenFlagIsCleared() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
+    page.locator("#pane button.flag").click();
+
+    page.locator("#pane button.flag").click();
+
+    assertThat(page.locator("#tasks .row.flagged")).hasCount(0);
   }
 
   @Test

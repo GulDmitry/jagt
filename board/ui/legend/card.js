@@ -77,7 +77,12 @@ export const cardRows = () => [
     span("badge required stop", "lift the stop"),
     span("badge optional paused", "you can lift the pause"),
   ),
-  row("flag", flagButton(false), flagButton(true)),
+  row(
+    "flag",
+    flagButton(false),
+    flagButton(true),
+    make("span", "flagged", "", span("alias", "a1")),
+  ),
   row(
     "status",
     aged("status", "in progress", "12m"),

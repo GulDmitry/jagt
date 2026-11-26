@@ -166,6 +166,31 @@ test("aFlaggedRowLeadsItsGroup whenTheFlagHoldsIt", () => {
   );
 });
 
+test("theTaskIsMarkedFlagged whenTheFlagHoldsIt", () => {
+  const tasks = [{ id: "1", attention: "OPTIONAL", project: "a" }];
+
+  const groups = grouped(/** @type {never} */ (tasks), false, () => true);
+
+  assert.equal(groups[0].tasks[0].flagged, true);
+});
+
+test("theTaskIsNotMarked whenTheFlagIsCleared", () => {
+  const tasks = [{ id: "1", attention: "OPTIONAL", project: "a" }];
+
+  const groups = grouped(/** @type {never} */ (tasks), false, () => false);
+
+  assert.equal(groups[0].tasks[0].flagged, undefined);
+});
+
+test("theRowIsFlagged whenTheTaskIsFlagged", () => {
+  const row = rowClass(
+    task({ owner: "HUMAN", attention: "REQUIRED", flagged: true }),
+    false,
+  );
+
+  assert.equal(row, "row human flagged");
+});
+
 test("noGroupIsShown whenNothingIsShown", () => {
   assert.deepEqual(grouped([], false), []);
 });

@@ -231,7 +231,7 @@
   "legend.head": "what the board’s colours and marks mean",
   "legend.row.edges": "your move · agent working · with the reviewers · nothing waiting, or a move of yours that can wait",
   "legend.row.badges": "you are the hold-up · yours whenever you like · ! red: broken, a failed run or an outside condition · ■ ringed: jagt stopped it, lift the stop · ‖ you paused it, lift your pause whenever you like",
-  "legend.row.flag": "not flagged · flagged important by you, in this browser only; its row leads its group",
+  "legend.row.flag": "not flagged · flagged important by you, in this browser only; its row leads its group, its alias carries the mark",
   "legend.row.status": "the state and its age · green: already on a shared branch · dashed ‖: you paused it",
   "legend.row.deployed": "a verb · ↻ green: its last run is live — press again for what came after",
   "legend.row.quiet": "pressed, nothing new: the round read as unchanged or still waiting — until the card moves or you press it again",

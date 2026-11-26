@@ -54,7 +54,7 @@ Text clears 4.5:1 and a control's edge 3:1 on `--panel` in both themes (`Palette
 - in a round's replies — `.block` head, its `.verdict` word green FIXED / `--you` a question / grey pushed back; `.quote` muted.
 - `.tabs` — an `--accent` underline means open, nothing else; a `.badge.required` `new` pill on the Drafted tab:
   replies since you last opened it.
-- `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
+- `button.flag` ⚐/⚑ — flagged important, this browser only; its row leads its group, its `.flagged .alias` chip carries ⚑.
 - `.group.yours .group-head` on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open.
 - `.doc .changed` bold with a left bar, `.doc .removed` muted struck — a plan line new, changed or gone since your approval.

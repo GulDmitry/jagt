@@ -30,6 +30,7 @@ export const rowClass = (task, selected) =>
     task.owner.toLowerCase(),
     task.attention === "OPTIONAL" && "optional",
     selected && "selected",
+    task.flagged && "flagged",
   ]
     .filter(Boolean)
     .join(" ");
@@ -64,7 +65,7 @@ export const manyProjects = (tasks) =>
 export function grouped(shown, many, flagged = () => false) {
   const leading = shown.filter(flagged);
   const ordered = [
-    ...leading,
+    ...leading.map((task) => ({ ...task, flagged: true })),
     ...shown.filter((task) => !leading.includes(task)),
   ];
   const yours = ordered.filter((task) => task.attention === "REQUIRED");

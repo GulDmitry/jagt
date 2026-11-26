@@ -54,7 +54,8 @@ header {
   top: 0;
   z-index: 3;
 }
-.role-chips {
+.role-chips,
+#pane article > .actions {
   display: contents;
 }
 header .chip,
@@ -203,7 +204,8 @@ fieldset.field legend {
 #gear-dialog {
   width: min(360px, 94vw);
 }
-#gear-dialog[open] {
+#gear-dialog[open],
+#report[open] {
   display: flex;
   flex-direction: column;
 }
@@ -627,10 +629,6 @@ body.stale #report-line,
   overflow: hidden;
   box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
 }
-#report[open] {
-  display: flex;
-  flex-direction: column;
-}
 #report::backdrop {
   background: rgb(0 0 0 / 45%);
 }
@@ -712,7 +710,8 @@ body.stale #report-line,
   gap: 10px;
   align-items: center;
 }
-.legend-key button {
+.legend-key button,
+.actions button {
   font-size: 12px;
   padding: 3px 8px;
 }
@@ -860,6 +859,11 @@ main#board {
   flex-shrink: 0;
   font-size: 12px;
 }
+.flagged .alias::after {
+  content: "⚑";
+  position: absolute;
+  margin-top: -5px;
+}
 .row-verb:not(.primary) {
   background: none;
 }
@@ -914,9 +918,6 @@ main#board > #pane:only-child {
 #pane article > .meta,
 #pane article > .detail {
   flex: 0 0 100%;
-}
-#pane article > .actions {
-  display: contents;
 }
 #pane article .actions.flow > button {
   order: 1;
@@ -1204,10 +1205,6 @@ a {
   gap: 6px;
   flex-wrap: wrap;
   margin-top: 8px;
-}
-.actions button {
-  font-size: 12px;
-  padding: 3px 8px;
 }
 .actions.tool {
   margin-top: 4px;
