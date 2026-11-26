@@ -1,0 +1,3168 @@
+{
+  "tasks": {
+    "ABC-1": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "NEW",
+      "lastActiveTimestamp": 1700000002000,
+      "message": "message",
+      "report": "NO_CHANGES",
+      "history": [
+        {
+          "status": "VERIFYING",
+          "at": 1700000005000,
+          "origin": "MASTER",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000007000,
+      "requestOpenedAt": 1700000008000,
+      "lastPolledAt": 1700000009000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "silence": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000011000,
+            "threads": 4,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000013000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000014000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000015000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 2,
+          "of": 3
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "REQUIRED",
+      "probes": [
+        {
+          "kind": "COMMAND",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 3,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 2
+      },
+      "usage": {
+        "calls": 3,
+        "inputTokens": 1700000024000,
+        "cachedInputTokens": 1700000025000,
+        "outputTokens": 1700000026000,
+        "costUsd": 0.5,
+        "coldStarts": 4,
+        "warmStarts": 2,
+        "unpricedCalls": 3
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 4,
+          "inputTokens": 1700000031000,
+          "cachedInputTokens": 1700000032000,
+          "outputTokens": 1700000033000,
+          "costUsd": 0.5,
+          "coldStarts": 2,
+          "warmStarts": 3,
+          "unpricedCalls": 4
+        },
+        "marks": {
+          "marksKey": 1700000037000
+        }
+      },
+      "session": {
+        "movedAt": 1700000038000,
+        "workStartedAt": 1700000039000,
+        "reportedAt": 1700000040000,
+        "halt": {
+          "kind": "FAILED",
+          "at": 1700000042000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000043000,
+        "log": "log",
+        "askedAt": 1700000044000,
+        "generation": 4,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000047000,
+          "printedAt": 1700000048000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000050000,
+        "digest": "digest",
+        "since": 1700000051000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000052000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000053000,
+          "until": 1700000054000,
+          "why": "STOP"
+        }
+      ],
+      "stop": {
+        "trigger": "ROUNDS",
+        "at": 1700000057000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "CASE",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000060000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000061000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 3,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "REVERT",
+              "since": 1700000064000,
+              "movedAt": 1700000065000
+            }
+          }
+        ],
+        "at": 4,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000067000,
+        "askedStop": "askedStop",
+        "liftedStops": 3
+      }
+    },
+    "ABC-2": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "PLAN_PENDING",
+      "lastActiveTimestamp": 1700000070000,
+      "message": "message",
+      "report": "QUESTION",
+      "history": [
+        {
+          "status": "PLAN_PENDING",
+          "at": 1700000073000,
+          "origin": "PALETTE",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000075000,
+      "requestOpenedAt": 1700000076000,
+      "lastPolledAt": 1700000077000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "verifyOutput": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000079000,
+            "threads": 3,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000081000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000082000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000083000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 4,
+          "of": 2
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "CLOSED",
+      "probes": [
+        {
+          "kind": "ARTIFACT",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 2,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 4
+      },
+      "usage": {
+        "calls": 2,
+        "inputTokens": 1700000092000,
+        "cachedInputTokens": 1700000093000,
+        "outputTokens": 1700000094000,
+        "costUsd": 0.5,
+        "coldStarts": 3,
+        "warmStarts": 4,
+        "unpricedCalls": 2
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 3,
+          "inputTokens": 1700000099000,
+          "cachedInputTokens": 1700000100000,
+          "outputTokens": 1700000101000,
+          "costUsd": 0.5,
+          "coldStarts": 4,
+          "warmStarts": 2,
+          "unpricedCalls": 3
+        },
+        "marks": {
+          "marksKey": 1700000105000
+        }
+      },
+      "session": {
+        "movedAt": 1700000106000,
+        "workStartedAt": 1700000107000,
+        "reportedAt": 1700000108000,
+        "halt": {
+          "kind": "IDLE",
+          "at": 1700000110000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000111000,
+        "log": "log",
+        "askedAt": 1700000112000,
+        "generation": 3,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000115000,
+          "printedAt": 1700000116000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000118000,
+        "digest": "digest",
+        "since": 1700000119000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000120000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000121000,
+          "until": 1700000122000,
+          "why": "VERDICT"
+        }
+      ],
+      "stop": {
+        "trigger": "UNDELIVERED",
+        "at": 1700000125000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "SESSION",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000128000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000129000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 2,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "RED_PIPELINE",
+              "since": 1700000132000,
+              "movedAt": 1700000133000
+            }
+          }
+        ],
+        "at": 3,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000135000,
+        "askedStop": "askedStop",
+        "liftedStops": 2
+      }
+    },
+    "ABC-3": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "IN_PROGRESS",
+      "lastActiveTimestamp": 1700000138000,
+      "message": "message",
+      "report": "WAIT",
+      "history": [
+        {
+          "status": "DONE",
+          "at": 1700000141000,
+          "origin": "ACCEPTANCE",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000143000,
+      "requestOpenedAt": 1700000144000,
+      "lastPolledAt": 1700000145000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "unreadable": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000147000,
+            "threads": 2,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000149000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000150000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000151000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 3,
+          "of": 4
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "OPEN",
+      "probes": [
+        {
+          "kind": "REF",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 4,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 3
+      },
+      "usage": {
+        "calls": 4,
+        "inputTokens": 1700000160000,
+        "cachedInputTokens": 1700000161000,
+        "outputTokens": 1700000162000,
+        "costUsd": 0.5,
+        "coldStarts": 2,
+        "warmStarts": 3,
+        "unpricedCalls": 4
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 2,
+          "inputTokens": 1700000167000,
+          "cachedInputTokens": 1700000168000,
+          "outputTokens": 1700000169000,
+          "costUsd": 0.5,
+          "coldStarts": 3,
+          "warmStarts": 4,
+          "unpricedCalls": 2
+        },
+        "marks": {
+          "marksKey": 1700000173000
+        }
+      },
+      "session": {
+        "movedAt": 1700000174000,
+        "workStartedAt": 1700000175000,
+        "reportedAt": 1700000176000,
+        "halt": {
+          "kind": "GONE",
+          "at": 1700000178000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000179000,
+        "log": "log",
+        "askedAt": 1700000180000,
+        "generation": 2,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000183000,
+          "printedAt": 1700000184000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000186000,
+        "digest": "digest",
+        "since": 1700000187000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000188000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000189000,
+          "until": 1700000190000,
+          "why": "QUESTION"
+        }
+      ],
+      "stop": {
+        "trigger": "WAIT",
+        "at": 1700000193000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "JAGT",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000196000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000197000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 4,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "MERGE",
+              "since": 1700000200000,
+              "movedAt": 1700000201000
+            }
+          }
+        ],
+        "at": 2,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000203000,
+        "askedStop": "askedStop",
+        "liftedStops": 4
+      }
+    },
+    "ABC-4": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "VERIFYING",
+      "lastActiveTimestamp": 1700000206000,
+      "message": "message",
+      "report": "PERMISSION",
+      "history": [
+        {
+          "status": "DEPLOYED",
+          "at": 1700000209000,
+          "origin": "MCP",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000211000,
+      "requestOpenedAt": 1700000212000,
+      "lastPolledAt": 1700000213000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "silence": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000215000,
+            "threads": 4,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000217000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000218000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000219000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 2,
+          "of": 3
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "REQUIRED",
+      "probes": [
+        {
+          "kind": "COMMAND",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 3,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 2
+      },
+      "usage": {
+        "calls": 3,
+        "inputTokens": 1700000228000,
+        "cachedInputTokens": 1700000229000,
+        "outputTokens": 1700000230000,
+        "costUsd": 0.5,
+        "coldStarts": 4,
+        "warmStarts": 2,
+        "unpricedCalls": 3
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 4,
+          "inputTokens": 1700000235000,
+          "cachedInputTokens": 1700000236000,
+          "outputTokens": 1700000237000,
+          "costUsd": 0.5,
+          "coldStarts": 2,
+          "warmStarts": 3,
+          "unpricedCalls": 4
+        },
+        "marks": {
+          "marksKey": 1700000241000
+        }
+      },
+      "session": {
+        "movedAt": 1700000242000,
+        "workStartedAt": 1700000243000,
+        "reportedAt": 1700000244000,
+        "halt": {
+          "kind": "FAILED",
+          "at": 1700000246000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000247000,
+        "log": "log",
+        "askedAt": 1700000248000,
+        "generation": 4,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000251000,
+          "printedAt": 1700000252000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000254000,
+        "digest": "digest",
+        "since": 1700000255000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000256000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000257000,
+          "until": 1700000258000,
+          "why": "STATUS"
+        }
+      ],
+      "stop": {
+        "trigger": "PAUSE",
+        "at": 1700000261000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "MASTER",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000264000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000265000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 3,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "REVERT",
+              "since": 1700000268000,
+              "movedAt": 1700000269000
+            }
+          }
+        ],
+        "at": 4,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000271000,
+        "askedStop": "askedStop",
+        "liftedStops": 3
+      }
+    },
+    "ABC-5": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "REVIEW_PENDING",
+      "lastActiveTimestamp": 1700000274000,
+      "message": "message",
+      "report": "PLAIN",
+      "history": [
+        {
+          "status": "APPROVED",
+          "at": 1700000277000,
+          "origin": "TRACKER",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000279000,
+      "requestOpenedAt": 1700000280000,
+      "lastPolledAt": 1700000281000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "verifyOutput": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000283000,
+            "threads": 3,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000285000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000286000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000287000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 4,
+          "of": 2
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "CLOSED",
+      "probes": [
+        {
+          "kind": "ARTIFACT",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 2,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 4
+      },
+      "usage": {
+        "calls": 2,
+        "inputTokens": 1700000296000,
+        "cachedInputTokens": 1700000297000,
+        "outputTokens": 1700000298000,
+        "costUsd": 0.5,
+        "coldStarts": 3,
+        "warmStarts": 4,
+        "unpricedCalls": 2
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 3,
+          "inputTokens": 1700000303000,
+          "cachedInputTokens": 1700000304000,
+          "outputTokens": 1700000305000,
+          "costUsd": 0.5,
+          "coldStarts": 4,
+          "warmStarts": 2,
+          "unpricedCalls": 3
+        },
+        "marks": {
+          "marksKey": 1700000309000
+        }
+      },
+      "session": {
+        "movedAt": 1700000310000,
+        "workStartedAt": 1700000311000,
+        "reportedAt": 1700000312000,
+        "halt": {
+          "kind": "IDLE",
+          "at": 1700000314000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000315000,
+        "log": "log",
+        "askedAt": 1700000316000,
+        "generation": 3,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000319000,
+          "printedAt": 1700000320000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000322000,
+        "digest": "digest",
+        "since": 1700000323000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000324000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000325000,
+          "until": 1700000326000,
+          "why": "PERMISSION"
+        }
+      ],
+      "stop": {
+        "trigger": "MISS",
+        "at": 1700000329000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "NONE",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000332000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000333000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 2,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "RED_PIPELINE",
+              "since": 1700000336000,
+              "movedAt": 1700000337000
+            }
+          }
+        ],
+        "at": 3,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000339000,
+        "askedStop": "askedStop",
+        "liftedStops": 2
+      }
+    },
+    "ABC-6": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "SHIPPING",
+      "lastActiveTimestamp": 1700000342000,
+      "message": "message",
+      "report": "NO_CHANGES",
+      "history": [
+        {
+          "status": "CI_FAILED",
+          "at": 1700000345000,
+          "origin": "ROOT",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000347000,
+      "requestOpenedAt": 1700000348000,
+      "lastPolledAt": 1700000349000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "unreadable": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000351000,
+            "threads": 2,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000353000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000354000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000355000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 3,
+          "of": 4
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "OPEN",
+      "probes": [
+        {
+          "kind": "REF",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 4,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 3
+      },
+      "usage": {
+        "calls": 4,
+        "inputTokens": 1700000364000,
+        "cachedInputTokens": 1700000365000,
+        "outputTokens": 1700000366000,
+        "costUsd": 0.5,
+        "coldStarts": 2,
+        "warmStarts": 3,
+        "unpricedCalls": 4
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 2,
+          "inputTokens": 1700000371000,
+          "cachedInputTokens": 1700000372000,
+          "outputTokens": 1700000373000,
+          "costUsd": 0.5,
+          "coldStarts": 3,
+          "warmStarts": 4,
+          "unpricedCalls": 2
+        },
+        "marks": {
+          "marksKey": 1700000377000
+        }
+      },
+      "session": {
+        "movedAt": 1700000378000,
+        "workStartedAt": 1700000379000,
+        "reportedAt": 1700000380000,
+        "halt": {
+          "kind": "GONE",
+          "at": 1700000382000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000383000,
+        "log": "log",
+        "askedAt": 1700000384000,
+        "generation": 2,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000387000,
+          "printedAt": 1700000388000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000390000,
+        "digest": "digest",
+        "since": 1700000391000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000392000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000393000,
+          "until": 1700000394000,
+          "why": "STOP"
+        }
+      ],
+      "stop": {
+        "trigger": "CHECKS",
+        "at": 1700000397000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "CASE",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000400000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000401000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 4,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "MERGE",
+              "since": 1700000404000,
+              "movedAt": 1700000405000
+            }
+          }
+        ],
+        "at": 2,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000407000,
+        "askedStop": "askedStop",
+        "liftedStops": 4
+      }
+    },
+    "ABC-7": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "CI_POLLING",
+      "lastActiveTimestamp": 1700000410000,
+      "message": "message",
+      "report": "QUESTION",
+      "history": [
+        {
+          "status": "SHIPPING",
+          "at": 1700000413000,
+          "origin": "JAGT",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000415000,
+      "requestOpenedAt": 1700000416000,
+      "lastPolledAt": 1700000417000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "silence": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000419000,
+            "threads": 4,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000421000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000422000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000423000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 2,
+          "of": 3
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "REQUIRED",
+      "probes": [
+        {
+          "kind": "COMMAND",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 3,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 2
+      },
+      "usage": {
+        "calls": 3,
+        "inputTokens": 1700000432000,
+        "cachedInputTokens": 1700000433000,
+        "outputTokens": 1700000434000,
+        "costUsd": 0.5,
+        "coldStarts": 4,
+        "warmStarts": 2,
+        "unpricedCalls": 3
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 4,
+          "inputTokens": 1700000439000,
+          "cachedInputTokens": 1700000440000,
+          "outputTokens": 1700000441000,
+          "costUsd": 0.5,
+          "coldStarts": 2,
+          "warmStarts": 3,
+          "unpricedCalls": 4
+        },
+        "marks": {
+          "marksKey": 1700000445000
+        }
+      },
+      "session": {
+        "movedAt": 1700000446000,
+        "workStartedAt": 1700000447000,
+        "reportedAt": 1700000448000,
+        "halt": {
+          "kind": "FAILED",
+          "at": 1700000450000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000451000,
+        "log": "log",
+        "askedAt": 1700000452000,
+        "generation": 4,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000455000,
+          "printedAt": 1700000456000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000458000,
+        "digest": "digest",
+        "since": 1700000459000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000460000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000461000,
+          "until": 1700000462000,
+          "why": "VERDICT"
+        }
+      ],
+      "stop": {
+        "trigger": "INFRA",
+        "at": 1700000465000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "SESSION",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000468000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000469000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 3,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "REVERT",
+              "since": 1700000472000,
+              "movedAt": 1700000473000
+            }
+          }
+        ],
+        "at": 4,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000475000,
+        "askedStop": "askedStop",
+        "liftedStops": 3
+      }
+    },
+    "ABC-8": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "CI_FAILED",
+      "lastActiveTimestamp": 1700000478000,
+      "message": "message",
+      "report": "WAIT",
+      "history": [
+        {
+          "status": "VERIFYING",
+          "at": 1700000481000,
+          "origin": "AUTO_REVIEW",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000483000,
+      "requestOpenedAt": 1700000484000,
+      "lastPolledAt": 1700000485000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "verifyOutput": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000487000,
+            "threads": 3,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000489000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000490000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000491000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 4,
+          "of": 2
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "CLOSED",
+      "probes": [
+        {
+          "kind": "ARTIFACT",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 2,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 4
+      },
+      "usage": {
+        "calls": 2,
+        "inputTokens": 1700000500000,
+        "cachedInputTokens": 1700000501000,
+        "outputTokens": 1700000502000,
+        "costUsd": 0.5,
+        "coldStarts": 3,
+        "warmStarts": 4,
+        "unpricedCalls": 2
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 3,
+          "inputTokens": 1700000507000,
+          "cachedInputTokens": 1700000508000,
+          "outputTokens": 1700000509000,
+          "costUsd": 0.5,
+          "coldStarts": 4,
+          "warmStarts": 2,
+          "unpricedCalls": 3
+        },
+        "marks": {
+          "marksKey": 1700000513000
+        }
+      },
+      "session": {
+        "movedAt": 1700000514000,
+        "workStartedAt": 1700000515000,
+        "reportedAt": 1700000516000,
+        "halt": {
+          "kind": "IDLE",
+          "at": 1700000518000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000519000,
+        "log": "log",
+        "askedAt": 1700000520000,
+        "generation": 3,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000523000,
+          "printedAt": 1700000524000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000526000,
+        "digest": "digest",
+        "since": 1700000527000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000528000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000529000,
+          "until": 1700000530000,
+          "why": "QUESTION"
+        }
+      ],
+      "stop": {
+        "trigger": "DEPLOY_UNREAD",
+        "at": 1700000533000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "JAGT",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000536000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000537000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 2,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "RED_PIPELINE",
+              "since": 1700000540000,
+              "movedAt": 1700000541000
+            }
+          }
+        ],
+        "at": 3,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000543000,
+        "askedStop": "askedStop",
+        "liftedStops": 2
+      }
+    },
+    "ABC-9": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "REVIEWED",
+      "lastActiveTimestamp": 1700000546000,
+      "message": "message",
+      "report": "PERMISSION",
+      "history": [
+        {
+          "status": "PLAN_PENDING",
+          "at": 1700000549000,
+          "origin": "BOARD",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000551000,
+      "requestOpenedAt": 1700000552000,
+      "lastPolledAt": 1700000553000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "unreadable": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000555000,
+            "threads": 2,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000557000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000558000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000559000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 3,
+          "of": 4
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "OPEN",
+      "probes": [
+        {
+          "kind": "REF",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 4,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 3
+      },
+      "usage": {
+        "calls": 4,
+        "inputTokens": 1700000568000,
+        "cachedInputTokens": 1700000569000,
+        "outputTokens": 1700000570000,
+        "costUsd": 0.5,
+        "coldStarts": 2,
+        "warmStarts": 3,
+        "unpricedCalls": 4
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 2,
+          "inputTokens": 1700000575000,
+          "cachedInputTokens": 1700000576000,
+          "outputTokens": 1700000577000,
+          "costUsd": 0.5,
+          "coldStarts": 3,
+          "warmStarts": 4,
+          "unpricedCalls": 2
+        },
+        "marks": {
+          "marksKey": 1700000581000
+        }
+      },
+      "session": {
+        "movedAt": 1700000582000,
+        "workStartedAt": 1700000583000,
+        "reportedAt": 1700000584000,
+        "halt": {
+          "kind": "GONE",
+          "at": 1700000586000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000587000,
+        "log": "log",
+        "askedAt": 1700000588000,
+        "generation": 2,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000591000,
+          "printedAt": 1700000592000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000594000,
+        "digest": "digest",
+        "since": 1700000595000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000596000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000597000,
+          "until": 1700000598000,
+          "why": "STATUS"
+        }
+      ],
+      "stop": {
+        "trigger": "SHIPS",
+        "at": 1700000601000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "MASTER",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000604000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000605000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 4,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "MERGE",
+              "since": 1700000608000,
+              "movedAt": 1700000609000
+            }
+          }
+        ],
+        "at": 2,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000611000,
+        "askedStop": "askedStop",
+        "liftedStops": 4
+      }
+    },
+    "ABC-10": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "APPROVED",
+      "lastActiveTimestamp": 1700000614000,
+      "message": "message",
+      "report": "PLAIN",
+      "history": [
+        {
+          "status": "DONE",
+          "at": 1700000617000,
+          "origin": "CODE_HOST",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000619000,
+      "requestOpenedAt": 1700000620000,
+      "lastPolledAt": 1700000621000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "silence": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000623000,
+            "threads": 4,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000625000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000626000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000627000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 2,
+          "of": 3
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "REQUIRED",
+      "probes": [
+        {
+          "kind": "COMMAND",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 3,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 2
+      },
+      "usage": {
+        "calls": 3,
+        "inputTokens": 1700000636000,
+        "cachedInputTokens": 1700000637000,
+        "outputTokens": 1700000638000,
+        "costUsd": 0.5,
+        "coldStarts": 4,
+        "warmStarts": 2,
+        "unpricedCalls": 3
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 4,
+          "inputTokens": 1700000643000,
+          "cachedInputTokens": 1700000644000,
+          "outputTokens": 1700000645000,
+          "costUsd": 0.5,
+          "coldStarts": 2,
+          "warmStarts": 3,
+          "unpricedCalls": 4
+        },
+        "marks": {
+          "marksKey": 1700000649000
+        }
+      },
+      "session": {
+        "movedAt": 1700000650000,
+        "workStartedAt": 1700000651000,
+        "reportedAt": 1700000652000,
+        "halt": {
+          "kind": "FAILED",
+          "at": 1700000654000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000655000,
+        "log": "log",
+        "askedAt": 1700000656000,
+        "generation": 4,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000659000,
+          "printedAt": 1700000660000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000662000,
+        "digest": "digest",
+        "since": 1700000663000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000664000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000665000,
+          "until": 1700000666000,
+          "why": "PERMISSION"
+        }
+      ],
+      "stop": {
+        "trigger": "PACE",
+        "at": 1700000669000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "NONE",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000672000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000673000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 3,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "REVERT",
+              "since": 1700000676000,
+              "movedAt": 1700000677000
+            }
+          }
+        ],
+        "at": 4,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000679000,
+        "askedStop": "askedStop",
+        "liftedStops": 3
+      }
+    },
+    "ABC-11": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "DEPLOY_CONFLICT",
+      "lastActiveTimestamp": 1700000682000,
+      "message": "message",
+      "report": "NO_CHANGES",
+      "history": [
+        {
+          "status": "DEPLOYED",
+          "at": 1700000685000,
+          "origin": "PALETTE",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000687000,
+      "requestOpenedAt": 1700000688000,
+      "lastPolledAt": 1700000689000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "verifyOutput": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000691000,
+            "threads": 3,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000693000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000694000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000695000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 4,
+          "of": 2
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "CLOSED",
+      "probes": [
+        {
+          "kind": "ARTIFACT",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 2,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 4
+      },
+      "usage": {
+        "calls": 2,
+        "inputTokens": 1700000704000,
+        "cachedInputTokens": 1700000705000,
+        "outputTokens": 1700000706000,
+        "costUsd": 0.5,
+        "coldStarts": 3,
+        "warmStarts": 4,
+        "unpricedCalls": 2
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 3,
+          "inputTokens": 1700000711000,
+          "cachedInputTokens": 1700000712000,
+          "outputTokens": 1700000713000,
+          "costUsd": 0.5,
+          "coldStarts": 4,
+          "warmStarts": 2,
+          "unpricedCalls": 3
+        },
+        "marks": {
+          "marksKey": 1700000717000
+        }
+      },
+      "session": {
+        "movedAt": 1700000718000,
+        "workStartedAt": 1700000719000,
+        "reportedAt": 1700000720000,
+        "halt": {
+          "kind": "IDLE",
+          "at": 1700000722000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000723000,
+        "log": "log",
+        "askedAt": 1700000724000,
+        "generation": 3,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000727000,
+          "printedAt": 1700000728000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000730000,
+        "digest": "digest",
+        "since": 1700000731000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000732000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000733000,
+          "until": 1700000734000,
+          "why": "STOP"
+        }
+      ],
+      "stop": {
+        "trigger": "UNCHANGED_FAILURE",
+        "at": 1700000737000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "CASE",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000740000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000741000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 2,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "MERGE",
+              "since": 1700000682000,
+              "movedAt": 1700000682000
+            }
+          }
+        ],
+        "at": 0,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000747000,
+        "askedStop": "askedStop",
+        "liftedStops": 2
+      }
+    },
+    "ABC-12": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "DEPLOYED",
+      "lastActiveTimestamp": 1700000750000,
+      "message": "message",
+      "report": "QUESTION",
+      "history": [
+        {
+          "status": "APPROVED",
+          "at": 1700000753000,
+          "origin": "ACCEPTANCE",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000755000,
+      "requestOpenedAt": 1700000756000,
+      "lastPolledAt": 1700000757000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "unreadable": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000759000,
+            "threads": 2,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000761000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000762000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000763000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 3,
+          "of": 4
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "OPEN",
+      "probes": [
+        {
+          "kind": "REF",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 4,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 3
+      },
+      "usage": {
+        "calls": 4,
+        "inputTokens": 1700000772000,
+        "cachedInputTokens": 1700000773000,
+        "outputTokens": 1700000774000,
+        "costUsd": 0.5,
+        "coldStarts": 2,
+        "warmStarts": 3,
+        "unpricedCalls": 4
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 2,
+          "inputTokens": 1700000779000,
+          "cachedInputTokens": 1700000780000,
+          "outputTokens": 1700000781000,
+          "costUsd": 0.5,
+          "coldStarts": 3,
+          "warmStarts": 4,
+          "unpricedCalls": 2
+        },
+        "marks": {
+          "marksKey": 1700000785000
+        }
+      },
+      "session": {
+        "movedAt": 1700000786000,
+        "workStartedAt": 1700000787000,
+        "reportedAt": 1700000788000,
+        "halt": {
+          "kind": "GONE",
+          "at": 1700000790000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000791000,
+        "log": "log",
+        "askedAt": 1700000792000,
+        "generation": 2,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000795000,
+          "printedAt": 1700000796000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000798000,
+        "digest": "digest",
+        "since": 1700000799000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000800000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000801000,
+          "until": 1700000802000,
+          "why": "VERDICT"
+        }
+      ],
+      "stop": {
+        "trigger": "ACCEPTANCE_FAILED",
+        "at": 1700000805000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "SESSION",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000808000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000809000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 4,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "MERGE",
+              "since": 1700000812000,
+              "movedAt": 1700000813000
+            }
+          }
+        ],
+        "at": 2,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000815000,
+        "askedStop": "askedStop",
+        "liftedStops": 4
+      }
+    },
+    "ABC-13": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "REVERTED",
+      "lastActiveTimestamp": 1700000818000,
+      "message": "message",
+      "report": "WAIT",
+      "history": [
+        {
+          "status": "CI_FAILED",
+          "at": 1700000821000,
+          "origin": "MCP",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000823000,
+      "requestOpenedAt": 1700000824000,
+      "lastPolledAt": 1700000825000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "silence": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000827000,
+            "threads": 4,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000829000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000830000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000831000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 2,
+          "of": 3
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "REQUIRED",
+      "probes": [
+        {
+          "kind": "COMMAND",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 3,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 2
+      },
+      "usage": {
+        "calls": 3,
+        "inputTokens": 1700000840000,
+        "cachedInputTokens": 1700000841000,
+        "outputTokens": 1700000842000,
+        "costUsd": 0.5,
+        "coldStarts": 4,
+        "warmStarts": 2,
+        "unpricedCalls": 3
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 4,
+          "inputTokens": 1700000847000,
+          "cachedInputTokens": 1700000848000,
+          "outputTokens": 1700000849000,
+          "costUsd": 0.5,
+          "coldStarts": 2,
+          "warmStarts": 3,
+          "unpricedCalls": 4
+        },
+        "marks": {
+          "marksKey": 1700000853000
+        }
+      },
+      "session": {
+        "movedAt": 1700000854000,
+        "workStartedAt": 1700000855000,
+        "reportedAt": 1700000856000,
+        "halt": {
+          "kind": "FAILED",
+          "at": 1700000858000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000859000,
+        "log": "log",
+        "askedAt": 1700000860000,
+        "generation": 4,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000863000,
+          "printedAt": 1700000864000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000866000,
+        "digest": "digest",
+        "since": 1700000867000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000868000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000869000,
+          "until": 1700000870000,
+          "why": "QUESTION"
+        }
+      ],
+      "stop": {
+        "trigger": "STALLED",
+        "at": 1700000873000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "JAGT",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000876000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000877000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 3,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "REVERT",
+              "since": 1700000880000,
+              "movedAt": 1700000881000
+            }
+          }
+        ],
+        "at": 4,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000883000,
+        "askedStop": "askedStop",
+        "liftedStops": 3
+      }
+    },
+    "ABC-14": {
+      "repos": [
+        {
+          "project": "project",
+          "worktreePath": "worktreePath",
+          "remoteUrl": "remoteUrl",
+          "mrUrl": "mrUrl",
+          "merged": true,
+          "hostMerged": true
+        }
+      ],
+      "status": "DONE",
+      "lastActiveTimestamp": 1700000886000,
+      "message": "message",
+      "report": "PERMISSION",
+      "history": [
+        {
+          "status": "SHIPPING",
+          "at": 1700000889000,
+          "origin": "TRACKER",
+          "why": "why",
+          "tree": "tree"
+        }
+      ],
+      "alias": "alias",
+      "title": "title",
+      "ticketUrl": "ticketUrl",
+      "baseBranch": "baseBranch",
+      "openedBy": "TRACKER",
+      "mrCreatedAt": 1700000891000,
+      "requestOpenedAt": 1700000892000,
+      "lastPolledAt": 1700000893000,
+      "autoReview": true,
+      "approved": true,
+      "told": {
+        "points": {
+          "pointsKey": "points"
+        },
+        "verifyOutput": "entries"
+      },
+      "trail": {
+        "rounds": [
+          {
+            "at": 1700000895000,
+            "threads": 3,
+            "failing": "failing",
+            "digest": "digest",
+            "notes": "notes"
+          }
+        ],
+        "since": 1700000897000
+      },
+      "pipelineStatus": "pipelineStatus",
+      "checksUnread": [
+        {
+          "at": 1700000898000,
+          "cause": "cause"
+        }
+      ],
+      "checksTip": "checksTip",
+      "headTip": "headTip",
+      "infraRetries": [
+        {
+          "at": 1700000899000,
+          "project": "project",
+          "pipelineUrl": "pipelineUrl",
+          "jobs": "jobs",
+          "reason": "reason",
+          "sent": true,
+          "attempt": 4,
+          "of": 2
+        }
+      ],
+      "pipelineUrl": "pipelineUrl",
+      "planGate": "CLOSED",
+      "probes": [
+        {
+          "kind": "ARTIFACT",
+          "repo": "repo",
+          "words": [
+            "words"
+          ],
+          "exit": 2,
+          "passed": true,
+          "excerpt": "excerpt"
+        }
+      ],
+      "switches": {
+        "switchesKey": "switches"
+      },
+      "gitTrust": {
+        "recorded": {
+          "recordedKey": "recorded"
+        },
+        "changed": "changed"
+      },
+      "refusals": {
+        "SESSION_LINE": 4
+      },
+      "usage": {
+        "calls": 2,
+        "inputTokens": 1700000908000,
+        "cachedInputTokens": 1700000909000,
+        "outputTokens": 1700000910000,
+        "costUsd": 0.5,
+        "coldStarts": 3,
+        "warmStarts": 4,
+        "unpricedCalls": 2
+      },
+      "agentSpend": {
+        "usage": {
+          "calls": 3,
+          "inputTokens": 1700000915000,
+          "cachedInputTokens": 1700000916000,
+          "outputTokens": 1700000917000,
+          "costUsd": 0.5,
+          "coldStarts": 4,
+          "warmStarts": 2,
+          "unpricedCalls": 3
+        },
+        "marks": {
+          "marksKey": 1700000921000
+        }
+      },
+      "session": {
+        "movedAt": 1700000922000,
+        "workStartedAt": 1700000923000,
+        "reportedAt": 1700000924000,
+        "halt": {
+          "kind": "IDLE",
+          "at": 1700000926000,
+          "cause": "cause"
+        },
+        "quietSince": 1700000927000,
+        "log": "log",
+        "askedAt": 1700000928000,
+        "generation": 3,
+        "window": {
+          "state": "DEAD_SHELL",
+          "at": 1700000931000,
+          "printedAt": 1700000932000
+        },
+        "tier": {
+          "models": [
+            "models"
+          ],
+          "rung": 0
+        }
+      },
+      "turn": {
+        "step": "step",
+        "id": 1700000934000,
+        "digest": "digest",
+        "since": 1700000935000,
+        "marks": {
+          "marksKey": "marks"
+        },
+        "run": [
+          1700000936000
+        ]
+      },
+      "waits": [
+        {
+          "since": 1700000937000,
+          "until": 1700000938000,
+          "why": "STATUS"
+        }
+      ],
+      "stop": {
+        "trigger": "ROUNDS",
+        "at": 1700000941000,
+        "evidence": "evidence",
+        "request": "request",
+        "triage": {
+          "who": "MASTER",
+          "classText": "classText",
+          "family": "family",
+          "lift": "SAFE",
+          "evidence": "evidence",
+          "failure": "failure"
+        }
+      },
+      "repoRequest": "repoRequest",
+      "deployment": {
+        "pressedAt": 1700000944000,
+        "targets": [
+          {
+            "project": "project",
+            "deployBranch": "deployBranch",
+            "merge": "merge",
+            "fixes": [],
+            "pushedAt": 1700000945000,
+            "revertCommit": "revertCommit",
+            "blocked": true,
+            "bare": true,
+            "unread": 2,
+            "retried": "retried",
+            "conflicted": {
+              "cause": "RED_PIPELINE",
+              "since": 1700000948000,
+              "movedAt": 1700000949000
+            }
+          }
+        ],
+        "at": 3,
+        "askedDigest": "askedDigest"
+      },
+      "roles": {
+        "rolesKey": {
+          "reading": "reading",
+          "passed": "passed",
+          "roundDigest": "roundDigest",
+          "roundRows": "roundRows",
+          "declined": "declined"
+        }
+      },
+      "master": {
+        "left": "left",
+        "unanswered": "unanswered",
+        "pressedDeploy": "pressedDeploy",
+        "seal": "seal",
+        "sealedRound": 1700000951000,
+        "askedStop": "askedStop",
+        "liftedStops": 2
+      }
+    }
+  }
+}
