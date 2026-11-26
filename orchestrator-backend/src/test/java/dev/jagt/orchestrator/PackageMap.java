@@ -13,6 +13,7 @@ public final class PackageMap {
 
   private static final String ROOT = SourceRoots.BASE_PATH;
   private static final Pattern ROW = Pattern.compile("(?m)^\\| `([^`]+)` \\|");
+  private static final Pattern REASON_ROW = Pattern.compile("(?m)^\\| `([^`]+)` \\| (.+) \\|$");
   private static final String OVER_TEN = "### Over ten classes";
   private static final String SINGLE = "### A single class";
 
@@ -31,6 +32,12 @@ public final class PackageMap {
 
   public static Set<String> overTen() {
     return rows(section(1));
+  }
+
+  public static Map<String, String> overTenReasons() {
+    Matcher row = REASON_ROW.matcher(section(1));
+    return row.results()
+        .collect(Collectors.toMap(match -> match.group(1), match -> match.group(2)));
   }
 
   static Set<String> single() {

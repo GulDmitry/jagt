@@ -354,14 +354,14 @@ A package of one class folds into its parent.
 
 | package | why |
 |---------|-----|
-| `flow` | package-private chart types (`Fact`, `Landing`, `TaskMove`, `Phases`, `Role`) are partners of `TaskChart` and `TaskReducer` |
-| `protocol` | package-private `Wire` is the codec of eight message and read records beside it |
+| `flow` | package-private `Fact`, `Landing`, `TaskMove`, `Phases` and `Role` are partners of `TaskChart` and `TaskReducer` |
+| `protocol` | the codec of the message and read records here and in `message/` and `debug/` is public for those sub-packages |
 | `service` | package-private `RoundBrief`, `TaskNotes` and `WorktreeSandbox` tie `HandBack`, `RoundRelay`, `AgentSessions` and their readers |
-| `service/master` | package-private `RoundQuotes` and `RoundFacts` are partners of `MasterPanel` |
-| `service/git` | twelve classes of one feature, no sub-kind of three; `GitStates` is package-private to `GitWorktrees` |
+| `service/master` | `MasterPanel` is built with the public `RoundQuotes` and `RoundFacts`, which a job's fake builds from outside |
+| `service/git` | one feature, no sub-kind; package-private `GitStates` belongs to `GitWorktrees` |
 | `adapter/agent` | package-private `ClaudeTranscripts` ties the Claude classes together |
-| `stand` | one harness, thirty-nine classes: runs, engines, host stubs and evidence; its split is open |
-| `stand/invariant` | seventeen checks of one feature, no sub-kind of three; `StateFiles` is package-private to them |
+| `stand` | one harness: runs, engines, host stubs and evidence; its split is open |
+| `stand/invariant` | checks of one feature, no sub-kind; package-private `StateFiles` is shared by them |
 | `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
 
 ## Where a new thing goes
