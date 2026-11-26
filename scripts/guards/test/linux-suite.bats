@@ -171,3 +171,10 @@ EOF
   [ "$status" -eq 2 ]
   [ ! -e "$DOCKER_LOG" ]
 }
+
+@test "the codeql job runs the CodeQL twin script in the CI image" {
+  run "$script" codeql
+  [ "$status" -eq 0 ]
+  grep -qxF '==> codeql: scripts/codeql-local.sh' <<<"$output"
+  grep -q 'scripts/codeql-local.sh' "$DOCKER_LOG"
+}

@@ -80,7 +80,7 @@ and no other Gradle line (`workflow-gradle-lines`); `scripts/ci-local.sh` runs t
 | `install` (Windows) | none: a Mac cannot run it; the pull request's CI run reproduces it |
 | `stand` (kind) | `ci-local.sh stand-kind`: the compose twin's image and engine, kind's tools installed in its run |
 | `release` | `gateRelease`, run by the release gate on the released tree |
-| CodeQL | none: GitHub's analyser has no local build; its build step is `gateCodeql`, and the pull request's run is the check |
+| CodeQL | `ci-local.sh codeql`: the pinned action's CLI bundle over the same databases, config and suite as `codeql.yml`, ending in its severity-error rule (`codeql-errors.sh`) |
 
 - Only the argument-free run, every job above green, records the tree for the push guard; the release gate runs it on the released tree.
 - A CI red after a local green is a defect ([testing](testing.md)).

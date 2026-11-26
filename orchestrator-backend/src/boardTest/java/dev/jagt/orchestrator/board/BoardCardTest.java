@@ -7,6 +7,8 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.e2e.FakeRefusingProcesses;
+import dev.jagt.orchestrator.job.tracker.TicketPrefetchJob;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -27,9 +29,18 @@ class BoardCardTest extends BoardPageContext {
       Collections.nCopies(
           60, new StatusChange(TaskStatus.IN_PROGRESS, System.currentTimeMillis() - 60_000, null));
 
+  private final TicketPrefetchJob ticketPrefetch;
+  private final FakeRefusingProcesses processes;
+
   @Autowired
-  BoardCardTest(BreakableJob breakable, StateService state) {
+  BoardCardTest(
+      BreakableJob breakable,
+      StateService state,
+      TicketPrefetchJob ticketPrefetch,
+      FakeRefusingProcesses processes) {
     super(breakable, state);
+    this.ticketPrefetch = ticketPrefetch;
+    this.processes = processes;
   }
 
   @Test
@@ -244,6 +255,19 @@ class BoardCardTest extends BoardPageContext {
     Page page = openLiveBoard();
 
     assertThat(page.locator("article a.id")).hasAttribute("href", "https://tracker.example/ABC-1");
+  }
+
+  @Test
+  void prefetchingTheTicketOfWorkingTaskStartsNoHostCommand() {
+    TaskState linked =
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
+            .ticketUrl("https://tracker.example/ABC-1")
+            .build();
+    state.putTask("ABC-1", linked);
+
+    ticketPrefetch.run("ABC-1", linked);
+
+    org.assertj.core.api.Assertions.assertThat(processes.drainRefused()).isEmpty();
   }
 
   @Test
