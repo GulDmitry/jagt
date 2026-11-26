@@ -145,6 +145,21 @@ public class FlowReports {
     return Optional.ofNullable(landed.get());
   }
 
+  /** Refuses a no_plan report where jagt holds the gate; the task is written nothing else. */
+  public void requireNoPlanAllowed(String taskId) {
+    AtomicReference<String> refused = new AtomicReference<>();
+    tasks.reduce(
+        taskId,
+        (reducer, task) -> {
+          Optional<String> why = reducer.refusedNoPlan(task);
+          why.ifPresent(refused::set);
+          return why.isPresent() ? task.refused(RefusalKind.STATUS_REPORT) : task;
+        });
+    if (refused.get() != null) {
+      throw Refusal.byState(refused.get());
+    }
+  }
+
   /**
    * A question jagt itself puts about a task, which keeps its status: a status no session reports
    * cannot carry it.

@@ -108,6 +108,12 @@ public final class TaskChart {
         new TaskMove.Offers(action));
   }
 
+  /** Whether a plan gate standing at {@code plan} lets {@code asked} approve it. */
+  boolean takesApproval(PlanGate plan, TaskMove.ApprovalAsked asked) {
+    Phases phases = Phases.at(TaskStatus.PLAN_PENDING, plan);
+    return chart.takes(PLAN, configurationOf(chart, composition, phases), phases.facts(), asked);
+  }
+
   /** Why a press by {@code origin} is declined once the chart has not offered it. */
   Optional<Decline> declined(TaskAction action, Facts facts, @Nullable ActionOrigin origin) {
     return TaskOffers.declined(action, new ChartFacts(false, Map.of(), facts, origin));

@@ -111,10 +111,22 @@ final class ProgressRegions {
     }
     chart
         .onMatching(
-            PLAN, PlanGate.CLOSED, "no plan declared", new TaskMove.NoPlanDeclared()::equals)
+            PLAN,
+            PlanGate.CLOSED,
+            "no plan declared",
+            move -> move instanceof TaskMove.NoPlanDeclared declared && !declared.outside())
         .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))
         .to(PlanGate.OPEN);
     for (PlanGate from : EnumSet.of(PlanGate.CLOSED, PlanGate.REQUIRED)) {
+      chart
+          .onMatching(
+              PLAN,
+              from,
+              "approval asked",
+              move ->
+                  move instanceof TaskMove.ApprovalAsked asked
+                      && (asked.human() || !asked.outside() || asked.sound()))
+          .internal();
       chart
           .onMatching(PLAN, from, "plan approved", new TaskMove.PlanApproved()::equals)
           .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))

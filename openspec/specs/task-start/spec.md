@@ -33,7 +33,6 @@ A task opened or reopened in `plan` mode, or with `agent.autoplan.enabled` on, S
 write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused (`PlanFirst`). `approve-plan` at `PLAN_PENDING`, and the Master's
 `go` on a gate autoplan closed, SHALL open it and start the session.
 While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`, `SHIPPING` or `CI_POLLING`.
-
 #### Scenario: A source file before approval
 - **WHEN** a session in `plan` mode writes `src/Foo.java` before its plan is approved
 - **THEN** the write is refused with `plan first`, and `plan.md` and `task_visual.md` are still written
@@ -46,7 +45,6 @@ While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`
 - **THEN** it reports a question naming why; the Master in act neither answers nor approves, the plan waits for you
 - **WHEN** the session judges ABC-42 sound
 - **THEN** the Master in act approves the plan as for any plan-first task
-
 #### Scenario: A plan lists its files
 - **WHEN** a session plans first
 - **THEN** `plan.md` lists every file it will create after approval: spec delta, code, tests
@@ -54,23 +52,30 @@ While it is closed the flow also refuses `ship` and a report of `REVIEW_PENDING`
 - **THEN** the write is not refused ([guards](../../../docs/rules/guards.md)), but its `REVIEW_PENDING` report and `ship` are, naming the plan
 - **WHEN** a review round is relayed to a task at `REVIEW_PENDING` whose gate is closed
 - **THEN** the gate opens and the session's writes are not refused as plan first
-
 #### Scenario: Approved
 - **WHEN** you press `approve-plan`, or the Master in `act` finds a plan holds
 - **THEN** the gate opens and the task is `IN_PROGRESS`; a `plan`-mode plan the Master found holding waits for you
 - **WHEN** an autoplan session reports `IN_PROGRESS` with `outcome=no_plan`
-- **THEN** the gate opens, and in `plan` mode the report is refused
-
+- **THEN** the gate opens, and in `plan` mode or on an outside-opened task the report is refused
 #### Scenario: A ratified probe is replaced
 - **WHEN** a session at `IN_PROGRESS` reports `PLAN_PENDING` with a new probes block
 - **THEN** the probes are read anew and the plan waits for approval
 - **AND** from `VERIFYING` the report is refused, naming `IN_PROGRESS` first
-
 #### Scenario: A task reopened in plan mode
 - **WHEN** a task whose gate is open is reopened with `mode=plan`
 - **THEN** its gate is closed until `approve-plan`, and the answer says the plan is approved on the board
 - **WHEN** a task at `VERIFYING`, `REVIEW_PENDING` or later is reopened with `mode=plan`
 - **THEN** it is refused as a state refusal naming the status; nothing opens and its gate stays as it was
+
+### Requirement: An outside system's plan gate is jagt's
+A task SHALL record the `ActionOrigin` that opened it. Where an outside system did, the flow MUST refuse `no_plan` while its gate is closed.
+It MUST refuse a Master approval of a plan not headed `verdict: sound`; each is a `Refusal`, and your approval is never refused.
+#### Scenario: An outside-opened plan
+- **WHEN** the session of tracker-opened ABC-42 reports `no_plan` with its gate closed
+- **THEN** the report is refused and the gate stays closed
+- **WHEN** ABC-42's plan is headed `verdict: unsound`
+- **THEN** the approval of the Master in act is refused and the plan waits for you
+- **AND** your approval opens the gate
 
 ### Requirement: A task may plan before it has a repository
 The board form's `plan first` with no project ticked SHALL start a task with no project, never routed (`ProjectRouting` is not asked).
@@ -139,11 +144,9 @@ Uncommitted tracked changes there, or another worktree holding it, MUST refuse n
 A request URL SHALL belong to the project whose remote path is the URL's leading path segments, whole segments only.
 The name the remote reaches the host by is no part of it. Where several projects match, the one whose remote is on the URL's host wins.
 A project with no remote is passed over.
-
 #### Scenario: A path that only starts the same
 - **WHEN** `group/api` and `group/api-shop` are two projects and the request is `https://host.test/group/api-shop/-/merge_requests/4`
 - **THEN** it belongs to `group/api-shop`
-
 #### Scenario: A remote reached by an alias
 - **WHEN** a project's remote is `git@github-work:group/api.git` and the request is `https://github.com/group/api/pull/4`
 - **THEN** it belongs to that project
@@ -153,11 +156,9 @@ A project with no remote is passed over.
 `none` SHALL mean a repository kept on this machine. Startup MUST refuse a remote `git remote` does not list, and `none` beside a `codeHost`
 that is not `none`, each naming its keys; it reads no network.
 A base branch is read with that remote's prefix dropped, and the briefs and refusals that name a push name that remote.
-
 #### Scenario: A repository kept on this machine
 - **WHEN** `remote` is `none` and ABC-42 starts
 - **THEN** its worktree is cut from the local base branch `main`, nothing is fetched or pushed, and a deploy merges into the local deploy branch
-
 #### Scenario: A remote the repository lacks
 - **WHEN** `remote` is `upstream` and `git remote` lists `origin` alone
 - **THEN** startup refuses, naming `orchestrator.projects.<key>.remote`

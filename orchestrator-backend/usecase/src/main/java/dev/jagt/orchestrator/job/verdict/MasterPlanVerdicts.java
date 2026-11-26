@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.config.MasterMove;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -57,6 +58,14 @@ class MasterPlanVerdicts {
       }
     } catch (Unplaceable unplaceable) {
       return revise(taskId, task, standing, verdict, unplaceable.revision());
+    } catch (Refusal _) {
+      log.atInfo()
+          .setMessage("master approval refused")
+          .addKeyValue("task", taskId)
+          .addKeyValue("cause", "plan not headed verdict: sound on an outside-opened task")
+          .addKeyValue("effect", "the plan waits for the human")
+          .log();
+      return false;
     }
     decisions.returned(task, verdict.round(), List.of());
     log.atInfo()

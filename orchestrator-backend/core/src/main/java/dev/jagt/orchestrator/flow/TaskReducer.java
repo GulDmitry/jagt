@@ -12,11 +12,13 @@ import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
+import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.repo.GitTrust;
 import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.session.Session;
 import dev.jagt.orchestrator.task.stop.StopTriage;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
@@ -26,7 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -141,7 +145,43 @@ public final class TaskReducer {
 
   /** {@code task} whose session declared it needs no plan; a gate the human asked for stays. */
   public TaskState noPlanDeclared(TaskState task) {
-    return step(task, new TaskMove.NoPlanDeclared());
+    return step(task, new TaskMove.NoPlanDeclared(task.ticket().openedOutside()));
+  }
+
+  /** Why a session may not declare {@code task} needs no plan, empty where it may. */
+  public Optional<String> refusedNoPlan(TaskState task) {
+    PlanGate plan = task.gate().planGate();
+    boolean taken =
+        plan != PlanGate.CLOSED
+            || !chart
+                .effects(
+                    Phases.at(TaskStatus.IN_PROGRESS, plan),
+                    new TaskMove.NoPlanDeclared(task.ticket().openedOutside()))
+                .isEmpty();
+    return taken
+        ? Optional.empty()
+        : Optional.of(
+            "no_plan refused: an outside system opened this task, so its plan gate is jagt's"
+                + " — report PLAN_PENDING with the plan, or a question if the ticket is unsound");
+  }
+
+  /**
+   * Why {@code by} may not approve the plan of {@code task}, empty where it may; {@code sound} is
+   * read only where the answer depends on it.
+   */
+  public Optional<String> refusedApproval(
+      TaskState task, @Nullable ActionOrigin by, BooleanSupplier sound) {
+    PlanGate plan = task.gate().planGate();
+    boolean outside = task.ticket().openedOutside();
+    boolean human = ChartFacts.human(by);
+    if (!plan.closed() || human || !outside) {
+      return Optional.empty();
+    }
+    return chart.takesApproval(plan, new TaskMove.ApprovalAsked(true, false, sound.getAsBoolean()))
+        ? Optional.empty()
+        : Optional.of(
+            "the plan waits for the human: an outside system opened this task and plan.md is not"
+                + " headed `verdict: sound`");
   }
 
   /**

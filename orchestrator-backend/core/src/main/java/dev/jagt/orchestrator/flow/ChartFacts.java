@@ -25,6 +25,10 @@ record ChartFacts(
   }
 
   boolean human() {
-    return origin != null && HUMAN.contains(origin);
+    return human(origin);
+  }
+
+  static boolean human(@Nullable ActionOrigin by) {
+    return by != null && HUMAN.contains(by);
   }
 }

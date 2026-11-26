@@ -77,6 +77,9 @@ public class AgentStatusReports {
     String url = said.link();
     // What the machine lets this report land on; the agent is told, not left reading its own word
     // back.
+    if (said.noPlan()) {
+      flow.requireNoPlanAllowed(taskId);
+    }
     FlowReports.Landed written =
         flow.report(
                 taskId,

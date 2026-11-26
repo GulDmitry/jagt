@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -16,8 +17,11 @@ import dev.jagt.orchestrator.service.session.LinkRefusals;
 import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.plan.Holds;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.plan.Probe;
+import dev.jagt.orchestrator.task.stop.RefusalKind;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,7 +142,9 @@ class AgentStatusReportsPlanTest {
             "IN_PROGRESS", "one file, no contradiction", "no_plan", null, Map.of()),
         "ABC-1");
 
-    assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(state.task("ABC-1").orElseThrow().gate())
+        .returns(PlanGate.OPEN, Holds::planGate)
+        .returns(Map.of(), Holds::refusals);
   }
 
   @Test
@@ -155,6 +161,29 @@ class AgentStatusReportsPlanTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("outcome");
     assertThat(state.task("ABC-1").orElseThrow().gate().planGate()).isEqualTo(PlanGate.REQUIRED);
+  }
+
+  @Test
+  void keepsThePlanGateClosedWhereTheTrackerOpenedTheTaskAndItsSessionReportsNoPlan() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", "/wt", TaskStatus.NEW)
+            .planGate(PlanGate.CLOSED)
+            .openedBy(ActionOrigin.TRACKER)
+            .build());
+    when(configService.load()).thenReturn(ConfigFile.defaults());
+
+    assertThatThrownBy(() ->
+            reports.report(
+                new AgentStatusMessage("IN_PROGRESS", "one file", "no_plan", null, Map.of()),
+                "ABC-1"))
+        .isInstanceOf(Refusal.class)
+        .extracting(refusal -> ((Refusal) refusal).code())
+        .isEqualTo(Refusal.Code.STATE);
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(PlanGate.CLOSED, task -> task.gate().planGate())
+        .returns(TaskStatus.NEW, task -> task.standing().status())
+        .returns(Map.of(RefusalKind.STATUS_REPORT, 1), task -> task.gate().refusals());
   }
 
   @Test
