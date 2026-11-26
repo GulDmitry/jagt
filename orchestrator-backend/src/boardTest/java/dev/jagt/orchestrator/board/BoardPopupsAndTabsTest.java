@@ -454,6 +454,18 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
+  void mermaidFenceThatCannotBeParsedReportsTheFailureInAnErrorToast() throws Exception {
+    Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
+    Files.writeString(worktree.resolve("task_visual.md"), "```mermaid\nnot a diagram\n```\n");
+    state.putTask("ABC-7", alphaTask("ABC-7", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
+
+    page.locator("#pane .tabs button[data-tab=artifacts]").click();
+
+    assertThat(page.locator("#toasts .toast.error")).containsText("could not draw the diagram");
+  }
+
+  @Test
   void theOpenTaskTabsStandInTheOrderTheyAreUsed() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     Page page = openBoard();
