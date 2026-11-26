@@ -5,7 +5,7 @@ spec: [`fitness`](../../openspec/specs/fitness/spec.md)
 
 ## Status
 
-Accepted 2026-11-26.
+Superseded 2026-11-26 by [0259](0259-each-pitest-task-stops-at-three-times-its-measured-run.md).
 
 ## Context
 

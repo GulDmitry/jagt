@@ -2,6 +2,9 @@
 def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'GitStates', 'GitCommands', 'WorktreeHooks', 'DiffCheckouts', 'WorkspaceBranch']
     .collect { "dev.jagt.orchestrator.service.git.${it}".toString() } + ['dev.jagt.orchestrator.job.checker.workspace.WorkspaceRequests']
 
+// Three times each project's longest finished nightly run, in minutes (0259); a project absent from it has no measured run.
+def pitestHangGuardMinutes = [':': 45, ':adapter': 74, ':core': 77, ':mutation-scope': 23, ':stand': 181, ':statechart': 31, ':surface': 39, ':usecase': 451]
+
 allprojects {
     // The register's one row for this plugin: its deprecation is Gradle-reported at apply time and only upstream can end it.
     def pitestWarningAccepted = file("${rootDir}/build-logic/accepted-warnings.txt").readLines().any { it.startsWith('Configuration.setVisible(boolean)') }
@@ -43,7 +46,14 @@ allprojects {
         }
     }
 
-    tasks.named('pitest') { forkedTestEnv(it) }
+    tasks.named('pitest') {
+        forkedTestEnv(it)
+        def minutes = pitestHangGuardMinutes[project.path]
+        if (minutes == null) {
+            throw new GradleException("pitest hang guard: no measured time for ${project.path}, add it to pitestHangGuardMinutes")
+        }
+        timeout = java.time.Duration.ofMinutes(minutes)
+    }
 
     // `:usecase` runs `:core`'s tests too, so a changed `:core` type is mutated there alone (0139).
     if (project.path == ':core') {
