@@ -238,7 +238,7 @@ public class MasterReview {
 
     /** A request for evidence decides nothing, so no later round is bound by it. */
     public boolean settles() {
-      return !finding.severity().equals("unproven");
+      return !finding.is(Finding.Severity.UNPROVEN);
     }
 
     /**
@@ -285,7 +285,7 @@ public class MasterReview {
 
     private static final String NO_ROLE_READ = "No role read the round";
     private static final Finding NAMING_NOTHING =
-        new Finding("", "not ready, naming nothing", "", "blocking", "", "");
+        new Finding("", "not ready, naming nothing", "", Finding.Severity.BLOCKING.id(), "", "");
 
     static Verdict of(Review review) {
       List<Said> findings = new ArrayList<>();

@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.protocol.read;
 
+import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
 import dev.jagt.orchestrator.protocol.Schema;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ public final class RoundRead {
 
   public static final List<String> VERDICTS = List.of("ready", "not ready", "question");
   public static final List<String> SEVERITIES =
-      List.of("blocking", "wrong", "unproven", "unguarded", "noise");
+      Arrays.stream(Finding.Severity.values()).map(Finding.Severity::id).toList();
   public static final List<String> KINDS =
       List.of("behaviour", "missing", "scope", "test", "structure");
 

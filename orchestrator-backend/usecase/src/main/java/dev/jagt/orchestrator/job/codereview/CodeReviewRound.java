@@ -124,7 +124,7 @@ public class CodeReviewRound {
   private boolean post(Subject subject, RequestChange change, List<Finding> findings) {
     String head = change.headSha();
     for (Finding finding : findings) {
-      if ("noise".equals(finding.severity())) {
+      if (finding.is(Finding.Severity.NOISE)) {
         continue;
       }
       String key =

@@ -34,6 +34,7 @@ technical:
       task-opening-doors: { fitness: TaskOpeningDoorsFitness, governs: class-dependency, max: 0, decision: "0066" }
       command-literals-in-surface: { fitness: CommandLiteralsFitness, governs: count, max: 0, hint: "a surface reads a verb from TaskAction or a GlobalCommand bean, never spells it" }
       semver-literals-in-surface: { engine: scan, glob: "surface/src/main/**/*.java", per: file, regex: "\"\\d+\\.\\d+\\.\\d+\"", governs: count, max: 0, hint: "a surface reports jagt's version from BuildProperties, never a literal" }
+      finding-severity-literals: { engine: scan, glob: "*/src/main/**/*.java", except: "core/src/main/java/dev/jagt/orchestrator/port/assistant/RoundReviewer.java", regex: "\"(blocking|wrong|unproven|unguarded|noise)\"", governs: count, max: 0, hint: "a finding's severity is Finding.Severity, spelled by its id() nowhere else" }
       untyped-task-fields: { engine: scan, glob: "../contracts/openapi.yaml", per: file, regex: "(?ms)^    Task:\\n(?:(?!^    \\w+:\\n).)*?(?:\\{type: object\\}|\\[object, 'null'\\])", governs: count, max: 0, decision: "0170", hint: "a Task field is typed from the record the surface serialises: a $ref to its own schema, never a bare object" }
       role-names: { fitness: RoleNamesFitness, governs: class-dependency, max: 0, decision: "0122" }
       role-names-outside: { fitness: RoleNamesOutsideFitness, governs: class-dependency, max: 0, decision: "0203" }

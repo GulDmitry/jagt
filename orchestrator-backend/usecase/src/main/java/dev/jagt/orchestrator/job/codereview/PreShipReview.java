@@ -87,7 +87,7 @@ public class PreShipReview {
       return;
     }
     List<Finding> findings =
-        judged.findings().stream().filter(finding -> !"noise".equals(finding.severity())).toList();
+        judged.findings().stream().filter(finding -> !finding.is(Finding.Severity.NOISE)).toList();
     log.atInfo()
         .setMessage("pre-ship review read")
         .addKeyValue("task", taskId)

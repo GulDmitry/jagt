@@ -43,7 +43,30 @@ public interface RoundReviewer {
       String file, String issue, String pattern, String severity, String anchor, String kind) {
 
     public boolean stops() {
-      return !severity.equals("unguarded") && !severity.equals("noise");
+      return !is(Severity.UNGUARDED) && !is(Severity.NOISE);
+    }
+
+    public boolean is(Severity expected) {
+      return expected.id().equals(severity);
+    }
+
+    /** The wire value of {@code severity}, in the order a reader ranks it. */
+    public enum Severity {
+      BLOCKING("blocking"),
+      WRONG("wrong"),
+      UNPROVEN("unproven"),
+      UNGUARDED("unguarded"),
+      NOISE("noise");
+
+      private final String id;
+
+      Severity(String id) {
+        this.id = id;
+      }
+
+      public String id() {
+        return id;
+      }
     }
   }
 
