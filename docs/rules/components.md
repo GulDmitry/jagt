@@ -22,13 +22,13 @@ The root is provisioned for both CLIs as a worktree is: **a rule only one vendor
 sessions break**. Claude reads its `CLAUDE.md` symlink (AGENTS.md) and declares the server, minting the
 Master's token, in `.mcp.json`; Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** project.
 
-- `jagt.yml` is user config, gitignored, copied from `jagt.desktop.yml.dist`: one `orchestrator` root, re-read per access,
-  Spring binding it once for `orchestrator.*`. Sections are omissible value records (`ConfigFile.*Config`).
-- Root: a `versions/<v>/` jar's install home, else the nearest parent holding `jagt.desktop.yml.dist` **or** `mcp_client.js` (`OrchestratorPaths`);
-  `ORCHESTRATOR_ROOT` overrides.
-- `initialize_task` copies gitignored local files, a code viewer's included, best-effort
-  (`WorktreeFiles.copyProjectFiles(…, PROJECT_FILES)`, `copyLocalFiles`); the per-project
-  `worktree.copyGlobs`, default `["**/.env"]`, are config, not code.
+- `jagt.yml`: user config, gitignored, from `jagt.desktop.yml.dist`; one `orchestrator` root, re-read per access, Spring
+  binding `orchestrator.*` once; sections are omissible value records (`ConfigFile.*Config`). A key moved, renamed or
+  re-meant carries the existing config: the local `jagt.yml` adjusted in that turn, a key nothing reads named at startup.
+- Root (`OrchestratorPaths`): a `versions/<v>/` jar's home, else the nearest parent with `jagt.desktop.yml.dist` or
+  `mcp_client.js`; `ORCHESTRATOR_ROOT` wins.
+- `initialize_task` copies gitignored local files, a code viewer's included, best-effort (`WorktreeFiles.copyProjectFiles(…,
+  PROJECT_FILES)`, `copyLocalFiles`); the per-project `worktree.copyGlobs`, default `["**/.env"]`, are config, not code.
 
 ## `state.json`
 
