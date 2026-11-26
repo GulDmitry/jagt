@@ -155,6 +155,23 @@ class DeployCheckJobTest {
     verify(pipelines, never()).read(anyString(), any());
   }
 
+  @Test
+  void decidesDeployAskedAboutBeforeItsGreenReadWasRecorded() {
+    TaskState deployed = deployCheckTask().build();
+    state.putTask(
+        "ABC-42",
+        deployed.withDeployment(
+            Objects.requireNonNull(deployed.work().deployment())
+                .withAskedDigest(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"))));
+
+    job.runOn(state.tasks());
+
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
+                .undecided())
+        .isFalse();
+  }
+
   @Nested
   class WhereTheDeployLanded {
 
@@ -338,6 +355,16 @@ class DeployCheckJobTest {
                 Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                     .askedDigest())
             .isNull();
+      }
+
+      @Test
+      void decidesTheDeployOnceItsPipelineReadGreenWhetherOrNotItsSessionWasHanded() {
+        job.runOn(state.tasks());
+
+        assertThat(
+                Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
+                    .undecided())
+            .isFalse();
       }
     }
   }

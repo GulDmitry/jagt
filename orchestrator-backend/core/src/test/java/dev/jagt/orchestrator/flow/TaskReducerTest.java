@@ -174,6 +174,50 @@ class TaskReducerTest {
   }
 
   @Test
+  void keepsThePushAndPipelineReadOfLiveDeployWhenTheNextPressOpens() {
+    TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
+    TaskState landed =
+        reducer.deployStepped(
+            reducer.deployStepped(
+                reducer.deployStepped(
+                    task, new DeployStep.Opened(List.of(Deployment.Target.of("a", "dev"))), 1_000),
+                new DeployStep.Merged("a", "cafe"),
+                1_100),
+            new DeployStep.Pushed("a", 1_200),
+            1_200);
+
+    TaskState pressedAgain =
+        reducer.deployStepped(
+            landed, new DeployStep.Opened(List.of(Deployment.Target.of("a", "dev"))), 2_000);
+
+    assertThat(
+            Objects.requireNonNull(pressedAgain.work().deployment())
+                .targets()
+                .getFirst()
+                .landing()
+                .pushedAt())
+        .isEqualTo(1_200);
+  }
+
+  @Test
+  void decidesDeployOnlyOnceThePipelineOnItsTipReadGreen() {
+    TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
+    TaskState landed =
+        reducer.deployStepped(
+            reducer.deployStepped(
+                task, new DeployStep.Opened(List.of(Deployment.Target.of("a", "dev"))), 1_000),
+            new DeployStep.Merged("a", "cafe"),
+            1_100);
+
+    TaskState green = reducer.deployStepped(landed, new DeployStep.Green(), 1_200);
+    TaskState fixed = reducer.deployStepped(green, new DeployStep.Fixed("a", "beef"), 1_300);
+
+    assertThat(Objects.requireNonNull(landed.work().deployment()).undecided()).isTrue();
+    assertThat(Objects.requireNonNull(green.work().deployment()).undecided()).isFalse();
+    assertThat(Objects.requireNonNull(fixed.work().deployment()).undecided()).isTrue();
+  }
+
+  @Test
   void forgetsTheMergeOfRepositoryOnceItsRevertCommitIsRecorded() {
     TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
     TaskState deployed =

@@ -28,12 +28,16 @@ public class RedCauses {
 
   /**
    * {@code waiting} says what is armed, blank where nothing is; {@code stop} stands where the task
-   * was stopped.
+   * was stopped; {@code failed} names each failed job with its reason, blank where none was read.
    */
   public record Verdict(
-      RedCause cause, boolean retryLeft, String waiting, Optional<TaskStop> stop) {
+      RedCause cause, boolean retryLeft, String waiting, Optional<TaskStop> stop, String failed) {
 
     static final Verdict CODE = new Verdict(RedCause.CODE, false, "", Optional.empty());
+
+    public Verdict(RedCause cause, boolean retryLeft, String waiting, Optional<TaskStop> stop) {
+      this(cause, retryLeft, waiting, stop, "");
+    }
   }
 
   private final CodeHost codeHost;
@@ -84,7 +88,15 @@ public class RedCauses {
     }
     if (RedCause.of(failed.facts().get()) == RedCause.CODE) {
       retries.clearAll(taskId);
-      return Verdict.CODE;
+      return new Verdict(
+          RedCause.CODE,
+          false,
+          "",
+          Optional.empty(),
+          failed.facts().get().stream()
+              .map(job ->
+                  job.reason().isEmpty() ? job.name() : job.name() + " (" + job.reason() + ")")
+              .collect(Collectors.joining(", ")));
     }
     return waitOut(taskId, project, pipelineUrl, failed.facts().get());
   }

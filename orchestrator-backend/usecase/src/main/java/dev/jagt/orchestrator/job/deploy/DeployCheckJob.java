@@ -87,6 +87,8 @@ public class DeployCheckJob implements TaskJob {
             settle(taskId, task, landed);
           } else if (!bareOf(task).isEmpty()) {
             readLate(taskId, task);
+          } else if (Objects.requireNonNull(task.work().deployment()).undecided()) {
+            reports.deployGreen(taskId);
           }
         });
   }
@@ -177,6 +179,7 @@ public class DeployCheckJob implements TaskJob {
     switch (reading.kind()) {
       case GREEN -> {
         markBare(taskId, task, reading.bare());
+        reports.deployGreen(taskId);
         reports.readDeploy(taskId, null, stamp);
         if (configService.anyCheckerEnabled()) {
           reports.deployAsked(taskId, Turn.digestOf(landed));

@@ -118,6 +118,27 @@ class DeployPipelinesRetryTest {
     verify(pipelines, never()).retryFailed(anyString(), anyString());
   }
 
+  @Test
+  void redPipelineHandedBackNamesItsFailedJobAndItsCause() {
+    state.putTask(
+        "ABC-42",
+        deployedTask()
+            .withTargets(
+                List.of(Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA)))
+            .build());
+    when(causes.judgeDeploy("ABC-42", "shop", URL))
+        .thenReturn(
+            new RedCauses.Verdict(
+                RedCause.CODE, false, "", Optional.empty(), "verifyBuild (script_failure)"));
+
+    DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
+
+    assertThat(reading.said())
+        .isEqualTo(
+            "red pipeline on the deploy commit: shop 01234567,"
+                + " failed verifyBuild (script_failure)");
+  }
+
   @ParameterizedTest(name = "{0}")
   @MethodSource("redCommitsStandingOnLaterGreenPipeline")
   void redDeployCommitStandsOnLaterGreenPipelineWithoutAnotherReRunOrFixWorktree(

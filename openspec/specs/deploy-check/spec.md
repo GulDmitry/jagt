@@ -49,10 +49,7 @@ read through that pair that succeeds. A retry waiting for its time stays armed t
 #### Scenario: The CLI is signed out
 - **WHEN** `glab` is signed out for three reads running
 - **THEN** ABC-42 stays deployed, its line says `waiting on its pipeline`, and the header carries the lost reach
-
-#### Scenario: Reads go on while reach stands
-- **WHEN** reach to `git.example.invalid` is lost and the human signs in
-- **THEN** the next tick's read lists the pipeline and clears it
+- **AND** once the human signs in, the next tick's read lists the pipeline and clears the lost reach
 
 ### Requirement: A deploy pipeline red on infrastructure is retried
 A pipeline red on infrastructure SHALL be retried and counted as a request's is, and stops the task as `INFRA` after the last retry.
@@ -65,7 +62,7 @@ A pipeline red on infrastructure SHALL be retried and counted as a request's is,
 ### Requirement: A deploy pipeline red on the code goes to the session
 A pipeline red on the code SHALL be re-run once per commit jagt pushed (`DeployPipelines`), kept on the deployment's target across a restart
 ([0133](../../../docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)); the deploy stays open meanwhile. Red after its re-run, or refused
-one, it SHALL hand the session the deploy worktree: `DEPLOY_CONFLICT`, handed as any deploy conflict is
+one with no second try, it SHALL hand the session the deploy worktree: `DEPLOY_CONFLICT`, handed as any deploy conflict is
 ([task-flow](../task-flow/spec.md#requirement-in-act-a-deploy-conflict-is-the-sessions)).
 
 #### Scenario: The deploy pipeline is red on the code
@@ -74,13 +71,10 @@ one, it SHALL hand the session the deploy worktree: `DEPLOY_CONFLICT`, handed as
 - **AND** a restart in between re-runs nothing again
 
 #### Scenario: The re-run is red again
-- **WHEN** the pipeline on ABC-42's deploy commit is red again after its re-run
-- **THEN** ABC-42 is `DEPLOY_CONFLICT`, its line reads `red pipeline on the deploy commit: proj 01234567`, its worktree cut from `dev` as it stands
+- **WHEN** the pipeline on ABC-42's deploy commit is red again after its re-run, job `verifyBuild` failing its script
+- **THEN** ABC-42 is `DEPLOY_CONFLICT`, its line reads `red pipeline on the deploy commit: proj 01234567, failed verifyBuild (script_failure)`,
+  its worktree cut from `dev` as it stands
 - **AND** where the Master acts the session is handed that worktree once; in `judge` the card says NEEDS YOU and nothing is pressed
-
-#### Scenario: The host refuses the re-run
-- **WHEN** the host refuses to re-run the pipeline
-- **THEN** the red is handed back as it stands, with no second try
 
 #### Scenario: The session fixes the merge result
 - **WHEN** the session stages its fix in full in the deploy worktree
@@ -110,13 +104,10 @@ jagt SHALL read a deploy's pipeline through the driver `codeHost` names, a proje
 `github` (`gh`), `gitlab` (`glab`), `command`, `none` and `replay`. jagt MUST NOT guess the kind from a host name or an address, and the agent
 chosen by `agent.cli` selects none. `replay` reads every commit green and re-runs nothing. A CLI or command holds the credential, jagt none.
 
-#### Scenario: No key
-- **WHEN** a project and `orchestrator` name no `codeHost`
-- **THEN** its pipelines are read through `gh`
-
 #### Scenario: A host the name does not give away
 - **WHEN** `projects.proj.codeHost` is `gitlab` and the remote is `git@git.example.invalid:acme/shop.git`
 - **THEN** its pipelines are read through `glab` on `git.example.invalid`
+- **AND** where neither the project nor `orchestrator` names a `codeHost`, they are read through `gh`
 
 #### Scenario: A host the remote does not name
 - **WHEN** `codeHostName` names the host where the remote does not
@@ -140,13 +131,9 @@ chosen by `agent.cli` selects none. `replay` reads every commit green and re-run
 Each driver SHALL tell what its host says of a pipeline in five words: `success`, `failed`, `running`, `none`, `unknown`. It SHALL tell each failed
 job as infrastructure or code. No host's wording passes it.
 
-#### Scenario: A cancelled run
-- **WHEN** the host says a run was cancelled
-- **THEN** the driver tells it `failed`
-
-#### Scenario: A run that never started
-- **WHEN** the host says a run's conclusion is `startup_failure`
-- **THEN** its failed job is told as infrastructure
+#### Scenario: A cancelled run, and one that never started
+- **WHEN** the host says a run was cancelled, or a run's conclusion is `startup_failure`
+- **THEN** the driver tells the first `failed`, and the failed job of the second as infrastructure
 
 ### Requirement: Startup finds the selected code host missing
 Startup SHALL refuse a selected `gh` or `glab` that cannot be found, naming the `codeHost` key. It SHALL refuse a `command` whose `pipelineCommand`
@@ -198,3 +185,12 @@ With it on, acceptance checks the deploy ([acceptance](../acceptance/spec.md)) a
 #### Scenario: Acceptance checks the deploy
 - **WHEN** a deploy lands with `orchestrator.roles.acceptance.enabled` on
 - **THEN** `deploy` is never sent to the session and acceptance's check runs
+
+### Requirement: A deploy holds its session until it is decided
+Until each landed tip read green and while a checker reads it, a session's report moving the task off `DEPLOYED` SHALL be refused.
+A new press SHALL keep a live target's push time and reads; only a new landing replaces them.
+
+#### Scenario: The session leaves early
+- **WHEN** ABC-42's pipeline runs, or acceptance reads its deploy, and its session reports `IN_PROGRESS`
+- **THEN** the report is refused naming the undecided deploy; a red pipeline then hands the session the deploy worktree
+- **AND** `deploy` pressed again keeps the push time its target recorded

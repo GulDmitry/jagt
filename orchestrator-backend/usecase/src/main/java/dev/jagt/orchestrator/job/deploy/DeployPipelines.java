@@ -238,7 +238,9 @@ public class DeployPipelines {
       return Reading.waiting(
           at + "red on the code, its deploy worktree not opened: " + e.getMessage());
     }
-    return new Reading(Kind.RED, DeployRedLine.CAUSE + ": " + label, project, url, List.of());
+    String failed = verdict.failed().isEmpty() ? "" : ", failed " + verdict.failed();
+    return new Reading(
+        Kind.RED, DeployRedLine.CAUSE + ": " + label + failed, project, url, List.of());
   }
 
   /**

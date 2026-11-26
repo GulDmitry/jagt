@@ -113,6 +113,7 @@ final class DeliveryRegions {
     for (DeployPhase at : EnumSet.of(DeployPhase.LANDING, DeployPhase.CHECK_ASKED)) {
       deployed(chart, at, "settled bare", at, step -> step instanceof DeployStep.Bare);
       deployed(chart, at, "read", at, step -> step instanceof DeployStep.ReadOn);
+      deployed(chart, at, "read green", at, step -> step instanceof DeployStep.Green);
       deployed(chart, at, "retried", at, step -> step instanceof DeployStep.Retried);
     }
   }

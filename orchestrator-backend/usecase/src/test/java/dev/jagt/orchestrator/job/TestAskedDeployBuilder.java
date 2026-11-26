@@ -26,6 +26,9 @@ public record TestAskedDeployBuilder(
         .build()
         .withDeployment(
             new Deployment(
-                1, List.of(Deployment.Target.of("proj", "dev").withMerge(merge)), 1, askedDigest));
+                1,
+                List.of(Deployment.Target.of("proj", "dev").withMerge(merge).withGreen()),
+                1,
+                askedDigest));
   }
 }

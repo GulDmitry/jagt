@@ -237,4 +237,20 @@ class RedCausesTest {
     assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
     assertThat(verdict.retryLeft()).isFalse();
   }
+
+  @Test
+  void namesEachFailedJobOfDeployPipelineWithItsReason() {
+    when(pipelines.failedJobs("shop", "https://host.invalid/p/9"))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    List.of(
+                        new FailedJob("2", "verifyBuild", "script_failure", false),
+                        new FailedJob("3", "lint", "", false))),
+                TokenUsage.NONE));
+
+    RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "shop", "https://host.invalid/p/9");
+
+    assertThat(verdict.failed()).isEqualTo("verifyBuild (script_failure), lint");
+  }
 }

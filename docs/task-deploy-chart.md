@@ -33,9 +33,11 @@ stateDiagram-v2
         deploy_LANDING --> deploy_CHECK_ASKED : asked
         deploy_LANDING --> deploy_LANDING : settled bare
         deploy_LANDING --> deploy_LANDING : read
+        deploy_LANDING --> deploy_LANDING : read green
         deploy_LANDING --> deploy_LANDING : retried
         deploy_CHECK_ASKED --> deploy_CHECK_ASKED : settled bare
         deploy_CHECK_ASKED --> deploy_CHECK_ASKED : read
+        deploy_CHECK_ASKED --> deploy_CHECK_ASKED : read green
         deploy_CHECK_ASKED --> deploy_CHECK_ASKED : retried
     }
 ```

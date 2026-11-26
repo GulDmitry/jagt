@@ -109,6 +109,17 @@ public sealed interface DeployStep {
     }
   }
 
+  /** The pipeline on every landed target's tip read green. */
+  record Green() implements DeployStep {
+    @Override
+    public Deployment applyTo(Deployment deployment, long now) {
+      return deployment.withTargets(
+          deployment.targets().stream()
+              .map(target -> target.landed() ? target.withGreen() : target)
+              .toList());
+    }
+  }
+
   record Asked(String digest) implements DeployStep {
     @Override
     public Deployment applyTo(Deployment deployment, long now) {

@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.task.deploy.Conflict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.RoleRecord;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -302,6 +303,66 @@ class FlowReportsTest {
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("already REVIEW_PENDING");
+  }
+
+  @Test
+  void holdsDeployedTaskWhoseSessionLeavesBeforeTheDeployPipelineReadGreen() {
+    TaskState deployed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(java.util.List.of(mergedWeb)))
+            .build();
+    AtomicReference<TaskState> written = new AtomicReference<>();
+    when(stateService.reduce(eq("ABC-1"), any()))
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, deployed));
+          return true;
+        });
+
+    assertThatThrownBy(
+            () -> reports.report("ABC-1", TaskStatus.IN_PROGRESS, "dev does not compile"))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("the deploy is undecided");
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.DEPLOYED);
+  }
+
+  @Test
+  void holdsDeployedTaskWhoseSessionLeavesWhileAcceptanceReadsTheDeploy() {
+    TaskState deployed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(java.util.List.of(mergedWeb.withGreen())))
+            .build()
+            .withRole(
+                Checkers.ACCEPTANCE, RoleRecord.defaults().withReading("web@0123456789abcdef"));
+    when(stateService.reduce(eq("ABC-1"), any()))
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          return write.apply(reducer, deployed) != null;
+        });
+
+    assertThatThrownBy(
+            () -> reports.report("ABC-1", TaskStatus.IN_PROGRESS, "dev does not compile"))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("a checker is still reading it");
+  }
+
+  @Test
+  void letsSessionLeaveDeployedOnceTheDeployPipelineReadGreen() {
+    TaskState deployed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(java.util.List.of(mergedWeb.withGreen())))
+            .build();
+    AtomicReference<TaskState> written = new AtomicReference<>();
+    when(stateService.reduce(eq("ABC-1"), any()))
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, deployed));
+          return true;
+        });
+
+    reports.report("ABC-1", TaskStatus.IN_PROGRESS, "the change fails its check");
+
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @ParameterizedTest

@@ -30,7 +30,7 @@ Accepted 2026-11-26.
 | HOST_READ (request open) | reread · none · WAIT past `checksMinutes`; red keeps the loop guards |
 | INFRA_RERUN (`InfraPhase` armed) | `InfraRetries` budget · none · INFRA |
 | JUDGE_ROUND (a claim open) | `undoClaim`, claim once · none · turn to the human |
-| DEPLOY (an unfinished `DeployStep`) | finish from recorded steps; red once · none · DEPLOY_CONFLICT or DEPLOY_UNREAD |
+| DEPLOY (an unfinished `DeployStep`, or a landed tip unread green or checker reading: the session may not leave) | finish from recorded steps; red once · none · DEPLOY_CONFLICT or DEPLOY_UNREAD |
 
 - **A lost reach of jagt's own** suspends the row's clock and marks the board's head, never a card. An exhausted policy logs one ERROR,
   sets one `ToldOnce` mark, ends on the read that disproves it (0108). Loop guards become `StepPolicy` counters;

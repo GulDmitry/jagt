@@ -125,6 +125,11 @@ public record Deployment(
         .collect(java.util.stream.Collectors.joining(","));
   }
 
+  /** A landed target's pipeline has not read green on its tip yet. */
+  public boolean undecided() {
+    return targets.stream().filter(Target::landed).anyMatch(target -> !target.greenTip());
+  }
+
   /** A recorded merge is one no revert has taken out yet. */
   public boolean live() {
     return targets.stream().anyMatch(Target::landed);
@@ -160,10 +165,11 @@ public record Deployment(
         @Nullable Boolean bare,
         @Nullable Integer unread,
         @Nullable String retried,
-        @JsonProperty("conflicted") @Nullable Conflict conflict) {
+        @JsonProperty("conflicted") @Nullable Conflict conflict,
+        @Nullable String green) {
 
       public static Progress defaults() {
-        return new Progress(null, null, null, null, null);
+        return new Progress(null, null, null, null, null, null);
       }
     }
 
@@ -246,15 +252,18 @@ public record Deployment(
           Progress.defaults().withConflict(progress.conflict()));
     }
 
-    /** Carries what an earlier press of the task left live in this repository into a new press. */
+    /**
+     * Carries what an earlier press of the task left live in this repository into a new press, its
+     * pipeline's reads included: only a new landing replaces them.
+     */
     public Target carrying(Target earlier) {
       return earlier.landed()
           ? new Target(
               project,
               deployBranch,
-              new Landed(earlier.landing.merge(), earlier.landing.fixes(), 0),
+              earlier.landing,
               null,
-              Progress.defaults())
+              earlier.progress.withBlocked(null).withConflict(null))
           : this;
     }
 
@@ -290,6 +299,16 @@ public record Deployment(
      */
     public Target withRetried(String tip) {
       return new Target(project, deployBranch, landing, revertCommit, progress.withRetried(tip));
+    }
+
+    /** The pipeline on its tip read green; a new push owes its own read. */
+    public Target withGreen() {
+      return new Target(project, deployBranch, landing, revertCommit, progress.withGreen(tip()));
+    }
+
+    @JsonIgnore
+    public boolean greenTip() {
+      return tip() != null && tip().equals(progress.green());
     }
 
     @JsonIgnore

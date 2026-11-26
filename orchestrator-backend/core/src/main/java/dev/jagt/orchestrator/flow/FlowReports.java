@@ -115,7 +115,9 @@ public class FlowReports {
             return task;
           }
           Optional<String> why =
-              rules.refusedReport(task.standing().status(), status, means, task.gate().planGate());
+              rules
+                  .refusedReport(task.standing().status(), status, means, task.gate().planGate())
+                  .or(() -> deployUndecided(task, status));
           if (why.isPresent()) {
             refused.set(why.get());
             return task.refused(RefusalKind.STATUS_REPORT);
@@ -143,6 +145,30 @@ public class FlowReports {
       throw Refusal.byState(why.get());
     }
     return Optional.ofNullable(landed.get());
+  }
+
+  /**
+   * Why a task live on the deploy branch may not leave it yet: its deploy is undecided until the
+   * pipeline on each landed tip reads green and no checker is reading it. A red one comes back as
+   * the deploy conflict.
+   */
+  private Optional<String> deployUndecided(TaskState task, TaskStatus to) {
+    Deployment deployment = task.work().deployment();
+    if (!FlowRules.checkedWhereItLanded(task.standing().status())
+        || to == task.standing().status()
+        || deployment == null) {
+      return Optional.empty();
+    }
+    if (deployment.undecided()) {
+      return Optional.of(
+          "the deploy is undecided: its pipeline has not read green yet; a red one hands you the"
+              + " deploy worktree with the failing job. End your turn.");
+    }
+    return checkers.of(task).containsValue(CheckerPhase.READING)
+        ? Optional.of(
+            "the deploy is undecided: a checker is still reading it; a row it finds not met comes"
+                + " back to you as a round. End your turn.")
+        : Optional.empty();
   }
 
   /** Refuses a no_plan report where jagt holds the gate; the task is written nothing else. */
@@ -392,6 +418,12 @@ public class FlowReports {
         taskId,
         (reducer, task) ->
             reducer.deployStepped(task, new DeployStep.Retried(project, tip), clock.millis()));
+  }
+
+  public void deployGreen(String taskId) {
+    tasks.reduce(
+        taskId,
+        (reducer, task) -> reducer.deployStepped(task, new DeployStep.Green(), clock.millis()));
   }
 
   public void deployAsked(String taskId, String digest) {
