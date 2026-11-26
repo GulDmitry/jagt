@@ -42,6 +42,21 @@ run_cmd() {
   [ "$status" -eq 0 ]
 }
 
+@test "a push from release naming only another branch passes" {
+  run run_cmd "git push -u origin ci/try-abc"
+  [ "$status" -eq 0 ]
+}
+
+@test "a push from release naming HEAD without a local green is refused" {
+  run run_cmd "git push origin HEAD"
+  [ "$status" -eq 2 ]
+}
+
+@test "a push from release naming another branch and release without a local green is refused" {
+  run run_cmd "git push origin ci/try-abc +HEAD:refs/heads/release"
+  [ "$status" -eq 2 ]
+}
+
 @test "a commit message naming git push passes" {
   run run_cmd 'git commit -m "git push release"'
   [ "$status" -eq 0 ]

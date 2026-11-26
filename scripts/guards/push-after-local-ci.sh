@@ -11,6 +11,17 @@ case "$branch $scan" in
   release* | hotfix/* | *" release"* | *:release* | *hotfix/*) ;;
   *) exit 0 ;;
 esac
+# A push naming its refspecs is guarded only when one of them lands on release, a hotfix branch or the checked-out branch.
+refs=$(printf '%s' "$scan" | sed -nE 's/.*git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push[[:space:]]+([^;&|]*).*/\2/p' \
+  | tr -s '[:space:]' '\n' | grep -v '^-' | tail -n +2)
+if [ -n "$refs" ]; then
+  shared=0
+  for ref in $refs; do
+    dst=${ref##*:}; dst=${dst#+}; dst=${dst#refs/heads/}
+    case "$dst" in release | hotfix/* | HEAD | "$branch") shared=1 ;; esac
+  done
+  [ "$shared" = 1 ] || exit 0
+fi
 dir=$(printf '%s' "$scan" | sed -nE 's/.*git[[:space:]]+-C[[:space:]]+([^[:space:]]+)[[:space:]]+push.*/\1/p')
 src=$(printf '%s' "$scan" | sed -nE 's/.*[[:space:]]\+?([^[:space:]:+]+):(refs\/heads\/)?(release|hotfix\/[^[:space:]]+)([[:space:]].*)?$/\1/p')
 ok=$(cat "$(git -C "${dir:-.}" rev-parse --git-common-dir)/ci-local.ok" 2>/dev/null)
