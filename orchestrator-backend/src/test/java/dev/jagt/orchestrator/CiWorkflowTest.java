@@ -314,7 +314,7 @@ class CiWorkflowTest {
   @Test
   void runsTheMacosInstallJobsGateNativelyInTheLocalCi() {
     assertThat(SourceRoots.read(Path.of("scripts/ci-local.sh")))
-        .contains("jobs=${*:-test heavy stand stand-kind install install-macos audit}")
+        .contains("jobs=${*:-test heavy stand stand-kind install install-macos audit codeql}")
         .contains("./gradlew --no-daemon gateInstall");
   }
 
@@ -826,9 +826,30 @@ class CiWorkflowTest {
     String workflow = SourceRoots.read(CODEQL);
 
     assertThat(workflow)
-        .contains("select(. == \"error\")")
-        .contains("test \"$errors\" -eq 0")
+        .contains("orchestrator-backend/scripts/codeql-errors.sh sarif-results/*.sarif")
         .doesNotContainPattern("uses: [^.\\n]+@(?![0-9a-f]{40} )");
+    assertThat(SourceRoots.read(Path.of("scripts/codeql-errors.sh")))
+        .contains("== \"error\"")
+        .contains("[ \"$count\" -eq 0 ]");
+  }
+
+  @Test
+  void runsCodeqlLocallyWithTheBundleOfTheActionTheWorkflowPinsAndVerifiesItByChecksum() {
+    String script = SourceRoots.read(Path.of("scripts/codeql-local.sh"));
+
+    assertThat(SourceRoots.read(CODEQL))
+        .contains("github/codeql-action/init@f3bbb05694c2f74569081c28664c0866d64dec21 # v4.39.3");
+    assertThat(script)
+        .contains("action=v4.39.3 ")
+        .containsPattern("sha256=[0-9a-f]{64}")
+        .contains("sha256sum -c")
+        .contains("--codescanning-config=\"$config\"")
+        .contains(
+            "-p $root/orchestrator-backend --no-daemon --no-build-cache --rerun-tasks gateCodeql\"")
+        .contains("--language=javascript-typescript --build-mode=none")
+        .contains("codeql-errors.sh");
+    assertThat(SourceRoots.read(Path.of("scripts/linux-suite.sh")))
+        .contains("codeql) echo 'scripts/codeql-local.sh' ;;");
   }
 
   @Test

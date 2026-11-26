@@ -74,11 +74,4 @@ jobs:
           category: /language:${{ matrix.language }}
           output: sarif-results
       - name: fail on a finding of severity error
-        run: |
-          errors=$(jq -s '[.[] | .runs[]
-            | ([.tool.driver.rules[]?] + [.tool.extensions[]?.rules[]?]) as $rules
-            | .results[] | (.ruleId // .rule.id) as $id
-            | (.level // ([$rules[] | select(.id == $id)][0].defaultConfiguration.level) // "warning")
-            | select(. == "error")] | length' sarif-results/*.sarif)
-          echo "codeql.errors=$errors"
-          test "$errors" -eq 0
+        run: orchestrator-backend/scripts/codeql-errors.sh sarif-results/*.sarif

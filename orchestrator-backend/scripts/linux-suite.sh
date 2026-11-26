@@ -5,7 +5,7 @@
 # The container is never capped in CPU or memory: the machine is the resource. Every job runs with its network, as on a runner;
 # a Gradle home and npm cache volume only speeds it up, and an empty one never changes a result.
 #
-# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand stand-kind install audit boardTest, and one per nightly.yml job: nightly-*)
+# Usage: scripts/linux-suite.sh <job…>      (jobs: test heavy stand stand-kind install audit codeql boardTest, and one per nightly.yml job: nightly-*)
 # Requires: Docker. Leaves nothing on the host but the Gradle cache, the Docker engine's volume and the image.
 # exits: 0 2
 set -euo pipefail
@@ -28,13 +28,14 @@ gate() {
         stand-kind) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind' ;;
         install) echo './gradlew --no-daemon gateInstall' ;;
         audit) echo './gradlew --no-daemon gateScan -Paudit.base=origin/main' ;;
+        codeql) echo 'scripts/codeql-local.sh' ;;
         boardTest) echo './gradlew --no-daemon boardInstall boardTest' ;;
         nightly-stand-compose) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=compose -PstandRuns=3' ;;
         nightly-stand-kind) echo './gradlew --no-daemon gateStand -Pmodelfree -Pengine=kind -PstandRuns=3' ;;
         nightly-e2e) echo './gradlew --no-daemon gateRepeat' ;;
         nightly-properties) echo './gradlew --no-daemon gateProperties -PjqwikTries=1000 --rerun-tasks' ;;
         nightly-scan) echo './gradlew --no-daemon gateScan' ;;
-        *) echo "linux-suite: no job $1; jobs: test heavy stand stand-kind install audit boardTest nightly-*" >&2; return 2 ;;
+        *) echo "linux-suite: no job $1; jobs: test heavy stand stand-kind install audit codeql boardTest nightly-*" >&2; return 2 ;;
     esac
 }
 

@@ -71,3 +71,9 @@ teardown() {
   [[ "$output" != *pitest* && "$output" != *stryker* ]]
   [ ! -f .git/ci-local.ok ]
 }
+
+@test "the argument-free run includes the codeql job" {
+  JAGT_CI_LOCAL_SUITE=echo run "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *" audit codeql"* ]]
+}
