@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -68,6 +69,13 @@ public final class JagtYmlSchema {
         .withCustomDefinitionProvider(
             (type, context) -> definition(type.getErasedType(), context.getGeneratorConfig()));
     return builder.build();
+  }
+
+  public static Set<String> fileKeys() {
+    return Set.copyOf(
+        unwrapped(new SchemaGenerator(config()).generateSchema(ConfigFile.class))
+            .get("properties")
+            .propertyNames());
   }
 
   public static ObjectNode generate() {

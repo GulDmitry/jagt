@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.review.LoopBreaker;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +19,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -160,6 +162,41 @@ public class ConfigService implements LoopBreaker.Current {
     return section instanceof Map<?, ?> keys
         ? keys.keySet().stream().map(String::valueOf).collect(Collectors.toUnmodifiableSet())
         : Set.of();
+  }
+
+  /**
+   * Full dotted paths of written keys no config record reads: what a read-back of the parsed config
+   * no longer holds. A written null is no value, so it never counts.
+   */
+  public List<String> unreadKeys() {
+    if (!(section() instanceof Map<?, ?>)) {
+      return List.of();
+    }
+    Object layered = layered(section());
+    List<String> unread = new ArrayList<>();
+    collectUnread(
+        "orchestrator",
+        mapper.valueToTree(layered),
+        mapper.valueToTree(mapper.convertValue(layered, ConfigFile.class)),
+        unread);
+    return unread;
+  }
+
+  private static void collectUnread(
+      String path, JsonNode written, JsonNode read, List<String> unread) {
+    for (Map.Entry<String, JsonNode> entry : written.properties()) {
+      JsonNode value = entry.getValue();
+      String key = path + "." + entry.getKey();
+      JsonNode kept = read.path(entry.getKey());
+      if (value.isNull()) {
+        continue;
+      }
+      if (kept.isMissingNode()) {
+        unread.add(key);
+      } else if (value.isObject() && kept.isObject()) {
+        collectUnread(key, value, kept, unread);
+      }
+    }
   }
 
   private @Nullable Object section() {

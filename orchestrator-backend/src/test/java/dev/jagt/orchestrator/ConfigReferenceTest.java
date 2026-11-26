@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
+import dev.jagt.orchestrator.config.source.SpringReadKeys;
 import java.io.IOException;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -52,6 +54,21 @@ class ConfigReferenceTest {
                 .filter(
                     key -> !Pattern.compile("(?m)^\\s*#?\\s*" + key + ":").matcher(dist).find()))
         .isEmpty();
+  }
+
+  @Test
+  void everyTopLevelKeyBeyondTheConfigFileIsNamedAsReadBySpring() {
+    Set<String> schemaKeys =
+        Set.copyOf(
+            JagtYmlSchema.generate()
+                .path("properties")
+                .path("orchestrator")
+                .path("properties")
+                .propertyNames());
+
+    assertThat(schemaKeys)
+        .filteredOn(key -> !JagtYmlSchema.fileKeys().contains(key))
+        .containsExactlyInAnyOrderElementsOf(new SpringReadKeys().names());
   }
 
   @ParameterizedTest

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.source.ConfigSource;
+import dev.jagt.orchestrator.config.source.SpringReadKeys;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -59,7 +61,8 @@ class ConfigCheckTest {
                 new KeptNumbers(new ReachLedger())),
             new OrchestratorPaths(properties, FakeHost.machine()),
             sessions,
-            new WorkingDirHost(root));
+            new WorkingDirHost(root),
+            new SpringReadKeys());
   }
 
   @Test
@@ -116,6 +119,30 @@ class ConfigCheckTest {
   @Test
   void freshInstallWithNoConfigFileStartsOnTheDefaults() {
     assertThat(check.problems()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      textBlock =
+          """
+          codeHostName: gitlab                  | orchestrator.codeHostName
+          viewer: { tmuxSessoin: jagt }         | orchestrator.viewer.tmuxSessoin
+          projects: { demo: { basebranch: x } } | orchestrator.projects.demo.basebranch
+          """)
+  void notesEveryKeyNoSettingReadsWithItsFullPath(String written, String path) throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  " + written + "\n");
+
+    assertThat(check.notes()).extracting(Problem::key).containsExactly(path);
+  }
+
+  @Test
+  void notesNoKeyOfTheShippedExample() throws Exception {
+    Files.copy(
+        Path.of("../../jagt.desktop.yml.dist").toAbsolutePath().normalize(),
+        root.resolve("jagt.yml"));
+
+    assertThat(check.notes()).isEmpty();
   }
 
   @ParameterizedTest

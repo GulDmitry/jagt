@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.config.source.SpringReadKeys;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +42,7 @@ public class ConfigCheck implements StartupCheck {
   private final OrchestratorPaths paths;
   private final SessionHost sessions;
   private final Host host;
+  private final SpringReadKeys springKeys;
 
   @Override
   public List<Problem> problems() {
@@ -64,6 +67,21 @@ public class ConfigCheck implements StartupCheck {
     projects.forEach((key, project) -> problems.addAll(ProjectProblems.of(key, project)));
     problems.addAll(companionProblems(projects));
     return problems;
+  }
+
+  @Override
+  public List<Problem> notes() {
+    Set<String> bySpring = springKeys.names();
+    return configService.unreadKeys().stream()
+        .filter(key -> !bySpring.contains(key.substring("orchestrator.".length())))
+        .map(key ->
+            new Problem(
+                key,
+                key
+                    + " is unknown: no setting reads it. Fix its name or remove it from "
+                    + paths.configFile()
+                    + "."))
+        .toList();
   }
 
   private static List<Problem> companionProblems(Map<String, ProjectConfig> projects) {
