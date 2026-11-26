@@ -24,7 +24,7 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
    - Master → `master-lesson`.
    - session → the brief or the rule it broke, proven by `promptEval`.
    - case → `cases` spec plus a case.
-   - jagt → a regression test verified RED, a `Defect-family` trailer.
+   - jagt → a regression test verified RED, a `Defect-family` trailer, the [investigation](../../../docs/defect-investigation.md).
    - A stop that rightly stopped (the human really had to decide) gets no fix, with one clause why.
 5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "trigger":…, "who":…,
    "origin":{"at":…, "who":…, "step":…}, "class":…, "fix":"<sha or why none>", "lift":"<safe, or what must be true first>"}`.

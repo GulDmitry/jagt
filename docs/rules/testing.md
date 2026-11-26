@@ -11,9 +11,9 @@ test reaches** ([0181](../decisions/0181-every-module-keeps-80-percent-line-cove
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 **Root `:test` runs the rule tests whole; a filtered run names its project**, `:<module>:test --tests '<Name>'` (bare `--tests` fails on no match).
 **A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
-A fixed bug's commit carries `Defect-family: <A–M>`: A text vs. text. B state overwritten. C turn collision. D model overreach. E missing ending.
-F unbounded loop. G prose routing. H a guard. I vendor CLI behaviour. J git and worktrees. K the board. L the tests themselves. M anything else.
-**A new test's run is predicted first**, outcome and message; a surprise is a stop to understand, never a blind retry.
+A fix's commit carries `Defect-family: <A–M>` and its [investigation](../defect-investigation.md): A text vs. text. B state overwritten. C turn
+collision. D model overreach. E missing ending. F unbounded loop. G prose routing. H a guard. I vendor CLI behaviour. J git and worktrees. K the
+board. L the tests themselves. M anything else. **A new test's run is predicted first**: a surprise is understood, never retried.
 **Every new install requirement goes in `docs/installation.md`**. **Leave no trace** (AGENTS.md "Tests"): a suite uses a throwaway tmux session plus
 `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the
 task), so no test reaches the human's. Shared test code: `SourceRoots` a scanner, `ScriptedProcesses` a fake, `NoChildLeftBehind` a suite guard.

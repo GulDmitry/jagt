@@ -139,4 +139,32 @@ class FixedBugCommitsTest {
 
     assertThat(FixedBugCommits.postmortem(feature)).isEmpty();
   }
+
+  @Test
+  void defectFamilyCommitWithKindHoldsAndPreventsPasses() {
+    Commit fix =
+        new Commit(
+            SHA,
+            "A fix\n\nDefect-family: B\nKind: core\nHolds: today\nPrevents: a rule test\n",
+            List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.investigation(fix)).isEmpty();
+  }
+
+  @Test
+  void defectFamilyCommitWithoutKindHoldsOrPreventsNamesEach() {
+    Commit fix = new Commit(SHA, "A fix\n\nDefect-family: B\nHolds: \n", List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.investigation(fix))
+        .contains("no Kind trailer")
+        .contains("no Holds trailer")
+        .contains("no Prevents trailer");
+  }
+
+  @Test
+  void commitWithoutDefectFamilyNeedsNoInvestigation() {
+    Commit feature = new Commit(SHA, "A feature\n", List.of("build.gradle"));
+
+    assertThat(FixedBugCommits.investigation(feature)).isEmpty();
+  }
 }

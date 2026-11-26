@@ -17,7 +17,10 @@ public final class FixedBugCommits {
 
   static final String POSTMORTEM_CUTOFF = "6969ccdd07149e212560f8c6e741721251380db1";
 
+  static final String INVESTIGATION_CUTOFF = "8e101a5b98d17b612db1b7bc66d479aa91fb98e2";
+
   private static final List<String> POSTMORTEM_TRAILERS = List.of("Written", "Uncaught", "Unseen");
+  private static final List<String> INVESTIGATION_TRAILERS = List.of("Kind", "Holds", "Prevents");
   private static final String RECORD = "\u001e";
   private static final String FIELD = "\u001f";
   private static final Pattern DEFECT_FAMILY = Pattern.compile("(?m)^Defect-family: [A-M]$");
@@ -33,16 +36,28 @@ public final class FixedBugCommits {
   public static List<String> defects() {
     return Stream.concat(
             commitsAfter(CUTOFF).stream().map(FixedBugCommits::defect),
-            commitsAfter(POSTMORTEM_CUTOFF).stream().map(FixedBugCommits::postmortem))
+            Stream.concat(
+                commitsAfter(POSTMORTEM_CUTOFF).stream()
+                    .map(commit -> missing(commit, POSTMORTEM_TRAILERS)),
+                commitsAfter(INVESTIGATION_CUTOFF).stream()
+                    .map(commit -> missing(commit, INVESTIGATION_TRAILERS))))
         .filter(defect -> !defect.isEmpty())
         .toList();
   }
 
   static String postmortem(Commit commit) {
+    return missing(commit, POSTMORTEM_TRAILERS);
+  }
+
+  static String investigation(Commit commit) {
+    return missing(commit, INVESTIGATION_TRAILERS);
+  }
+
+  private static String missing(Commit commit, List<String> trailers) {
     if (!DEFECT_FAMILY.matcher(commit.message()).find()) {
       return "";
     }
-    return POSTMORTEM_TRAILERS.stream()
+    return trailers.stream()
         .filter(trailer ->
             !Pattern.compile("(?m)^" + trailer + ": \\S.*$").matcher(commit.message()).find())
         .map(trailer ->

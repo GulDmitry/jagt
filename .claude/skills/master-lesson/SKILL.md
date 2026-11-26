@@ -21,3 +21,4 @@ Input: the exchange (what the agent wrote, what the human said) and the human's 
 5. **GREEN on the new brief.** `./gradlew roleEval -Prole=master`: every round passes, the old ones included.
 6. **Copy the pattern line into the local `roles/master/brief.md`**, gitignored, so this install judges by it.
 7. Commit `roles/master/brief.md.dist` and the round's `.yml` together; the subject names the class that slipped through.
+   The commit carries the [investigation](../../../docs/defect-investigation.md) when it fixes a defect.
