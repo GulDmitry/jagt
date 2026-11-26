@@ -218,7 +218,7 @@ public class AgentSessions implements SessionLines {
     TaskState task = requireTask(id);
     String session = windows.session(id);
     if (windows.cold(task) && !windows.promptOpen(session, id)) {
-      return relayUnderCold(id, line);
+      return under(id, line, COLD_PROMPT);
     }
     typed(session, id, line);
     log.atInfo()
@@ -315,21 +315,36 @@ public class AgentSessions implements SessionLines {
     return under(taskId, addition, ROUND_HANDED_BACK);
   }
 
-  /** The same, always on a fresh session: its caller has already seen the conversation go cold. */
-  public String relayUnderCold(String taskId, String addition) {
-    return under(taskId, addition, "a prompt typed after the cache lifetime");
+  /**
+   * The human's own prompt, cold: a fresh session starts at once. False, with nothing written,
+   * where an open question of the old session would be lost.
+   */
+  public boolean relayUnderCold(String taskId, String addition) {
+    String id = stateService.canonicalTaskId(taskId);
+    TaskState task = requireTask(id);
+    if (freshStarts.questionOpen(id)) {
+      return false;
+    }
+    write(id, task, instructionsUnder(id, task, addition));
+    freshStarts.startFresh(id, task, COLD_PROMPT, null);
+    return true;
   }
 
   private String under(String taskId, String addition, @Nullable String freshBecause) {
     String id = stateService.canonicalTaskId(taskId);
-    Path contextFile = Path.of(requireTask(id).worktreePath()).resolve(Artifact.CONTEXT.fileName());
+    TaskState task = requireTask(id);
+    return relay(id, instructionsUnder(id, task, addition), freshBecause);
+  }
+
+  private String instructionsUnder(String id, TaskState task, String addition) {
+    Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
     synchronized (windows.contextLock(id)) {
       String standing =
           WorktreeFiles.read(contextFile)
               .map(CarriedBlock::without)
               .map(held -> held.contains(UNDER) ? held.substring(0, held.indexOf(UNDER)) : held)
               .orElse("");
-      return relay(id, standing.isBlank() ? addition : standing + UNDER + addition, freshBecause);
+      return standing.isBlank() ? addition : standing + UNDER + addition;
     }
   }
 
@@ -338,24 +353,14 @@ public class AgentSessions implements SessionLines {
 
   private static final String ROUND_HANDED_BACK = "the round was already handed back";
 
+  private static final String COLD_PROMPT = "a prompt typed after the cache lifetime";
+
   private static final String IDLE_PAST_CACHE = "conversation idle past its cache lifetime";
 
   private String relay(String taskId, String instructions, @Nullable String freshBecause) {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
-    Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
-    // One relay at a time per task: interleaving two writes to one file loses an instruction.
-    synchronized (windows.contextLock(taskId)) {
-      WorktreeFiles.write(contextFile, instructions);
-    }
-    // The opening line only: a brief runs to hundreds of lines.
-    log.atInfo()
-        .setMessage("instructions relayed")
-        .addKeyValue("task", taskId)
-        .addKeyValue("alias", task.ticket().alias())
-        .addKeyValue("chars", instructions.length())
-        .addKeyValue("said", OneLine.clipped(instructions.lines().findFirst().orElse("(empty)")))
-        .log();
+    write(taskId, task, instructions);
     // A file on disk doesn't wake a running agent session — nudge it directly.
     String session = windows.session(taskId);
     if (freshBecause != null || windows.cold(task)) {
@@ -400,6 +405,22 @@ public class AgentSessions implements SessionLines {
             Path.of(task.worktreePath()));
     return "Instructions written to task_context.md; the agent session was down, so it was"
         + " re-entered to read and follow them.";
+  }
+
+  private void write(String taskId, TaskState task, String instructions) {
+    Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
+    // One relay at a time per task: interleaving two writes to one file loses an instruction.
+    synchronized (windows.contextLock(taskId)) {
+      WorktreeFiles.write(contextFile, instructions);
+    }
+    // The opening line only: a brief runs to hundreds of lines.
+    log.atInfo()
+        .setMessage("instructions relayed")
+        .addKeyValue("task", taskId)
+        .addKeyValue("alias", task.ticket().alias())
+        .addKeyValue("chars", instructions.length())
+        .addKeyValue("said", OneLine.clipped(instructions.lines().findFirst().orElse("(empty)")))
+        .log();
   }
 
   private String relayFreshStart(String taskId, TaskState task, @Nullable String freshBecause) {

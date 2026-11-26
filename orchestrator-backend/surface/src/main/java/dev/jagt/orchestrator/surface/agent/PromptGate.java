@@ -38,7 +38,9 @@ public class PromptGate {
       return "";
     }
     try {
-      sessions.relayUnderCold(taskId, prompt);
+      if (!sessions.relayUnderCold(taskId, prompt)) {
+        return notRelayed(taskId, "the agent's window holds an unanswered question");
+      }
     } catch (RuntimeException e) {
       log.atWarn()
           .setMessage("cold prompt not relayed")
@@ -55,6 +57,15 @@ public class PromptGate {
         ("Your message moved to a fresh session of this task, which is working on it now: this one"
                 + " stood idle for over %s, so its cache had expired.")
             .formatted(threshold()));
+  }
+
+  private String notRelayed(String taskId, String cause) {
+    log.atWarn()
+        .setMessage("cold prompt not relayed")
+        .addKeyValue("task", taskId)
+        .addKeyValue("cause", cause)
+        .log();
+    return "";
   }
 
   private String threshold() {

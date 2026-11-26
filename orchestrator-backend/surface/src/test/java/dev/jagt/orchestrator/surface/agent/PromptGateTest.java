@@ -46,6 +46,7 @@ class PromptGateTest {
   void blocksColdPromptOnlyAfterItWasRelayedToFreshSession() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
     when(runtime.blockedPrompt(anyString())).thenReturn("{\"decision\": \"block\"}");
+    when(sessions.relayUnderCold("ABC-1", "now handle empty files")).thenReturn(true);
 
     String answered =
         new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "now handle empty files");
@@ -59,6 +60,7 @@ class PromptGateTest {
   @Test
   void tellsTheHumanTheMessageMovedToOneFreshSessionWorkingOnIt() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
+    when(sessions.relayUnderCold("ABC-1", "go on")).thenReturn(true);
     ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
 
     new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "go on");
@@ -89,6 +91,17 @@ class PromptGateTest {
     new PromptGate(sessions, runtime, config).answer("ABC-1", working, "go on");
 
     verify(sessions).relayUnderCold("ABC-1", "go on");
+  }
+
+  @Test
+  void letsColdPromptThroughWhenNoFreshSessionStarted() {
+    when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
+    when(sessions.relayUnderCold("ABC-1", "go on")).thenReturn(false);
+
+    String answered = new PromptGate(sessions, runtime, config).answer("ABC-1", idle, "go on");
+
+    assertThat(answered).isEmpty();
+    verify(runtime, never()).blockedPrompt(anyString());
   }
 
   @Test

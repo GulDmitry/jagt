@@ -640,6 +640,27 @@ class AgentSessionsTest {
     }
 
     @Test
+    void coldPromptTheHumanTypedStartsFreshSessionAtOnceWhileTheirOwnTurnIsOpen() {
+      ownTurnOpen.set(true);
+
+      boolean started = sessions.relayUnderCold("ABC-1", "and handle empty files");
+
+      assertThat(started).isTrue();
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, LaunchMode.WORK, "");
+    }
+
+    @Test
+    void coldPromptStartsNothingWhereTheAgentsQuestionIsUnanswered() {
+      when(agentRuntime.unansweredPrompt("typed")).thenReturn(Optional.of("Proceed?"));
+
+      boolean started = sessions.relayUnderCold("ABC-1", "and handle empty files");
+
+      assertThat(started).isFalse();
+      verify(tmux, never())
+          .openTaskWindow(anyString(), anyString(), anyString(), any(), any(), any(), anyString());
+    }
+
+    @Test
     void freshStartOpensNothingWhileTheHumanKeepsTyping() {
       sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 

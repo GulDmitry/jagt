@@ -39,6 +39,12 @@ public class FreshStarts {
     return false;
   }
 
+  /** An unanswered question of the agent: a fresh window would close it. */
+  boolean questionOpen(String taskId) {
+    String session = windows.session(taskId);
+    return windows.running(session, taskId) && windows.promptOpen(session, taskId);
+  }
+
   /** A window that is not running, or a task that is gone, holds nobody. */
   private boolean humanHolds(String session, String taskId) {
     return windows.running(session, taskId)
