@@ -5,6 +5,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.master.Master;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -73,11 +74,15 @@ class BoardStopKindsTest extends BoardPageContext {
   }
 
   @Test
-  void failedRunAndYourMoveWaitingWearDifferentMarksEachWithItsLegendRow() {
+  void failedRunAndPlanWaitingForYouWearDifferentMarksEachWithItsLegendRow() {
     state.putTask(
         "ABC-42",
         alphaTask("ABC-42", TaskStatus.CI_FAILED).mrUrl("https://host.example/mr/7").build());
-    state.putTask("ABC-43", alphaTask("ABC-43", TaskStatus.DEPLOY_CONFLICT).build());
+    state.putTask(
+        "ABC-43",
+        alphaTask("ABC-43", TaskStatus.PLAN_PENDING)
+            .master(Master.defaults().withLeft("approve the plan"))
+            .build());
 
     Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
