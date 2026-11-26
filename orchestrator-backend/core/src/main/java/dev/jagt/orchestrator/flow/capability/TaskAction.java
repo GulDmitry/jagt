@@ -177,6 +177,13 @@ public enum TaskAction {
   /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
   private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP, "ide", CODE);
 
+  /** Mapping a retired verb onto a live command is the one guess that could be destructive. */
+  private static final Map<String, String> RETIRED =
+      Map.of(
+          "prune",
+          "jagt has no `prune`: cleaning up a merged branch is that one task's business, and yours"
+              + " to do with git.");
+
   private final int rank;
   private final Group group;
   private final String id;
@@ -295,6 +302,13 @@ public enum TaskAction {
     return verb == null
         ? Optional.empty()
         : Optional.ofNullable(RENAMED.get(verb.strip().toLowerCase(Locale.ROOT)));
+  }
+
+  /** Why a verb that was retired without a successor does nothing, or empty. */
+  public static Optional<String> whyRetired(String verb) {
+    return verb == null
+        ? Optional.empty()
+        : Optional.ofNullable(RETIRED.get(verb.strip().toLowerCase(Locale.ROOT)));
   }
 
   /** What this action also answers to, for a surface that must accept what it does not offer. */

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.surface.board.task;
 
+import dev.jagt.orchestrator.command.GlobalCommand;
+import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant;
@@ -21,20 +23,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaletteContext {
 
-  /**
-   * Not a TaskAction: `do` creates a task rather than acting on one, and it is the commonest
-   * request.
-   */
-  static final String DO = "do";
-
-  /**
-   * Also not a TaskAction: `resume` takes over an EXISTING review request instead of starting
-   * anything.
-   */
-  static final String RESUME = "resume";
-
   private final StateService stateService;
   private final TaskViews taskViews;
+  private final GlobalCommands globals;
 
   /**
    * Built from the SAME projection the surfaces render, so nothing off the board can be proposed.
@@ -42,7 +33,9 @@ public class PaletteContext {
   public CommandAssistant.Menu menu() {
     List<TaskView> views = taskViews.all();
     List<String> commands =
-        Stream.concat(Arrays.stream(TaskAction.values()).map(TaskAction::id), Stream.of(DO, RESUME))
+        Stream.concat(
+                Arrays.stream(TaskAction.values()).map(TaskAction::id),
+                proposable().stream().map(GlobalCommand::id))
             .toList();
     List<String> tasks =
         views.stream()
@@ -50,6 +43,10 @@ public class PaletteContext {
             .filter(name -> name != null && !name.isBlank())
             .toList();
     return new CommandAssistant.Menu(prompt(views), commands, tasks);
+  }
+
+  private List<GlobalCommand> proposable() {
+    return globals.all().stream().filter(global -> global.modelHint().isPresent()).toList();
   }
 
   private String prompt(List<TaskView> views) {
@@ -61,16 +58,16 @@ public class PaletteContext {
         views.stream().map(PaletteContext::taskLine).collect(Collectors.joining("\n"));
     return "COMMANDS (one of these words, or \"none\"):\n"
         + commandList
-        + "\n- "
-        + DO
-        + ": start a NEW task from a ticket key or URL (the `ticket` field carries it)"
-        + "\n- "
-        + RESUME
-        + ": take over an EXISTING review request / merge request — its branch and its"
-        + " commits — when the human gives such a URL (the `ticket` field carries the URL)\n\n"
-        + "TASKS currently registered"
+        + proposable().stream()
+            .map(global -> "\n- " + global.id() + ": " + global.modelHint().orElseThrow())
+            .collect(Collectors.joining())
+        + "\n\nTASKS currently registered"
         + (stateService.tasks().isEmpty()
-            ? " — NONE, so only `do` or `none` can apply:\n(none)"
+            ? " — NONE, so only "
+                + proposable().stream()
+                    .map(global -> "`" + global.id() + "`")
+                    .collect(Collectors.joining(", "))
+                + " or `none` can apply:\n(none)"
             : " (use the id or alias verbatim):\n" + taskList);
   }
 

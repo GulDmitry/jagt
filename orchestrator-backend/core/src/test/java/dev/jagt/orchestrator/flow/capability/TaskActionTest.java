@@ -26,6 +26,17 @@ class TaskActionTest {
   }
 
   @Test
+  void explainsRetiredVerbWithoutSuccessorTypedInAnyCase() {
+    assertThat(TaskAction.whyRetired(" PRUNE "))
+        .hasValueSatisfying(why -> assertThat(why).contains("jagt has no `prune`"));
+  }
+
+  @Test
+  void explainsNothingForVerbThatWasNeverRetired() {
+    assertThat(TaskAction.whyRetired("ship")).isEmpty();
+  }
+
+  @Test
   void noVerbTakesKeyTheBoardKeepsForItself() {
     List<String> keys = Arrays.stream(TaskAction.values()).map(TaskAction::key).toList();
 

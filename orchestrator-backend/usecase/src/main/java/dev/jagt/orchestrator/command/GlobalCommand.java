@@ -67,6 +67,19 @@ public interface GlobalCommand {
     return Optional.empty();
   }
 
+  /** What the palette's model is told about the verb; empty where it may not propose it. */
+  default Optional<String> modelHint() {
+    return Optional.empty();
+  }
+
+  /**
+   * The whole answer to what the model understood: {@code target} is the field it carried the
+   * ticket or URL in, {@code reason} its own words. Only a verb with a {@link #modelHint()}.
+   */
+  default String runProposed(String target, String reason) {
+    throw new UnsupportedOperationException(id() + " is never proposed by the model");
+  }
+
   /** {@code tail} is what was typed after the verb, blank when nothing was. */
   String run(String tail);
 }

@@ -119,6 +119,30 @@ class ResumeCommandTest {
   }
 
   @Test
+  void offersTheModelTheRequestItMayTakeOver() {
+    assertThat(command.modelHint())
+        .hasValueSatisfying(hint -> assertThat(hint).contains("EXISTING review request"));
+  }
+
+  @Test
+  void asksForTheUrlWhenTheModelNamedNoneAndTouchesNothing() {
+    assertThat(command.runProposed("ABC-1", "no url given"))
+        .isEqualTo(
+            "Understood as `resume` but no review-request URL was named (no url given) — say it"
+                + " explicitly: `resume <request-url>`.");
+    verifyNoInteractions(launcher);
+  }
+
+  @Test
+  void saysWhatItUnderstoodAndAnswersWithTheLaunchersSentence() {
+    when(launcher.resume("https://host/mr/42"))
+        .thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
+
+    assertThat(command.runProposed("https://host/mr/42", "an existing request"))
+        .isEqualTo("understood as `resume https://host/mr/42` — Resumed PROJ-1");
+  }
+
+  @Test
   void listsTheRequestFormAndBothStartForms() {
     assertThat(command.usage())
         .containsExactly(

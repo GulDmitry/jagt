@@ -1,16 +1,15 @@
 package dev.jagt.orchestrator.surface.board.task;
 
+import dev.jagt.orchestrator.command.GlobalCommand;
+import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,17 +24,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NaturalLanguageDispatch {
 
-  /** Mapping a retired verb onto a live command is the one guess that could be destructive. */
-  private static final Map<String, String> RETIRED =
-      Map.of(
-          "prune",
-          "jagt has no `prune`: cleaning up a merged branch is that one task's business, and yours"
-              + " to do with git.");
-
   private final CommandAssistant assistant;
   private final PaletteContext palette;
   private final CommandService commands;
-  private final TaskLauncher launcher;
+  private final GlobalCommands globals;
 
   /**
    * Interprets free text and runs what it means. Never throws for a request it cannot place; a
@@ -49,9 +41,9 @@ public class NaturalLanguageDispatch {
     if (text == null || text.isBlank()) {
       return "Nothing to interpret.";
     }
-    String retired = RETIRED.get(text.strip().split("\\s+", 2)[0].toLowerCase(Locale.ROOT));
-    if (retired != null) {
-      return retired;
+    Optional<String> retired = TaskAction.whyRetired(text.strip().split("\\s+", 2)[0]);
+    if (retired.isPresent()) {
+      return retired.get();
     }
     // A single word that is not a command is a typo, and it cannot name both an action and a task
     // anyway.
@@ -74,11 +66,11 @@ public class NaturalLanguageDispatch {
     if (command.isBlank() || command.equals("none")) {
       return "Not clear enough to act on: " + reasonOf(mapped) + " Type `help` for the grammar.";
     }
-    if (command.equals(PaletteContext.DO)) {
-      return runDo(mapped);
-    }
-    if (command.equals(PaletteContext.RESUME)) {
-      return runResume(mapped);
+    Optional<GlobalCommand> proposed =
+        globals.byId(command).filter(global -> global.modelHint().isPresent());
+    if (proposed.isPresent()) {
+      String target = mapped.ticket() == null ? "" : mapped.ticket().strip();
+      return proposed.get().runProposed(target, reasonOf(mapped));
     }
     Optional<TaskAction> action =
         TaskAction.byId(command).or(() -> TaskAction.byRetiredVerb(command));
@@ -119,30 +111,6 @@ public class NaturalLanguageDispatch {
       // interpretation.
       throw new IllegalStateException(understood + "refused: " + e.getMessage(), e);
     }
-  }
-
-  private String runDo(CommandProposal mapped) {
-    String ticket = mapped.ticket() == null ? "" : mapped.ticket().strip();
-    if (ticket.isBlank()) {
-      return "Understood as `do` but no ticket was named ("
-          + reasonOf(mapped)
-          + ") — say it explicitly: `do <ticket|url> [project]`.";
-    }
-    return "understood as `do "
-        + ticket
-        + "` — "
-        + launcher.launch(LaunchRequest.of(ticket)).message();
-  }
-
-  /** The URL is carried in the same field a ticket would be, and it must BE a URL. */
-  private String runResume(CommandProposal mapped) {
-    String url = mapped.ticket() == null ? "" : mapped.ticket().strip();
-    if (!url.startsWith("http")) {
-      return "Understood as `resume` but no review-request URL was named ("
-          + reasonOf(mapped)
-          + ") — say it explicitly: `resume <request-url>`.";
-    }
-    return "understood as `resume " + url + "` — " + launcher.resume(url).message();
   }
 
   private static String reasonOf(CommandProposal mapped) {

@@ -39,6 +39,25 @@ public class ResumeCommand implements GlobalCommand {
   }
 
   @Override
+  public Optional<String> modelHint() {
+    return Optional.of(
+        "take over an EXISTING review request / merge request — its branch and its commits — when"
+            + " the human gives such a URL (the `ticket` field carries the URL)");
+  }
+
+  @Override
+  public String runProposed(String target, String reason) {
+    if (!target.startsWith("http")) {
+      return "Understood as `"
+          + id()
+          + "` but no review-request URL was named ("
+          + reason
+          + ") — say it explicitly: `resume <request-url>`.";
+    }
+    return "understood as `" + id() + " " + target + "` — " + launcher.resume(target).message();
+  }
+
+  @Override
   public List<String> usage() {
     return List.of("resume <request-url>", "resume <start-key>", "resume <start-key> discard");
   }

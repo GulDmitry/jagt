@@ -48,4 +48,27 @@ class DoCommandTest {
         .hasMessageContaining("error: refused")
         .hasMessageContaining(LaunchRequest.OWN_GRAMMAR);
   }
+
+  @Test
+  void offersTheModelTheTicketItMayStart() {
+    assertThat(command.modelHint())
+        .hasValueSatisfying(hint -> assertThat(hint).contains("NEW task"));
+  }
+
+  @Test
+  void asksForTheTicketWhenTheModelNamedNone() {
+    assertThat(command.runProposed("", "no ticket in the request"))
+        .isEqualTo(
+            "Understood as `do` but no ticket was named (no ticket in the request) — say it"
+                + " explicitly: `do <ticket|url> [project]`.");
+  }
+
+  @Test
+  void saysWhatItUnderstoodAndAnswersWithTheLaunchersSentence() {
+    when(launcher.launch(LaunchRequest.of("ABC-42")))
+        .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+
+    assertThat(command.runProposed("ABC-42", "a new ticket"))
+        .isEqualTo("understood as `do ABC-42` — Task ABC-42 initialized");
+  }
 }
