@@ -21,7 +21,6 @@ public final class SourceRoots {
   public static final String BASE_PATH = BASE_PACKAGE.replace('.', '/');
 
   private static final Path BACKEND = Path.of(".");
-  private static final int DEEPEST = 4;
 
   public static final List<Path> ROOTS = roots();
 
@@ -87,15 +86,22 @@ public final class SourceRoots {
   }
 
   private static List<Path> roots() {
-    try (Stream<Path> tree = Files.walk(BACKEND, DEEPEST)) {
-      return tree.filter(Files::isDirectory)
-          .filter(path -> path.getFileName().toString().equals("java"))
-          .filter(path -> path.getNameCount() >= 3)
-          .filter(path -> path.getName(path.getNameCount() - 3).toString().equals("src"))
-          .filter(path -> !path.startsWith(BACKEND.resolve("build-logic")))
-          .map(BACKEND::relativize)
-          .sorted()
-          .toList();
+    return Stream.concat(Stream.of(BACKEND), directoriesIn(BACKEND))
+        .filter(module -> !module.equals(BACKEND.resolve("build-logic")))
+        .flatMap(module -> directoriesIn(module.resolve("src")))
+        .map(set -> set.resolve("java"))
+        .filter(Files::isDirectory)
+        .map(BACKEND::relativize)
+        .sorted()
+        .toList();
+  }
+
+  private static Stream<Path> directoriesIn(Path parent) {
+    if (!Files.isDirectory(parent)) {
+      return Stream.empty();
+    }
+    try (Stream<Path> children = Files.list(parent)) {
+      return children.filter(Files::isDirectory).toList().stream();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
