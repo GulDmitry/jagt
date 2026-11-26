@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
@@ -30,6 +31,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 public class RuntimeWiring {
 
   private static final int NOTIFICATION_BACKLOG = 64;
+  private static final Duration HTTP_CONNECT_TIMEOUT = Duration.ofSeconds(10);
 
   public static Clock utcClock() {
     return Clock.systemUTC();
@@ -51,8 +53,17 @@ public class RuntimeWiring {
   }
 
   @Bean
+  @Primary
   public HttpClient httpClient() {
-    return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    return HttpClient.newBuilder().connectTimeout(HTTP_CONNECT_TIMEOUT).build();
+  }
+
+  @Bean
+  public HttpClient redirectingHttpClient() {
+    return HttpClient.newBuilder()
+        .connectTimeout(HTTP_CONNECT_TIMEOUT)
+        .followRedirects(HttpClient.Redirect.NORMAL)
+        .build();
   }
 
   @Bean

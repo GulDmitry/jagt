@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ class TeamsWorkflowChannelTest {
 
   @Test
   void postsAnAdaptiveCardWithTheLinksAsActions() throws Exception {
-    new TeamsWorkflowChannel(environment)
+    new TeamsWorkflowChannel(HttpClient.newHttpClient(), environment)
         .deliver(
             TEAMS,
             new ChannelMessage(
@@ -77,7 +78,8 @@ class TeamsWorkflowChannelTest {
   @Test
   void namesTheHostWhenTheWebhookAnswers4xx() {
     status[0] = 400;
-    TeamsWorkflowChannel channel = new TeamsWorkflowChannel(environment);
+    TeamsWorkflowChannel channel =
+        new TeamsWorkflowChannel(HttpClient.newHttpClient(), environment);
     ChannelMessage message = new ChannelMessage("stopped", "ABC-42", null, "stopped", "silent");
 
     assertThatThrownBy(() -> channel.deliver(TEAMS, message))
@@ -94,7 +96,9 @@ class TeamsWorkflowChannelTest {
             new MapPropertySource("test", Map.of("ABC_HOOK", "https://hook.invalid/TOKEN 42")));
     ChannelMessage message = new ChannelMessage("stopped", "ABC-42", null, "stopped", "silent");
 
-    assertThatThrownBy(() -> new TeamsWorkflowChannel(environment).deliver(TEAMS, message))
+    assertThatThrownBy(() ->
+            new TeamsWorkflowChannel(HttpClient.newHttpClient(), environment)
+                .deliver(TEAMS, message))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("ABC_HOOK")
         .hasMessageNotContaining("TOKEN");
@@ -102,6 +106,8 @@ class TeamsWorkflowChannelTest {
 
   @Test
   void isTheDriverOfKindTeams() {
-    assertThat(new TeamsWorkflowChannel(new StandardEnvironment()).kind()).isEqualTo("teams");
+    assertThat(
+            new TeamsWorkflowChannel(HttpClient.newHttpClient(), new StandardEnvironment()).kind())
+        .isEqualTo("teams");
   }
 }

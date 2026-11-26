@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -56,7 +57,8 @@ class OpenAiCompatibleModelTest {
                 .withEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
                 .withModel("qwen")
                 .withTimeout(Duration.ofSeconds(5)),
-            usageTracker);
+            usageTracker,
+            HttpClient.newHttpClient());
   }
 
   @AfterEach
@@ -122,7 +124,8 @@ class OpenAiCompatibleModelTest {
                     .withEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
                     .withModel("qwen")
                     .withTimeout(Duration.ofSeconds(1)),
-                usageTracker)
+                usageTracker,
+                HttpClient.newHttpClient())
             .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();

@@ -39,7 +39,7 @@ public class ReplayMoves {
 
   private final McpEndpoint mcp;
   private final Processes processes;
-  private final HttpClient http = HttpClient.newHttpClient();
+  private final HttpClient http;
 
   public void make(Path worktree, RecordingLine.Move move) {
     switch (move) {

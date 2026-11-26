@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
+import java.net.http.HttpClient;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,8 @@ class HeadlessClaudeCommandAssistantTest {
       new HeadlessClaudeCommandAssistant(
           new ToolLessRead(
               headlessClaude().build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class)),
-              new OpenAiCompatibleModel(LocalModelProperties.off(), mock(UsageTracker.class)),
+              new OpenAiCompatibleModel(
+                  LocalModelProperties.off(), mock(UsageTracker.class), HttpClient.newHttpClient()),
               LocalModelProperties.off()));
   private final CommandAssistant.Menu menu =
       new CommandAssistant.Menu(

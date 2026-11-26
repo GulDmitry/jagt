@@ -11,7 +11,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -30,12 +29,11 @@ import tools.jackson.databind.node.ObjectNode;
 @Slf4j
 class OpenAiCompatibleModel {
 
-  private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(2);
   private static final int MAX_TOKENS = 400;
 
   private final LocalModelProperties local;
   private final UsageTracker usageTracker;
-  private final HttpClient http = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
+  private final HttpClient http;
   private final JsonMapper mapper = new JsonMapper();
 
   Answer<JsonNode> ask(String prompt, String schema, String label, AssistantCallKind kind) {

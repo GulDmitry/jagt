@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,11 @@ class GithubReleaseFeedTest {
 
   @Test
   void namesItsDriverAndTheHostOfItsUrl() {
-    GithubReleaseFeed feed = new GithubReleaseFeed("https://git.example.invalid/org/app/releases/");
+    GithubReleaseFeed feed =
+        new GithubReleaseFeed(
+            HttpClient.newHttpClient(),
+            HttpClient.newHttpClient(),
+            "https://git.example.invalid/org/app/releases/");
 
     assertThat(feed.driver()).isEqualTo("github");
     assertThat(feed.host()).isEqualTo("git.example.invalid");
@@ -36,7 +41,10 @@ class GithubReleaseFeedTest {
     server.start();
     try {
       GithubReleaseFeed feed =
-          new GithubReleaseFeed("http://127.0.0.1:" + server.getAddress().getPort() + "/releases/");
+          new GithubReleaseFeed(
+              HttpClient.newHttpClient(),
+              HttpClient.newHttpClient(),
+              "http://127.0.0.1:" + server.getAddress().getPort() + "/releases/");
 
       assertThat(feed.latest()).contains("0.25.0");
     } finally {
@@ -57,7 +65,10 @@ class GithubReleaseFeedTest {
     server.start();
     try {
       GithubReleaseFeed feed =
-          new GithubReleaseFeed("http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
+          new GithubReleaseFeed(
+              HttpClient.newHttpClient(),
+              HttpClient.newHttpClient(),
+              "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
 
       assertThat(feed.latest()).isEmpty();
     } finally {
@@ -66,16 +77,28 @@ class GithubReleaseFeedTest {
   }
 
   @Test
-  void writesTheReleaseJarAndItsChecksumsWhereAsked(@TempDir Path dir) throws Exception {
+  void writesTheReleaseJarFollowingItsRedirectAndItsChecksumsWhereAsked(@TempDir Path dir)
+      throws Exception {
     HttpServer server =
         HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
     server.createContext(
         "/releases/download/v0.25.0/",
         exchange -> {
-          byte[] body =
-              exchange.getRequestURI().getPath().endsWith(".jar")
-                  ? "jar bytes".getBytes(StandardCharsets.UTF_8)
-                  : "sums".getBytes(StandardCharsets.UTF_8);
+          if (exchange.getRequestURI().getPath().endsWith(".jar")) {
+            exchange.getResponseHeaders().add("Location", "/assets/jagt.jar");
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+            return;
+          }
+          byte[] body = "sums".getBytes(StandardCharsets.UTF_8);
+          exchange.sendResponseHeaders(200, body.length);
+          exchange.getResponseBody().write(body);
+          exchange.close();
+        });
+    server.createContext(
+        "/assets/",
+        exchange -> {
+          byte[] body = "jar bytes".getBytes(StandardCharsets.UTF_8);
           exchange.sendResponseHeaders(200, body.length);
           exchange.getResponseBody().write(body);
           exchange.close();
@@ -83,7 +106,10 @@ class GithubReleaseFeedTest {
     server.start();
     try {
       GithubReleaseFeed feed =
-          new GithubReleaseFeed("http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
+          new GithubReleaseFeed(
+              HttpClient.newHttpClient(),
+              HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build(),
+              "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
 
       feed.jar("0.25.0", dir.resolve("a.jar"));
       feed.checksums("0.25.0", dir.resolve("a.sha256"));
@@ -108,7 +134,10 @@ class GithubReleaseFeedTest {
     server.start();
     try {
       GithubReleaseFeed feed =
-          new GithubReleaseFeed("http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
+          new GithubReleaseFeed(
+              HttpClient.newHttpClient(),
+              HttpClient.newHttpClient(),
+              "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
 
       assertThatThrownBy(() -> feed.jar("0.25.0", dir.resolve("a.jar")))
           .isInstanceOf(IOException.class);

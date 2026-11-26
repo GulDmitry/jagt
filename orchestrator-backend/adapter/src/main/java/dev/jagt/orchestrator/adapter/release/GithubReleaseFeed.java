@@ -9,6 +9,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -21,27 +22,22 @@ import org.springframework.stereotype.Component;
     matchIfMissing = true)
 class GithubReleaseFeed implements ReleaseFeed {
 
-  private static final Duration CONNECT = Duration.ofSeconds(15);
   private static final Duration LOOKUP = Duration.ofSeconds(30);
   private static final Duration DOWNLOAD = Duration.ofMinutes(10);
   private static final int FOUND = 200;
   private static final int REDIRECT_CLASS = 3;
 
   private final String base;
-  private final HttpClient lookup =
-      HttpClient.newBuilder()
-          .connectTimeout(CONNECT)
-          .followRedirects(HttpClient.Redirect.NEVER)
-          .build();
-  private final HttpClient download =
-      HttpClient.newBuilder()
-          .connectTimeout(CONNECT)
-          .followRedirects(HttpClient.Redirect.NORMAL)
-          .build();
+  private final HttpClient lookup;
+  private final HttpClient download;
 
   GithubReleaseFeed(
+      HttpClient lookup,
+      @Qualifier("redirectingHttpClient") HttpClient download,
       @Value("${orchestrator.release-feed.url:https://github.com/GulDmitry/jagt/releases}")
           String url) {
+    this.lookup = lookup;
+    this.download = download;
     this.base = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
   }
 

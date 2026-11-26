@@ -7,16 +7,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class HttpEnvironmentProbe implements EnvironmentProbe {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
-  private final HttpClient http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+  private final HttpClient http;
 
   @Override
   public boolean answers(String url) {

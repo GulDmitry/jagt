@@ -25,13 +25,12 @@ import tools.jackson.databind.json.JsonMapper;
 @RequiredArgsConstructor
 public class LocalModelReach implements Job {
 
-  private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(2);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
   private final OpenCodeProperties opencode;
   private final LocalModelProperties local;
   private final Reach reach;
-  private final HttpClient http = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
+  private final HttpClient http;
   private final JsonMapper mapper = new JsonMapper();
 
   @Override

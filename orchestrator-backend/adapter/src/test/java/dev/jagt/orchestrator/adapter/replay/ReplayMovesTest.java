@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
 import dev.jagt.orchestrator.port.host.Processes;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -32,7 +33,10 @@ class ReplayMovesTest {
   void replayWritesTheFilesTheSessionLeftInItsTreeCreatingTheirFolders(@TempDir Path worktree)
       throws Exception {
     ReplayMoves moves =
-        new ReplayMoves(new McpEndpoint("http://127.0.0.1:1/mcp"), mock(Processes.class));
+        new ReplayMoves(
+            new McpEndpoint("http://127.0.0.1:1/mcp"),
+            mock(Processes.class),
+            HttpClient.newHttpClient());
 
     moves.make(worktree, new RecordingLine.Wrote("ABC-1", 1, Map.of("src/widget.txt", "done")));
 
@@ -59,7 +63,8 @@ class ReplayMovesTest {
       ReplayMoves moves =
           new ReplayMoves(
               new McpEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/mcp"),
-              mock(Processes.class));
+              mock(Processes.class),
+              HttpClient.newHttpClient());
 
       moves.make(
           worktree,
@@ -97,7 +102,10 @@ class ReplayMovesTest {
   @Test
   void replayInterruptedMidCallStaysInterruptedAndStopsTheReplay(@TempDir Path worktree) {
     ReplayMoves moves =
-        new ReplayMoves(new McpEndpoint("http://127.0.0.1:1/mcp"), mock(Processes.class));
+        new ReplayMoves(
+            new McpEndpoint("http://127.0.0.1:1/mcp"),
+            mock(Processes.class),
+            HttpClient.newHttpClient());
     Thread.currentThread().interrupt();
 
     assertThatThrownBy(() ->
@@ -118,7 +126,9 @@ class ReplayMovesTest {
     Processes processes = mock(Processes.class);
     when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
-    ReplayMoves moves = new ReplayMoves(new McpEndpoint("http://127.0.0.1:1/mcp"), processes);
+    ReplayMoves moves =
+        new ReplayMoves(
+            new McpEndpoint("http://127.0.0.1:1/mcp"), processes, HttpClient.newHttpClient());
 
     moves.make(
         worktree,

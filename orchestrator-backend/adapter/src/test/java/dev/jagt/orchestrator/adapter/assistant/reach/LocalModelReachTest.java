@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.reach.ReachLost;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,8 @@ class LocalModelReachTest {
     new LocalModelReach(
             OpenCodeProperties.defaults(),
             new LocalModelProperties(endpoint, "qwen", Duration.ofSeconds(5), List.of()),
-            reach)
+            reach,
+            HttpClient.newHttpClient())
         .run();
 
     assertThat(reach.standing())
@@ -54,7 +56,8 @@ class LocalModelReachTest {
         new LocalModelReach(
             new OpenCodeProperties("", endpoint, "qwen", Map.of()),
             LocalModelProperties.off(),
-            reach);
+            reach,
+            HttpClient.newHttpClient());
     job.run();
     assertThat(reach.standing()).hasSize(1);
 
@@ -75,7 +78,8 @@ class LocalModelReachTest {
     new LocalModelReach(
             OpenCodeProperties.defaults(),
             new LocalModelProperties(endpoint, "qwen", Duration.ofSeconds(5), List.of()),
-            reach)
+            reach,
+            HttpClient.newHttpClient())
         .run();
 
     assertThat(reach.standing())

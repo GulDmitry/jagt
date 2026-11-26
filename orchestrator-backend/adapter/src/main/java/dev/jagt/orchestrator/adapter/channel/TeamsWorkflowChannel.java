@@ -27,10 +27,11 @@ public class TeamsWorkflowChannel implements ChannelDriver {
   private static final Pattern LINK = Pattern.compile("https?://[^\\s<>\"]+");
   private static final Pattern TRAILING_PUNCTUATION = Pattern.compile("[.,;:)\\]]+$");
 
-  private final HttpClient http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+  private final HttpClient http;
   private final Environment environment;
 
-  public TeamsWorkflowChannel(Environment environment) {
+  public TeamsWorkflowChannel(HttpClient http, Environment environment) {
+    this.http = http;
     this.environment = environment;
   }
 

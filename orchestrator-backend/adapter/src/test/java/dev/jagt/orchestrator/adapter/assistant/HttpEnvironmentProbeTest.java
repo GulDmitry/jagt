@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class HttpEnvironmentProbeTest {
 
-  private final HttpEnvironmentProbe probe = new HttpEnvironmentProbe();
+  private final HttpEnvironmentProbe probe = new HttpEnvironmentProbe(HttpClient.newHttpClient());
   private final int[] status = {200};
   private HttpServer server;
 
