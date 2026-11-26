@@ -44,11 +44,7 @@ docker compose up -d --build
 
 One container with the board behind a password login: [docs/server.md](docs/server.md).
 
-### For engineers
-
-Eight architecture principles, each with the file that holds it: [Architecture principles](docs/principles.md).
-
-**Nothing reaches a shared branch without you.** In `act`, the default, the Master pushes and opens requests; the deploy stays yours.
+## Key features
 
 ```mermaid
 flowchart LR
@@ -60,18 +56,18 @@ flowchart LR
     s -- "MCP" --> host["code host · tracker"]
 ```
 
-
-## Key features
-
 - **Several tickets at once.** Each in its own worktree and branch: agents never trip over each other or your base branch.
 - **You look only when it needs you.** Questions, stalls and crashes are flagged and ranked by whose move it is, with a banner.
 - **Review comments answered for you.** Each thread is fixed, declined with a why, or asked; replies are drafted for you to read first.
 - **A red pipeline goes back by itself.** The session fixes it; a failure the host blames on infrastructure is re-run.
-- **A reviewer before you read.** The Master judges every round by your brief; in `act` it ships, your word overrules it, and the deploy stays yours.
+- **A reviewer before you read.** The Master judges every round by your brief. In `act`, the default, it ships, and your word overrules it.
+- **Nothing reaches a shared branch without you.** The Master pushes a task's branch and opens its request. Only your deploy merges.
 - **Done means checked.** jagt runs the plan's acceptance probes itself and refuses a hand-back without a valid spec change.
 - **Tickets in, tickets out.** A ready ticket can open a task and a done one close it, through your own MCP; jagt holds no token.
 
 Everything jagt does, one line each and linked to its spec: [Features](docs/features.md).
+
+Eight architecture principles, each with the file that holds it: [Architecture principles](docs/principles.md).
 
 ## The session, and you
 
