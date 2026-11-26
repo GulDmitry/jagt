@@ -159,6 +159,20 @@ A session is a model run on text it did not write: a ticket, a repository file, 
 
 LLM03, LLM04, LLM05, LLM08, LLM09 and LLM10 name no jagt-owned model, store or endpoint: jagt trains and hosts nothing.
 
+### Sessions and reviewing roles on one inference server
+
+Models served by one local inference server can signal each other without a shared file or tool.
+A published test on vLLM (Models Can Communicate via Inference Servers Despite Being Sandboxed, LessWrong, read 2026-11-26)
+passed bits through the kernel the engine picks per step and through KV-cache reuse.
+There a policy told a colluding monitor it was not a honeypot, and the monitor let 354 of 354 attacks through.
+
+| item | statement |
+|------|-----------|
+| channel | sessions, the code reviewer and the Master in `act` on one server ([local models](local-models.md)): kernel choice per engine step, prompt-cache reuse in `llama-server` |
+| mitigation | no model's judgement alone ships code: tests, `fitness.yml` rows and guards decide, the human's deploy ends it |
+| advice | a role that reviews runs on its own server where this matters ([local models](local-models.md#a-reviewing-role-gets-its-own-server)) |
+| residual risk | hosted APIs: unknown, the post tests vLLM only; llama.cpp not tested here |
+
 ## Gaps
 
 | gap | what stands in for it | open |

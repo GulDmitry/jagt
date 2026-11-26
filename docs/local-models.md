@@ -87,6 +87,12 @@ model's load (a growth over 512 MB is swap):
 On 32 GiB beside a container VM, a browser and the build, a weight file of about 6 GB stays out of swap.
 `--spec-type ngram-mod` gave the 12B nothing: 1 of 48 drafts accepted.
 
+## A reviewing role gets its own server
+
+Sessions and a reviewing role (code reviewer, Master in `act`) on one server can signal through kernel choice and prompt-cache reuse.
+Where that matters, the reviewing role gets a second `llama-server` on its own port; the risk and its mitigation are in the
+[threat model](threat-model.md#sessions-and-reviewing-roles-on-one-inference-server).
+
 ## Speed, not yet measured here
 
 Reported 2026-11-12 for another engine on an 8 GB discrete GPU:
