@@ -33,6 +33,7 @@ technical:
       flow-doors: { fitness: FlowDoorsFitness, governs: class-dependency, max: 0, decision: "0144" }
       task-opening-doors: { fitness: TaskOpeningDoorsFitness, governs: class-dependency, max: 0, decision: "0066" }
       command-literals-in-surface: { fitness: CommandLiteralsFitness, governs: count, max: 0, hint: "a surface reads a verb from TaskAction or a GlobalCommand bean, never spells it" }
+      semver-literals-in-surface: { engine: scan, glob: "surface/src/main/**/*.java", per: file, regex: "\"\\d+\\.\\d+\\.\\d+\"", governs: count, max: 0, hint: "a surface reports jagt's version from BuildProperties, never a literal" }
       role-names: { fitness: RoleNamesFitness, governs: class-dependency, max: 0, decision: "0122" }
       role-names-outside: { fitness: RoleNamesOutsideFitness, governs: class-dependency, max: 0, decision: "0203" }
       collaborator-owners: { fitness: CollaboratorOwnersFitness, governs: count, max: 0 }

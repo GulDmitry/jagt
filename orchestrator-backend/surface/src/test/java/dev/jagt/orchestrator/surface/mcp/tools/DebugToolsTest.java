@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpProtocolService;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.MessageHandler;
+import dev.jagt.orchestrator.surface.mcp.TestBuildPropertiesBuilder;
 import dev.jagt.orchestrator.surface.mcp.TestStateServiceBuilder;
 import dev.jagt.orchestrator.surface.ui.log.LogReads;
 import dev.jagt.orchestrator.task.TaskState;
@@ -80,6 +81,7 @@ class DebugToolsTest {
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
             state,
             new FakeClock(),
             List.of(

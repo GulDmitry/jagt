@@ -67,7 +67,12 @@ class McpProtocolServiceTest {
                   return "moved";
                 });
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(moving));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(moving));
 
     protocol.handle(
         mapper.readTree(
@@ -85,6 +90,7 @@ class McpProtocolServiceTest {
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
             state,
             new FakeClock(),
             List.of(
@@ -123,6 +129,7 @@ class McpProtocolServiceTest {
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
             state,
             new FakeClock(),
             List.of(new SessionTools(mock(AgentSessions.class), mock(CommandService.class))));
@@ -148,7 +155,13 @@ class McpProtocolServiceTest {
   @Test
   void answersParseErrorWithJsonRpcCode32700(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     JsonNode error = protocol.parseError("unexpected character");
 
@@ -159,7 +172,13 @@ class McpProtocolServiceTest {
   void namesTheFailureKindWhenTheCauseCarriesNoMessage() {
     StateService state = mock(StateService.class);
     when(state.findByWorktree(any())).thenThrow(new IllegalStateException());
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     JsonNode error =
         protocol
@@ -179,7 +198,12 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools failing = new ThrowingMcpTools(new IllegalStateException());
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(failing));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(failing));
 
     JsonNode response =
         protocol
@@ -205,7 +229,12 @@ class McpProtocolServiceTest {
             .withTurn(Turn.none().relayed("ship", "d1", "", 0)));
     McpTools noting = new AnsweringMcpTools("note", Effect.REPORTS, "notes", "noted");
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(noting));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(noting));
 
     try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
       protocol.handle(
@@ -236,7 +265,12 @@ class McpProtocolServiceTest {
     McpTools refusing =
         new ThrowingMcpTools(new IllegalArgumentException("CI_POLLING cannot be reported"));
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(refusing));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(refusing));
 
     try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
       protocol.handle(
@@ -259,7 +293,12 @@ class McpProtocolServiceTest {
     McpTools failing =
         new ThrowingMcpTools(new IllegalStateException("branch ABC-1 is checked out elsewhere"));
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(failing));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(failing));
 
     JsonNode result =
         protocol
@@ -285,7 +324,12 @@ class McpProtocolServiceTest {
     McpTools failing =
         new ThrowingMcpTools(new UncheckedIOException(new IOException("state.json locked")));
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(failing));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(failing));
 
     JsonNode result =
         protocol
@@ -308,7 +352,12 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools echoing = new AnsweringMcpTools("echo", Effect.CHANGES, "answers", "all done");
     McpProtocolService protocol =
-        new McpProtocolService(mapper, state, new FakeClock(), List.of(echoing));
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(echoing));
 
     JsonNode result =
         protocol
@@ -327,7 +376,13 @@ class McpProtocolServiceTest {
   @Test
   void answersAnInitializeWithTheProtocolVersionTheClientAsked(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     JsonNode result =
         protocol
@@ -345,9 +400,38 @@ class McpProtocolServiceTest {
   }
 
   @Test
+  void reportsTheBuildVersionInTheInitializeAnswer(@TempDir Path root) {
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
+
+    JsonNode result =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\"}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result");
+
+    assertThat(result.path("serverInfo").path("version").asString()).isEqualTo("1.2.3");
+  }
+
+  @Test
   void answersMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     JsonNode error =
         protocol
@@ -365,7 +449,13 @@ class McpProtocolServiceTest {
   @Test
   void refusesAnUnknownCallersNotificationWithAnErrorCarryingNoId(@TempDir Path root) {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     JsonNode response =
         protocol
@@ -390,7 +480,11 @@ class McpProtocolServiceTest {
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, new FakeClock(), List.of(new DeployTools(mock(CommandService.class))));
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -410,7 +504,11 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, new FakeClock(), List.of(new DeployTools(mock(CommandService.class))));
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -440,6 +538,7 @@ class McpProtocolServiceTest {
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
             state,
             new FakeClock(),
             List.of(
@@ -478,7 +577,13 @@ class McpProtocolServiceTest {
             .lastActiveTimestamp(1000)
             .alias("a1")
             .build());
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
@@ -502,7 +607,11 @@ class McpProtocolServiceTest {
             .build());
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC), List.of());
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC),
+            List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
@@ -522,7 +631,13 @@ class McpProtocolServiceTest {
             .lastActiveTimestamp(freshTimestamp)
             .alias("a1")
             .build());
-    McpProtocolService protocol = new McpProtocolService(mapper, state, new FakeClock(), List.of());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
@@ -544,7 +659,11 @@ class McpProtocolServiceTest {
             .build());
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC), List.of());
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC),
+            List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
@@ -568,6 +687,7 @@ class McpProtocolServiceTest {
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
             state,
             new FakeClock(),
             List.of(
@@ -604,7 +724,11 @@ class McpProtocolServiceTest {
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
-            mapper, state, new FakeClock(), List.of(new DeployTools(mock(CommandService.class))));
+            mapper,
+            TestBuildPropertiesBuilder.buildProperties().build(),
+            state,
+            new FakeClock(),
+            List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode response =
         protocol

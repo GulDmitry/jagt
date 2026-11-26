@@ -52,7 +52,12 @@ class McpControllerTest {
     realProtocolMvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(
-                    new McpProtocolService(mapper, state, new FakeClock(), List.of()),
+                    new McpProtocolService(
+                        mapper,
+                        TestBuildPropertiesBuilder.buildProperties().build(),
+                        state,
+                        new FakeClock(),
+                        List.of()),
                     state,
                     mapper,
                     new MasterToken(paths)))

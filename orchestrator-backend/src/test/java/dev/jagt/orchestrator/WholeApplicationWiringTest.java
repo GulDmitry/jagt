@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -171,9 +173,12 @@ class WholeApplicationWiringTest {
                 Map.entry(
                     "ABC-1",
                     TaskState.builder("proj", "/work/ABC-1", TaskStatus.IN_PROGRESS).build())));
+    Properties buildEntries = new Properties();
+    buildEntries.setProperty("version", "1.2.3");
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
+            new BuildProperties(buildEntries),
             state,
             Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
             List.copyOf(context.getBeansOfType(McpTools.class).values()));

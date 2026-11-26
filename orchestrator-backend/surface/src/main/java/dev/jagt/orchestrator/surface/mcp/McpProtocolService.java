@@ -19,6 +19,7 @@ import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.event.Level;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -38,13 +39,19 @@ public final class McpProtocolService implements McpToolRegistry {
       String name, Audience audience, Effect effect, JsonNode schema, ToolHandler handler) {}
 
   private final ObjectMapper mapper;
+  private final BuildProperties build;
   private final StateService stateService;
   private final Clock clock;
   private final Map<String, ToolSpec> tools = new LinkedHashMap<>();
 
   public McpProtocolService(
-      ObjectMapper mapper, StateService stateService, Clock clock, List<McpTools> groups) {
+      ObjectMapper mapper,
+      BuildProperties build,
+      StateService stateService,
+      Clock clock,
+      List<McpTools> groups) {
     this.mapper = mapper;
+    this.build = build;
     this.stateService = stateService;
     this.clock = clock;
     groups.forEach(group -> group.declare(this));
@@ -131,7 +138,7 @@ public final class McpProtocolService implements McpToolRegistry {
     result.putObject("capabilities").putObject("tools");
     ObjectNode serverInfo = result.putObject("serverInfo");
     serverInfo.put("name", "jagt-orchestrator");
-    serverInfo.put("version", "0.1.0");
+    serverInfo.put("version", build.getVersion());
     return result;
   }
 
