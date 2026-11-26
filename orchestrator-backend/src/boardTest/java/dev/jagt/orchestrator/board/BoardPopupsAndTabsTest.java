@@ -466,6 +466,29 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
+  void mermaidFailureThatIsNotAnErrorIsReportedByItsValue() throws Exception {
+    Path worktree = Files.createDirectories(root.resolve("ABC-8-alpha"));
+    Files.writeString(worktree.resolve("task_visual.md"), "```mermaid\ngraph TD\n```\n");
+    state.putTask("ABC-8", alphaTask("ABC-8", TaskStatus.IN_PROGRESS).build());
+    Page page = session.newPage();
+    page.route(
+        "**/vendor/mermaid.min.js",
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setContentType("text/javascript")
+                    .setBody(
+                        "globalThis.mermaid = { initialize() {},"
+                            + " run() { return Promise.reject('renderer gone'); } };")));
+    page.navigate("http://localhost:" + port + "/");
+
+    page.locator("#pane .tabs button[data-tab=artifacts]").click();
+
+    assertThat(page.locator("#toasts .toast.error"))
+        .containsText("could not draw the diagram: renderer gone");
+  }
+
+  @Test
   void theOpenTaskTabsStandInTheOrderTheyAreUsed() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     Page page = openBoard();

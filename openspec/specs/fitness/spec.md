@@ -9,8 +9,7 @@ Every automated fitness function of jagt, declared in one `fitness.yml` and meas
 Loading `fitness.yml` SHALL fail before any fitness function runs, with a `FitnessConfigException` naming the key.
 The causes are an unknown key, a wrong type, a missing threshold, an unknown fitness function id and an unknown selector.
 So is what an engine cannot measure: a missing selector, a `measure` its `per` does not size, a `set` naming no source set,
-a `regex` that does not compile.
-Each cause has its own test.
+a `regex` that does not compile. Each cause has its own test.
 #### Scenario: An unknown key
 - **WHEN** a fitness function holds a key outside the fitness function keys
 - **THEN** loading fails with a `FitnessConfigException` naming that key and no fitness function runs
@@ -52,10 +51,7 @@ asking to lower it ([0176](../../../docs/decisions/0176-every-kind-has-a-ceiling
 - **WHEN** a `max 0` fitness function measures two items
 - **THEN** the report names its id, value 2, `max 0` and both items
 #### Scenario: A counted kind falls below its number
-- **WHEN** a counted kind measures fewer items than its stored number
-- **THEN** it fails asking to lower the number to the measured one
-#### Scenario: A tool-measured counted row falls below its number
-- **WHEN** a counted row measured by a build tool measures fewer than its stored number
+- **WHEN** a counted row, measured by a scan or by a build tool, measures fewer items than its stored number
 - **THEN** it fails naming the row and asking to lower the number to the measured one
 #### Scenario: A row marked not to ratchet
 - **WHEN** a counted row holds `ratchet: false` and measures fewer than its number
@@ -104,8 +100,7 @@ A function a suite run measures SHALL print its threshold and the last value a c
 - **THEN** the task prints its threshold and `last value 5`
 
 ### Requirement: The fitness library names no project
-No file of the library SHALL name a project package, ring, path, vendor, framework or build property.
-The library SHALL build alone.
+No file of the library SHALL name a project package, ring, path, vendor, framework or build property. The library SHALL build alone.
 A value the library needs from the project SHALL be a key of its Gradle extension with a neutral default.
 #### Scenario: A project name enters the library
 - **WHEN** a library source names `dev.jagt`, a ring, a user path, a framework or a build property of the project
@@ -158,8 +153,7 @@ An empty `project.basePackage` SHALL prefix no selector of the archunit engine, 
 - **THEN** the classes of that package are measured
 
 ### Requirement: The test task reads every tracked file
-The plugin SHALL declare every tracked file as an input of the `test` task.
-A cached run then cannot hide a breach.
+The plugin SHALL declare every tracked file as an input of the `test` task. A cached run then cannot hide a breach.
 #### Scenario: A tracked file changes
 - **WHEN** a tracked file changes and nothing else does
 - **THEN** the `test` task runs again

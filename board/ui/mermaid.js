@@ -38,7 +38,11 @@ export function draw(root) {
   const fences = [...root.querySelectorAll("pre > code.language-mermaid")];
   if (!fences.length) return;
   const nodes = fences.map((code) => {
-    const node = make("div", "mermaid", code.textContent ?? "");
+    const node = make(
+      "div",
+      "mermaid",
+      /** @type {string} */ (code.textContent),
+    );
     code.parentElement?.replaceWith(node);
     return node;
   });
