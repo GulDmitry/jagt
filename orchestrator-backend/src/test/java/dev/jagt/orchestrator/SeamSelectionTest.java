@@ -21,11 +21,12 @@ class SeamSelectionTest {
     List<String> unselected =
         adapterPorts.adaptersByPort().entrySet().stream()
             .filter(port -> port.getValue().size() > 1 && !RUN_TOGETHER.contains(port.getKey()))
-            .flatMap(port -> port.getValue().stream().map(name -> port.getKey() + " <- " + name))
-            .filter(line ->
-                !SELECTED
-                    .matcher(adapterPorts.sourceOf(line.substring(line.indexOf("<- ") + 3)))
-                    .find())
+            .flatMap(port ->
+                port.getValue().stream()
+                    .filter(name ->
+                        !SELECTED.matcher(adapterPorts.sourceOf(name)).find()
+                            && !adapterPorts.wiredAsFallback(port.getKey(), name))
+                    .map(name -> port.getKey() + " <- " + name))
             .sorted()
             .toList();
 

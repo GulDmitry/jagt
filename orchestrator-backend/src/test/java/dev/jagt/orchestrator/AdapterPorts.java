@@ -44,6 +44,13 @@ final class AdapterPorts {
     return sources.getOrDefault(adapter, "");
   }
 
+  boolean wiredAsFallback(String port, String adapter) {
+    Pattern fallback =
+        Pattern.compile(
+            "@ConditionalOnMissingBean\\(" + port + "\\.class\\)\\s+" + adapter + "\\s+\\w+\\(\\)");
+    return sources.values().stream().anyMatch(source -> fallback.matcher(source).find());
+  }
+
   private void register(Path file) {
     String source = SourceRoots.read(file);
     Matcher header = HEADER.matcher(source.replaceAll("(?s)/\\*.*?\\*/", ""));
