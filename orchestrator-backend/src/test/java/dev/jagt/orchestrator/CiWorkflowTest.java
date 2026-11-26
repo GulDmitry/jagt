@@ -343,6 +343,26 @@ class CiWorkflowTest {
   }
 
   @Test
+  void repeatsNoPullRequestGateLineInAnyNightlyJob() {
+    Map<String, String> pullRequest = CiWorkflow.gateLinesByJob(CiWorkflow.jobs());
+    Map<String, String> nightly = CiWorkflow.gateLinesByJob(CiWorkflow.nightlyJobs());
+
+    List<String> repeated =
+        nightly.entrySet().stream()
+            .filter(line -> pullRequest.containsKey(line.getKey()))
+            .map(line ->
+                "nightly job "
+                    + line.getValue()
+                    + " repeats pull-request job "
+                    + pullRequest.get(line.getKey())
+                    + ": "
+                    + line.getKey())
+            .toList();
+
+    assertThat(repeated).isEmpty();
+  }
+
+  @Test
   void runsOnlyWhatTheLocalGateCannotInTheNightly() {
     assertThat(CiWorkflow.nightlyJobs().keySet())
         .containsExactlyInAnyOrder("stand", "e2e", "properties", "scan", "install", "report");

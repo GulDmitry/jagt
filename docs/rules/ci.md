@@ -17,7 +17,7 @@ A local green predicts a CI green. CI adds no check the local gate lacks and tak
 
 ## The stability policy
 
-Each rule names its check. `none yet` is a gap, open until the check lands.
+Each rule names its check; a rule with none is a gap (`rules-without-check`).
 
 1. **CI has no time ceiling, measurement or stop**; only the job's `timeout-minutes` bounds a hang. `ci-jobs-without-timeout`,
    `ci-no-time-flags`; the ceilings are local, on by default, and soft: an overrun finishes and warns, a hang guard of 3x stops
@@ -26,7 +26,8 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 3. **Every CI and nightly job has a local twin**, selectable by name: `ci-local.sh nightly-<job>`, or `nightly` for all.
    Windows install and the real-feed install are the exceptions: the first by a manual dispatch, the second by `install-macos`.
    `CiWorkflowTest`: each nightly job runs `scripts/linux-suite.sh nightly-…` and `gate()` holds its line; `linux-suite.bats`.
-4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`. none yet.
+4. **The recorded green is the whole gate**: only the argument-free default run records `ci-local.ok`.
+   `ci-local.bats`: "a green run of a chosen job records nothing", "an option is refused before any run".
 5. **The CI image is one, pinned by digest**, used by CI and the local gate; no `ci.yml` job installs a package.
    `ci-image-pinned-by-digest`, `ci-no-package-install`, `CiWorkflowTest`.
 6. **Every Linux job runs through `scripts/linux-suite.sh <job>`, online; a cache only speeds it up**, and the gate is never capped:
@@ -43,7 +44,7 @@ Each rule names its check. `none yet` is a gap, open until the check lands.
 8. **A wait is a hang guard** from one shared constant, never a speed assert. `sleep-in-tests`, `ci-no-sleep`, `wait-literal-in-tests`.
 9. **A rerun or retry never turns a CI red green.** `ci-no-retry`.
 10. **The nightly runs only what T1 does not**; no nightly job repeats a pull request job unchanged.
-    `nightly-calls-no-pull-request-job`; the rest: none yet.
+    `nightly-calls-no-pull-request-job`; `CiWorkflowTest`: no nightly job runs a line a pull-request job runs.
 11. **Main publishes the tree the pull request proved**; no test, stand or install job re-runs there.
     `release-needs-no-stand-or-install`, `CiWorkflowTest`, `ProvenTree`.
 12. **A change to CI or the local twin runs first as one job alone on a throwaway branch**: a dispatch with input `job`,
