@@ -26,6 +26,8 @@
   "palette.run": "Uruchom",
   "palette.interpreting": "interpretuję…",
   "act-stopped": "■ act zatrzymany",
+  "stop.at": "zatrzymano {at}",
+  "mermaid.failed": "nie udało się narysować diagramu: {error}",
   "board-stopped": "‖ tablica zatrzymana",
   "start-interrupted": "start przerwany",
   "header.review.tip": "nienadzorowane odpytywanie o review",

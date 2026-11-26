@@ -26,6 +26,8 @@
   "palette.run": "Выполнить",
   "palette.interpreting": "разбираю…",
   "act-stopped": "■ act остановлен",
+  "stop.at": "остановлено {at}",
+  "mermaid.failed": "не удалось нарисовать диаграмму: {error}",
   "board-stopped": "‖ доска остановлена",
   "start-interrupted": "запуск прерван",
   "header.review.tip": "автоматический опрос ревью без присмотра",

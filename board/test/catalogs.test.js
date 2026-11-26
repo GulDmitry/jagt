@@ -120,3 +120,22 @@ test("everyEnglishKeyIsAsked whenTheCatalogHoldsIt", () => {
 
   assert.deepEqual(unasked, []);
 });
+
+test("noEnglishWordsAreHardcoded whenABoardSourceBuildsATemplateLiteral", () => {
+  const stylesheet = readFileSync(
+    new URL("../app.css", import.meta.url),
+    "utf8",
+  );
+
+  const hardcoded = sources().flatMap(({ path, text }) =>
+    firsts("`([A-Za-z]{3,}[ ][^`]*)`", text)
+      .filter((template) => template.includes("${"))
+      .filter((template) => {
+        const first = template.split(" ")[0];
+        return first !== "jagt" && !stylesheet.includes(`.${first}`);
+      })
+      .map((template) => `${path}: ${template}`),
+  );
+
+  assert.deepEqual(hardcoded, []);
+});

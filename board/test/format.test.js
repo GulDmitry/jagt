@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import {
+import { mock, test } from "node:test";
+
+const FILES = { "i18n/en.json": { "stop.at": "stopped {at}" } };
+mock.method(globalThis, "fetch", async (/** @type {string} */ url) =>
+  url in FILES
+    ? new Response(
+        JSON.stringify(FILES[/** @type {keyof typeof FILES} */ (url)]),
+      )
+    : new Response("", { status: 404 }),
+);
+const {
   bothNames,
   countdown,
   duration,
@@ -8,7 +17,7 @@ import {
   reportParts,
   stopLines,
   switchLines,
-} from "../core/format.js";
+} = await import("../core/format.js");
 
 /** @type {[number, string][]} */
 const SPANS = [

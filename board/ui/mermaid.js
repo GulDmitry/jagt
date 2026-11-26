@@ -1,4 +1,5 @@
 import { make } from "../core/dom.js";
+import { t } from "../core/i18n.js";
 import { toast } from "./toast.js";
 
 /** @typedef {{ initialize: (config: object) => void, run: (options: { nodes: Element[] }) => Promise<void> }} Mermaid */
@@ -46,7 +47,9 @@ export function draw(root) {
     .catch(
       /** @param {unknown} e */ (e) =>
         toast(
-          `could not draw the diagram: ${e instanceof Error ? e.message : String(e)}`,
+          t("mermaid.failed", {
+            error: e instanceof Error ? e.message : String(e),
+          }),
           true,
         ),
     );

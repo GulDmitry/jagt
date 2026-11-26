@@ -63,6 +63,8 @@
   "palette.run": "Run",
   "palette.interpreting": "interpreting…",
   "act-stopped": "■ act stopped",
+  "stop.at": "stopped {at}",
+  "mermaid.failed": "could not draw the diagram: {error}",
   "board-stopped": "‖ board stopped",
   "start-interrupted": "start interrupted",
   "header.review.tip": "unattended review polling",

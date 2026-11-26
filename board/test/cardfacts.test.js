@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 
 const FILES = {
-  "i18n/en.json": { "card.tier.tip": "runs on {model}" },
+  "i18n/en.json": {
+    "card.tier.tip": "runs on {model}",
+    "stop.at": "stopped {at}",
+  },
 };
 mock.method(globalThis, "fetch", async (/** @type {string} */ url) =>
   url in FILES

@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 import { full } from "./time.js";
 
 /** @param {number} millis */
@@ -129,7 +130,7 @@ export const stopLines = (task) =>
     ? [
         task.stop.evidence,
         task.stop.next,
-        `stopped ${full(task.stop.at)}`,
+        t("stop.at", { at: full(task.stop.at) }),
         task.stop.triage,
       ].flatMap((line) => (line ? [line] : []))
     : [];
