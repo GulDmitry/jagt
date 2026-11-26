@@ -484,7 +484,7 @@ class BoardReportsTest extends BoardPageContext {
     assertThat(page.locator("#report")).isVisible();
     assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");
     assertThat(page.locator("#report-section .legend .checks.red")).hasCount(1);
-    assertThat(page.locator("#report-section .legend .tabs button.you")).hasText("Drafted review");
+    assertThat(page.locator("#report-section .legend .tabs .badge.required")).hasText("new");
     assertThat(page.locator("#report-section .legend a.id")).hasCount(1);
     assertThat(page.locator("#report-section .legend .repos .tick")).hasCount(1);
   }

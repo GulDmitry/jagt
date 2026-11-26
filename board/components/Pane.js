@@ -37,11 +37,16 @@ export const Pane = ({ card, tab, shown, peek = {}, fresh = false }) =>
             role="tab"
             data-tab=${one.id}
             id=${`tab-${one.id}`}
-            class=${one.id === "round" && fresh ? "you" : undefined}
             aria-selected=${String(one.id === tab)}
             aria-controls=${one.id === tab ? `panel-${one.id}` : undefined}
           >
-            ${one.label}
+            ${one.label}${
+              one.id === "round" && fresh
+                ? html` <span class="badge required"
+                    >${t("tab.round.new")}</span
+                  >`
+                : ""
+            }
           </button>`,
       )}
     </div>

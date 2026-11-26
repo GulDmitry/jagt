@@ -15,6 +15,7 @@ Fourteen tokens, each defined once at the top of `app.css` as `light-dark(light,
 (`data-theme` on `<html>`) and `prefers-color-scheme` both only set `color-scheme`, so a token cannot be in one
 theme only. `--on-accent` is `button.primary`'s label (`#fff`, `#10131a` dark): accent text on the accent fill is
 illegible. A hex outside `:root` is a bug (`css-hex-outside-root`); the translucent blacks are not hex: six shadows, two backdrops.
+Text clears 4.5:1 and a control's edge 3:1 on `--panel` in both themes (`PaletteContrastTest`).
 
 - `--you` `#92400e` / `#fbbf24` — **your move**: nothing advances without you.
 - `--agent` `#1d4ed8` / `#93b4ff` — **an agent is working**.
@@ -23,7 +24,8 @@ illegible. A hex outside `:root` is a bug (`css-hex-outside-root`); the transluc
 - `--danger` `#b42318` / `#fca5a5` — **broken**: a failed run, a refused command, an outside condition holding a task.
 - `--accent` `#1d4ed8` / `#93b4ff` — **pressable / pressed**: hover, a primary button, a pressed filter, the open tab.
 - `--muted` `#5f6672` / `#9aa3ad` — **not news**: labels, ages, a verdict with nothing wrong, a pause you made.
-- `--text` / `--line` / `--panel` / `--bg` / `--chip-bg` / `--you-bg` — structure, never meaning.
+- `--text` / `--line` / `--panel` / `--bg` / `--chip-bg` / `--you-bg` — structure, never meaning. A control's edge
+  (input, select, switch, button) is `color-mix(in srgb, var(--text) 55%, var(--panel))`: `--line` is 1.4:1.
 
 **A green REQUEST is an approval and nothing else**; the checks verdict wears its own DOT. **`--agent` and
 `--accent` are the same blue**: never in one row, never two meanings on one element.
@@ -50,7 +52,8 @@ illegible. A hex outside `:root` is a bug (`css-hex-outside-root`); the transluc
   `@keyframes` (`prefers-reduced-motion` safe); hollow means waiting everywhere, a said line or a retry pending.
 - `✓` on the request, or `.tick` closing `.repos`: approved.
 - in a round's replies — `.block` head, its `.verdict` word green FIXED / `--you` a question / grey pushed back; `.quote` muted.
-- `.tabs` — the open tab an `--accent` underline; `.tabs .badge.required` count on the Drafted tab: replies since you last opened it.
+- `.tabs` — an `--accent` underline means open, nothing else; a `.badge.required` `new` pill on the Drafted tab:
+  replies since you last opened it.
 - `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open.
@@ -93,4 +96,5 @@ is not depth: the 2px `--ok` ring on a primary deploy button.
 A library is a vendored file the jar serves as published, pinned by `BoardAssetsTest`
 ([0046](../decisions/0046-the-board-renders-preact-components-with-no-build.md)).
 
-**A chosen value is never marked by colour alone**: the gear's and the settings' radios wear a check glyph (✓) and `aria-checked`.
+**No mark is told apart by colour alone**: two marks in one legend row differ in shape or glyph
+(`BoardLegendNotColourAloneTest`); a chosen value too: the gear's and the settings' radios wear a check glyph (✓) and `aria-checked`.

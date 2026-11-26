@@ -68,7 +68,7 @@ header .waiting {
   padding: 3px 4px 3px 10px;
   width: 320px;
   max-width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 6px;
   background: var(--bg);
   color: var(--muted);
@@ -229,7 +229,7 @@ fieldset.field legend {
 .choice {
   display: inline-flex;
   flex-wrap: wrap;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 6px;
   overflow: hidden;
 }
@@ -268,7 +268,7 @@ input[role="switch"] {
   appearance: none;
   width: 34px;
   height: 18px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 9px;
   background: var(--chip-bg);
   position: relative;
@@ -370,9 +370,8 @@ input[role="switch"]:checked::after {
   color: var(--text);
   border-bottom-color: var(--accent);
 }
-.tabs button.you {
-  color: var(--you);
-  border-bottom-color: var(--you);
+.tabs .badge {
+  margin-left: 6px;
 }
 #settings-body .tabs {
   flex-direction: column;
@@ -548,14 +547,14 @@ input[type="number"],
 input:not([type]) {
   background: var(--bg);
   color: var(--text);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   border-radius: 6px;
   padding: 5px 8px;
   font: inherit;
 }
 button {
   font: inherit;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--text) 55%, var(--panel));
   background: var(--panel);
   color: var(--text);
   border-radius: 6px;
@@ -1127,6 +1126,9 @@ button.chip.log {
   background: none;
   cursor: pointer;
 }
+button.chip.log::before {
+  content: "▸ ";
+}
 .chip.log.on {
   color: var(--accent);
   border-color: var(--accent);
@@ -1277,8 +1279,8 @@ a {
   border-left-color: var(--danger);
 }
 
-/* A verdict is filled — red failed, green passed — and a run still going is a hollow pulsing ring, so the three
-   read apart with the animation switched off. No dot at all is a verdict nothing here can read. */
+/* A verdict is filled — a red square failed, a green disc passed — and a run still going is a hollow pulsing ring,
+   so the three read apart in greyscale and with the animation switched off. No dot at all is a verdict nothing here can read. */
 .checks {
   width: 9px;
   height: 9px;
@@ -1288,6 +1290,7 @@ a {
 }
 .checks.red {
   background: var(--danger);
+  border-radius: 0;
 }
 .checks.green {
   background: var(--ok);
@@ -1316,6 +1319,12 @@ button:not(.primary).again:hover:not(:disabled) {
 /* The highlighted move keeps its fill and takes the mark as a ring: green ON accent is legible in neither theme. */
 button.primary.again {
   box-shadow: 0 0 0 2px var(--ok);
+}
+button.again::after {
+  content: " ↻";
+}
+button.again[data-key]::after {
+  content: " ↻ " attr(data-key);
 }
 button.quiet,
 button.quiet:hover:not(:disabled) {

@@ -44,9 +44,16 @@ const flagButton = (on) => {
 };
 
 const draftedTab = () => {
-  const tab = make("button", "you", t("tab.round"));
+  const tab = make(
+    "button",
+    "",
+    `${t("tab.round")} `,
+    span("badge required", t("tab.round.new")),
+  );
   tab.setAttribute("role", "tab");
-  return make("span", "tabs", "", tab);
+  const plain = make("button", "", t("tab.overview"));
+  plain.setAttribute("role", "tab");
+  return make("span", "tabs", "", plain, tab);
 };
 
 const blockHead = () =>
@@ -75,7 +82,11 @@ export const cardRows = () => [
     aged("status live", "done", "3d"),
     aged("status paused", "‖ paused", "2m"),
   ),
-  row("deployed", make("button", "again", "Deploy")),
+  row(
+    "deployed",
+    make("button", "", "Deploy"),
+    make("button", "again", "Deploy"),
+  ),
   row("quiet", make("button", "quiet", "Check review")),
   row(
     "request",
