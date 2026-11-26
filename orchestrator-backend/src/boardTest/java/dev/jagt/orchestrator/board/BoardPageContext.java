@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.scenario.OpenedWindows;
 import dev.jagt.orchestrator.service.session.SessionStreams;
 import dev.jagt.orchestrator.surface.board.task.NaturalLanguageDispatch;
@@ -133,6 +134,7 @@ abstract class BoardPageContext {
   @MockitoBean SessionStreams streams;
   @MockitoBean SessionHost sessionHost;
   @MockitoBean McpHealth mcpHealth;
+  @MockitoBean TicketTexts ticketTexts;
   @MockitoSpyBean ReviewRepliesReport replies;
 
   BrowserContext session;
