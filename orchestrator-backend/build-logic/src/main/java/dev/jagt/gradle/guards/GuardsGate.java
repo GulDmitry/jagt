@@ -11,12 +11,22 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-/** The contract each script of scripts.list keeps: a case file, a header, a tagged case per key. */
+/**
+ * The shell scripts the scripts-are-java allow-list names, and the contract each guard keeps: a
+ * case file, a header, a tagged case per key.
+ */
 public final class GuardsGate {
 
   private static final String TESTS = "scripts/guards/test";
+  private static final String GUARDS = "scripts/guards";
+  private static final String BACKEND = "orchestrator-backend";
+  private static final Pattern EXCEPT =
+      Pattern.compile("scripts-are-java:.*?\\bexcept:\\s*\"([^\"]*)\"");
   private static final String TAGS = "# bats test_tags=";
   private static final int HEADER_LINES = 40;
 
@@ -38,13 +48,16 @@ public final class GuardsGate {
   }
 
   private void check() {
-    if (!Files.isRegularFile(list())) {
-      problems.add("no list: " + TESTS + "/scripts.list is missing");
+    if (entries().isEmpty()) {
+      problems.add("no list: fitness.yml has no scripts-are-java except list");
       return;
     }
     Set<String> seen = new HashSet<>();
     for (Path script : listed()) {
       Path cases = caseFile(script.getFileName().toString());
+      if (!script.startsWith(root.resolve(GUARDS)) && !Files.isRegularFile(cases)) {
+        continue;
+      }
       checkContract(script, cases, seen);
       if (lines(cases).stream().noneMatch(line -> line.startsWith("@test "))) {
         problems.add("no case: " + relative(script) + " has no case in " + relative(cases));
@@ -53,30 +66,50 @@ public final class GuardsGate {
     checkGaps(seen);
   }
 
-  private List<Path> listed() {
-    List<Path> scripts = new ArrayList<>();
-    for (String entry : lines(list())) {
-      if (entry.isBlank()) {
-        continue;
+  private List<String> entries() {
+    for (String line : lines(root.resolve("fitness.yml"))) {
+      Matcher match = EXCEPT.matcher(line);
+      if (match.find()) {
+        return Arrays.stream(match.group(1).split(","))
+            .map(String::strip)
+            .filter(entry -> !entry.isEmpty())
+            .toList();
       }
-      List<Path> matches = expand(entry.strip());
+    }
+    return List.of();
+  }
+
+  private List<Path> listed() {
+    Set<Path> scripts = new TreeSet<>();
+    for (String entry : entries()) {
+      List<Path> matches = expand(entry);
       if (matches.isEmpty()) {
         problems.add("missing script: " + entry + " names no file");
       }
-      scripts.addAll(matches);
+      matches.stream().filter(GuardsGate::isShell).forEach(scripts::add);
     }
-    return scripts;
+    return List.copyOf(scripts);
+  }
+
+  private static boolean isShell(Path file) {
+    String name = file.getFileName().toString();
+    return name.endsWith(".sh") || name.endsWith(".bash");
   }
 
   private List<Path> expand(String glob) {
+    Path backend = root.resolve(BACKEND);
     int star = glob.indexOf('*');
-    String fixed = star < 0 ? glob : glob.substring(0, star);
-    int slash = fixed.lastIndexOf('/');
-    Path base = root.resolve(slash < 0 ? "" : fixed.substring(0, slash));
+    if (star < 0) {
+      Path file = backend.resolve(glob).normalize();
+      return Files.isRegularFile(file) ? List.of(file) : List.of();
+    }
+    int slash = glob.lastIndexOf('/', star);
+    Path base = backend.resolve(slash < 0 ? "" : glob.substring(0, slash)).normalize();
     if (!Files.isDirectory(base)) {
       return List.of();
     }
-    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + root.resolve(glob));
+    PathMatcher matcher =
+        FileSystems.getDefault().getPathMatcher("glob:" + backend.resolve(glob).normalize());
     try (Stream<Path> walk = Files.walk(base)) {
       return walk.filter(Files::isRegularFile).filter(matcher::matches).sorted().toList();
     } catch (IOException e) {
@@ -121,10 +154,6 @@ public final class GuardsGate {
                 + " has a tagged case, delete the line");
       }
     }
-  }
-
-  private Path list() {
-    return root.resolve(TESTS).resolve("scripts.list");
   }
 
   private Path gaps() {

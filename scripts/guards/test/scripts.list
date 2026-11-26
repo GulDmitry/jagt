@@ -1,4 +1,0 @@
-scripts/guards/*.sh
-orchestrator-backend/scripts/ci-local.sh
-orchestrator-backend/scripts/gradle-slot.sh
-orchestrator-backend/scripts/linux-suite.sh

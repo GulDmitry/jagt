@@ -48,7 +48,17 @@ for cmd in \
   "cd x && rm f" \
   "echo x >> f" \
   "sed -n -i p f" \
-  "sed -ni p f"; do
+  "sed -ni p f" \
+  "cp a b" \
+  "touch x" \
+  "mkdir d" \
+  "ln -s a b" \
+  "chmod +x f" \
+  "git apply p.diff" \
+  "perl -pi -e 's/a/b/' f" \
+  "curl -o f https://example.test" \
+  "curl -sSLo f https://example.test" \
+  "echo '>' x"; do
   bats_test_function --description "reviewer-read-only denies: $cmd" -- denies "$cmd"
 done
 

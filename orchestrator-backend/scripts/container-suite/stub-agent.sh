@@ -1,6 +1,6 @@
 #!/bin/bash
 worktree="$1"
-cd "$worktree"
+cd "$worktree" || exit
 
 post() {
   exec 3<>/dev/tcp/127.0.0.1/8290

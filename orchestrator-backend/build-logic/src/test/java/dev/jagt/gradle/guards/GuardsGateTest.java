@@ -21,8 +21,8 @@ class GuardsGateTest {
 
   @BeforeEach
   void greenTree() throws IOException {
-    write("scripts/a.sh", "#!/bin/sh\n# exits: 0 2\nexit 0\n");
-    write(TESTS + "scripts.list", "scripts/a.sh\n");
+    write("scripts/guards/a.sh", "#!/bin/sh\n# exits: 0 2\nexit 0\n");
+    write("fitness.yml", exceptList("../scripts/guards/*.sh"));
     write(TESTS + "a.bats", CASES);
   }
 
@@ -36,7 +36,7 @@ class GuardsGateTest {
     Files.delete(tree.resolve(TESTS + "a.bats"));
 
     assertThat(GuardsGate.problems(tree))
-        .contains("no case: scripts/a.sh has no case in scripts/guards/test/a.bats");
+        .contains("no case: scripts/guards/a.sh has no case in scripts/guards/test/a.bats");
   }
 
   @Test
@@ -79,15 +79,15 @@ class GuardsGateTest {
 
   @Test
   void scriptWithoutContractHeaderIsRed() throws IOException {
-    write("scripts/a.sh", "#!/bin/sh\nexit 0\n");
+    write("scripts/guards/a.sh", "#!/bin/sh\nexit 0\n");
 
     assertThat(GuardsGate.problems(tree))
-        .contains("no contract: scripts/a.sh has no '# exits:' header line");
+        .contains("no contract: scripts/guards/a.sh has no '# exits:' header line");
   }
 
   @Test
   void optionKeyNeedsItsTaggedCaseToo() throws IOException {
-    write("scripts/a.sh", "#!/bin/sh\n# exits: 0 2\n# options: --force\nexit 0\n");
+    write("scripts/guards/a.sh", "#!/bin/sh\n# exits: 0 2\n# options: --force\nexit 0\n");
 
     assertThat(GuardsGate.problems(tree))
         .containsExactly(
@@ -96,27 +96,57 @@ class GuardsGateTest {
   }
 
   @Test
-  void listEntryNamingNoFileIsRed() throws IOException {
-    write(TESTS + "scripts.list", "scripts/gone.sh\n");
+  void exceptEntryNamingNoTrackedFileIsRed() throws IOException {
+    write("fitness.yml", exceptList("../scripts/guards/*.sh,gradle/gone.sh"));
 
-    assertThat(GuardsGate.problems(tree)).contains("missing script: scripts/gone.sh names no file");
+    assertThat(GuardsGate.problems(tree)).contains("missing script: gradle/gone.sh names no file");
   }
 
   @Test
-  void globEntryListsEveryMatchingScript() throws IOException {
-    write(TESTS + "scripts.list", "scripts/*.sh\n");
-    write("scripts/b.sh", "#!/bin/sh\n# exits: 0\nexit 0\n");
+  void globEntryListsEveryMatchingShellScript() throws IOException {
+    write("scripts/guards/b.sh", "#!/bin/sh\n# exits: 0\nexit 0\n");
 
     assertThat(GuardsGate.scripts(tree))
-        .containsExactly(tree.resolve("scripts/a.sh"), tree.resolve("scripts/b.sh"));
+        .containsExactly(
+            tree.resolve("scripts/guards/a.sh"), tree.resolve("scripts/guards/b.sh"));
   }
 
   @Test
-  void missingListIsRed() throws IOException {
-    Files.delete(tree.resolve(TESTS + "scripts.list"));
+  void shellEntryJoiningExceptListIsLintedWithoutAnotherList() throws IOException {
+    write("orchestrator-backend/scripts/c.sh", "#!/bin/sh\nexit 0\n");
+    write("fitness.yml", exceptList("../scripts/guards/*.sh,scripts/c.sh"));
+
+    assertThat(GuardsGate.scripts(tree))
+        .contains(tree.resolve("orchestrator-backend/scripts/c.sh"));
+  }
+
+  @Test
+  void nonShellEntryIsNotLinted() throws IOException {
+    write("mcp_client.js", "x\n");
+    write("fitness.yml", exceptList("../scripts/guards/*.sh,../mcp_client.js"));
+
+    assertThat(GuardsGate.scripts(tree)).containsExactly(tree.resolve("scripts/guards/a.sh"));
+  }
+
+  @Test
+  void scriptOutsideGuardsWithoutCaseFileNeedsNoContract() throws IOException {
+    write("orchestrator-backend/scripts/c.sh", "#!/bin/sh\nexit 0\n");
+    write("fitness.yml", exceptList("../scripts/guards/*.sh,scripts/c.sh"));
+
+    assertThat(GuardsGate.problems(tree)).isEmpty();
+  }
+
+  @Test
+  void treeWithoutExceptListIsRed() throws IOException {
+    write("fitness.yml", "rules: {}\n");
 
     assertThat(GuardsGate.problems(tree))
-        .containsExactly("no list: scripts/guards/test/scripts.list is missing");
+        .containsExactly("no list: fitness.yml has no scripts-are-java except list");
+  }
+
+  private static String exceptList(String entries) {
+    return "      scripts-are-java: { engine: scan, per: file, except: \"" + entries
+        + "\", governs: count, max: 0 }\n";
   }
 
   private void write(String path, String content) throws IOException {

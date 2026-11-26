@@ -204,7 +204,7 @@ tasks.register('provenTree', dev.jagt.gradle.provenance.ProvenTreeTask) {
 }
 
 tasks.register('guardsTest',dev.jagt.gradle.guards.GuardsGateTask) {
-    description = 'Gates every script in scripts/guards/test/scripts.list: shellcheck, a case file and the contract tags, then the bats cases.'
+    description = 'Gates every shell script of the scripts-are-java allow-list in fitness.yml: shellcheck, a case file and the contract tags, then the bats cases.'
     group = 'verification'
     repository = layout.settingsDirectory.dir('..')
     onlyIf { task ->
