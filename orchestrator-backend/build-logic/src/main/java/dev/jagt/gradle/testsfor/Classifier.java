@@ -211,6 +211,17 @@ final class Classifier {
     } else if (like(path, "roles/*")) {
       selection.rules(
           "RoleNamesFitness", "RoleNamesOutsideFitness", "RoleVocabulary", "MasterBriefShipped");
+      roleEval(path);
+    }
+  }
+
+  private void roleEval(String path) {
+    String[] parts = path.split("/");
+    String eval = "roles/" + parts[1] + "/eval";
+    if (parts.length > 2
+        && (path.endsWith(".dist") || path.startsWith(eval + "/"))
+        && repo.exists(eval)) {
+      selection.roleEvals.add(parts[1]);
     }
   }
 }

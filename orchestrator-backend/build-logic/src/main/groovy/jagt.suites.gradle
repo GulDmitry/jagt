@@ -55,6 +55,7 @@ sourceSets {
     }
 }
 
+// The tool-less reads through the claude CLI: the code reviewer's of a diff, a session's of a step's turn.
 sourceSets {
     codeReviewEval {
         java.srcDirs = ['src/codeReviewEval/java']

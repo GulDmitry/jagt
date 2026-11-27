@@ -1,0 +1,33 @@
+case: a ship of a clean tree whose request is open and green
+step: ship
+facts: |
+  Ship ABC-42. Push branch ABC-42.
+  The request's title is EXACTLY "ABC-42 Sort the price list by date"; a later round's commit message STARTS with "ABC-42".
+  The task's repository, and what it still needs:
+  - shop: /work/ABC-42, merges into main — its request is already open
+  Replies: If review_replies.md exists, post each drafted reply to its thread, then delete it. Resolve threads exactly as your `<review_replies>` rules say.
+  Report: update_agent_status CI_POLLING and reviewRequestUrl=<the url>.
+carried: |
+
+
+  ## Carried from the previous session
+
+  ### Where it stood
+  — Sort the price list by date. On the board: SHIPPING; your last report: Sorted by date, tests green, ready for review
+
+  ### Git
+  9c4d7b1 (HEAD -> ABC-42, origin/ABC-42) ABC-42 Sort the price list by date
+
+  ### Its last words, newest last
+  All tests pass and the self-review is clean, so I hand the round back.
+  update_agent_status REVIEW_PENDING "Sorted by date, tests green, ready for review"
+situation: |
+  This session started fresh: the task was handed back hours ago, and task_notes.md says the change is done.
+  `git status`: On branch ABC-42. Your branch is up to date with 'origin/ABC-42'. nothing to commit, working tree clean.
+  `git fetch`: nothing new; origin/main holds no commit this branch lacks.
+  `git push`: Everything up-to-date.
+  The code host: request https://git.example.invalid/shop/-/merge_requests/7 is open from ABC-42 into main; its pipeline passed.
+  review_replies.md does not exist.
+expect:
+  status: CI_POLLING
+  outcome: plain

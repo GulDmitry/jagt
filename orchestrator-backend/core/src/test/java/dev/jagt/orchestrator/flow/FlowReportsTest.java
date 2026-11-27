@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.stop.RefusalKind;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -142,6 +143,34 @@ class FlowReportsTest {
     assertThat(written.get().standing().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
     assertThat(written.get().gate().refusals())
         .containsExactly(Map.entry(RefusalKind.STATUS_REPORT, 1));
+  }
+
+  @Test
+  void refusesHandBackEndingShipTurnOfTaskWhoseRequestIsOpen() {
+    TaskState shipping =
+        TaskState.builder("proj", "/wt", TaskStatus.SHIPPING)
+            .mrUrl("https://host.invalid/p/1")
+            .build()
+            .withTurn(new Turn("ship", 6, "d", 6_000, Map.of(), List.of()));
+    AtomicReference<TaskState> written = new AtomicReference<>();
+    when(stateService.reduce(eq("ABC-1"), any()))
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          written.set(write.apply(reducer, shipping));
+          return true;
+        });
+
+    assertThatThrownBy(() ->
+            reports.report(
+                "ABC-1",
+                TaskStatus.REVIEW_PENDING,
+                AgentReport.PLAIN,
+                "nothing to commit, CI green",
+                (was, next) -> next,
+                task -> true))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("CI_POLLING");
+    assertThat(written.get().standing().status()).isEqualTo(TaskStatus.SHIPPING);
   }
 
   @Test

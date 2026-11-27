@@ -338,6 +338,19 @@ class TestsForTest {
   }
 
   @Test
+  void roleBriefChangeRunsThatRolesEvalCases(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("roles/a/brief.md.dist", "## ship")
+            .file("roles/a/eval/01-a-ship.yml", "case: a ship")
+            .tracked();
+
+    TestsFor.Plan plan = testsFor.plan(List.of("roles/a/brief.md.dist"));
+
+    assertThat(plan.lines()).contains(GRADLE + "1800 ./gradlew roleEval -Prole=a");
+  }
+
+  @Test
   void buildLogicChangeRunsTheBuildLogicTests(@TempDir Path repo) throws Exception {
     TestsFor testsFor =
         TestRepoBuilder.in(repo)

@@ -107,7 +107,8 @@ This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.
    the diff cannot show — never a report of what you did.
    Where one is already open, do NOT create another or retitle it.
 4. Post replies as the replies line above says.
-5. Report back as the report line above says.
+5. Report back as the report line above says, even where steps 1 to 4 found nothing left to do.
+While a request is open, a ship never ends in REVIEW_PENDING, whatever its pipeline reads: this turn hands nothing back.
 This authorises ONE commit and ONE push PER REPOSITORY listed above, of what is in their trees now — no fewer, and
 nothing after. It is single-use and does not clear this file (rule 4).
 

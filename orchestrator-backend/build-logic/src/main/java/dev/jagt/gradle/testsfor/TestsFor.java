@@ -111,6 +111,7 @@ public final class TestsFor {
     if (selection.buildLogic) {
       lines.add("cd " + layout.directory() + "/build-logic && timeout 600 ../gradlew test");
     }
+    selection.roleEvals.forEach(role -> addGradle(lines, 1800, "roleEval -Prole=" + role));
     if (selection.board) {
       lines.add("cd board && timeout 600 sh -c 'npm run lint && npm test'");
       addGradle(lines, 900, "boardTest");

@@ -80,6 +80,8 @@ Method <dev.jagt.orchestrator.eval.MasterCase.answers()> does not satisfy be cal
 Method <dev.jagt.orchestrator.eval.MasterCases.all()> does not satisfy be called from main in (MasterCases.java:15)
 Method <dev.jagt.orchestrator.eval.MasterVerdictReport.of(java.lang.String, java.nio.file.Path)> does not satisfy be called from main in (MasterVerdictReport.java:22)
 Method <dev.jagt.orchestrator.eval.ShippedRoot.configure(org.springframework.test.context.DynamicPropertyRegistry, java.nio.file.Path)> does not satisfy be called from main in (ShippedRoot.java:36)
+Method <dev.jagt.orchestrator.eval.SessionTurnCase.all()> does not satisfy be called from main in (SessionTurnCase.java:20)
+Method <dev.jagt.orchestrator.eval.SessionTurnReader.read(dev.jagt.orchestrator.eval.SessionTurnCase)> does not satisfy be called from main in (SessionTurnReader.java:36)
 Method <dev.jagt.orchestrator.eval.StopTriageCases.all()> does not satisfy be called from main in (StopTriageCases.java:15)
 Method <dev.jagt.orchestrator.flow.Composition.builtIn()> does not satisfy be called from main in (Composition.java:45)
 Method <dev.jagt.orchestrator.flow.FlowEngine.run(java.lang.String, dev.jagt.orchestrator.flow.capability.TaskAction)> does not satisfy be called from main in (FlowEngine.java:26)

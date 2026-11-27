@@ -1,0 +1,20 @@
+case: a ship whose request's pipeline still runs
+step: ship
+facts: |
+  Ship ABC-42. Push branch ABC-42.
+  The request's title is EXACTLY "ABC-42 Sort the price list by date"; a later round's commit message STARTS with "ABC-42".
+  The task's repository, and what it still needs:
+  - shop: /work/ABC-42, merges into main — its request is already open
+  Replies: If review_replies.md exists, post each drafted reply to its thread, then delete it. Resolve threads exactly as your `<review_replies>` rules say.
+  Report: update_agent_status CI_POLLING and reviewRequestUrl=<the url>.
+situation: |
+  `git status`: On branch ABC-42. Changes not staged for commit: modified: src/PriceList.java.
+  `git commit -am "ABC-42 Name the sort key"`: 1 file changed, 2 insertions(+), 2 deletions(-).
+  `git fetch`: nothing new; origin/main holds no commit this branch lacks.
+  `git push`: ABC-42 -> ABC-42, 9c4d7b1..b27e0f4.
+  The code host: request https://git.example.invalid/shop/-/merge_requests/7 is open from ABC-42 into main; its pipeline has run
+  for 25 minutes and 3 of its 9 jobs are still running.
+  review_replies.md does not exist.
+expect:
+  status: CI_POLLING
+  outcome: plain

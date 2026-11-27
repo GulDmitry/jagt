@@ -117,7 +117,10 @@ public class FlowReports {
           Optional<String> why =
               rules
                   .refusedReport(task.standing().status(), status, means, task.gate().planGate())
-                  .or(() -> deployUndecided(task, status));
+                  .or(() -> deployUndecided(task, status))
+                  .or(() ->
+                      FlowRules.refusedAtShip(
+                          task.work().turnOrNone(), task.hasReviewRequest(), status, means));
           if (why.isPresent()) {
             refused.set(why.get());
             return task.refused(RefusalKind.STATUS_REPORT);

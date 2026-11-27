@@ -34,8 +34,11 @@ dev.jagt.orchestrator.eval.MasterCases
 dev.jagt.orchestrator.eval.MasterVerdictReport
 dev.jagt.orchestrator.eval.RoleCases
 dev.jagt.orchestrator.eval.ShippedRoot
+dev.jagt.orchestrator.eval.SessionTurnCase
+dev.jagt.orchestrator.eval.SessionTurnReader
 dev.jagt.orchestrator.eval.StopTriageCase
 dev.jagt.orchestrator.eval.StopTriageCases
+dev.jagt.orchestrator.eval.ToollessCli
 dev.jagt.orchestrator.eval.Yamls
 dev.jagt.orchestrator.mastereval.MasterEvalWorkspace
 dev.jagt.orchestrator.prompteval.CommandMappingCase

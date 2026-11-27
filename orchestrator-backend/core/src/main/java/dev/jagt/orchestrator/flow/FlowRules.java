@@ -10,6 +10,8 @@ import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
+import dev.jagt.orchestrator.task.turn.Step;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -202,6 +204,22 @@ public final class FlowRules {
   /** Whether the agent is shipping the change. */
   public static boolean shipping(TaskStatus status) {
     return StatusSets.shipping(status);
+  }
+
+  /** Why a report may not end a ship turn of a task whose request is open, or empty when it may. */
+  public static Optional<String> refusedAtShip(
+      Turn turn, boolean requestOpen, TaskStatus to, AgentReport means) {
+    if (!turn.open()
+        || !turn.step().equals(Step.SHIP.id())
+        || !requestOpen
+        || to == TaskStatus.CI_POLLING
+        || means.asks()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        to
+            + " cannot end a ship while its request is open — report CI_POLLING with the request"
+            + " link, or ask");
   }
 
   /**

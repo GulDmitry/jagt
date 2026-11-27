@@ -34,6 +34,7 @@ Under heavy load GitHub drops a scheduled run (none on 2026-11-23):
 | `standTest` | live scenarios with a real agent | tokens | ~10–13 min |
 | `promptEval`, `roleEval` | the brief and the Master judge their cases right | tokens | unknown |
 | `roleEval -Prole=code-reviewer` | the reviewer's brief finds a case's file and pattern, and no finding on a clean diff; a rating becomes a case: `code-reviewer-lesson` | claude, tokens | unknown |
+| `roleEval -Prole=session` | the session brief ends each step's turn with its case's report; `testsFor` names it on a change to the brief or a case | claude, tokens | unknown |
 
 ## A change runs the heavy suites it reaches
 

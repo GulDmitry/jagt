@@ -11,6 +11,7 @@ final class Selection {
   final Set<String> tests = new LinkedHashSet<>();
   final Set<String> properties = new LinkedHashSet<>();
   final Set<String> rules = new LinkedHashSet<>();
+  final Set<String> roleEvals = new LinkedHashSet<>();
   boolean removedMain;
   boolean board;
   boolean fitness;
