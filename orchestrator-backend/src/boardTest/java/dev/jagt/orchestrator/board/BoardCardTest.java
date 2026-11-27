@@ -50,6 +50,7 @@ class BoardCardTest extends BoardPageContext {
         alphaTask("ABC-1", TaskStatus.APPROVED)
             .title("Widget layout is off")
             .mrUrl("https://host.example/mr/7")
+            .pipelineStatus("success")
             .build());
 
     Page page = openLiveBoard();
@@ -336,7 +337,10 @@ class BoardCardTest extends BoardPageContext {
         alphaTask("ABC-1", TaskStatus.CI_FAILED).mrUrl("https://host.example/mr/7").build());
     state.putTask(
         "ABC-2",
-        alphaTask("ABC-2", TaskStatus.APPROVED).mrUrl("https://host.example/mr/8").build());
+        alphaTask("ABC-2", TaskStatus.APPROVED)
+            .mrUrl("https://host.example/mr/8")
+            .pipelineStatus("success")
+            .build());
 
     Page page = openLiveBoard();
 
@@ -535,7 +539,10 @@ class BoardCardTest extends BoardPageContext {
   void cardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.APPROVED).mrUrl("https://host.example/mr/7").build());
+        alphaTask("ABC-1", TaskStatus.APPROVED)
+            .mrUrl("https://host.example/mr/7")
+            .pipelineStatus("success")
+            .build());
 
     Page page = openLiveBoard();
 
@@ -648,7 +655,10 @@ class BoardCardTest extends BoardPageContext {
   void tipBeingReadStaysOpenInItsNewWordsWhenRepaintRebuildsItsCard() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.APPROVED).mrUrl("https://host.example/mr/7").build());
+        alphaTask("ABC-1", TaskStatus.APPROVED)
+            .mrUrl("https://host.example/mr/7")
+            .pipelineStatus("success")
+            .build());
     Page page = openLiveBoard();
     page.locator("article .badge").focus();
     assertThat(page.locator("#tip")).containsText("approved: deploy or done");
@@ -863,6 +873,7 @@ class BoardCardTest extends BoardPageContext {
         "ABC-1",
         alphaTask("ABC-1", TaskStatus.APPROVED)
             .mrUrl("https://host.example/mr/7")
+            .pipelineStatus("success")
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
@@ -893,7 +904,10 @@ class BoardCardTest extends BoardPageContext {
   void theDeployVerbIsPlainWhileNothingOfTheTaskIsLive() {
     state.putTask(
         "ABC-1",
-        alphaTask("ABC-1", TaskStatus.APPROVED).mrUrl("https://host.example/mr/7").build());
+        alphaTask("ABC-1", TaskStatus.APPROVED)
+            .mrUrl("https://host.example/mr/7")
+            .pipelineStatus("success")
+            .build());
 
     Page page = openLiveBoard();
 

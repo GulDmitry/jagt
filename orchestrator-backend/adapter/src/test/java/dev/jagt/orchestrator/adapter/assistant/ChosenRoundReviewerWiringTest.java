@@ -64,6 +64,6 @@ class ChosenRoundReviewerWiringTest {
             .facts()
             .orElseThrow();
 
-    assertThat(judgement.verdict()).isEqualTo("ready");
+    assertThat(judgement.verdict()).isEqualTo(RoundReviewer.Verdict.READY);
   }
 }
