@@ -32,7 +32,7 @@ final class BoardBrowser implements ParameterResolver, AfterEachCallback {
   private static final ExtensionContext.Namespace BROWSERS =
       ExtensionContext.Namespace.create(BoardBrowser.class);
 
-  private static final Duration WAIT_CEILING = Duration.ofMinutes(5);
+  private static final Duration ASSERTION_TIMEOUT = Duration.ofSeconds(15);
 
   private static final class Launched implements AutoCloseable {
 
@@ -40,7 +40,7 @@ final class BoardBrowser implements ParameterResolver, AfterEachCallback {
     private final Browser browser = playwright.chromium().launch();
 
     Launched() {
-      PlaywrightAssertions.setDefaultAssertionTimeout((double) WAIT_CEILING.toMillis());
+      PlaywrightAssertions.setDefaultAssertionTimeout((double) ASSERTION_TIMEOUT.toMillis());
     }
 
     @Override
