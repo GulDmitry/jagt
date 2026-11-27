@@ -33,7 +33,7 @@ public class ReviewReads {
   }
 
   void unread(Answer<?> read) {
-    faults.faulted(read.failure().isBlank() ? "the request's change was unread" : read.failure());
+    faults.faulted(read.failure().isBlank() ? "the request was unread" : read.failure());
   }
 
   Judgement reported(Judgement judged) {

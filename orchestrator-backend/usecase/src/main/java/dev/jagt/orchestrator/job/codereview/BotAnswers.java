@@ -45,6 +45,7 @@ public class BotAnswers {
     }
     Answer<List<RequestNote>> read = notes.notes(subject.project(), subject.url());
     if (read.facts().isEmpty()) {
+      panel.unread(read);
       return;
     }
     Map<String, List<RequestNote>> threads = new LinkedHashMap<>();
@@ -70,7 +71,7 @@ public class BotAnswers {
   private void reply(Subject subject, String thread, List<RequestNote> inThread, String model) {
     Answer<RequestChange> change = notes.change(subject.project(), subject.url());
     if (change.facts().isEmpty()) {
-      panel.changeUnread(change);
+      panel.unread(change);
       return;
     }
     Optional<SubjectCheckout.Open> opened = checkout.open(subject, change.facts().get().headSha());

@@ -64,7 +64,7 @@ class CodeReviewRoundTest {
 
     round.run(other, new Settings(true, true, 5000, 2.55), "");
 
-    verify(panel).changeUnread(failed);
+    verify(panel).unread(failed);
   }
 
   @Test

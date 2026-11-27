@@ -43,8 +43,8 @@ public class CodeReviewPanel {
     return subject.own() ? coverage.unseen(subject.taskId(), judged) : judged;
   }
 
-  /** A change read that failed is its job's failure. */
-  public void changeUnread(Answer<RequestChange> read) {
+  /** A read that failed is its job's failure. */
+  public void unread(Answer<?> read) {
     reads.unread(read);
   }
 

@@ -92,7 +92,17 @@ class BotAnswersTest {
 
     answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
 
-    verify(panel).changeUnread(failed);
+    verify(panel).unread(failed);
+  }
+
+  @Test
+  void noteReadThatFailedIsHandedToThePanelAsTheJobsFailure() {
+    Answer<List<RequestNote>> failed = Answer.failed(TokenUsage.NONE, "the host refused");
+    when(notes.notes("shop", subject.url())).thenReturn(failed);
+
+    answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
+
+    verify(panel).unread(failed);
   }
 
   @Test

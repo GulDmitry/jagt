@@ -112,7 +112,7 @@ class CodeReviewPanelTest {
             paths,
             new ReviewReads(new RoundReader(assistants), ledger, faults),
             new PreShipCoverage(stateService().withRoot(root).build()))
-        .changeUnread(Answer.failed(TokenUsage.NONE, "the host refused"));
+        .unread(Answer.failed(TokenUsage.NONE, "the host refused"));
 
     assertThat(faults.causes()).containsExactly("the host refused");
   }
