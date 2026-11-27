@@ -114,6 +114,7 @@
   "act.running": "{task} уже выполняет: {what}",
   "refresh.backend": "Не удаётся связаться с бэкендом: {cause}",
   "refresh.commands": "Не удаётся прочитать команды: {cause}",
+  "refresh.render": "Не удаётся отрисовать доску: {cause}",
   "tabs.unread": "не удалось прочитать: {cause}",
   "keys.walk": "j k перемещение",
   "keys.open": "↵ открыть",

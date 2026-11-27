@@ -156,6 +156,7 @@
   "act.running": "{task} is already running {what}",
   "refresh.backend": "Cannot reach the backend: {cause}",
   "refresh.commands": "Cannot read the commands: {cause}",
+  "refresh.render": "Cannot render the board: {cause}",
   "tabs.unread": "could not read it: {cause}",
   "keys.walk": "j k walk",
   "keys.open": "↵ open",

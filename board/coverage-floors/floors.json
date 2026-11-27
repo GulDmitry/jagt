@@ -299,6 +299,18 @@
     "lines": 100,
     "branches": 100
   },
+  "ui/paintboard.js": {
+    "lines": 100,
+    "branches": 22
+  },
+  "ui/refreshread.js": {
+    "lines": 100,
+    "branches": 100
+  },
+  "ui/refreshverbs.js": {
+    "lines": 88,
+    "branches": 80
+  },
   "ui/refresh.js": {
     "lines": 92,
     "branches": 54

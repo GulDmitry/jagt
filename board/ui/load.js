@@ -1,5 +1,6 @@
 import * as menu from "./menu.js";
-import { refresh, refreshVerbs } from "./refresh.js";
+import { refresh } from "./refresh.js";
+import { refreshVerbs } from "./refreshverbs.js";
 import { render } from "./render.js";
 import { judge, refreshSuggestions } from "./verdict.js";
 

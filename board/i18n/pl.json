@@ -114,6 +114,7 @@
   "act.running": "{task} już wykonuje: {what}",
   "refresh.backend": "Nie można połączyć się z backendem: {cause}",
   "refresh.commands": "Nie można odczytać poleceń: {cause}",
+  "refresh.render": "Nie można narysować tablicy: {cause}",
   "tabs.unread": "nie udało się tego odczytać: {cause}",
   "keys.walk": "j k poruszanie",
   "keys.open": "↵ otwórz",

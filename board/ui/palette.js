@@ -1,5 +1,5 @@
 import { interpret } from "./interpret.js";
-import { boardArrived, verbsArrived } from "./refresh.js";
+import { stateArrived } from "./refreshverbs.js";
 import { routeLine } from "./route.js";
 import { tier1 } from "./tier1.js";
 import { ask, judge } from "./verdict.js";
@@ -56,7 +56,7 @@ opener.onclick = toggle;
 
 form.onsubmit = async (event) => {
   event.preventDefault();
-  await Promise.all([verbsArrived, boardArrived]);
+  await stateArrived;
   const { route, parsed } = routeLine(ask.value);
   if (route === "judge") return;
   if (route === "run" && parsed) {
