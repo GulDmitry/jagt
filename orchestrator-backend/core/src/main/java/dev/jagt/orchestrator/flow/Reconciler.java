@@ -50,6 +50,9 @@ record Reconciler(Composition composition, Arbiter.Profile profile, Duration bea
     /** A move the stored facts already call for, taken through the chart like any other. */
     record Land(ProgressStep step, TaskMove move) implements Decision {}
 
+    /** The first red read of a step: its failed jobs run again and the step stays open. */
+    record Rerun(ProgressStep step) implements Decision {}
+
     record Retry(ProgressStep step) implements Decision {}
 
     record Restart(ProgressStep step) implements Decision {}
@@ -64,6 +67,13 @@ record Reconciler(Composition composition, Arbiter.Profile profile, Duration bea
       if (landing.isPresent()) {
         return new Decision.Land(step, landing.get());
       }
+    }
+    Optional<ProgressStep> red =
+        steps.stream()
+            .filter(step -> redRead(step, task) && !spent(step, task.beats().get(step)))
+            .findFirst();
+    if (red.isPresent()) {
+      return new Decision.Rerun(red.get());
     }
     return steps.stream()
         .map(step -> missed(step, task.beats().get(step), now))
@@ -154,14 +164,18 @@ record Reconciler(Composition composition, Arbiter.Profile profile, Duration bea
               .filter(concluded -> concluded != chart.get(LIFECYCLE))
               .map(TaskMove.Read::new);
       case ProgressStep.Deploy deploy
-          when task.deploy() == Pipeline.RED && spent(deploy, task.beats().get(deploy)) ->
+          when redRead(deploy, task) && spent(deploy, task.beats().get(deploy)) ->
           Optional.of(new TaskMove.DeployRead(true));
       default -> Optional.empty();
     };
   }
 
+  private static boolean redRead(ProgressStep step, Stored task) {
+    return step instanceof ProgressStep.Deploy && task.deploy() == Pipeline.RED;
+  }
+
   private static boolean spent(ProgressStep step, @Nullable Beat beat) {
-    return beat != null && beat.attempts() >= StepPolicy.of(step).redReads();
+    return beat != null && beat.reds() >= StepPolicy.of(step).redReads();
   }
 
   private Optional<Decision> missed(ProgressStep step, @Nullable Beat last, long now) {

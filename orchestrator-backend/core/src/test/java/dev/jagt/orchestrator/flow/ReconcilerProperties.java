@@ -85,8 +85,26 @@ class ReconcilerProperties {
       soft.assertThat(run.offTable()).isEmpty();
       soft.assertThat(run.stalls(EnumSet.of(TaskStatus.VERIFYING, TaskStatus.SHIPPING)))
           .anyMatch(stall -> stall.startsWith("IN_PROGRESS with green checks"));
-      soft.assertThat(run.states()).isEqualTo(12_742);
+      soft.assertThat(run.states()).isEqualTo(12_730);
       soft.assertThat(Model.bound()).isEqualTo(11);
+    });
+  }
+
+  @Example
+  void deployRedTwiceIsConflictAndNoReachedWorldStopsUnreadOnRedDeploy() {
+    Model.Run run = new Model(chart, ACTS).explore();
+
+    Set<Model.World> reached = run.reached().keySet();
+    assertSoftly(soft -> {
+      soft.assertThat(reached)
+          .noneMatch(world ->
+              world.chart().get(STOP) == StopKind.DEPLOY_READ && world.deploy() == Pipeline.RED);
+      soft.assertThat(reached)
+          .anyMatch(world ->
+              world.status() == TaskStatus.DEPLOYED
+                  && world.deploy() == Pipeline.RUNNING
+                  && world.deployReds() == 1);
+      soft.assertThat(reached).anyMatch(world -> world.status() == TaskStatus.DEPLOY_CONFLICT);
     });
   }
 
@@ -221,7 +239,8 @@ class ReconcilerProperties {
         Configuration chart,
         Pipeline checks,
         List<Pipeline> targets,
-        Map<ProgressStep, Integer> beats) {
+        Map<ProgressStep, Integer> beats,
+        int deployReds) {
 
       TaskStatus status() {
         return chart.get(LIFECYCLE);
@@ -236,21 +255,22 @@ class ReconcilerProperties {
       }
 
       World withChart(Configuration next) {
-        return new World(next, checks, targets, beats);
+        return new World(next, checks, targets, beats, deployReds);
       }
 
       World withChecks(Pipeline read) {
-        return new World(chart, read, targets, beats);
+        return new World(chart, read, targets, beats, deployReds);
       }
 
       World withTargets(UnaryOperator<Pipeline> change) {
-        return new World(chart, checks, targets.stream().map(change).sorted().toList(), beats);
+        return new World(
+            chart, checks, targets.stream().map(change).sorted().toList(), beats, deployReds);
       }
 
       World withTarget(int index, Pipeline read) {
         List<Pipeline> next = new ArrayList<>(targets);
         next.set(index, read);
-        return new World(chart, checks, next.stream().sorted().toList(), beats);
+        return new World(chart, checks, next.stream().sorted().toList(), beats, deployReds);
       }
 
       String described() {
@@ -264,6 +284,8 @@ class ReconcilerProperties {
                 .map(beat -> beat.getKey().getClass().getSimpleName() + "=" + beat.getValue())
                 .sorted()
                 .toList()
+            + ", deploy reds "
+            + deployReds
             + ", "
             + new TreeSet<>(
                 chart.toPlain().entrySet().stream()
@@ -368,14 +390,19 @@ class ReconcilerProperties {
 
     private World start() {
       List<Pipeline> unread = List.of(Pipeline.UNKNOWN, Pipeline.UNKNOWN);
-      return reflight(new World(chart.chart().initial(), Pipeline.UNKNOWN, unread, Map.of()));
+      return reflight(new World(chart.chart().initial(), Pipeline.UNKNOWN, unread, Map.of(), 0));
     }
 
     private Reconciler.Stored stored(World world, long lastAt) {
       Map<ProgressStep, Beat> beats = new HashMap<>();
       world
           .beats()
-          .forEach((step, attempts) -> beats.put(step, new Beat(step, 0, lastAt, attempts)));
+          .forEach((step, attempts) -> beats.put(step, new Beat(step, 0, lastAt, attempts, 0)));
+      ProgressStep deploy = new ProgressStep.Deploy();
+      Beat last = beats.getOrDefault(deploy, new Beat(deploy, 0, lastAt, 0, 0));
+      if (world.deployReds() > 0) {
+        beats.put(deploy, new Beat(deploy, 0, lastAt, last.attempts(), world.deployReds()));
+      }
       return new Reconciler.Stored(world.chart(), world.checks(), world.deploy(), beats);
     }
 
@@ -390,7 +417,8 @@ class ReconcilerProperties {
               world.chart(),
               read ? world.checks() : Pipeline.UNKNOWN,
               world.targets(),
-              Map.copyOf(beats))
+              Map.copyOf(beats),
+              deployed ? world.deployReds() : 0)
           .withTargets(target -> deployed ? target : Pipeline.UNKNOWN);
     }
 
@@ -430,6 +458,7 @@ class ReconcilerProperties {
       return switch (decision) {
         case Decision.Stay stay -> at;
         case Decision.Land land -> landed(run, at, land.move());
+        case Decision.Rerun rerun -> rerun(at);
         case Decision.Retry retry -> retried(bumped(at, retry.step()), retry.step());
         case Decision.Restart restart -> bumped(at, restart.step());
         case Decision.Stop stop -> stepped(run, at, stop.move(), ActionOrigin.JAGT);
@@ -463,10 +492,15 @@ class ReconcilerProperties {
           : at;
     }
 
+    private static World rerun(World at) {
+      return new World(at.chart(), at.checks(), at.targets(), at.beats(), at.deployReds() + 1)
+          .withTargets(target -> target == Pipeline.GREEN ? target : Pipeline.RUNNING);
+    }
+
     private static World bumped(World at, ProgressStep step) {
       Map<ProgressStep, Integer> beats = new HashMap<>(at.beats());
       beats.merge(step, 1, Integer::sum);
-      return new World(at.chart(), at.checks(), at.targets(), Map.copyOf(beats));
+      return new World(at.chart(), at.checks(), at.targets(), Map.copyOf(beats), at.deployReds());
     }
 
     private void safety(Run run, World at, Decision decision, String after) {
@@ -490,6 +524,7 @@ class ReconcilerProperties {
     private static ProgressStep stepOf(Decision decision) {
       return switch (decision) {
         case Decision.Land land -> land.step();
+        case Decision.Rerun rerun -> rerun.step();
         case Decision.Retry retry -> retry.step();
         case Decision.Restart restart -> restart.step();
         case Decision.Stop halt -> halt.step();

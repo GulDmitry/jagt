@@ -15,9 +15,9 @@ Accepted 2026-11-26.
 ## Decision
 
 - **One component decides progress**: `flow/Reconciler.decide(task, now)` over the table `flow/StepPolicy`, run by `job/ReconcileJob`. Each tick
-  returns STAY, LAND, RETRY, RESTART or STOP per task; "supervisor" is `port/host/Supervisor`'s (0161). Every other writer (sessions, sweep, watchdog,
-  Master answers, deploy reads) records a fact or a beat.
-- **Input is stored facts alone**: the chart configuration, its regions' stamps, one `Beat(step, since, lastAt, attempts)` per step. A beat is written
+  returns STAY, LAND, RERUN, RETRY, RESTART or STOP per task; "supervisor" is `port/host/Supervisor`'s (0161). Every other writer (sessions, sweep,
+  watchdog, Master answers, deploy reads) records a fact or a beat.
+- **Input is stored facts alone**: the chart configuration, its regions' stamps, a `Beat(step, since, lastAt, attempts, reds)` per step, written
   through the reducer, so a restart changes no decision. A step is derived, never stored: sealed `flow/ProgressStep`, a `StepPolicy` row each.
 - **The tick is door two** (`FlowDoorsFitness`): LAND is `FlowReports.tick`, eventless guarded edges over the CHECKS, APPROVAL, REQUEST, DEPLOY
   regions. A press stays door one; a reported status is a claim.

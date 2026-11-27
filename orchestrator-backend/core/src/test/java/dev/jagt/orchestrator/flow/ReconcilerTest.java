@@ -47,28 +47,28 @@ class ReconcilerTest {
             "a fresh session beat waits",
             Map.of("lifecycle", "IN_PROGRESS"),
             Pipeline.UNKNOWN,
-            Map.of(turn, new Beat(turn, 0, 0, 0)),
+            Map.of(turn, new Beat(turn, 0, 0, 0, 0)),
             59_999L,
             new Decision.Stay()),
         arguments(
             "a missed session beat nudges first",
             Map.of("lifecycle", "IN_PROGRESS"),
             Pipeline.UNKNOWN,
-            Map.of(turn, new Beat(turn, 0, 0, 0)),
+            Map.of(turn, new Beat(turn, 0, 0, 0, 0)),
             60_000L,
             new Decision.Retry(turn)),
         arguments(
             "a missed session beat past its nudge relays",
             Map.of("lifecycle", "IN_PROGRESS"),
             Pipeline.UNKNOWN,
-            Map.of(turn, new Beat(turn, 0, 0, 1)),
+            Map.of(turn, new Beat(turn, 0, 0, 1, 0)),
             60_000L,
             new Decision.Restart(turn)),
         arguments(
             "a missed session beat past its relay stops undelivered",
             Map.of("lifecycle", "IN_PROGRESS"),
             Pipeline.UNKNOWN,
-            Map.of(turn, new Beat(turn, 0, 0, 2)),
+            Map.of(turn, new Beat(turn, 0, 0, 2, 0)),
             60_000L,
             new Decision.Stop(
                 turn,
@@ -78,63 +78,63 @@ class ReconcilerTest {
             "a session beat waits while a checker reads",
             Map.of("lifecycle", "IN_PROGRESS", "acceptance", "READING"),
             Pipeline.UNKNOWN,
-            Map.of(turn, new Beat(turn, 0, 0, 0)),
+            Map.of(turn, new Beat(turn, 0, 0, 0, 0)),
             60_000L,
             new Decision.Stay()),
         arguments(
             "red checks on a failed request land nothing new",
             Map.of("lifecycle", "CI_FAILED", "request", "OPEN", "checks", "READ"),
             Pipeline.RED,
-            Map.of(read, new Beat(read, 0, 0, 0)),
+            Map.of(read, new Beat(read, 0, 0, 0, 0)),
             0L,
             new Decision.Stay()),
         arguments(
             "a task stopped on a host read keeps no session beat",
             Map.of("lifecycle", "IN_PROGRESS", "stop", "HOST_READ"),
             Pipeline.UNKNOWN,
-            Map.of(turn, new Beat(turn, 0, 0, 0)),
+            Map.of(turn, new Beat(turn, 0, 0, 0, 0)),
             60_000L,
             new Decision.Stay()),
         arguments(
             "green checks on the head of a polled request land reviewed",
             Map.of("lifecycle", "CI_POLLING", "request", "OPEN", "checks", "READ"),
             Pipeline.GREEN,
-            Map.of(read, new Beat(read, 0, 0, 0)),
+            Map.of(read, new Beat(read, 0, 0, 0, 0)),
             0L,
             new Decision.Land(read, new TaskMove.Read(TaskStatus.REVIEWED))),
         arguments(
             "a polled request read on another head lands nothing",
             Map.of("lifecycle", "CI_POLLING", "request", "OPEN", "checks", "STALE"),
             Pipeline.GREEN,
-            Map.of(read, new Beat(read, 0, 0, 0)),
+            Map.of(read, new Beat(read, 0, 0, 0, 0)),
             0L,
             new Decision.Stay()),
         arguments(
             "the judge round the master holds waits on a missed beat",
             Map.of("lifecycle", "PLAN_PENDING"),
             Pipeline.UNKNOWN,
-            Map.of(round, new Beat(round, 0, 0, 1)),
+            Map.of(round, new Beat(round, 0, 0, 1, 0)),
             60_000L,
             new Decision.Stay()),
         arguments(
-            "a red deploy read past its retry lands the conflict",
+            "a second red deploy read lands the conflict",
             Map.of("lifecycle", "DEPLOYED", "deploy", "LANDING"),
             Pipeline.RED,
-            Map.of(deploy, new Beat(deploy, 0, 0, 1)),
+            Map.of(deploy, new Beat(deploy, 0, 0, 0, 1)),
             0L,
             new Decision.Land(deploy, new TaskMove.DeployRead(true))),
         arguments(
-            "a first red deploy read waits for its beat",
+            "a first red deploy read re-runs its failed jobs",
             Map.of("lifecycle", "DEPLOYED", "deploy", "LANDING"),
             Pipeline.RED,
-            Map.of(deploy, new Beat(deploy, 0, 0, 0)),
+            Map.of(deploy, new Beat(deploy, 0, 0, 0, 0)),
             0L,
-            new Decision.Stay()),
+            new Decision.Rerun(deploy)),
         arguments(
             "a green deploy read leaves nothing in flight",
             Map.of("lifecycle", "DEPLOYED", "deploy", "LANDING"),
             Pipeline.GREEN,
-            Map.of(deploy, new Beat(deploy, 0, 0, 1)),
+            Map.of(deploy, new Beat(deploy, 0, 0, 1, 0)),
             60_000L,
             new Decision.Stay()));
   }
@@ -178,6 +178,27 @@ class ReconcilerTest {
             chart.chart().configuration(plain), Pipeline.GREEN, Pipeline.UNKNOWN, Map.of());
 
     assertThat(reconciler.holder(task)).isEqualTo(Turn.Holder.CI);
+  }
+
+  static Stream<Arguments> budgets() {
+    return Stream.of(
+        arguments(new ProgressStep.SessionTurn(), 1, 1),
+        arguments(new ProgressStep.Verifying(), 1, 0),
+        arguments(new ProgressStep.HostRead(), 0, 0),
+        arguments(new ProgressStep.InfraRerun(), 2, 0),
+        arguments(new ProgressStep.JudgeRound(), 0, 0),
+        arguments(new ProgressStep.Deploy(), 0, 0));
+  }
+
+  @ParameterizedTest
+  @MethodSource("budgets")
+  void missedBeatSpendsTheRetriesAndRestartsOfItsStepsRow(
+      ProgressStep step, int retries, int restarts) {
+    StepPolicy row = StepPolicy.of(step);
+
+    assertThat(row)
+        .extracting(StepPolicy::retries, StepPolicy::restarts)
+        .containsExactly(retries, restarts);
   }
 
   static Stream<Arguments> stops() {
