@@ -27,14 +27,19 @@ sealed interface TaskMove {
     Generation readAt();
   }
 
-  record Ran(TaskAction action, Outcome.Kind outcome) implements TaskMove {}
+  /**
+   * A claim a session makes or a press a human or the Master makes: one without a class is refused.
+   */
+  sealed interface Asked extends TaskMove {}
+
+  record Ran(TaskAction action, Outcome.Kind outcome) implements Asked {}
 
   /**
    * Whether a human may run {@code action} now; no edge on it changes a state or emits an effect.
    */
-  record Offers(TaskAction action) implements TaskMove {}
+  record Offers(TaskAction action) implements Asked {}
 
-  record Reported(TaskStatus status, boolean verificationOwed) implements TaskMove {}
+  record Reported(TaskStatus status, boolean verificationOwed) implements Asked {}
 
   /** A note on what the Master left; {@code after} is where the master region then stands. */
   record MasterNoted(MasterNote note, MasterPhase after) implements TaskMove {}
@@ -71,7 +76,7 @@ sealed interface TaskMove {
 
   record StopSet(TaskStop stop) implements TaskMove {}
 
-  record Lifted() implements TaskMove {}
+  record Lifted() implements Asked {}
 
   record Escalated() implements TaskMove {}
 
@@ -82,13 +87,13 @@ sealed interface TaskMove {
 
   record PlanAsked(boolean planMode) implements TaskMove {}
 
-  record PlanApproved() implements TaskMove {}
+  record PlanApproved() implements Asked {}
 
   /** {@code outside}: an outside system opened the task, so the gate is jagt's. */
-  record NoPlanDeclared(boolean outside) implements TaskMove {}
+  record NoPlanDeclared(boolean outside) implements Asked {}
 
   /** Whether a press may approve the plan; no edge on it changes a state or emits an effect. */
-  record ApprovalAsked(boolean outside, boolean human, boolean sound) implements TaskMove {}
+  record ApprovalAsked(boolean outside, boolean human, boolean sound) implements Asked {}
 
   record Autoplanned() implements TaskMove {}
 
@@ -96,7 +101,7 @@ sealed interface TaskMove {
    * A session's report meaning {@code means}; a status that holds its line keeps a report that is
    * not a question.
    */
-  record Said(AgentReport means) implements TaskMove {}
+  record Said(AgentReport means) implements Asked {}
 
   /** A verb's stamp meaning {@code means}, set whatever the status. */
   record Stamped(AgentReport means) implements TaskMove {}

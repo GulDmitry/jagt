@@ -36,7 +36,7 @@ import tools.jackson.databind.json.JsonMapper;
 class PlanApprovalTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);

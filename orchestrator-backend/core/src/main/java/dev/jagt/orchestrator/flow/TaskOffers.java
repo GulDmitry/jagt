@@ -268,6 +268,7 @@ final class TaskOffers {
           .onMatching(
               lifecycle,
               offer.from(),
+              TaskMove.Offers.class,
               "offers " + offer.action().id(),
               move -> move instanceof TaskMove.Offers offers && offers.action() == offer.action())
           .when(holds(offer.needs()))

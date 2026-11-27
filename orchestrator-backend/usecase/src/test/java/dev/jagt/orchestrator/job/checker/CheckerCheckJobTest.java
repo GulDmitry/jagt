@@ -40,7 +40,7 @@ import org.junit.jupiter.api.io.TempDir;
 class CheckerCheckJobTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private final ConfigService config = mock(ConfigService.class);
   private final CheckerReads reader = mock(CheckerReads.class);

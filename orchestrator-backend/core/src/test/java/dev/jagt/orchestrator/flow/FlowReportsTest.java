@@ -35,7 +35,7 @@ class FlowReportsTest {
   private static final Clock CLOCK = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC);
 
   private final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private final ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write =
       ArgumentCaptor.captor();
@@ -535,6 +535,7 @@ class FlowReportsTest {
 
     assertThat(written).isTrue();
     assertThat(applied.get().standing().message()).isEqualTo("waiting on its pipeline");
+    assertThat(applied.get().standing().history()).hasSameSizeAs(deployed.standing().history());
   }
 
   @Test

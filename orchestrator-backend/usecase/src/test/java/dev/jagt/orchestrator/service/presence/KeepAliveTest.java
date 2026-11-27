@@ -27,7 +27,8 @@ class KeepAliveTest {
     state.putTask("ABC-1", held);
     state.updateTask(
         "ABC-1",
-        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {})::sessionStartedOver);
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {})
+            ::sessionStartedOver);
 
     KeepAlive.beat(state, Map.entry("ABC-1", held), new SessionSign.Called(), 100_000);
 

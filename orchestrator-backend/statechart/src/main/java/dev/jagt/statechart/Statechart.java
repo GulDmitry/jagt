@@ -33,14 +33,17 @@ public final class Statechart<E, X, F> {
   private final Map<String, Map<Enum<?>, List<Transition<E, F>>>> bySource;
   private final int ceiling;
   private final Optional<Function<Completed, E>> completion;
+  private final Classes<E, F> classes;
 
   Statechart(
       List<Region<E, F>> regions,
       List<Datum<X>> data,
       List<Transition<E, F>> transitions,
       int ceiling,
-      Optional<Function<Completed, E>> completion) {
+      Optional<Function<Completed, E>> completion,
+      Classes<E, F> classes) {
     this.completion = completion;
+    this.classes = classes;
     this.regions = regions;
     this.data = data;
     this.transitions = transitions;
@@ -151,6 +154,14 @@ public final class Statechart<E, X, F> {
     return regions.stream()
         .filter(r -> r.name().equals(region.name()))
         .anyMatch(r -> select(r, state, active, Optional.of(event)).isPresent());
+  }
+
+  /**
+   * The places {@code event}'s kind has no class in {@code start}, each as {@code region.state}, or
+   * the kind itself where it is no kind of move; empty where the chart declares no kinds.
+   */
+  public List<String> unclassified(Configuration start, E event) {
+    return classes.unclassified(start, event);
   }
 
   public String render() {

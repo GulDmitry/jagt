@@ -308,9 +308,10 @@ public class FlowReports {
     tasks.reduce(
         taskId,
         (reducer, task) -> {
-          TaskStatus now = rules.readLands(task.standing().status(), concluded);
-          landed.set(new Landed(task.standing().status(), now));
-          if (now == task.standing().status()) {
+          TaskStatus was = task.standing().status();
+          Optional<TaskStatus> lands = rules.readLands(was, concluded);
+          landed.set(new Landed(was, lands.orElse(was)));
+          if (lands.isEmpty() || lands.get() == was) {
             return task;
           }
           return reducer.reduce(
@@ -355,18 +356,14 @@ public class FlowReports {
     if (!FlowRules.checkedWhereItLanded(task.standing().status())) {
       return task;
     }
-    TaskStatus now = rules.deployReadLands(task.standing().status(), redOnTheCode);
-    if (now == task.standing().status() && message.equals(task.standing().message())) {
+    TaskStatus was = task.standing().status();
+    boolean moves = rules.deployReadLands(was, redOnTheCode).filter(to -> to != was).isPresent();
+    if (!moves && message.equals(task.standing().message())) {
       return task;
     }
     written.set(true);
     TaskState read =
-        reducer.reduce(
-            task,
-            new TaskMove.DeployRead(redOnTheCode),
-            message,
-            now != task.standing().status(),
-            clock.millis());
+        reducer.reduce(task, new TaskMove.DeployRead(redOnTheCode), message, moves, clock.millis());
     return redProject == null
         ? read
         : reducer.deployStepped(

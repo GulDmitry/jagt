@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class DashboardLineTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   @ParameterizedTest
   @CsvSource(

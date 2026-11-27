@@ -24,6 +24,7 @@ record MasterRegion() implements Role {
   public void declareRegion(
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
     chart.region(REGION, MasterPhase.STANDS_IN);
+    chart.addressed(TaskMove.MasterNoted.class, REGION);
     for (MasterPhase from : MasterPhase.values()) {
       for (MasterPhase to : MasterPhase.values()) {
         ChartRegions.regionEdge(
@@ -31,7 +32,9 @@ record MasterRegion() implements Role {
             REGION,
             from,
             "noted, " + to + " after",
-            move -> move instanceof TaskMove.MasterNoted noted && noted.after() == to,
+            ChartRegions.takes(
+                TaskMove.MasterNoted.class,
+                move -> move instanceof TaskMove.MasterNoted noted && noted.after() == to),
             move -> new TaskEffect.NotesMaster(((TaskMove.MasterNoted) move).note()),
             to);
       }

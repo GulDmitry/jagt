@@ -56,7 +56,7 @@ class TaskViewTest {
           null);
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> watches() {
     return java.util.stream.Stream.of(

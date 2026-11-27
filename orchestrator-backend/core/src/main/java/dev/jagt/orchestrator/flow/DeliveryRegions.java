@@ -9,6 +9,7 @@ import static dev.jagt.orchestrator.flow.ChartRegions.LIFECYCLE;
 import static dev.jagt.orchestrator.flow.ChartRegions.REPO;
 import static dev.jagt.orchestrator.flow.ChartRegions.REQUEST;
 import static dev.jagt.orchestrator.flow.ChartRegions.regionEdge;
+import static dev.jagt.orchestrator.flow.ChartRegions.takes;
 import static dev.jagt.orchestrator.task.TaskStatus.DEPLOY_CONFLICT;
 
 import dev.jagt.orchestrator.flow.deploy.ApprovalPhase;
@@ -87,6 +88,7 @@ final class DeliveryRegions {
         .onMatching(
             DEPLOY,
             DeployPhase.HANDED,
+            TaskMove.RepoLeft.class,
             "conflicted repository left",
             move -> move instanceof TaskMove.RepoLeft left && left.leavesTheRecord())
         .emitFor(move ->
@@ -96,6 +98,7 @@ final class DeliveryRegions {
         .onMatching(
             DEPLOY,
             DeployPhase.HANDED,
+            TaskMove.DeployStepped.class,
             "conflict left",
             // A deploy step lands no status, so the guard alone already refuses it.
             move -> !(move instanceof TaskMove.DeployStepped))
@@ -123,7 +126,12 @@ final class DeliveryRegions {
     for (GitPhase from : GitPhase.values()) {
       TransitionBuilder<TaskMove, ChartFacts, TaskEffect, GitPhase> trusted =
           chart
-              .onMatching(GIT, from, "trusted", move -> move instanceof TaskMove.GitTrusted)
+              .onMatching(
+                  GIT,
+                  from,
+                  TaskMove.GitTrusted.class,
+                  "trusted",
+                  move -> move instanceof TaskMove.GitTrusted)
               .emitFor(move -> new TaskEffect.TrustsGit(((TaskMove.GitTrusted) move).trust()));
       if (from == GitPhase.TRUSTED) {
         trusted.internal();
@@ -132,18 +140,31 @@ final class DeliveryRegions {
       }
     }
     chart
-        .onMatching(GIT, GitPhase.TRUSTED, "changed", move -> move instanceof TaskMove.GitChanged)
+        .onMatching(
+            GIT,
+            GitPhase.TRUSTED,
+            TaskMove.GitChanged.class,
+            "changed",
+            move -> move instanceof TaskMove.GitChanged)
         .emitFor(move -> new TaskEffect.ParksGit(((TaskMove.GitChanged) move).changed()))
         .to(GitPhase.CHANGED);
     chart
         .onMatching(
-            GIT, GitPhase.CHANGED, "changed again", move -> move instanceof TaskMove.GitChanged)
+            GIT,
+            GitPhase.CHANGED,
+            TaskMove.GitChanged.class,
+            "changed again",
+            move -> move instanceof TaskMove.GitChanged)
         .emitFor(move -> new TaskEffect.ParksGit(((TaskMove.GitChanged) move).changed()))
         .internal();
     for (GitPhase from : EnumSet.of(GitPhase.TRUSTED, GitPhase.CHANGED)) {
       chart
           .onMatching(
-              GIT, from, "repository joined", move -> move instanceof TaskMove.GitRepoJoined)
+              GIT,
+              from,
+              TaskMove.GitRepoJoined.class,
+              "repository joined",
+              move -> move instanceof TaskMove.GitRepoJoined)
           .emitFor(move -> new TaskEffect.JoinsGit(((TaskMove.GitRepoJoined) move).added()))
           .internal();
     }
@@ -152,26 +173,45 @@ final class DeliveryRegions {
   void repos(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(REPO, RepoPhase.NONE);
     chart
-        .onMatching(REPO, RepoPhase.NONE, "asked", move -> move instanceof TaskMove.RepoAsked)
+        .onMatching(
+            REPO,
+            RepoPhase.NONE,
+            TaskMove.RepoAsked.class,
+            "asked",
+            move -> move instanceof TaskMove.RepoAsked)
         .emitFor(move -> new TaskEffect.AsksRepo(((TaskMove.RepoAsked) move).project()))
         .to(RepoPhase.ASKED);
     chart
         .onMatching(
-            REPO, RepoPhase.ASKED, "asked again", move -> move instanceof TaskMove.RepoAsked)
+            REPO,
+            RepoPhase.ASKED,
+            TaskMove.RepoAsked.class,
+            "asked again",
+            move -> move instanceof TaskMove.RepoAsked)
         .emitFor(move -> new TaskEffect.AsksRepo(((TaskMove.RepoAsked) move).project()))
         .internal();
     chart
-        .onMatching(REPO, RepoPhase.ASKED, "asked no more", new TaskMove.RepoUnasked()::equals)
+        .onMatching(
+            REPO,
+            RepoPhase.ASKED,
+            TaskMove.RepoUnasked.class,
+            "asked no more",
+            new TaskMove.RepoUnasked()::equals)
         .emit(new TaskEffect.DropsRepoRequest())
         .to(RepoPhase.NONE);
     chart
         .onMatching(
-            REPO, RepoPhase.ASKED, "attached", move -> move instanceof TaskMove.RepoAttached)
+            REPO,
+            RepoPhase.ASKED,
+            TaskMove.RepoAttached.class,
+            "attached",
+            move -> move instanceof TaskMove.RepoAttached)
         .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo()))
         .to(RepoPhase.NONE);
     for (RepoPhase from : RepoPhase.values()) {
       chart
-          .onMatching(REPO, from, "placed", move -> move instanceof TaskMove.Placed)
+          .onMatching(
+              REPO, from, TaskMove.Placed.class, "placed", move -> move instanceof TaskMove.Placed)
           .emitFor(move ->
               new TaskEffect.Places(
                   ((TaskMove.Placed) move).repos(), ((TaskMove.Placed) move).baseBranch()))
@@ -179,7 +219,11 @@ final class DeliveryRegions {
     }
     chart
         .onMatching(
-            REPO, RepoPhase.NONE, "attached unasked", move -> move instanceof TaskMove.RepoAttached)
+            REPO,
+            RepoPhase.NONE,
+            TaskMove.RepoAttached.class,
+            "attached unasked",
+            move -> move instanceof TaskMove.RepoAttached)
         .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo()))
         .internal();
   }
@@ -192,7 +236,9 @@ final class DeliveryRegions {
           REQUEST,
           from,
           "linked, open",
-          move -> move instanceof TaskMove.RequestLinked linked && linked.opens(),
+          takes(
+              TaskMove.RequestLinked.class,
+              move -> move instanceof TaskMove.RequestLinked linked && linked.opens()),
           DeliveryRegions::linksRequests,
           RequestPhase.OPEN);
       regionEdge(
@@ -200,7 +246,9 @@ final class DeliveryRegions {
           REQUEST,
           from,
           "linked, standing",
-          move -> move instanceof TaskMove.RequestLinked linked && !linked.opens(),
+          takes(
+              TaskMove.RequestLinked.class,
+              move -> move instanceof TaskMove.RequestLinked linked && !linked.opens()),
           DeliveryRegions::linksRequests,
           from);
     }
@@ -208,6 +256,7 @@ final class DeliveryRegions {
         .onMatching(
             REQUEST,
             RequestPhase.NONE,
+            TaskMove.RepoAttached.class,
             "repository added with a request",
             DeliveryRegions::attachesRequest)
         .to(RequestPhase.OPEN);
@@ -215,6 +264,7 @@ final class DeliveryRegions {
         .onMatching(
             REQUEST,
             RequestPhase.MERGED,
+            TaskMove.RepoAttached.class,
             "repository added with a request merged",
             DeliveryRegions::attachesMergedRequest)
         .internal();
@@ -222,6 +272,7 @@ final class DeliveryRegions {
         .onMatching(
             REQUEST,
             RequestPhase.MERGED,
+            TaskMove.RepoAttached.class,
             "repository added without one",
             move -> move instanceof TaskMove.RepoAttached)
         .to(RequestPhase.OPEN);
@@ -232,7 +283,9 @@ final class DeliveryRegions {
             REQUEST,
             from,
             "repository left",
-            move -> move instanceof TaskMove.RepoLeft left && left.after() == to,
+            takes(
+                TaskMove.RepoLeft.class,
+                move -> move instanceof TaskMove.RepoLeft left && left.after() == to),
             move -> new TaskEffect.LeavesRepo(((TaskMove.RepoLeft) move).project()),
             to);
       }
@@ -242,7 +295,7 @@ final class DeliveryRegions {
         REQUEST,
         RequestPhase.OPEN,
         "merged (all)",
-        DeliveryRegions::completesMerge,
+        takes(ChartRegions.MERGE_READS, DeliveryRegions::completesMerge),
         DeliveryRegions::mergesRequest,
         RequestPhase.MERGED);
     regionEdge(
@@ -250,7 +303,7 @@ final class DeliveryRegions {
         REQUEST,
         RequestPhase.OPEN,
         "merge read (some)",
-        DeliveryRegions::readsMerge,
+        takes(ChartRegions.MERGE_READS, DeliveryRegions::readsMerge),
         DeliveryRegions::mergesRequest,
         RequestPhase.OPEN);
     regionEdge(
@@ -258,7 +311,7 @@ final class DeliveryRegions {
         REQUEST,
         RequestPhase.MERGED,
         "merged (all)",
-        DeliveryRegions::completesMerge,
+        takes(ChartRegions.MERGE_READS, DeliveryRegions::completesMerge),
         DeliveryRegions::mergesRequest,
         RequestPhase.MERGED);
     regionEdge(
@@ -266,7 +319,7 @@ final class DeliveryRegions {
         REQUEST,
         RequestPhase.MERGED,
         "unmerged (some)",
-        DeliveryRegions::readsMerge,
+        takes(ChartRegions.MERGE_READS, DeliveryRegions::readsMerge),
         DeliveryRegions::mergesRequest,
         RequestPhase.OPEN);
     regionEdge(
@@ -274,7 +327,7 @@ final class DeliveryRegions {
         REQUEST,
         RequestPhase.NONE,
         "merge recorded unrequested",
-        DeliveryRegions::readsMerge,
+        takes(ChartRegions.MERGE_READS, DeliveryRegions::readsMerge),
         DeliveryRegions::mergesRequest,
         RequestPhase.NONE);
   }
@@ -315,7 +368,9 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "read on the head",
-          move -> move instanceof TaskMove.ChecksRead read && read.onHead(),
+          takes(
+              TaskMove.ChecksRead.class,
+              move -> move instanceof TaskMove.ChecksRead read && read.onHead()),
           DeliveryRegions::readsChecks,
           ChecksPhase.READ);
       regionEdge(
@@ -323,7 +378,9 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "read on another head",
-          move -> move instanceof TaskMove.ChecksRead read && !read.onHead(),
+          takes(
+              TaskMove.ChecksRead.class,
+              move -> move instanceof TaskMove.ChecksRead read && !read.onHead()),
           DeliveryRegions::readsChecks,
           ChecksPhase.STALE);
       regionEdge(
@@ -331,7 +388,7 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "unread",
-          move -> move instanceof TaskMove.ChecksUnread,
+          takes(TaskMove.ChecksUnread.class, move -> move instanceof TaskMove.ChecksUnread),
           move -> new TaskEffect.FailsToReadChecks(((TaskMove.ChecksUnread) move).read()),
           ChecksPhase.UNREAD);
     }
@@ -341,7 +398,7 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "a new round",
-          ChartRegions::beginsRound,
+          takes(TaskMove.RequestLinked.class, ChartRegions::beginsRound),
           move -> new TaskEffect.ResetsChecks(),
           ChecksPhase.NONE);
     }
@@ -351,7 +408,7 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "head seen",
-          move -> move instanceof TaskMove.HeadSeen,
+          takes(TaskMove.HeadSeen.class, move -> move instanceof TaskMove.HeadSeen),
           DeliveryRegions::seesHead,
           from);
     }
@@ -361,7 +418,9 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "head seen, reads of another",
-          move -> move instanceof TaskMove.HeadSeen seen && seen.staleReads(),
+          takes(
+              TaskMove.HeadSeen.class,
+              move -> move instanceof TaskMove.HeadSeen seen && seen.staleReads()),
           DeliveryRegions::seesHead,
           ChecksPhase.STALE);
       regionEdge(
@@ -369,7 +428,9 @@ final class DeliveryRegions {
           CHECKS,
           from,
           "head seen, reads of it",
-          move -> move instanceof TaskMove.HeadSeen seen && !seen.staleReads(),
+          takes(
+              TaskMove.HeadSeen.class,
+              move -> move instanceof TaskMove.HeadSeen seen && !seen.staleReads()),
           DeliveryRegions::seesHead,
           ChecksPhase.READ);
     }
@@ -396,7 +457,7 @@ final class DeliveryRegions {
           APPROVAL,
           from,
           "a new round",
-          ChartRegions::beginsRound,
+          takes(TaskMove.RequestLinked.class, ChartRegions::beginsRound),
           move -> new TaskEffect.ResetsApproval(),
           ApprovalPhase.UNREAD);
       regionEdge(
@@ -404,7 +465,9 @@ final class DeliveryRegions {
           APPROVAL,
           from,
           "approved",
-          move -> move instanceof TaskMove.ApprovalRead read && read.approved(),
+          takes(
+              TaskMove.ApprovalRead.class,
+              move -> move instanceof TaskMove.ApprovalRead read && read.approved()),
           DeliveryRegions::readsApproval,
           ApprovalPhase.APPROVED);
       regionEdge(
@@ -412,7 +475,9 @@ final class DeliveryRegions {
           APPROVAL,
           from,
           "withheld",
-          move -> move instanceof TaskMove.ApprovalRead read && !read.approved(),
+          takes(
+              TaskMove.ApprovalRead.class,
+              move -> move instanceof TaskMove.ApprovalRead read && !read.approved()),
           DeliveryRegions::readsApproval,
           ApprovalPhase.WITHHELD);
     }
@@ -426,7 +491,7 @@ final class DeliveryRegions {
           INFRA,
           from,
           "a new round",
-          ChartRegions::beginsRound,
+          takes(TaskMove.RequestLinked.class, ChartRegions::beginsRound),
           move -> new TaskEffect.ResetsInfra(),
           InfraPhase.NONE);
       regionEdge(
@@ -434,7 +499,7 @@ final class DeliveryRegions {
           INFRA,
           from,
           "armed",
-          move -> move instanceof TaskMove.InfraArmed,
+          takes(TaskMove.InfraArmed.class, move -> move instanceof TaskMove.InfraArmed),
           move -> new TaskEffect.ArmsInfra(((TaskMove.InfraArmed) move).retry()),
           InfraPhase.ARMED);
       regionEdge(
@@ -442,7 +507,9 @@ final class DeliveryRegions {
           INFRA,
           from,
           "cleared with the sent",
-          move -> move instanceof TaskMove.InfraCleared clear && clear.all(),
+          takes(
+              TaskMove.InfraCleared.class,
+              move -> move instanceof TaskMove.InfraCleared clear && clear.all()),
           move -> new TaskEffect.ClearsInfra(true),
           InfraPhase.NONE);
       if (from != InfraPhase.ARMED) {
@@ -451,7 +518,9 @@ final class DeliveryRegions {
             INFRA,
             from,
             "sent one cleared",
-            move -> move instanceof TaskMove.InfraCleared clear && !clear.all(),
+            takes(
+                TaskMove.InfraCleared.class,
+                move -> move instanceof TaskMove.InfraCleared clear && !clear.all()),
             move -> new TaskEffect.ClearsInfra(false),
             from);
       }
@@ -460,8 +529,11 @@ final class DeliveryRegions {
           INFRA,
           from,
           "sent",
-          move ->
-              move instanceof TaskMove.InfraSent sent && sent.retry().attempt() < sent.retry().of(),
+          takes(
+              TaskMove.InfraSent.class,
+              move ->
+                  move instanceof TaskMove.InfraSent sent
+                      && sent.retry().attempt() < sent.retry().of()),
           move -> new TaskEffect.SendsInfra(((TaskMove.InfraSent) move).retry()),
           InfraPhase.SENT);
       regionEdge(
@@ -469,9 +541,11 @@ final class DeliveryRegions {
           INFRA,
           from,
           "last wait sent",
-          move ->
-              move instanceof TaskMove.InfraSent sent
-                  && sent.retry().attempt() >= sent.retry().of(),
+          takes(
+              TaskMove.InfraSent.class,
+              move ->
+                  move instanceof TaskMove.InfraSent sent
+                      && sent.retry().attempt() >= sent.retry().of()),
           move -> new TaskEffect.SendsInfra(((TaskMove.InfraSent) move).retry()),
           InfraPhase.SPENT);
     }
@@ -481,10 +555,12 @@ final class DeliveryRegions {
           INFRA,
           InfraPhase.ARMED,
           "armed one cleared, " + unarmed + " remains",
-          move ->
-              move instanceof TaskMove.InfraCleared clear
-                  && !clear.all()
-                  && clear.unarmed() == unarmed,
+          takes(
+              TaskMove.InfraCleared.class,
+              move ->
+                  move instanceof TaskMove.InfraCleared clear
+                      && !clear.all()
+                      && clear.unarmed() == unarmed),
           move -> new TaskEffect.ClearsInfra(false),
           unarmed);
       regionEdge(
@@ -492,8 +568,12 @@ final class DeliveryRegions {
           INFRA,
           InfraPhase.ARMED,
           "head moved, " + unarmed + " remains",
-          move ->
-              move instanceof TaskMove.HeadSeen seen && seen.moved() && seen.unarmed() == unarmed,
+          takes(
+              TaskMove.HeadSeen.class,
+              move ->
+                  move instanceof TaskMove.HeadSeen seen
+                      && seen.moved()
+                      && seen.unarmed() == unarmed),
           move -> new TaskEffect.DisarmsInfra(),
           unarmed);
     }
@@ -510,6 +590,7 @@ final class DeliveryRegions {
             .onMatching(
                 DEPLOY,
                 from,
+                TaskMove.DeployStepped.class,
                 label,
                 move ->
                     move instanceof TaskMove.DeployStepped stepped && matches.test(stepped.step()))

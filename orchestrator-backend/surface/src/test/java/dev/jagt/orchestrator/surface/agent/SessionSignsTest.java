@@ -72,7 +72,8 @@ class SessionSignsTest {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     state.updateTask(
         "ABC-1",
-        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {})::sessionStartedOver);
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {})
+            ::sessionStartedOver);
     SessionSigns signs =
         new SessionSigns(
             new SessionLedger(state, Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC)),

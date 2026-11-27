@@ -44,7 +44,7 @@ class TaskReducerProperties {
   private static final TaskChart chart = new TaskChart(Composition.builtIn());
   private static final FlowRules rules = new FlowRules(chart);
 
-  private static final TaskReducer reducer = new TaskReducer(chart, stale -> {});
+  private static final TaskReducer reducer = new TaskReducer(chart, stale -> {}, gap -> {});
 
   @Property
   void deployConflictNeverTravelsWithStatusChange(

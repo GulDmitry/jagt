@@ -31,7 +31,7 @@ public record TestStateServiceBuilder(Path root) {
                 .withData(root.toString())
                 .withStateFile(root.resolve("state.json").toString()),
             FakeHost.machine()),
-        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}),
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {}),
         events);
   }
 }

@@ -71,6 +71,13 @@ class TaskChartProperties {
   }
 
   @Example
+  void everyKindOfMoveHasClassInEveryStateTheChartCanReach() {
+    Set<String> unclassified = new Explorer(chart).walk().unclassified();
+
+    assertThat(unclassified).isEmpty();
+  }
+
+  @Example
   void everyKindOfMoveTheChartTakesHasAnInstanceToDriveIt() {
     Set<Class<?>> built =
         new Explorer(chart).moves().stream().map(Object::getClass).collect(Collectors.toSet());
@@ -509,11 +516,18 @@ class TaskChartProperties {
       this.chart = chart;
     }
 
+    record Walk(Set<String> fired, Set<String> unclassified) {}
+
     Set<String> fired() {
+      return walk().fired();
+    }
+
+    Walk walk() {
       List<Map.Entry<TaskMove, ChartFacts>> presses = presses();
       List<Map.Entry<TaskMove, ChartFacts>> afterTheStart =
           presses.stream().filter(press -> !offers(press)).toList();
       Set<String> fired = new TreeSet<>();
+      Set<String> unclassified = new TreeSet<>();
       Set<String> placed = new HashSet<>();
       Set<Key> seen = new HashSet<>();
       Deque<Configuration> frontier = new ArrayDeque<>();
@@ -523,6 +537,10 @@ class TaskChartProperties {
         Configuration at = frontier.poll();
         List<Map.Entry<TaskMove, ChartFacts>> tried =
             startKeys.contains(Key.of(at)) ? presses : afterTheStart;
+        tried.forEach(press ->
+            chart.chart().unclassified(at, press.getKey()).stream()
+                .map(gap -> press.getKey().getClass().getSimpleName() + " at " + gap)
+                .forEach(unclassified::add));
         List<Macrostep<TaskEffect>> steps =
             tried.parallelStream()
                 .map(press -> chart.chart().step(at, press.getValue(), press.getKey()))
@@ -534,7 +552,7 @@ class TaskChartProperties {
         }
       }
       assertThat(seen).hasSizeLessThan(CEILING);
-      return fired;
+      return new Walk(fired, unclassified);
     }
 
     private static boolean learns(

@@ -34,7 +34,7 @@ import org.mockito.ArgumentCaptor;
 class RoundRecordTest {
 
   private final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private final Generation readAt = new Generation(Generation.Kind.HEAD, "");
   private final StateService stateService = mock(StateService.class);

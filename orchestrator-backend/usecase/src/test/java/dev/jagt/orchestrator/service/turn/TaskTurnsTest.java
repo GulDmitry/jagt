@@ -39,7 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 class TaskTurnsTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   @TempDir Path root;
 

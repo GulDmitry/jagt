@@ -2,6 +2,7 @@ package dev.jagt.statechart;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -27,7 +28,7 @@ record Transition<E, F>(
     INTERNAL
   }
 
-  record Trigger<E>(String label, Predicate<E> matches, boolean eventless) {
+  record Trigger<E>(String label, Predicate<E> matches, boolean eventless, Set<Class<?>> kinds) {
 
     boolean fires(Optional<E> event) {
       return event.map(e -> !eventless && matches.test(e)).orElse(eventless);

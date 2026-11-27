@@ -218,15 +218,15 @@ public final class FlowRules {
   }
 
   /**
-   * Where a round read lands: only a task waiting on the host moves, a session on its status keeps
-   * it.
+   * Where a round read lands: only a task waiting on the host moves; empty where the chart ignores
+   * the read, a session on its status keeping it.
    */
-  public TaskStatus readLands(TaskStatus from, TaskStatus read) {
+  public Optional<TaskStatus> readLands(TaskStatus from, TaskStatus read) {
     if (!StatusSets.reads().contains(read)) {
       throw new IllegalArgumentException(
           read + " is not what a read of the review round concludes");
     }
-    return chart.land(from, new TaskMove.Read(read)).orElse(from);
+    return chart.land(from, new TaskMove.Read(read));
   }
 
   /**
@@ -343,10 +343,10 @@ public final class FlowRules {
 
   /**
    * Where a read of the pipeline on a deploy commit lands: only a task live on the deploy branch
-   * moves, and only on a red the code owns.
+   * moves, and only on a red the code owns; empty where the chart ignores the read.
    */
-  public TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
-    return chart.land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);
+  public Optional<TaskStatus> deployReadLands(TaskStatus from, boolean redOnTheCode) {
+    return chart.land(from, new TaskMove.DeployRead(redOnTheCode));
   }
 
   /** A plan waiting to be read, rather than a round of code. */

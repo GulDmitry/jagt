@@ -15,7 +15,8 @@ class TaskReducerStaleReadTest {
   @Test
   void dropsSignReadBeforeTheSessionStartedOverWithItsReasonNamed() {
     List<Generation.Stale> dropped = new ArrayList<>();
-    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()), dropped::add);
+    TaskReducer reducer =
+        new TaskReducer(new TaskChart(Composition.builtIn()), dropped::add, gap -> {});
     TaskState task =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).alias("ABC-42").build();
     Generation readAt = new Generation(Generation.Kind.SESSION_START, "0");
@@ -31,7 +32,8 @@ class TaskReducerStaleReadTest {
   @Test
   void landsSignReadOnTheSessionStillRunning() {
     List<Generation.Stale> dropped = new ArrayList<>();
-    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()), dropped::add);
+    TaskReducer reducer =
+        new TaskReducer(new TaskChart(Composition.builtIn()), dropped::add, gap -> {});
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     Generation readAt = new Generation(Generation.Kind.SESSION_START, "0");
 
@@ -43,7 +45,8 @@ class TaskReducerStaleReadTest {
 
   @Test
   void headGenerationIsTheNewestTipSeen() {
-    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+    TaskReducer reducer =
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).build();
 
     Generation head = Generation.of(Generation.Kind.HEAD, reducer.headSeen(task, "abc"));
@@ -53,7 +56,8 @@ class TaskReducerStaleReadTest {
 
   @Test
   void roundGenerationIsTheRequestsLinked() {
-    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+    TaskReducer reducer =
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState linked =
         reducer.requestLinked(task, Map.of(), "https://host.example/1", false, 1_000);

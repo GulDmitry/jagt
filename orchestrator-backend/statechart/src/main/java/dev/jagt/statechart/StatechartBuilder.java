@@ -20,6 +20,7 @@ public final class StatechartBuilder<E, X, F> {
   private final List<Datum<X>> data = new ArrayList<>();
   private final Map<String, RegionDecls<E, F>> decls = new HashMap<>();
   private final List<Transition<E, F>> transitions = new ArrayList<>();
+  private final ClassDecls classes = new ClassDecls();
   private int groups;
   private int ceiling = Statechart.DEFAULT_CEILING;
   private Optional<Function<Completed, E>> completion = Optional.empty();
@@ -146,7 +147,7 @@ public final class StatechartBuilder<E, X, F> {
         this,
         id.name(),
         from,
-        new Transition.Trigger<>(type.getSimpleName(), type::isInstance, false));
+        new Transition.Trigger<>(type.getSimpleName(), type::isInstance, false, Set.of(type)));
   }
 
   /**
@@ -156,13 +157,23 @@ public final class StatechartBuilder<E, X, F> {
   public <S extends Enum<S>> TransitionBuilder<E, X, F, S> always(RegionId<S> id, S from) {
     return new TransitionBuilder<>(
         // Never evaluated: an eventless trigger fires on no event whatever the predicate says.
-        this, id.name(), from, new Transition.Trigger<>("always", event -> false, true));
+        this, id.name(), from, new Transition.Trigger<>("always", event -> false, true, Set.of()));
   }
 
   public <S extends Enum<S>> TransitionBuilder<E, X, F, S> onMatching(
       RegionId<S> id, S from, String label, Predicate<E> matches) {
     return new TransitionBuilder<>(
-        this, id.name(), from, new Transition.Trigger<>(label, matches, false));
+        this, id.name(), from, new Transition.Trigger<>(label, matches, false, Set.of()));
+  }
+
+  /**
+   * As above, for a move of {@code kind}: where the chart declares {@link #moves}, only a
+   * transition naming its kind counts as taking it.
+   */
+  public <S extends Enum<S>> TransitionBuilder<E, X, F, S> onMatching(
+      RegionId<S> id, S from, Class<? extends E> kind, String label, Predicate<E> matches) {
+    return new TransitionBuilder<>(
+        this, id.name(), from, new Transition.Trigger<>(label, matches, false, Set.of(kind)));
   }
 
   /**
@@ -178,6 +189,61 @@ public final class StatechartBuilder<E, X, F> {
             .sorted()
             .map(state -> onMatching(id, state, label, matches).inGroup(group))
             .toList());
+  }
+
+  /** As above, for a move of {@code kind}. */
+  public <S extends Enum<S>> TransitionSetBuilder<E, X, F, S> onMatching(
+      RegionId<S> id, Set<S> from, Class<? extends E> kind, String label, Predicate<E> matches) {
+    int group = ++groups;
+    return new TransitionSetBuilder<>(
+        this,
+        from.stream()
+            .sorted()
+            .map(state -> onMatching(id, state, kind, label, matches).inGroup(group))
+            .toList());
+  }
+
+  /**
+   * As above, for a predicate that takes several kinds of move; a kind that is not a leaf of {@link
+   * #moves} stands for each leaf under it.
+   */
+  public <S extends Enum<S>> TransitionBuilder<E, X, F, S> onMatchingAny(
+      RegionId<S> id, S from, Set<Class<? extends E>> kinds, String label, Predicate<E> matches) {
+    return new TransitionBuilder<>(
+        this,
+        id.name(),
+        from,
+        new Transition.Trigger<>(label, matches, false, Set.<Class<?>>copyOf(kinds)));
+  }
+
+  /**
+   * Every leaf of {@code root} is a kind of move the chart classifies: per region it is addressed
+   * to ({@link #addressed}), each state either has an edge for it or is declared {@link #ignores}
+   * or {@link #refuses}; {@link #build} fails on a state with none.
+   */
+  public StatechartBuilder<E, X, F> moves(Class<? extends E> root) {
+    classes.moves(root);
+    return this;
+  }
+
+  /** {@code kind} is the concern of {@code regions}, and of no other region. */
+  public StatechartBuilder<E, X, F> addressed(Class<? extends E> kind, RegionId<?>... regions) {
+    classes.addressed(kind, Stream.of(regions).map(RegionId::name).toList());
+    return this;
+  }
+
+  /** {@code kind} changes nothing in {@code states} of {@code id}, for {@code why}. */
+  public <S extends Enum<S>> StatechartBuilder<E, X, F> ignores(
+      RegionId<S> id, Class<? extends E> kind, Set<S> states, String why) {
+    classes.declare(id.name(), kind, states, false, why);
+    return this;
+  }
+
+  /** {@code kind} is turned away in {@code states} of {@code id}, under the name {@code named}. */
+  public <S extends Enum<S>> StatechartBuilder<E, X, F> refuses(
+      RegionId<S> id, Class<? extends E> kind, Set<S> states, String named) {
+    classes.declare(id.name(), kind, states, true, named);
+    return this;
   }
 
   /**
@@ -205,11 +271,13 @@ public final class StatechartBuilder<E, X, F> {
     List<String> names = new ArrayList<>(regions.stream().map(Pending::name).toList());
     data.forEach(datum -> names.add(datum.name()));
     List<String> problems = Validation.problems(names, built, data, transitions);
+    Classes<E, F> classed = classes.of(built, transitions);
+    problems.addAll(classed.problems());
     if (!problems.isEmpty()) {
       throw new StatechartInvalid(problems);
     }
     return new Statechart<>(
-        built, List.copyOf(data), List.copyOf(transitions), ceiling, completion);
+        built, List.copyOf(data), List.copyOf(transitions), ceiling, completion, classed);
   }
 
   private RegionDecls<E, F> decl(String region) {

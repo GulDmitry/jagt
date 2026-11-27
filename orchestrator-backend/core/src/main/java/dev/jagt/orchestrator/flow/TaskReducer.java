@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.repo.RequestPhase;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.session.SessionSign;
+import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
@@ -46,10 +47,13 @@ public final class TaskReducer {
 
   private final TaskChart chart;
   private final Consumer<Generation.Stale> dropped;
+  private final Consumer<Unclassified> unclassified;
 
-  public TaskReducer(TaskChart chart, Consumer<Generation.Stale> dropped) {
+  public TaskReducer(
+      TaskChart chart, Consumer<Generation.Stale> dropped, Consumer<Unclassified> unclassified) {
     this.chart = chart;
     this.dropped = dropped;
+    this.unclassified = unclassified;
   }
 
   /** {@code move} applied to {@code task}; where the chart has no edge for it the status stays. */
@@ -621,7 +625,19 @@ public final class TaskReducer {
   }
 
   private List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
-    return chart.effects(Phases.of(task), move);
+    Phases phases = Phases.of(task);
+    List<String> gaps = chart.unclassified(phases, move);
+    if (!gaps.isEmpty()) {
+      Unclassified found = Unclassified.of(move, gaps);
+      unclassified.accept(found);
+      if (found.refused()) {
+        throw Refusal.byState(
+            found.kind()
+                + " is refused: no class is declared for it at "
+                + String.join(", ", gaps));
+      }
+    }
+    return chart.effects(phases, move);
   }
 
   private List<TaskEffect> landing(TaskState task, TaskMove move) {

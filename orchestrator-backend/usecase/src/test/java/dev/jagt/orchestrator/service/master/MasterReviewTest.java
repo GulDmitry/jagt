@@ -32,7 +32,7 @@ import tools.jackson.databind.json.JsonMapper;
 class MasterReviewTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   @TempDir Path worktree;
   private final MasterReview stateless = new MasterReview(mock(StateService.class));

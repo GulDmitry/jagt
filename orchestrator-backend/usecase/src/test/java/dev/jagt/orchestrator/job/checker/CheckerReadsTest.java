@@ -46,7 +46,7 @@ class CheckerReadsTest {
   private final FakeHost host = FakeHost.machine();
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private static final CheckerReader.Run RUN =
       new CheckerReader.Run(

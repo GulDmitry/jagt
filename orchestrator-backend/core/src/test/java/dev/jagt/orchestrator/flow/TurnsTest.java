@@ -29,7 +29,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class TurnsTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private static final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 

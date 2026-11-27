@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.port.MergedRefresh;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.UnansweredFindings;
+import dev.jagt.orchestrator.service.reach.UnclassifiedMoves;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import java.time.Clock;
@@ -47,7 +48,7 @@ public class FlowWiring {
   }
 
   @Bean
-  public TaskReducer taskReducer(TaskChart chart) {
+  public TaskReducer taskReducer(TaskChart chart, UnclassifiedMoves unclassified) {
     return new TaskReducer(
         chart,
         stale ->
@@ -57,7 +58,8 @@ public class FlowWiring {
                 .addKeyValue("kind", stale.kind())
                 .addKeyValue("from", stale.readAt())
                 .addKeyValue("to", stale.current())
-                .log());
+                .log(),
+        unclassified);
   }
 
   @Bean

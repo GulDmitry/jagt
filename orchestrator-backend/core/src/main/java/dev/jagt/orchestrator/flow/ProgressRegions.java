@@ -55,7 +55,8 @@ final class ProgressRegions {
   void stops(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(STOP, StopKind.NONE);
     chart
-        .onMatching(STOP, StopKind.NONE, "lift", new TaskMove.Lifted()::equals)
+        .onMatching(
+            STOP, StopKind.NONE, TaskMove.Lifted.class, "lift", new TaskMove.Lifted()::equals)
         .emit(new TaskEffect.Lifts())
         .to(StopKind.NONE);
     for (TaskStop.Trigger.Ends ends : TaskStop.Trigger.Ends.values()) {
@@ -64,17 +65,19 @@ final class ProgressRegions {
           .onMatching(
               STOP,
               StopKind.NONE,
+              TaskMove.StopSet.class,
               "stop ending on " + ends,
               move -> move instanceof TaskMove.StopSet set && set.stop().trigger().ends() == ends)
           .emitFor(move -> new TaskEffect.Stops(((TaskMove.StopSet) move).stop()))
           .to(kind);
       chart
-          .onMatching(STOP, kind, "lift", new TaskMove.Lifted()::equals)
+          .onMatching(STOP, kind, TaskMove.Lifted.class, "lift", new TaskMove.Lifted()::equals)
           .emit(new TaskEffect.Lifts())
           .to(StopKind.NONE);
       if (ends == TaskStop.Trigger.Ends.LIFT) {
         chart
-            .onMatching(STOP, kind, "escalate", new TaskMove.Escalated()::equals)
+            .onMatching(
+                STOP, kind, TaskMove.Escalated.class, "escalate", new TaskMove.Escalated()::equals)
             .emit(new TaskEffect.Escalates())
             .to(StopKind.NONE);
       }
@@ -82,11 +85,21 @@ final class ProgressRegions {
         continue;
       }
       chart
-          .onMatching(STOP, kind, ends + " ends it", new TaskMove.StopEnded(ends)::equals)
+          .onMatching(
+              STOP,
+              kind,
+              TaskMove.StopEnded.class,
+              ends + " ends it",
+              new TaskMove.StopEnded(ends)::equals)
           .emit(new TaskEffect.ClearsStop())
           .to(StopKind.NONE);
       chart
-          .onMatching(STOP, kind, "a new request voids it", new TaskMove.RequestReplaced()::equals)
+          .onMatching(
+              STOP,
+              kind,
+              TaskMove.RequestReplaced.class,
+              "a new request voids it",
+              new TaskMove.RequestReplaced()::equals)
           .emit(new TaskEffect.ClearsStop())
           .to(StopKind.NONE);
     }
@@ -95,7 +108,12 @@ final class ProgressRegions {
   void plans(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(PLAN, PlanGate.OPEN);
     chart
-        .onMatching(PLAN, PlanGate.OPEN, "autoplan", new TaskMove.Autoplanned()::equals)
+        .onMatching(
+            PLAN,
+            PlanGate.OPEN,
+            TaskMove.Autoplanned.class,
+            "autoplan",
+            new TaskMove.Autoplanned()::equals)
         .emit(new TaskEffect.GatesPlan(PlanGate.CLOSED))
         .to(PlanGate.CLOSED);
     for (PlanGate from : EnumSet.of(PlanGate.OPEN, PlanGate.CLOSED)) {
@@ -103,6 +121,7 @@ final class ProgressRegions {
           .onMatching(
               PLAN,
               from,
+              TaskMove.PlanAsked.class,
               "plan mode",
               move -> move instanceof TaskMove.PlanAsked asked && asked.planMode())
           .when((active, move) -> planMayComeFirst.test(active.state(LIFECYCLE)))
@@ -113,6 +132,7 @@ final class ProgressRegions {
         .onMatching(
             PLAN,
             PlanGate.CLOSED,
+            TaskMove.NoPlanDeclared.class,
             "no plan declared",
             move -> move instanceof TaskMove.NoPlanDeclared declared && !declared.outside())
         .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))
@@ -122,19 +142,29 @@ final class ProgressRegions {
           .onMatching(
               PLAN,
               from,
+              TaskMove.ApprovalAsked.class,
               "approval asked",
               move ->
                   move instanceof TaskMove.ApprovalAsked asked
                       && (asked.human() || !asked.outside() || asked.sound()))
           .internal();
       chart
-          .onMatching(PLAN, from, "plan approved", new TaskMove.PlanApproved()::equals)
+          .onMatching(
+              PLAN,
+              from,
+              TaskMove.PlanApproved.class,
+              "plan approved",
+              new TaskMove.PlanApproved()::equals)
           .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))
           .to(PlanGate.OPEN);
     }
     chart
         .onMatching(
-            PLAN, PlanGate.CLOSED, "round past the plan", move -> move instanceof TaskMove.Relayed)
+            PLAN,
+            PlanGate.CLOSED,
+            TaskMove.Relayed.class,
+            "round past the plan",
+            move -> move instanceof TaskMove.Relayed)
         .when((active, move) -> ROUND_PAST_THE_PLAN.contains(active.state(LIFECYCLE)))
         .emit(new TaskEffect.GatesPlan(PlanGate.OPEN))
         .to(PlanGate.OPEN);
@@ -148,6 +178,7 @@ final class ProgressRegions {
           from,
           "said on a status that holds its line",
           from.asks() ? AgentReport.PLAIN : from,
+          TaskMove.Said.class,
           move -> move instanceof TaskMove.Said said && !said.means().asks(),
           (active, move) -> HELD.contains(active.state(LIFECYCLE)));
       becomes(chart, from);
@@ -163,7 +194,12 @@ final class ProgressRegions {
       relayed(chart, from);
       TransitionBuilder<TaskMove, ChartFacts, TaskEffect, TurnKind> closed =
           chart
-              .onMatching(TURN, from, "turn closed", new TaskMove.TurnClosed()::equals)
+              .onMatching(
+                  TURN,
+                  from,
+                  TaskMove.TurnClosed.class,
+                  "turn closed",
+                  new TaskMove.TurnClosed()::equals)
               .emit(new TaskEffect.ClosesTurn());
       if (from == TurnKind.CLOSED) {
         closed.internal();
@@ -176,6 +212,7 @@ final class ProgressRegions {
             .onMatching(
                 TURN,
                 from,
+                TaskMove.TurnRestored.class,
                 "turn restored " + restored,
                 move ->
                     move instanceof TaskMove.TurnRestored undone
@@ -198,6 +235,7 @@ final class ProgressRegions {
           .onMatching(
               SESSION,
               from,
+              TaskMove.Signed.class,
               "work started clearing a stamped permission",
               move ->
                   move instanceof TaskMove.Signed signed
@@ -213,6 +251,7 @@ final class ProgressRegions {
           .onMatching(
               SESSION,
               from,
+              TaskMove.Signed.class,
               "asked",
               move ->
                   move instanceof TaskMove.Signed signed
@@ -242,7 +281,12 @@ final class ProgressRegions {
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, SessionPhase from) {
     TransitionBuilder<TaskMove, ChartFacts, TaskEffect, SessionPhase> over =
         chart
-            .onMatching(SESSION, from, "started over", new TaskMove.SessionStartedOver()::equals)
+            .onMatching(
+                SESSION,
+                from,
+                TaskMove.SessionStartedOver.class,
+                "started over",
+                new TaskMove.SessionStartedOver()::equals)
             .emit(new TaskEffect.RestartsSession());
     if (from == SessionPhase.NONE) {
       over.internal();
@@ -262,6 +306,7 @@ final class ProgressRegions {
             .onMatching(
                 SESSION,
                 from,
+                TaskMove.Signed.class,
                 label,
                 move ->
                     move instanceof TaskMove.Signed signed
@@ -286,6 +331,7 @@ final class ProgressRegions {
             .onMatching(
                 SESSION,
                 from,
+                TaskMove.Signed.class,
                 label,
                 move -> move instanceof TaskMove.Signed signed && kind.isInstance(signed.sign()))
             .emitFor(move -> new TaskEffect.Signs(((TaskMove.Signed) move).sign()));
@@ -299,7 +345,12 @@ final class ProgressRegions {
   private void relayed(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {
     TransitionBuilder<TaskMove, ChartFacts, TaskEffect, TurnKind> relayed =
         chart
-            .onMatching(TURN, from, "relayed", move -> move instanceof TaskMove.Relayed)
+            .onMatching(
+                TURN,
+                from,
+                TaskMove.Relayed.class,
+                "relayed",
+                move -> move instanceof TaskMove.Relayed)
             .emitFor(move ->
                 new TaskEffect.OpensTurn(
                     ((TaskMove.Relayed) move).step(),
@@ -321,6 +372,7 @@ final class ProgressRegions {
             from,
             "said " + means,
             means,
+            TaskMove.Said.class,
             move -> move instanceof TaskMove.Said said && said.means() == means,
             ALWAYS);
         said(
@@ -328,6 +380,7 @@ final class ProgressRegions {
             from,
             "stamped " + means,
             means,
+            TaskMove.Stamped.class,
             move -> move instanceof TaskMove.Stamped stamped && stamped.means() == means,
             ALWAYS);
       }
@@ -340,6 +393,7 @@ final class ProgressRegions {
         from,
         "verified",
         AgentReport.PLAIN,
+        TaskMove.Verified.class,
         move -> move instanceof TaskMove.Verified,
         ALWAYS);
     said(
@@ -347,10 +401,18 @@ final class ProgressRegions {
         from,
         "deploy read moving the status",
         AgentReport.PLAIN,
+        TaskMove.DeployRead.class,
         move -> move instanceof TaskMove.DeployRead,
         (active, move) -> land.land(active.state(LIFECYCLE), move).isPresent());
     if (!STANDING_THROUGH_A_READ.contains(from)) {
-      said(chart, from, "read", AgentReport.PLAIN, move -> move instanceof TaskMove.Read, ALWAYS);
+      said(
+          chart,
+          from,
+          "read",
+          AgentReport.PLAIN,
+          TaskMove.Read.class,
+          move -> move instanceof TaskMove.Read,
+          ALWAYS);
     }
   }
 
@@ -359,10 +421,14 @@ final class ProgressRegions {
       AgentReport from,
       String label,
       AgentReport to,
+      Class<? extends TaskMove> kind,
       Predicate<TaskMove> matches,
       Guard<TaskMove> when) {
     TransitionBuilder<TaskMove, ChartFacts, TaskEffect, AgentReport> edge =
-        chart.onMatching(REPORT, from, label, matches).when(when).emit(new TaskEffect.Reports(to));
+        chart
+            .onMatching(REPORT, from, kind, label, matches)
+            .when(when)
+            .emit(new TaskEffect.Reports(to));
     if (from == to) {
       edge.internal();
     } else {

@@ -91,7 +91,8 @@ class SessionLedgerTest {
   void dropsTheSignReadOnTheSessionThatStartedOver() {
     state.updateTask(
         "ABC-1",
-        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {})::sessionStartedOver);
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {})
+            ::sessionStartedOver);
 
     new SessionLedger(state, new FakeClock())
         .sign(

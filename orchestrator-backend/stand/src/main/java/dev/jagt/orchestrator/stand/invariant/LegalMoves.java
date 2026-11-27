@@ -83,7 +83,8 @@ public final class LegalMoves {
   }
 
   private boolean byRead(TaskStatus from, TaskStatus to) {
-    return FlowRules.reads().stream().anyMatch(read -> rules.readLands(from, read) == to);
+    return FlowRules.reads().stream()
+        .anyMatch(read -> rules.readLands(from, read).filter(to::equals).isPresent());
   }
 
   private static boolean bit(int bits, int index) {

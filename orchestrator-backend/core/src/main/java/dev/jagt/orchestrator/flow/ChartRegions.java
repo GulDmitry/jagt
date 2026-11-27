@@ -19,6 +19,7 @@ import dev.jagt.statechart.Guard;
 import dev.jagt.statechart.RegionId;
 import dev.jagt.statechart.StatechartBuilder;
 import dev.jagt.statechart.TransitionBuilder;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -57,22 +58,36 @@ final class ChartRegions {
 
   static final Guard<TaskMove> ALWAYS = (active, move) -> true;
 
+  /** The kinds of move an edge takes, and which of them it does. */
+  record Takes(Set<Class<? extends TaskMove>> kinds, Predicate<TaskMove> matches) {}
+
+  static Takes takes(Class<? extends TaskMove> kind, Predicate<TaskMove> matches) {
+    return new Takes(Set.of(kind), matches);
+  }
+
+  static Takes takes(Set<Class<? extends TaskMove>> kinds, Predicate<TaskMove> matches) {
+    return new Takes(kinds, matches);
+  }
+
   static <S extends Enum<S>> void regionEdge(
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       RegionId<S> region,
       S from,
       String label,
-      Predicate<TaskMove> matches,
+      Takes takes,
       Function<TaskMove, TaskEffect> effect,
       S to) {
     TransitionBuilder<TaskMove, ChartFacts, TaskEffect, S> edge =
-        chart.onMatching(region, from, label, matches).emitFor(effect);
+        chart.onMatchingAny(region, from, takes.kinds(), label, takes.matches()).emitFor(effect);
     if (from == to) {
       edge.internal();
     } else {
       edge.to(to);
     }
   }
+
+  static final Set<Class<? extends TaskMove>> MERGE_READS =
+      Set.of(TaskMove.MergedByHost.class, TaskMove.MergedByGit.class);
 
   static boolean beginsRound(TaskMove move) {
     return move instanceof TaskMove.RequestLinked linked && (linked.newRound() || linked.relinks());

@@ -80,10 +80,15 @@ public final class TaskChart {
 
   /**
    * What {@code move} does to a task standing at {@code phases}, in order; empty where no edge
-   * takes it.
+   * takes it, which a declared class says is meant ({@link #unclassified} says where none is).
    */
   List<TaskEffect> effects(Phases phases, TaskMove move) {
     return step(phases, move).effects();
+  }
+
+  /** Where {@code move}'s kind has no class for a task standing at {@code phases}. */
+  List<String> unclassified(Phases phases, TaskMove move) {
+    return chart.unclassified(configurationOf(chart, composition, phases), move);
   }
 
   /**
@@ -245,6 +250,7 @@ public final class TaskChart {
     LifecycleEdges.conflicts(chart);
     composition.roles().forEach(role -> role.declareLifecycleEdge(chart));
     LifecycleEdges.verification(chart);
+    MoveClasses.declare(chart);
     return chart.build();
   }
 

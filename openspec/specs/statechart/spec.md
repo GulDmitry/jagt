@@ -70,3 +70,16 @@ It SHALL refuse an unreachable state and a non-final state with no way out, per 
 #### Scenario: A choice with no default
 - **WHEN** a chart declares a choice with no `otherwise`
 - **THEN** building fails naming the choice
+
+### Requirement: A chart that declares its moves classifies every state
+Building a chart that declares its kinds of move SHALL refuse a state with no class for a kind. A class is an edge, an ignoring or a
+refusal, in a region the kind is addressed to. It SHALL also refuse an edge or a declaration in a region the kind is not addressed to.
+It SHALL refuse a declaration beside an edge, one without its why, and an edge naming no kind.
+
+#### Scenario: A state with no class
+- **WHEN** a kind of move has no edge and no declaration for a state of a region it is addressed to
+- **THEN** building fails with `move Pull has no class in state door.OPEN`
+
+#### Scenario: An edge on a supertype
+- **WHEN** an edge names a supertype of several kinds
+- **THEN** it takes every kind under it, and `unclassified` names the states, or the kind itself, with no class for an event

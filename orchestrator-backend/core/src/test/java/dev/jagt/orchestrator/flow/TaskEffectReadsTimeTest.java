@@ -98,7 +98,7 @@ class TaskEffectReadsTimeTest {
 
     TaskChart chart = mock(TaskChart.class);
     when(chart.effects(any(), any())).thenReturn(List.of(effect));
-    TaskReducer reducer = new TaskReducer(chart, stale -> {});
+    TaskReducer reducer = new TaskReducer(chart, stale -> {}, gap -> {});
 
     TaskState early = reducer.reduce(task, new TaskMove.Lifted(), null, false, 10L);
     TaskState late = reducer.reduce(task, new TaskMove.Lifted(), null, false, 20L);

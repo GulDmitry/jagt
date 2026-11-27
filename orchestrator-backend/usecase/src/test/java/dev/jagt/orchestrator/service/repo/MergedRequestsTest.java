@@ -34,7 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
 class MergedRequestsTest {
 
   private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {});
 
   private final ConfigService config = mock(ConfigService.class);
   private final WorktreeInspection inspection = mock(WorktreeInspection.class);

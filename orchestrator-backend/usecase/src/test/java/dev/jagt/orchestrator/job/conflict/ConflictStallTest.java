@@ -137,7 +137,7 @@ class ConflictStallTest {
     state.updateTask(
         "ABC-42",
         task ->
-            new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {})
+            new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}, gap -> {})
                 .deployStepped(
                     task, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 900_000));
 

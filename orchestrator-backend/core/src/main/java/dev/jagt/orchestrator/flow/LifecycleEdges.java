@@ -47,7 +47,13 @@ final class LifecycleEdges {
 
   static void reads(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     for (TaskStatus concluded : READ) {
-      edges(chart, READ_FROM, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
+      edges(
+          chart,
+          READ_FROM,
+          "read " + concluded,
+          TaskMove.Read.class,
+          new TaskMove.Read(concluded)::equals,
+          concluded);
     }
   }
 
@@ -71,6 +77,7 @@ final class LifecycleEdges {
             chart,
             status,
             "remove-repo RELAYED",
+            TaskMove.Ran.class,
             new TaskMove.Ran(TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)::equals,
             status));
     TaskOffers.HAND_OFF_FROM.forEach(status ->
@@ -78,6 +85,7 @@ final class LifecycleEdges {
             chart,
             status,
             "hand-off RELAYED",
+            TaskMove.Ran.class,
             new TaskMove.Ran(TaskAction.HAND_OFF, Outcome.Kind.RELAYED)::equals,
             status));
     EnumSet.of(DEPLOYED, DEPLOY_CONFLICT)
@@ -86,6 +94,7 @@ final class LifecycleEdges {
                 chart,
                 status,
                 "revert RELAYED",
+                TaskMove.Ran.class,
                 new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.RELAYED)::equals,
                 status));
     ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, TaskOffers.DEPLOY_FROM);
@@ -107,7 +116,13 @@ final class LifecycleEdges {
       Outcome.Kind outcome,
       TaskStatus to,
       Set<TaskStatus> from) {
-    edges(chart, from, action.id() + " " + outcome, new TaskMove.Ran(action, outcome)::equals, to);
+    edges(
+        chart,
+        from,
+        action.id() + " " + outcome,
+        TaskMove.Ran.class,
+        new TaskMove.Ran(action, outcome)::equals,
+        to);
   }
 
   static void reports(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
@@ -120,14 +135,17 @@ final class LifecycleEdges {
             chart,
             free,
             "report " + to + " owing verification",
+            TaskMove.Reported.class,
             reportOf(to, true),
             open,
             VERIFYING);
       }
-      edges(chart, free, "report " + to, reportOf(to, false), open, to);
+      edges(chart, free, "report " + to, TaskMove.Reported.class, reportOf(to, false), open, to);
       HELD.stream()
           .filter(held -> mayReport(held, to))
-          .forEach(held -> edge(chart, held, "report " + to, reportOf(to, false), held));
+          .forEach(held ->
+              edge(
+                  chart, held, "report " + to, TaskMove.Reported.class, reportOf(to, false), held));
     }
   }
 
@@ -147,21 +165,23 @@ final class LifecycleEdges {
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       Set<TaskStatus> from,
       String label,
+      Class<? extends TaskMove> kind,
       Predicate<TaskMove> matches,
       TaskStatus to) {
-    edges(chart, from, label, matches, (active, move) -> true, to);
+    edges(chart, from, label, kind, matches, (active, move) -> true, to);
   }
 
   private static void edges(
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       Set<TaskStatus> from,
       String label,
+      Class<? extends TaskMove> kind,
       Predicate<TaskMove> matches,
       Guard<TaskMove> when,
       TaskStatus to) {
     if (!from.isEmpty()) {
       chart
-          .onMatching(LIFECYCLE, from, label, matches)
+          .onMatching(LIFECYCLE, from, kind, label, matches)
           .when(when)
           .emit(new TaskEffect.Lands(to))
           .to(to);
@@ -172,10 +192,11 @@ final class LifecycleEdges {
       StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       TaskStatus from,
       String label,
+      Class<? extends TaskMove> kind,
       Predicate<TaskMove> matches,
       TaskStatus to) {
     TransitionBuilder<TaskMove, ChartFacts, TaskEffect, TaskStatus> edge =
-        chart.onMatching(LIFECYCLE, from, label, matches).emit(new TaskEffect.Lands(to));
+        chart.onMatching(LIFECYCLE, from, kind, label, matches).emit(new TaskEffect.Lands(to));
     if (from == to) {
       edge.internal();
     } else {
@@ -188,27 +209,46 @@ final class LifecycleEdges {
         chart,
         DEPLOY_CONFLICT,
         "conflicted repository left",
+        TaskMove.RepoLeft.class,
         move -> move instanceof TaskMove.RepoLeft left && left.landsTheTask(),
         DEPLOYED);
     edge(
         chart,
         DEPLOY_CONFLICT,
         "conflicted repository left, nothing landed",
+        TaskMove.RepoLeft.class,
         move -> move instanceof TaskMove.RepoLeft left && left.returnsTheTask(),
         REVIEWED);
     edge(
-        chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
+        chart,
+        DEPLOYED,
+        "deploy read red",
+        TaskMove.DeployRead.class,
+        new TaskMove.DeployRead(true)::equals,
+        DEPLOY_CONFLICT);
     edge(
         chart,
         DEPLOY_CONFLICT,
         "deploy read green",
+        TaskMove.DeployRead.class,
         new TaskMove.DeployRead(false)::equals,
         DEPLOYED);
   }
 
   static void verification(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
-    edge(chart, VERIFYING, "verified", new TaskMove.Verified(true)::equals, REVIEW_PENDING);
     edge(
-        chart, VERIFYING, "verification failed", new TaskMove.Verified(false)::equals, IN_PROGRESS);
+        chart,
+        VERIFYING,
+        "verified",
+        TaskMove.Verified.class,
+        new TaskMove.Verified(true)::equals,
+        REVIEW_PENDING);
+    edge(
+        chart,
+        VERIFYING,
+        "verification failed",
+        TaskMove.Verified.class,
+        new TaskMove.Verified(false)::equals,
+        IN_PROGRESS);
   }
 }

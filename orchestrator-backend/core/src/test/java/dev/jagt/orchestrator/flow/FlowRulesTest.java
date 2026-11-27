@@ -477,7 +477,7 @@ class FlowRulesTest {
   })
   void keepsTaskWhoseCodeWentOutWhereItIsWhateverReadOfTheRoundConcludes(
       TaskStatus from, TaskStatus verdict) {
-    assertThat(rules.readLands(from, verdict)).isEqualTo(from);
+    assertThat(rules.readLands(from, verdict)).isEmpty();
   }
 
   @ParameterizedTest
@@ -504,13 +504,13 @@ class FlowRulesTest {
       value = TaskStatus.class,
       names = {"CI_POLLING", "REVIEWED", "APPROVED"})
   void stopsTaskWaitingOnTheHostWhenItsRunReadsRed(TaskStatus waiting) {
-    assertThat(rules.readLands(waiting, TaskStatus.CI_FAILED)).isEqualTo(TaskStatus.CI_FAILED);
+    assertThat(rules.readLands(waiting, TaskStatus.CI_FAILED)).contains(TaskStatus.CI_FAILED);
   }
 
   @ParameterizedTest
   @CsvSource({"REVIEWED", "APPROVED"})
   void movesFailedTaskOnWhenItsRerunPipelineReadsGreen(TaskStatus verdict) {
-    assertThat(rules.readLands(TaskStatus.CI_FAILED, verdict)).isEqualTo(verdict);
+    assertThat(rules.readLands(TaskStatus.CI_FAILED, verdict)).contains(verdict);
   }
 
   @ParameterizedTest
@@ -525,7 +525,7 @@ class FlowRulesTest {
   })
   void leavesTaskItsSessionWorksInWhereItIsWhenItsRunReadsGreen(
       TaskStatus busy, TaskStatus verdict) {
-    assertThat(rules.readLands(busy, verdict)).isEqualTo(busy);
+    assertThat(rules.readLands(busy, verdict)).isEmpty();
   }
 
   @ParameterizedTest
@@ -533,7 +533,7 @@ class FlowRulesTest {
       value = TaskStatus.class,
       names = {"IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "DEPLOYED"})
   void leavesTaskSomeoneIsOnWhereItIsWhenItsRunReadsRed(TaskStatus busy) {
-    assertThat(rules.readLands(busy, TaskStatus.CI_FAILED)).isEqualTo(busy);
+    assertThat(rules.readLands(busy, TaskStatus.CI_FAILED)).isEmpty();
   }
 
   @ParameterizedTest
@@ -898,10 +898,9 @@ class FlowRulesTest {
   @Test
   void movesDeployReadOnlyOnRedTheCodeOwnsAndOnlyOnDeployedTask() {
     assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, true))
-        .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, false)).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(rules.deployReadLands(TaskStatus.IN_PROGRESS, true))
-        .isEqualTo(TaskStatus.IN_PROGRESS);
+        .contains(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(rules.deployReadLands(TaskStatus.DEPLOYED, false)).isEmpty();
+    assertThat(rules.deployReadLands(TaskStatus.IN_PROGRESS, true)).isEmpty();
   }
 
   @Test
