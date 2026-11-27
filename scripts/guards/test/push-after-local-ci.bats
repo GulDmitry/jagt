@@ -23,6 +23,17 @@ run_cmd() {
 }
 
 # bats test_tags=exit:0
+@test "a push behind a wrapper such as timeout without a local green is refused" {
+  run run_cmd "git status; timeout 120 git push origin release 2>&1 | tail -3"
+  [ "$status" -eq 2 ]
+}
+
+@test "a word ending in git before push is no push" {
+  run run_cmd "legit push origin release"
+  [ "$status" -eq 0 ]
+}
+
+# bats test_tags=exit:0
 @test "a push from release whose tree ran green passes" {
   git rev-parse 'HEAD^{tree}' > .git/ci-local.ok
   run run_cmd "git push"
