@@ -54,6 +54,7 @@ public class CodeReviewRound {
     }
     Answer<RequestChange> read = notes.change(subject.project(), subject.url());
     if (read.facts().isEmpty()) {
+      panel.changeUnread(read);
       log.atWarn()
           .setMessage("code review change unread")
           .addKeyValue("request", subject.url())

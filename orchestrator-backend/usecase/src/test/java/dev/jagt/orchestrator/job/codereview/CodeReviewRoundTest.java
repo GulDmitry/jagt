@@ -58,6 +58,16 @@ class CodeReviewRoundTest {
   }
 
   @Test
+  void changeReadThatFailedIsHandedToThePanelAsTheJobsFailure() {
+    Answer<RequestChange> failed = Answer.failed(TokenUsage.NONE, "the host refused");
+    when(notes.change("shop", other.url())).thenReturn(failed);
+
+    round.run(other, new Settings(true, true, 5000, 2.55), "");
+
+    verify(panel).changeUnread(failed);
+  }
+
+  @Test
   void newHeadOfA1200LineRequestWithFourReviewsIsNotReviewedAgain() {
     when(ledger.row(other.url())).thenReturn(Optional.of(fourReviews));
     when(notes.change("shop", other.url()))

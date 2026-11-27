@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.codereview;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -10,6 +11,7 @@ import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
 import dev.jagt.orchestrator.job.codereview.request.Subject;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
+import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.service.CodeReviewSettings;
@@ -71,6 +73,26 @@ class BotAnswersTest {
     answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
 
     verifyNoInteractions(panel, poster, checkout);
+  }
+
+  @Test
+  void changeReadThatFailedIsHandedToThePanelAsTheJobsFailure() {
+    Answer<RequestChange> failed = Answer.failed(TokenUsage.NONE, "the host refused");
+    when(notes.notes("shop", subject.url()))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    List.of(
+                        RequestNote.defaults()
+                            .withId("5")
+                            .withThread("T1")
+                            .withKind(AuthorKind.BOT))),
+                TokenUsage.NONE));
+    when(notes.change("shop", subject.url())).thenReturn(failed);
+
+    answers.answer(subject, CodeReviewSettings.Settings.defaults(), "");
+
+    verify(panel).changeUnread(failed);
   }
 
   @Test

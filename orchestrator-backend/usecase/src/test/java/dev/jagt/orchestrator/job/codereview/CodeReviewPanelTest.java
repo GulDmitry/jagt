@@ -104,6 +104,20 @@ class CodeReviewPanelTest {
   }
 
   @Test
+  void changeReadThatFailedIsReportedAsItsJobsFailure() {
+    FakeJobFaults faults = new FakeJobFaults();
+
+    new CodeReviewPanel(
+            charged,
+            paths,
+            new ReviewReads(new RoundReader(assistants), ledger, faults),
+            new PreShipCoverage(stateService().withRoot(root).build()))
+        .changeUnread(Answer.failed(TokenUsage.NONE, "the host refused"));
+
+    assertThat(faults.causes()).containsExactly("the host refused");
+  }
+
+  @Test
   void anUnreadableBriefIsReportedAsItsJobsFailure() {
     when(paths.root()).thenReturn(root);
     FakeJobFaults faults = new FakeJobFaults();

@@ -32,6 +32,10 @@ public class ReviewReads {
     return reported(read.facts().orElse(Judgement.failed("the review answered nothing")));
   }
 
+  void unread(Answer<?> read) {
+    faults.faulted(read.failure().isBlank() ? "the request's change was unread" : read.failure());
+  }
+
   Judgement reported(Judgement judged) {
     if (!judged.failure().isBlank()) {
       faults.faulted(judged.failure());

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.codereview;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.job.codereview.request.Subject;
+import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
@@ -40,6 +41,11 @@ public class CodeReviewPanel {
   public Judgement review(Subject subject, RequestChange change, Path checkout, String model) {
     Judgement judged = judged(subject, prompt(subject, change, checkout), checkout, model);
     return subject.own() ? coverage.unseen(subject.taskId(), judged) : judged;
+  }
+
+  /** A change read that failed is its job's failure. */
+  public void changeUnread(Answer<RequestChange> read) {
+    reads.unread(read);
   }
 
   /** The first finding's issue is the answer to the newest note of {@code thread}. */

@@ -70,6 +70,7 @@ public class BotAnswers {
   private void reply(Subject subject, String thread, List<RequestNote> inThread, String model) {
     Answer<RequestChange> change = notes.change(subject.project(), subject.url());
     if (change.facts().isEmpty()) {
+      panel.changeUnread(change);
       return;
     }
     Optional<SubjectCheckout.Open> opened = checkout.open(subject, change.facts().get().headSha());
