@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import dev.jagt.orchestrator.flow.Reconciler.Decision;
+import dev.jagt.orchestrator.flow.ReconcilerProperties.FaultTable.Fault;
+import dev.jagt.orchestrator.flow.ReconcilerProperties.FaultTable.Response;
 import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
@@ -34,16 +36,22 @@ import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import net.jqwik.api.Example;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.cycle.CycleDetector;
@@ -63,43 +71,192 @@ class ReconcilerProperties {
       EnumSet.of(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING, TaskStatus.SHIPPING);
 
   @Example
-  void everyReachableStateKeepsSafetyAndReachesItsGoalWithinTheBoundButTheKnownRows() {
+  void everyStateOfTwoReposKeepsSafetyAndTheFaultTableAndReachesItsGoalButGreenChecksInProgress() {
     Model.Run run = new Model(chart, ACTS).explore();
 
     assertSoftly(soft -> {
       soft.assertThat(run.violations()).isEmpty();
       soft.assertThat(run.stalls(P4)).isEmpty();
-      soft.assertThat(run.states()).isEqualTo(22_021);
+      soft.assertThat(run.offTable())
+          .containsExactlyInAnyOrder(
+              "HostRead RETRY on a missed beat",
+              "JudgeRound RETRY on a missed beat",
+              "JudgeRound STOP on a missed beat",
+              "Deploy RETRY on a missed beat");
+      soft.assertThat(run.stalls(EnumSet.of(TaskStatus.VERIFYING, TaskStatus.SHIPPING)))
+          .anyMatch(stall -> stall.startsWith("IN_PROGRESS with green checks"));
+      soft.assertThat(run.states()).isEqualTo(29_980);
       soft.assertThat(Model.bound()).isEqualTo(14);
     });
   }
 
   @Example
-  void greenChecksInProgressStallWithNoMoverWithoutTheirKnownRow() {
-    Model.Run run = new Model(chart, ACTS).explore();
+  void theFaultTableListsEveryFaultAtEveryStepOnce() {
+    List<List<Object>> pairs =
+        FaultTable.CELLS.stream().map(cell -> List.<Object>of(cell.fault(), cell.step())).toList();
 
-    assertThat(run.stalls(EnumSet.of(TaskStatus.VERIFYING, TaskStatus.SHIPPING)))
-        .anyMatch(stall -> stall.startsWith("IN_PROGRESS with green checks"));
+    assertThat(pairs).doesNotHaveDuplicates().hasSize(72);
+  }
+
+  /**
+   * Decision 0261's fault by step table, one cell each; {@link #admitted()} is what the model
+   * admits per fault, the named stop ending any non-empty cell once its budget is spent (0260).
+   */
+  static final class FaultTable {
+
+    enum Fault {
+      SESSION_LIES(false),
+      SESSION_SILENT(true),
+      SESSION_DIES(false),
+      CHECKS_RED(false),
+      CHECKS_GREEN(false),
+      CHECKS_FLAKY(false),
+      CHECKS_SLOW(true),
+      CHECKS_UNREAD(false),
+      RESTART_EFFECT_UNRECORDED(false),
+      TOKEN_STALE(false),
+      READ_LANDS_LATE(false),
+      JOB_THROWS(false);
+
+      private final boolean missedBeat;
+
+      Fault(boolean missedBeat) {
+        this.missedBeat = missedBeat;
+      }
+
+      boolean missedBeat() {
+        return missedBeat;
+      }
+    }
+
+    enum Response {
+      RETRY,
+      RESTART,
+      STOP
+    }
+
+    record Cell(Fault fault, Class<? extends ProgressStep> step, Set<Response> responses) {}
+
+    static final List<Cell> CELLS =
+        Stream.of(
+                row(Fault.SESSION_LIES, "i", "i", "i", "i", "i", "i"),
+                row(Fault.SESSION_SILENT, "r→R→S", "i", "i", "i", "i", "i"),
+                row(Fault.SESSION_DIES, "R", "i", "i", "i", "i", "i"),
+                row(Fault.CHECKS_RED, "i", "S", "S", "r", "i", "r→S"),
+                row(Fault.CHECKS_GREEN, "i", "i", "i", "i", "i", "i"),
+                row(Fault.CHECKS_FLAKY, "i", "r", "r", "r", "i", "r"),
+                row(Fault.CHECKS_SLOW, "i", "r", "S", "r", "i", "S"),
+                row(Fault.CHECKS_UNREAD, "i", "i", "r", "i", "i", "S"),
+                row(Fault.RESTART_EFFECT_UNRECORDED, "i", "r", "r", "r", "r", "R"),
+                row(Fault.TOKEN_STALE, "i", "i", "i", "i", "i", "i"),
+                row(Fault.READ_LANDS_LATE, "i", "i", "i", "i", "i", "i"),
+                row(Fault.JOB_THROWS, "i", "i", "i", "i", "i", "i"))
+            .flatMap(List::stream)
+            .toList();
+
+    private FaultTable() {}
+
+    static Map<Fault, Map<Class<? extends ProgressStep>, Set<Response>>> admitted() {
+      return CELLS.stream()
+          .filter(cell -> !cell.responses().isEmpty())
+          .collect(
+              Collectors.groupingBy(
+                  Cell::fault,
+                  () -> new EnumMap<>(Fault.class),
+                  Collectors.toMap(Cell::step, FaultTable::ended)));
+    }
+
+    static Set<Response> admits(Fault fault, ProgressStep step) {
+      return CELLS.stream()
+          .filter(cell -> cell.fault() == fault && cell.step() == step.getClass())
+          .map(FaultTable::ended)
+          .findFirst()
+          .orElseThrow(() -> new IllegalStateException("unlisted pair " + fault + " x " + step));
+    }
+
+    private static Set<Response> ended(Cell cell) {
+      Set<Response> responses = EnumSet.noneOf(Response.class);
+      responses.addAll(cell.responses());
+      if (!responses.isEmpty()) {
+        responses.add(Response.STOP);
+      }
+      return responses;
+    }
+
+    private static List<Cell> row(Fault fault, String... outcomes) {
+      return IntStream.range(0, outcomes.length)
+          .mapToObj(
+              i -> new Cell(fault, ProgressStep.ALL.get(i).getClass(), responses(outcomes[i])))
+          .toList();
+    }
+
+    private static Set<Response> responses(String outcome) {
+      Set<Response> responses = EnumSet.noneOf(Response.class);
+      outcome
+          .chars()
+          .forEach(letter -> {
+            switch (letter) {
+              case 'r' -> responses.add(Response.RETRY);
+              case 'R' -> responses.add(Response.RESTART);
+              case 'S' -> responses.add(Response.STOP);
+              default -> {}
+            }
+          });
+      return Set.copyOf(responses);
+    }
   }
 
   static final class Model {
 
     private static final Duration BEAT = Duration.ofMinutes(1);
     private static final int SHOWN = 5;
+    private static final int REPOS = 2;
 
+    /**
+     * {@code checks} keeps a round's worst verdict alone: the next round reads both requests again.
+     */
     record World(
-        Configuration chart, Pipeline checks, Pipeline deploy, Map<ProgressStep, Integer> beats) {
+        Configuration chart,
+        Pipeline checks,
+        List<Pipeline> targets,
+        Map<ProgressStep, Integer> beats) {
 
       TaskStatus status() {
         return chart.get(LIFECYCLE);
+      }
+
+      Pipeline deploy() {
+        return worst(targets.stream());
+      }
+
+      static Pipeline worst(Stream<Pipeline> said) {
+        return said.min(Comparator.comparingInt(Pipeline::severity)).orElseThrow();
+      }
+
+      World withChart(Configuration next) {
+        return new World(next, checks, targets, beats);
+      }
+
+      World withChecks(Pipeline read) {
+        return new World(chart, read, targets, beats);
+      }
+
+      World withTargets(UnaryOperator<Pipeline> change) {
+        return new World(chart, checks, targets.stream().map(change).sorted().toList(), beats);
+      }
+
+      World withTarget(int index, Pipeline read) {
+        List<Pipeline> next = new ArrayList<>(targets);
+        next.set(index, read);
+        return new World(chart, checks, next.stream().sorted().toList(), beats);
       }
 
       String described() {
         return status()
             + " with "
             + checks.name().toLowerCase(Locale.ROOT)
-            + " checks, deploy "
-            + deploy.name().toLowerCase(Locale.ROOT)
+            + " checks, deploy targets "
+            + targets
             + ", beats "
             + beats.entrySet().stream()
                 .map(beat -> beat.getKey().getClass().getSimpleName() + "=" + beat.getValue())
@@ -119,6 +276,7 @@ class ReconcilerProperties {
         Map<World, @Nullable Arrival> reached,
         Map<World, World> silences,
         List<String> violations,
+        Set<String> offTable,
         Model model) {
 
       int states() {
@@ -141,12 +299,11 @@ class ReconcilerProperties {
     Run explore() {
       Map<World, @Nullable Arrival> reached = new LinkedHashMap<>();
       Map<World, World> silences = new HashMap<>();
-      List<String> violations = new ArrayList<>();
       Deque<World> frontier = new ArrayDeque<>();
       World start = start();
       reached.put(start, null);
       frontier.add(start);
-      Run run = new Run(reached, silences, violations, this);
+      Run run = new Run(reached, silences, new ArrayList<>(), new TreeSet<>(), this);
       while (!frontier.isEmpty()) {
         World at = frontier.poll();
         silences.put(at, tick(run, at, true, "silence"));
@@ -167,8 +324,8 @@ class ReconcilerProperties {
     }
 
     private World start() {
-      return reflight(
-          new World(chart.chart().initial(), Pipeline.UNKNOWN, Pipeline.UNKNOWN, Map.of()));
+      List<Pipeline> unread = List.of(Pipeline.UNKNOWN, Pipeline.UNKNOWN);
+      return reflight(new World(chart.chart().initial(), Pipeline.UNKNOWN, unread, Map.of()));
     }
 
     private Reconciler.Stored stored(World world, long lastAt) {
@@ -187,19 +344,43 @@ class ReconcilerProperties {
       boolean read = world.chart().get(CHECKS) == ChecksPhase.READ;
       boolean deployed = world.status() == TaskStatus.DEPLOYED;
       return new World(
-          world.chart(),
-          read ? world.checks() : Pipeline.UNKNOWN,
-          deployed ? world.deploy() : Pipeline.UNKNOWN,
-          Map.copyOf(beats));
+              world.chart(),
+              read ? world.checks() : Pipeline.UNKNOWN,
+              world.targets(),
+              Map.copyOf(beats))
+          .withTargets(target -> deployed ? target : Pipeline.UNKNOWN);
     }
 
     private World tick(Run run, World at, boolean aging, String after) {
       long now = aging ? BEAT.toMillis() : 0;
       Decision decision = reconciler.decide(stored(at, 0), now);
       safety(run, at, decision, after);
+      if (aging) {
+        tabled(run, decision);
+      }
       World next = reflight(decided(run, at, decision));
       restarted(run, at, next, decision, now);
       return next;
+    }
+
+    private static void tabled(Run run, Decision decision) {
+      Optional<Response> response =
+          switch (decision) {
+            case Decision.Retry retry -> Optional.of(Response.RETRY);
+            case Decision.Restart restart -> Optional.of(Response.RESTART);
+            case Decision.Stop stop -> Optional.of(Response.STOP);
+            default -> Optional.empty();
+          };
+      ProgressStep step = stepOf(decision);
+      Set<Response> admitted = EnumSet.noneOf(Response.class);
+      Arrays.stream(Fault.values())
+          .filter(Fault::missedBeat)
+          .forEach(fault -> admitted.addAll(FaultTable.admits(fault, step)));
+      response
+          .filter(taken -> !admitted.contains(taken))
+          .ifPresent(taken ->
+              run.offTable()
+                  .add(step.getClass().getSimpleName() + " " + taken + " on a missed beat"));
     }
 
     private World decided(Run run, World at, Decision decision) {
@@ -212,16 +393,16 @@ class ReconcilerProperties {
       };
     }
 
-    private World retried(World at, ProgressStep step) {
+    private static World retried(World at, ProgressStep step) {
       return step instanceof ProgressStep.Deploy
-          ? new World(at.chart(), at.checks(), Pipeline.RUNNING, at.beats())
+          ? at.withTargets(target -> target == Pipeline.GREEN ? target : Pipeline.RUNNING)
           : at;
     }
 
     private static World bumped(World at, ProgressStep step) {
       Map<ProgressStep, Integer> beats = new HashMap<>(at.beats());
       beats.merge(step, 1, Integer::sum);
-      return new World(at.chart(), at.checks(), at.deploy(), Map.copyOf(beats));
+      return new World(at.chart(), at.checks(), at.targets(), Map.copyOf(beats));
     }
 
     private void safety(Run run, World at, Decision decision, String after) {
@@ -242,15 +423,18 @@ class ReconcilerProperties {
       return step instanceof ProgressStep.SessionTurn || step instanceof ProgressStep.JudgeRound;
     }
 
+    private static ProgressStep stepOf(Decision decision) {
+      return switch (decision) {
+        case Decision.Land land -> land.step();
+        case Decision.Retry retry -> retry.step();
+        case Decision.Restart restart -> restart.step();
+        case Decision.Stop halt -> halt.step();
+        case Decision.Stay stay -> new ProgressStep.SessionTurn();
+      };
+    }
+
     private static boolean named(StopKind stop, Decision decision) {
-      ProgressStep step =
-          switch (decision) {
-            case Decision.Land land -> land.step();
-            case Decision.Retry retry -> retry.step();
-            case Decision.Restart restart -> restart.step();
-            case Decision.Stop halt -> halt.step();
-            case Decision.Stay stay -> new ProgressStep.SessionTurn();
-          };
+      ProgressStep step = stepOf(decision);
       return (stop == StopKind.HOST_READ && step instanceof ProgressStep.HostRead)
           || (stop == StopKind.DEPLOY_READ && step instanceof ProgressStep.Deploy);
     }
@@ -274,7 +458,7 @@ class ReconcilerProperties {
         violation(
             run, at, "S1 a status change is not one fired edge: " + lifecycle, move.toString());
       }
-      return new World(step.configuration(), at.checks(), at.deploy(), at.beats());
+      return at.withChart(step.configuration());
     }
 
     private ChartFacts facts(World at, @Nullable ActionOrigin origin) {
@@ -290,7 +474,8 @@ class ReconcilerProperties {
               .withHold(
                   none.hold()
                       .withStopped(stop != StopKind.NONE && stop != StopKind.PAUSE)
-                      .withPaused(stop == StopKind.PAUSE));
+                      .withPaused(stop == StopKind.PAUSE))
+              .withWorkspace(none.workspace().withSeveralRepos(true));
       return new ChartFacts(false, Map.of(), read, origin);
     }
 
@@ -311,8 +496,8 @@ class ReconcilerProperties {
     }
 
     private List<Env> moves(World at) {
-      List<Env> moves = new ArrayList<>(Env.session());
-      moves.addAll(Env.host(at));
+      List<Env> moves = new ArrayList<>(Env.hostFacts(at));
+      Arrays.stream(Fault.values()).forEach(fault -> moves.addAll(Env.realising(fault, at)));
       moves.addAll(presses(at));
       return moves;
     }
@@ -320,13 +505,7 @@ class ReconcilerProperties {
     private List<Env> presses(World at) {
       List<Env> presses = new ArrayList<>();
       for (TaskAction action : TaskAction.values()) {
-        if (chart
-            .chart()
-            .takes(
-                LIFECYCLE,
-                at.chart(),
-                facts(at, ActionOrigin.BOARD),
-                new TaskMove.Offers(action))) {
+        if (offered(at, action)) {
           Arrays.stream(Outcome.Kind.values())
               .forEach(outcome ->
                   presses.add(
@@ -423,11 +602,34 @@ class ReconcilerProperties {
 
     interface Env {
 
+      Set<Pipeline> READ = EnumSet.of(Pipeline.RED, Pipeline.RUNNING, Pipeline.GREEN);
+
+      TaskMove LINKS_EVERY_REQUEST = new TaskMove.RequestLinked(Map.of(), "u", false, false, true);
+
       String label();
 
       World apply(Model model, Run run, World at);
 
-      static List<Env> session() {
+      /** The moves a fault takes in the model; a fault the model meets elsewhere takes none. */
+      static List<Env> realising(Fault fault, World at) {
+        return switch (fault) {
+          case SESSION_LIES -> session();
+          case CHECKS_RED -> red(at);
+          case CHECKS_GREEN -> said(at, Pipeline.GREEN);
+          case CHECKS_SLOW -> said(at, Pipeline.RUNNING);
+          case CHECKS_UNREAD -> unread(at);
+          case SESSION_SILENT,
+              SESSION_DIES,
+              CHECKS_FLAKY,
+              RESTART_EFFECT_UNRECORDED,
+              TOKEN_STALE,
+              READ_LANDS_LATE,
+              JOB_THROWS ->
+              List.of();
+        };
+      }
+
+      private static List<Env> session() {
         List<Env> moves = new ArrayList<>();
         StatusSets.REPORTED.stream()
             .filter(status -> status != TaskStatus.CI_POLLING)
@@ -440,17 +642,9 @@ class ReconcilerProperties {
         return moves;
       }
 
-      static List<Env> host(World at) {
-        List<Env> moves = new ArrayList<>(deploys(at));
-        if (at.chart().get(REQUEST) != RequestPhase.OPEN) {
-          return moves;
-        }
-        moves.add(new Session(new TaskMove.ApprovalRead(true)));
-        moves.add(new Session(new TaskMove.ApprovalRead(false)));
-        moves.add(new Session(new TaskMove.ChecksUnread(new ChecksUnread(0, "down"))));
-        EnumSet.of(Pipeline.RED, Pipeline.GREEN, Pipeline.RUNNING)
-            .forEach(said -> moves.add(new ChecksSay(said)));
-        if (at.checks() == Pipeline.RED) {
+      private static List<Env> red(World at) {
+        List<Env> moves = new ArrayList<>(said(at, Pipeline.RED));
+        if (at.chart().get(REQUEST) == RequestPhase.OPEN && at.checks() == Pipeline.RED) {
           moves.add(
               new Session(
                   new TaskMove.InfraArmed(InfraRetry.armed(0, "api", "u", "j", "r", 1, 2))));
@@ -458,16 +652,35 @@ class ReconcilerProperties {
         return moves;
       }
 
-      private static List<Env> deploys(World at) {
-        if (at.status() != TaskStatus.DEPLOYED) {
-          return List.of();
-        }
+      /** Every round whose worst verdict is {@code said}, and each target reading it. */
+      private static List<Env> said(World at, Pipeline said) {
         List<Env> moves = new ArrayList<>();
-        if (at.chart().get(DEPLOY) == DeployPhase.NONE) {
+        if (at.chart().get(REQUEST) == RequestPhase.OPEN) {
+          READ.stream()
+              .filter(other -> other.severity() >= said.severity())
+              .forEach(other -> moves.add(new ChecksRound(said, other)));
+        }
+        if (at.status() == TaskStatus.DEPLOYED) {
+          IntStream.range(0, REPOS).forEach(target -> moves.add(new DeploySays(target, said)));
+        }
+        return moves;
+      }
+
+      private static List<Env> unread(World at) {
+        return at.chart().get(REQUEST) == RequestPhase.OPEN
+            ? List.of(new Session(new TaskMove.ChecksUnread(new ChecksUnread(0, "down"))))
+            : List.of();
+      }
+
+      static List<Env> hostFacts(World at) {
+        List<Env> moves = new ArrayList<>();
+        if (at.status() == TaskStatus.DEPLOYED && at.chart().get(DEPLOY) == DeployPhase.NONE) {
           moves.add(new Session(new TaskMove.DeployStepped(new DeployStep.Opened(List.of()))));
         }
-        EnumSet.of(Pipeline.RED, Pipeline.GREEN, Pipeline.RUNNING)
-            .forEach(said -> moves.add(new DeploySays(said)));
+        if (at.chart().get(REQUEST) == RequestPhase.OPEN) {
+          moves.add(new Session(new TaskMove.ApprovalRead(true)));
+          moves.add(new Session(new TaskMove.ApprovalRead(false)));
+        }
         return moves;
       }
 
@@ -494,17 +707,12 @@ class ReconcilerProperties {
 
         @Override
         public String label() {
-          return "reported CI_POLLING with its request";
+          return "reported CI_POLLING with every request";
         }
 
         @Override
         public World apply(Model model, Run run, World at) {
-          World linked =
-              model.stepped(
-                  run,
-                  at,
-                  new TaskMove.RequestLinked(Map.of(), "u", false, false, true),
-                  ActionOrigin.MCP);
+          World linked = model.stepped(run, at, LINKS_EVERY_REQUEST, ActionOrigin.MCP);
           return model.stepped(
               run, linked, new TaskMove.Reported(TaskStatus.CI_POLLING, false), ActionOrigin.MCP);
         }
@@ -529,11 +737,7 @@ class ReconcilerProperties {
         public World apply(Model model, Run run, World at) {
           World shipped =
               move.equals(new TaskMove.Ran(TaskAction.SHIP, Outcome.Kind.OK))
-                  ? model.stepped(
-                      run,
-                      at,
-                      new TaskMove.RequestLinked(Map.of(), "u", false, false, true),
-                      origin)
+                  ? model.stepped(run, at, LINKS_EVERY_REQUEST, origin)
                   : at;
           World pressed = model.stepped(run, shipped, move, origin);
           boolean deploys =
@@ -542,28 +746,29 @@ class ReconcilerProperties {
                   && StatusSets.WAITING_FOR_A_DEPLOY.contains(at.status())
                   && pressed.status() != at.status();
           if (deploys && !green(at)) {
-            model.violation(run, at, "S3 a deploy on facts not green", label());
+            model.violation(run, at, "S3 a deploy while a request is unready", label());
           }
           return pressed;
         }
       }
 
-      record ChecksSay(Pipeline said) implements Env {
+      record ChecksRound(Pipeline first, Pipeline second) implements Env {
 
         @Override
         public String label() {
-          return "checks read " + said;
+          return "round reads " + first + " and " + second;
         }
 
         @Override
         public World apply(Model model, Run run, World at) {
-          World read =
-              model.stepped(
+          Pipeline worst = World.worst(Stream.of(first, second));
+          return model
+              .stepped(
                   run,
                   at,
-                  new TaskMove.ChecksRead(word(said), "tip", true),
-                  ActionOrigin.CODE_HOST);
-          return new World(read.chart(), said, read.deploy(), read.beats());
+                  new TaskMove.ChecksRead(word(worst), "tip", true),
+                  ActionOrigin.CODE_HOST)
+              .withChecks(worst);
         }
 
         static String word(Pipeline said) {
@@ -575,16 +780,16 @@ class ReconcilerProperties {
         }
       }
 
-      record DeploySays(Pipeline said) implements Env {
+      record DeploySays(int target, Pipeline said) implements Env {
 
         @Override
         public String label() {
-          return "deploy pipeline read " + said;
+          return "deploy target " + target + " read " + said;
         }
 
         @Override
         public World apply(Model model, Run run, World at) {
-          return new World(at.chart(), at.checks(), said, at.beats());
+          return at.withTarget(target, said);
         }
       }
     }
