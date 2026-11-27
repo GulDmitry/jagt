@@ -9,11 +9,13 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.Master;
+import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.plan.PlanGate;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.AgentReport;
@@ -24,6 +26,7 @@ import dev.jagt.orchestrator.testing.FakeHost;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -92,6 +95,19 @@ class TaskTurnsTest {
     state.reduce("ABC-42", (reducer, task) -> TaskTurns.closed(reducer, task));
 
     assertThat(state.task("ABC-42").orElseThrow().gate().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
+
+  @Test
+  void theHostHoldsApprovedRequestWhileItsChecksRunWhereTheMasterDeploys() {
+    TaskState approved =
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+            .mrUrl("http://mr/1")
+            .pipelineStatus("running")
+            .build();
+
+    Turn.Holder holder = turns.next(approved, new Arbiter.Profile(MasterMode.ACT, Set.of()));
+
+    assertThat(holder).isEqualTo(Turn.Holder.CI);
   }
 
   @Nested

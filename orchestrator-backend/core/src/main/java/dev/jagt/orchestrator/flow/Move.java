@@ -122,12 +122,18 @@ public record Move(
         phaseOf(status),
         owner,
         attention,
-        ask(status, hasReviewRequest, round, agentSilent, attention, checksPending(facts)),
+        ask(
+            status,
+            hasReviewRequest,
+            round,
+            agentSilent,
+            attention,
+            facts.delivery().checksPending()),
         rules.allowed(status, facts),
         revertLeads(
             status,
             facts,
-            primaryOf(status, hasReviewRequest, round, polled, checksPending(facts))),
+            primaryOf(status, hasReviewRequest, round, polled, facts.delivery().checksPending())),
         hint(status, hasReviewRequest, round, agentSilent, polled, facts));
   }
 
@@ -311,23 +317,13 @@ public record Move(
   private static Owner turnOf(TaskStatus status, RoundState round, Facts facts) {
     return Owner.of(
         Turns.next(
-            status,
-            round.report(),
-            StopHold.NONE,
-            round.checkers(),
-            round.arbiter(),
-            facts.reach().requireApproval(),
-            checksPending(facts)));
+            status, round.report(), StopHold.NONE, round.checkers(), round.arbiter(), facts));
   }
 
   private static String approvedHint(Facts facts) {
-    return checksPending(facts)
+    return facts.delivery().checksPending()
         ? "approved: deploy waits for the checks to read green on the head"
         : "approved: deploy or done";
-  }
-
-  private static boolean checksPending(Facts facts) {
-    return facts.delivery().hasReviewRequest() && !facts.delivery().checksGreen();
   }
 
   private static boolean arbiterReading(TaskStatus status, RoundState round) {

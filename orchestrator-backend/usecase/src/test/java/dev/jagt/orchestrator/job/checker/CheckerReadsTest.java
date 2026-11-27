@@ -15,7 +15,9 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.job.checker.workspace.CheckerWorkspace;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
@@ -91,9 +93,10 @@ class CheckerReadsTest {
               Turns.next(
                   task.standing().status(),
                   task.standing().report(),
-                  task.work().stopped(),
+                  task.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
                   new Checkers(new TaskChart(Composition.builtIn())).of(task),
-                  Arbiter.Profile.OFF));
+                  Arbiter.Profile.OFF,
+                  Facts.defaults()));
           return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
 
@@ -112,9 +115,10 @@ class CheckerReadsTest {
             Turns.next(
                 after.standing().status(),
                 after.standing().report(),
-                after.work().stopped(),
+                after.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
                 new Checkers(new TaskChart(Composition.builtIn())).of(after),
-                Arbiter.Profile.OFF))
+                Arbiter.Profile.OFF,
+                Facts.defaults()))
         .isEqualTo(Turn.Holder.NOBODY);
   }
 

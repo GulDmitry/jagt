@@ -225,7 +225,7 @@ class ReconcilerProperties {
     }
 
     private void safety(Run run, World at, Decision decision, String after) {
-      Holder holder = reconciler.holder(at.chart());
+      Holder holder = reconciler.holder(stored(at, 0));
       boolean relays =
           (decision instanceof Decision.Retry retry && holdsTheTurn(retry.step()))
               || (decision instanceof Decision.Restart restart && holdsTheTurn(restart.step()));
@@ -391,7 +391,7 @@ class ReconcilerProperties {
       if (landingOwed(at) && !known.contains(at.status())) {
         return false;
       }
-      Holder holder = reconciler.holder(at.chart());
+      Holder holder = reconciler.holder(stored(at, 0));
       return at.status() == TaskStatus.DONE
           || (at.status() == TaskStatus.DEPLOYED
               && !at.beats().containsKey(new ProgressStep.Deploy()))

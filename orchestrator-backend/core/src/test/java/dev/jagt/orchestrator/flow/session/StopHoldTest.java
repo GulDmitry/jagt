@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow.session;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -37,7 +38,8 @@ class StopHoldTest {
             task.standing().report(),
             StopHold.of(task, ACT),
             Map.of(),
-            ACT);
+            ACT,
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(Holder.ARBITER);
   }

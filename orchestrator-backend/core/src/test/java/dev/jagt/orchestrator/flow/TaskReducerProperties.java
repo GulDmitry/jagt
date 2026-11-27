@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.flow.repo.RepoPhase;
 import dev.jagt.orchestrator.flow.repo.RequestPhase;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
@@ -369,10 +370,11 @@ class TaskReducerProperties {
                                       Turns.next(
                                               moved.standing().status(),
                                               moved.standing().report(),
-                                              false,
+                                              StopHold.NONE,
                                               new Checkers(new TaskChart(Composition.builtIn()))
                                                   .of(moved),
-                                              Arbiter.Profile.OFF)
+                                              Arbiter.Profile.OFF,
+                                              Facts.defaults())
                                           .equals(new Turn.Holder.Role("acceptance")))
                                   .isEqualTo(
                                       CheckerPhase.of(moved, Checkers.ACCEPTANCE)

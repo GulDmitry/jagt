@@ -9,6 +9,7 @@ import static dev.jagt.orchestrator.flow.ChartRegions.REPORT;
 import static dev.jagt.orchestrator.flow.ChartRegions.REQUEST;
 import static dev.jagt.orchestrator.flow.ChartRegions.STOP;
 
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.deploy.ApprovalPhase;
 import dev.jagt.orchestrator.flow.deploy.ChecksPhase;
 import dev.jagt.orchestrator.flow.deploy.DeployPhase;
@@ -82,19 +83,33 @@ record Reconciler(Composition composition, Arbiter.Profile profile, Duration bea
     return running.stream().filter(step -> endsOn(step) == stop).toList();
   }
 
-  Holder holder(Configuration chart) {
+  Holder holder(Stored task) {
+    Configuration chart = task.chart();
     return Turns.next(
         chart.get(LIFECYCLE),
         chart.get(REPORT),
         chart.get(STOP) == StopKind.NONE ? StopHold.NONE : StopHold.HUMAN,
         checkers(chart),
-        profile.at(chart.get(MasterRegion.REGION)));
+        profile.at(chart.get(MasterRegion.REGION)),
+        facts(task));
+  }
+
+  private static Facts facts(Stored task) {
+    Configuration chart = task.chart();
+    boolean checksGreen =
+        chart.get(CHECKS) != ChecksPhase.UNREAD
+            && (task.checks() == Pipeline.GREEN || task.checks() == Pipeline.NONE);
+    return Facts.defaults()
+        .withDelivery(
+            Facts.Delivery.defaults()
+                .withHasReviewRequest(chart.get(REQUEST) != RequestPhase.NONE)
+                .withChecksGreen(checksGreen));
   }
 
   private List<ProgressStep> running(Stored task) {
     Configuration chart = task.chart();
     TaskStatus status = chart.get(LIFECYCLE);
-    Holder holder = holder(chart);
+    Holder holder = holder(task);
     return ProgressStep.ALL.stream()
         .filter(step ->
             switch (step) {

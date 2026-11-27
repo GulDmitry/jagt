@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -19,51 +20,17 @@ public final class Turns {
   private Turns() {}
 
   /**
-   * As {@link #next(TaskStatus, AgentReport, StopHold, Map, Arbiter.Profile)}, a stop standing
-   * being the human's.
-   */
-  public static Holder next(
-      TaskStatus status,
-      AgentReport report,
-      boolean stopped,
-      Map<String, CheckerPhase> checkers,
-      Arbiter.Profile profile) {
-    return next(status, report, stopped ? StopHold.HUMAN : StopHold.NONE, checkers, profile);
-  }
-
-  /**
    * A question rides on the plan or round the Master reads; elsewhere no model grants a right. A
-   * check a checker reads holds it.
+   * check a checker reads holds it; the approval a request waits on and its checks are {@code
+   * facts}.
    */
   public static Holder next(
       TaskStatus status,
       AgentReport report,
       StopHold stop,
       Map<String, CheckerPhase> checkers,
-      Arbiter.Profile profile) {
-    return next(status, report, stop, checkers, profile, false);
-  }
-
-  /** As above, where {@code requireApproval} leaves a read request waiting on the code host. */
-  public static Holder next(
-      TaskStatus status,
-      AgentReport report,
-      StopHold stop,
-      Map<String, CheckerPhase> checkers,
       Arbiter.Profile profile,
-      boolean requireApproval) {
-    return next(status, report, stop, checkers, profile, requireApproval, false);
-  }
-
-  /** As above, where {@code checksPending} leaves a request waiting for a deploy on its checks. */
-  public static Holder next(
-      TaskStatus status,
-      AgentReport report,
-      StopHold stop,
-      Map<String, CheckerPhase> checkers,
-      Arbiter.Profile profile,
-      boolean requireApproval,
-      boolean checksPending) {
+      Facts facts) {
     if (FlowRules.closed(status)) {
       return Holder.NOBODY;
     }
@@ -80,7 +47,7 @@ public final class Turns {
     if (report.asks()) {
       return asked(report, profile);
     }
-    Holder deploy = deploying(status, profile, requireApproval, checksPending);
+    Holder deploy = deploying(status, profile, facts);
     if (deploy != null) {
       return deploy;
     }
@@ -91,11 +58,11 @@ public final class Turns {
   }
 
   private static @Nullable Holder deploying(
-      TaskStatus status, Arbiter.Profile profile, boolean requireApproval, boolean checksPending) {
-    if (checksPending && StatusSets.waitsForDeploy(status)) {
+      TaskStatus status, Arbiter.Profile profile, Facts facts) {
+    if (facts.delivery().checksPending() && StatusSets.waitsForDeploy(status)) {
       return Holder.CI;
     }
-    return FlowRules.deployedByTheArbiter(status, requireApproval)
+    return FlowRules.deployedByTheArbiter(status, facts.reach().requireApproval())
             && profile.may(MasterRight.DEPLOY)
         ? Holder.ARBITER
         : null;

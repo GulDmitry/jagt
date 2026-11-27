@@ -3,8 +3,10 @@ package dev.jagt.orchestrator.service.turn;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.session.SessionStanding;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -42,9 +44,10 @@ public class TaskTurns {
     return Turns.next(
         task.standing().status(),
         task.standing().report(),
-        task.work().stopped(),
+        task.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
         checkers.of(task),
-        profile);
+        profile,
+        Facts.projected(task));
   }
 
   public Turn of(String taskId) {

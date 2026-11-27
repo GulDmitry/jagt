@@ -38,6 +38,10 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
     public static Delivery defaults() {
       return new Delivery(false, false, false, false, false, false, () -> false);
     }
+
+    public boolean checksPending() {
+      return hasReviewRequest && !checksGreen;
+    }
   }
 
   /**

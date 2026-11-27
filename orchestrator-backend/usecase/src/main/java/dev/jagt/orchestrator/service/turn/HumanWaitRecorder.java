@@ -78,7 +78,6 @@ public class HumanWaitRecorder {
         StopHold.of(task, round.arbiter()),
         checkers.of(task),
         round.arbiter(),
-        round.reach().requireApproval(),
-        task.hasReviewRequest() && !Facts.checksGreen(task));
+        Facts.projected(task).withReach(round.reach()));
   }
 }

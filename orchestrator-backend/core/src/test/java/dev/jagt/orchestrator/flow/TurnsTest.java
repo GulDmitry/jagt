@@ -62,9 +62,10 @@ class TurnsTest {
                 Turns.next(
                     Objects.requireNonNull((TaskStatus) row.get()[0]),
                     Objects.requireNonNull((AgentReport) row.get()[1]),
-                    false,
+                    StopHold.NONE,
                     Map.of(),
-                    Objects.requireNonNull(PROFILES.get((String) row.get()[2]))),
+                    Objects.requireNonNull(PROFILES.get((String) row.get()[2])),
+                    Facts.defaults()),
                 Holder.ARBITER));
   }
 
@@ -73,7 +74,13 @@ class TurnsTest {
   void namesExactlyOneHolderForEveryStatusReportAndProfile(
       TaskStatus status, AgentReport report, String profile) {
     Holder holder =
-        Turns.next(status, report, false, Map.of(), Objects.requireNonNull(PROFILES.get(profile)));
+        Turns.next(
+            status,
+            report,
+            StopHold.NONE,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     assertThat(holder).isInstanceOf(Holder.Fixed.class);
   }
@@ -83,7 +90,13 @@ class TurnsTest {
   void theBoardShowsTheHolderWhereNoMasterHoldsTheTurn(
       TaskStatus status, AgentReport report, String profile) {
     Holder holder =
-        Turns.next(status, report, false, Map.of(), Objects.requireNonNull(PROFILES.get(profile)));
+        Turns.next(
+            status,
+            report,
+            StopHold.NONE,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     Move move =
         Move.forTask(
@@ -128,7 +141,13 @@ class TurnsTest {
   void taskJagtStoppedIsTheHumansWhereverTheMasterStands(
       TaskStatus status, AgentReport report, String profile, Holder.Fixed expected) {
     Holder holder =
-        Turns.next(status, report, true, Map.of(), Objects.requireNonNull(PROFILES.get(profile)));
+        Turns.next(
+            status,
+            report,
+            StopHold.HUMAN,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(expected);
   }
@@ -143,7 +162,13 @@ class TurnsTest {
   void roundTheMasterReadsIsItsTurnAndTheBoardSaysMasterReview(
       TaskStatus status, AgentReport report, String profile) {
     Holder holder =
-        Turns.next(status, report, false, Map.of(), Objects.requireNonNull(PROFILES.get(profile)));
+        Turns.next(
+            status,
+            report,
+            StopHold.NONE,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     Move move =
         Move.forTask(
@@ -172,7 +197,13 @@ class TurnsTest {
   void theMasterHoldsTheTurnOnlyWhereItStandsInForTheHuman(
       TaskStatus status, AgentReport report, String profile, Holder.Fixed expected) {
     Holder holder =
-        Turns.next(status, report, false, Map.of(), Objects.requireNonNull(PROFILES.get(profile)));
+        Turns.next(
+            status,
+            report,
+            StopHold.NONE,
+            Map.of(),
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(expected);
   }
@@ -188,7 +219,7 @@ class TurnsTest {
             StopHold.NONE,
             Map.of(),
             Objects.requireNonNull(PROFILES.get("act")),
-            true);
+            Facts.defaults().withReach(Facts.Reach.defaults().withRequireApproval(true)));
 
     assertThat(holder).isEqualTo(expected);
   }
@@ -215,9 +246,10 @@ class TurnsTest {
         Turns.next(
             TaskStatus.IN_PROGRESS,
             AgentReport.WAIT,
-            false,
+            StopHold.NONE,
             Map.of(),
-            Objects.requireNonNull(PROFILES.get(profile)));
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(Holder.SESSION);
   }
@@ -230,9 +262,10 @@ class TurnsTest {
         Turns.next(
             TaskStatus.DEPLOYED,
             AgentReport.PLAIN,
-            false,
+            StopHold.NONE,
             Map.of("acceptance", CheckerPhase.READING),
-            Objects.requireNonNull(PROFILES.get(profile)));
+            Objects.requireNonNull(PROFILES.get(profile)),
+            Facts.defaults());
 
     Move move =
         Move.forTask(
@@ -258,8 +291,7 @@ class TurnsTest {
             StopHold.NONE,
             Map.of(),
             Objects.requireNonNull(PROFILES.get("act")),
-            false,
-            true);
+            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)));
 
     assertThat(holder).isEqualTo(Holder.CI);
   }
@@ -270,9 +302,10 @@ class TurnsTest {
         Turns.next(
             TaskStatus.DEPLOYED,
             AgentReport.PLAIN,
-            false,
+            StopHold.NONE,
             Map.of(),
-            Objects.requireNonNull(PROFILES.get("act")));
+            Objects.requireNonNull(PROFILES.get("act")),
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(Holder.NOBODY);
   }
@@ -283,9 +316,10 @@ class TurnsTest {
         Turns.next(
             TaskStatus.DEPLOYED,
             AgentReport.PLAIN,
-            true,
+            StopHold.HUMAN,
             Map.of("acceptance", CheckerPhase.READING),
-            Objects.requireNonNull(PROFILES.get("act")));
+            Objects.requireNonNull(PROFILES.get("act")),
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(Holder.HUMAN);
   }
@@ -302,9 +336,10 @@ class TurnsTest {
         Turns.next(
             sealed.standing().status(),
             sealed.standing().report(),
-            sealed.work().stopped(),
+            sealed.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
             new Checkers(new TaskChart(Composition.builtIn())).of(sealed),
-            new Arbiter.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
+            new Arbiter.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)),
+            Facts.defaults());
 
     assertThat(holder).isEqualTo(Holder.ARBITER);
   }
@@ -329,9 +364,10 @@ class TurnsTest {
         Turns.next(
             status,
             report,
-            stopped,
+            stopped ? StopHold.HUMAN : StopHold.NONE,
             Map.of("acceptance", acceptance),
-            new Arbiter.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
+            new Arbiter.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT),
+            Facts.defaults());
 
     assertThat(holder).isNotEqualTo(Holder.ARBITER);
   }

@@ -10,11 +10,13 @@ import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.stop.TaskStop;
+import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -156,6 +158,28 @@ class ReconcilerTest {
     Decision decided = reconciler.decide(task, now);
 
     assertThat(decided).isEqualTo(expected);
+  }
+
+  @Test
+  void theHostHoldsApprovedRequestWhileItsChecksRunWhereTheMasterDeploys() {
+    Map<String, String> plain = new HashMap<>(chart.chart().initial().toPlain());
+    plain.putAll(Map.of("lifecycle", "APPROVED", "request", "OPEN", "checks", "READ"));
+    Reconciler.Stored task =
+        new Reconciler.Stored(
+            chart.chart().configuration(plain), Pipeline.RUNNING, Pipeline.UNKNOWN, Map.of());
+
+    assertThat(reconciler.holder(task)).isEqualTo(Turn.Holder.CI);
+  }
+
+  @Test
+  void theHostHoldsApprovedRequestWhoseLastReadOfItsChecksFailedEvenWhereTheStoredReadIsGreen() {
+    Map<String, String> plain = new HashMap<>(chart.chart().initial().toPlain());
+    plain.putAll(Map.of("lifecycle", "APPROVED", "request", "OPEN", "checks", "UNREAD"));
+    Reconciler.Stored task =
+        new Reconciler.Stored(
+            chart.chart().configuration(plain), Pipeline.GREEN, Pipeline.UNKNOWN, Map.of());
+
+    assertThat(reconciler.holder(task)).isEqualTo(Turn.Holder.CI);
   }
 
   static Stream<Arguments> stops() {

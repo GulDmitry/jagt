@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.deploy.DeployStep;
+import dev.jagt.orchestrator.flow.session.StopHold;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -77,9 +78,10 @@ class ConflictStall {
         && Turns.next(
                 task.standing().status(),
                 AgentReport.QUESTION,
-                task.work().stopped(),
+                task.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
                 checkers.of(task),
-                config.load().arbiter().profile())
+                config.load().arbiter().profile(),
+                Facts.projected(task))
             .equals(Turn.Holder.ARBITER);
   }
 
