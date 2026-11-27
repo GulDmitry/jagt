@@ -19,11 +19,12 @@ class OrchestratorLaunchTest {
   }
 
   @Test
-  void pinsTheDefaultDataFolderUnderTheNamedRoot() {
+  void pinsTheDefaultDataFolderOutsideTheNamedRoot() {
     String[] launched =
         OrchestratorApplication.withConfigFile(
             new String[] {"--orchestrator.root=/opt/jagt"}, new SystemHost());
 
-    assertThat(launched).contains("--orchestrator.default-data=/opt/jagt/data");
+    assertThat(launched)
+        .contains("--orchestrator.default-data=" + new SystemHost().home().resolve(".jagt/data"));
   }
 }

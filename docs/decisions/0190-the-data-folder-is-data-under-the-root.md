@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-11-17.
+Default superseded by [0266](0266-the-data-folder-lies-outside-the-checkout.md): `~/.jagt/data`, not `<root>/data`.
 
 ## Context
 

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import java.nio.file.Files;
@@ -21,6 +22,7 @@ public class WorkspaceCheck implements StartupCheck {
   private static final String STATE_FILE = "orchestrator.state-file";
 
   private final OrchestratorPaths paths;
+  private final AgentRuntime agentRuntime;
 
   @Override
   public List<Problem> problems() {
@@ -75,5 +77,35 @@ public class WorkspaceCheck implements StartupCheck {
               "orchestrator.state-file " + paths.layout().stateFile() + " is not writable."));
     }
     return problems;
+  }
+
+  /**
+   * A data folder inside a checkout holding the agent's rule files: a session in a task worktree
+   * there loads them, and the checkout's hooks, as the task's own.
+   */
+  @Override
+  public List<Problem> notes() {
+    Path data = paths.layout().data();
+    for (Path dir = data.getParent(); dir != null; dir = dir.getParent()) {
+      if (Files.exists(dir.resolve(".git")) && holdsAgentFile(dir)) {
+        return List.of(
+            new Problem(
+                DATA,
+                DATA
+                    + " "
+                    + data
+                    + " lies inside the checkout "
+                    + dir
+                    + ", whose agent rule files every task session there loads; set "
+                    + DATA
+                    + " (ORCHESTRATOR_DATA) to a folder outside it."));
+      }
+    }
+    return List.of();
+  }
+
+  private boolean holdsAgentFile(Path dir) {
+    return agentRuntime.projectAgentFiles().stream()
+        .anyMatch(name -> Files.exists(dir.resolve(name)));
   }
 }

@@ -165,7 +165,7 @@
   [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
 - **Server image** — Yours adds tools, agent seed. [spec](../openspec/specs/readiness/spec.md) · [env](../openspec/specs/server-environment/spec.md)
 - **Signed release** — SBOM, SHA-256 and signed provenance for the jar and the image. [spec](../openspec/specs/release-artifacts/spec.md)
-- **One data folder** — State, records, tasks, clones and logs live under `<root>/data`, or the folder `orchestrator.data` names.
+- **One data folder** — State, records, tasks, clones and logs live under `~/.jagt/data`, or the folder `orchestrator.data` names.
   [spec](../openspec/specs/startup/spec.md#requirement-one-data-folder-holds-everything-jagt-writes)
 - **Console logging** — `logging: console` writes every log line as one ECS JSON object on stdout and no file; `file` is the default.
   [spec](../openspec/specs/startup/spec.md#requirement-logging-is-a-seam-file-or-console)

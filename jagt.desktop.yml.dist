@@ -303,7 +303,7 @@ orchestrator:
   startupChecks: true     # refuse to start when part of the installation is missing
 
   # ── Almost nobody sets these ───────────────────────────────────────────────────────────────────────────────
-  # data: /data                  # everything jagt writes: state, tasks/<task>/worktrees/<project>, projects, logs; default <root>/data
+  # data: /data                  # everything jagt writes: state, tasks/<task>/worktrees/<project>, projects, logs; default ~/.jagt/data, outside the checkout; an existing <root>/data with a state stays
   # root: /path/to/jagt          # where jagt finds `jagt.desktop.yml.dist` and the roles; default the jagt checkout
   # previousData: ~/.jagt         # the older default data folder; what it holds is moved into the data folder once; default ~/.jagt
   # stateFile: /path/to/state.json   # where the tasks are kept; default `data`/jagt/state.json

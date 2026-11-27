@@ -47,6 +47,7 @@ public class DataFolderStart {
 
   @EventListener(ContextRefreshedEvent.class)
   public void prepare() {
+    nameDataFolderKeptInRoot();
     try {
       Files.createDirectories(paths.layout().data());
       olderFolder().ifPresent(this::bringIn);
@@ -59,6 +60,19 @@ public class DataFolderStart {
           .addKeyValue("path", paths.layout().data())
           .addKeyValue("cause", e.toString())
           .addKeyValue("effect", "the start check names it")
+          .log();
+    }
+  }
+
+  private void nameDataFolderKeptInRoot() {
+    Path data = paths.layout().data();
+    if (data.equals(paths.root().resolve("data")) && Files.exists(paths.layout().stateFile())) {
+      log.atWarn()
+          .setMessage("data folder kept inside the root")
+          .addKeyValue("path", data)
+          .addKeyValue("setting", "orchestrator.data")
+          .addKeyValue("move", "mv " + data + " " + paths.homeData())
+          .addKeyValue("effect", "agent sessions in its worktrees load the root's rule files")
           .log();
     }
   }

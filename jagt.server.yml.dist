@@ -3,6 +3,7 @@
 # Code host: gh or glab read GH_TOKEN or GITLAB_TOKEN from the environment themselves.
 # Each key is described in jagt.desktop.yml.dist under the same name, and nowhere else.
 orchestrator:
+  # data: default ~/.jagt/data, outside the checkout; /data in the container (jagt.desktop.yml.dist)
   projects:
     my-project:
       url: https://example.com/team/repo.git   # projects: cloned into the data folder; replace this placeholder, it cannot clone

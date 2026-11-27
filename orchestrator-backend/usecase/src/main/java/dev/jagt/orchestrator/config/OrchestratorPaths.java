@@ -26,12 +26,14 @@ public class OrchestratorPaths {
   private final Path root;
   private final Path configFile;
   private final Layout layout;
+  private final Path homeData;
 
   public OrchestratorPaths(OrchestratorProperties properties, Host host) {
     this.root =
         properties.root() != null && !properties.root().isBlank()
             ? Path.of(properties.root()).toAbsolutePath().normalize()
             : findRoot(host);
+    this.homeData = underHome(host.home());
     this.configFile = resolve(properties.configFile(), "jagt.yml");
     Path data =
         properties.data() != null && !properties.data().isBlank()
@@ -68,6 +70,11 @@ public class OrchestratorPaths {
   /** Separate from the deploy worktree, which may be sitting in a conflict. */
   public Path revertWorktree(String projectKey, String taskId) {
     return layout.revertWorktree(TaskName.slug(taskId), projectKey);
+  }
+
+  /** Where the data folder lies by default, outside any checkout. */
+  public Path homeData() {
+    return homeData;
   }
 
   public Layout layout() {
@@ -136,7 +143,17 @@ public class OrchestratorPaths {
 
   /** Answered WITHOUT a Spring context, as {@link #configFileOutside}. */
   public static Path dataOutside(String[] args, Host host) {
-    return rootOutside(args, host).resolve("data");
+    return defaultData(rootOutside(args, host), host.home());
+  }
+
+  private static Path underHome(Path home) {
+    return home.resolve(".jagt").resolve("data").toAbsolutePath().normalize();
+  }
+
+  /** An existing {@code <root>/data} with a state stays in use; else the home's. */
+  private static Path defaultData(Path root, Path home) {
+    Path inRoot = root.resolve("data");
+    return Files.exists(inRoot.resolve("jagt").resolve("state.json")) ? inRoot : underHome(home);
   }
 
   /** The install home, where the jar's own files are placed; empty when the root is named. */

@@ -68,8 +68,8 @@ orchestrator:
   root: ${ORCHESTRATOR_ROOT:}
   config-file: ${ORCHESTRATOR_CONFIG_FILE:}
   state-file: ${ORCHESTRATOR_STATE_FILE:}
-  # Everything jagt writes: the layout is docs/rules/components.md. <root>/data unless named; the launch pins default-data.
-  data: ${ORCHESTRATOR_DATA:${orchestrator.default-data:${orchestrator.root}/data}}
+  # Everything jagt writes (docs/rules/components.md): ~/.jagt/data unless named; an existing <root>/data with a state stays.
+  data: ${ORCHESTRATOR_DATA:${orchestrator.default-data:${user.home}/.jagt/data}}
   # The previous default data folder; what it holds is moved into the data folder once.
   previous-data: ${user.home}/.jagt
   # macos | linux — selects the notifier; unset, detected from the machine.

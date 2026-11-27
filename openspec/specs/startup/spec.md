@@ -136,11 +136,17 @@ A change in a variable or file a read used SHALL be picked up by the next one. A
 ### Requirement: One data folder holds everything jagt writes
 jagt SHALL write `jagt/` (state and marks), `projects/`, `tasks/<task>/` (its worktrees, deploy and revert ones included),
 `archive/`, `records/`, `memory/` and `logs/` under one data folder.
-The folder is `orchestrator.data`, default `data/` under the root, overridden by `JAGT__orchestrator__data` or `ORCHESTRATOR_DATA`.
+The folder is `orchestrator.data`, default `~/.jagt/data`, outside any checkout, overridden by `JAGT__orchestrator__data` or `ORCHESTRATOR_DATA`.
 `jagt.yml` stays outside it. A project's `path` is used in place; a task in `state.json` keeps its recorded worktree.
 #### Scenario: No data key
-- **WHEN** jagt starts with no `orchestrator.data`
-- **THEN** state, records, tasks, clones and logs are written under `data/` in the root and nowhere else
+- **WHEN** jagt starts with no `orchestrator.data` and no `data/jagt/state.json` in the root
+- **THEN** state, records, tasks, clones and logs are written under `~/.jagt/data` and nowhere else
+#### Scenario: A data folder kept in the root
+- **WHEN** jagt starts with no `orchestrator.data` and the root's `data/jagt/state.json` exists
+- **THEN** that folder is used, never moved, and startup logs once its path, `orchestrator.data` and the command moving it
+#### Scenario: A data folder inside a checkout
+- **WHEN** jagt starts with a data folder inside a git checkout holding `AGENTS.md` or `CLAUDE.md`
+- **THEN** startup names the path and `orchestrator.data` and goes on
 #### Scenario: A data key
 - **WHEN** `orchestrator.data` or `JAGT__orchestrator__data` names a folder
 - **THEN** everything is written there

@@ -263,6 +263,52 @@ class DataFolderStartTest {
   }
 
   @Test
+  void warnsOnceWithPathSettingAndMoveCommandWhereTheRootsDataFolderHoldsState(@TempDir Path home)
+      throws Exception {
+    Files.createDirectories(root.resolve("data/jagt"));
+    Files.writeString(root.resolve("data/jagt/state.json"), "{}");
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(root.resolve("data").toString()),
+            FakeHost.machine().withHome(home));
+
+    try (FakeLogCapture log = new FakeLogCapture(DataFolderStart.class)) {
+      new DataFolderStart(paths, processes, "").prepare();
+
+      assertThat(log.events())
+          .filteredOn(event -> event.getLevel() == Level.WARN)
+          .singleElement()
+          .satisfies(event -> {
+            assertThat(event.getMessage()).isEqualTo("data folder kept inside the root");
+            assertThat(event.getKeyValuePairs())
+                .extracting(pair -> pair.key + "=" + pair.value)
+                .contains(
+                    "path=" + root.resolve("data"),
+                    "setting=orchestrator.data",
+                    "move=mv " + root.resolve("data") + " " + home.resolve(".jagt/data"));
+          });
+    }
+  }
+
+  @Test
+  void staysSilentWhereTheDataFolderLiesOutsideTheRoot(@TempDir Path home) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withData(home.resolve(".jagt/data").toString()),
+            FakeHost.machine().withHome(home));
+
+    try (FakeLogCapture log = new FakeLogCapture(DataFolderStart.class)) {
+      new DataFolderStart(paths, processes, "").prepare();
+
+      assertThat(log.events()).filteredOn(event -> event.getLevel() == Level.WARN).isEmpty();
+    }
+  }
+
+  @Test
   void movesNothingFromFolderHoldingNoState() throws Exception {
     Files.writeString(root.resolve("finished.jsonl"), "f");
     OrchestratorPaths paths =

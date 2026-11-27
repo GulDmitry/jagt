@@ -17,9 +17,9 @@ class DataFolderDefaultTest {
   @CsvSource({
     "orchestrator.default-data, /opt/j/data, /opt/j/data, /opt/j/data/logs/jagt-backend.log",
     "orchestrator.data, /srv/jagt, /srv/jagt, /srv/jagt/logs/jagt-backend.log",
-    "orchestrator.root, /opt/j, /opt/j/data, /opt/j/data/logs/jagt-backend.log"
+    "orchestrator.root, /opt/j, /h/ann/.jagt/data, /h/ann/.jagt/data/logs/jagt-backend.log"
   })
-  void putsDataAndLogsUnderTheDataFolderOfTheRootUnlessTheDataKeyNamesOne(
+  void putsDataAndLogsUnderTheHomeUnlessTheDataKeyNamesOne(
       String key, String given, String data, String log) throws Exception {
     StandardEnvironment environment = new StandardEnvironment();
     environment

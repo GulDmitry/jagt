@@ -77,7 +77,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   with **all** problems at once (`Misconfigured` via `StartupFailure`), each line naming its key.
 - A check lives **next to** the part it answers for, existing only where that part was selected; what no
   implementation answers for goes in `startup` — a `type` selecting nothing, `jagt.yml`, jagt's paths, git,
-  tmux.
+  tmux. `WorkspaceCheck` notes, never refuses, a data folder inside a checkout holding the agent's rule files.
 - Two limits: **nothing reaches the network** (presence, never validity) and nothing asks a
   remote about a branch. `orchestrator.startup-checks=false` is for test harnesses only and skips the machine
   alone: a check of jagt's own files answers `machine()` false and runs always.
@@ -86,8 +86,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 
 ## The data folder
 
-`orchestrator.data`: `<root>/data` by default (one `/data/` ignore line), `/data` in the container, built only by `port/host/Layout`
-([0190](../decisions/0190-the-data-folder-is-data-under-the-root.md)).
+`orchestrator.data`: `~/.jagt/data` by default, outside any checkout; an existing `<root>/data` with a state stays and is named at startup;
+`/data` in the container; built only by `port/host/Layout` ([0266](../decisions/0266-the-data-folder-lies-outside-the-checkout.md)).
 
 | path | what |
 |------|------|
