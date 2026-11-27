@@ -15,6 +15,9 @@ class VendorNamesTest {
   private static final Map<String, String> ALLOWED =
       Map.ofEntries(
           Map.entry(
+              "usecase/src/main/java/dev/jagt/orchestrator/config/source/RenamedKeys.java tmux",
+              "the retired keys by name, until the release that drops them"),
+          Map.entry(
               JOB + "host/RunningJarWatch.java gradlew",
               "names jagt's own build tool; iteration 2"),
           Map.entry(

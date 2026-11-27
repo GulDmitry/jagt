@@ -28,8 +28,6 @@ class OrchestratorPropertiesTest {
             new MapConfigurationPropertySource(
                 Map.of(
                     "orchestrator.root", "/jagt",
-                    "orchestrator.tmux-command", "tmux",
-                    "orchestrator.tmux-socket", "jagt-sock",
                     "orchestrator.editor-command", "ed",
                     "orchestrator.editor-diff-command", "diff")));
 
@@ -39,7 +37,6 @@ class OrchestratorPropertiesTest {
         binder.bind("orchestrator", Bindable.of(ToolchainProperties.class)).get();
 
     assertThat(orchestrator.root()).isEqualTo("/jagt");
-    assertThat(toolchain)
-        .isEqualTo(new ToolchainProperties(List.of("ed"), List.of("diff"), "tmux", "jagt-sock"));
+    assertThat(toolchain).isEqualTo(new ToolchainProperties(List.of("ed"), List.of("diff")));
   }
 }

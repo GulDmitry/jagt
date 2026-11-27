@@ -19,7 +19,7 @@ class HerdrCheckTest {
         .singleElement()
         .satisfies(problem -> {
           assertThat(problem.key()).isEqualTo("orchestrator.herdr.command");
-          assertThat(problem.text()).contains("orchestrator.session-host", "no-such-herdr");
+          assertThat(problem.text()).contains("orchestrator.multiplexer", "no-such-herdr");
         });
   }
 

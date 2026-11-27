@@ -28,14 +28,14 @@ class ConfigFileTest {
     String json =
         """
         {
-          "viewer": { "tmuxSession": "alt", "viewMode": "tab-per-task", "keepViewer": false },
+          "viewer": { "session": "alt", "viewMode": "tab-per-task", "keepViewer": false },
           "agent": { "model": "acme-model" }
         }
         """;
 
     ConfigFile config = new JsonMapper().readValue(json, ConfigFile.class);
 
-    assertThat(config.viewer().tmuxSession()).isEqualTo("alt");
+    assertThat(config.viewer().session()).isEqualTo("alt");
     assertThat(config.viewer().sharedView()).isFalse();
     assertThat(config.viewer().keepViewerOrDefault()).isFalse();
     assertThat(config.agent().modelOrInherited()).isEqualTo("acme-model");

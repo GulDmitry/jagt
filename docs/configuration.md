@@ -62,6 +62,19 @@ Widen it to whatever your tests and run configs read, knowing each copy is anoth
 sibling directory. `**/` also matches at the repository root, so `**/.env` covers both `app/.env` and a
 single-module repo's own `.env`.
 
+**`multiplexer`** picks the tool that keeps every agent session running: `tmux` (the default) or `herdr`.
+Each tool has its own block, `tmux: {command, socket}` or `herdr: {command, home}`.
+`viewer.session` names the session either tool runs. tmux reserves `:` and `.` in it.
+
+**Renamed keys** still work until release 0.32.0. Startup names each one you still write, once.
+
+| old key | new key |
+|---------|---------|
+| `sessionHost` | `multiplexer` |
+| `tmuxCommand` | `tmux.command` |
+| `tmuxSocket` | `tmux.socket` |
+| `viewer.tmuxSession` | `viewer.session` |
+
 **Binaries are resolved by bare name** — PATH, then the usual install directories (a GUI-launched process has
 no Homebrew on PATH), then inside application bundles. Give an absolute path to pin one; for `editorCommand`
 only the launcher is resolved, and the arguments stay yours.

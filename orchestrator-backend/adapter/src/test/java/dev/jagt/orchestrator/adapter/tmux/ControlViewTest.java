@@ -7,7 +7,6 @@ import static org.awaitility.Awaitility.await;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.adapter.FakeSink;
 import dev.jagt.orchestrator.adapter.ProcessRunnerTest;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +23,7 @@ class ControlViewTest {
   private final FakeProcesses processes =
       new FakeProcesses().answering(new Processes.Result(0, "100 30", ""));
   private final ResizedWindows sizes =
-      new ResizedWindows(processes, new TmuxReads(processes, ToolchainProperties.defaults()));
+      new ResizedWindows(processes, new TmuxReads(processes, new TmuxProperties("", "")));
   private final FakeControlProcess client = new FakeControlProcess();
   private final FakeSink sink = new FakeSink();
   private final ControlView view = new ControlView(client, "@1", sizes, sink);

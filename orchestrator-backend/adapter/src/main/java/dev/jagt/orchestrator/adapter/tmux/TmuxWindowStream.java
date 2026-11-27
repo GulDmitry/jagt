@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 /** Views of a tmux window, each read through a control-mode client of its own. */
 @Service
 @ConditionalOnProperty(
-    name = "orchestrator.session-host",
+    name = "orchestrator.multiplexer",
     havingValue = "tmux",
     matchIfMissing = true)
 @RequiredArgsConstructor

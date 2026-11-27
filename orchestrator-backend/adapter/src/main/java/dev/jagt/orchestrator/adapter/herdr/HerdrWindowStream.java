@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
  * differs from the last one it sent; the window keeps the size herdr's own client gives it.
  */
 @Service
-@ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
+@ConditionalOnProperty(name = "orchestrator.multiplexer", havingValue = "herdr")
 @RequiredArgsConstructor
 @Slf4j
 public class HerdrWindowStream implements WindowStream {

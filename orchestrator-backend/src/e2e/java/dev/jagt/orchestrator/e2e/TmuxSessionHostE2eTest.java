@@ -13,12 +13,12 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.adapter.terminal.SessionEnvironment;
+import dev.jagt.orchestrator.adapter.tmux.TmuxProperties;
 import dev.jagt.orchestrator.adapter.tmux.TmuxReads;
 import dev.jagt.orchestrator.adapter.tmux.TmuxSessionHost;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -57,7 +57,7 @@ class TmuxSessionHostE2eTest {
     host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults().withTmuxCommand("tmux")),
+            new TmuxReads(processes, new TmuxProperties("tmux", "")),
             new SessionEnvironment(
                 new OrchestratorPaths(orchestrator, new SystemHost()),
                 new NoWorktreeContainers(),

@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(
-    name = "orchestrator.session-host",
+    name = "orchestrator.multiplexer",
     havingValue = "tmux",
     matchIfMissing = true)
 @Slf4j

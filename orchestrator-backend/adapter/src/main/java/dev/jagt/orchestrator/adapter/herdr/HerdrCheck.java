@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
+@ConditionalOnProperty(name = "orchestrator.multiplexer", havingValue = "herdr")
 @RequiredArgsConstructor
 public class HerdrCheck implements StartupCheck {
 
@@ -21,10 +21,10 @@ public class HerdrCheck implements StartupCheck {
       return List.of(
           new Problem(
               "orchestrator.herdr.command",
-              "orchestrator.session-host is herdr, but orchestrator.herdr.command: '"
+              "orchestrator.multiplexer is herdr, but orchestrator.herdr.command: '"
                   + properties.command()
                   + "' is not on PATH nor in the usual install directories. Install herdr, set the"
-                  + " key to a full path, or set orchestrator.session-host to tmux."));
+                  + " key to a full path, or set orchestrator.multiplexer to tmux."));
     }
     return List.of();
   }

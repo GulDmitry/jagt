@@ -9,7 +9,7 @@ allprojects {
         // One thread per core: factors 2 and 3 bought no wall time, only load.
         systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', project.findProperty('testFactor') ?: '1'
         // The gate never reaches the developer's own terminal: a booted context finds no tmux and no kitty to run.
-        systemProperty 'orchestrator.tmux-command', 'jagt-test-no-tmux'
+        systemProperty 'orchestrator.tmux.command', 'jagt-test-no-tmux'
         systemProperty 'orchestrator.kitty-command', 'jagt-test-no-kitty'
         environment.remove('KITTY_LISTEN_ON')
         environment.remove('KITTY_WINDOW_ID')

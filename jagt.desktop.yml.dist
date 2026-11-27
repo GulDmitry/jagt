@@ -89,9 +89,10 @@ orchestrator:
   # terminal: kitty       # kitty | ghostty | none: the viewer; ghostty is macOS only and needs Ghostty 1.3 or newer; `none` opens no window, needs no kitty and `focus` names this key
   # kittyCommand: kitty   # if the binary is not on PATH
   # kittyFontSize: 13     # blank keeps kitty.conf's own
-  tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs
-  # tmuxSocket: jagt      # a named tmux server (-L): jagt's sessions stay apart from yours; empty = the default server
-  # sessionHost: tmux     # tmux | herdr: what keeps every agent session running; herdr needs its binary, startup names herdr.command when it is missing
+  # multiplexer: tmux     # tmux | herdr: what keeps every agent session running; herdr needs its binary, startup names herdr.command when it is missing
+  # tmux:
+  #   command: tmux       # a bare name is resolved on PATH and in the usual install dirs
+  #   socket: jagt        # a named tmux server (-L): jagt's sessions stay apart from yours; empty = the default server
   # herdr:
   #   command: herdr      # a bare name is resolved on PATH and in the usual install dirs
   #   home: ~/.config/herdr   # the folder holding herdr's sessions/<name>/herdr.sock; empty = ~/.config/herdr
@@ -108,7 +109,7 @@ orchestrator:
 
   # ── The viewer ─────────────────────────────────────────────────────────────────────────────────────────────
   viewer:
-    tmuxSession: jagt     # tmux reserves ':' and '.' — a name carrying either is unaddressable
+    session: jagt         # the session's name, in tmux or herdr; tmux reserves ':' and '.', so a name carrying either is refused at startup
     viewMode: shared      # shared | tab-per-task
     keepViewer: true      # keep the agents window open after the last task closes
 

@@ -5,9 +5,9 @@ import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.tmux.ResizedWindows;
+import dev.jagt.orchestrator.adapter.tmux.TmuxProperties;
 import dev.jagt.orchestrator.adapter.tmux.TmuxReads;
 import dev.jagt.orchestrator.adapter.tmux.TmuxWindowStream;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.WindowStream;
 import java.time.Duration;
@@ -24,8 +24,7 @@ class TmuxWindowStreamE2eTest {
   private static final Duration TEN_SECONDS = Duration.ofSeconds(10);
 
   private final Processes processes = new ProcessRunner();
-  private final TmuxReads reads =
-      new TmuxReads(processes, ToolchainProperties.defaults().withTmuxCommand("tmux"));
+  private final TmuxReads reads = new TmuxReads(processes, new TmuxProperties("tmux", ""));
   private final WindowStream stream =
       new TmuxWindowStream(processes, reads, new ResizedWindows(processes, reads));
   private final List<String> askWindowSize =

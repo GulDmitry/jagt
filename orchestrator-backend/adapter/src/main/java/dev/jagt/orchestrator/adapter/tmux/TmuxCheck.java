@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.adapter.host.Executables;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
 import java.util.ArrayList;
@@ -12,23 +11,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(
-    name = "orchestrator.session-host",
+    name = "orchestrator.multiplexer",
     havingValue = "tmux",
     matchIfMissing = true)
 @RequiredArgsConstructor
 public class TmuxCheck implements StartupCheck {
 
-  private final ToolchainProperties properties;
+  private final TmuxProperties properties;
 
   @Override
   public List<Problem> problems() {
     List<Problem> problems = new ArrayList<>();
-    if (Executables.unresolved(Executables.resolve(properties.tmuxCommand()))) {
+    if (Executables.unresolved(Executables.resolve(properties.command()))) {
       problems.add(
           new Problem(
-              "orchestrator.tmux-command",
-              "orchestrator.tmux-command: '"
-                  + properties.tmuxCommand()
+              "orchestrator.tmux.command",
+              "orchestrator.tmux.command: '"
+                  + properties.command()
                   + "' is not on PATH nor in the usual install directories, and every agent runs"
                   + " inside a tmux session. Install tmux or set the key to a full path."));
     }

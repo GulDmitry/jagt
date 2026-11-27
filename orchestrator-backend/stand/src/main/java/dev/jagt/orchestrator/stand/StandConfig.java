@@ -63,7 +63,7 @@ public final class StandConfig {
       Path shipped,
       Path root,
       Target target,
-      String tmuxSession,
+      String session,
       StandMode mode,
       @Nullable Replay replay) {
     try {
@@ -82,7 +82,7 @@ public final class StandConfig {
               .formatted(target.mcpUrl()));
       Files.writeString(
           root.resolve("jagt.yml"),
-          jagtYml(reviewed, servers, tmuxSession, mode, replay, acceptance(root, replay)));
+          jagtYml(reviewed, servers, session, mode, replay, acceptance(root, replay)));
     } catch (IOException e) {
       throw new StandFailure("cannot write the stand configuration under " + root, e);
     }
@@ -129,7 +129,7 @@ public final class StandConfig {
   private static String jagtYml(
       Target target,
       Path servers,
-      String tmuxSession,
+      String session,
       StandMode mode,
       @Nullable Replay replay,
       String acceptance) {
@@ -140,7 +140,7 @@ public final class StandConfig {
         proj: { %s, baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
       startupChecks: false
       terminal: none
-      viewer: { tmuxSession: "%s", viewMode: shared, keepViewer: false }
+      viewer: { session: "%s", viewMode: shared, keepViewer: false }
       agent:
         cli: %s
         model: sonnet
@@ -165,7 +165,7 @@ public final class StandConfig {
         .formatted(
             replay == null ? "" : "codeHost: replay",
             target.project(),
-            tmuxSession,
+            session,
             replay == null ? "claude" : "replay",
             target.sandbox(),
             servers,

@@ -60,7 +60,7 @@ acceptance scenarios session. The tab lists the open task's session first, then 
 - **THEN** the Session tab lists it, streams its terminal live, and a line typed under it reaches that window
 
 ### Requirement: A herdr window streams as a redrawn screen
-herdr streams no output. With `orchestrator.session-host: herdr` (`HerdrWindowStream`) the Session tab SHALL redraw
+herdr streams no output. With `orchestrator.multiplexer: herdr` (`HerdrWindowStream`) the Session tab SHALL redraw
 the window's screen whenever it differs from the last one sent. The tab's size SHALL NOT change the window:
 it keeps the size herdr's own client gives it.
 #### Scenario: A herdr session's tab

@@ -33,3 +33,4 @@ operational.performanceefficiency.timebehaviour.CiJobTimeoutsFitness
 technical.maintainability.testability.FixedBugCaseFitness
 technical.maintainability.testability.InstanceStateFitness
 technical.maintainability.analysability.JobCatchFitness
+technical.maintainability.modularity.ConfigKeyVendorsFitness

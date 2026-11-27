@@ -13,6 +13,7 @@ orchestrator:
   notifier: none                               # notifier
   keepAwake: none                              # keepAwake
   terminal: none                               # terminal: no window, so no kitty is needed
+  multiplexer: tmux                            # multiplexer: the image holds tmux
   editor: none                                 # editor
   maxTasks: 4                                  # maxTasks: an estimate, each task's agent CLI takes a few hundred MB of the pod's 4Gi
   onStop: end                                  # onStop

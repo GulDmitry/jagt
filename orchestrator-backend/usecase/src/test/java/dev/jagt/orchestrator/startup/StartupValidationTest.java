@@ -29,7 +29,7 @@ class StartupValidationTest {
     StartupValidation validation =
         new StartupValidation(
             List.of(
-                () -> List.of(new Problem("orchestrator.tmux-command", "tmux is not on PATH")),
+                () -> List.of(new Problem("orchestrator.tmux.command", "tmux is not on PATH")),
                 () ->
                     List.of(
                         new Problem("orchestrator.projects", "config.json defines no projects"),
@@ -65,7 +65,7 @@ class StartupValidationTest {
   void skipsWhatItAsksOfTheMachineWhenTheChecksAreOff() {
     StartupValidation validation =
         new StartupValidation(
-            List.of(() -> List.of(new Problem("orchestrator.tmux-command", "tmux is not on PATH"))),
+            List.of(() -> List.of(new Problem("orchestrator.tmux.command", "tmux is not on PATH"))),
             new FakeReach(),
             false);
 

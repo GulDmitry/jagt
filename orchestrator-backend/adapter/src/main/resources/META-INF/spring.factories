@@ -1,2 +1,2 @@
 org.springframework.boot.diagnostics.FailureAnalyzer=dev.jagt.orchestrator.adapter.agent.AgentCliFailureAnalyzer
-org.springframework.boot.EnvironmentPostProcessor=dev.jagt.orchestrator.adapter.DetectedPlatform,dev.jagt.orchestrator.adapter.values.ConfiguredValues
+org.springframework.boot.EnvironmentPostProcessor=dev.jagt.orchestrator.adapter.DetectedPlatform,dev.jagt.orchestrator.adapter.values.RenamedKeysAlias,dev.jagt.orchestrator.adapter.values.ConfiguredValues

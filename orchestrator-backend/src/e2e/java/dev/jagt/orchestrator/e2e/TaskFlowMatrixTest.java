@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.adapter.tmux.TmuxProperties;
 import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -38,7 +38,7 @@ class TaskFlowMatrixTest {
   private final TaskRetirement retirement;
   private final StateService stateService;
   private final OrchestratorPaths paths;
-  private final ToolchainProperties properties;
+  private final TmuxProperties properties;
 
   @Autowired
   TaskFlowMatrixTest(
@@ -46,7 +46,7 @@ class TaskFlowMatrixTest {
       TaskRetirement retirement,
       StateService stateService,
       OrchestratorPaths paths,
-      ToolchainProperties properties) {
+      TmuxProperties properties) {
     this.provisioning = provisioning;
     this.retirement = retirement;
     this.stateService = stateService;
@@ -61,14 +61,14 @@ class TaskFlowMatrixTest {
 
   @BeforeEach
   void startFromNoneOfThisRunsSessions() {
-    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.command()));
   }
 
   @AfterEach
   void leaveNothingBehindForTheNextCombinationEvenOneThatFailedEarly() {
     E2eWorkspace.forgetTask(
         workspace.resolve("proj"), workspace.resolve("root/tasks/ABC-1/worktrees/proj"), "ABC-1");
-    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.command()));
     stateService.removeTask("ABC-1");
   }
 
@@ -92,7 +92,7 @@ class TaskFlowMatrixTest {
     assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
     assertThat(worktree.resolve(".mcp.json")).doesNotExist();
     assertThat(worktree.resolve(".claude")).doesNotExist();
-    assertThat(E2eWorkspace.tmuxSessions(Objects.requireNonNull(properties.tmuxCommand())))
+    assertThat(E2eWorkspace.tmuxSessions(Objects.requireNonNull(properties.command())))
         .containsExactly(flowCase.agentSession());
     assertThat(stateService.task("ABC-1").orElseThrow().standing().status())
         .isEqualTo(TaskStatus.NEW);

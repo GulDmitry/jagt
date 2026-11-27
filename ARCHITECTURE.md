@@ -74,7 +74,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no static mutable field in any ring (`static-state`).
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
-- it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, vendor-named keys by design; renaming one a human wrote is the owner's call.
+- it exempts only `RenamedKeys`, which holds the retired keys by name until the release that drops them.
 
 ## The flow machine
 
@@ -174,7 +174,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/host/SystemHost` — OS name, home, temp and working directory, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/{tmux/TmuxSessionHost,herdr/HerdrSessionHost}` by `session-host`; `openCommandWindow` runs a command as a window's process |
-| `WindowStream` | `adapter/{tmux/TmuxWindowStream,herdr/HerdrWindowStream}` by `session-host` |
+| `WindowStream` | `adapter/{tmux/TmuxWindowStream,herdr/HerdrWindowStream}` by `multiplexer` |
 | `ReadScope` | `adapter/{tmux/TmuxReads,herdr/HerdrReads}` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
 | `SessionLog`, `SubscriptionUsage` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did; `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `BuildTools`, `LineDiff` | `adapter/worktree/{RepositoryBuildTools,DiffUtilsLineDiff}` |

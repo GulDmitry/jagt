@@ -7,8 +7,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.adapter.tmux.TmuxProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
@@ -176,7 +176,7 @@ final class FlowHarness {
     E2eWorkspace.forgetTask(repo(), worktree(), task);
     E2eWorkspace.resetDeployBranch(repo());
     E2eWorkspace.killTmuxSessions(
-        Objects.requireNonNull(context.getBean(ToolchainProperties.class).tmuxCommand()));
+        Objects.requireNonNull(context.getBean(TmuxProperties.class).command()));
   }
 
   TaskState task() {

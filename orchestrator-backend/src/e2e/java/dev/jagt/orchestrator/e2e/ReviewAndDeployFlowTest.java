@@ -11,8 +11,8 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.adapter.tmux.TmuxProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.job.deploy.DeployOnApprovalJob;
 import dev.jagt.orchestrator.port.assistant.Answer;
@@ -69,7 +69,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
   private final TaskViews views;
   private final DeployOnApprovalJob deployOnApproval;
   private final OrchestratorPaths paths;
-  private final ToolchainProperties properties;
+  private final TmuxProperties properties;
   private final FlowHarness flow;
 
   @Autowired
@@ -87,7 +87,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
     this.views = views;
     this.deployOnApproval = deployOnApproval;
     this.paths = context.getBean(OrchestratorPaths.class);
-    this.properties = context.getBean(ToolchainProperties.class);
+    this.properties = context.getBean(TmuxProperties.class);
     this.flow = new FlowHarness(context, workspace, TASK, port);
   }
 
@@ -103,7 +103,7 @@ class ReviewAndDeployFlowTest extends FlowHarness.World {
     E2eWorkspace.forgetTask(flow.webRepo(), flow.webWorktree(), TASK);
     E2eWorkspace.resetDeployBranch(flow.repo());
     E2eWorkspace.resetDeployBranch(flow.webRepo());
-    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.command()));
   }
 
   @Test

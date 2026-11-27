@@ -23,7 +23,7 @@ import tools.jackson.databind.JsonNode;
  * own, so the line is typed into its shell, which it replaces.
  */
 @Service
-@ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
+@ConditionalOnProperty(name = "orchestrator.multiplexer", havingValue = "herdr")
 @Slf4j
 public class HerdrSessionHost extends AbstractSessionHost<String, HerdrReads.Window> {
 

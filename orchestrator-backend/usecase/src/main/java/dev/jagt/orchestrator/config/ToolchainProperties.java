@@ -13,12 +13,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "orchestrator")
 @With
 public record ToolchainProperties(
-    @Nullable List<String> editorCommand,
-    @Nullable List<String> editorDiffCommand,
-    @Nullable String tmuxCommand,
-    @Nullable String tmuxSocket) {
+    @Nullable List<String> editorCommand, @Nullable List<String> editorDiffCommand) {
 
   public static ToolchainProperties defaults() {
-    return new ToolchainProperties(null, null, null, null);
+    return new ToolchainProperties(null, null);
   }
 }

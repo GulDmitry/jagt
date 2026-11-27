@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.config.source.RenamedKeys;
 import dev.jagt.orchestrator.config.source.SpringReadKeys;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.host.Problem;
@@ -72,13 +73,31 @@ public class ConfigCheck implements StartupCheck {
   @Override
   public List<Problem> notes() {
     Set<String> bySpring = springKeys.names();
-    return configService.unreadKeys().stream()
+    List<Problem> notes = new ArrayList<>(renamedKeys());
+    configService.unreadKeys().stream()
         .filter(key -> !bySpring.contains(key.substring("orchestrator.".length())))
         .map(key ->
             new Problem(
                 key,
                 key
                     + " is unknown: no setting reads it. Fix its name or remove it from "
+                    + paths.configFile()
+                    + "."))
+        .forEach(notes::add);
+    return notes;
+  }
+
+  private List<Problem> renamedKeys() {
+    return configService.renamedKeysWritten().stream()
+        .map(renamed ->
+            new Problem(
+                renamed.oldName(),
+                renamed.oldName()
+                    + " is now "
+                    + renamed.newName()
+                    + ". The old name is read until release "
+                    + RenamedKeys.DROPPED_IN
+                    + ": rename it in "
                     + paths.configFile()
                     + "."))
         .toList();
@@ -186,8 +205,8 @@ public class ConfigCheck implements StartupCheck {
           .ifPresent(why ->
               problems.add(
                   new Problem(
-                      "orchestrator.viewer.tmuxSession",
-                      "viewer.tmuxSession '" + session + "' " + why + ". Pick another name.")));
+                      "orchestrator.viewer.session",
+                      "viewer.session '" + session + "' " + why + ". Pick another name.")));
     }
     String viewMode = config.viewer().viewMode();
     if (viewMode != null && !viewMode.isBlank() && !ViewerConfig.knowsViewMode(viewMode)) {

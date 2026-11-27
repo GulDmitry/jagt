@@ -19,7 +19,6 @@ import dev.jagt.orchestrator.adapter.worktree.DockerComposeContainers;
 import dev.jagt.orchestrator.adapter.worktree.NoWorktreeContainers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
@@ -82,7 +81,7 @@ class TmuxSessionHostTest {
         "list-windows",
         "-a");
     processes.answering(new Processes.Result(0, "    1\n  100\n  300\n", ""), "ps");
-    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
+    TmuxReads reads = new TmuxReads(processes, new TmuxProperties("", ""));
     TmuxSessionHost host = tmuxHost().build(state, processes, reads, terminal, agent);
     List<WindowState> states = new java.util.ArrayList<>();
 
@@ -106,7 +105,7 @@ class TmuxSessionHostTest {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
     processes.answering(
         new Processes.Result(0, "jagt\t@1 100 1700000000 ABC-1\n", ""), "list-windows");
-    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
+    TmuxReads reads = new TmuxReads(processes, new TmuxProperties("", ""));
     TmuxSessionHost host = tmuxHost().build(state, processes, reads, terminal, agent);
 
     reads.once(() -> {
@@ -131,7 +130,7 @@ class TmuxSessionHostTest {
     FakeProcesses processes = new FakeProcesses();
     processes.answering(
         new Processes.Result(0, "other\t@4 400 1700000009 ABC-4\n", ""), "list-windows");
-    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
+    TmuxReads reads = new TmuxReads(processes, new TmuxProperties("", ""));
     TmuxSessionHost host = tmuxHost().build(state, processes, reads, terminal, agent);
     List<Long> activity = new java.util.ArrayList<>();
 
@@ -145,7 +144,7 @@ class TmuxSessionHostTest {
     FakeProcesses processes = new FakeProcesses();
     processes.answering(
         new Processes.Result(0, "jagt\t@1 100 1700000000 ABC-1\n", ""), "list-windows");
-    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
+    TmuxReads reads = new TmuxReads(processes, new TmuxProperties("", ""));
     TmuxSessionHost host = tmuxHost().build(state, processes, reads, terminal, agent);
 
     reads.once(() -> host.lastWindowActivityMillis("jagt", "ABC-1"));
@@ -254,10 +253,8 @@ class TmuxSessionHostTest {
     processes.answering(
         new Processes.Result(0, "@1 100 1700000000 XABC-1\n@2 200 1700000500 ABC-1\n", ""),
         "list-windows");
-    ToolchainProperties properties =
-        ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
-    TmuxSessionHost host =
-        tmuxHost().withToolchain(properties).build(state, processes, terminal, agent);
+    TmuxProperties properties = new TmuxProperties("/opt/jagt/tmux", "");
+    TmuxSessionHost host = tmuxHost().withTmux(properties).build(state, processes, terminal, agent);
 
     boolean focused = host.focusTaskWindow("jagt", "agents", "ABC-1");
 
@@ -273,9 +270,8 @@ class TmuxSessionHostTest {
   @Test
   void scopesTheWindowBarAndTitleOptionsToTheTasksSessionAlone() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
-    ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("tmux");
-    TmuxSessionHost host =
-        tmuxHost().withToolchain(properties).build(state, processes, terminal, agent);
+    TmuxProperties properties = new TmuxProperties("tmux", "");
+    TmuxSessionHost host = tmuxHost().withTmux(properties).build(state, processes, terminal, agent);
 
     host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli"));
 
@@ -535,10 +531,8 @@ class TmuxSessionHostTest {
   void opensTheViewerWhereTaskWindowIsOpenedAndNoClientIsAttached() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
     processes.answering(new Processes.Result(0, "", ""), "list-clients");
-    ToolchainProperties properties =
-        ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
-    TmuxSessionHost host =
-        tmuxHost().withToolchain(properties).build(state, processes, terminal, agent);
+    TmuxProperties properties = new TmuxProperties("/opt/jagt/tmux", "");
+    TmuxSessionHost host = tmuxHost().withTmux(properties).build(state, processes, terminal, agent);
 
     host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), LaunchMode.WORK, "");
 
@@ -608,10 +602,8 @@ class TmuxSessionHostTest {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
     processes.answering(new Processes.Result(1, "", "no session"), "has-session");
     processes.answering(new Processes.Result(0, "", ""), "list-clients");
-    ToolchainProperties properties =
-        ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
-    TmuxSessionHost host =
-        tmuxHost().withToolchain(properties).build(state, processes, terminal, agent);
+    TmuxProperties properties = new TmuxProperties("/opt/jagt/tmux", "");
+    TmuxSessionHost host = tmuxHost().withTmux(properties).build(state, processes, terminal, agent);
 
     host.openCommandWindow("jagt", "jagt-title", "login", List.of("no-such-cli"));
 
@@ -684,7 +676,7 @@ class TmuxSessionHostTest {
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            new TmuxReads(processes, new TmuxProperties("", "")),
             new SessionEnvironment(
                 new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()),
                 new DockerComposeContainers(processes),
@@ -711,7 +703,7 @@ class TmuxSessionHostTest {
   @Test
   void stopsGitClimbingOutOfScratchFolderWhereTheSessionRuns() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
-    ToolchainProperties properties = ToolchainProperties.defaults();
+    TmuxProperties properties = new TmuxProperties("", "");
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine());
     TmuxSessionHost host =
@@ -800,12 +792,8 @@ class TmuxSessionHostTest {
     void setUp() {
       socketProcesses.answering(
           new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""), "list-windows");
-      ToolchainProperties properties =
-          ToolchainProperties.defaults()
-              .withTmuxCommand("/opt/jagt/tmux")
-              .withTmuxSocket("jagt-sock");
-      socketHost =
-          tmuxHost().withToolchain(properties).build(state, socketProcesses, terminal, agent);
+      TmuxProperties properties = new TmuxProperties("/opt/jagt/tmux", "jagt-sock");
+      socketHost = tmuxHost().withTmux(properties).build(state, socketProcesses, terminal, agent);
     }
 
     @Test

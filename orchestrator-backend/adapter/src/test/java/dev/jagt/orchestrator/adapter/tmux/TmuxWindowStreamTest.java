@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.adapter.FakeSink;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +17,7 @@ class TmuxWindowStreamTest {
           .answering(new Processes.Result(0, "100 30", ""), "display-message")
           .answering(new Processes.Result(0, "@1 100 1700000000 ABC-1\n", ""), "list-windows")
           .starting(client);
-  private final TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
+  private final TmuxReads reads = new TmuxReads(processes, new TmuxProperties("", ""));
   private final TmuxWindowStream stream =
       new TmuxWindowStream(processes, reads, new ResizedWindows(processes, reads));
 

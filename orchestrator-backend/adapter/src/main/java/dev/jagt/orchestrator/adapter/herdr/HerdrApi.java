@@ -26,7 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /** herdr's JSON API as one call at a time, one socket per named session. */
 @Service
-@ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
+@ConditionalOnProperty(name = "orchestrator.multiplexer", havingValue = "herdr")
 @RequiredArgsConstructor
 @Slf4j
 public class HerdrApi {

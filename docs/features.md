@@ -124,7 +124,7 @@
   [spec](../openspec/specs/infra-wait/spec.md#requirement-a-session-waits-out-a-dependency-that-is-down)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
-- **Sessions in tmux or herdr** — Each agent runs in a tmux window or a herdr tab (`orchestrator.session-host`), viewed in kitty
+- **Sessions in tmux or herdr** — Each agent runs in a tmux window or a herdr tab (`orchestrator.multiplexer`), viewed in kitty
   or Ghostty (`orchestrator.terminal`), on `orchestrator.agent.model` where the notes name none.
   [spec](../openspec/specs/session-host/spec.md#requirement-the-session-host-is-chosen-by-a-key-tmux-the-default)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)

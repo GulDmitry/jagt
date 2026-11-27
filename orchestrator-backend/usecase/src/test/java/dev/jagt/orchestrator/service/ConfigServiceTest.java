@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.source.ConfigSource;
+import dev.jagt.orchestrator.config.source.RenamedKeys;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -542,6 +543,33 @@ class ConfigServiceTest {
   }
 
   @Test
+  void readsTheOldViewerTmuxSessionKeyAsTheViewerSession() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  viewer:\n    tmuxSession: alt\n");
+
+    assertThat(service.load().viewer().session()).isEqualTo("alt");
+  }
+
+  @Test
+  void readsTheNewViewerSessionKeyWhereTheOldOneIsWrittenToo() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  viewer:\n    tmuxSession: old\n    session: new\n");
+
+    assertThat(service.load().viewer().session()).isEqualTo("new");
+  }
+
+  @Test
+  void namesEachRenamedKeyTheFileStillWrites() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  sessionHost: herdr\n  tmuxSocket: s\n  viewer:\n    session: a\n");
+
+    assertThat(service.renamedKeysWritten())
+        .extracting(RenamedKeys.Rename::newName)
+        .containsExactly("orchestrator.multiplexer", "orchestrator.tmux.socket");
+  }
+
+  @Test
   void writesEveryKeyOfFlatConfigFileBackAsTheSameTree() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     String written =
@@ -554,7 +582,7 @@ class ConfigServiceTest {
               deployBranch: dev
               labels: [backend]
           viewer:
-            tmuxSession: alt
+            session: alt
           archive:
             maxMegabytes: 5
           agent:

@@ -30,6 +30,7 @@ technical:
       rings: { fitness: RingsFitness, governs: import-direction, max: 0, decision: "0162" }
       ring-sources: { fitness: RingSourcesFitness, governs: package-dependency, max: 0, decision: "0035" }
       edge-names: { fitness: EdgeNamesFitness, governs: class-dependency, max: 0, decision: "0007" }
+      config-key-vendors: { fitness: ConfigKeyVendorsFitness, governs: class-dependency, max: 0, decision: "0267", hint: "a config key names a vendor only as its own block or inside it: the key choosing a tool names its kind, the vendor is its value" }
       flow-doors: { fitness: FlowDoorsFitness, governs: class-dependency, max: 0, decision: "0144" }
       fact-generations: { fitness: FactGenerationsFitness, governs: class-dependency, max: 0, decision: "0261", hint: "a move whose edge writes what a read saw carries the Generation it was read at, so the reducer drops it once the task moved past" }
       task-opening-doors: { fitness: TaskOpeningDoorsFitness, governs: class-dependency, max: 0, decision: "0066" }

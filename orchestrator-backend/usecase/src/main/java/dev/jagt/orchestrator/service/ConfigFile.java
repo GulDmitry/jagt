@@ -137,7 +137,9 @@ public record ConfigFile(
   @JsonIgnoreProperties(ignoreUnknown = true)
   @With
   public record ViewerConfig(
-      @Nullable String tmuxSession, @Nullable String viewMode, @Nullable Boolean keepViewer) {
+      @With(AccessLevel.NONE) @Nullable String session,
+      @Nullable String viewMode,
+      @Nullable Boolean keepViewer) {
 
     public static final List<String> VIEW_MODES = List.of("shared", "tab-per-task");
 
@@ -147,11 +149,6 @@ public record ConfigFile(
 
     public static ViewerConfig defaults() {
       return new ViewerConfig(null, null, null);
-    }
-
-    /** The session the viewer attaches to, as written; the session host names a blank one. */
-    public @Nullable String session() {
-      return tmuxSession;
     }
 
     public boolean keepViewerOrDefault() {

@@ -72,7 +72,7 @@ class ConfigCheckTest {
         root.resolve("jagt.yml"),
         """
         orchestrator:
-          viewer: { tmuxSession: jagt, viewMode: tab-per-task }
+          viewer: { session: jagt, viewMode: tab-per-task }
           projects:
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
@@ -101,7 +101,7 @@ class ConfigCheckTest {
         root.resolve("jagt.yml"),
         """
         orchestrator:
-          viewer: { tmuxSession: jagt, viewMode: tab-per-task }
+          viewer: { session: jagt, viewMode: tab-per-task }
           projects:
             demo: { url: "https://example.invalid/demo.git", baseBranch: origin/main }
         """);
@@ -134,6 +134,28 @@ class ConfigCheckTest {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  " + written + "\n");
 
     assertThat(check.notes()).extracting(Problem::key).containsExactly(path);
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      textBlock =
+          """
+          sessionHost: herdr            | orchestrator.sessionHost         | orchestrator.multiplexer
+          tmuxCommand: /opt/tmux        | orchestrator.tmuxCommand         | orchestrator.tmux.command
+          tmuxSocket: jagt              | orchestrator.tmuxSocket          | orchestrator.tmux.socket
+          viewer: { tmuxSession: jagt } | orchestrator.viewer.tmuxSession  | orchestrator.viewer.session
+          """)
+  void notesOnceTheNewKeyOfEachRenamedKeyStillRead(String written, String oldKey, String newKey)
+      throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  " + written + "\n");
+
+    assertThat(check.notes())
+        .singleElement()
+        .satisfies(note -> {
+          assertThat(note.key()).isEqualTo(oldKey);
+          assertThat(note.text()).contains(newKey, "0.32.0");
+        });
   }
 
   @Test
@@ -262,7 +284,7 @@ class ConfigCheckTest {
         root.resolve("jagt.yml"),
         """
         orchestrator:
-          viewer: { tmuxSession: "my.session" }
+          viewer: { session: "my.session" }
           projects:
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
@@ -271,7 +293,7 @@ class ConfigCheckTest {
 
     assertThat(check.problems())
         .extracting(Problem::key)
-        .containsExactly("orchestrator.viewer.tmuxSession");
+        .containsExactly("orchestrator.viewer.session");
   }
 
   @Test

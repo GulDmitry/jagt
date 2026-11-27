@@ -14,7 +14,7 @@ public record TestLaunchArgsBuilder(Path root, int port) {
     return new String[] {
       "--server.port=" + port,
       "--orchestrator.terminal=none",
-      "--orchestrator.tmux-command=" + root.resolve("tmux"),
+      "--orchestrator.tmux.command=" + root.resolve("tmux"),
       "--orchestrator.root=" + root,
       "--orchestrator.data=" + root,
       "--spring.config.import=",

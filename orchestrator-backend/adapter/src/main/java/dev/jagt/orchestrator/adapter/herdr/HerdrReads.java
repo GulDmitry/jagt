@@ -23,7 +23,7 @@ import tools.jackson.databind.JsonNode;
  * shared. A window is a tab labelled with its name, shown through that tab's first pane.
  */
 @Service
-@ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
+@ConditionalOnProperty(name = "orchestrator.multiplexer", havingValue = "herdr")
 @RequiredArgsConstructor
 @Slf4j
 public class HerdrReads implements ReadScope {

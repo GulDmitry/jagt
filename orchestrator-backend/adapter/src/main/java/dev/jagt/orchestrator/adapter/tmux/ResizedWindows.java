@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(
-    name = "orchestrator.session-host",
+    name = "orchestrator.multiplexer",
     havingValue = "tmux",
     matchIfMissing = true)
 @RequiredArgsConstructor

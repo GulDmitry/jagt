@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "orchestrator.session-host", havingValue = "herdr")
+@ConditionalOnProperty(name = "orchestrator.multiplexer", havingValue = "herdr")
 public class UnixHerdrWire implements HerdrWire {
 
   private static final Duration ANSWER_WITHIN = Duration.ofSeconds(20);

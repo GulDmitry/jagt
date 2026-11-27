@@ -20,6 +20,7 @@ kittyCommand
 kittyFontSize
 logging
 mcpUrl
+multiplexer
 notifier
 notifySendCommand
 onStop
@@ -29,14 +30,12 @@ previousData
 releaseFeed
 replay
 root
-sessionHost
 startupChecks
 stateFile
 stub
 supervisor
 terminal
 terminalNotifierCommand
-tmuxCommand
-tmuxSocket
+tmux
 usageLimits
 watchdog

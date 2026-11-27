@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.source.ConfigSource;
+import dev.jagt.orchestrator.config.source.RenamedKeys;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
@@ -95,7 +96,8 @@ public class ConfigService implements LoopBreaker.Current {
    * Per role, key by key, {@code roles.<id>} wins over the old top-level key, which fills what it
    * leaves unwritten.
    */
-  private static Object layered(Object section) {
+  private static Object layered(Object asWritten) {
+    Object section = RenamedKeys.applied(asWritten);
     if (!(section instanceof Map<?, ?> keys)) {
       return section;
     }
@@ -162,6 +164,11 @@ public class ConfigService implements LoopBreaker.Current {
     return section instanceof Map<?, ?> keys
         ? keys.keySet().stream().map(String::valueOf).collect(Collectors.toUnmodifiableSet())
         : Set.of();
+  }
+
+  /** The renamed keys the file still writes under their old name. */
+  public List<RenamedKeys.Rename> renamedKeysWritten() {
+    return RenamedKeys.written(section());
   }
 
   /**

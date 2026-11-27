@@ -123,7 +123,7 @@ class AgentSessionsTest {
         orchestrator:
           projects: {}
           viewer:
-            tmuxSession: jagt
+            session: jagt
             viewMode: tab-per-task
         """);
     when(tmux.sessionName("jagt")).thenReturn("jagt");
@@ -152,7 +152,7 @@ class AgentSessionsTest {
         orchestrator:
           projects: {}
           viewer:
-            tmuxSession: jagt
+            session: jagt
             viewMode: tab-per-task
         """);
     when(tmux.sessionName("jagt")).thenReturn("jagt");
@@ -456,8 +456,7 @@ class AgentSessionsTest {
   @Test
   void keepsTheAgentsViewerOpenAfterTheLastTaskByDefault() throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  projects: {}\n  viewer:\n    tmuxSession: jagt\n");
+        root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  viewer:\n    session: jagt\n");
     when(tmux.sessionName("jagt")).thenReturn("jagt");
 
     assertThat(sessions.viewerToClose()).isEmpty();
@@ -467,7 +466,7 @@ class AgentSessionsTest {
   void closesTheAgentsViewerAfterTheLastTaskWhenReservingItIsTurnedOff() throws Exception {
     Files.writeString(
         root.resolve("jagt.yml"),
-        "orchestrator:\n  projects: {}\n  viewer:\n    tmuxSession: jagt\n    keepViewer: false\n");
+        "orchestrator:\n  projects: {}\n  viewer:\n    session: jagt\n    keepViewer: false\n");
     when(tmux.sessionName("jagt")).thenReturn("jagt");
 
     assertThat(sessions.viewerToClose()).contains("jagt");

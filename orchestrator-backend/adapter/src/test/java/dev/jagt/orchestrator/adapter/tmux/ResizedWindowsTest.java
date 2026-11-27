@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.adapter.tmux;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +13,7 @@ class ResizedWindowsTest {
           .answering(new Processes.Result(0, "", ""))
           .answering(new Processes.Result(0, "100 30", ""), "display-message");
   private final ResizedWindows sizes =
-      new ResizedWindows(processes, new TmuxReads(processes, ToolchainProperties.defaults()));
+      new ResizedWindows(processes, new TmuxReads(processes, new TmuxProperties("", "")));
 
   @Test
   void givesTheWindowTheViewsSizeAndRecordsWhatItWas() {
@@ -62,7 +61,7 @@ class ResizedWindowsTest {
             .answering(new Processes.Result(0, "100 30", ""), "display-message")
             .answering(new Processes.Result(0, "latest", ""), "show-options");
     ResizedWindows sizes =
-        new ResizedWindows(processes, new TmuxReads(processes, ToolchainProperties.defaults()));
+        new ResizedWindows(processes, new TmuxReads(processes, new TmuxProperties("", "")));
     sizes.claim("@1", 150, 40);
 
     sizes.release("@1");

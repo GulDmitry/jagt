@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.adapter.tmux;
 
 import dev.jagt.orchestrator.adapter.host.Executables;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.ReadScope;
 import dev.jagt.orchestrator.port.terminal.SessionHost.WindowsUnreadable;
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @ConditionalOnProperty(
-    name = "orchestrator.session-host",
+    name = "orchestrator.multiplexer",
     havingValue = "tmux",
     matchIfMissing = true)
 @RequiredArgsConstructor
@@ -50,7 +49,7 @@ public class TmuxReads implements ReadScope {
   }
 
   private final Processes processes;
-  private final ToolchainProperties properties;
+  private final TmuxProperties properties;
   private final AtomicLong generation = new AtomicLong();
   private final ScopedValue<Tick> tick = ScopedValue.newInstance();
 
@@ -71,8 +70,7 @@ public class TmuxReads implements ReadScope {
   public List<String> argv(String... args) {
     List<String> argv =
         new ArrayList<>(
-            TmuxArgv.prefix(
-                Executables.resolve(properties.tmuxCommand()), properties.tmuxSocket()));
+            TmuxArgv.prefix(Executables.resolve(properties.command()), properties.socket()));
     argv.addAll(List.of(args));
     return argv;
   }

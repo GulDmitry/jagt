@@ -111,14 +111,15 @@ orchestrator:
     # Measured cold: it costs MORE than inheriting, which rides the prompt cache the human's own sessions keep warm.
     # mcp-config: /path/to/mcp-servers.json
   # claude.outputStyle and claude.disabledPlugins are read from jagt.yml on every access; jagt.desktop.yml.dist describes them.
+  # tmux | herdr: the terminal multiplexer keeping every agent session; unset is tmux.
+  # multiplexer: tmux
   # A bare name is resolved on PATH and then in the known install dirs; an absolute path is not portable.
-  tmux-command: tmux
-  # Empty: tmux's default server. A name: every tmux call carries -L <name>.
-  tmux-socket:
-  # tmux | herdr: where every agent session lives; herdr is the alternative terminal multiplexer, tmux the default.
-  session-host: tmux
+  # Empty socket: tmux's default server. A name: every tmux call carries -L <name>.
+  # tmux:
+  #   command: tmux
+  #   socket:
   # herdr:
-  #   command: herdr   # resolved like tmux-command
+  #   command: herdr   # resolved like tmux.command
   #   home:            # the folder holding herdr's sessions/<name>/herdr.sock; empty = ~/.config/herdr
   # Refuse to start when a part of the installation is missing, instead of failing at the click that needs it.
   # A suite that boots the application passes false: what these check is the machine, and a runner is not one.

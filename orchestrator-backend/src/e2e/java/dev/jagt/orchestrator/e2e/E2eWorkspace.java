@@ -144,7 +144,7 @@ final class E2eWorkspace {
         orchestrator:
           projects:
             %s
-          viewer: { tmuxSession: "%s", viewMode: "%s" }
+          viewer: { session: "%s", viewMode: "%s" }
           autoReview: { enabled: %s }
           roles:
             code-reviewer: { enabled: false }

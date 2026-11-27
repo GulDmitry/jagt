@@ -9,7 +9,6 @@ import fitness.core.Project;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public final class EdgeNamesFitness implements Fitness {
@@ -27,7 +26,7 @@ public final class EdgeNamesFitness implements Fitness {
           "kill -9",
           "/Applications");
 
-  private static final List<String> VENDORS =
+  static final List<String> VENDORS =
       List.of(
           "claude",
           "codex",
@@ -43,10 +42,9 @@ public final class EdgeNamesFitness implements Fitness {
           "openai",
           "mcp__");
 
-  private static final Pattern VENDOR_KEYS_BY_DESIGN =
-      Pattern.compile("tmuxCommand|tmuxSession|tmuxSocket");
-
   private static final List<String> IDE_FOLDERS = List.of(".idea", ".vscode", ".fleet");
+
+  private static final String RETIRED_KEY_TABLE = "RenamedKeys.java";
 
   private static final List<String> WORKTREE_FILLING =
       List.of("WorktreeNoise.java", "WorktreeFiles.java");
@@ -70,12 +68,9 @@ public final class EdgeNamesFitness implements Fitness {
 
   private static Stream<Path> vendorNamed() {
     return RingFiles.outsideTheEdge(false)
+        .filter(path -> !path.getFileName().toString().equals(RETIRED_KEY_TABLE))
         .filter(path -> {
-          String text =
-              VENDOR_KEYS_BY_DESIGN
-                  .matcher(SourceRoots.read(path))
-                  .replaceAll("")
-                  .toLowerCase(Locale.ROOT);
+          String text = SourceRoots.read(path).toLowerCase(Locale.ROOT);
           return VENDORS.stream().anyMatch(text::contains);
         })
         .map(Path::getFileName);
