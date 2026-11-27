@@ -221,6 +221,6 @@ class ClaudeAgentRuntimeScreenTest {
         claudeRuntime().build(new FakeClock()).blockedPrompt("went to a fresh session");
 
     assertThat(blocked)
-        .isEqualTo("{\"decision\": \"block\", \"reason\": \"went to a fresh session\"}");
+        .isEqualTo("{\"decision\":\"block\",\"reason\":\"went to a fresh session\"}");
   }
 }

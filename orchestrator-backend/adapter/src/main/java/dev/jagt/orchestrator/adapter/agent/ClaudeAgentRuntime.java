@@ -17,9 +17,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -289,7 +287,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
             claude.outputStyle(),
             claude.disabledPlugins(),
             Stream.concat(worktree.allowedTools().stream(), editRules(worktree.sandbox())).toList(),
-            hooksJson(worktree.path()) + sandboxJson(worktree.sandbox())));
+            hooksJson(worktree.path()),
+            sandboxJson(worktree.sandbox())));
     ClaudeTrust.accept(ClaudeTrust.configFile(host), worktree.path());
   }
 
@@ -307,18 +306,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
    * worktree path.
    */
   static String mcpJson(String url, String worktreePath) {
-    return """
-    {
-      "mcpServers": {
-        "jagt-orchestrator": {
-          "type": "http",
-          "url": %s,
-          "headers": { %s: %s }
-        }
-      }
-    }
-    """
-        .formatted(quoted(url), quoted(McpEndpoint.CALLER_HEADER), quoted(worktreePath));
+    ObjectNode root = JSON.createObjectNode();
+    ObjectNode jagt = root.withObjectProperty("mcpServers").withObjectProperty("jagt-orchestrator");
+    jagt.put("type", "http");
+    jagt.put("url", url);
+    jagt.withObjectProperty("headers").put(McpEndpoint.CALLER_HEADER, worktreePath);
+    return pretty(root);
   }
 
   /**
@@ -344,45 +337,37 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
       @Nullable String outputStyle,
       List<String> disabledPlugins,
       List<String> allowedTools,
-      String sections) {
-    String styleLine =
-        outputStyle == null || outputStyle.isBlank()
-            ? ""
-            : "\n  \"outputStyle\": " + quoted(outputStyle) + ",";
-    String pluginsLine = "";
+      ObjectNode... sections) {
+    ObjectNode root = JSON.createObjectNode();
+    if (outputStyle != null && !outputStyle.isBlank()) {
+      root.put("outputStyle", outputStyle);
+    }
     if (disabledPlugins != null) {
-      String entries =
-          disabledPlugins.stream()
-              .filter(p -> p != null && !p.isBlank())
-              .map(p -> quoted(p.strip()) + ": false")
-              .collect(Collectors.joining(", "));
-      if (!entries.isBlank()) {
-        pluginsLine = "\n  \"enabledPlugins\": {" + entries + "},";
+      ObjectNode plugins = JSON.createObjectNode();
+      disabledPlugins.stream()
+          .filter(p -> p != null && !p.isBlank())
+          .forEach(p -> plugins.put(p.strip(), false));
+      if (!plugins.isEmpty()) {
+        root.set("enabledPlugins", plugins);
       }
     }
-    return """
-    {%s%s%s
-      "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
-      "enableAllProjectMcpServers": true,
-      "autoMemoryEnabled": false,
-      "idleCompaction": false,
-      "permissions": {
-        "allow": [%s],
-        "deny": ["AskUserQuestion"]
-      }
+    for (ObjectNode section : sections) {
+      root.setAll(section);
     }
-    """
-        .formatted(
-            styleLine,
-            pluginsLine,
-            sections == null ? "" : sections,
-            COMPACT_AT_TOKENS,
-            Stream.concat(
-                    Stream.of("mcp__jagt-orchestrator", "Bash(git:*)"),
-                    allowedTools == null ? Stream.empty() : allowedTools.stream())
-                .filter(tool -> tool != null && !tool.isBlank())
-                .map(tool -> quoted(tool.strip()))
-                .collect(Collectors.joining(", ")));
+    root.withObjectProperty("env")
+        .put("CLAUDE_CODE_AUTO_COMPACT_WINDOW", String.valueOf(COMPACT_AT_TOKENS));
+    root.put("enableAllProjectMcpServers", true);
+    root.put("autoMemoryEnabled", false);
+    root.put("idleCompaction", false);
+    ObjectNode permissions = root.withObjectProperty("permissions");
+    ArrayNode allow = permissions.withArrayProperty("allow");
+    Stream.concat(
+            Stream.of("mcp__jagt-orchestrator", "Bash(git:*)"),
+            allowedTools == null ? Stream.empty() : allowedTools.stream())
+        .filter(tool -> tool != null && !tool.isBlank())
+        .forEach(tool -> allow.add(tool.strip()));
+    permissions.withArrayProperty("deny").add("AskUserQuestion");
+    return pretty(root);
   }
 
   /**
@@ -412,7 +397,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
             path);
       }
     }
-    write(file, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(settings));
+    write(file, pretty(settings));
     return Admission.GRANTED;
   }
 
@@ -465,7 +450,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   @Override
   public String refusedTurnEnd(String reason) {
-    return "{\"decision\": \"block\", \"reason\": " + quoted(reason) + "}";
+    return JSON.createObjectNode().put("decision", "block").put("reason", reason).toString();
   }
 
   @Override
@@ -475,7 +460,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   @Override
   public String toldTheHuman(String line) {
-    return "{\"systemMessage\": " + quoted(line) + "}";
+    return JSON.createObjectNode().put("systemMessage", line).toString();
   }
 
   @Override
@@ -496,86 +481,77 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
    * a socket and a local port stay open for a container client and a tunnel, the OS trust store for
    * a TLS client.
    */
-  static String sandboxJson(Sandbox sandbox) {
+  static ObjectNode sandboxJson(Sandbox sandbox) {
+    ObjectNode root = JSON.createObjectNode();
     if (!sandbox.enabled()) {
-      return "";
+      return root;
     }
-    Map<String, Object> block = new LinkedHashMap<>();
+    ObjectNode block = root.withObjectProperty("sandbox");
     block.put("enabled", true);
     block.put("failIfUnavailable", true);
     block.put("autoAllowBashIfSandboxed", true);
     block.put("allowUnsandboxedCommands", true);
     block.put("enableWeakerNetworkIsolation", true);
-    block.put("excludedCommands", sandbox.excludedCommands());
-    block.put(
-        "filesystem",
-        Map.of("allowWrite", sandbox.writable().stream().map(Path::toString).toList()));
-    block.put(
-        "network",
-        Map.of(
-            "allowedDomains",
-            List.of("*"),
-            "allowLocalBinding",
-            true,
-            "allowAllUnixSockets",
-            true));
-    return "\n  \"sandbox\": " + JSON.writeValueAsString(block) + ",";
+    block.set("excludedCommands", JSON.valueToTree(sandbox.excludedCommands()));
+    block
+        .withObjectProperty("filesystem")
+        .set(
+            "allowWrite",
+            JSON.valueToTree(sandbox.writable().stream().map(Path::toString).toList()));
+    ObjectNode network = block.withObjectProperty("network");
+    network.putArray("allowedDomains").add("*");
+    network.put("allowLocalBinding", true);
+    network.put("allowAllUnixSockets", true);
+    return root;
   }
 
   /**
    * Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here.
    */
-  private String hooksJson(Path worktree) {
-    String events =
-        Stream.of(
-                SessionHooks.of("claude").entrySet().stream()
-                    .map(event ->
-                        hook(
-                            event.getKey(), endpoints.hooks().command(worktree, event.getValue()))),
-                SessionHooks.turnEnd("claude").stream()
-                    .map(event -> hook(event, endpoints.hooks().command(worktree, "turn-end"))),
-                SessionHooks.promptGate("claude").stream()
-                    .map(event ->
-                        hook(
-                            event,
-                            endpoints.hooks().promptCommand(worktree),
-                            HookEndpoint.PROMPT_GATE_SECONDS + 5)),
-                SessionHooks.turnFailure("claude").stream()
-                    .map(event -> hook(event, endpoints.hooks().command(worktree, "turn-failure"))),
-                SessionHooks.permissionRequest("claude").stream()
-                    .map(event -> hook(event, endpoints.hooks().command(worktree, "permission"))),
-                // Scoped to the tools that can push or write a file: a hook on all of them would
-                // sit in
-                // front of every step the agent takes.
-                SessionHooks.gate("claude").stream()
-                    .map(event ->
-                        """
-                        %s: [{"matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": %s,\
-                         "timeout": 5}]}]\
-                        """
-                            .formatted(
-                                quoted(event), quoted(endpoints.hooks().gateCommand(worktree)))))
-            .flatMap(stream -> stream)
-            .collect(Collectors.joining(",\n    "));
-    return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";
+  private ObjectNode hooksJson(Path worktree) {
+    ObjectNode events = JSON.createObjectNode();
+    SessionHooks.of("claude")
+        .forEach(
+            (event, state) -> hook(events, event, endpoints.hooks().command(worktree, state), 5));
+    SessionHooks.turnEnd("claude")
+        .ifPresent(
+            event -> hook(events, event, endpoints.hooks().command(worktree, "turn-end"), 5));
+    SessionHooks.promptGate("claude")
+        .ifPresent(event ->
+            hook(
+                events,
+                event,
+                endpoints.hooks().promptCommand(worktree),
+                HookEndpoint.PROMPT_GATE_SECONDS + 5));
+    SessionHooks.turnFailure("claude")
+        .ifPresent(
+            event -> hook(events, event, endpoints.hooks().command(worktree, "turn-failure"), 5));
+    SessionHooks.permissionRequest("claude")
+        .ifPresent(
+            event -> hook(events, event, endpoints.hooks().command(worktree, "permission"), 5));
+    SessionHooks.gate("claude")
+        .ifPresent(event ->
+            hook(events, event, endpoints.hooks().gateCommand(worktree), 5)
+                .put("matcher", "Bash|Edit|Write|MultiEdit|NotebookEdit"));
+    ObjectNode root = JSON.createObjectNode();
+    if (!events.isEmpty()) {
+      root.set("hooks", events);
+    }
+    return root;
   }
 
-  private static String hook(String event, String command) {
-    return hook(event, command, 5);
+  private static ObjectNode hook(ObjectNode events, String event, String command, int timeout) {
+    ObjectNode entry = events.putArray(event).addObject();
+    entry
+        .putArray("hooks")
+        .addObject()
+        .put("type", "command")
+        .put("command", command)
+        .put("timeout", timeout);
+    return entry;
   }
 
-  private static String hook(String event, String command, int timeoutSeconds) {
-    return """
-    %s: [{"hooks": [{"type": "command", "command": %s, "timeout": %d}]}]\
-    """
-        .formatted(quoted(event), quoted(command), timeoutSeconds);
-  }
-
-  /**
-   * Serialized rather than hand-quoted: a control character in a path would make the whole file
-   * unreadable, and it is then discarded whole.
-   */
-  private static String quoted(String value) {
-    return JSON.writeValueAsString(value);
+  private static String pretty(ObjectNode root) {
+    return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(root);
   }
 }

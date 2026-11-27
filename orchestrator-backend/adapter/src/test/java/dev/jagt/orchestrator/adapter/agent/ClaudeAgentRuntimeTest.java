@@ -286,7 +286,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-    String json = ClaudeAgentRuntime.settingsJson("team:Engineer", List.of(), List.of(), "");
+    String json = ClaudeAgentRuntime.settingsJson("team:Engineer", List.of(), List.of());
 
     String style = new JsonMapper().readTree(json).path("outputStyle").asString(null);
 
@@ -295,7 +295,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void compactsTaskSessionLongBeforeItsContextWindowIsFull() {
-    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of());
 
     String window =
         new JsonMapper()
@@ -309,7 +309,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void keepsTaskSessionFromWritingTheRepositorysAutoMemory() {
-    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of());
 
     boolean enabled = new JsonMapper().readTree(json).path("autoMemoryEnabled").asBoolean(true);
 
@@ -318,7 +318,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void keepsAnIdleTaskSessionUncompactedSoColdPromptStillFindsItCold() {
-    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of());
 
     boolean idleCompaction = new JsonMapper().readTree(json).path("idleCompaction").asBoolean(true);
 
@@ -327,7 +327,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void deniesTheQuestionDialogSoAnAnswerRelayedToTheSessionIsNotHeldBehindIt() {
-    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of());
 
     List<String> deny = new ArrayList<>();
     new JsonMapper()
@@ -341,7 +341,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
-    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of());
 
     List<String> allow = new ArrayList<>();
     new JsonMapper()
@@ -356,7 +356,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void preApprovesTheConfiguredToolsBesideJagtsOwnInGeneratedAgentSettings() {
     String json =
-        ClaudeAgentRuntime.settingsJson(null, List.of(), List.of("mcp__host__open_request"), "");
+        ClaudeAgentRuntime.settingsJson(null, List.of(), List.of("mcp__host__open_request"));
 
     List<String> allow = new ArrayList<>();
     new JsonMapper()
@@ -407,7 +407,7 @@ class ClaudeAgentRuntimeTest {
   void disablesConfiguredPluginsInGeneratedAgentSettings() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, List.of("jdtls-lsp@claude-plugins-official"), List.of(), "");
+            null, List.of("jdtls-lsp@claude-plugins-official"), List.of());
 
     boolean enabled =
         new JsonMapper()
@@ -536,7 +536,7 @@ class ClaudeAgentRuntimeTest {
   void skipsBlankPluginsInGeneratedAgentSettings() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, List.of("  ", "jdtls-lsp@claude-plugins-official"), List.of(), "");
+            null, List.of("  ", "jdtls-lsp@claude-plugins-official"), List.of());
 
     var plugins = new JsonMapper().readTree(json).path("enabledPlugins");
 
@@ -548,7 +548,7 @@ class ClaudeAgentRuntimeTest {
   void skipsBlankToolsInGeneratedAgentSettings() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, List.of(), List.of("  ", " mcp__host__open_request "), "");
+            null, List.of(), List.of("  ", " mcp__host__open_request "));
 
     List<String> allow = new ArrayList<>();
     new JsonMapper()
@@ -715,6 +715,29 @@ class ClaudeAgentRuntimeTest {
       assertThat(config.path("url").asString("")).isEqualTo("http://localhost:8290/mcp");
       assertThat(config.path("headers").path("X-Working-Directory").asString(""))
           .isEqualTo(worktree.toAbsolutePath().normalize().toString());
+    }
+
+    @Test
+    void writesTheSettingsFileAsOneJsonObjectWithEveryKeyTheSessionReads() {
+      assertThat(settings.propertyNames())
+          .containsExactlyInAnyOrder(
+              "hooks",
+              "env",
+              "enableAllProjectMcpServers",
+              "autoMemoryEnabled",
+              "idleCompaction",
+              "permissions");
+      assertThat(settings.path("enableAllProjectMcpServers").asBoolean(false)).isTrue();
+      assertThat(settings.path("hooks").propertyNames())
+          .containsExactlyInAnyOrder(
+              "Notification",
+              "SessionEnd",
+              "SessionStart",
+              "Stop",
+              "UserPromptSubmit",
+              "StopFailure",
+              "PermissionRequest",
+              "PreToolUse");
     }
 
     @Test
