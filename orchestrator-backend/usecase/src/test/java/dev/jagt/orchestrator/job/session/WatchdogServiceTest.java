@@ -51,7 +51,8 @@ import org.slf4j.event.KeyValuePair;
 
 class WatchdogServiceTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final SessionProbe probe = mock(SessionProbe.class);
   private final long now = new FakeClock().millis();

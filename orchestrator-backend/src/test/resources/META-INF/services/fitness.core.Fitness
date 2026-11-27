@@ -13,6 +13,7 @@ technical.maintainability.modularity.CollaboratorOwnersFitness
 technical.maintainability.modularity.CommandLiteralsFitness
 technical.maintainability.modularity.DependencyLinesFitness
 technical.maintainability.modularity.EdgeNamesFitness
+technical.maintainability.modularity.FactGenerationsFitness
 technical.maintainability.modularity.FlowDoorsFitness
 technical.maintainability.modularity.PackageCeilingFitness
 technical.maintainability.modularity.PackageExceptionsFitness

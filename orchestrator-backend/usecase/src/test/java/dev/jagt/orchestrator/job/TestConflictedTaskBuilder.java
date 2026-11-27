@@ -18,7 +18,7 @@ public record TestConflictedTaskBuilder(Deployment.Cause cause, String worktree)
   }
 
   public TaskState build() {
-    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
     TaskState conflicted =
         TaskState.builder("web", worktree, TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)

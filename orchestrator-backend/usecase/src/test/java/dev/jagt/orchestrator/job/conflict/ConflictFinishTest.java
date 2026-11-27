@@ -33,7 +33,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class ConflictFinishTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final CommandService commands = mock(CommandService.class);
   private final TaskStops stops = mock(TaskStops.class);

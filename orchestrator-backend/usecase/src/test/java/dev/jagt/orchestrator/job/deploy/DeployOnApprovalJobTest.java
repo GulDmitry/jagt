@@ -53,7 +53,7 @@ class DeployOnApprovalJobTest {
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(properties, FakeHost.machine()),
-            new TaskReducer(new TaskChart(Composition.builtIn())),
+            new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}),
             event -> {});
     job = new DeployOnApprovalJob(config, commands, state);
   }

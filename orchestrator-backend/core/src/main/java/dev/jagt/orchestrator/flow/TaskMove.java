@@ -21,6 +21,12 @@ import org.jspecify.annotations.Nullable;
 /** What can happen to a task's status, named by the door it came through. */
 sealed interface TaskMove {
 
+  /** A fact read from outside the task, landing only on the generation it was taken at. */
+  sealed interface Observed extends TaskMove {
+
+    Generation readAt();
+  }
+
   record Ran(TaskAction action, Outcome.Kind outcome) implements TaskMove {}
 
   /**
@@ -109,7 +115,7 @@ sealed interface TaskMove {
 
   record DeployStepped(DeployStep step) implements TaskMove {}
 
-  record Signed(SessionSign sign) implements TaskMove {}
+  record Signed(Generation readAt, SessionSign sign) implements Observed {}
 
   /** A session started over: nothing the old one signed speaks for the new one. */
   record SessionStartedOver() implements TaskMove {}
@@ -183,33 +189,37 @@ sealed interface TaskMove {
    * What git found of whether a repository's request is merged into its target; {@code completes}
    * where every repository's request is then merged.
    */
-  record MergedByGit(String project, boolean merged, boolean completes) implements TaskMove {}
+  record MergedByGit(Generation readAt, String project, boolean merged, boolean completes)
+      implements Observed {}
 
   /**
    * The host's word that a repository's request is merged; {@code completes} as in {@link
    * MergedByGit}.
    */
-  record MergedByHost(String project, boolean completes) implements TaskMove {}
+  record MergedByHost(Generation readAt, String project, boolean completes) implements Observed {}
 
   /**
    * The newest commit a read saw pushed; {@code moved} where it is not the head the task already
    * had, {@code staleReads} where the checks it read are then not of the head, {@code unarmed}
    * where the infra region stands once an armed re-run is gone.
    */
-  record HeadSeen(String tip, boolean moved, boolean staleReads, InfraPhase unarmed)
-      implements TaskMove {}
+  record HeadSeen(
+      Generation readAt, String tip, boolean moved, boolean staleReads, InfraPhase unarmed)
+      implements Observed {}
 
   /**
    * What a read listed of the checks on {@code tip}, {@code onHead} where that is the head the task
    * has seen.
    */
-  record ChecksRead(String hostStatus, String tip, boolean onHead) implements TaskMove {}
+  record ChecksRead(Generation readAt, String hostStatus, String tip, boolean onHead)
+      implements Observed {}
 
   /** A round that could not list the checks. */
-  record ChecksUnread(dev.jagt.orchestrator.task.deploy.ChecksUnread read) implements TaskMove {}
+  record ChecksUnread(Generation readAt, dev.jagt.orchestrator.task.deploy.ChecksUnread read)
+      implements Observed {}
 
   /** What the host said of the approval. */
-  record ApprovalRead(boolean approved) implements TaskMove {}
+  record ApprovalRead(Generation readAt, boolean approved) implements Observed {}
 
   /** A re-run armed for a pipeline that died on infrastructure. */
   record InfraArmed(InfraRetry retry) implements TaskMove {}

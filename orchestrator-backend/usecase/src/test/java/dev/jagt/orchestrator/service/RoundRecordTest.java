@@ -32,7 +32,8 @@ import org.mockito.ArgumentCaptor;
 
 class RoundRecordTest {
 
-  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final StateService stateService = mock(StateService.class);
   private final TaskStops stops = mock(TaskStops.class);

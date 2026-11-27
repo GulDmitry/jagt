@@ -31,7 +31,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class UnaffectedReposTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final ConfigService config = mock(ConfigService.class);
   private final GitWorktrees git = mock(GitWorktrees.class);

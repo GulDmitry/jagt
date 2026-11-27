@@ -15,7 +15,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class TaskReducerSessionTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   @Test
   void clearsPermissionTheSignStampedWhenWorkStartsAgain() {

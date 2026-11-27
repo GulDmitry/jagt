@@ -49,7 +49,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class DeployServiceTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);

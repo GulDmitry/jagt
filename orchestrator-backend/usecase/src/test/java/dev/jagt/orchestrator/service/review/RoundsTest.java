@@ -18,7 +18,8 @@ import org.junit.jupiter.api.Test;
 
 class RoundsTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final ConfigService configService = mock(ConfigService.class);
   private final Rounds rounds =

@@ -26,7 +26,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class FinishedTasksTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   @TempDir Path root;
 

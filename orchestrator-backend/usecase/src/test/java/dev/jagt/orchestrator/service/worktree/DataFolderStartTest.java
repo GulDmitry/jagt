@@ -29,7 +29,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DataFolderStartTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final Processes processes = mock(Processes.class);
 

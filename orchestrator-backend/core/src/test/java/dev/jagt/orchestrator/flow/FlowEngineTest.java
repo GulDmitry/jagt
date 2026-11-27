@@ -38,7 +38,8 @@ class FlowEngineTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
-  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final ReducingStore stateService = mock(ReducingStore.class);
   private final AgentPresence sessions = mock(AgentPresence.class);

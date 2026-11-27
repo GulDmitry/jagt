@@ -44,7 +44,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class CheckerDeclineJobTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private static final ConfigFile ON =
       ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));

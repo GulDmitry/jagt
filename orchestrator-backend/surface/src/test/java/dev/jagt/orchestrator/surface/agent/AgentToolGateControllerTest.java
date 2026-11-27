@@ -40,7 +40,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 class AgentToolGateControllerTest {
 
-  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final StateService stateService = mock(StateService.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC);

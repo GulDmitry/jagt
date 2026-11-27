@@ -384,6 +384,10 @@ final class DeliveryRegions {
     return new TaskEffect.SeesHead(((TaskMove.HeadSeen) move).tip());
   }
 
+  private static TaskEffect readsApproval(TaskMove move) {
+    return new TaskEffect.ReadsApproval(((TaskMove.ApprovalRead) move).approved());
+  }
+
   void approvals(StatechartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(APPROVAL, ApprovalPhase.UNREAD);
     for (ApprovalPhase from : ApprovalPhase.values()) {
@@ -401,7 +405,7 @@ final class DeliveryRegions {
           from,
           "approved",
           move -> move instanceof TaskMove.ApprovalRead read && read.approved(),
-          move -> new TaskEffect.ReadsApproval(true),
+          DeliveryRegions::readsApproval,
           ApprovalPhase.APPROVED);
       regionEdge(
           chart,
@@ -409,7 +413,7 @@ final class DeliveryRegions {
           from,
           "withheld",
           move -> move instanceof TaskMove.ApprovalRead read && !read.approved(),
-          move -> new TaskEffect.ReadsApproval(false),
+          DeliveryRegions::readsApproval,
           ApprovalPhase.WITHHELD);
     }
   }

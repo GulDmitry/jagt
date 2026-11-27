@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 
 class TaskReducerDeclinedRoundTest {
 
-  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   @Test
   void declinedRoundLandsDeployedAndRecordsTheDigestOnTheRole() {

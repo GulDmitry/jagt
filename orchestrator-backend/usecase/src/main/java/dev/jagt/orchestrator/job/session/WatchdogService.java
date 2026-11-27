@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job.session;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.job.Job;
@@ -111,15 +112,9 @@ public class WatchdogService implements Job {
     } catch (SessionHost.WindowsUnreadable unknown) {
       return;
     }
-    stateService.reduce(
-        taskId,
-        (reducer, current) ->
-            startedOverSince(task, current) ? current : reducer.signed(current, read, now));
+    Generation started = Generation.of(Generation.Kind.SESSION_START, task);
+    stateService.reduce(taskId, (reducer, current) -> reducer.signed(current, started, read, now));
     alert(taskId, stateService.task(taskId).orElse(task), now);
-  }
-
-  private static boolean startedOverSince(TaskState looked, TaskState current) {
-    return current.work().session().generation() != looked.work().session().generation();
   }
 
   private void alert(String taskId, TaskState task, long now) {

@@ -601,6 +601,10 @@ class ReconcilerProperties {
 
       TaskMove LINKS_EVERY_REQUEST = new TaskMove.RequestLinked(Map.of(), "u", false, false, true);
 
+      Generation ON_THE_HEAD = new Generation(Generation.Kind.HEAD, "tip");
+
+      Generation PUSHED_SINCE = new Generation(Generation.Kind.HEAD, "pushed");
+
       String label();
 
       World apply(Model model, Run run, World at);
@@ -613,12 +617,12 @@ class ReconcilerProperties {
           case CHECKS_GREEN -> said(at, Pipeline.GREEN);
           case CHECKS_SLOW -> said(at, Pipeline.RUNNING);
           case CHECKS_UNREAD -> unread(at);
+          case READ_LANDS_LATE -> late(at);
           case SESSION_SILENT,
               SESSION_DIES,
               CHECKS_FLAKY,
               RESTART_EFFECT_UNRECORDED,
               TOKEN_STALE,
-              READ_LANDS_LATE,
               JOB_THROWS ->
               List.of();
         };
@@ -663,7 +667,20 @@ class ReconcilerProperties {
 
       private static List<Env> unread(World at) {
         return at.chart().get(REQUEST) == RequestPhase.OPEN
-            ? List.of(new Session(new TaskMove.ChecksUnread(new ChecksUnread(0, "down"))))
+            ? List.of(
+                new Session(new TaskMove.ChecksUnread(ON_THE_HEAD, new ChecksUnread(0, "down"))))
+            : List.of();
+      }
+
+      private static List<Env> late(World at) {
+        return at.chart().get(REQUEST) == RequestPhase.OPEN
+            ? Stream.<TaskMove.Observed>of(
+                    new TaskMove.ChecksRead(ON_THE_HEAD, "success", "tip", true),
+                    new TaskMove.ChecksRead(ON_THE_HEAD, "failed", "tip", true),
+                    new TaskMove.ApprovalRead(ON_THE_HEAD, true),
+                    new TaskMove.ChecksUnread(ON_THE_HEAD, new ChecksUnread(0, "down")))
+                .<Env>map(LateRead::new)
+                .toList()
             : List.of();
       }
 
@@ -673,8 +690,8 @@ class ReconcilerProperties {
           moves.add(new Session(new TaskMove.DeployStepped(new DeployStep.Opened(List.of()))));
         }
         if (at.chart().get(REQUEST) == RequestPhase.OPEN) {
-          moves.add(new Session(new TaskMove.ApprovalRead(true)));
-          moves.add(new Session(new TaskMove.ApprovalRead(false)));
+          moves.add(new Session(new TaskMove.ApprovalRead(ON_THE_HEAD, true)));
+          moves.add(new Session(new TaskMove.ApprovalRead(ON_THE_HEAD, false)));
         }
         return moves;
       }
@@ -761,7 +778,7 @@ class ReconcilerProperties {
               .stepped(
                   run,
                   at,
-                  new TaskMove.ChecksRead(word(worst), "tip", true),
+                  new TaskMove.ChecksRead(ON_THE_HEAD, word(worst), "tip", true),
                   ActionOrigin.CODE_HOST)
               .withChecks(worst);
         }
@@ -772,6 +789,26 @@ class ReconcilerProperties {
             case GREEN -> "success";
             default -> "running";
           };
+        }
+      }
+
+      record LateRead(TaskMove.Observed read) implements Env {
+
+        @Override
+        public String label() {
+          return "late " + read;
+        }
+
+        @Override
+        public World apply(Model model, Run run, World at) {
+          World landed =
+              read.readAt().landingOn(null, PUSHED_SINCE).isPresent()
+                  ? at
+                  : model.stepped(run, at, read, ActionOrigin.CODE_HOST);
+          if (!landed.equals(at)) {
+            model.violation(run, at, "S6 a read moved a newer state: " + read, label());
+          }
+          return landed;
         }
       }
 

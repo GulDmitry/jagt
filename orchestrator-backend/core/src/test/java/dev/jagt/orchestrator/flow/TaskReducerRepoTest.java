@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test;
 
 class TaskReducerRepoTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
   private final TaskState openedThree =
       reducer.deployStepped(
           TaskState.builder(

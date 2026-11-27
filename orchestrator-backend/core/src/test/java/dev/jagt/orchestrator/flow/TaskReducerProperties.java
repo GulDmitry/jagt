@@ -44,7 +44,7 @@ class TaskReducerProperties {
   private static final TaskChart chart = new TaskChart(Composition.builtIn());
   private static final FlowRules rules = new FlowRules(chart);
 
-  private static final TaskReducer reducer = new TaskReducer(chart);
+  private static final TaskReducer reducer = new TaskReducer(chart, stale -> {});
 
   @Property
   void deployConflictNeverTravelsWithStatusChange(
@@ -587,8 +587,17 @@ class TaskReducerProperties {
             Arbitraries.just(new TaskMove.RepoAsked("registry")),
             Arbitraries.just(new TaskMove.RepoUnasked()),
             Arbitraries.of("t1", "t2")
-                .map(tip -> new TaskMove.HeadSeen(tip, true, false, InfraPhase.NONE)),
-            Arbitraries.of("t1", "t2").map(tip -> new TaskMove.ChecksRead("failed", tip, false)),
+                .map(tip ->
+                    new TaskMove.HeadSeen(
+                        new Generation(Generation.Kind.HEAD, ""),
+                        tip,
+                        true,
+                        false,
+                        InfraPhase.NONE)),
+            Arbitraries.of("t1", "t2")
+                .map(tip ->
+                    new TaskMove.ChecksRead(
+                        new Generation(Generation.Kind.HEAD, ""), "failed", tip, false)),
             Arbitraries.just(
                 new TaskMove.InfraArmed(
                     InfraRetry.armed(
@@ -611,8 +620,11 @@ class TaskReducerProperties {
                         true,
                         1,
                         3))),
-            Arbitraries.just(new TaskMove.ChecksUnread(new ChecksUnread(500, "no listing"))),
-            flag.map(TaskMove.ApprovalRead::new),
+            Arbitraries.just(
+                new TaskMove.ChecksUnread(
+                    new Generation(Generation.Kind.HEAD, ""), new ChecksUnread(500, "no listing"))),
+            flag.map(approved ->
+                new TaskMove.ApprovalRead(new Generation(Generation.Kind.HEAD, ""), approved)),
             flag.map(owed ->
                 new TaskMove.RequestLinked(
                     Map.of("api", "https://host.example/2"),
@@ -620,8 +632,11 @@ class TaskReducerProperties {
                     owed,
                     false,
                     false)),
-            flag.map(merged -> new TaskMove.MergedByGit("api", merged, false)),
-            Arbitraries.just(new TaskMove.MergedByHost("api", false)),
+            flag.map(merged ->
+                new TaskMove.MergedByGit(
+                    new Generation(Generation.Kind.ROUND, ""), "api", merged, false)),
+            Arbitraries.just(
+                new TaskMove.MergedByHost(new Generation(Generation.Kind.ROUND, ""), "api", false)),
             Arbitraries.just(new TaskMove.RepoAttached(TaskRepo.of("registry", "/wt-registry"))),
             Arbitraries.just(
                 new TaskMove.RepoLeft("api", RequestPhase.NONE, TaskMove.ConflictDrop.NONE)),

@@ -48,7 +48,7 @@ class NewTaskWorktreesCompanionsTest {
         new StateService(
             new JsonMapper(),
             paths,
-            new TaskReducer(new TaskChart(Composition.builtIn())),
+            new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}),
             event -> {});
     worktrees = new NewTaskWorktrees(config, state, git, mock(WorktreeSetup.class), paths);
     apiWithSpecs =

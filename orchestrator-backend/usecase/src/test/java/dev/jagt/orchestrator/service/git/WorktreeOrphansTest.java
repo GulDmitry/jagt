@@ -39,7 +39,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class WorktreeOrphansTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);

@@ -33,7 +33,8 @@ class FlowReportsTest {
 
   private static final Clock CLOCK = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC);
 
-  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write =
       ArgumentCaptor.captor();

@@ -37,7 +37,7 @@ class PlanBaselineTest {
         new StateService(
             new JsonMapper(),
             paths,
-            new TaskReducer(new TaskChart(Composition.builtIn())),
+            new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}),
             event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("web", worktree.toString(), TaskStatus.PLAN_PENDING).build());

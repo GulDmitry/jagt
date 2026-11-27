@@ -26,7 +26,7 @@ public record TestStateServiceBuilder(OrchestratorProperties properties) {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()),
             FakeHost.machine()),
-        new TaskReducer(new TaskChart(Composition.builtIn())),
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}),
         event -> {});
   }
 }

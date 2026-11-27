@@ -258,22 +258,26 @@ class TaskChartTest {
             List.of(new TaskEffect.SendsInfra(last))),
         arguments(
             "ARMED",
-            new TaskMove.HeadSeen("t", true, false, InfraPhase.SENT),
+            new TaskMove.HeadSeen(
+                new Generation(Generation.Kind.HEAD, ""), "t", true, false, InfraPhase.SENT),
             "SENT",
             List.of(new TaskEffect.DisarmsInfra())),
         arguments(
             "ARMED",
-            new TaskMove.HeadSeen("t", true, false, InfraPhase.SPENT),
+            new TaskMove.HeadSeen(
+                new Generation(Generation.Kind.HEAD, ""), "t", true, false, InfraPhase.SPENT),
             "SPENT",
             List.of(new TaskEffect.DisarmsInfra())),
         arguments(
             "ARMED",
-            new TaskMove.HeadSeen("t", true, false, InfraPhase.NONE),
+            new TaskMove.HeadSeen(
+                new Generation(Generation.Kind.HEAD, ""), "t", true, false, InfraPhase.NONE),
             "NONE",
             List.of(new TaskEffect.DisarmsInfra())),
         arguments(
             "ARMED",
-            new TaskMove.HeadSeen("t", false, false, InfraPhase.SENT),
+            new TaskMove.HeadSeen(
+                new Generation(Generation.Kind.HEAD, ""), "t", false, false, InfraPhase.SENT),
             "ARMED",
             List.of()));
   }
@@ -331,7 +335,7 @@ class TaskChartTest {
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults(), ChartFacts.PROJECTED),
-                new TaskMove.Signed(sign));
+                new TaskMove.Signed(new Generation(Generation.Kind.SESSION_START, "0"), sign));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("session", to);
     assertThat(stepped.effects()).contains(new TaskEffect.Signs(sign));
@@ -671,7 +675,8 @@ class TaskChartTest {
             "checks",
             "NONE",
             "IN_PROGRESS",
-            new TaskMove.ChecksUnread(new ChecksUnread(1L, "c")),
+            new TaskMove.ChecksUnread(
+                new Generation(Generation.Kind.HEAD, ""), new ChecksUnread(1L, "c")),
             "UNREAD",
             List.of(new TaskEffect.FailsToReadChecks(new ChecksUnread(1L, "c")))),
         arguments(
@@ -699,28 +704,30 @@ class TaskChartTest {
             "checks",
             "NONE",
             "IN_PROGRESS",
-            new TaskMove.ChecksRead("ok", "t", false),
+            new TaskMove.ChecksRead(new Generation(Generation.Kind.HEAD, ""), "ok", "t", false),
             "STALE",
             List.of(new TaskEffect.ReadsChecks("ok", "t"))),
         arguments(
             "checks",
             "NONE",
             "IN_PROGRESS",
-            new TaskMove.HeadSeen("t", false, false, InfraPhase.NONE),
+            new TaskMove.HeadSeen(
+                new Generation(Generation.Kind.HEAD, ""), "t", false, false, InfraPhase.NONE),
             "NONE",
             List.of(new TaskEffect.SeesHead("t"))),
         arguments(
             "checks",
             "STALE",
             "IN_PROGRESS",
-            new TaskMove.HeadSeen("t", false, false, InfraPhase.NONE),
+            new TaskMove.HeadSeen(
+                new Generation(Generation.Kind.HEAD, ""), "t", false, false, InfraPhase.NONE),
             "READ",
             List.of(new TaskEffect.SeesHead("t"))),
         arguments(
             "approval",
             "UNREAD",
             "IN_PROGRESS",
-            new TaskMove.ApprovalRead(false),
+            new TaskMove.ApprovalRead(new Generation(Generation.Kind.HEAD, ""), false),
             "WITHHELD",
             List.of(new TaskEffect.ReadsApproval(false))),
         arguments(

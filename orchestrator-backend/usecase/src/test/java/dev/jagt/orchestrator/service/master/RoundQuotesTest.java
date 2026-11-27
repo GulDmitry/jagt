@@ -53,7 +53,7 @@ class RoundQuotesTest {
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString()),
                 FakeHost.machine()),
-            new TaskReducer(new TaskChart(Composition.builtIn())),
+            new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {}),
             event -> {});
     reviews = new MasterReview(state);
     quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews, mock(NamedTickets.class));

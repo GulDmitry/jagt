@@ -48,7 +48,16 @@ public class FlowWiring {
 
   @Bean
   public TaskReducer taskReducer(TaskChart chart) {
-    return new TaskReducer(chart);
+    return new TaskReducer(
+        chart,
+        stale ->
+            log.atInfo()
+                .setMessage("read dropped stale")
+                .addKeyValue("alias", stale.alias())
+                .addKeyValue("kind", stale.kind())
+                .addKeyValue("from", stale.readAt())
+                .addKeyValue("to", stale.current())
+                .log());
   }
 
   @Bean

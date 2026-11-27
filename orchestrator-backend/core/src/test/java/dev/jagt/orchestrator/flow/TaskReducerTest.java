@@ -24,7 +24,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class TaskReducerTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
   private final TaskState conflicted =
       reducer.deployStepped(
           reducer.deployStepped(

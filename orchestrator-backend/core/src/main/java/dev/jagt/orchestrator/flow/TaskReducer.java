@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -43,9 +44,11 @@ public final class TaskReducer {
   private static final long TIMELESS = 0;
 
   private final TaskChart chart;
+  private final Consumer<Generation.Stale> dropped;
 
-  public TaskReducer(TaskChart chart) {
+  public TaskReducer(TaskChart chart, Consumer<Generation.Stale> dropped) {
     this.chart = chart;
+    this.dropped = dropped;
   }
 
   /** {@code move} applied to {@code task}; where the chart has no edge for it the status stays. */
@@ -335,7 +338,12 @@ public final class TaskReducer {
    * dropped.
    */
   public TaskState signed(TaskState task, SessionSign sign, long now) {
-    return step(task, new TaskMove.Signed(sign), now);
+    return signed(task, Generation.of(Generation.Kind.SESSION_START, task), sign, now);
+  }
+
+  /** As {@link #signed}, for a sign read off the session that started {@code readAt}. */
+  public TaskState signed(TaskState task, Generation readAt, SessionSign sign, long now) {
+    return step(task, new TaskMove.Signed(readAt, sign), now);
   }
 
   /** {@code task} whose session starts over: nothing the old one signed speaks for the new one. */
@@ -416,7 +424,8 @@ public final class TaskReducer {
    * {@code task} with what git found of {@code project}'s request: merged into its target or not.
    */
   public TaskState mergedByGit(TaskState task, String project, boolean merged) {
-    return step(task, resolved(task, new TaskMove.MergedByGit(project, merged, false)));
+    return step(
+        task, resolved(task, new TaskMove.MergedByGit(round(task), project, merged, false)));
   }
 
   /**
@@ -424,12 +433,14 @@ public final class TaskReducer {
    * not take back.
    */
   public TaskState mergedByHost(TaskState task, String project) {
-    return step(task, resolved(task, new TaskMove.MergedByHost(project, false)));
+    return step(task, resolved(task, new TaskMove.MergedByHost(round(task), project, false)));
   }
 
   /** {@code task} that has seen {@code tip} pushed, where it is not the head it already had. */
   public TaskState headSeen(TaskState task, String tip) {
-    return step(task, resolved(task, new TaskMove.HeadSeen(tip, false, false, InfraPhase.NONE)));
+    return step(
+        task,
+        resolved(task, new TaskMove.HeadSeen(head(task), tip, false, false, InfraPhase.NONE)));
   }
 
   /**
@@ -437,7 +448,7 @@ public final class TaskReducer {
    * to read them.
    */
   public TaskState checksRead(TaskState task, String hostStatus, String tip) {
-    return step(task, resolved(task, new TaskMove.ChecksRead(hostStatus, tip, false)));
+    return step(task, resolved(task, new TaskMove.ChecksRead(head(task), hostStatus, tip, false)));
   }
 
   /**
@@ -445,12 +456,12 @@ public final class TaskReducer {
    * not this round's.
    */
   public TaskState checksUnread(TaskState task, ChecksUnread read) {
-    return step(task, new TaskMove.ChecksUnread(read));
+    return step(task, new TaskMove.ChecksUnread(head(task), read));
   }
 
   /** {@code task} with the approval the host last said. */
   public TaskState approvalRead(TaskState task, boolean approved) {
-    return step(task, new TaskMove.ApprovalRead(approved));
+    return step(task, new TaskMove.ApprovalRead(head(task), approved));
   }
 
   /**
@@ -479,6 +490,7 @@ public final class TaskReducer {
     return switch (move) {
       case TaskMove.HeadSeen seen ->
           new TaskMove.HeadSeen(
+              seen.readAt(),
               seen.tip(),
               !seen.tip().isBlank() && !seen.tip().equals(task.checks().headTip()),
               task.withHead(seen.tip()).checks().readsStaleOn(task.checks().checksTip()),
@@ -498,12 +510,14 @@ public final class TaskReducer {
       }
       case TaskMove.MergedByGit merges ->
           new TaskMove.MergedByGit(
+              merges.readAt(),
               merges.project(),
               merges.merged(),
               RequestPhase.of(task.withMerged(merges.project(), merges.merged()))
                   == RequestPhase.MERGED);
       case TaskMove.MergedByHost merges ->
           new TaskMove.MergedByHost(
+              merges.readAt(),
               merges.project(),
               RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
       case TaskMove.RepoLeft left ->
@@ -541,7 +555,10 @@ public final class TaskReducer {
       case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
       case TaskMove.ChecksRead read ->
           new TaskMove.ChecksRead(
-              read.hostStatus(), read.tip(), !task.checks().readsStaleOn(read.tip()));
+              read.readAt(),
+              read.hostStatus(),
+              read.tip(),
+              !task.checks().readsStaleOn(read.tip()));
       default -> move;
     };
   }
@@ -585,16 +602,38 @@ public final class TaskReducer {
     return InfraPhase.of(task.withInfraRetries(sent(task)));
   }
 
+  private static Generation head(TaskState task) {
+    return Generation.of(Generation.Kind.HEAD, task);
+  }
+
+  private static Generation round(TaskState task) {
+    return Generation.of(Generation.Kind.ROUND, task);
+  }
+
   private List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
     return chart.effects(Phases.of(task), move);
   }
 
+  private List<TaskEffect> landing(TaskState task, TaskMove move) {
+    return stale(task, move) ? List.of() : effectsOf(task, move);
+  }
+
+  private boolean stale(TaskState task, TaskMove move) {
+    if (!(move instanceof TaskMove.Observed read)) {
+      return false;
+    }
+    Optional<Generation.Stale> stale =
+        read.readAt().landingOn(task.ticket().alias(), Generation.of(read.readAt().kind(), task));
+    stale.ifPresent(dropped);
+    return stale.isPresent();
+  }
+
   private TaskState step(TaskState task, TaskMove move, long now) {
-    return applied(task, effectsOf(task, move), null, false, now);
+    return applied(task, landing(task, move), null, false, now);
   }
 
   private TaskState step(TaskState task, TaskMove move) {
-    List<TaskEffect> effects = effectsOf(task, move);
+    List<TaskEffect> effects = landing(task, move);
     effects.stream()
         .filter(TaskEffect::readsTime)
         .findFirst()

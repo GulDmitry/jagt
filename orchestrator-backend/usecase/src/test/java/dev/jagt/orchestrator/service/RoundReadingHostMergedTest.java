@@ -26,7 +26,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RoundReadingHostMergedTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
   private final ReviewRound reviewRound = mock(ReviewRound.class);
   private final MergedRequests mergedRequests = mock(MergedRequests.class);
