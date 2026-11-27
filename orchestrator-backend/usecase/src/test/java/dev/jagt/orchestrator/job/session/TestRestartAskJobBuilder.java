@@ -5,6 +5,7 @@ import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchest
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.turn.StepRelay;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Path;
 import java.time.Clock;
 import lombok.With;
@@ -17,11 +18,16 @@ public record TestRestartAskJobBuilder(Path root) {
   }
 
   public RestartAskJob build(
-      AgentSessions sessions, AgentPresence presence, StepRelay relay, Clock clock) {
+      AgentSessions sessions,
+      AgentPresence presence,
+      StepRelay relay,
+      Clock clock,
+      FakeJobFaults faults) {
     return new RestartAskJob(
         sessions,
         presence,
         relay,
-        new AliveStamp(orchestratorPaths().withRoot(root).build(), clock));
+        new AliveStamp(orchestratorPaths().withRoot(root).build(), clock),
+        faults);
   }
 }

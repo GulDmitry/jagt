@@ -2,15 +2,12 @@ package dev.jagt.orchestrator.job.codereview;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.role.RoleFiles;
-import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
 import dev.jagt.orchestrator.job.codereview.request.Subject;
-import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.codehost.review.RequestChange;
 import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.service.CodeReviewSettings;
-import dev.jagt.orchestrator.service.assistant.RoundReader;
 import dev.jagt.orchestrator.service.master.ChargedReviews;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,9 +24,8 @@ import org.springframework.stereotype.Service;
 public class CodeReviewPanel {
 
   private final ChargedReviews charged;
-  private final RoundReader rounds;
   private final OrchestratorPaths paths;
-  private final ReviewLedger ledger;
+  private final ReviewReads reads;
   private final PreShipCoverage coverage;
 
   /** The brief's text the judgement reads by; blank where it is unreadable. */
@@ -73,19 +69,13 @@ public class CodeReviewPanel {
 
   private Judgement judged(Subject subject, String prompt, Path checkout, String model) {
     if (brief().isBlank()) {
-      return Judgement.failed("the code reviewer's brief is unreadable");
+      return reads.reported(Judgement.failed("the code reviewer's brief is unreadable"));
     }
     RoundReviewer.Round round = new RoundReviewer.Round("", prompt, List.of(checkout), model);
     if (subject.own()) {
-      return charged.review(subject.taskId(), round);
+      return reads.reported(charged.review(subject.taskId(), round));
     }
-    Answer<Judgement> read = rounds.read(round);
-    ledger.update(
-        subject.url(),
-        subject.project(),
-        subject.taskId(),
-        row -> row.withCostUsd(row.signals().costUsd() + read.usage().costUsd()));
-    return read.facts().orElse(Judgement.failed("the review answered nothing"));
+    return reads.read(subject, round);
   }
 
   private String prompt(Subject subject, RequestChange change, Path checkout) {

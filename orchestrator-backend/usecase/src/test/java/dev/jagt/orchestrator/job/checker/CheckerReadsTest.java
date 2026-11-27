@@ -31,6 +31,7 @@ import dev.jagt.orchestrator.task.turn.Turn;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -101,12 +102,12 @@ class CheckerReadsTest {
         });
 
     new CheckerReads(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
             new TaskTurns(
                 state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(CheckerFlows.class),
-            mock(CheckerWorkspace.class))
+            mock(CheckerWorkspace.class),
+            new FakeJobFaults())
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
     TaskState after = state.task("ABC-42").orElseThrow();
@@ -159,12 +160,12 @@ class CheckerReadsTest {
 
     Answer<AcceptanceVerdict> answer =
         new CheckerReads(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 reader,
                 new TaskTurns(
                     state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
                 flows,
-                mock(CheckerWorkspace.class))
+                mock(CheckerWorkspace.class),
+                new FakeJobFaults())
             .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
     assertThat(answer.facts()).contains(withFlows);
@@ -191,12 +192,12 @@ class CheckerReadsTest {
     CheckerWorkspace workspace = mock(CheckerWorkspace.class);
 
     new CheckerReads(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
             new TaskTurns(
                 state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
             flows,
-            workspace)
+            workspace,
+            new FakeJobFaults())
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
     verify(workspace).offer("ABC-42");
@@ -220,14 +221,48 @@ class CheckerReadsTest {
     CheckerWorkspace workspace = mock(CheckerWorkspace.class);
 
     new CheckerReads(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
             new TaskTurns(
                 state, new FakeClock(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(CheckerFlows.class),
-            workspace)
+            workspace,
+            new FakeJobFaults())
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
     verifyNoInteractions(workspace);
+  }
+
+  @Test
+  void declineClosesTheTurnItOpened() {
+    CheckerReader reader = mock(CheckerReader.class);
+    when(reader.reconsider(any())).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+    TaskTurns turns = mock(TaskTurns.class);
+
+    new CheckerReads(
+            reader,
+            turns,
+            mock(CheckerFlows.class),
+            mock(CheckerWorkspace.class),
+            new FakeJobFaults())
+        .decline("ABC-42", "decline", "digest", RUN);
+
+    verify(turns).closed("ABC-42", "acceptance", "decline", "digest");
+  }
+
+  @Test
+  void readThatFailedIsReportedAsItsJobsFailure() {
+    CheckerReader reader = mock(CheckerReader.class);
+    when(reader.read(any())).thenReturn(Answer.failed(TokenUsage.NONE, "claude exited 1"));
+    FakeJobFaults faults = new FakeJobFaults();
+
+    new CheckerReads(
+            reader,
+            mock(TaskTurns.class),
+            mock(CheckerFlows.class),
+            mock(CheckerWorkspace.class),
+            faults)
+        .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
+
+    assertThat(faults.causes()).containsExactly("claude exited 1");
   }
 }

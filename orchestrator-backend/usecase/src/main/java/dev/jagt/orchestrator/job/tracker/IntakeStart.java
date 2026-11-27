@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.tracker;
 
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -26,6 +27,7 @@ public class IntakeStart {
   private final ProjectRouting routing;
   private final IntakeHistory history;
   private final TaskLauncher launcher;
+  private final JobFaults faults;
 
   public Set<String> held() {
     return history.held();
@@ -64,6 +66,7 @@ public class IntakeStart {
           .log();
       return true;
     } catch (RuntimeException refused) {
+      faults.faulted(Causes.of(refused));
       log.atWarn()
           .setMessage("intake could not start a task")
           .setCause(refused)

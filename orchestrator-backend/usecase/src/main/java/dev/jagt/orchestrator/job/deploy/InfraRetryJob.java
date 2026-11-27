@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job.deploy;
 
 import dev.jagt.orchestrator.flow.deploy.RedCause;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.service.Causes;
@@ -30,6 +31,7 @@ public class InfraRetryJob implements Job {
   private final InfraRetries retries;
   private final CodeHost codeHost;
   private final TaskStops stops;
+  private final JobFaults faults;
 
   @Override
   public String id() {
@@ -57,6 +59,7 @@ public class InfraRetryJob implements Job {
       try {
         OriginContext.as(ActionOrigin.JAGT, () -> retry(due.getKey(), due.getValue()));
       } catch (RuntimeException e) {
+        faults.faulted(Causes.of(e));
         log.atWarn()
             .setMessage("infra retry failed")
             .addKeyValue("task", due.getKey())

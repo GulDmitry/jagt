@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.stop.StopAnnouncements;
 import dev.jagt.orchestrator.service.stop.StopPolicy;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -35,7 +36,8 @@ public record TestAutoReviewSchedulerBuilder(Path root) {
       ConfigService config,
       ReviewSweepService sweep,
       Executor executor,
-      Clock clock) {
+      Clock clock,
+      FakeJobFaults faults) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -57,7 +59,8 @@ public record TestAutoReviewSchedulerBuilder(Path root) {
                 Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
                 new FlowRules(new TaskChart(Composition.builtIn()))),
             executor,
-            state),
+            state,
+            faults),
         clock);
   }
 }

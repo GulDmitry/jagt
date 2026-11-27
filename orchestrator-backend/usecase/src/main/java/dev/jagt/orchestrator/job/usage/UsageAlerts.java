@@ -109,7 +109,7 @@ class UsageAlerts {
       read.load(in);
     } catch (NoSuchFileException absent) {
       return Map.of();
-    } catch (IOException | RuntimeException e) {
+    } catch (IOException | IllegalArgumentException e) {
       log.atWarn()
           .setMessage("usage alerts unread")
           .addKeyValue("file", file)

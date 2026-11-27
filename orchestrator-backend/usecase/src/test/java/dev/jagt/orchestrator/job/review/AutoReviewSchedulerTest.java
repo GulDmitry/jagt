@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -60,6 +61,7 @@ class AutoReviewSchedulerTest {
           .build();
   private final ReviewSweepService sweep = mock(ReviewSweepService.class);
   private final ConfigService config = mock(ConfigService.class);
+  private final FakeJobFaults faults = new FakeJobFaults();
 
   @TempDir Path root;
 
@@ -75,7 +77,7 @@ class AutoReviewSchedulerTest {
     scheduler =
         autoReviewScheduler()
             .withRoot(root)
-            .build(state, config, sweep, Runnable::run, new FakeClock());
+            .build(state, config, sweep, Runnable::run, new FakeClock(), faults);
   }
 
   @ParameterizedTest
@@ -113,6 +115,16 @@ class AutoReviewSchedulerTest {
     scheduler.run();
 
     verify(sweep).sweep("ABC-1");
+  }
+
+  @Test
+  void reportsAsItsJobsFailureSweepThatThrew() {
+    state.putTask("ABC-1", due);
+    when(sweep.sweep("ABC-1")).thenThrow(new IllegalStateException("host down"));
+
+    scheduler.run();
+
+    assertThat(faults.causes()).containsExactly("host down");
   }
 
   @Test
@@ -190,7 +202,10 @@ class AutoReviewSchedulerTest {
         pollingTask().withMrCreatedAt(999_998_200_000L).withLastPolledAt(999_998_200_000L).build());
     Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000_000_000L), ZoneOffset.UTC);
 
-    autoReviewScheduler().withRoot(root).build(state, config, sweep, Runnable::run, clock).run();
+    autoReviewScheduler()
+        .withRoot(root)
+        .build(state, config, sweep, Runnable::run, clock, faults)
+        .run();
 
     assertThat(state.task("ABC-1").orElseThrow().round().lastPolledAt())
         .isEqualTo(1_000_000_000_000L);
@@ -203,7 +218,7 @@ class AutoReviewSchedulerTest {
     AutoReviewScheduler queuing =
         autoReviewScheduler()
             .withRoot(root)
-            .build(state, config, sweep, queued::add, new FakeClock());
+            .build(state, config, sweep, queued::add, new FakeClock(), faults);
 
     queuing.run();
     queuing.run();

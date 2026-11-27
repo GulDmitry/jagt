@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.job.review;
 
+import dev.jagt.orchestrator.port.JobFaults;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.SweepFetches;
@@ -30,6 +32,7 @@ class AutoReviewPolls {
   private final Executor executor;
 
   private final StateService stateService;
+  private final JobFaults faults;
   private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
   /**
@@ -49,7 +52,7 @@ class AutoReviewPolls {
         .addKeyValue("alias", alias)
         .log();
     try {
-      executor.execute(() -> pollNow(taskId, round, fetches, finished));
+      executor.execute(faults.carry(() -> pollNow(taskId, round, fetches, finished)));
       return true;
     } catch (RejectedExecutionException e) {
       // Caught NARROWLY: an exception from the sweep landing here would leave lastPolledAt
@@ -89,6 +92,7 @@ class AutoReviewPolls {
                 reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)));
       }
     } catch (RuntimeException e) {
+      faults.faulted(Causes.of(e));
       log.atWarn()
           .setMessage("auto-review sweep failed")
           .addKeyValue("task", taskId)

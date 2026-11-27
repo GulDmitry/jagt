@@ -5,7 +5,9 @@ import dev.jagt.orchestrator.flow.session.SessionStanding;
 import dev.jagt.orchestrator.flow.session.TurnKind;
 import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.turn.Step;
@@ -30,6 +32,7 @@ public class RestartAskJob implements TaskJob {
   private final AgentPresence presence;
   private final StepRelay relay;
   private final AliveStamp alive;
+  private final JobFaults faults;
 
   @Override
   public String id() {
@@ -105,6 +108,7 @@ public class RestartAskJob implements TaskJob {
     try {
       relay.say(taskId, Step.RESTARTED, FACTS, read);
     } catch (RuntimeException e) {
+      faults.faulted(Causes.of(e));
       log.atWarn()
           .setMessage("restart ask not sent")
           .addKeyValue("task", taskId)

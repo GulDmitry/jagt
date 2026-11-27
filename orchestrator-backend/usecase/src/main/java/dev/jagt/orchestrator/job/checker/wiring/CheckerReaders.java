@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.job.checker.CheckerFlows;
 import dev.jagt.orchestrator.job.checker.CheckerReads;
 import dev.jagt.orchestrator.job.checker.workspace.CheckerWorkspace;
 import dev.jagt.orchestrator.job.checker.workspace.WorkspaceRequests;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.worktree.FlowRunner;
 import dev.jagt.orchestrator.service.role.RoleKit;
@@ -20,6 +21,7 @@ public class CheckerReaders {
   private final CheckerReader reader;
   private final TaskTurns turns;
   private final WorkspaceRequests requests;
+  private final JobFaults faults;
 
   public CheckerFlows flows(RoleKit kit) {
     return new CheckerFlows(runner, kit.definition(), kit.settings());
@@ -27,10 +29,10 @@ public class CheckerReaders {
 
   public CheckerReads reads(RoleKit kit) {
     return new CheckerReads(
-        kit.definition(),
         reader,
         turns,
         flows(kit),
-        new CheckerWorkspace(kit.definition(), kit.settings(), requests));
+        new CheckerWorkspace(kit.definition(), kit.settings(), requests),
+        faults);
   }
 }

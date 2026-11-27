@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
@@ -23,6 +24,7 @@ public class SessionAliveJob implements TaskJob {
 
   private final AgentPresence agents;
   private final TaskStops stops;
+  private final JobFaults faults;
 
   @Override
   public String id() {
@@ -76,6 +78,7 @@ public class SessionAliveJob implements TaskJob {
           .addKeyValue("effect", "the stop stands")
           .log();
     } catch (RuntimeException e) {
+      faults.faulted(Causes.of(e));
       log.atWarn()
           .setMessage("session read failed")
           .addKeyValue("task", taskId)

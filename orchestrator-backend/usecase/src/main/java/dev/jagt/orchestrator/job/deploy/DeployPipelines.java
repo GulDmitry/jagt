@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.flow.deploy.RedCause;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
-import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.service.git.Shas;
 import dev.jagt.orchestrator.task.TaskState;
@@ -225,18 +224,10 @@ public class DeployPipelines {
         && retried(taskId, project, url, Objects.requireNonNull(landed.tip()))) {
       return Reading.waiting(at + "red, re-run once before it is handed back");
     }
-    try {
-      fixes.open(task, taskId, project);
-    } catch (RuntimeException e) {
-      log.atWarn()
-          .setMessage("deploy worktree not opened")
-          .addKeyValue("task", taskId)
-          .addKeyValue("project", project)
-          .addKeyValue("cause", Causes.of(e))
-          .addKeyValue("effect", "the deploy stays open, tried again")
-          .log();
+    Optional<String> unopened = fixes.open(task, taskId, project);
+    if (unopened.isPresent()) {
       return Reading.waiting(
-          at + "red on the code, its deploy worktree not opened: " + e.getMessage());
+          at + "red on the code, its deploy worktree not opened: " + unopened.get());
     }
     String failed = verdict.failed().isEmpty() ? "" : ", failed " + verdict.failed();
     return new Reading(

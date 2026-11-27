@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
@@ -39,6 +40,7 @@ public class ProjectClonesJob implements Job {
   private final ConfigService configService;
   private final Processes processes;
   private final Reach reach;
+  private final JobFaults faults;
 
   private volatile boolean cloning;
 
@@ -73,6 +75,7 @@ public class ProjectClonesJob implements Job {
     try {
       missing = new LinkedHashMap<>(configService.load().projects());
     } catch (RuntimeException unreadable) {
+      faults.faulted(Causes.of(unreadable));
       return;
     }
     missing
@@ -114,10 +117,15 @@ public class ProjectClonesJob implements Job {
         return null;
       }
       String said = OneLine.clipped(result.stderr().isBlank() ? result.stdout() : result.stderr());
-      return said == null || said.isBlank() ? "git clone exit " + result.exitCode() : said;
+      return faulted(said == null || said.isBlank() ? "git clone exit " + result.exitCode() : said);
     } catch (IOException | RuntimeException failed) {
-      return Causes.of(failed);
+      return faulted(Causes.of(failed));
     }
+  }
+
+  private String faulted(String cause) {
+    faults.faulted(cause);
+    return cause;
   }
 
   private static void discard(Path folder) {

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.stop;
 import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class StopReadJob implements TaskJob {
 
   private final StopReads reads;
+  private final JobFaults faults;
 
   @Override
   public String id() {
@@ -56,6 +58,7 @@ public class StopReadJob implements TaskJob {
     try {
       reads.probe(taskId);
     } catch (RuntimeException e) {
+      faults.faulted(Causes.of(e));
       log.atWarn()
           .setMessage("stop read failed")
           .addKeyValue("task", taskId)

@@ -11,7 +11,6 @@ The poll (`AutoReviewScheduler` → `ReviewSweepService`) SHALL only read and dr
 `review_replies.md`, the diff and drafts left for `code <alias>`. A reply reaches the host only by a ship: the human's, or the Master's
 in `act` where `codeReview.repliesToPeopleUnasked` is `true`, as the server starter sets it (P3 and S1 of [review-actors](../review-actors/spec.md)).
 Rounds: [review](../review/spec.md).
-
 #### Scenario: Sweep by hand
 - **WHEN** you type `review <task>`
 - **THEN** it runs the sweep
@@ -20,7 +19,6 @@ Rounds: [review](../review/spec.md).
 ### Requirement: Detection is deterministic and a host write is named
 Detection SHALL be deterministic (a cadence, a status, an open request), a new trigger's too.
 A host write is a re-run after an infrastructure death ([infra-wait](../infra-wait/spec.md)) or a note ([code-review](../code-review/spec.md)).
-
 #### Scenario: A new trigger
 - **WHEN** a trigger is added to the poll
 - **THEN** it detects by a cadence, a status or an open request, never by a model's word
@@ -28,7 +26,6 @@ A host write is a re-run after an infrastructure death ([infra-wait](../infra-wa
 ### Requirement: An open request is what the poller watches
 `AutoReviewCadence.polls` SHALL watch an open request, never a status: an unmerged one exists and the task is not DONE. At `REVIEWED`, `APPROVED` or
 `DEPLOYED` only a reviewer moves it on: it is read every `maxIntervalMinutes`, and past its window up to `waitingMaxIntervalMinutes` (60).
-
 #### Scenario: Comments after hand-back
 - **WHEN** comments arrive after the agent handed back
 - **THEN** the next poll picks them up
@@ -40,7 +37,6 @@ A host write is a re-run after an infrastructure death ([infra-wait](../infra-wa
 
 ### Requirement: The polling window is per round
 The window SHALL run per round from `mrCreatedAt`, restamped on each entry into CI_POLLING, kept by a repeat, else `requestOpenedAt`.
-
 #### Scenario: A wait on the reviewers outlives the window
 - **WHEN** ABC-42 is `REVIEWED`, `waitingMaxIntervalMinutes` is 240 and 36h have passed since its round began
 - **THEN** it is still watched and read every 150 minutes, owned by CI with no attention asked, until approved, merged or closed
@@ -81,6 +77,10 @@ A job failing with one cause run after run logs ERROR once, DEBUG after, and ERR
 #### Scenario: A job fails every minute
 - **WHEN** a job fails with the same cause on every tick for over an hour
 - **THEN** the log holds its first ERROR and a repeat ERROR carrying the runs since
+
+#### Scenario: A job handles a failure itself
+- **WHEN** a job catches a failure or reads a failed answer, reporting it through `JobFaults.faulted(cause)`
+- **THEN** the head's jobs chip and `jobs` name that job with its run's first cause, until its next run begins
 
 ### Requirement: A restart keeps the run before
 `logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/log/LogFileRoll` SHALL roll the file into `.1` before it opens

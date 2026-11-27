@@ -186,7 +186,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TerminalDriver` | `adapter/terminal/AbstractKittyTerminalDriver` (+ one per platform), `NoTerminalDriver` |
 | `EditorDriver` | `adapter/terminal/{CliEditorDriver,NoEditorDriver}` |
 | `CurrentPointer`, `ReleaseFeed`, `Supervisor`, `Exit` | `adapter/release/{InstalledCurrentPointer,GithubReleaseFeed,NoReleaseFeed}`, `adapter/{macos/LaunchdSupervisor,NoSupervisor,ProcessExit}` |
-| `CurrentOrigin`, `GitDistrust`, `MergedRefresh`, `ScenarioReach`, `ShellEscapeReach`, `NotificationSink`, `StateEvents` | `service/ThreadOrigin`, `service/git/TrustedGitState`, `service/repo/MergedRequests`, `service/reach/{ScenarioReadiness,AgentShellEscape}`, `notify/Notifications` — ports only the use cases answer; `StateEvents`, a `RuntimeWiring` bean, publishes a Spring event |
+| `CurrentOrigin`, `GitDistrust`, `JobFaults`, `MergedRefresh`, `ScenarioReach`, `ShellEscapeReach`, `NotificationSink`, `StateEvents` | `service/ThreadOrigin`, `service/git/TrustedGitState`, `job/JobFaultBook`, `service/repo/MergedRequests`, `service/reach/{ScenarioReadiness,AgentShellEscape}`, `notify/Notifications` — ports only the use cases answer; `StateEvents`, a `RuntimeWiring` bean, publishes a Spring event |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
 | `AgentWorktree`, `Notification`, `Answer`, `Sandbox` | nothing: value **records** the ports pass |
 

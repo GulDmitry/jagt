@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.service.master.ChargedReviews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,9 +61,8 @@ class CodeReviewPanelTest {
     CodeReviewPanel panel =
         new CodeReviewPanel(
             charged,
-            new RoundReader(assistants),
             paths,
-            ledger,
+            new ReviewReads(new RoundReader(assistants), ledger, new FakeJobFaults()),
             new PreShipCoverage(stateService().withRoot(root).build()));
     Subject other = new Subject("shop", "https://h/a/b/7", "git@h:a/b.git", "");
 
@@ -93,9 +93,29 @@ class CodeReviewPanelTest {
     Subject own = new Subject("shop", "https://h/a/b/7", "remote.example:a/b.git", "ABC-42");
 
     Judgement judged =
-        new CodeReviewPanel(charged, new RoundReader(assistants), paths, ledger, coverage)
+        new CodeReviewPanel(
+                charged,
+                paths,
+                new ReviewReads(new RoundReader(assistants), ledger, new FakeJobFaults()),
+                coverage)
             .review(own, RequestChange.defaults(), root, "");
 
     assertThat(judged.findings()).containsExactly(gap);
+  }
+
+  @Test
+  void anUnreadableBriefIsReportedAsItsJobsFailure() {
+    when(paths.root()).thenReturn(root);
+    FakeJobFaults faults = new FakeJobFaults();
+    Subject other = new Subject("shop", "https://h/a/b/7", "git@h:a/b.git", "");
+
+    new CodeReviewPanel(
+            charged,
+            paths,
+            new ReviewReads(new RoundReader(assistants), ledger, faults),
+            new PreShipCoverage(stateService().withRoot(root).build()))
+        .review(other, RequestChange.defaults(), root, "");
+
+    assertThat(faults.causes()).containsExactly("the code reviewer's brief is unreadable");
   }
 }

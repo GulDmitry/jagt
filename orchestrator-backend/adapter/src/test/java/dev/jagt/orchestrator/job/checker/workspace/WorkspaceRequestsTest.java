@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.service.git.GitWorktrees;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,6 +44,7 @@ class WorkspaceRequestsTest {
   private final Processes runner = new ProcessRunner();
   private final ConfigService config = mock(ConfigService.class);
   private final CodeHost host = mock(CodeHost.class);
+  private final FakeJobFaults faults = new FakeJobFaults();
   private WorkspaceRequests requests;
   private Path repo;
   private Path workspace;
@@ -70,7 +72,8 @@ class WorkspaceRequestsTest {
                     .withData(dir.resolve("data").toString()),
                 FakeHost.machine()),
             new GitWorktrees(commands, FakeHost.machine()),
-            host);
+            host,
+            faults);
     when(host.openRequest(eq("repo"), any(), any()))
         .thenReturn(
             new Answer<>(
@@ -151,6 +154,16 @@ class WorkspaceRequestsTest {
 
     assertThat(GitRepos.git(runner, repo, "ls-remote", "origin", BRANCH).stdout()).isBlank();
     verify(host, never()).openRequest(eq("repo"), any(), any());
+  }
+
+  @Test
+  void requestLookupThatThrowsIsReportedAsItsJobsFailure() {
+    when(host.openRequestOf(eq("repo"), any(), eq(BRANCH)))
+        .thenThrow(new IllegalStateException("host down"));
+
+    requests.propose("acceptance", workspace, "ABC-42");
+
+    assertThat(faults.causes()).containsExactly("host down");
   }
 
   @Test
@@ -258,6 +271,7 @@ class WorkspaceRequestsTest {
 
     assertThat(GitRepos.git(runner, repo, "ls-remote", "origin", BRANCH).stdout()).isBlank();
     verify(host, never()).openRequest(eq("repo"), any(), any());
+    assertThat(faults.causes()).containsExactly("glab exited 1");
   }
 
   @Test

@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.view.RoundState;
 import dev.jagt.orchestrator.flow.view.TaskView;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.job.JobFaultBook;
 import dev.jagt.orchestrator.job.JobSource;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
@@ -51,6 +52,7 @@ class BoardApiControllerTest {
 
   private final TaskViews taskViews = mock(TaskViews.class);
   private final TaskScheduler scheduler = mock(TaskScheduler.class);
+  private final JobFaultBook faults = new JobFaultBook();
   private final BoardStop idleStop =
       new BoardStop(
           new OrchestratorPaths(
@@ -69,7 +71,7 @@ class BoardApiControllerTest {
                   new Declared("do", "start a task", false, 40))),
           new HeaderState(
               new Jobs(
-                  new Jobs.Catalog(List.of(), List.of()),
+                  new Jobs.Catalog(List.of(), List.of(), faults),
                   scheduler,
                   new FakeClock(),
                   mock(StateService.class),
@@ -180,7 +182,7 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    new Jobs.Catalog(List.of(), List.of()),
+                    new Jobs.Catalog(List.of(), List.of(), faults),
                     scheduler,
                     new FakeClock(),
                     mock(StateService.class),
@@ -211,7 +213,7 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    new Jobs.Catalog(List.of(), List.of()),
+                    new Jobs.Catalog(List.of(), List.of(), faults),
                     scheduler,
                     new FakeClock(),
                     mock(StateService.class),
@@ -235,7 +237,7 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    new Jobs.Catalog(List.of(poll), List.of()),
+                    new Jobs.Catalog(List.of(poll), List.of(), faults),
                     scheduler,
                     new FakeClock(),
                     mock(StateService.class),
@@ -260,7 +262,7 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    new Jobs.Catalog(List.of(poll), List.<JobSource>of()),
+                    new Jobs.Catalog(List.of(poll), List.<JobSource>of(), faults),
                     scheduler,
                     new FakeClock(),
                     mock(StateService.class),
@@ -285,7 +287,7 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of()),
             new HeaderState(
                 new Jobs(
-                    new Jobs.Catalog(List.of(), List.of()),
+                    new Jobs.Catalog(List.of(), List.of(), faults),
                     scheduler,
                     new FakeClock(),
                     mock(StateService.class),
@@ -349,7 +351,7 @@ class BoardApiControllerTest {
             new GlobalCommands(List.of(drafts)),
             new HeaderState(
                 new Jobs(
-                    new Jobs.Catalog(List.of(), List.of()),
+                    new Jobs.Catalog(List.of(), List.of(), faults),
                     scheduler,
                     new FakeClock(),
                     mock(StateService.class),

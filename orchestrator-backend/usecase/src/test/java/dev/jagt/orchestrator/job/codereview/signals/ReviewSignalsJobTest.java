@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.codereview.signals;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -22,6 +23,7 @@ import dev.jagt.orchestrator.port.codehost.review.RequestNote;
 import dev.jagt.orchestrator.port.codehost.review.RequestNotes;
 import dev.jagt.orchestrator.port.codehost.review.RequestState;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +39,9 @@ class ReviewSignalsJobTest {
   private final ReviewSubjects subjects = mock(ReviewSubjects.class);
   private final RequestNotes notes = mock(RequestNotes.class);
   private final SignalRecorder recorder = mock(SignalRecorder.class);
-  private final ReviewSignalsJob job = new ReviewSignalsJob(ledger, subjects, notes, recorder);
+  private final FakeJobFaults faults = new FakeJobFaults();
+  private final ReviewSignalsJob job =
+      new ReviewSignalsJob(ledger, subjects, notes, recorder, faults);
   private final ReviewSubjects.Listing nothingListed =
       new ReviewSubjects.Listing(List.of(), Set.of());
   private final Answer<List<RequestNote>> noNotes =
@@ -72,6 +76,7 @@ class ReviewSignalsJobTest {
 
     verify(recorder, never()).record(any(), any(), any(), any());
     verify(ledger, never()).update(any(), any(), any(), any());
+    assertThat(faults.causes()).containsExactly("rate limit exceeded");
   }
 
   @Test

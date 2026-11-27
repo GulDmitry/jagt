@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.repo.TaskRepo;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import dev.jagt.orchestrator.task.turn.ToldOnce;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -60,12 +61,13 @@ class RequestClosedReadTest {
                   new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
           TokenUsage.NONE);
   private StateService state;
+  private final FakeJobFaults faults = new FakeJobFaults();
   private RequestClosedRead read;
 
   @BeforeEach
   void readOverStateOnDisk() {
     state = stateService().withRoot(root).build();
-    read = new RequestClosedRead(reader, merged, state);
+    read = new RequestClosedRead(reader, merged, state, faults);
   }
 
   @Test
@@ -138,5 +140,6 @@ class RequestClosedReadTest {
     boolean said = read.read("ABC-42", betaMerge);
 
     assertThat(said).isFalse();
+    assertThat(faults.causes()).containsExactly("down");
   }
 }

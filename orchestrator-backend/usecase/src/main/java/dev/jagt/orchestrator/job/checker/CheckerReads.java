@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job.checker;
 
-import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.job.checker.workspace.CheckerWorkspace;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.protocol.read.RetryPolicy;
@@ -20,11 +20,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CheckerReads {
 
-  private final RoleDefinition role;
   private final CheckerReader reader;
   private final TaskTurns turns;
   private final CheckerFlows flows;
   private final CheckerWorkspace workspace;
+  private final JobFaults faults;
 
   public Answer<AcceptanceVerdict> check(
       String taskId, String step, String digest, CheckerReader.Run run) {
@@ -41,9 +41,9 @@ public class CheckerReads {
       if (answer.facts().isPresent()) {
         workspace.offer(taskId);
       }
-      return answer;
+      return reported(answer);
     } finally {
-      turns.closed(taskId, role.id(), step, digest);
+      turns.closed(taskId, run.role(), step, digest);
     }
   }
 
@@ -51,9 +51,16 @@ public class CheckerReads {
       String taskId, String step, String digest, CheckerReader.Run run) {
     turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
     try {
-      return reader.reconsider(run);
+      return reported(reader.reconsider(run));
     } finally {
-      turns.closed(taskId, role.id(), step, digest);
+      turns.closed(taskId, run.role(), step, digest);
     }
+  }
+
+  private <T> Answer<T> reported(Answer<T> answer) {
+    if (answer.facts().isEmpty() && !answer.failure().isBlank()) {
+      faults.faulted(answer.failure());
+    }
+    return answer;
   }
 }

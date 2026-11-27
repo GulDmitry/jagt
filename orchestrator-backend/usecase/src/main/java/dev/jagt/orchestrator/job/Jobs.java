@@ -43,7 +43,7 @@ public class Jobs {
 
   /**
    * {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled; {@code
-   * failing} says each job whose last run threw, with its cause.
+   * failing} says each job whose last run threw or booked a handled failure, with its cause.
    */
   public record Summary(int count, @Nullable Long nextRunAt, List<String> failing) {}
 
@@ -52,10 +52,16 @@ public class Jobs {
   public static class Catalog {
 
     private final List<Job> all;
+    private final JobFaultBook faults;
 
-    public Catalog(List<Job> declared, List<JobSource> sources) {
+    public Catalog(List<Job> declared, List<JobSource> sources, JobFaultBook faults) {
+      this.faults = faults;
       all = new ArrayList<>(declared);
       sources.forEach(source -> all.addAll(source.jobs()));
+    }
+
+    JobFaultBook faults() {
+      return faults;
     }
 
     List<Job> all() {
@@ -68,6 +74,7 @@ public class Jobs {
     private volatile long nextAt;
     private volatile @Nullable Long startedAt;
     private volatile @Nullable String lastError;
+    private volatile JobFaultBook.@Nullable Booking booking;
     private volatile long reportedAt;
     private final AtomicInteger repeats = new AtomicInteger();
     private volatile @Nullable Duration every;
@@ -83,6 +90,7 @@ public class Jobs {
   private final Clock clock;
   private final StateService stateService;
   private final BoardStop boardStop;
+  private final JobFaultBook faults;
   private volatile boolean ready;
 
   public Jobs(
@@ -91,6 +99,7 @@ public class Jobs {
       Clock clock,
       StateService stateService,
       BoardStop boardStop) {
+    this.faults = catalog.faults();
     this.scheduler = scheduler;
     this.clock = clock;
     this.stateService = stateService;
@@ -119,7 +128,7 @@ public class Jobs {
               job.describe(),
               every(job, run),
               run.startedAt,
-              run.lastError,
+              run.lastError != null ? run.lastError : handled(run),
               next,
               run.running.get(),
               Objects.requireNonNullElse(job.serves(), Job.Serves.HOUSEKEEPING).label());
@@ -136,6 +145,11 @@ public class Jobs {
     } catch (RuntimeException e) {
       return run.every;
     }
+  }
+
+  private static @Nullable String handled(Run run) {
+    JobFaultBook.Booking booking = run.booking;
+    return booking == null ? null : booking.cause();
   }
 
   public Summary summary(long now) {
@@ -222,7 +236,9 @@ public class Jobs {
     }
     run.startedAt = clock.millis();
     try {
-      runOnce(job);
+      JobFaultBook.Booking booking = new JobFaultBook.Booking();
+      run.booking = booking;
+      faults.during(booking, () -> runOnce(job));
       recovered(job.id(), run);
     } catch (SessionHost.WindowsUnreadable unknown) {
       // Already logged where it was read: this round decides nothing and the next one asks again.

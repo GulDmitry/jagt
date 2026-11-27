@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -34,7 +35,8 @@ class ProjectClonesJobTest {
   private final ProcessRunner runner = new ProcessRunner();
   private final ConfigService config = mock(ConfigService.class);
   private final ReachLedger reach = new ReachLedger();
-  private final ProjectClonesJob job = new ProjectClonesJob(config, runner, reach);
+  private final FakeJobFaults faults = new FakeJobFaults();
+  private final ProjectClonesJob job = new ProjectClonesJob(config, runner, reach, faults);
   private Path origin;
 
   @BeforeEach
@@ -64,6 +66,7 @@ class ProjectClonesJobTest {
 
     assertThat(folder.resolve("f.txt")).hasContent("base");
     assertThat(reach.standing()).isEmpty();
+    assertThat(faults.causes()).isEmpty();
   }
 
   @Test
@@ -103,6 +106,16 @@ class ProjectClonesJobTest {
         });
     assertThat(bad).doesNotExist();
     assertThat(good.resolve("f.txt")).exists();
+    assertThat(faults.causes()).containsExactly(reach.standing().getFirst().said());
+  }
+
+  @Test
+  void reportsAsItsJobsFailureTheConfigurationItCannotRead() {
+    when(config.load()).thenThrow(new IllegalStateException("jagt.yml unreadable"));
+
+    job.run();
+
+    assertThat(faults.causes()).containsExactly("jagt.yml unreadable");
   }
 
   @Test
@@ -125,7 +138,7 @@ class ProjectClonesJobTest {
   @Test
   void reportsCloningWhileOneProjectIsClonedAndNotBeforeNorAfter() {
     Processes processes = mock(Processes.class);
-    ProjectClonesJob watched = new ProjectClonesJob(config, processes, reach);
+    ProjectClonesJob watched = new ProjectClonesJob(config, processes, reach, new FakeJobFaults());
     AtomicBoolean duringTheClone = new AtomicBoolean();
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenAnswer(call -> {
@@ -150,7 +163,7 @@ class ProjectClonesJobTest {
   @Test
   void reportsNotCloningWhereNoProjectIsMissing() throws Exception {
     Processes processes = mock(Processes.class);
-    ProjectClonesJob watched = new ProjectClonesJob(config, processes, reach);
+    ProjectClonesJob watched = new ProjectClonesJob(config, processes, reach, new FakeJobFaults());
     AtomicBoolean duringTheRun = new AtomicBoolean(true);
     when(config.load())
         .thenAnswer(call -> {

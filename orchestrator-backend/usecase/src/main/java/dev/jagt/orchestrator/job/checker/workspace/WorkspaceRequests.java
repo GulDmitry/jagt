@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.checker.workspace;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
 import dev.jagt.orchestrator.port.codehost.RequestDraft;
@@ -32,6 +33,7 @@ public class WorkspaceRequests {
   private final OrchestratorPaths paths;
   private final GitWorktrees worktrees;
   private final CodeHost host;
+  private final JobFaults faults;
 
   /** Never throws: a request that cannot be made is logged and tried again by the next call. */
   public void propose(String role, Path folder, String taskId) {
@@ -48,6 +50,7 @@ public class WorkspaceRequests {
     } catch (Processes.Stopped stopped) {
       throw stopped;
     } catch (RuntimeException failed) {
+      faults.faulted(Causes.of(failed));
       log.atWarn()
           .setMessage("workspace request failed")
           .addKeyValue("role", role)
@@ -108,6 +111,7 @@ public class WorkspaceRequests {
   }
 
   private void failed(String role, String branch, String cause) {
+    faults.faulted(cause);
     log.atWarn()
         .setMessage("workspace request failed")
         .addKeyValue("role", role)

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.job.codereview.ReviewSubjects;
 import dev.jagt.orchestrator.job.codereview.request.LedgerRow;
 import dev.jagt.orchestrator.job.codereview.request.NotePoster;
 import dev.jagt.orchestrator.job.codereview.request.ReviewLedger;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.review.AuthorKind;
 import dev.jagt.orchestrator.port.codehost.review.Reaction;
@@ -39,6 +40,7 @@ public class ReviewSignalsJob implements Job {
   private final ReviewSubjects subjects;
   private final RequestNotes notes;
   private final SignalRecorder recorder;
+  private final JobFaults faults;
 
   @Override
   public String id() {
@@ -132,7 +134,8 @@ public class ReviewSignalsJob implements Job {
         .orElse(false);
   }
 
-  private static boolean warn(LedgerRow row, String cause) {
+  private boolean warn(LedgerRow row, String cause) {
+    faults.faulted(cause);
     log.atWarn()
         .setMessage("review signals unread")
         .addKeyValue("request", row.url())

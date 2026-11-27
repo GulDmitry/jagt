@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -183,9 +182,8 @@ class DeployPipelinesRetryTest {
                 List.of(Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA)))
             .build());
     TaskState task = state.task("ABC-42").orElseThrow();
-    doThrow(new IllegalStateException("the path holds another checkout"))
-        .when(fixes)
-        .open(task, "ABC-42", "shop");
+    when(fixes.open(task, "ABC-42", "shop"))
+        .thenReturn(Optional.of("the path holds another checkout"));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", task);
 

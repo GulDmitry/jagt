@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.job.conflict;
 
 import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
+import dev.jagt.orchestrator.port.JobFaults;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.assistant.ReviewReader;
 import dev.jagt.orchestrator.service.repo.MergedRequests;
@@ -26,6 +28,7 @@ class RequestClosedRead implements ConflictRead {
   private final ReviewReader reviewReader;
   private final MergedRequests mergedRequests;
   private final StateService stateService;
+  private final JobFaults faults;
 
   @Override
   public ConflictEnding ending() {
@@ -75,6 +78,7 @@ class RequestClosedRead implements ConflictRead {
       }
       return closed;
     } catch (RuntimeException failed) {
+      faults.faulted(Causes.of(failed));
       log.atWarn()
           .setMessage("request of the conflicted repository not read")
           .addKeyValue("task", taskId)

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.job.JobFaultBook;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
@@ -248,7 +249,7 @@ class TaskEventStreamTest {
                     new GlobalCommands(List.of()),
                     new HeaderState(
                         new Jobs(
-                            new Jobs.Catalog(List.of(), List.of()),
+                            new Jobs.Catalog(List.of(), List.of(), new JobFaultBook()),
                             mock(TaskScheduler.class),
                             new FakeClock(),
                             mock(StateService.class),

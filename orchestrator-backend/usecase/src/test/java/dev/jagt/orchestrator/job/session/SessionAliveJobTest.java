@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -64,7 +65,7 @@ class SessionAliveJobTest {
   void endsStopForStepThatNeverLandedOnceTheSessionsWindowRunsAgain() {
     when(agents.agentLive("ABC-42")).thenReturn(true);
 
-    new SessionAliveJob(agents, stops).runOn(state.tasks());
+    new SessionAliveJob(agents, stops, new FakeJobFaults()).runOn(state.tasks());
 
     assertThat(stops.stopped("ABC-42")).isFalse();
   }
@@ -73,16 +74,26 @@ class SessionAliveJobTest {
   void keepsStopForStepThatNeverLandedWhileTheSessionsWindowIsNotRunning() {
     when(agents.agentLive("ABC-42")).thenReturn(false);
 
-    new SessionAliveJob(agents, stops).runOn(state.tasks());
+    new SessionAliveJob(agents, stops, new FakeJobFaults()).runOn(state.tasks());
 
     assertThat(stops.stopped("ABC-42")).isTrue();
+  }
+
+  @Test
+  void reportsAsItsJobsFailureLookThatFailed() {
+    when(agents.agentLive("ABC-42")).thenThrow(new IllegalStateException("tmux crashed"));
+    FakeJobFaults faults = new FakeJobFaults();
+
+    new SessionAliveJob(agents, stops, faults).runOn(state.tasks());
+
+    assertThat(faults.causes()).containsExactly("tmux crashed");
   }
 
   @Test
   void keepsStopForStepThatNeverLandedWhileTheSessionsWindowCannotBeRead() {
     when(agents.agentLive("ABC-42")).thenThrow(new AgentPresence.Unread("tmux timed out"));
 
-    new SessionAliveJob(agents, stops).runOn(state.tasks());
+    new SessionAliveJob(agents, stops, new FakeJobFaults()).runOn(state.tasks());
 
     assertThat(stops.stopped("ABC-42")).isTrue();
   }

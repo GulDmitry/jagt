@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.testing.FakeClock;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,7 @@ class RestartAskJobTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final AgentPresence presence = mock(AgentPresence.class);
   private final StepRelay relay = mock(StepRelay.class);
+  private final FakeJobFaults faults = new FakeJobFaults();
 
   @TempDir Path root;
 
@@ -47,7 +49,7 @@ class RestartAskJobTest {
   void restartedJagtWithOneTaskOnItsFirstTurn() {
     state = stateService().withRoot(root).build();
     turns = taskTurns().build(state, new FakeClock());
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock(), faults);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
   }
@@ -58,7 +60,7 @@ class RestartAskJobTest {
     turns.opened("ABC-42", "round-not-ready", "digest", TaskStatus.REVIEW_PENDING);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince("ABC-42", 1793862000000L)).thenReturn(true);
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock(), faults);
 
     job.runOn(state.tasks());
 
@@ -120,7 +122,7 @@ class RestartAskJobTest {
     turns.opened("ABC-43", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive(anyString())).thenReturn(true);
     when(sessions.loggedSince(anyString(), eq(1793862000000L))).thenReturn(true);
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock(), faults);
     doThrow(new IllegalStateException("No session"))
         .when(relay)
         .say(
@@ -137,6 +139,7 @@ class RestartAskJobTest {
             Step.RESTARTED,
             "jagt was restarted.",
             SessionStanding.of(state.task("ABC-43").orElseThrow()));
+    assertThat(faults.causes()).containsExactly("No session");
   }
 
   @Test
@@ -144,7 +147,7 @@ class RestartAskJobTest {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince("ABC-42", 1793862000000L)).thenReturn(false);
-    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock());
+    job = restartAskJob().withRoot(root).build(sessions, presence, relay, new FakeClock(), faults);
 
     job.runOn(state.tasks());
 

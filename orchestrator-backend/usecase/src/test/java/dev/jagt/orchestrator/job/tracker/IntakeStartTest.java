@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.task.launch.LaunchRequest;
 import dev.jagt.orchestrator.task.launch.Launched;
 import dev.jagt.orchestrator.task.ticket.TicketFacts;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,8 @@ class IntakeStartTest {
   private final ProjectRouting routing = mock(ProjectRouting.class);
   private final IntakeHistory history = mock(IntakeHistory.class);
   private final TaskLauncher launcher = mock(TaskLauncher.class);
-  private final IntakeStart starts = new IntakeStart(routing, history, launcher);
+  private final FakeJobFaults faults = new FakeJobFaults();
+  private final IntakeStart starts = new IntakeStart(routing, history, launcher, faults);
 
   @Test
   void startsTheTaskInTheProjectTheItemWasPlacedIn() {
@@ -89,6 +91,7 @@ class IntakeStartTest {
             assertThat(pair.value).isEqualTo("NullPointerException");
           });
       assertThat(failed.getThrowableProxy()).isNotNull();
+      assertThat(faults.causes()).containsExactly("NullPointerException");
     }
   }
 

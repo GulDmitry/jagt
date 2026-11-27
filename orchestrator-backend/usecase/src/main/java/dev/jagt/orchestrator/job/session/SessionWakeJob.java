@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.session;
 
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.port.JobFaults;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.presence.SessionWakes;
@@ -25,6 +26,7 @@ public class SessionWakeJob implements Job {
   private final SessionWakes wakes;
   private final AgentSessions sessions;
   private final StepRelay relay;
+  private final JobFaults faults;
 
   @Override
   public String id() {
@@ -52,6 +54,7 @@ public class SessionWakeJob implements Job {
       try {
         relay.say(due.taskId(), due.step(), LINES.getOrDefault(due.step(), ""), due.read());
       } catch (RuntimeException e) {
+        faults.faulted(Causes.of(e));
         log.atWarn()
             .setMessage("session wake not sent")
             .addKeyValue("task", due.taskId())

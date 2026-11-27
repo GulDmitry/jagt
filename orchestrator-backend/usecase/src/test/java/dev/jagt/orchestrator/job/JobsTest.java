@@ -57,7 +57,7 @@ class JobsTest {
     when(job.id()).thenReturn("poll-reviews");
     jobs =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of()),
+            new Jobs.Catalog(List.of(job), List.of(), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -86,7 +86,7 @@ class JobsTest {
     when(sourced.id()).thenReturn("audit-check");
     Jobs halted =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced))),
+            new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced)), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -105,7 +105,7 @@ class JobsTest {
     when(job.every()).thenReturn(Duration.ofMinutes(1));
     Jobs fixed =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of()),
+            new Jobs.Catalog(List.of(job), List.of(), new JobFaultBook()),
             scheduler,
             Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
             state,
@@ -172,7 +172,7 @@ class JobsTest {
     doThrow(new IllegalStateException("disk full")).when(failing).run();
     Jobs both =
         new Jobs(
-            new Jobs.Catalog(List.of(failing, job), List.of()),
+            new Jobs.Catalog(List.of(failing, job), List.of(), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -221,7 +221,7 @@ class JobsTest {
     FakeClock clock = new FakeClock();
     Jobs hourly =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of()),
+            new Jobs.Catalog(List.of(job), List.of(), new JobFaultBook()),
             scheduler,
             clock,
             state,
@@ -257,7 +257,7 @@ class JobsTest {
     FakeClock clock = new FakeClock();
     Jobs hourly =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of()),
+            new Jobs.Catalog(List.of(job), List.of(), new JobFaultBook()),
             scheduler,
             clock,
             state,
@@ -323,7 +323,7 @@ class JobsTest {
 
     assertThatThrownBy(() ->
             new Jobs(
-                new Jobs.Catalog(List.of(job, second), List.of()),
+                new Jobs.Catalog(List.of(job, second), List.of(), new JobFaultBook()),
                 scheduler,
                 new FakeClock(),
                 state,
@@ -339,7 +339,7 @@ class JobsTest {
 
     assertThatThrownBy(() ->
             new Jobs(
-                new Jobs.Catalog(List.of(nameless), List.of()),
+                new Jobs.Catalog(List.of(nameless), List.of(), new JobFaultBook()),
                 scheduler,
                 new FakeClock(),
                 state,
@@ -379,7 +379,7 @@ class JobsTest {
     when(later.every()).thenReturn(Duration.ofHours(1));
     Jobs both =
         new Jobs(
-            new Jobs.Catalog(List.of(job, later), List.of()),
+            new Jobs.Catalog(List.of(job, later), List.of(), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -432,7 +432,7 @@ class JobsTest {
     when(healthy.every()).thenReturn(Duration.ofHours(1));
     Jobs both =
         new Jobs(
-            new Jobs.Catalog(List.of(job, healthy), List.of()),
+            new Jobs.Catalog(List.of(job, healthy), List.of(), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -450,7 +450,7 @@ class JobsTest {
     doReturn(waiting).when(scheduler).schedule(any(Runnable.class), any(Trigger.class));
     Jobs fixed =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of()),
+            new Jobs.Catalog(List.of(job), List.of(), new JobFaultBook()),
             scheduler,
             Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
             state,
@@ -519,7 +519,7 @@ class JobsTest {
     when(state.tasks()).thenReturn(tasks);
     Jobs withTaskJob =
         new Jobs(
-            new Jobs.Catalog(List.of(taskJob), List.of()),
+            new Jobs.Catalog(List.of(taskJob), List.of(), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -540,7 +540,7 @@ class JobsTest {
 
     Jobs both =
         new Jobs(
-            new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced))),
+            new Jobs.Catalog(List.of(job), List.of(() -> List.of(sourced)), new JobFaultBook()),
             scheduler,
             new FakeClock(),
             state,
@@ -549,5 +549,64 @@ class JobsTest {
     assertThat(both.statuses(1_000))
         .extracting(Jobs.Status::id)
         .containsExactly("poll-reviews", "audit-check");
+  }
+
+  @Test
+  void summaryNamesJobThatCaughtFailureItselfAndItsCauseUntilItsNextCleanRun() {
+    JobFaultBook book = new JobFaultBook();
+    Jobs booking =
+        new Jobs(
+            new Jobs.Catalog(List.of(job), List.of(), book),
+            scheduler,
+            new FakeClock(),
+            state,
+            mock(BoardStop.class));
+    doAnswer(
+            call -> {
+              book.faulted("no tmux server");
+              return null;
+            })
+        .doNothing()
+        .when(job)
+        .run();
+    booking.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+
+    work.getValue().run();
+
+    assertThat(booking.summary(1_000).failing()).containsExactly("poll-reviews: no tmux server");
+
+    work.getValue().run();
+
+    assertThat(booking.summary(1_000).failing()).isEmpty();
+  }
+
+  @Test
+  void summaryNamesJobThatBookedFailedAnswerWithTheFirstCauseOfItsRun() {
+    JobFaultBook book = new JobFaultBook();
+    Jobs booking =
+        new Jobs(
+            new Jobs.Catalog(List.of(job), List.of(), book),
+            scheduler,
+            new FakeClock(),
+            state,
+            mock(BoardStop.class));
+    doAnswer(
+            call -> {
+              book.faulted("glab exited 1: 403");
+              book.faulted("glab exited 1: 500");
+              return null;
+            })
+        .when(job)
+        .run();
+    booking.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+
+    work.getValue().run();
+
+    assertThat(booking.statuses(1_000))
+        .singleElement()
+        .extracting(Jobs.Status::lastError)
+        .isEqualTo("glab exited 1: 403");
   }
 }

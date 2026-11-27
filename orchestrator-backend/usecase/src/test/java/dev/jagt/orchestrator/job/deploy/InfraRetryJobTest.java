@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.deploy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -14,6 +15,7 @@ import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +27,8 @@ class InfraRetryJobTest {
   private final InfraRetries retries = mock(InfraRetries.class);
   private final CodeHost pipelines = mock(CodeHost.class);
   private final TaskStops stops = mock(TaskStops.class);
-  private final InfraRetryJob job = new InfraRetryJob(retries, pipelines, stops);
+  private final FakeJobFaults faults = new FakeJobFaults();
+  private final InfraRetryJob job = new InfraRetryJob(retries, pipelines, stops, faults);
   private final InfraRetry armed =
       InfraRetry.armed(
           1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
@@ -112,6 +115,16 @@ class InfraRetryJobTest {
     verify(retries, never()).refused(anyString(), anyString());
     verify(retries, never()).clearArmed(anyString());
     verify(retries, never()).clearAll(anyString());
+  }
+
+  @Test
+  void reportsAsItsJobsFailureRetryThatThrew() {
+    when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
+        .thenThrow(new IllegalStateException("glab crashed"));
+
+    job.run();
+
+    assertThat(faults.causes()).containsExactly("glab crashed");
   }
 
   @Test

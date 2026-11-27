@@ -89,6 +89,7 @@ import dev.jagt.orchestrator.testing.FakeAssistants;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeConfigInputs;
 import dev.jagt.orchestrator.testing.FakeHost;
+import dev.jagt.orchestrator.testing.FakeJobFaults;
 import dev.jagt.orchestrator.testing.FakeProcesses;
 import dev.jagt.orchestrator.testing.FakeReach;
 import dev.jagt.orchestrator.testing.FakeSessionHost;
@@ -322,10 +323,12 @@ public final class FakeJobWorld implements AutoCloseable {
     StepRelay relay = stepRelay().withRoot(root).build(state, sessions, clock);
     AliveStamp alive = new AliveStamp(paths, clock);
     return new Jobs(
-        autoReviewScheduler().withRoot(root).build(state, config, sweeps, Runnable::run, clock),
+        autoReviewScheduler()
+            .withRoot(root)
+            .build(state, config, sweeps, Runnable::run, clock, new FakeJobFaults()),
         yourMoveJob().build(state, notifications, changes, config, clock),
         pointWatch().withRoot(root).build(state, notifications),
-        new RestartAskJob(sessions, new FakeAgentPresence(), relay, alive),
+        new RestartAskJob(sessions, new FakeAgentPresence(), relay, alive, new FakeJobFaults()),
         alive,
         master,
         new FakeConflictWatch(
