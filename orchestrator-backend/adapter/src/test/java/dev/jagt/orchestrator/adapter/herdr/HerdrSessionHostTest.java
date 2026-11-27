@@ -256,7 +256,7 @@ class HerdrSessionHostTest {
     boolean focused = host.focusTaskWindow("jagt", "agents", "ABC-1");
 
     assertThat(focused).isTrue();
-    assertThat(herdr.requests()).noneMatch(r -> r.method().equals("tab.focus"));
+    assertThat(herdr.requests()).anyMatch(r -> r.method().equals("tab.focus"));
     verify(terminal).openViewer(any(), eq("agents"), any());
   }
 
