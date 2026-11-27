@@ -1,7 +1,8 @@
 #!/bin/sh
 # Usage: ci-local.sh [job...]   (jobs: test heavy stand stand-kind install install-macos audit codeql nightly-*; nightly = every nightly-*; default: the PR jobs)
-# Runs a pull request's CI jobs over the tree as it stands: each Linux job's gate in a container (linux-suite.sh),
-# install-macos's natively. Only the argument-free run, green, records the tree's hash in the git dir;
+# Runs a pull request's CI jobs over HEAD's committed tree, in a detached worktree of HEAD when tracked files are changed:
+# each Linux job's gate in a container (linux-suite.sh), install-macos's natively. Only the argument-free run, green, records
+# the tree's hash in the git dir;
 # ci-local.greens keeps every one, which `./gradlew divergenceRegister` reads against CI's red runs.
 # guards/push-after-local-ci.sh lets a push through only when HEAD's tree is the recorded one.
 # audit also builds and scans the base images on the host's Docker (`baseImageScan`), base-images.yml's per-image step.
@@ -19,8 +20,15 @@ if [ -n "$untracked" ]; then
   echo "$untracked" >&2
   exit 1
 fi
-wip=$(git stash create)
-tree=$(git rev-parse "${wip:-HEAD}^{tree}") || exit 1
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  clean=$(mktemp -d) || exit 1
+  trap 'git worktree remove -f -f "$clean/tree" 2>/dev/null; rm -rf "$clean"' EXIT
+  git worktree add -q --detach "$clean/tree" HEAD || exit 1
+  rc=0
+  (cd "$clean/tree" && "$here/ci-local.sh" "$@") || rc=$?
+  exit "$rc"
+fi
+tree=$(git rev-parse 'HEAD^{tree}') || exit 1
 jobs=${*:-test heavy stand stand-kind install install-macos audit codeql}
 linux=; macos=; images=
 nightly=$(sed -n "s/^ *\(nightly-[a-z0-9-]*\)) echo '\.\/gradlew.*/\1/p" "$here/linux-suite.sh")

@@ -14,12 +14,19 @@ teardown() {
 }
 
 # bats test_tags=exit:0
-@test "a green suite records the tree it ran on, uncommitted changes included" {
+@test "a green suite in a tree with an uncommitted change records HEAD's committed tree" {
   echo b > f
   JAGT_CI_LOCAL_SUITE=true run "$script"
   [ "$status" -eq 0 ]
-  git add f && git -c user.name=t -c user.email=t@t commit -q -m two
   [ "$(cat .git/ci-local.ok)" = "$(git rev-parse 'HEAD^{tree}')" ]
+}
+
+@test "a run in a tree with an uncommitted change tests HEAD's content and leaves no worktree behind" {
+  echo b > f
+  JAGT_CI_LOCAL_SUITE="grep -qx a f" run "$script"
+  [ "$status" -eq 0 ]
+  [ "$(git worktree list | wc -l)" -eq 1 ]
+  [ "$(cat f)" = b ]
 }
 
 @test "every green run adds its tree to the list of recorded greens" {
