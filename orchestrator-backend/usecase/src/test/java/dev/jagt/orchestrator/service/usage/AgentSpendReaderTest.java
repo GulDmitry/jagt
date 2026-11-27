@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.agent;
+package dev.jagt.orchestrator.service.usage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

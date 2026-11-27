@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.gate.GateRefusals;
 import dev.jagt.orchestrator.service.gate.ToolGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -49,7 +50,11 @@ class AgentToolGateControllerTest {
   private final ToolGateEnvelope envelope = mock(ToolGateEnvelope.class);
   private final AgentToolGateController controller =
       new AgentToolGateController(
-          stateService, clock, configService, envelope, new ToolGate(List.of()));
+          stateService,
+          clock,
+          configService,
+          envelope,
+          new GateRefusals(stateService, new ToolGate(List.of())));
   private final TaskState inProgress =
       TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 

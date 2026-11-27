@@ -6,18 +6,15 @@ import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.gate.ToolGate;
-import dev.jagt.orchestrator.service.plan.PlanFirst;
+import dev.jagt.orchestrator.service.gate.GateRefusals;
 import dev.jagt.orchestrator.service.presence.KeepAlive;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.Remote;
-import dev.jagt.orchestrator.task.stop.RefusalKind;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
  * answers nothing.
  */
 @RestController
-@Slf4j
 @RequiredArgsConstructor
 public class AgentToolGateController {
 
@@ -39,7 +35,7 @@ public class AgentToolGateController {
   private final Clock clock;
   private final ConfigService configService;
   private final ToolGateEnvelope envelope;
-  private final ToolGate toolGate;
+  private final GateRefusals refusals;
 
   /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
   @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -69,14 +65,9 @@ public class AgentToolGateController {
             .findByWorktree(cwd)
             .map(owner -> remoteOf(owner.getValue()))
             .orElse(Remote.ORIGIN);
-    return toolGate
-        .refusal(call.command(), taskBranch, request.getLocalPort(), remote)
-        .map(reason -> {
-          stateService.updateTask(
-              Objects.requireNonNull(taskBranch), task -> task.refused(RefusalKind.SESSION_LINE));
-          log.atInfo().setMessage("session line refused").addKeyValue("task", taskBranch).log();
-          return denied(reason);
-        })
+    return refusals
+        .shell(call.command(), taskBranch, request.getLocalPort(), remote)
+        .map(this::denied)
         .orElseGet(() -> ResponseEntity.noContent().build());
   }
 
@@ -91,19 +82,8 @@ public class AgentToolGateController {
   private ResponseEntity<Map<String, Object>> planFirst(@Nullable String cwd, ToolCall call) {
     return stateService
         .findByWorktree(cwd)
-        .flatMap(owner ->
-            PlanFirst.refusal(owner.getValue(), call.file())
-                .map(reason -> {
-                  stateService.updateTask(
-                      owner.getKey(), task -> task.refused(RefusalKind.PLAN_FIRST));
-                  log.atInfo()
-                      .setMessage("write refused")
-                      .addKeyValue("task", owner.getKey())
-                      .addKeyValue("cause", "plan not approved")
-                      .addKeyValue("file", call.file())
-                      .log();
-                  return denied(reason);
-                }))
+        .flatMap(owner -> refusals.write(owner.getKey(), owner.getValue(), call.file()))
+        .map(this::denied)
         .orElseGet(() -> ResponseEntity.noContent().build());
   }
 
