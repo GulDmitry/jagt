@@ -13,8 +13,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What every session host does the same: names its session, launches or revives the agent, and
- * shows a window in the order ensure session, replace, create, select, attach a viewer. {@code S}
- * is what a host's ensured session hands back, {@code W} how it addresses a created window.
+ * opens a window in the order ensure session, replace, create, attach a viewer; only focus selects.
+ * {@code S} is what a host's ensured session hands back, {@code W} how it addresses a created
+ * window.
  */
 @Slf4j
 public abstract class AbstractSessionHost<S, W> implements SessionHost {
@@ -113,7 +114,7 @@ public abstract class AbstractSessionHost<S, W> implements SessionHost {
     synchronized (lock) {
       S ensured = ensureSession(session);
       killTaskWindows(session, name);
-      show(session, newWindow(session, ensured, name, cwd, line));
+      newWindow(session, ensured, name, cwd, line);
       ensureViewer(session, dedicatedTitle);
     }
   }
@@ -142,11 +143,6 @@ public abstract class AbstractSessionHost<S, W> implements SessionHost {
 
   /** Brings the window to whoever is attached; a failure throws. */
   protected abstract void select(String session, W window);
-
-  /** Brings a window just opened for a command to whoever is attached; selects it by default. */
-  protected void show(String session, W window) {
-    select(session, window);
-  }
 
   /** Attaches a viewer unless a human is already looking. */
   protected abstract void ensureViewer(String session, String dedicatedTitle);

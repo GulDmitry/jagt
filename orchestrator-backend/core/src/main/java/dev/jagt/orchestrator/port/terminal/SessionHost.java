@@ -97,13 +97,13 @@ public interface SessionHost {
 
   /**
    * Runs {@code command} as the process of a window named {@code name}, replacing one of that name,
-   * and shows it to the human.
+   * without changing the window the human looks at.
    */
   void openCommandWindow(String session, String dedicatedTitle, String name, List<String> command);
 
   /**
    * Runs the shell line {@code command} in {@code cwd} as the process of a window named {@code
-   * name}, replacing one of that name, and shows it to the human.
+   * name}, replacing one of that name, without changing the window the human looks at.
    */
   void openShellWindow(
       String session, String dedicatedTitle, String name, Path cwd, String command);

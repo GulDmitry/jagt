@@ -45,6 +45,18 @@ class LoginCommandTest {
   }
 
   @Test
+  void bringsTheLoginWindowToTheFrontForTheHumanWhoAskedForIt() {
+    when(config.load()).thenReturn(ConfigFile.defaults());
+    when(sessions.sessionName(any())).thenReturn("jagt");
+    reach.lost(
+        new ReachLost("glab", "git.example.invalid", List.of("glab", "auth", "login"), "no login"));
+
+    login.run("");
+
+    verify(sessions).focusTaskWindow("jagt", "jagt", "login");
+  }
+
+  @Test
   void opensNothingWhereTheLostReachHasNoCommandToFixIt() {
     reach.lost(new ReachLost("glab", "git.example.invalid", List.of(), "glab is not installed"));
 

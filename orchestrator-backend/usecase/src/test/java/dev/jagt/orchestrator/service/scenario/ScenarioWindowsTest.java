@@ -47,6 +47,14 @@ class ScenarioWindowsTest {
   }
 
   @Test
+  void takesNoFocusWhereItOpensTheSessionUnasked() {
+
+    windows.open("alpha", "", "go", workspace);
+
+    verify(hosts, never()).focusTaskWindow(anyString(), anyString(), anyString());
+  }
+
+  @Test
   void focusesTheRunningSessionAndOpensNoSecond() {
     when(hosts.taskWindowState("jagt", "acceptance-alpha"))
         .thenReturn(SessionHost.WindowState.AGENT_RUNNING);

@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter.tmux;
 
 import static dev.jagt.orchestrator.adapter.tmux.TestTmuxHostBuilder.tmuxHost;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -589,13 +588,19 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void opensShellWindowWhereTmuxRefusesToSelectIt() {
-    FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "@9", ""));
-    processes.answering(new Processes.Result(1, "", "can't find window"), "select-window");
-    TmuxSessionHost host = tmuxHost().build(state, processes, terminal, agent);
+  void opensShellWindowWithoutSelectingItWhereTheHumanWorksInAnother() {
 
-    assertThatCode(() -> host.openShellWindow("jagt", "jagt", "build", Path.of("/ws"), "make"))
-        .doesNotThrowAnyException();
+    host.openShellWindow("jagt", "jagt", "acceptance-alpha", Path.of("/ws"), "agent 'p'");
+
+    assertThat(processes.issuedContaining("select-window")).isEmpty();
+  }
+
+  @Test
+  void opensCommandWindowWithoutSelectingItWhereTheHumanWorksInAnother() {
+
+    host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli"));
+
+    assertThat(processes.issuedContaining("select-window")).isEmpty();
   }
 
   @Test

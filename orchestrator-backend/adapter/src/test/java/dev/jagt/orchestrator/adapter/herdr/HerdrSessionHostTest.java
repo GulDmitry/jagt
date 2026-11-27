@@ -256,7 +256,7 @@ class HerdrSessionHostTest {
     boolean focused = host.focusTaskWindow("jagt", "agents", "ABC-1");
 
     assertThat(focused).isTrue();
-    assertThat(herdr.requests()).anyMatch(r -> r.method().equals("tab.focus"));
+    assertThat(herdr.requests()).noneMatch(r -> r.method().equals("tab.focus"));
     verify(terminal).openViewer(any(), eq("agents"), any());
   }
 
@@ -313,28 +313,20 @@ class HerdrSessionHostTest {
   }
 
   @Test
-  void opensCommandWindowsRunningTheQuotedCommandAndSelectsThem() {
+  void opensCommandWindowsRunningTheQuotedCommandWithoutFocusingThem() {
     host.openCommandWindow("jagt", "agents", "login", List.of("/bin/echo", "it's"));
 
     assertThat(herdr.screenOf("login")).contains("exec sh -c ", "/bin/echo", "it");
-    assertThat(herdr.requests()).anyMatch(r -> r.method().equals("tab.focus"));
+    assertThat(herdr.requests()).noneMatch(r -> r.method().equals("tab.focus"));
   }
 
   @Test
-  void opensShellWindowsRunningTheLineAndSelectsThem() {
+  void opensShellWindowsRunningTheLineWithoutFocusingThem() {
     host.openShellWindow("jagt", "agents", "build", Path.of("/tmp"), "make all");
 
     assertThat(herdr.screenOf("build")).contains("make all");
+    assertThat(herdr.requests()).noneMatch(r -> r.method().equals("tab.focus"));
     verify(terminal).openViewer(any(), eq("agents"), any());
-  }
-
-  @Test
-  void opensNoShellWindowWhereTheServerRefusesToFocusIt() {
-    herdr.refusing("tab.focus", "tab_not_found");
-
-    assertThatThrownBy(
-            () -> host.openShellWindow("jagt", "agents", "build", Path.of("/tmp"), "make"))
-        .isInstanceOf(HerdrApi.Failed.class);
   }
 
   @Test

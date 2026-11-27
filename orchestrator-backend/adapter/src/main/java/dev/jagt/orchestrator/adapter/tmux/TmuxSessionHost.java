@@ -293,11 +293,6 @@ public class TmuxSessionHost extends AbstractSessionHost<String, String> {
   }
 
   @Override
-  protected void show(String session, String windowId) {
-    processRunner.run(null, TIMEOUT, tmux("select-window", "-t", windowId));
-  }
-
-  @Override
   protected void label(String session, String windowId, String alias) {
     processRunner.run(
         null, TIMEOUT, tmux("set-option", "-w", "-t", windowId, "@jagt_alias", alias));

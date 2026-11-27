@@ -44,6 +44,7 @@ public class LoginCommand implements GlobalCommand {
     List<String> fix = lost.fix();
     String session = sessions.sessionName(configService.load().viewer().session());
     sessions.openCommandWindow(session, session, OpenedWindows.LOGIN, fix);
+    sessions.focusTaskWindow(session, session, OpenedWindows.LOGIN);
     return "`"
         + String.join(" ", fix)
         + "` is open in the "
