@@ -11,7 +11,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    A new kind of thing is checked against its sphere's standard (`ARCHITECTURE.md` "The kinds") before you build it.
 3. Before touching a test file, load the unit-testing skill your setup provides, if any; before a comment, the commenting skill.
 4. As AGENTS.md says in "Read before you change" and "Tests": a behaviour change carries its spec delta, a fixed bug
-   its regression test and trailer.
+   its regression test and every trailer `FixedBugCommits` asks for ([`defect-investigation`](../../docs/defect-investigation.md)).
 5. The inner loop is `./gradlew -q testsFor --paths=<a,b>` from `orchestrator-backend` on the files you changed (no `--paths`: the branch):
    run its lines in order, each in the background into a log, each under its `timeout`, stop at the first red.
    Its trailing `read:` lines name the specs and rules governing those files: read them before you change anything.
