@@ -58,12 +58,14 @@ public class MasterDeployJob implements TaskJob {
         task.standing().status(), config.deploy().requireApprovalOrDefault())) {
       return;
     }
+    Facts.Reach reach =
+        Facts.Reach.defaults().withRequireApproval(config.deploy().requireApprovalOrDefault());
     String arrival = String.valueOf(task.standing().statusSince());
     // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a
     // restart.
     if (!profile.may(MasterRight.DEPLOY)
         || !Facts.checksGreen(task)
-        || !turns.next(task, profile).equals(Turn.Holder.ARBITER)
+        || !turns.next(task, profile, reach).equals(Turn.Holder.ARBITER)
         || task.work().arbiterOrNone().pressedDeploy().equals(arrival)) {
       return;
     }

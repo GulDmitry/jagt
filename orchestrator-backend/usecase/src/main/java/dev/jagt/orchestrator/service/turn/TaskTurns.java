@@ -40,14 +40,14 @@ public class TaskTurns {
   private final Clock clock;
   private final Checkers checkers;
 
-  public Turn.Holder next(TaskState task, Arbiter.Profile profile) {
+  public Turn.Holder next(TaskState task, Arbiter.Profile profile, Facts.Reach reach) {
     return Turns.next(
         task.standing().status(),
         task.standing().report(),
         task.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
         checkers.of(task),
         profile,
-        Facts.projected(task));
+        Facts.projected(task).withReach(reach));
   }
 
   public Turn of(String taskId) {

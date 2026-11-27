@@ -81,7 +81,11 @@ class ConflictStall {
                 task.work().stopped() ? StopHold.HUMAN : StopHold.NONE,
                 checkers.of(task),
                 config.load().arbiter().profile(),
-                Facts.projected(task))
+                Facts.projected(task)
+                    .withReach(
+                        Facts.Reach.defaults()
+                            .withRequireApproval(
+                                config.load().deploy().requireApprovalOrDefault())))
             .equals(Turn.Holder.ARBITER);
   }
 

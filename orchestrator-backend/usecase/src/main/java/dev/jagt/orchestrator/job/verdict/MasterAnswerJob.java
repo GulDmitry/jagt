@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job.verdict;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -64,16 +65,19 @@ public class MasterAnswerJob implements Job {
       return;
     }
     Arbiter.Profile profile = config.profile();
+    Facts.Reach reach =
+        Facts.Reach.defaults()
+            .withRequireApproval(configService.load().deploy().requireApprovalOrDefault());
     stateService.tasks().entrySet().stream()
-        .filter(entry -> answers(entry.getValue(), profile))
+        .filter(entry -> answers(entry.getValue(), profile, reach))
         .findFirst()
         .ifPresent(entry -> answer(entry.getKey(), entry.getValue(), config));
   }
 
   /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
-  private boolean answers(TaskState task, Arbiter.Profile profile) {
+  private boolean answers(TaskState task, Arbiter.Profile profile, Facts.Reach reach) {
     return Move.asking(task.standing().status(), task.standing().report())
-        && turns.next(task, profile).equals(Turn.Holder.ARBITER)
+        && turns.next(task, profile, reach).equals(Turn.Holder.ARBITER)
         && !task.work().arbiterOrNone().unanswered().equals(task.standing().askedDigest());
   }
 

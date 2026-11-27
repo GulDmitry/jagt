@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.flow.capability.Facts;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.service.StateService;
@@ -105,7 +106,21 @@ class TaskTurnsTest {
             .pipelineStatus("running")
             .build();
 
-    Turn.Holder holder = turns.next(approved, new Arbiter.Profile(MasterMode.ACT, Set.of()));
+    Turn.Holder holder =
+        turns.next(approved, new Arbiter.Profile(MasterMode.ACT, Set.of()), Facts.Reach.defaults());
+
+    assertThat(holder).isEqualTo(Turn.Holder.CI);
+  }
+
+  @Test
+  void theHostHoldsReviewedRequestWhereApprovalIsRequiredNotTheMaster() {
+    TaskState reviewed = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build();
+
+    Turn.Holder holder =
+        turns.next(
+            reviewed,
+            new Arbiter.Profile(MasterMode.ACT, Set.of()),
+            Facts.Reach.defaults().withRequireApproval(true));
 
     assertThat(holder).isEqualTo(Turn.Holder.CI);
   }
