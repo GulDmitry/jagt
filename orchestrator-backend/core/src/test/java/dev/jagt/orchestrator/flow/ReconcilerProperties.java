@@ -77,16 +77,11 @@ class ReconcilerProperties {
     assertSoftly(soft -> {
       soft.assertThat(run.violations()).isEmpty();
       soft.assertThat(run.stalls(P4)).isEmpty();
-      soft.assertThat(run.offTable())
-          .containsExactlyInAnyOrder(
-              "HostRead RETRY on a missed beat",
-              "JudgeRound RETRY on a missed beat",
-              "JudgeRound STOP on a missed beat",
-              "Deploy RETRY on a missed beat");
+      soft.assertThat(run.offTable()).isEmpty();
       soft.assertThat(run.stalls(EnumSet.of(TaskStatus.VERIFYING, TaskStatus.SHIPPING)))
           .anyMatch(stall -> stall.startsWith("IN_PROGRESS with green checks"));
-      soft.assertThat(run.states()).isEqualTo(29_980);
-      soft.assertThat(Model.bound()).isEqualTo(14);
+      soft.assertThat(run.states()).isEqualTo(12_742);
+      soft.assertThat(Model.bound()).isEqualTo(11);
     });
   }
 

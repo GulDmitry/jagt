@@ -161,7 +161,7 @@ record Reconciler(Composition composition, Arbiter.Profile profile, Duration bea
   }
 
   private static boolean spent(ProgressStep step, @Nullable Beat beat) {
-    return beat != null && beat.attempts() >= StepPolicy.of(step).retries();
+    return beat != null && beat.attempts() >= StepPolicy.of(step).redReads();
   }
 
   private Optional<Decision> missed(ProgressStep step, @Nullable Beat last, long now) {
@@ -175,7 +175,7 @@ record Reconciler(Composition composition, Arbiter.Profile profile, Duration bea
     if (last.attempts() < policy.retries() + policy.restarts()) {
       return Optional.of(new Decision.Restart(step));
     }
-    return Optional.of(new Decision.Stop(step, policy.stop(now)));
+    return policy.stop(now).map(move -> new Decision.Stop(step, move));
   }
 
   private Map<String, CheckerPhase> checkers(Configuration chart) {

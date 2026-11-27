@@ -6,7 +6,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import dev.jagt.orchestrator.flow.Reconciler.Decision;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.role.Arbiter;
-import dev.jagt.orchestrator.flow.role.MasterPhase;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.MasterMode;
 import dev.jagt.orchestrator.task.stop.TaskStop;
@@ -14,6 +13,7 @@ import dev.jagt.orchestrator.task.turn.Turn;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -110,14 +110,12 @@ class ReconcilerTest {
             0L,
             new Decision.Stay()),
         arguments(
-            "the judge round the master holds turns to the human once its retry is spent",
+            "the judge round the master holds waits on a missed beat",
             Map.of("lifecycle", "PLAN_PENDING"),
             Pipeline.UNKNOWN,
             Map.of(round, new Beat(round, 0, 0, 1)),
             60_000L,
-            new Decision.Stop(
-                round,
-                new TaskMove.MasterNoted(new MasterNote.Left("judge round"), MasterPhase.LEFT))),
+            new Decision.Stay()),
         arguments(
             "a red deploy read past its retry lands the conflict",
             Map.of("lifecycle", "DEPLOYED", "deploy", "LANDING"),
@@ -193,8 +191,8 @@ class ReconcilerTest {
   @ParameterizedTest
   @MethodSource("stops")
   void anExhaustedStepStopsOnTheTriggerOfItsRow(ProgressStep step, TaskStop.Trigger trigger) {
-    TaskMove stop = StepPolicy.of(step).stop(5L);
+    Optional<TaskMove> stop = StepPolicy.of(step).stop(5L);
 
-    assertThat(stop).isEqualTo(new TaskMove.StopSet(new TaskStop(trigger, 5L, trigger.reason())));
+    assertThat(stop).contains(new TaskMove.StopSet(new TaskStop(trigger, 5L, trigger.reason())));
   }
 }
