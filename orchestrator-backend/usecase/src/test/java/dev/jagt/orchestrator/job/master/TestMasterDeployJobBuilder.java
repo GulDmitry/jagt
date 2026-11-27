@@ -3,10 +3,13 @@ package dev.jagt.orchestrator.job.master;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.service.turn.TaskTurns;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import java.time.Clock;
 import java.util.List;
 import lombok.With;
@@ -36,5 +39,20 @@ public record TestMasterDeployJobBuilder(
         configService,
         press,
         new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn()))));
+  }
+
+  public MasterDeployJob build(
+      ConfigService configService,
+      CommandService commands,
+      WorktreeChanges changes,
+      TaskStops stops,
+      StateService state,
+      Clock clock) {
+    TaskTurns turns =
+        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
+    return new MasterDeployJob(
+        configService,
+        new MasterPress(commands, new HumanPaths(configService, changes), stops, turns),
+        turns);
   }
 }

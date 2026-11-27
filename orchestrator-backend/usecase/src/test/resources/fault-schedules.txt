@@ -1,0 +1,8 @@
+# name | seed | events, played as written | outcome: deploys, stops <trigger> or stalls <status>
+p4 | 7 | question, tick, master-retry, tick, silent, tick, tick, tick, green, tick, tick, tick | stalls IN_PROGRESS
+windows-unreadable | 3 | windows-unreadable, tick, green, tick, tick | deploys
+flaky-then-green | 11 | flaky, tick, tick, tick | deploys
+restart-before-green | 5 | green, restart, tick, tick | deploys
+unread-then-green | 17 | unread, tick, tick, green, tick, tick | deploys
+red-relays | 19 | red, tick, tick | stalls CI_FAILED
+late-red-after-push | 13 | red, late, push, tick | stalls CI_FAILED
