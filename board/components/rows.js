@@ -53,7 +53,9 @@ export const pickFacts = (task, changed, stopped) =>
 /** @param {CardTask[]} tasks */
 export const manyProjects = (tasks) =>
   new Set(
-    tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project)),
+    tasks
+      .flatMap((task) => (task.repos || []).map((repo) => repo.project))
+      .filter(Boolean),
   ).size > 1;
 
 /**
@@ -70,14 +72,17 @@ export function grouped(shown, many, flagged = () => false) {
   ];
   const yours = ordered.filter((task) => task.attention === "REQUIRED");
   const rest = ordered.filter((task) => task.attention !== "REQUIRED");
-  const projects = [...new Set(rest.map((task) => task.project))].sort((a, b) =>
-    a.localeCompare(b, "en"),
-  );
+  const named = [...new Set(rest.map((task) => task.project))]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "en"));
+  const projects = rest.some((task) => !task.project)
+    ? [...named, null]
+    : named;
   const groups = many
     ? projects.map((project) => ({
-        name: project,
+        name: project || "",
         kind: "project",
-        tasks: rest.filter((task) => task.project === project),
+        tasks: rest.filter((task) => (task.project || null) === project),
       }))
     : [
         {

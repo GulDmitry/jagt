@@ -48,6 +48,10 @@ No board script SHALL compare, sort or format in the browser's locale: `localeCo
 - **WHEN** a board source asks `t()` or a `data-t*` attribute for a key `en.json` lacks
 - **THEN** the board's catalog test fails naming the key
 
+#### Scenario: A task has no project yet
+- **WHEN** ABC-42 still plans in its scratch folder beside tasks of two projects
+- **THEN** the board renders, ABC-42 in an unnamed group after the project groups
+
 ### Requirement: No mark is told apart by colour alone
 Two marks in one Help legend row SHALL differ in shape or glyph.
 A control's edge SHALL be at least 3:1 on `--panel` in both themes ([design.md](../../../docs/rules/design.md)).

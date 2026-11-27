@@ -75,6 +75,31 @@ test("theRestSplitsByProjectName whenProjectsAreMany", () => {
   );
 });
 
+test("aTaskWithoutProjectFollowsTheProjectGroups whenProjectsAreMany", () => {
+  const tasks = [
+    { id: "1", attention: "OPTIONAL", project: null },
+    { id: "2", attention: "OPTIONAL", project: "b" },
+    { id: "3", attention: "OPTIONAL", project: "a" },
+  ];
+
+  const groups = grouped(/** @type {never} */ (tasks), true);
+
+  assert.deepEqual(
+    groups.map((group) => [group.name, group.tasks.map((one) => one.id)]),
+    [
+      ["a", ["3"]],
+      ["b", ["2"]],
+      ["", ["1"]],
+    ],
+  );
+});
+
+test("projectsAreNotMany whenARepoHasNoProjectBesideOne", () => {
+  const tasks = [{ repos: [{ project: "a" }] }, { repos: [{ project: null }] }];
+
+  assert.equal(manyProjects(/** @type {never} */ (tasks)), false);
+});
+
 test("aFlaggedRowLeadsItsGroup whenTheFlagHoldsIt", () => {
   const tasks = [
     { id: "1", attention: "OPTIONAL", project: "a" },
