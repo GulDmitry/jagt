@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.host.Exit;
 import dev.jagt.orchestrator.port.host.Host;
@@ -54,7 +55,11 @@ class AutoUpgradeTest {
 
   @Test
   void waitsWhileAnAgentSessionRuns() {
-    new SessionLedger(state, new FakeClock()).sign("ABC-1", new SessionSign.WorkStarted());
+    new SessionLedger(state, new FakeClock())
+        .sign(
+            "ABC-1",
+            new Generation(Generation.Kind.SESSION_START, "0"),
+            new SessionSign.WorkStarted());
 
     new AutoUpgrade(releases, new ReleaseSwitch(releases, host, exit), state, true).attempt();
 

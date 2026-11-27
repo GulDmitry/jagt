@@ -24,6 +24,12 @@ public record SessionHookReport(
     @JsonUnwrapped Turn turn)
     implements Message {
 
+  /** The header carrying the session start a hook was sent from, set from the variable below. */
+  public static final String SESSION_START_HEADER = "X-Session-Start";
+
+  /** Set in the environment of each session's process, so a hook reads the start it began on. */
+  public static final String SESSION_START_ENV = "JAGT_SESSION_START";
+
   public record Ending(
       @Nullable Boolean continuing, @Nullable String error, @Nullable String reason) {
 

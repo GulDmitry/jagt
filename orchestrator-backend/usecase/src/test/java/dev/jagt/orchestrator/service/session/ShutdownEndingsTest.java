@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -42,8 +43,10 @@ class ShutdownEndingsTest {
 
   @Test
   void recordsEveryWorkingSessionAsGoneAndTheNextStartReadsThemSo() {
-    ledger.sign("ABC-1", new SessionSign.WorkStarted());
-    ledger.sign("ABC-2", new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-2", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
 
     new ShutdownEndings(state, ledger, sessions).stop();
 
@@ -58,7 +61,8 @@ class ShutdownEndingsTest {
 
   @Test
   void leavesTaskThatNeverHadSessionAlone() {
-    ledger.sign("ABC-1", new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
 
     new ShutdownEndings(state, ledger, sessions).stop();
 
@@ -69,8 +73,10 @@ class ShutdownEndingsTest {
 
   @Test
   void stillEndsTheOtherSessionsWhenOneWindowCannotBeClosed() {
-    ledger.sign("ABC-1", new SessionSign.WorkStarted());
-    ledger.sign("ABC-2", new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-2", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
     doThrow(new IllegalStateException("tmux unreadable")).when(sessions).killWindows("ABC-1");
 
     new ShutdownEndings(state, ledger, sessions).stop();
@@ -82,7 +88,8 @@ class ShutdownEndingsTest {
 
   @Test
   void endsTheSessionsWhenTheContextClosesWithOnStopEnd() {
-    ledger.sign("ABC-1", new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
     ApplicationContextRunner runner =
         new ApplicationContextRunner()
             .withPropertyValues("orchestrator.on-stop=end")
@@ -95,7 +102,8 @@ class ShutdownEndingsTest {
 
   @Test
   void keepsTheSessionsWhenTheContextClosesWithOnStopUnset() {
-    ledger.sign("ABC-1", new SessionSign.WorkStarted());
+    ledger.sign(
+        "ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), new SessionSign.WorkStarted());
     ApplicationContextRunner runner =
         new ApplicationContextRunner()
             .withBean(ShutdownEndings.class, () -> new ShutdownEndings(state, ledger, sessions));
@@ -121,7 +129,10 @@ class ShutdownEndingsTest {
           @Override
           public void stop() {
             running = false;
-            ledger.sign("ABC-1", new SessionSign.WorkStarted());
+            ledger.sign(
+                "ABC-1",
+                new Generation(Generation.Kind.SESSION_START, "0"),
+                new SessionSign.WorkStarted());
           }
 
           @Override

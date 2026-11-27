@@ -37,7 +37,12 @@ class SessionLedgerTest {
   void writesTheSignOnTheTask() {
     Clock clock = Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC);
 
-    new SessionLedger(state, clock).record("ABC-1", null, new SessionSign.WorkStarted());
+    new SessionLedger(state, clock)
+        .record(
+            "ABC-1",
+            new Generation(Generation.Kind.SESSION_START, "0"),
+            null,
+            new SessionSign.WorkStarted());
 
     assertThat(state.task("ABC-1").orElseThrow().work().session().workStartedAt()).isEqualTo(7_000);
   }
@@ -46,7 +51,11 @@ class SessionLedgerTest {
   void recordsTheLogFileTheSessionAppendsToOnTheTask() {
 
     new SessionLedger(state, new FakeClock())
-        .record("ABC-1", Path.of("/logs/session.jsonl"), new SessionSign.WorkStarted());
+        .record(
+            "ABC-1",
+            new Generation(Generation.Kind.SESSION_START, "0"),
+            Path.of("/logs/session.jsonl"),
+            new SessionSign.WorkStarted());
 
     assertThat(state.task("ABC-1").orElseThrow().work().session().log())
         .isEqualTo("/logs/session.jsonl");
@@ -58,6 +67,7 @@ class SessionLedgerTest {
     new SessionLedger(state, new FakeClock())
         .sign(
             "ABC-1",
+            new Generation(Generation.Kind.SESSION_START, "0"),
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK));
 
     assertThat(state.task("ABC-1").orElseThrow().standing().report())
@@ -70,9 +80,9 @@ class SessionLedgerTest {
         new SessionSign.Asked("waiting on the trust dialog", SessionSign.Asked.Channel.SCREEN);
 
     new SessionLedger(state, Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC))
-        .sign("ABC-1", ask);
+        .sign("ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), ask);
     new SessionLedger(state, Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
-        .sign("ABC-1", ask);
+        .sign("ABC-1", new Generation(Generation.Kind.SESSION_START, "0"), ask);
 
     assertThat(state.task("ABC-1").orElseThrow().work().session().askedAt()).isEqualTo(7_000);
   }

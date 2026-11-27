@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.port.agent.LaunchMode;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.service.StateService;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -68,7 +69,8 @@ class HerdrSessionHostE2eTest {
             new SessionEnvironment(
                 new OrchestratorPaths(orchestrator, new SystemHost()),
                 new NoWorktreeContainers(),
-                new SystemHost()),
+                new SystemHost(),
+                mock(StateService.class)),
             mock(TerminalDriver.class),
             agentRuntime);
   }

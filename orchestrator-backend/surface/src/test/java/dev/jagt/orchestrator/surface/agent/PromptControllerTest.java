@@ -33,12 +33,13 @@ class PromptControllerTest {
   void reportsTheSessionWorkingWhenTheGateLetsThePromptThrough() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
     when(gate.answer("ABC-1", task, "go on")).thenReturn("");
-    when(sessions.report("working", "/wt/ABC-1-proj", typed)).thenReturn("");
+    when(sessions.report("working", "/wt/ABC-1-proj", "3", typed)).thenReturn("");
 
-    String answered = new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", typed);
+    String answered =
+        new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", "3", typed);
 
     assertThat(answered).isEmpty();
-    verify(sessions).report("working", "/wt/ABC-1-proj", typed);
+    verify(sessions).report("working", "/wt/ABC-1-proj", "3", typed);
   }
 
   @Test
@@ -46,12 +47,14 @@ class PromptControllerTest {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
     when(gate.answer("ABC-1", task, "go on")).thenReturn("{\"decision\": \"block\"}");
 
-    String answered = new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", typed);
+    String answered =
+        new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", "3", typed);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     verify(sessions, never())
         .report(
             org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any());
   }
@@ -60,7 +63,7 @@ class PromptControllerTest {
   void letsPromptThroughFromRootSessionNoTaskOwns() {
     when(state.findByWorktree("/root")).thenReturn(Optional.empty());
 
-    String answered = new PromptController(state, gate, sessions).prompt("/root", typed);
+    String answered = new PromptController(state, gate, sessions).prompt("/root", null, typed);
 
     assertThat(answered).isEmpty();
     verify(gate, never())

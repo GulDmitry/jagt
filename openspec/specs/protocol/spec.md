@@ -58,7 +58,6 @@ plan gate ([task-flow](../task-flow/spec.md)). For a task opened in `plan` mode 
 ### Requirement: A session may say only the human can unblock it
 `update_agent_status` SHALL take `outcome=permission`: a question stopped on a call the CLI denied, recorded as the
 task's `PERMISSION` report, which nothing standing in for the human answers ([master](../master/spec.md)).
-
 #### Scenario: Edits denied in the deploy worktree
 - **WHEN** a session reports `outcome=permission`
 - **THEN** the card reads `NEEDS INPUT: permission: …` and the Master leaves it to you
@@ -90,26 +89,27 @@ what comes next off what the handler threw: `validation`, a wrong argument, is f
 
 ### Requirement: A hook's post is filtered, not refused
 `protocol/SessionHookReport` SHALL filter what a hook posts, never refuse it: what jagt cannot believe is dropped, logged once.
-#### Scenario: A relative or unparseable log path
+A hook SHALL name the session start it was sent from in `X-Session-Start`, read from its process's environment; its sign lands on that start.
+#### Scenario: An unbelievable log path, a restarted session
 - **WHEN** a hook posts a relative path, or one holding a NUL character
 - **THEN** it is dropped as a violation, never thrown, the rest kept
+- **WHEN** a hook's sign names a session start the task has moved past
+- **THEN** the reducer drops it with `read dropped stale`, the task unchanged
+- **WHEN** a hook names no start, or one that is no count
+- **THEN** its sign lands on the start the task stands at on arrival
 
 ### Requirement: A paid read is judged and asked again
 For a paid read jagt is the sender: `protocol/TicketRead`, `RoundRead` and `RowStatusRead` SHALL judge the answer, and its violations ride into
 the next ask: the identical question returns the identical answer. A verdict, press and row status are types, never Strings.
-
 #### Scenario: A false "does not exist"
 - **WHEN** the read says a ticket that plainly exists does not
 - **THEN** it is asked again, up to three times, each attempt told what the last got wrong
-
 #### Scenario: The wrong ticket
 - **WHEN** the read answers about a different key, or with no key or link
 - **THEN** no task opens, and the message says why
-
 #### Scenario: Prose instead of the object
 - **WHEN** a paid call answers in prose, not the schema's object
 - **THEN** it is asked once more at once, both calls billed; a failed call is not
-
 #### Scenario: A word outside the vocabulary
 - **WHEN** a review answers a verdict, or an acceptance row a status, that names none of the declared words
 - **THEN** it is asked once more, told the field, then failed with its cause on the card; an undeclared field is ignored

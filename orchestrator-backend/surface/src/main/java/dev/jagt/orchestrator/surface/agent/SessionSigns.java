@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.job.session.WatchdogService;
 import dev.jagt.orchestrator.service.presence.SessionLedger;
@@ -17,14 +18,18 @@ public class SessionSigns {
   private final WatchdogService watchdog;
   private final AgentSpendReader agentSpend;
 
-  public void asked(String taskId, SessionSign.Asked sign) {
-    ledger.sign(taskId, sign);
+  public void asked(String taskId, Generation readAt, SessionSign.Asked sign) {
+    ledger.sign(taskId, readAt, sign);
     watchdog.check(taskId);
   }
 
-  /** {@code sessionLog} is the file the session appends to, or null where none was named. */
-  public void record(String taskId, @Nullable Path sessionLog, SessionSign sign) {
-    ledger.record(taskId, sessionLog, sign);
+  /**
+   * {@code readAt} is the session start the sign was sent from; {@code sessionLog} is the file the
+   * session appends to, or null where none was named.
+   */
+  public void record(
+      String taskId, Generation readAt, @Nullable Path sessionLog, SessionSign sign) {
+    ledger.record(taskId, readAt, sessionLog, sign);
     watchdog.check(taskId);
     // Off this thread: a read of the log, or the state lock a sweep holds, must not delay the
     // answer.

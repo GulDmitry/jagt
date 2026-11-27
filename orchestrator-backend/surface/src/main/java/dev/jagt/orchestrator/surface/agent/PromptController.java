@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.agent;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,6 +27,8 @@ public class PromptController {
   @PostMapping(value = "/prompt", produces = MediaType.TEXT_PLAIN_VALUE)
   public String prompt(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+      @RequestHeader(value = SessionHookReport.SESSION_START_HEADER, required = false)
+          @Nullable String sessionStart,
       @RequestBody(required = false) SessionHookReport session) {
     var owner = stateService.findByWorktree(cwd);
     if (owner.isEmpty()) {
@@ -34,6 +37,6 @@ public class PromptController {
     String blocked =
         gate.answer(
             owner.get().getKey(), owner.get().getValue(), session == null ? "" : session.typed());
-    return blocked.isEmpty() ? sessions.report("working", cwd, session) : blocked;
+    return blocked.isEmpty() ? sessions.report("working", cwd, sessionStart, session) : blocked;
   }
 }

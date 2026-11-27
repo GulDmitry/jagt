@@ -1,11 +1,13 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.presence.SessionProbe;
 import dev.jagt.orchestrator.service.task.TaskFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,8 @@ public class SessionReports {
    * is the file the session appends to, otherwise derived; {@code startedBy} why it started, in the
    * CLI's own word; {@code said} what the CLI told the human; {@code task} the task it runs for;
    * {@code endedBy} why a session ended; {@code failedOn} the error a turn ended on; {@code
-   * toolName} the tool a permission prompt asks for. Each null where nothing was named.
+   * toolName} the tool a permission prompt asks for; {@code sessionStart} the start of the session
+   * that sent it, which a restart outdates. Each null where nothing was named.
    */
   public record Report(
       @Nullable Path sessionLog,
@@ -37,54 +40,69 @@ public class SessionReports {
       @Nullable TaskState task,
       @Nullable String endedBy,
       @Nullable String failedOn,
-      @Nullable String toolName) {
+      @Nullable String toolName,
+      @Nullable Generation sessionStart) {
 
     /** Everything absent: a harness may hand a hook nothing jagt can use, and most of them do. */
     public static Report defaults() {
-      return new Report(null, null, null, null, null, null, null);
+      return new Report(null, null, null, null, null, null, null, null);
     }
 
     public Report withSessionLog(@Nullable Path sessionLog) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
 
     public Report withStartedBy(@Nullable String startedBy) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
 
     public Report withSaid(@Nullable String said) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
 
     public Report withTask(@Nullable TaskState task) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
 
     public Report withEndedBy(@Nullable String endedBy) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
 
     public Report withFailedOn(@Nullable String failedOn) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
 
     public Report withToolName(@Nullable String toolName) {
-      return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
+    }
+
+    public Report withSessionStart(@Nullable Generation sessionStart) {
+      return new Report(
+          sessionLog, startedBy, said, task, endedBy, failedOn, toolName, sessionStart);
     }
   }
 
   /** The brief for a session that has just been compacted, or empty for every other report. */
   public String record(String taskId, SessionProbe.State state, Report report) {
-    signs.record(taskId, report.sessionLog(), signOf(state, report));
+    signs.record(taskId, readAt(report), report.sessionLog(), signOf(state, report));
     return brief(taskId, report.startedBy(), report.task());
   }
 
   /** Records the session as idle and asking for permission, naming the tool where the CLI did. */
   public void permissionAsked(String taskId, Report report) {
-    signs.record(taskId, report.sessionLog(), signOf(SessionProbe.State.IDLE, report));
+    signs.record(
+        taskId, readAt(report), report.sessionLog(), signOf(SessionProbe.State.IDLE, report));
     String tool = report.toolName();
     signs.asked(
         taskId,
+        readAt(report),
         new SessionSign.Asked(
             tool == null ? "permission" : "permission to use " + tool,
             SessionSign.Asked.Channel.HOOK));
@@ -95,7 +113,8 @@ public class SessionReports {
    * limit.
    */
   public boolean turnFailed(String taskId, Report report) {
-    signs.record(taskId, report.sessionLog(), new SessionSign.TurnFailed(report.failedOn()));
+    signs.record(
+        taskId, readAt(report), report.sessionLog(), new SessionSign.TurnFailed(report.failedOn()));
     String limit = runtime.rateLimitError();
     return report.failedOn() != null
         && limit != null
@@ -110,6 +129,13 @@ public class SessionReports {
         pausedOnBackgroundWork ? SessionProbe.State.WORKING : SessionProbe.State.IDLE,
         report);
     return turnEnds.answer(taskId, report.task(), sentOn, pausedOnBackgroundWork, report.said());
+  }
+
+  /** A hook naming no start is read as of its arrival, on the start the task stands at. */
+  private static Generation readAt(Report report) {
+    return report.sessionStart() != null
+        ? report.sessionStart()
+        : Generation.of(Generation.Kind.SESSION_START, Objects.requireNonNull(report.task()));
   }
 
   private boolean continuing(SessionProbe.State state, @Nullable String endedBy) {

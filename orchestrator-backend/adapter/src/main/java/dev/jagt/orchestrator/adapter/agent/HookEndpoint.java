@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.protocol.SessionHookReport;
 import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +55,8 @@ public class HookEndpoint {
    * the human, and one that hung would hold up the session. A harness adds a hook's stdout to the
    * session's context, so the answer is printed; {@code -f} keeps an error page out of that context
    * by printing nothing on failure. Whatever the harness hands the hook rides along on stdin,
-   * unparsed by the shell.
+   * unparsed by the shell. The session start rides in a header read from the process's own
+   * environment, so a hook of a session that has since restarted still names the start it began on.
    */
   public String command(Path worktree, String state) {
     return command(worktree, state, url);
@@ -70,7 +72,11 @@ public class HookEndpoint {
         + " -X POST --data-binary @- -H 'Content-Type: application/json' -H "
         + AbstractAgentRuntime.shellQuote(
             McpEndpoint.CALLER_HEADER + ": " + McpEndpoint.callerHeaderValue(worktree))
-        + " "
+        + " -H \""
+        + SessionHookReport.SESSION_START_HEADER
+        + ": ${"
+        + SessionHookReport.SESSION_START_ENV
+        + "}\" "
         + AbstractAgentRuntime.shellQuote(base + "/" + state)
         + " || true";
   }

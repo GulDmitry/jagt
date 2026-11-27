@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.presence.SessionProbe;
@@ -21,26 +22,29 @@ class SessionReportsTest {
   private final SessionSigns signs = mock(SessionSigns.class);
   private final AgentRuntime runtime = mock(AgentRuntime.class);
   private final TurnEnds turnEnds = mock(TurnEnds.class);
+  private final Generation start = new Generation(Generation.Kind.SESSION_START, "3");
 
   @Test
   void signsAnAskNamingTheToolWhenThePermissionPromptOpens() {
     new SessionReports(signs, runtime, turnEnds)
-        .permissionAsked("ABC-1", SessionReports.Report.defaults().withToolName("Bash"));
+        .permissionAsked(
+            "ABC-1", SessionReports.Report.defaults().withSessionStart(start).withToolName("Bash"));
 
-    verify(signs).record("ABC-1", null, new SessionSign.TurnEnded(null));
+    verify(signs).record("ABC-1", start, null, new SessionSign.TurnEnded(null));
     verify(signs)
         .asked(
             "ABC-1",
+            start,
             new SessionSign.Asked("permission to use Bash", SessionSign.Asked.Channel.HOOK));
   }
 
   @Test
   void signsAnAskWithoutToolWhenThePermissionPromptNamesNone() {
     new SessionReports(signs, runtime, turnEnds)
-        .permissionAsked("ABC-1", SessionReports.Report.defaults());
+        .permissionAsked("ABC-1", SessionReports.Report.defaults().withSessionStart(start));
 
     verify(signs)
-        .asked("ABC-1", new SessionSign.Asked("permission", SessionSign.Asked.Channel.HOOK));
+        .asked("ABC-1", start, new SessionSign.Asked("permission", SessionSign.Asked.Channel.HOOK));
   }
 
   @Test
@@ -49,10 +53,12 @@ class SessionReportsTest {
         .record(
             "ABC-1",
             SessionProbe.State.IDLE,
-            SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
+            SessionReports.Report.defaults()
+                .withSessionStart(start)
+                .withSaid("Claude needs your permission to use Bash"));
 
-    verify(signs).record("ABC-1", null, new SessionSign.TurnEnded(null));
-    verify(signs, never()).asked(any(), any());
+    verify(signs).record("ABC-1", start, null, new SessionSign.TurnEnded(null));
+    verify(signs, never()).asked(any(), any(), any());
   }
 
   @Test
@@ -63,9 +69,9 @@ class SessionReportsTest {
         .record(
             "ABC-1",
             SessionProbe.State.GONE,
-            SessionReports.Report.defaults().withEndedBy("clear"));
+            SessionReports.Report.defaults().withSessionStart(start).withEndedBy("clear"));
 
-    verify(signs).record("ABC-1", null, new SessionSign.Restarted("clear"));
+    verify(signs).record("ABC-1", start, null, new SessionSign.Restarted("clear"));
   }
 
   @Test
@@ -76,9 +82,11 @@ class SessionReportsTest {
         .record(
             "ABC-1",
             SessionProbe.State.GONE,
-            SessionReports.Report.defaults().withEndedBy("prompt_input_exit"));
+            SessionReports.Report.defaults()
+                .withSessionStart(start)
+                .withEndedBy("prompt_input_exit"));
 
-    verify(signs).record("ABC-1", null, new SessionSign.Ended("prompt_input_exit"));
+    verify(signs).record("ABC-1", start, null, new SessionSign.Ended("prompt_input_exit"));
   }
 
   @Test
@@ -87,9 +95,13 @@ class SessionReportsTest {
 
     boolean limit =
         new SessionReports(signs, runtime, turnEnds)
-            .turnFailed("ABC-1", SessionReports.Report.defaults().withFailedOn("rate_limit"));
+            .turnFailed(
+                "ABC-1",
+                SessionReports.Report.defaults()
+                    .withSessionStart(start)
+                    .withFailedOn("rate_limit"));
 
-    verify(signs).record("ABC-1", null, new SessionSign.TurnFailed("rate_limit"));
+    verify(signs).record("ABC-1", start, null, new SessionSign.TurnFailed("rate_limit"));
     assertThat(limit).isTrue();
   }
 
@@ -99,9 +111,13 @@ class SessionReportsTest {
 
     boolean limit =
         new SessionReports(signs, runtime, turnEnds)
-            .turnFailed("ABC-1", SessionReports.Report.defaults().withFailedOn("overloaded"));
+            .turnFailed(
+                "ABC-1",
+                SessionReports.Report.defaults()
+                    .withSessionStart(start)
+                    .withFailedOn("overloaded"));
 
-    verify(signs).record("ABC-1", null, new SessionSign.TurnFailed("overloaded"));
+    verify(signs).record("ABC-1", start, null, new SessionSign.TurnFailed("overloaded"));
     assertThat(limit).isFalse();
   }
 
@@ -113,9 +129,13 @@ class SessionReportsTest {
 
     String answered =
         new SessionReports(signs, runtime, turnEnds)
-            .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
+            .turnEnded(
+                "ABC-1",
+                SessionReports.Report.defaults().withSessionStart(start).withTask(task),
+                false,
+                false);
 
-    verify(signs).record("ABC-1", null, new SessionSign.TurnEnded(null));
+    verify(signs).record("ABC-1", start, null, new SessionSign.TurnEnded(null));
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
 
@@ -124,9 +144,13 @@ class SessionReportsTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
     new SessionReports(signs, runtime, turnEnds)
-        .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, true);
+        .turnEnded(
+            "ABC-1",
+            SessionReports.Report.defaults().withSessionStart(start).withTask(task),
+            false,
+            true);
 
-    verify(signs).record("ABC-1", null, new SessionSign.WorkStarted());
+    verify(signs).record("ABC-1", start, null, new SessionSign.WorkStarted());
   }
 
   @Test
@@ -138,7 +162,7 @@ class SessionReportsTest {
             .record(
                 "ABC-1",
                 SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("compact"));
+                SessionReports.Report.defaults().withSessionStart(start).withStartedBy("compact"));
 
     assertThat(answered).contains("sub-agent for ABC-1", "task_request.md", "task_context.md");
   }
@@ -160,7 +184,10 @@ class SessionReportsTest {
             .record(
                 "ABC-1",
                 SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+                SessionReports.Report.defaults()
+                    .withSessionStart(start)
+                    .withStartedBy("compact")
+                    .withTask(task));
 
     assertThat(answered)
         .contains(
@@ -184,7 +211,10 @@ class SessionReportsTest {
             .record(
                 "ABC-1",
                 SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+                SessionReports.Report.defaults()
+                    .withSessionStart(start)
+                    .withStartedBy("compact")
+                    .withTask(task));
 
     assertThat(answered)
         .contains("its branch, ABC-1", "your last report: outcome=progress — v3 routes done");
@@ -200,7 +230,10 @@ class SessionReportsTest {
             .record(
                 "ABC-1",
                 SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+                SessionReports.Report.defaults()
+                    .withSessionStart(start)
+                    .withStartedBy("compact")
+                    .withTask(task));
 
     assertThat(answered).doesNotContain("your last report", "null");
   }
@@ -214,7 +247,7 @@ class SessionReportsTest {
             .record(
                 "ABC-1",
                 SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("startup"));
+                SessionReports.Report.defaults().withSessionStart(start).withStartedBy("startup"));
 
     assertThat(answered).isEmpty();
   }
@@ -228,7 +261,7 @@ class SessionReportsTest {
             .record(
                 "ABC-1",
                 SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("compact"));
+                SessionReports.Report.defaults().withSessionStart(start).withStartedBy("compact"));
 
     assertThat(answered).isEmpty();
   }

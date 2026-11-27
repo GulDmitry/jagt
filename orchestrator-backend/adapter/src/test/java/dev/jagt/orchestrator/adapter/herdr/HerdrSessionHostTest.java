@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.SessionHost.WindowState;
 import dev.jagt.orchestrator.port.terminal.SessionHost.WindowsUnreadable;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -59,7 +60,8 @@ class HerdrSessionHostTest {
             new SessionEnvironment(
                 new OrchestratorPaths(OrchestratorProperties.defaults(), FakeHost.machine()),
                 new NoWorktreeContainers(),
-                FakeHost.machine()),
+                FakeHost.machine(),
+                mock(StateService.class)),
             terminal,
             agent);
     when(agent.launchCommand(any(), eq(LaunchMode.WORK))).thenReturn("agent --go");

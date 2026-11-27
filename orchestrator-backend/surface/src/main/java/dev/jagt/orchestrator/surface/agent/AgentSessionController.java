@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.protocol.Violation;
@@ -43,13 +44,15 @@ public class AgentSessionController {
   public String report(
       @PathVariable String state,
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+      @RequestHeader(value = SessionHookReport.SESSION_START_HEADER, required = false)
+          @Nullable String sessionStart,
       @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
     SessionProbe.State reported = reported(state);
     if (reported == SessionProbe.State.WORKING) {
       wakes.cancel(task.getKey());
     }
-    return reports.record(task.getKey(), reported, read(task, session));
+    return reports.record(task.getKey(), reported, read(task, session, sessionStart));
   }
 
   /**
@@ -58,19 +61,26 @@ public class AgentSessionController {
   @PostMapping(value = "/turn-end", produces = MediaType.TEXT_PLAIN_VALUE)
   public String turnEnd(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+      @RequestHeader(value = SessionHookReport.SESSION_START_HEADER, required = false)
+          @Nullable String sessionStart,
       @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
     SessionHookReport said = session == null ? SessionHookReport.none() : session;
     return reports.turnEnded(
-        task.getKey(), read(task, said), said.sentOn(), said.pausedOnBackgroundWork());
+        task.getKey(),
+        read(task, said, sessionStart),
+        said.sentOn(),
+        said.pausedOnBackgroundWork());
   }
 
   @PostMapping(value = "/turn-failure", produces = MediaType.TEXT_PLAIN_VALUE)
   public String turnFailure(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+      @RequestHeader(value = SessionHookReport.SESSION_START_HEADER, required = false)
+          @Nullable String sessionStart,
       @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
-    if (reports.turnFailed(task.getKey(), read(task, session))) {
+    if (reports.turnFailed(task.getKey(), read(task, session, sessionStart))) {
       wakes.arm(task.getKey());
     }
     return "";
@@ -79,9 +89,11 @@ public class AgentSessionController {
   @PostMapping(value = "/permission", produces = MediaType.TEXT_PLAIN_VALUE)
   public String permission(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+      @RequestHeader(value = SessionHookReport.SESSION_START_HEADER, required = false)
+          @Nullable String sessionStart,
       @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
-    reports.permissionAsked(task.getKey(), read(task, session));
+    reports.permissionAsked(task.getKey(), read(task, session, sessionStart));
     return "";
   }
 
@@ -92,7 +104,9 @@ public class AgentSessionController {
   }
 
   private SessionReports.Report read(
-      Map.Entry<String, TaskState> task, @Nullable SessionHookReport session) {
+      Map.Entry<String, TaskState> task,
+      @Nullable SessionHookReport session,
+      @Nullable String sessionStart) {
     SessionHookReport said = session == null ? SessionHookReport.none() : session;
     // Nobody reads a refusal here — the hook posts what its CLI handed it and discards the answer —
     // so what
@@ -112,7 +126,24 @@ public class AgentSessionController {
         .withEndedBy(said.ending().reason())
         .withFailedOn(said.ending().error())
         .withToolName(said.turn().toolName())
+        .withSessionStart(startOf(task.getKey(), sessionStart))
         .withTask(task.getValue());
+  }
+
+  /** Absent where the session predates the variable; a value that is no count is no start. */
+  private @Nullable Generation startOf(String taskId, @Nullable String sessionStart) {
+    if (sessionStart == null || sessionStart.isBlank()) {
+      return null;
+    }
+    if (!sessionStart.strip().matches("\\d{1,9}")) {
+      log.atWarn()
+          .setMessage("session start header dropped")
+          .addKeyValue("task", taskId)
+          .addKeyValue("cause", OneLine.clipped(sessionStart))
+          .log();
+      return null;
+    }
+    return new Generation(Generation.Kind.SESSION_START, sessionStart.strip());
   }
 
   private static SessionProbe.State reported(String state) {

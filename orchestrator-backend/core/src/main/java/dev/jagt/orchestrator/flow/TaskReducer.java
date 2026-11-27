@@ -336,7 +336,8 @@ public final class TaskReducer {
 
   /**
    * {@code task} with the sign its session made recorded; a sign the phase has no edge for is
-   * dropped.
+   * dropped. For a sign made on the state the caller already holds, with no earlier read to go
+   * stale.
    */
   public TaskState signed(TaskState task, SessionSign sign, long now) {
     return signed(task, Generation.of(Generation.Kind.SESSION_START, task), sign, now);

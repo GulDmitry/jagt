@@ -29,4 +29,14 @@ class HookEndpointTest {
 
     assertThat(command).endsWith("|| true");
   }
+
+  @Test
+  void namesTheSessionStartFromTheProcessEnvironmentSoRestartedSessionsHookStillNamesItsOwn() {
+    String command =
+        new HookEndpoint(
+                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")
+            .command(Path.of("/wt/ABC-1-proj"), "waiting");
+
+    assertThat(command).contains("-H \"X-Session-Start: ${JAGT_SESSION_START}\"");
+  }
 }

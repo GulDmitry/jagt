@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.presence.SessionProbe;
@@ -36,7 +38,10 @@ class AgentSessionControllerTest {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
     controller.report(
-        "idle", "/wt/ABC-1-proj", new SessionHookReport("/logs/session.jsonl", "compact", null));
+        "idle",
+        "/wt/ABC-1-proj",
+        null,
+        new SessionHookReport("/logs/session.jsonl", "compact", null));
 
     verify(reports)
         .record(
@@ -57,6 +62,7 @@ class AgentSessionControllerTest {
 
     controller.turnFailure(
         "/wt/ABC-1-proj",
+        null,
         new SessionHookReport(
             null,
             null,
@@ -73,6 +79,7 @@ class AgentSessionControllerTest {
 
     controller.turnFailure(
         "/wt/ABC-1-proj",
+        null,
         new SessionHookReport(
             null,
             null,
@@ -87,7 +94,7 @@ class AgentSessionControllerTest {
   void cancelsTheWakeWhenTheSessionReportsWorking() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller.report("working", "/wt/ABC-1-proj", null);
+    controller.report("working", "/wt/ABC-1-proj", null, null);
 
     verify(wakes).cancel("ABC-1");
   }
@@ -96,7 +103,7 @@ class AgentSessionControllerTest {
   void keepsTheWakeWhenTheSessionReportsIdle() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller.report("idle", "/wt/ABC-1-proj", null);
+    controller.report("idle", "/wt/ABC-1-proj", null, null);
 
     verify(wakes, never()).cancel("ABC-1");
   }
@@ -105,7 +112,7 @@ class AgentSessionControllerTest {
   void namesNoLogWhenThePayloadCarriedNone() {
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller.report("working", "/wt/ABC-1-proj", null);
+    controller.report("working", "/wt/ABC-1-proj", null, null);
 
     verify(reports)
         .record(
@@ -120,11 +127,13 @@ class AgentSessionControllerTest {
       controller.report(
           "working",
           "/wt/ABC-1-proj",
+          null,
           new SessionHookReport("/logs/session.jsonl", "compact", null));
       final int warnedForAbsolute = log.events().size();
       controller.report(
           "working",
           "/wt/ABC-1-proj",
+          null,
           new SessionHookReport("relative/session.jsonl", "compact", null));
 
       verify(reports)
@@ -151,7 +160,7 @@ class AgentSessionControllerTest {
 
     String answered =
         controller.report(
-            "working", "/wt/ABC-1-proj", new SessionHookReport(null, "compact", null));
+            "working", "/wt/ABC-1-proj", null, new SessionHookReport(null, "compact", null));
 
     assertThat(answered).isEqualTo("re-read task_context.md");
   }
@@ -163,6 +172,7 @@ class AgentSessionControllerTest {
     controller.report(
         "idle",
         "/wt/ABC-1-proj",
+        null,
         new SessionHookReport(null, null, "Claude needs your permission to use Bash"));
 
     verify(reports)
@@ -181,6 +191,7 @@ class AgentSessionControllerTest {
     String answered =
         controller.permission(
             "/wt/ABC-1-proj",
+            null,
             new SessionHookReport(
                 null,
                 null,
@@ -200,6 +211,7 @@ class AgentSessionControllerTest {
 
     controller.turnEnd(
         "/wt/ABC-1-proj",
+        null,
         new SessionHookReport(
             null,
             null,
@@ -216,7 +228,7 @@ class AgentSessionControllerTest {
     when(reports.turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false))
         .thenReturn("{\"decision\": \"block\"}");
 
-    String answered = controller.turnEnd("/wt/ABC-1-proj", null);
+    String answered = controller.turnEnd("/wt/ABC-1-proj", null, null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -228,7 +240,7 @@ class AgentSessionControllerTest {
 
     assertThatThrownBy(() ->
             new AgentSessionController(state, mock(SessionReports.class), wakes)
-                .report("waiting", "/elsewhere", null))
+                .report("waiting", "/elsewhere", null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("/elsewhere");
   }
@@ -245,8 +257,34 @@ class AgentSessionControllerTest {
 
     assertThatThrownBy(() ->
             new AgentSessionController(state, mock(SessionReports.class), wakes)
-                .report("busy", "/wt/ABC-1-proj", null))
+                .report("busy", "/wt/ABC-1-proj", null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("busy");
+  }
+
+  @Test
+  void carriesTheSessionStartTheHookWasSentFromSoRestartCanOutdateIt() {
+    when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+
+    controller.report("idle", "/wt/ABC-1-proj", " 4 ", null);
+
+    verify(reports)
+        .record(
+            "ABC-1",
+            SessionProbe.State.IDLE,
+            SessionReports.Report.defaults()
+                .withSessionStart(new Generation(Generation.Kind.SESSION_START, "4"))
+                .withTask(task));
+  }
+
+  @Test
+  void readsHookNamingNoSessionStartOrOneThatIsNoCountAsSentOnArrival() {
+    when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+
+    controller.report("idle", "/wt/ABC-1-proj", "", null);
+    controller.report("idle", "/wt/ABC-1-proj", "four", null);
+
+    verify(reports, times(2))
+        .record("ABC-1", SessionProbe.State.IDLE, SessionReports.Report.defaults().withTask(task));
   }
 }

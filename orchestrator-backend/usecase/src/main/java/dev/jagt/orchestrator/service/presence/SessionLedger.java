@@ -17,20 +17,16 @@ public class SessionLedger {
   private final StateService stateService;
   private final Clock clock;
 
-  public void record(String taskId, @Nullable Path sessionLog, SessionSign sign) {
+  public void record(
+      String taskId, Generation readAt, @Nullable Path sessionLog, SessionSign sign) {
     if (sessionLog != null) {
-      sign(taskId, new SessionSign.LogNamed(sessionLog.toString()));
+      sign(taskId, readAt, new SessionSign.LogNamed(sessionLog.toString()));
     }
-    sign(taskId, sign);
+    sign(taskId, readAt, sign);
   }
 
   public void sign(String taskId, Generation readAt, SessionSign sign) {
     long now = clock.millis();
     stateService.reduce(taskId, (reducer, task) -> reducer.signed(task, readAt, sign, now));
-  }
-
-  public void sign(String taskId, SessionSign sign) {
-    long now = clock.millis();
-    stateService.reduce(taskId, (reducer, task) -> reducer.signed(task, sign, now));
   }
 }

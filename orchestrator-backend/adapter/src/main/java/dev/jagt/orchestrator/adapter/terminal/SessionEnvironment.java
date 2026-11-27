@@ -1,8 +1,11 @@
 package dev.jagt.orchestrator.adapter.terminal;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.port.host.Host;
 import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
+import dev.jagt.orchestrator.protocol.SessionHookReport;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
@@ -17,6 +20,7 @@ public class SessionEnvironment {
   private final OrchestratorPaths paths;
   private final WorktreeContainers containers;
   private final Host host;
+  private final StateService state;
 
   /** Where jagt's own session starts. */
   public Path root() {
@@ -33,7 +37,16 @@ public class SessionEnvironment {
         containers.environment(worktree).entrySet().stream()
             .map(variable -> variable.getKey() + "=" + quoted(variable.getValue()) + " ")
             .collect(Collectors.joining());
-    return WorktreeHooks.gitEnv(worktree) + stacks + outsideGit(worktree);
+    return WorktreeHooks.gitEnv(worktree) + stacks + outsideGit(worktree) + sessionStart(worktree);
+  }
+
+  /** Fixed at the process's birth, so a hook of a session since restarted still names its own. */
+  private String sessionStart(Path worktree) {
+    return state
+        .findByWorktree(worktree.toString())
+        .map(task -> Generation.of(Generation.Kind.SESSION_START, task.getValue()).at())
+        .map(start -> SessionHookReport.SESSION_START_ENV + "=" + start + " ")
+        .orElse("");
   }
 
   /**
