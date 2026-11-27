@@ -3,6 +3,10 @@ package dev.jagt.orchestrator.service.presence;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.Generation;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -71,5 +75,21 @@ class SessionLedgerTest {
         .sign("ABC-1", ask);
 
     assertThat(state.task("ABC-1").orElseThrow().work().session().askedAt()).isEqualTo(7_000);
+  }
+
+  @Test
+  void dropsTheSignReadOnTheSessionThatStartedOver() {
+    state.updateTask(
+        "ABC-1",
+        new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {})::sessionStartedOver);
+
+    new SessionLedger(state, new FakeClock())
+        .sign(
+            "ABC-1",
+            new Generation(Generation.Kind.SESSION_START, "0"),
+            new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK));
+
+    assertThat(state.task("ABC-1").orElseThrow().standing().report())
+        .isNotEqualTo(AgentReport.PERMISSION);
   }
 }

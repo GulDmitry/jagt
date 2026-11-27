@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.repo.MergedRequests;
 import dev.jagt.orchestrator.service.review.ReviewRound;
@@ -184,6 +185,23 @@ class RoundReadingTest {
             round ->
                 assertThat(round.facts().discussion().awaitingReviewer())
                     .containsExactly("[web] mia: Why?\nagent: Because."));
+  }
+
+  @Test
+  void carriesTheHeadTheTaskHadWhenTheReadBegan() {
+    when(stateService.task("ABC-1"))
+        .thenReturn(Optional.of(oneRepository.withHead("proj=aaa")))
+        .thenReturn(Optional.of(oneRepository.withHead("proj=bbb")));
+    when(reviewReader.read("ABC-1", "proj", "http://mr/1")).thenReturn(reviewAnswer().build());
+
+    var read = reading.read("ABC-1");
+
+    assertThat(read)
+        .isInstanceOfSatisfying(
+            RoundReading.Round.class,
+            round ->
+                assertThat(round.readAt())
+                    .isEqualTo(new Generation(Generation.Kind.HEAD, "proj=aaa")));
   }
 
   @Test

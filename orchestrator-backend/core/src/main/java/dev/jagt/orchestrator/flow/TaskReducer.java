@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -346,6 +347,14 @@ public final class TaskReducer {
     return step(task, new TaskMove.Signed(readAt, sign), now);
   }
 
+  /**
+   * {@code reads} applied to {@code task} as it stands, or {@code task} unchanged, the drop logged,
+   * where it has moved past {@code readAt}: what a read took before a move never lands after it.
+   */
+  public TaskState observed(TaskState task, Generation readAt, UnaryOperator<TaskState> reads) {
+    return movedPast(task, readAt) ? task : reads.apply(task);
+  }
+
   /** {@code task} whose session starts over: nothing the old one signed speaks for the new one. */
   public TaskState sessionStartedOver(TaskState task) {
     return step(task, new TaskMove.SessionStartedOver());
@@ -619,11 +628,12 @@ public final class TaskReducer {
   }
 
   private boolean stale(TaskState task, TaskMove move) {
-    if (!(move instanceof TaskMove.Observed read)) {
-      return false;
-    }
+    return move instanceof TaskMove.Observed read && movedPast(task, read.readAt());
+  }
+
+  private boolean movedPast(TaskState task, Generation readAt) {
     Optional<Generation.Stale> stale =
-        read.readAt().landingOn(task.ticket().alias(), Generation.of(read.readAt().kind(), task));
+        readAt.landingOn(task.ticket().alias(), Generation.of(readAt.kind(), task));
     stale.ifPresent(dropped);
     return stale.isPresent();
   }

@@ -57,7 +57,13 @@ public class ReviewSweepService {
           switch (reading.read(taskId)) {
             case RoundReading.Refused refused -> refused.result();
             case RoundReading.Round round ->
-                outcome.settle(taskId, round.project(), round.mrUrl(), round.facts(), round.tip());
+                outcome.settle(
+                    taskId,
+                    round.project(),
+                    round.mrUrl(),
+                    round.facts(),
+                    round.tip(),
+                    round.readAt());
           };
       String alias =
           stateService.task(taskId).map(taskState -> taskState.ticket().alias()).orElse(null);

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigFile;
@@ -139,9 +140,34 @@ class MergedRequestsTest {
   void requestStaysMergedWhereTheHostSaidMergedAndNothingElseIsKnown() {
     state.putTask("ABC-42", reviewed);
 
-    requests.hostSaidMerged("ABC-42", "proj");
+    requests.hostSaidMerged("ABC-42", "proj", new Generation(Generation.Kind.ROUND, "http://mr/1"));
 
     assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isTrue();
+  }
+
+  @Test
+  void dropsTheHostsWordReadBeforeTheNextRoundLinkedItsRequest() {
+    state.putTask("ABC-42", reviewed);
+
+    requests.hostSaidMerged("ABC-42", "proj", new Generation(Generation.Kind.ROUND, "http://mr/0"));
+
+    assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
+  }
+
+  @Test
+  void dropsWhatGitFoundWhereTheNextRoundLinkedItsRequestDuringTheRead() {
+    state.putTask("ABC-42", reviewed);
+    when(inspection.mergedIntoTarget(any(), any(), any()))
+        .thenAnswer(call -> {
+          state.putTask(
+              "ABC-42",
+              TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://mr/2").build());
+          return true;
+        });
+
+    requests.refresh("ABC-42");
+
+    assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
   }
 
   @Test

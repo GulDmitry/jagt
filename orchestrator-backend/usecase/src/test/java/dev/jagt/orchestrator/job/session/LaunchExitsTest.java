@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
@@ -57,6 +58,7 @@ class LaunchExitsTest {
     verify(ledger)
         .sign(
             "ABC-42",
+            new Generation(Generation.Kind.SESSION_START, "0"),
             new SessionSign.Asked("waiting on the trust dialog", SessionSign.Asked.Channel.SCREEN));
   }
 

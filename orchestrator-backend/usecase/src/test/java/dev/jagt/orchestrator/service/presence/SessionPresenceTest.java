@@ -86,4 +86,18 @@ class SessionPresenceTest {
 
     assertThatThrownBy(() -> presence.agentLive("ABC-1")).isInstanceOf(AgentPresence.Unread.class);
   }
+
+  @Test
+  void keepsTheSessionThatStartedOverWhileItsWindowWasRead() {
+    when(probe.read(anyString(), any(), anyLong(), anyLong()))
+        .thenAnswer(read -> {
+          state.updateTask("ABC-1", reducer::sessionStartedOver);
+          return new SessionSign.Read(Session.Window.State.DEAD_SHELL, 0, 0, 0, 300_000, "exit 1");
+        });
+    SessionPresence presence = new SessionPresence(state, probe, properties, new FakeClock());
+
+    assertThatThrownBy(() -> presence.agentLive("ABC-1")).isInstanceOf(AgentPresence.Unread.class);
+    assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().work().session()))
+        .isNotEqualTo(SessionPhase.GONE);
+  }
 }

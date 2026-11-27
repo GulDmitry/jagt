@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.deploy.RedCause;
 import dev.jagt.orchestrator.service.report.AgentStatusReports;
 import dev.jagt.orchestrator.service.review.ReviewSweepService;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 class RoundOutcomeTest {
 
+  private final Generation readAt = new Generation(Generation.Kind.HEAD, "");
   private final RoundRecord roundRecord = mock(RoundRecord.class);
   private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
   private final RoundRelay relay = mock(RoundRelay.class);
@@ -29,7 +31,7 @@ class RoundOutcomeTest {
 
   @BeforeEach
   void theRoundRecordsNothingUnusual() {
-    when(roundRecord.record(any(), any(), any(), any()))
+    when(roundRecord.record(any(), any(), any(), any(), any()))
         .thenReturn(new RoundRecord.Recorded(Optional.empty(), RedCauses.Verdict.CODE));
   }
 
@@ -41,9 +43,9 @@ class RoundOutcomeTest {
             new ReviewFacts.Pipeline("running", "", ""),
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
-    outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
-    verify(roundRecord).record("ABC-1", "shop", facts, "");
+    verify(roundRecord).record("ABC-1", "shop", facts, "", readAt);
   }
 
   @Test
@@ -53,7 +55,7 @@ class RoundOutcomeTest {
             new ReviewFacts.Request(true, false, false, false, 0),
             new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
-    when(roundRecord.record("ABC-1", "shop", facts, ""))
+    when(roundRecord.record("ABC-1", "shop", facts, "", readAt))
         .thenReturn(
             new RoundRecord.Recorded(
                 Optional.of(
@@ -64,7 +66,7 @@ class RoundOutcomeTest {
                             + " Forbidden")),
                 RedCauses.Verdict.CODE));
 
-    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.STOPPED);
   }
@@ -80,7 +82,8 @@ class RoundOutcomeTest {
                 new ReviewFacts.Request(true, true, false, false, 0),
                 new ReviewFacts.Pipeline("success", "", ""),
                 new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
-            "");
+            "",
+            readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
     verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
@@ -98,7 +101,8 @@ class RoundOutcomeTest {
                 new ReviewFacts.Request(true, false, false, false, 0),
                 new ReviewFacts.Pipeline("success", "", ""),
                 new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
-            "");
+            "",
+            readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
     verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -116,7 +120,8 @@ class RoundOutcomeTest {
                 new ReviewFacts.Request(true, false, false, false, 0),
                 new ReviewFacts.Pipeline("unknown", "", ""),
                 new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
-            "");
+            "",
+            readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
     verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
@@ -133,7 +138,8 @@ class RoundOutcomeTest {
                 new ReviewFacts.Request(true, false, false, false, 0),
                 new ReviewFacts.Pipeline("running", "", ""),
                 new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
-            "");
+            "",
+            readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
     assertThat(result.message()).contains("checks running");
@@ -150,7 +156,8 @@ class RoundOutcomeTest {
             new ReviewFacts.Request(true, false, false, false, 0),
             new ReviewFacts.Pipeline("failed", "", ""),
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
-        "");
+        "",
+        readAt);
 
     verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
   }
@@ -168,7 +175,7 @@ class RoundOutcomeTest {
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.RELAYED, "relayed"));
 
-    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
     verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.APPROVED), any());
@@ -190,9 +197,9 @@ class RoundOutcomeTest {
                     agent: No change: entries are immutable\
                     """),
                 List.of()));
-    outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
-    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
     assertThat(result.message()).contains("waiting on the reviewer");
@@ -207,7 +214,7 @@ class RoundOutcomeTest {
             new ReviewFacts.Request(true, false, false, false, 0),
             new ReviewFacts.Pipeline("failed", "unit-tests", "https://host.invalid/p/1"),
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
-    when(roundRecord.record("ABC-1", "shop", facts, ""))
+    when(roundRecord.record("ABC-1", "shop", facts, "", readAt))
         .thenReturn(
             new RoundRecord.Recorded(
                 Optional.empty(),
@@ -217,7 +224,7 @@ class RoundOutcomeTest {
                     "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
                     Optional.empty())));
 
-    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
     assertThat(result.message())
@@ -234,7 +241,7 @@ class RoundOutcomeTest {
             new ReviewFacts.Pipeline("failed", "unit-tests", "https://host.invalid/p/1"),
             new ReviewFacts.Discussion(List.of("mia: rename x"), List.of(), List.of("n1")));
     ReviewFacts threadsOnly = facts.withoutChecks();
-    when(roundRecord.record("ABC-1", "shop", facts, ""))
+    when(roundRecord.record("ABC-1", "shop", facts, "", readAt))
         .thenReturn(
             new RoundRecord.Recorded(
                 Optional.empty(),
@@ -244,7 +251,7 @@ class RoundOutcomeTest {
                     "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
                     Optional.empty())));
 
-    outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     verify(relay).relay("ABC-1", RoundSource.REQUEST, "http://mr/1", threadsOnly, "failed", "");
     verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.CI_FAILED), any());
@@ -259,13 +266,13 @@ class RoundOutcomeTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
     TaskStop stop =
         new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
-    when(roundRecord.record("ABC-1", "shop", facts, ""))
+    when(roundRecord.record("ABC-1", "shop", facts, "", readAt))
         .thenReturn(
             new RoundRecord.Recorded(
                 Optional.empty(),
                 new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(stop))));
 
-    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
+    var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.STOPPED);
     verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED, Optional.of(stop));

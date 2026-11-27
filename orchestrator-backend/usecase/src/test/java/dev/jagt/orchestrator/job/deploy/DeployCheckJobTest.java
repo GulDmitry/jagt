@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.turn.StepRelay;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.deploy.Deployment;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.Step;
@@ -170,6 +171,28 @@ class DeployCheckJobTest {
             Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
                 .undecided())
         .isFalse();
+  }
+
+  @Test
+  void recordsNoGreenReadWhereTheFixLandedOnTheDeployBranchWhileThePipelineWasRead() {
+    TaskState deployed = deployCheckTask().build();
+    Deployment landed = Objects.requireNonNull(deployed.work().deployment());
+    state.putTask("ABC-42", deployed);
+    when(pipelines.read(eq("ABC-42"), any()))
+        .thenAnswer(call -> {
+          state.putTask(
+              "ABC-42",
+              deployed.withDeployment(
+                  landed.withTarget("proj", target -> target.withFix("fedcba9876543210"))));
+          return GREEN;
+        });
+
+    job.runOn(state.tasks());
+
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().work().deployment())
+                .undecided())
+        .isTrue();
   }
 
   @Nested

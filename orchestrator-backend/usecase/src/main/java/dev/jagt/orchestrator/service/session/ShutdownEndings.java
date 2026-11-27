@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.session;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -50,7 +51,7 @@ public class ShutdownEndings implements SmartLifecycle {
     running = false;
     for (Map.Entry<String, TaskState> entry : state.tasks().entrySet()) {
       if (live(entry.getValue())) {
-        endSession(entry.getKey());
+        endSession(entry.getKey(), entry.getValue());
       }
     }
   }
@@ -59,8 +60,9 @@ public class ShutdownEndings implements SmartLifecycle {
     return SessionPhase.of(task.work().session()).live();
   }
 
-  private void endSession(String taskId) {
-    ledger.sign(taskId, new SessionSign.Ended(REASON));
+  private void endSession(String taskId, TaskState task) {
+    ledger.sign(
+        taskId, Generation.of(Generation.Kind.SESSION_START, task), new SessionSign.Ended(REASON));
     try {
       sessions.killWindows(taskId);
     } catch (RuntimeException unread) {

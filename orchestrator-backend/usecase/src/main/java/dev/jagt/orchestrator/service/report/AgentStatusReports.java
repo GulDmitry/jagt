@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.report;
 
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.flow.view.Refusal;
@@ -100,11 +101,7 @@ public class AgentStatusReports {
                 verificationOwed)
             .orElseThrow(() -> Refusal.noSuchTask(taskId));
     if (url != null && FlowRules.outForReview(written.now())) {
-      stateService
-          .task(taskId)
-          .map(handBack::pushedTips)
-          .ifPresent(
-              tip -> stateService.reduce(taskId, (reducer, task) -> reducer.headSeen(task, tip)));
+      seeHead(taskId);
     }
     if (said.noPlan()) {
       stateService.reduce(taskId, TaskReducer::noPlanDeclared);
@@ -388,5 +385,19 @@ public class AgentStatusReports {
       return AgentReport.PLAIN;
     }
     return said.claimed();
+  }
+
+  private void seeHead(String taskId) {
+    Optional<TaskState> started = stateService.task(taskId);
+    started
+        .map(handBack::pushedTips)
+        .ifPresent(tip ->
+            stateService.reduce(
+                taskId,
+                (reducer, task) ->
+                    reducer.observed(
+                        task,
+                        Generation.of(Generation.Kind.HEAD, started.orElseThrow()),
+                        seen -> reducer.headSeen(seen, tip))));
   }
 }

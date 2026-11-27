@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.presence;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.service.StateService;
 import java.nio.file.Path;
@@ -21,6 +22,11 @@ public class SessionLedger {
       sign(taskId, new SessionSign.LogNamed(sessionLog.toString()));
     }
     sign(taskId, sign);
+  }
+
+  public void sign(String taskId, Generation readAt, SessionSign sign) {
+    long now = clock.millis();
+    stateService.reduce(taskId, (reducer, task) -> reducer.signed(task, readAt, sign, now));
   }
 
   public void sign(String taskId, SessionSign sign) {

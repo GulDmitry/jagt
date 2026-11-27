@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job.deploy;
 
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
@@ -88,7 +89,7 @@ public class DeployCheckJob implements TaskJob {
           } else if (!bareOf(task).isEmpty()) {
             readLate(taskId, task);
           } else if (Objects.requireNonNull(task.work().deployment()).undecided()) {
-            reports.deployGreen(taskId);
+            reports.deployGreen(taskId, readAt(task));
           }
         });
   }
@@ -123,7 +124,7 @@ public class DeployCheckJob implements TaskJob {
     if (!unread && unreadOf(task) == 0) {
       return 0;
     }
-    int running = reports.deployReadOn(taskId, unread ? reading.project() : null);
+    int running = reports.deployReadOn(taskId, readAt(task), unread ? reading.project() : null);
     if (running >= ChecksUnread.CEILING && !task.work().stopped()) {
       stops.stop(
           taskId,
@@ -131,6 +132,10 @@ public class DeployCheckJob implements TaskJob {
           running + " reads running could not list the deploy pipeline: " + reading.said());
     }
     return running;
+  }
+
+  private static Generation readAt(TaskState task) {
+    return Generation.of(Generation.Kind.DEPLOY_COMMIT, task);
   }
 
   private static int unreadOf(TaskState task) {
@@ -151,7 +156,8 @@ public class DeployCheckJob implements TaskJob {
     counted(taskId, task, reading);
     switch (reading.kind()) {
       case RED ->
-          reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
+          reports.readDeploy(
+              taskId, readAt(task), reading.project(), reading.said() + " " + reading.url());
       case GREEN -> markBare(taskId, task, reading.bare());
       default -> {}
     }
@@ -159,7 +165,7 @@ public class DeployCheckJob implements TaskJob {
 
   private void markBare(String taskId, TaskState task, List<String> bare) {
     if (!bareOf(task).equals(Set.copyOf(bare))) {
-      reports.deployBare(taskId, bare);
+      reports.deployBare(taskId, readAt(task), bare);
     }
   }
 
@@ -179,8 +185,8 @@ public class DeployCheckJob implements TaskJob {
     switch (reading.kind()) {
       case GREEN -> {
         markBare(taskId, task, reading.bare());
-        reports.deployGreen(taskId);
-        reports.readDeploy(taskId, null, stamp);
+        reports.deployGreen(taskId, readAt(task));
+        reports.readDeploy(taskId, readAt(task), null, stamp);
         if (configService.anyCheckerEnabled()) {
           reports.deployAsked(taskId, Turn.digestOf(landed));
         } else if (relay.relay(
@@ -189,9 +195,11 @@ public class DeployCheckJob implements TaskJob {
         }
       }
       case RED ->
-          reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
+          reports.readDeploy(
+              taskId, readAt(task), reading.project(), reading.said() + " " + reading.url());
       default ->
-          reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
+          reports.readDeploy(
+              taskId, readAt(task), null, stamp + " — waiting on its pipeline: " + reading.said());
     }
   }
 

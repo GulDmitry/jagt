@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.presence;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -15,8 +16,12 @@ public final class KeepAlive {
   public static void beat(
       StateService stateService, Map.Entry<String, TaskState> task, SessionSign sign, long now) {
     if (now - task.getValue().standing().lastActiveTimestamp() > THROTTLE_MS) {
+      Generation started = Generation.of(Generation.Kind.SESSION_START, task.getValue());
       stateService.reduce(
-          task.getKey(), (reducer, held) -> reducer.signed(held.touched(now), sign, now));
+          task.getKey(),
+          (reducer, held) ->
+              reducer.observed(
+                  held, started, current -> reducer.signed(current.touched(now), sign, now)));
     }
   }
 }

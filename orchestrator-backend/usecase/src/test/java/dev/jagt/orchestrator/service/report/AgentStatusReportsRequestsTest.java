@@ -521,6 +521,27 @@ class AgentStatusReportsRequestsTest {
   }
 
   @Test
+  void keepsTheNewerHeadWhenAnotherReadSawItWhileTheSessionsTipsWereBeingRead() {
+    TaskState reported =
+        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+            .alias("a1")
+            .mrUrl("http://mr/1")
+            .headTip("proj=aaa")
+            .build();
+    state.putTask("ABC-1", reported);
+    when(configService.load()).thenReturn(ConfigFile.defaults());
+    when(worktreeChanges.pushedTips(any()))
+        .thenAnswer(call -> {
+          state.putTask("ABC-1", reported.withHead("proj=ccc"));
+          return "proj=bbb";
+        });
+
+    reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+
+    assertThat(state.task("ABC-1").orElseThrow().checks().headTip()).isEqualTo("proj=ccc");
+  }
+
+  @Test
   void keepsThePollingWindowWhileTheAgentRepeatsThatItIsWaitingOnTheSameChecks() {
     state.putTask(
         "ABC-1",

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.service.RoundOutcome;
 import dev.jagt.orchestrator.service.RoundReading;
 import dev.jagt.orchestrator.service.StateService;
@@ -37,8 +38,11 @@ class ReviewSweepServiceTest {
             new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
     when(reading.read("ABC-1"))
-        .thenReturn(new RoundReading.Round("shop", "http://mr/1", facts, ""));
-    when(outcome.settle("ABC-1", "shop", "http://mr/1", facts, ""))
+        .thenReturn(
+            new RoundReading.Round(
+                "shop", "http://mr/1", facts, "", new Generation(Generation.Kind.HEAD, "")));
+    when(outcome.settle(
+            "ABC-1", "shop", "http://mr/1", facts, "", new Generation(Generation.Kind.HEAD, "")))
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.APPROVED, "approved"));

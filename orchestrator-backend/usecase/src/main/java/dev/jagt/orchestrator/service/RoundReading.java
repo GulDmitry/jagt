@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.repo.MergedRequests;
@@ -36,8 +37,12 @@ public class RoundReading {
     }
   }
 
-  /** {@code project} is the repository whose pipeline the round's checks and failed jobs are. */
-  public record Round(String project, String mrUrl, ReviewFacts facts, String tip)
+  /**
+   * {@code project} is the repository whose pipeline the round's checks and failed jobs are; {@code
+   * readAt} the head the task had when the read began.
+   */
+  public record Round(
+      String project, String mrUrl, ReviewFacts facts, String tip, Generation readAt)
       implements Read {}
 
   private static final int CAUSE_LIMIT = 200;
@@ -65,6 +70,13 @@ public class RoundReading {
   }
 
   public Read read(String taskId) {
+    return stateService
+        .task(taskId)
+        .map(started -> read(taskId, started))
+        .orElseGet(() -> noRequest(taskId));
+  }
+
+  private Read read(String taskId, TaskState started) {
     mergedRequests.refresh(taskId);
     Optional<TaskState> task = stateService.task(taskId);
     List<TaskRepo> reviewed =
@@ -106,12 +118,17 @@ public class RoundReading {
             Objects.requireNonNull(repo.mrUrl()));
       }
       if (read.get().request().merged()) {
-        mergedRequests.hostSaidMerged(taskId, Objects.requireNonNull(repo.project()));
+        mergedRequests.hostSaidMerged(
+            taskId,
+            Objects.requireNonNull(repo.project()),
+            Generation.of(Generation.Kind.ROUND, started));
       }
       kept.add(repo);
       rounds.add(read.get());
     }
-    return kept.isEmpty() ? noRequest(taskId) : roundOf(kept, rounds, tip);
+    return kept.isEmpty()
+        ? noRequest(taskId)
+        : roundOf(kept, rounds, tip, Generation.of(Generation.Kind.HEAD, started));
   }
 
   private boolean leaves(String taskId, TaskRepo repo, ReviewFacts read) {
@@ -130,7 +147,8 @@ public class RoundReading {
             SweepResult.Kind.NO_MR, "error: no request linked to " + taskId + " — `ship` first"));
   }
 
-  private static Round roundOf(List<TaskRepo> kept, List<ReviewFacts> read, String tip) {
+  private static Round roundOf(
+      List<TaskRepo> kept, List<ReviewFacts> read, String tip, Generation head) {
     List<ReviewFacts> rounds =
         kept.size() == 1
             ? read
@@ -141,7 +159,8 @@ public class RoundReading {
         checkedProject(kept, rounds),
         kept.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")),
         merged(rounds),
-        tip);
+        tip,
+        head);
   }
 
   private static String checkedProject(List<TaskRepo> kept, List<ReviewFacts> rounds) {

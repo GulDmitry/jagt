@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.task.turn.RoleRecord;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -458,8 +459,110 @@ class FlowReportsTest {
   }
 
   @Test
+  void dropsRedDeployReadTakenBeforeTheFixLandedOnTheDeployBranch() {
+    TaskState fixed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(List.of(mergedWeb)))
+            .build();
+
+    reports.readDeploy(
+        "ABC-1",
+        new Generation(Generation.Kind.DEPLOY_COMMIT, "web@aaaa"),
+        "web",
+        "deploy pipeline red");
+
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    assertThat(write.getValue().apply(reducer, fixed)).isEqualTo(fixed);
+  }
+
+  @Test
+  void dropsGreenDeployReadTakenBeforeTheFixLandedOnTheDeployBranch() {
+    TaskState fixed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(List.of(mergedWeb)))
+            .build();
+
+    reports.deployGreen("ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, "web@aaaa"));
+
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    assertThat(write.getValue().apply(reducer, fixed)).isEqualTo(fixed);
+  }
+
+  @Test
+  void dropsBareDeployReadTakenBeforeTheFixLandedOnTheDeployBranch() {
+    TaskState fixed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(List.of(mergedWeb)))
+            .build();
+
+    reports.deployBare(
+        "ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, "web@aaaa"), List.of("web"));
+
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    assertThat(write.getValue().apply(reducer, fixed)).isEqualTo(fixed);
+  }
+
+  @Test
+  void dropsUnlistedDeployReadTakenBeforeTheFixLandedOnTheDeployBranch() {
+    TaskState fixed =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .deployment(Deployment.defaults().withTargets(List.of(mergedWeb)))
+            .build();
+
+    reports.deployReadOn("ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, "web@aaaa"), "web");
+
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    assertThat(write.getValue().apply(reducer, fixed)).isEqualTo(fixed);
+  }
+
+  @Test
+  void answersTrueWhereTheDeployReadChangedTheLineTheTaskCarries() {
+    TaskState deployed = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build();
+    AtomicReference<TaskState> applied = new AtomicReference<>();
+    when(stateService.reduce(eq("ABC-1"), any()))
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          applied.set(write.apply(reducer, deployed));
+          return true;
+        });
+
+    boolean written =
+        reports.readDeploy(
+            "ABC-1",
+            new Generation(Generation.Kind.DEPLOY_COMMIT, ""),
+            null,
+            "waiting on its pipeline");
+
+    assertThat(written).isTrue();
+    assertThat(applied.get().standing().message()).isEqualTo("waiting on its pipeline");
+  }
+
+  @Test
+  void answersFalseWhereTheDeployReadFindsTaskNotLiveOnTheDeployBranch() {
+    TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
+    AtomicReference<TaskState> applied = new AtomicReference<>();
+    when(stateService.reduce(eq("ABC-1"), any()))
+        .thenAnswer(call -> {
+          BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
+          applied.set(write.apply(reducer, working));
+          return true;
+        });
+
+    boolean written =
+        reports.readDeploy(
+            "ABC-1",
+            new Generation(Generation.Kind.DEPLOY_COMMIT, ""),
+            null,
+            "waiting on its pipeline");
+
+    assertThat(written).isFalse();
+    assertThat(applied.get()).isEqualTo(working);
+  }
+
+  @Test
   void handsDeployedTaskBackWhenItsDeployPipelineIsRedOnTheCode() {
-    reports.readDeploy("ABC-1", "web", "deploy pipeline red");
+    reports.readDeploy(
+        "ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, ""), "web", "deploy pipeline red");
 
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState handed =
@@ -472,7 +575,8 @@ class FlowReportsTest {
 
   @Test
   void recordsTheRedPipelineAsTheCauseTheDeployWaitsOn() {
-    reports.readDeploy("ABC-1", "web", "deploy pipeline red");
+    reports.readDeploy(
+        "ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, ""), "web", "deploy pipeline red");
 
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     Deployment recorded =
@@ -497,7 +601,10 @@ class FlowReportsTest {
 
   @Test
   void endsConflictHeldByRedPipelineAlone() {
-    reports.endRedConflict("ABC-1", "deployed to dev");
+    reports.endRedConflict(
+        "ABC-1",
+        new Generation(Generation.Kind.DEPLOY_COMMIT, "web@0123456789abcdef"),
+        "deployed to dev");
 
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     Deployment held =
@@ -518,8 +625,27 @@ class FlowReportsTest {
   }
 
   @Test
+  void keepsConflictHeldByRedPipelineWhereTheFixLandedAfterTheLaterPipelineWasRead() {
+    reports.endRedConflict(
+        "ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, "web@aaaa"), "deployed to dev");
+
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    Deployment held =
+        Deployment.defaults()
+            .withTargets(
+                java.util.List.of(
+                    mergedWeb.withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))));
+    TaskState conflicted =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).deployment(held).build();
+    assertThat(write.getValue().apply(reducer, conflicted)).isEqualTo(conflicted);
+  }
+
+  @Test
   void leavesConflictOfMergeStandingWhateverTheDeployBranchPipelinesSay() {
-    reports.endRedConflict("ABC-1", "deployed to dev");
+    reports.endRedConflict(
+        "ABC-1",
+        new Generation(Generation.Kind.DEPLOY_COMMIT, "web@0123456789abcdef"),
+        "deployed to dev");
 
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     Deployment held =
@@ -533,7 +659,11 @@ class FlowReportsTest {
 
   @Test
   void keepsDeployedTaskDeployedWhileItsPipelineIsOnlyWaited() {
-    reports.readDeploy("ABC-1", null, "waiting on its pipeline");
+    reports.readDeploy(
+        "ABC-1",
+        new Generation(Generation.Kind.DEPLOY_COMMIT, ""),
+        null,
+        "waiting on its pipeline");
 
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState said =
@@ -546,7 +676,8 @@ class FlowReportsTest {
 
   @Test
   void movesNoTaskThatIsNotLiveOnTheDeployBranchWhateverItsDeployPipelineSays() {
-    reports.readDeploy("ABC-1", "web", "deploy pipeline red");
+    reports.readDeploy(
+        "ABC-1", new Generation(Generation.Kind.DEPLOY_COMMIT, ""), "web", "deploy pipeline red");
 
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).build();

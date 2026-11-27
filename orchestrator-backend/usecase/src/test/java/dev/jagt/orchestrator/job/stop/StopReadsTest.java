@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.service.RoundReading;
 import dev.jagt.orchestrator.service.RoundRecord;
@@ -35,7 +36,8 @@ class StopReadsTest {
                     new ReviewFacts.Request(true, false, false, false, 0),
                     new ReviewFacts.Pipeline("success", "", ""),
                     new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
-                ""));
+                "",
+                new Generation(Generation.Kind.HEAD, "")));
 
     reads.probe("ABC-42");
 
@@ -65,11 +67,13 @@ class StopReadsTest {
             new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
     when(reading.read("ABC-42"))
-        .thenReturn(new RoundReading.Round("shop", "http://mr/1", green, ""));
+        .thenReturn(
+            new RoundReading.Round(
+                "shop", "http://mr/1", green, "", new Generation(Generation.Kind.HEAD, "")));
 
     reads.probe("ABC-42");
 
-    verify(record).recordListed("ABC-42", green, "");
+    verify(record).recordListed("ABC-42", green, "", new Generation(Generation.Kind.HEAD, ""));
   }
 
   @Test

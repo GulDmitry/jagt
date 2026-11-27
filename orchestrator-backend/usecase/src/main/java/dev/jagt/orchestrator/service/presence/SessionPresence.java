@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.presence;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.port.AgentPresence;
@@ -31,7 +32,8 @@ public class SessionPresence implements AgentPresence {
     } catch (SessionHost.WindowsUnreadable unread) {
       throw new Unread(String.valueOf(unread.getMessage()));
     }
-    stateService.reduce(taskId, (reducer, current) -> reducer.signed(current, read, now));
+    Generation started = Generation.of(Generation.Kind.SESSION_START, task);
+    stateService.reduce(taskId, (reducer, current) -> reducer.signed(current, started, read, now));
     Boolean alive =
         stateService.task(taskId).map(current -> current.work().session().alive()).orElse(null);
     if (alive == null) {

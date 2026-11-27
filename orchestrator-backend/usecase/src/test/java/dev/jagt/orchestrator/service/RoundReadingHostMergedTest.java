@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.assistant.Answer;
@@ -63,6 +64,7 @@ class RoundReadingHostMergedTest {
 
     reading.read("ABC-1");
 
-    verify(mergedRequests).hostSaidMerged("ABC-1", "proj");
+    verify(mergedRequests)
+        .hostSaidMerged("ABC-1", "proj", new Generation(Generation.Kind.ROUND, "http://mr/1"));
   }
 }

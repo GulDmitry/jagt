@@ -332,35 +332,47 @@ public class FlowReports {
    * {@code redProject} is the repository whose pipeline is red on the code, null while none is; the
    * handed-back deploy records it as conflicted for that cause.
    */
-  public boolean readDeploy(String taskId, @Nullable String redProject, String message) {
-    boolean redOnTheCode = redProject != null;
+  public boolean readDeploy(
+      String taskId, Generation readAt, @Nullable String redProject, String message) {
     AtomicBoolean written = new AtomicBoolean();
     tasks.reduce(
         taskId,
-        (reducer, task) -> {
-          if (!FlowRules.checkedWhereItLanded(task.standing().status())) {
-            return task;
-          }
-          TaskStatus now = rules.deployReadLands(task.standing().status(), redOnTheCode);
-          if (now == task.standing().status() && message.equals(task.standing().message())) {
-            return task;
-          }
-          written.set(true);
-          TaskState read =
-              reducer.reduce(
-                  task,
-                  new TaskMove.DeployRead(redOnTheCode),
-                  message,
-                  now != task.standing().status(),
-                  clock.millis());
-          return redProject == null
-              ? read
-              : reducer.deployStepped(
-                  read,
-                  new DeployStep.Conflicted(redProject, Deployment.Cause.RED_PIPELINE),
-                  clock.millis());
-        });
+        (reducer, task) ->
+            reducer.observed(
+                task,
+                readAt,
+                current -> deployRead(reducer, current, redProject, message, written)));
     return written.get();
+  }
+
+  private TaskState deployRead(
+      TaskReducer reducer,
+      TaskState task,
+      @Nullable String redProject,
+      String message,
+      AtomicBoolean written) {
+    boolean redOnTheCode = redProject != null;
+    if (!FlowRules.checkedWhereItLanded(task.standing().status())) {
+      return task;
+    }
+    TaskStatus now = rules.deployReadLands(task.standing().status(), redOnTheCode);
+    if (now == task.standing().status() && message.equals(task.standing().message())) {
+      return task;
+    }
+    written.set(true);
+    TaskState read =
+        reducer.reduce(
+            task,
+            new TaskMove.DeployRead(redOnTheCode),
+            message,
+            now != task.standing().status(),
+            clock.millis());
+    return redProject == null
+        ? read
+        : reducer.deployStepped(
+            read,
+            new DeployStep.Conflicted(redProject, Deployment.Cause.RED_PIPELINE),
+            clock.millis());
   }
 
   /**
@@ -368,39 +380,52 @@ public class FlowReports {
    * branch containing the deploy commit is green: the task is live on the deploy branch again. Any
    * other task is left alone.
    */
-  public void endRedConflict(String taskId, String message) {
+  public void endRedConflict(String taskId, Generation readAt, String message) {
     tasks.reduce(
         taskId,
-        (reducer, task) -> {
-          if (!FlowRules.deployConflicted(task.standing().status())
-              || task.work().deployment() == null
-              || !task.work().deployment().heldByRedPipeline()) {
-            return task;
-          }
-          return reducer.reduce(
-              task, new TaskMove.DeployRead(false), message, true, clock.millis());
-        });
+        (reducer, task) ->
+            reducer.observed(
+                task,
+                readAt,
+                current -> {
+                  if (!FlowRules.deployConflicted(current.standing().status())
+                      || current.work().deployment() == null
+                      || !current.work().deployment().heldByRedPipeline()) {
+                    return current;
+                  }
+                  return reducer.reduce(
+                      current, new TaskMove.DeployRead(false), message, true, clock.millis());
+                }));
   }
 
   /**
    * Marks {@code bare} as the landed targets that settled with no pipeline listed; a target listed
    * since is cleared.
    */
-  public void deployBare(String taskId, List<String> bare) {
+  public void deployBare(String taskId, Generation readAt, List<String> bare) {
     tasks.reduce(
         taskId,
-        (reducer, task) -> reducer.deployStepped(task, new DeployStep.Bare(bare), clock.millis()));
+        (reducer, task) ->
+            reducer.observed(
+                task,
+                readAt,
+                current ->
+                    reducer.deployStepped(current, new DeployStep.Bare(bare), clock.millis())));
   }
 
   /**
    * Counts a read that could not list {@code unread}'s pipeline, null where it listed every one;
    * the reads running, at most.
    */
-  public int deployReadOn(String taskId, @Nullable String unread) {
+  public int deployReadOn(String taskId, Generation readAt, @Nullable String unread) {
     tasks.reduce(
         taskId,
         (reducer, task) ->
-            reducer.deployStepped(task, new DeployStep.ReadOn(unread), clock.millis()));
+            reducer.observed(
+                task,
+                readAt,
+                current ->
+                    reducer.deployStepped(current, new DeployStep.ReadOn(unread), clock.millis())));
     return tasks
         .task(taskId)
         .map(taskState -> taskState.work().deployment())
@@ -420,10 +445,14 @@ public class FlowReports {
             reducer.deployStepped(task, new DeployStep.Retried(project, tip), clock.millis()));
   }
 
-  public void deployGreen(String taskId) {
+  public void deployGreen(String taskId, Generation readAt) {
     tasks.reduce(
         taskId,
-        (reducer, task) -> reducer.deployStepped(task, new DeployStep.Green(), clock.millis()));
+        (reducer, task) ->
+            reducer.observed(
+                task,
+                readAt,
+                current -> reducer.deployStepped(current, new DeployStep.Green(), clock.millis())));
   }
 
   public void deployAsked(String taskId, String digest) {

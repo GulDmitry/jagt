@@ -12,7 +12,9 @@ public record Generation(Kind kind, String at) {
     SESSION_START,
     HEAD,
     /** The requests linked: a new round links new ones. */
-    ROUND
+    ROUND,
+    /** The commit each landed target of the deploy stands at. */
+    DEPLOY_COMMIT
   }
 
   /** A read dropped because the task's counter moved past the one it was taken at. */
@@ -25,6 +27,8 @@ public record Generation(Kind kind, String at) {
           case SESSION_START -> String.valueOf(task.work().session().generation());
           case HEAD -> Objects.toString(task.checks().headTip(), "");
           case ROUND -> String.join(" ", task.requests());
+          case DEPLOY_COMMIT ->
+              task.work().deployment() == null ? "" : task.work().deployment().tips();
         });
   }
 

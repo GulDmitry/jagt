@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.service.report.AgentStatusReports;
 import dev.jagt.orchestrator.service.review.ReviewSweepService.SweepResult;
@@ -21,12 +22,12 @@ public class RoundOutcome {
   private final RoundRelay relay;
 
   public SweepResult settle(
-      String taskId, String project, String mrUrl, ReviewFacts r, String tip) {
+      String taskId, String project, String mrUrl, ReviewFacts r, String tip, Generation readAt) {
     // THIS round's own read is what decides and what is relayed; the word the CARD carries is the
     // last one
     // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
     String said = RoundRecord.orUnknown(r.pipeline().status());
-    RoundRecord.Recorded recorded = roundRecord.record(taskId, project, r, tip);
+    RoundRecord.Recorded recorded = roundRecord.record(taskId, project, r, tip, readAt);
     if (recorded.stop().isPresent()) {
       return stopped(taskId, said, recorded.stop().get());
     }

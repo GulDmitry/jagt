@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
@@ -34,20 +35,25 @@ public class RoundRecord {
   private final Clock clock;
   private final RedCauses causes;
 
-  public Recorded record(String taskId, String project, ReviewFacts facts, String tip) {
+  public Recorded record(
+      String taskId, String project, ReviewFacts facts, String tip, Generation readAt) {
     if (gotNoListing(facts.pipeline().status())) {
       long now = clock.millis();
       stateService.reduce(
           taskId,
           (reducer, task) ->
-              reducer.headSeen(
-                  reducer
-                      .approvalRead(
-                          reducer.checksUnread(
-                              task, new ChecksUnread(now, facts.pipeline().failure())),
-                          facts.request().approved())
-                      .withRequestOpenedAt(facts.request().openedAt()),
-                  tip));
+              reducer.observed(
+                  task,
+                  readAt,
+                  current ->
+                      reducer.headSeen(
+                          reducer
+                              .approvalRead(
+                                  reducer.checksUnread(
+                                      current, new ChecksUnread(now, facts.pipeline().failure())),
+                                  facts.request().approved())
+                              .withRequestOpenedAt(facts.request().openedAt()),
+                          tip)));
       return new Recorded(
           stops.trip(
               taskId,
@@ -55,7 +61,7 @@ public class RoundRecord {
                   ChecksUnread.stop(task.checks().checksUnread(), task.round().trailOrNone(), now)),
           RedCauses.Verdict.CODE);
     }
-    recordListed(taskId, facts, tip);
+    recordListed(taskId, facts, tip, readAt);
     return new Recorded(
         Optional.empty(),
         causes.judge(taskId, project, facts, Pipeline.of(orUnknown(facts.pipeline().status()))));
@@ -65,7 +71,7 @@ public class RoundRecord {
    * Writes what a read that listed the checks said on {@code tip} and nothing else; a read that
    * listed none writes nothing.
    */
-  public void recordListed(String taskId, ReviewFacts facts, String tip) {
+  public void recordListed(String taskId, ReviewFacts facts, String tip, Generation readAt) {
     if (gotNoListing(facts.pipeline().status())) {
       return;
     }
@@ -92,12 +98,16 @@ public class RoundRecord {
       stateService.reduce(
           taskId,
           (reducer, task) ->
-              reducer
-                  .approvalRead(
-                      reducer.checksRead(reducer.headSeen(task, tip), read, tip),
-                      facts.request().approved())
-                  .withRequestOpenedAt(facts.request().openedAt())
-                  .withPipelineUrl(facts.pipeline().url()));
+              reducer.observed(
+                  task,
+                  readAt,
+                  current ->
+                      reducer
+                          .approvalRead(
+                              reducer.checksRead(reducer.headSeen(current, tip), read, tip),
+                              facts.request().approved())
+                          .withRequestOpenedAt(facts.request().openedAt())
+                          .withPipelineUrl(facts.pipeline().url())));
     }
   }
 

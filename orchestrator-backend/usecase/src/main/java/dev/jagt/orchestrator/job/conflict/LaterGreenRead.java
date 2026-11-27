@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job.conflict;
 
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.deploy.ConflictEnding;
 import dev.jagt.orchestrator.job.deploy.DeployPipelines;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -29,7 +30,8 @@ class LaterGreenRead implements ConflictRead {
       return false;
     }
     String branches = DeployTargets.deployBranches(task, configService.load().projects());
-    reports.endRedConflict(taskId, "deployed to " + branches);
+    reports.endRedConflict(
+        taskId, Generation.of(Generation.Kind.DEPLOY_COMMIT, task), "deployed to " + branches);
     return true;
   }
 }

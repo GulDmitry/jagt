@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
@@ -35,6 +36,7 @@ class RoundRecordTest {
   private final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()), stale -> {});
 
+  private final Generation readAt = new Generation(Generation.Kind.HEAD, "");
   private final StateService stateService = mock(StateService.class);
   private final TaskStops stops = mock(TaskStops.class);
   private final RedCauses causes = mock(RedCauses.class);
@@ -64,7 +66,8 @@ class RoundRecordTest {
             openRequest,
             new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
             noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stops).trip(eq("ABC-1"), tripped.capture());
     Optional<TaskStop> stop =
@@ -89,7 +92,8 @@ class RoundRecordTest {
             openRequest,
             new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
             noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(stamped.getValue().apply(reducer, polling).checks().checksUnread())
@@ -104,7 +108,8 @@ class RoundRecordTest {
         "ABC-1",
         "shop",
         new ReviewFacts(openRequest, new ReviewFacts.Pipeline("unknown", "", ""), noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     TaskState after = stamped.getValue().apply(reducer, failing);
@@ -120,7 +125,8 @@ class RoundRecordTest {
         "ABC-1",
         "shop",
         new ReviewFacts(approvedRequest, new ReviewFacts.Pipeline("success", "", ""), noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(stamped.getValue().apply(reducer, polling).round().approved()).isTrue();
@@ -134,7 +140,8 @@ class RoundRecordTest {
         "ABC-1",
         "shop",
         new ReviewFacts(openRequest, new ReviewFacts.Pipeline("SUCCEEDED", "", ""), noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(stamped.getValue().apply(reducer, polling).checks().pipelineStatus())
@@ -152,7 +159,8 @@ class RoundRecordTest {
             new ReviewFacts.Request(true, false, false, false, 1_700_000_000_000L),
             new ReviewFacts.Pipeline("running", "", ""),
             noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(stamped.getValue().apply(reducer, polling).round().requestOpenedAt())
@@ -174,7 +182,8 @@ class RoundRecordTest {
         "ABC-1",
         "shop",
         new ReviewFacts(openRequest, new ReviewFacts.Pipeline("running", "", ""), noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService, never()).reduce(eq("ABC-1"), any());
   }
@@ -197,7 +206,8 @@ class RoundRecordTest {
             new ReviewFacts.Request(true, false, false, false, 1_700_000_500_000L),
             new ReviewFacts.Pipeline("running", "", ""),
             noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(stamped.getValue().apply(reducer, polling).round().requestOpenedAt())
@@ -218,7 +228,8 @@ class RoundRecordTest {
                 openRequest,
                 new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
                 noDiscussion),
-            "");
+            "",
+            readAt);
 
     assertThat(answer.stop()).contains(standing);
   }
@@ -234,7 +245,7 @@ class RoundRecordTest {
         new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "waiting", Optional.empty());
     when(causes.judge("ABC-1", "shop", facts, Pipeline.RED)).thenReturn(infrastructure);
 
-    RoundRecord.Recorded answer = roundRecord.record("ABC-1", "shop", facts, "");
+    RoundRecord.Recorded answer = roundRecord.record("ABC-1", "shop", facts, "", readAt);
 
     assertThat(answer.red()).isEqualTo(infrastructure);
   }
@@ -246,7 +257,8 @@ class RoundRecordTest {
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(approvedRequest, new ReviewFacts.Pipeline("success", "", ""), noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     TaskState after = stamped.getValue().apply(reducer, failing);
@@ -270,7 +282,8 @@ class RoundRecordTest {
             openRequest,
             new ReviewFacts.Pipeline("success", "", "https://host.invalid/p/9"),
             noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(stamped.getValue().apply(reducer, polling).checks().pipelineUrl())
@@ -294,7 +307,8 @@ class RoundRecordTest {
             openRequest,
             new ReviewFacts.Pipeline("success", "", "https://host.invalid/p/9"),
             noDiscussion),
-        "");
+        "",
+        readAt);
 
     verify(stateService, never()).reduce(any(), any());
   }
@@ -304,8 +318,40 @@ class RoundRecordTest {
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(openRequest, new ReviewFacts.Pipeline("unknown", "", ""), noDiscussion),
-        "");
+        "",
+        readAt);
 
     verifyNoInteractions(stateService, stops, causes);
+  }
+
+  @Test
+  void dropsTheChecksTheRoundCouldNotListWhereTheHeadMovedSinceTheReadBegan() {
+    TaskState moved = polling.withHead("tip-2");
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(moved));
+
+    roundRecord.record(
+        "ABC-1",
+        "shop",
+        new ReviewFacts(openRequest, new ReviewFacts.Pipeline("unknown", "", ""), noDiscussion),
+        "tip-1",
+        readAt);
+
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
+    assertThat(stamped.getValue().apply(reducer, moved)).isEqualTo(moved);
+  }
+
+  @Test
+  void dropsTheChecksTheRoundListedWhereTheHeadMovedSinceTheReadBegan() {
+    TaskState moved = failing.withHead("tip-2");
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(moved));
+
+    roundRecord.recordListed(
+        "ABC-1",
+        new ReviewFacts(approvedRequest, new ReviewFacts.Pipeline("success", "", ""), noDiscussion),
+        "tip-1",
+        readAt);
+
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
+    assertThat(stamped.getValue().apply(reducer, moved)).isEqualTo(moved);
   }
 }

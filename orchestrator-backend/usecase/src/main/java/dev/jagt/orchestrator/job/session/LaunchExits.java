@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job.session;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.flow.capability.Watch;
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.flow.session.StopKind;
@@ -62,7 +63,9 @@ public class LaunchExits implements TaskJob {
                     .filter(cause -> !task.standing().report().asks())
                     .ifPresent(cause -> {
                       ledger.sign(
-                          taskId, new SessionSign.Asked(cause, SessionSign.Asked.Channel.SCREEN));
+                          taskId,
+                          Generation.of(Generation.Kind.SESSION_START, task),
+                          new SessionSign.Asked(cause, SessionSign.Asked.Channel.SCREEN));
                       watchdog.check(taskId);
                     }));
   }

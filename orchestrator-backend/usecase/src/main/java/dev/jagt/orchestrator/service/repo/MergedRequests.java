@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.repo;
 
+import dev.jagt.orchestrator.flow.Generation;
 import dev.jagt.orchestrator.port.MergedRefresh;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -41,12 +42,13 @@ public class MergedRequests implements MergedRefresh {
     if (task == null) {
       return false;
     }
+    Generation readAt = Generation.of(Generation.Kind.ROUND, task);
     leaveWorkless(taskId, task);
     for (TaskRepo repo : task.repos()) {
       if (repo.hasReviewRequest() && !repo.wasHostMerged()) {
         mergedNow(taskId, task, repo)
             .filter(now -> now != repo.wasMerged())
-            .ifPresent(now -> record(taskId, Objects.requireNonNull(repo.project()), now));
+            .ifPresent(now -> record(taskId, Objects.requireNonNull(repo.project()), now, readAt));
       }
     }
     return stateService.task(taskId).map(TaskState::requestsMerged).orElse(false);
@@ -67,7 +69,7 @@ public class MergedRequests implements MergedRefresh {
    * The host said {@code project}'s request is merged, which git cannot see for a squash or a
    * fast-forward; its word outlasts git's.
    */
-  public void hostSaidMerged(String taskId, String project) {
+  public void hostSaidMerged(String taskId, String project, Generation readAt) {
     boolean known =
         stateService
             .task(taskId)
@@ -76,7 +78,10 @@ public class MergedRequests implements MergedRefresh {
                     .anyMatch(repo -> project.equals(repo.project()) && repo.wasHostMerged()))
             .orElse(true);
     if (!known) {
-      stateService.reduce(taskId, (reducer, current) -> reducer.mergedByHost(current, project));
+      stateService.reduce(
+          taskId,
+          (reducer, current) ->
+              reducer.observed(current, readAt, seen -> reducer.mergedByHost(seen, project)));
       log.atInfo()
           .setMessage("request merged")
           .addKeyValue("task", taskId)
@@ -95,9 +100,11 @@ public class MergedRequests implements MergedRefresh {
     return departure.leave(taskId, repo, "its request was closed on the host");
   }
 
-  private void record(String taskId, String project, boolean merged) {
+  private void record(String taskId, String project, boolean merged, Generation readAt) {
     stateService.reduce(
-        taskId, (reducer, current) -> reducer.mergedByGit(current, project, merged));
+        taskId,
+        (reducer, current) ->
+            reducer.observed(current, readAt, seen -> reducer.mergedByGit(seen, project, merged)));
     log.atInfo()
         .setMessage(merged ? "request merged" : "request no longer merged")
         .addKeyValue("task", taskId)
