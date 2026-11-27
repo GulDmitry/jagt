@@ -34,8 +34,7 @@ The Master SHALL press every `TaskAction` where `roles.master.mode` is `act` and
 - **THEN** the door admits it as a human's press, held to a Master case
 
 ### Requirement: Door one runs an action
-`flow/FlowEngine.run` SHALL check the rules, run the action's `flow/capability/TaskCapability`, and write the status the table gives for
-its `flow/capability/Outcome`.
+`flow/FlowEngine.run` SHALL check the rules, run the action's `flow/capability/TaskCapability`, write the table's status for `capability/Outcome`.
 
 #### Scenario: A verb runs
 - **WHEN** an allowed action finishes
@@ -50,6 +49,7 @@ shared branch, out of one, closed, past its review. An outside system's plan gat
 - **WHEN** `FlowRules.refusedReport` refuses an agent's report
 - **THEN** the agent gets the reason
 - **AND** a session reporting `APPROVED` is refused: only the round read lands it
+- **AND** a `DEPLOYED` task's session reporting `SHIPPING` lands: it keeps working after the deploy, and a refusal errors every call
 
 ### Requirement: A hand-back waits at VERIFYING
 `FlowRules.reported` SHALL redirect a hand-back owing a verification run to `VERIFYING`; no action leads there and no agent may report it.
