@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.flow.repo.RequestPhase;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.session.StopKind;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.ChecksUnread;
 import dev.jagt.orchestrator.task.deploy.InfraRetry;
@@ -32,7 +33,10 @@ import dev.jagt.orchestrator.task.turn.Turn.Holder;
 import dev.jagt.statechart.Configuration;
 import dev.jagt.statechart.Fired;
 import dev.jagt.statechart.Macrostep;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +52,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -206,6 +211,8 @@ class ReconcilerProperties {
     private static final Duration BEAT = Duration.ofMinutes(1);
     private static final int SHOWN = 5;
     private static final int REPOS = 2;
+    private static final String TASK = "ABC-42";
+    private static final Generation UNDEPLOYED = new Generation(Generation.Kind.DEPLOY_COMMIT, "");
 
     /**
      * {@code checks} keeps a round's worst verdict alone: the next round reads both requests again.
@@ -285,10 +292,51 @@ class ReconcilerProperties {
 
     private final TaskChart chart;
     private final Reconciler reconciler;
+    private final Store store;
+    private final FlowReports reports;
 
     Model(TaskChart chart, Arbiter.Profile profile) {
       this.chart = chart;
       this.reconciler = new Reconciler(chart.composition(), profile, BEAT);
+      this.store = new Store(new TaskReducer(chart, stale -> {}, gap -> {}));
+      this.reports =
+          new FlowReports(
+              store,
+              Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
+              new Checkers(chart),
+              new FlowRules(chart));
+    }
+
+    static final class Store implements ReducingStore {
+
+      private final TaskReducer reducer;
+      private TaskState held = TaskState.builder(null, null, TaskStatus.NEW).build();
+
+      Store(TaskReducer reducer) {
+        this.reducer = reducer;
+      }
+
+      @Override
+      public Optional<TaskState> task(String taskId) {
+        return Optional.of(held);
+      }
+
+      @Override
+      public String canonicalTaskId(String idOrAlias) {
+        return idOrAlias;
+      }
+
+      @Override
+      public boolean updateTask(String taskId, UnaryOperator<TaskState> update) {
+        held = update.apply(held);
+        return true;
+      }
+
+      @Override
+      public boolean reduce(String taskId, BiFunction<TaskReducer, TaskState, TaskState> update) {
+        held = update.apply(reducer, held);
+        return true;
+      }
     }
 
     Run explore() {
@@ -381,11 +429,32 @@ class ReconcilerProperties {
     private World decided(Run run, World at, Decision decision) {
       return switch (decision) {
         case Decision.Stay stay -> at;
-        case Decision.Land land -> stepped(run, at, land.move(), ActionOrigin.JAGT);
+        case Decision.Land land -> landed(run, at, land.move());
         case Decision.Retry retry -> retried(bumped(at, retry.step()), retry.step());
         case Decision.Restart restart -> bumped(at, restart.step());
         case Decision.Stop stop -> stepped(run, at, stop.move(), ActionOrigin.JAGT);
       };
+    }
+
+    private World landed(Run run, World at, TaskMove move) {
+      store.held = TaskState.builder(null, null, at.status()).build();
+      switch (move) {
+        case TaskMove.Read read -> reports.read(TASK, read.concluded(), move.toString());
+        case TaskMove.DeployRead red ->
+            reports.readDeploy(
+                TASK, UNDEPLOYED, red.redOnTheCode() ? "api" : null, move.toString());
+        default -> throw new IllegalStateException("the tick lands no " + move);
+      }
+      TaskStatus door = store.held.standing().status();
+      World stepped = stepped(run, at, move, ActionOrigin.JAGT);
+      if (door == at.status() || door != stepped.status()) {
+        violation(
+            run,
+            at,
+            "LAND " + move + " lands " + door + " through door two, " + stepped.status() + " here",
+            "tick");
+      }
+      return door == at.status() ? at : stepped;
     }
 
     private static World retried(World at, ProgressStep step) {
