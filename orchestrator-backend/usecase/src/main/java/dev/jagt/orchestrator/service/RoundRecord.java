@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +27,9 @@ public class RoundRecord {
 
   /**
    * {@code stop} is the one a round that could not read the checks tripped; {@code red} whose fault
-   * a red run is.
+   * a red run is; {@code stale} that the task moved past the read, which then moves nothing.
    */
-  public record Recorded(Optional<TaskStop> stop, RedCauses.Verdict red) {}
+  public record Recorded(Optional<TaskStop> stop, RedCauses.Verdict red, boolean stale) {}
 
   private final StateService stateService;
   private final TaskStops stops;
@@ -37,6 +38,9 @@ public class RoundRecord {
 
   public Recorded record(
       String taskId, String project, ReviewFacts facts, String tip, Generation readAt) {
+    if (movedPast(taskId, readAt)) {
+      return new Recorded(Optional.empty(), RedCauses.Verdict.CODE, true);
+    }
     if (gotNoListing(facts.pipeline().status())) {
       long now = clock.millis();
       stateService.reduce(
@@ -59,12 +63,32 @@ public class RoundRecord {
               taskId,
               task ->
                   ChecksUnread.stop(task.checks().checksUnread(), task.round().trailOrNone(), now)),
-          RedCauses.Verdict.CODE);
+          RedCauses.Verdict.CODE,
+          false);
     }
     recordListed(taskId, facts, tip, readAt);
     return new Recorded(
         Optional.empty(),
-        causes.judge(taskId, project, facts, Pipeline.of(orUnknown(facts.pipeline().status()))));
+        causes.judge(taskId, project, facts, Pipeline.of(orUnknown(facts.pipeline().status()))),
+        false);
+  }
+
+  private boolean movedPast(String taskId, Generation readAt) {
+    Optional<TaskState> task = stateService.task(taskId);
+    if (task.isEmpty()) {
+      return false;
+    }
+    AtomicBoolean fresh = new AtomicBoolean();
+    stateService
+        .reducer()
+        .observed(
+            task.get(),
+            readAt,
+            landing -> {
+              fresh.set(true);
+              return landing;
+            });
+    return !fresh.get();
   }
 
   /**

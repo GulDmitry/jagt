@@ -5,4 +5,4 @@ flaky-then-green | 11 | flaky, tick, tick, tick | deploys
 restart-before-green | 5 | green, restart, tick, tick | deploys
 unread-then-green | 17 | unread, tick, tick, green, tick, tick | deploys
 red-relays | 19 | red, tick, tick | stalls CI_FAILED
-late-red-after-push | 13 | red, late, push, tick | stalls CI_FAILED
+late-red-after-push | 13 | red, late, push, tick | stalls CI_POLLING

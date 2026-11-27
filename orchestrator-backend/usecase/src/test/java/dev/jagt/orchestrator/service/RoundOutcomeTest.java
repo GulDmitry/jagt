@@ -32,7 +32,7 @@ class RoundOutcomeTest {
   @BeforeEach
   void theRoundRecordsNothingUnusual() {
     when(roundRecord.record(any(), any(), any(), any(), any()))
-        .thenReturn(new RoundRecord.Recorded(Optional.empty(), RedCauses.Verdict.CODE));
+        .thenReturn(new RoundRecord.Recorded(Optional.empty(), RedCauses.Verdict.CODE, false));
   }
 
   @Test
@@ -46,6 +46,27 @@ class RoundOutcomeTest {
     outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
     verify(roundRecord).record("ABC-1", "shop", facts, "", readAt);
+  }
+
+  @Test
+  void neitherRelaysNorMarksNorStopsOnReadTakenBeforeTheTaskMovedOn() {
+    when(roundRecord.record(any(), any(), any(), any(), any()))
+        .thenReturn(new RoundRecord.Recorded(Optional.empty(), RedCauses.Verdict.CODE, true));
+
+    var result =
+        outcome.settle(
+            "ABC-1",
+            "shop",
+            "http://mr/1",
+            new ReviewFacts(
+                new ReviewFacts.Request(true, true, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            "",
+            readAt);
+
+    assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNCHANGED);
+    verifyNoInteractions(statusReports, relay);
   }
 
   @Test
@@ -64,7 +85,8 @@ class RoundOutcomeTest {
                         3_000,
                         "3 reads running could not list the checks: list_pipelines: 403"
                             + " Forbidden")),
-                RedCauses.Verdict.CODE));
+                RedCauses.Verdict.CODE,
+                false));
 
     var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
@@ -222,7 +244,8 @@ class RoundOutcomeTest {
                     RedCause.INFRASTRUCTURE,
                     true,
                     "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
-                    Optional.empty())));
+                    Optional.empty()),
+                false));
 
     var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
@@ -249,7 +272,8 @@ class RoundOutcomeTest {
                     RedCause.INFRASTRUCTURE,
                     true,
                     "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
-                    Optional.empty())));
+                    Optional.empty()),
+                false));
 
     outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 
@@ -270,7 +294,8 @@ class RoundOutcomeTest {
         .thenReturn(
             new RoundRecord.Recorded(
                 Optional.empty(),
-                new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(stop))));
+                new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(stop)),
+                false));
 
     var result = outcome.settle("ABC-1", "shop", "http://mr/1", facts, "", readAt);
 

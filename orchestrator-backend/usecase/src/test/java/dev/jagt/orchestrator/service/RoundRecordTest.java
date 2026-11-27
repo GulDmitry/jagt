@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -54,6 +55,11 @@ class RoundRecordTest {
   private final RoundRecord roundRecord =
       new RoundRecord(
           stateService, stops, Clock.fixed(Instant.ofEpochMilli(3_000), ZoneOffset.UTC), causes);
+
+  @BeforeEach
+  void theStateServiceHandsOutTheReducer() {
+    when(stateService.reducer()).thenReturn(reducer);
+  }
 
   @Test
   void stopsTheTaskWhenTheThirdReadRunningCouldNotListTheChecks() {
@@ -325,19 +331,20 @@ class RoundRecordTest {
   }
 
   @Test
-  void dropsTheChecksTheRoundCouldNotListWhereTheHeadMovedSinceTheReadBegan() {
-    TaskState moved = polling.withHead("tip-2");
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(moved));
+  void answersStaleAndWritesAndJudgesNothingWhereTheHeadMovedSinceTheReadBegan() {
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(failing.withHead("tip-2")));
 
-    roundRecord.record(
-        "ABC-1",
-        "shop",
-        new ReviewFacts(openRequest, new ReviewFacts.Pipeline("unknown", "", ""), noDiscussion),
-        "tip-1",
-        readAt);
+    RoundRecord.Recorded recorded =
+        roundRecord.record(
+            "ABC-1",
+            "shop",
+            new ReviewFacts(openRequest, new ReviewFacts.Pipeline("failed", "", ""), noDiscussion),
+            "tip-1",
+            readAt);
 
-    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
-    assertThat(stamped.getValue().apply(reducer, moved)).isEqualTo(moved);
+    assertThat(recorded.stale()).isTrue();
+    verify(stateService, never()).reduce(any(), any());
+    verifyNoInteractions(causes, stops);
   }
 
   @Test
