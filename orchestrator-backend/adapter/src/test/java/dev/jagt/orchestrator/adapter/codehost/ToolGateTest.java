@@ -110,6 +110,27 @@ class ToolGateTest {
         .contains("could skip its pre-push check");
   }
 
+  @Test
+  void adviceKeepsTheLeaseOfRefusedCompoundPushLine() {
+    String line =
+        "find . -exec sh -c 'true' {} ; git push --force-with-lease=ABC-42:abc123 origin ABC-42";
+
+    assertThat(gate.refusal(line, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("`git push --force-with-lease=ABC-42:abc123 origin ABC-42`")
+        .contains("alone on its line");
+  }
+
+  @Test
+  void adviceStaysPlainWhenTheRefusedLineHeldNoLease() {
+    assertThat(gate.refusal("sh -c 'git push origin ABC-42'", "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("`git push origin ABC-42`")
+        .doesNotContain("lease");
+  }
+
   @ParameterizedTest
   @ValueSource(
       strings = {

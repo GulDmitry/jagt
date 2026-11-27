@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -54,6 +55,8 @@ public final class ToolGate {
 
   private static final Pattern GIT = Pattern.compile("(\\S*/)?git");
   private static final Pattern FORCE = Pattern.compile("--force|-[a-zA-Z]*f[a-zA-Z]*");
+  private static final Pattern LEASE =
+      Pattern.compile("(^|\\s)(--force-with-lease(=\\S+)?)(\\s|$)");
   private static final Pattern HOOK_OFF =
       Pattern.compile(
           "--no-verify|GIT_CONFIG|(?i:core\\.hookspath)"
@@ -108,6 +111,11 @@ public final class ToolGate {
         .findFirst();
   }
 
+  private static @Nullable String leaseIn(String command) {
+    Matcher lease = LEASE.matcher(command);
+    return lease.find() ? lease.group(2) : null;
+  }
+
   private static Optional<String> reachesBoard(String unquotedLine, int boardPort) {
     if (board(boardPort).matcher(unquotedLine).find()) {
       return Optional.of(
@@ -128,7 +136,7 @@ public final class ToolGate {
               + " only read ("
               + hostCli.readsAllowed()
               + "). "
-              + remote.pushAdvice(taskBranch));
+              + remote.pushAdvice(taskBranch, leaseIn(command)));
     }
     return Optional.empty();
   }
@@ -149,7 +157,7 @@ public final class ToolGate {
             || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresPush))) {
       return Optional.of(
           "jagt refuses a push that could skip its pre-push check. "
-              + remote.pushAdvice(taskBranch));
+              + remote.pushAdvice(taskBranch, leaseIn(command)));
     }
     return Optional.empty();
   }

@@ -46,14 +46,26 @@ public record Remote(String name) {
 
   /**
    * The sentence telling a session how its branch is shared: a push where there is a remote, none
-   * where there is not.
+   * where there is not. A {@code lease} option (a {@code --force-with-lease} form) is kept, since a
+   * rebased branch is refused without it; the push runs alone on its line.
    */
-  public String pushAdvice(String branch) {
-    return local()
-        ? "Nothing is pushed from here: the repository stays on this machine, so commit "
+  public String pushAdvice(String branch, @Nullable String lease) {
+    if (local()) {
+      return "Nothing is pushed from here: the repository stays on this machine, so commit "
+          + branch
+          + ".";
+    }
+    return lease == null
+        ? "Push " + branch + " with a plain `git push " + name + " " + branch + "`."
+        : "Push "
             + branch
-            + "."
-        : "Push " + branch + " with a plain `git push " + name + " " + branch + "`.";
+            + " with `git push "
+            + lease
+            + " "
+            + name
+            + " "
+            + branch
+            + "`, alone on its line: a rebased branch needs the lease.";
   }
 
   /**

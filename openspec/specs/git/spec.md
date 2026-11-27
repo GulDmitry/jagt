@@ -7,11 +7,10 @@ Shared-branch writes, commits, ships, worktree hooks and multi-repo tasks.
 ## Requirements
 
 ### Requirement: Only deploy and revert write shared branches
-`deploy` SHALL merge `origin/<task>` into `deployBranch` (`mergeIntoAndPush`), `revert` its merge commit
-(`revertMergeAndPush`); root-only (`Audience.ROOT`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves
-the cut and the request's **target**, never the merge destination (`baseBranchOr`). A `deployBranch` naming
-`baseBranch`, however spelled, MUST be refused.
-With `remote: none` both fast-forward the target's checkout (git refuses a push to it), else push within the repository.
+`deploy` SHALL merge `origin/<task>` into `deployBranch` (`mergeIntoAndPush`), `revert` its merge commit (`revertMergeAndPush`); root-only
+(`Audience.ROOT`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves the cut and the request's **target**, never the merge destination
+(`baseBranchOr`). A `deployBranch` naming `baseBranch`, however spelled, MUST be refused. With `remote: none` both fast-forward the target's
+checkout (git refuses a push to it), else push within the repository.
 
 #### Scenario: One repository without a deployBranch
 - **WHEN** `web` names none **THEN** `api` deploys, `web` is skipped, named in the outcome, never recorded
@@ -164,6 +163,8 @@ call but a read, however wrapped (quoted as data, it runs); a line naming the bo
 - **WHEN** a push line holds `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c` or
   `eval`, however quoted; a git line holds `$'…'` or `$"…"`
 - **THEN** refused
+- **WHEN** the base moved on, the branch was rebased and the refused line held `--force-with-lease=<b>:<sha>`
+- **THEN** its advice repeats that lease, alone on its line, which clears the request's conflict
 
 ### Requirement: Repositories multiply worktrees, not agents
 `task/repo/TaskRepo` SHALL be a list, `repos.get(0)` running the session. Creation is all-or-nothing (`resolveRepos`),
@@ -188,8 +189,7 @@ as the least finished (`RoundReading.merged`): approved only when all are, the *
 ### Requirement: A code-host write goes only to the repository's own host
 `CodeHost.closeRequest` SHALL send nothing unless the request's address is on the host the repository lives on: its
 `codeHostName`, else the host its remote names. A remote naming no host (a local path, `file:`) refuses every address
-while `codeHost` is not `none`. The refusal is a failed answer, logged at WARN with its cause. Reads keep judging
-no remote's links.
+while `codeHost` is not `none`. The refusal is a failed answer, logged at WARN with its cause. Reads keep judging no remote's links.
 
 #### Scenario: A local remote and a foreign link
 - **WHEN** ABC-42's repository has a local-path remote and a session reported a link on a public host

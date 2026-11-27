@@ -17,6 +17,27 @@ class RemoteTest {
   }
 
   @Test
+  void advisesPlainPushWhereTheRefusedLineHeldNoLease() {
+    assertThat(Remote.ORIGIN.pushAdvice("ABC-42", null))
+        .isEqualTo("Push ABC-42 with a plain `git push origin ABC-42`.");
+  }
+
+  @Test
+  void advisesTheLeasePushAloneOnItsLineWhereTheRefusedLineHeldOne() {
+    assertThat(Remote.ORIGIN.pushAdvice("ABC-42", "--force-with-lease=ABC-42:abc123"))
+        .isEqualTo(
+            "Push ABC-42 with `git push --force-with-lease=ABC-42:abc123 origin ABC-42`, alone on"
+                + " its line: a rebased branch needs the lease.");
+  }
+
+  @Test
+  void advisesCommittingWhereThereIsNoRemoteWhateverTheLine() {
+    assertThat(Remote.LOCAL.pushAdvice("ABC-42", "--force-with-lease"))
+        .isEqualTo(
+            "Nothing is pushed from here: the repository stays on this machine, so commit ABC-42.");
+  }
+
+  @Test
   void holdsBranchAsTheRemotesTrackingRefWhereThereIsRemote() {
     Remote upstream = Remote.of("upstream");
 
