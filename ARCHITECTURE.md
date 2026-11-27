@@ -424,7 +424,7 @@ both in `vendor/` behind the import map ([0046](docs/decisions/0046-the-board-re
   carries a closure — a button carries `data-action`/`data-select` and `ui/render` delegates the one listener.
 - **A new component gets its states in `styleguide/`** before the board uses it.
 - **One answer per question.** One transport, one toast, one submit pipeline, one key table.
-- **A board file over ~150 lines is the signal to split**, not to add a section comment.
+- **A board file over 150 lines is split by responsibility** (`board-file-lines`), not given a section comment.
 
 ## The agent system is a ring
 

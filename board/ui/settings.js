@@ -4,7 +4,7 @@ import { labelOf, paint, unread } from "./settings-view.js";
 import { toast } from "./toast.js";
 import { runGlobal } from "./verbs.js";
 
-/** @typedef {import("./settings-view.js").Setting} Setting */
+/** @typedef {import("./settings-rows.js").Setting} Setting */
 
 const dialog = /** @type {HTMLDialogElement} */ (
   document.getElementById("settings-dialog")

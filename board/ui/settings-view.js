@@ -1,105 +1,13 @@
 import { make } from "../core/dom.js";
 import { t } from "../core/i18n.js";
-import { choice } from "./choice.js";
+import { row } from "./settings-rows.js";
 
-/** @typedef {{ key: string, section: string, kind: string, options: string[], fallback: string | null, restart: boolean }} Setting */
-/** @typedef {{ setting: Setting, value: unknown }} View */
+export { labelOf } from "./settings-rows.js";
+
+/** @typedef {import("./settings-rows.js").View} View */
 
 /** @type {{ tab: string }} */
 const state = { tab: "" };
-
-/** @param {string} key */
-export const labelOf = (key) => t(`settings.key.${key}`);
-
-/**
- * @param {Setting} setting
- * @param {unknown} value
- */
-const control = (setting, value) => {
-  if (setting.kind === "BOOLEAN") {
-    const box = Object.assign(document.createElement("input"), {
-      type: "checkbox",
-      checked: value === true || (value == null && setting.fallback === "true"),
-    });
-    box.setAttribute("role", "switch");
-    return box;
-  }
-  return Object.assign(document.createElement("input"), {
-    type: setting.kind === "INTEGER" ? "number" : "text",
-    min: "0",
-    placeholder: setting.fallback ?? "",
-    value: Array.isArray(value) ? value.join(", ") : String(value ?? ""),
-  });
-};
-
-/**
- * @param {Setting} setting
- * @param {HTMLInputElement} field
- */
-const valueOf = (setting, field) => {
-  if (setting.kind === "BOOLEAN") return field.checked;
-  if (setting.kind === "INTEGER") return Number(field.value);
-  if (setting.kind === "LIST")
-    return field.value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  return field.value;
-};
-
-/** @param {(setting: Setting, value: unknown) => void} change */
-const row =
-  (change) =>
-  /** @param {View} view */
-  ({ setting, value }) => {
-    if (setting.kind === "NAMES") return namesRow(setting, value);
-    const hint = make(
-      "small",
-      "hint",
-      t(value == null ? "settings.default" : "settings.set"),
-    );
-    const name = make("span", "", labelOf(setting.key));
-    /** @type {HTMLElement} */
-    let line;
-    if (setting.kind === "CHOICE") {
-      line = make(
-        "div",
-        "field",
-        "",
-        name,
-        choice(
-          setting.key,
-          setting.options.map((option) => ({ value: option, label: option })),
-          String(value ?? setting.fallback),
-          (picked) => change(setting, picked),
-        ),
-        hint,
-      );
-    } else {
-      const field = /** @type {HTMLInputElement} */ (control(setting, value));
-      field.onchange = () => change(setting, valueOf(setting, field));
-      line = make("label", "field", "", name, field, hint);
-    }
-    line.dataset.key = setting.key;
-    return line;
-  };
-
-/**
- * @param {Setting} setting
- * @param {unknown} value
- */
-const namesRow = (setting, value) => {
-  const names = Array.isArray(value) ? value : [];
-  const line = make(
-    "div",
-    "field",
-    "",
-    make("span", "", labelOf(setting.key)),
-    make("span", "text", names.join(", ") || t("settings.none")),
-  );
-  line.dataset.key = setting.key;
-  return line;
-};
 
 /** @param {unknown} value */
 const projectRow = (value) => {
@@ -143,7 +51,7 @@ const select = (body, tab) => {
 /**
  * @param {string} name
  * @param {View[]} own
- * @param {(setting: Setting, value: unknown) => void} change
+ * @param {Parameters<typeof row>[0]} change
  */
 const pane = (name, own, change) => {
   const section = make("section", "", "", make("h3", "", sectionName(name)));
@@ -185,7 +93,7 @@ const tabFor =
 /**
  * @param {HTMLElement} body
  * @param {View[]} views
- * @param {(setting: Setting, value: unknown) => void} change
+ * @param {Parameters<typeof row>[0]} change
  */
 export const paint = (body, views, change) => {
   const names = [...new Set(views.map(({ setting }) => setting.section))];

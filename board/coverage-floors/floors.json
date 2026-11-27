@@ -351,6 +351,10 @@
     "lines": 100,
     "branches": 100
   },
+  "ui/settings-rows.js": {
+    "lines": 98,
+    "branches": 86
+  },
   "ui/settings-view.js": {
     "lines": 95,
     "branches": 88

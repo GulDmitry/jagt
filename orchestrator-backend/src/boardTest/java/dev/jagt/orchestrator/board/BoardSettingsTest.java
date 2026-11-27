@@ -250,4 +250,44 @@ class BoardSettingsTest extends BoardPageContext {
       file.toFile().setWritable(true);
     }
   }
+
+  @Test
+  void projectEditButtonOpensTheProjectFormFilledWithThatProject() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+
+    page.locator("#settings-body [data-project=alpha] button").click();
+
+    assertThat(page.locator("#project-title")).hasText("Edit alpha");
+    assertThat(page.locator("#project-key")).hasValue("alpha");
+  }
+
+  @Test
+  void otherKeysOnTheSectionTabsLeaveTheOpenSectionAsItIs() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+    page.locator("#settings-tab-projects").focus();
+
+    page.keyboard().press("ArrowRight");
+
+    assertThat(page.locator("#settings-body section[data-section=projects]")).isVisible();
+  }
+
+  @Test
+  void arrowDownOnTheSectionTabsOpensTheNextSectionAndArrowUpTheOneBefore() {
+    Page page = openLiveBoard();
+    page.locator("#gear").click();
+    page.locator("#gear-settings").click();
+    page.locator("#settings-tab-projects").focus();
+
+    page.keyboard().press("ArrowDown");
+
+    assertThat(page.locator("#settings-body section[data-section=projects]")).isHidden();
+
+    page.keyboard().press("ArrowUp");
+
+    assertThat(page.locator("#settings-body section[data-section=projects]")).isVisible();
+  }
 }

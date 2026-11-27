@@ -8,7 +8,7 @@ import * as store from "../core/store.js";
 /** @typedef {import("../components/Pane.js").Reading} Reading */
 /** @typedef {import("../components/Pane.js").Peek & { id?: string }} Peeked */
 
-/** @type {{ tab: string, read: { key: string | null, shown: Shown, stale: boolean }, asked: number, windowName: string | null, peeked: Peeked, again: () => void, viewer: Reading | null }} */
+/** @type {{ tab: string, read: { key: string | null, shown: Shown, stale: boolean }, asked: number, windowName: string | null, peeked: Peeked, again: () => void, viewer: Reading | null, picked: Map<string, string> }} */
 const state = {
   tab: "overview",
   read: { key: null, shown: null, stale: false },
@@ -17,39 +17,21 @@ const state = {
   peeked: {},
   again: () => {},
   viewer: null,
+  picked: new Map(),
 };
-
-/** @type {Map<string, string>} */
-const picked = new Map();
 
 /** @param {Task} task */
 const artifacts = async (task) => {
   const id = encodeURIComponent(task.id);
   const names = await api(`/api/tasks/files?task=${id}`);
-  const name = names.includes(picked.get(task.id))
-    ? picked.get(task.id)
+  const name = names.includes(state.picked.get(task.id))
+    ? state.picked.get(task.id)
     : names[0];
   const rendered = name
     ? await api(`/api/tasks/file?task=${id}&name=${encodeURIComponent(name)}`)
     : null;
   return { names, name, html: rendered ? rendered.html : "" };
 };
-
-async function sessionOf() {
-  const names = await api("/api/windows").catch(() => []);
-  const name = names.includes(state.windowName) ? state.windowName : null;
-  try {
-    const { Terminal } = await import("../terminal/Terminal.js");
-    return { held: true, Terminal, names, name };
-  } catch (e) {
-    return {
-      held: true,
-      shown: t("tabs.unread", { cause: cause(e) }),
-      names,
-      name,
-    };
-  }
-}
 
 /**
  * @param {Task} task
@@ -83,7 +65,8 @@ export const pickWindow = (name) => {
 const sources = {
   artifacts,
   diff: (task) => api(`/api/tasks/diff?task=${encodeURIComponent(task.id)}`),
-  session: sessionOf,
+  session: async () =>
+    (await import("../terminal/session.js")).sessionOf(state.windowName),
   round: (task, offer) =>
     text(
       `/api/commands/${offer?.id}?about=${encodeURIComponent(task.alias || task.id)}`,
@@ -97,7 +80,7 @@ export const current = () => state.tab;
  * @param {string} name
  */
 export const pick = (task, name) => {
-  picked.set(task, name);
+  state.picked.set(task, name);
   forget();
 };
 
