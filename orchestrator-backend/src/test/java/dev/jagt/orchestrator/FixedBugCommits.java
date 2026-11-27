@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 public final class FixedBugCommits {
 
-  static final String CUTOFF = "ae9b1f0b758e615aea5a57006f1f4d089db18a49";
+  static final String CUTOFF = "865adc57dd11f34daaa5321682dfc55fced42a18";
 
   static final String POSTMORTEM_CUTOFF = "6969ccdd07149e212560f8c6e741721251380db1";
 
