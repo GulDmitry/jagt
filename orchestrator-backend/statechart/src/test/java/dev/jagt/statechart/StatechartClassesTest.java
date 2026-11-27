@@ -118,6 +118,50 @@ class StatechartClassesTest {
   }
 
   @Test
+  void buildFailsNamingTheKindAddressedToNoRegionAndOwnedByNoRole() {
+    StatechartBuilder<Nudge, String, String> builder =
+        Statechart.<Nudge, String, String>builder()
+            .region(DOOR, Door.SHUT)
+            .moves(Nudge.class)
+            .addressed(Nudge.Shove.class, DOOR);
+    builder.onMatching(DOOR, Door.SHUT, Nudge.Shove.class, "shove", nudge -> true).to(Door.OPEN);
+    builder.ignores(DOOR, Nudge.Shove.class, Set.of(Door.OPEN), "an open door stays open");
+
+    assertThatThrownBy(builder::build)
+        .isInstanceOfSatisfying(
+            StatechartInvalid.class,
+            invalid ->
+                assertThat(invalid.problems())
+                    .contains("move Tug is addressed to no region and owned by no role"));
+  }
+
+  @Test
+  void buildPassesWhereTheKindAddressedToNoRegionIsOwnedByRole() {
+    StatechartBuilder<Nudge, String, String> builder =
+        Statechart.<Nudge, String, String>builder()
+            .region(DOOR, Door.SHUT)
+            .moves(Nudge.class)
+            .addressed(Nudge.Shove.class, DOOR)
+            .ownedByRole(Nudge.Tug.class, "caretaker");
+    builder.onMatching(DOOR, Door.SHUT, Nudge.Shove.class, "shove", nudge -> true).to(Door.OPEN);
+    builder.onMatching(DOOR, Door.OPEN, Nudge.Shove.class, "shove", nudge -> true).to(Door.SHUT);
+
+    assertThat(builder.build()).isNotNull();
+  }
+
+  @Test
+  void buildFailsWhereRoleOwnsWhatIsNoKindOfMove() {
+    StatechartBuilder<Nudge, String, String> builder = TestDoorBuilder.tuggedOnlyWhenShut();
+    builder.ownedByRole(Nudge.class, "caretaker");
+
+    assertThatThrownBy(builder::build)
+        .isInstanceOfSatisfying(
+            StatechartInvalid.class,
+            invalid ->
+                assertThat(invalid.problems()).containsExactly("move Nudge is not a kind of move"));
+  }
+
+  @Test
   void buildFailsWhereTransitionNamesNoKindOfMove() {
     StatechartBuilder<Nudge, String, String> builder = TestDoorBuilder.shovedBothWays();
     builder.onMatching(DOOR, Door.SHUT, "anything", nudge -> true).to(Door.OPEN);

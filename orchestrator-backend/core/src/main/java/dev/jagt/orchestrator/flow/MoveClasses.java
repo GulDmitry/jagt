@@ -80,6 +80,11 @@ final class MoveClasses {
     chart.addressed(TaskMove.TurnClosed.class, TURN);
     chart.addressed(TaskMove.TurnRestored.class, TURN);
     chart.addressed(TaskMove.Verified.class, LIFECYCLE, REPORT);
+    chart.ownedByRole(TaskMove.MasterNoted.class, Role.Kind.ARBITER.name());
+    chart.ownedByRole(TaskMove.Checked.ReadEnded.class, Role.Kind.CHECKER.name());
+    chart.ownedByRole(TaskMove.Checked.Passed.class, Role.Kind.CHECKER.name());
+    chart.ownedByRole(TaskMove.Checked.RoundSent.class, Role.Kind.CHECKER.name());
+    chart.ownedByRole(TaskMove.Checked.RoundDeclined.class, Role.Kind.CHECKER.name());
     lifecycle(chart);
     progress(chart);
     delivery(chart);

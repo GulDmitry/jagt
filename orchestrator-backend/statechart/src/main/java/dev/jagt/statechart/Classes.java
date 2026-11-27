@@ -21,6 +21,7 @@ final class Classes<E, F> {
 
   private final Set<Class<?>> kinds;
   private final Map<Class<?>, Set<String>> scope;
+  private final Map<Class<?>, String> owners;
   private final List<ClassDecls.Declared> declared;
   private final List<Region<E, F>> regions;
   private final List<Transition<E, F>> transitions;
@@ -30,11 +31,13 @@ final class Classes<E, F> {
   Classes(
       Set<Class<?>> kinds,
       Map<Class<?>, Set<String>> scope,
+      Map<Class<?>, String> owners,
       List<ClassDecls.Declared> declared,
       List<Region<E, F>> regions,
       List<Transition<E, F>> transitions) {
     this.kinds = kinds;
     this.scope = scope;
+    this.owners = owners;
     this.declared = declared;
     this.regions = regions;
     this.transitions = transitions;
@@ -61,6 +64,13 @@ final class Classes<E, F> {
     }
     problems.addAll(edgeProblems());
     problems.addAll(scopeProblems());
+    sorted(kinds).stream()
+        .filter(kind -> scope.getOrDefault(kind, Set.of()).isEmpty() && !owners.containsKey(kind))
+        .forEach(kind ->
+            problems.add(
+                "move "
+                    + kind.getSimpleName()
+                    + " is addressed to no region and owned by no role"));
     problems.addAll(declarationProblems());
     for (Class<?> kind : sorted(kinds)) {
       for (Region<E, F> region : regions) {
@@ -110,6 +120,9 @@ final class Classes<E, F> {
   private List<String> scopeProblems() {
     List<String> problems = new ArrayList<>();
     Set<String> names = regions.stream().map(Region::name).collect(Collectors.toSet());
+    owners.keySet().stream()
+        .filter(kind -> !kinds.contains(kind))
+        .forEach(kind -> problems.add("move " + kind.getSimpleName() + " is not a kind of move"));
     scope.forEach((kind, to) -> {
       if (!kinds.contains(kind)) {
         problems.add("move " + kind.getSimpleName() + " is not a kind of move");

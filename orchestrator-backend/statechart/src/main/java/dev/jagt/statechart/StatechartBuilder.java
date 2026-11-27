@@ -232,6 +232,12 @@ public final class StatechartBuilder<E, X, F> {
     return this;
   }
 
+  /** {@code kind} is addressed to no region of this chart: the region of {@code role} adds it. */
+  public StatechartBuilder<E, X, F> ownedByRole(Class<? extends E> kind, String role) {
+    classes.ownedByRole(kind, role);
+    return this;
+  }
+
   /** {@code kind} changes nothing in {@code states} of {@code id}, for {@code why}. */
   public <S extends Enum<S>> StatechartBuilder<E, X, F> ignores(
       RegionId<S> id, Class<? extends E> kind, Set<S> states, String why) {

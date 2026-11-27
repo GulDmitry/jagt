@@ -16,6 +16,7 @@ final class ClassDecls {
   private Optional<Class<?>> root = Optional.empty();
   private final Map<Class<?>, Set<String>> scope = new LinkedHashMap<>();
   private final List<Declared> declared = new ArrayList<>();
+  private final Map<Class<?>, String> owners = new LinkedHashMap<>();
 
   void moves(Class<?> type) {
     root = Optional.of(type);
@@ -23,6 +24,10 @@ final class ClassDecls {
 
   void addressed(Class<?> kind, List<String> regions) {
     scope.computeIfAbsent(kind, key -> new LinkedHashSet<>()).addAll(regions);
+  }
+
+  void ownedByRole(Class<?> kind, String role) {
+    owners.put(kind, role);
   }
 
   void declare(
@@ -37,6 +42,7 @@ final class ClassDecls {
     return new Classes<>(
         root.map(Classes::leaves).orElse(Set.of()),
         Map.copyOf(scope),
+        Map.copyOf(owners),
         List.copyOf(declared),
         regions,
         transitions);

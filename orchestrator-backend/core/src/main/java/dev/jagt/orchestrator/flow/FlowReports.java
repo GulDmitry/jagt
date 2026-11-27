@@ -310,8 +310,11 @@ public class FlowReports {
         (reducer, task) -> {
           TaskStatus was = task.standing().status();
           Optional<TaskStatus> lands = rules.readLands(was, concluded);
-          landed.set(new Landed(was, lands.orElse(was)));
-          if (lands.isEmpty() || lands.get() == was) {
+          if (lands.isEmpty()) {
+            return task;
+          }
+          landed.set(new Landed(was, lands.get()));
+          if (lands.get() == was) {
             return task;
           }
           return reducer.reduce(
