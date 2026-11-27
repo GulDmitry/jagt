@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.acceptanceeval;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleOptions;
@@ -22,6 +23,7 @@ import dev.jagt.orchestrator.job.checker.CheckerPrompts;
 import dev.jagt.orchestrator.job.checker.wiring.CheckerReaders;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.role.RoleKit;
 import dev.jagt.orchestrator.service.role.RoleKits;
 import dev.jagt.orchestrator.service.usage.UsageTracker;
@@ -33,6 +35,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -113,7 +118,12 @@ abstract class AcceptanceVerdictEvalTest {
       CheckerReader reader, RoleKits kits, CheckerReaders readers, UsageTracker usage) {
     this.reader = reader;
     RoleKit acceptance = kits.find(Checkers.ACCEPTANCE).orElseThrow();
-    this.prompts = new CheckerPrompts(acceptance.definition(), acceptance.files());
+    this.prompts =
+        new CheckerPrompts(
+            acceptance.definition(),
+            acceptance.files(),
+            mock(TicketTexts.class),
+            Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
     this.checkerFlows = readers.flows(acceptance);
     this.acceptanceDefinition = acceptance.definition();
     this.usage = usage;

@@ -557,6 +557,9 @@ class TaskStopsTest {
             TaskStop.Trigger.DEPLOY_UNREAD,
             (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnDeployRead("ABC-42")),
         Arguments.of(
+            TaskStop.Trigger.ACCEPTANCE_UNREAD,
+            (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnInputRead("ABC-42")),
+        Arguments.of(
             TaskStop.Trigger.UNDELIVERED,
             (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnSessionAlive("ABC-42")),
         Arguments.of(

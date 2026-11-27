@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -29,11 +30,12 @@ public record TestCheckerCheckJobBuilder(Path roleFile) {
       OrchestratorPaths paths,
       CheckerReads reader,
       CheckerOutcomes outcomes,
+      TicketTexts tickets,
       Clock clock) {
     RoleDefinition role = RoleDefinitions.fromFile(roleFile);
     return new CheckerCheckJob(
         new RoleSettings(role, config, paths),
-        new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
+        new CheckerPrompts(role, new RoleFiles(paths, "acceptance"), tickets, clock),
         reader,
         new CheckerRecords(paths, clock, "acceptance"),
         outcomes);

@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.role.RoleSettings;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -94,7 +95,9 @@ class CheckerDeclineJobTest {
                 paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
+                new RoleFiles(paths, "acceptance"),
+                mock(TicketTexts.class),
+                new FakeClock()),
             reader,
             records,
             outcomes);

@@ -166,6 +166,20 @@ public class CheckerOutcomes {
         .log();
   }
 
+  /** The round cannot start without {@code input}: the stop ends on a read that finds it. */
+  public void unread(String taskId, String input) {
+    stops.stop(taskId, TaskStop.Trigger.ACCEPTANCE_UNREAD, "no " + input + " to check against");
+    log.atWarn()
+        .setMessage("acceptance input unread")
+        .addKeyValue("task", taskId)
+        .addKeyValue("input", input)
+        .log();
+  }
+
+  public void inputsRead(String taskId) {
+    stops.endOnInputRead(taskId);
+  }
+
   private void failed(String taskId, AcceptanceVerdict verdict) {
     stops.stop(taskId, TaskStop.Trigger.ACCEPTANCE_FAILED, verdict.failure());
     log.atWarn()

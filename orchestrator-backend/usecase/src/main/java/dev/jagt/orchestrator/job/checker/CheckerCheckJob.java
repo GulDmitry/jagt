@@ -55,21 +55,33 @@ public class CheckerCheckJob implements TaskJob {
 
   @Override
   public Watch watch() {
-    return Watch.defaults().withStatuses(FlowRules::checkedWhereItLanded).withStops(StopKind.NONE);
+    return Watch.defaults()
+        .withStatuses(FlowRules::checkedWhereItLanded)
+        .withStops(StopKind.NONE, StopKind.INPUT_READ);
   }
 
   @Override
   public void run(String taskId, TaskState task) {
     RoleOptions acceptance = settings.load();
-    String worktree = task.worktreePath();
     Optional<Deployment> open = openFor(task, acceptance);
-    if (open.isEmpty() || worktree == null) {
+    if (open.isEmpty()) {
       return;
     }
     String digest = Objects.requireNonNull(open.get().askedDigest());
     if (records.settled(taskId, digest)) {
       return;
     }
+    Optional<String> missing = prompts.missingInput(taskId, task);
+    if (missing.isPresent()) {
+      if (!task.work().stopped()) {
+        outcomes.unread(taskId, missing.get());
+      }
+      return;
+    }
+    if (task.work().stopped()) {
+      outcomes.inputsRead(taskId);
+    }
+    String worktree = Objects.requireNonNull(task.worktreePath());
     String sha = open.get().tips();
     RoleDefinition.Checking steps = settings.role().checking();
     String step =

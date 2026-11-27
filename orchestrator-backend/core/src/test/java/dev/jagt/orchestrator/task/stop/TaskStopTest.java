@@ -22,7 +22,8 @@ class TaskStopTest {
     "INFRA,BROKEN,HOST_READ",
     "UNDELIVERED,BROKEN,SESSION_ALIVE",
     "WAIT,BROKEN,SESSION_REPORT",
-    "DEPLOY_UNREAD,BROKEN,DEPLOY_READ"
+    "DEPLOY_UNREAD,BROKEN,DEPLOY_READ",
+    "ACCEPTANCE_UNREAD,BROKEN,INPUT_READ"
   })
   void sortsEveryTriggerIntoGuardExactlyWhereOnlyLiftEndsIt(
       TaskStop.Trigger trigger, TaskStop.Trigger.Kind kind, TaskStop.Trigger.Ends ends) {
@@ -31,7 +32,7 @@ class TaskStopTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"CHECKS", "INFRA", "UNDELIVERED", "WAIT", "DEPLOY_UNREAD"})
+  @CsvSource({"CHECKS", "INFRA", "UNDELIVERED", "WAIT", "DEPLOY_UNREAD", "ACCEPTANCE_UNREAD"})
   void neverTellsTheHumanToLiftWhereReadEndsTheStop(TaskStop.Trigger trigger) {
     assertThat(trigger.next()).doesNotContain("lift");
     assertThat(new TaskStop(trigger, 1L, "evidence").reading()).doesNotContain("lift");

@@ -9,6 +9,7 @@ stateDiagram-v2
         state "SESSION_ALIVE" as stop_SESSION_ALIVE
         state "SESSION_REPORT" as stop_SESSION_REPORT
         state "DEPLOY_READ" as stop_DEPLOY_READ
+        state "INPUT_READ" as stop_INPUT_READ
         state "PAUSE" as stop_PAUSE
         [*] --> stop_NONE
         stop_NONE --> stop_NONE : lift
@@ -33,6 +34,10 @@ stateDiagram-v2
         stop_DEPLOY_READ --> stop_NONE : lift
         stop_DEPLOY_READ --> stop_NONE : DEPLOY_READ ends it
         stop_DEPLOY_READ --> stop_NONE : a new request voids it
+        stop_NONE --> stop_INPUT_READ : stop ending on INPUT_READ
+        stop_INPUT_READ --> stop_NONE : lift
+        stop_INPUT_READ --> stop_NONE : INPUT_READ ends it
+        stop_INPUT_READ --> stop_NONE : a new request voids it
         stop_NONE --> stop_PAUSE : stop ending on PAUSE
         stop_PAUSE --> stop_NONE : lift
     }

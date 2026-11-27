@@ -1,6 +1,13 @@
 package dev.jagt.orchestrator.job.checker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -8,11 +15,16 @@ import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeHost;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,6 +39,8 @@ class CheckerPromptsTest {
                   new RoleOptions.Environment(
                       "https://dev.example.test", "https://dev.example.test/version"),
                   new RoleOptions.Environment("https://stage.example.test", "")));
+  private final TicketTexts tickets = mock(TicketTexts.class);
+  private final FakeClock clock = new FakeClock();
   private CheckerPrompts prompts;
 
   @BeforeEach
@@ -38,7 +52,92 @@ class CheckerPromptsTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()),
                     FakeHost.machine()),
-                "acceptance"));
+                "acceptance"),
+            tickets,
+            clock);
+  }
+
+  @Test
+  void theBriefCarriesTheTicketTextJagtReadAtIntake() {
+    when(tickets.of("ABC-42")).thenReturn(Optional.of("Sort the list by name."));
+
+    CheckerReader.Run run =
+        prompts.accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.prompt()).contains("<ticket>\nSort the list by name.\n</ticket>");
+  }
+
+  @Test
+  void theBriefCarriesNoTicketSectionWhereNoTextWasRead() {
+    when(tickets.of("ABC-42")).thenReturn(Optional.empty());
+
+    CheckerReader.Run run =
+        prompts.accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.prompt()).doesNotContain("<ticket>");
+  }
+
+  @Test
+  void theTicketIsReadOnceMoreAndNamedMissingWhereNoTextCameOfIt() {
+    when(tickets.of("ABC-42")).thenReturn(Optional.empty());
+    TaskState withTicket =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .ticketUrl("https://t.example/ABC-42")
+            .build();
+
+    Optional<String> missing = prompts.missingInput("ABC-42", withTicket);
+
+    assertThat(missing).contains("ticket");
+    verify(tickets).read(eq("ABC-42"), eq("https://t.example/ABC-42"), anyLong());
+  }
+
+  @Test
+  void theTicketReadOnceMoreIsEnoughWhereItKeptTheText() {
+    when(tickets.of("ABC-42"))
+        .thenReturn(Optional.empty())
+        .thenReturn(Optional.of("Sort the list by name."));
+    TaskState withTicket =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .ticketUrl("https://t.example/ABC-42")
+            .build();
+
+    Optional<String> missing = prompts.missingInput("ABC-42", withTicket);
+
+    assertThat(missing).isEmpty();
+  }
+
+  @Test
+  void theTicketIsNotReadAgainWithinTenMinutesOfAnUnusableRead() {
+    when(tickets.of("ABC-42")).thenReturn(Optional.empty());
+    when(tickets.readSince("ABC-42", clock.millis() - 600_000L)).thenReturn(true);
+    TaskState withTicket =
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .ticketUrl("https://t.example/ABC-42")
+            .build();
+
+    Optional<String> missing = prompts.missingInput("ABC-42", withTicket);
+
+    assertThat(missing).contains("ticket");
+    verify(tickets, never()).read(any(), any(), anyLong());
+  }
+
+  @Test
+  void noTicketIsReadForTaskWithoutOne() {
+    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build();
+
+    Optional<String> missing = prompts.missingInput("ABC-42", task);
+
+    assertThat(missing).isEmpty();
+    verify(tickets, never()).read(any(), any(), anyLong());
+  }
+
+  @Test
+  void theDeployIsNamedMissingWhereTheTaskHasNoWorktree() {
+    TaskState task = TaskState.builder("proj", null, TaskStatus.DEPLOYED).build();
+
+    Optional<String> missing = prompts.missingInput("ABC-42", task);
+
+    assertThat(missing).contains("deploy");
   }
 
   @Test

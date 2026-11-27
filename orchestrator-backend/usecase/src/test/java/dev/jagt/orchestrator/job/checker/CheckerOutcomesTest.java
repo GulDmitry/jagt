@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.Checkers;
@@ -21,6 +23,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.deploy.Deployment;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.turn.RoleRecord;
 import dev.jagt.orchestrator.task.turn.Step;
 import dev.jagt.orchestrator.testing.FakeClock;
@@ -169,5 +172,32 @@ class CheckerOutcomesTest {
     checker.apply("ABC-42", task, verdict);
 
     assertThat(sentUnder).containsExactly("ACCEPTANCE/" + id);
+  }
+
+  @Test
+  void stopsOnTheReadEndedStopNamingTheMissingInputNeverOnFailedCheck() {
+    TaskStops stops = mock(TaskStops.class);
+    CheckerOutcomes checker =
+        checkerOutcomes()
+            .build(
+                mock(StepRelay.class), flowReports().build(state, new FakeClock()), stops, state);
+
+    checker.unread("ABC-42", "ticket");
+
+    verify(stops).stop("ABC-42", TaskStop.Trigger.ACCEPTANCE_UNREAD, "no ticket to check against");
+    verify(stops, never()).stop(any(), eq(TaskStop.Trigger.ACCEPTANCE_FAILED), any());
+  }
+
+  @Test
+  void endsTheStopOnTheReadThatFindsTheInputs() {
+    TaskStops stops = mock(TaskStops.class);
+    CheckerOutcomes checker =
+        checkerOutcomes()
+            .build(
+                mock(StepRelay.class), flowReports().build(state, new FakeClock()), stops, state);
+
+    checker.inputsRead("ABC-42");
+
+    verify(stops).endOnInputRead("ABC-42");
   }
 }

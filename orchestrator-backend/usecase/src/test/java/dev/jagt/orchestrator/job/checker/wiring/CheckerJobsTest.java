@@ -6,6 +6,7 @@ import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchest
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import dev.jagt.orchestrator.job.checker.CheckerReads;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.service.role.RoleKit;
 import dev.jagt.orchestrator.service.role.RoleKits;
@@ -39,10 +41,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class CheckerJobsTest {
 
   private final ConfigService config = mock(ConfigService.class);
-  private final CheckerReaders readers = mock(CheckerReaders.class);
-  private final CheckerActs acts = mock(CheckerActs.class);
-  private final CheckerReads reads = mock(CheckerReads.class);
-  private final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+  private final CheckerReaders readers = mock(CheckerReaders.class, RETURNS_DEEP_STUBS);
+  private final CheckerActs acts = mock(CheckerActs.class, RETURNS_DEEP_STUBS);
+  private final TicketTexts tickets = mock(TicketTexts.class);
 
   @ParameterizedTest
   @ValueSource(
@@ -72,7 +73,7 @@ class CheckerJobsTest {
                 new RoleKits(kits),
                 readers,
                 acts,
-                new CheckerLedgers(paths, new FakeClock()),
+                new CheckerLedgers(paths, new FakeClock(), tickets),
                 url -> true)
             .jobs();
 
@@ -106,8 +107,9 @@ class CheckerJobsTest {
                     new RoleKit(
                         new RoleSettings(role, config, paths), new RoleFiles(paths, role.id())))
                 .toList();
-    when(readers.reads(any())).thenReturn(reads);
-    when(acts.outcomes(any())).thenReturn(outcomes);
+    RoleKit auditKit = kits.getFirst();
+    CheckerReads reads = readers.reads(auditKit);
+    CheckerOutcomes outcomes = acts.outcomes(auditKit);
     when(reads.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(acceptanceVerdict().build()), TokenUsage.NONE));
     when(outcomes.apply(any(), any(), any())).thenReturn(AcceptanceEnding.PASSED);
@@ -116,7 +118,7 @@ class CheckerJobsTest {
                 new RoleKits(kits),
                 readers,
                 acts,
-                new CheckerLedgers(paths, new FakeClock()),
+                new CheckerLedgers(paths, new FakeClock(), tickets),
                 url -> true)
             .jobs().stream()
                 .filter(job -> job.id().equals("audit-check"))

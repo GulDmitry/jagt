@@ -22,10 +22,12 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.service.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceEnding;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
@@ -45,6 +47,7 @@ class CheckerCheckJobTest {
   private final ConfigService config = mock(ConfigService.class);
   private final CheckerReads reader = mock(CheckerReads.class);
   private final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+  private final TicketTexts tickets = mock(TicketTexts.class);
 
   @TempDir Path root;
 
@@ -63,7 +66,7 @@ class CheckerCheckJobTest {
     when(config.load()).thenReturn(ConfigFile.defaults());
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader, never()).check(any(), any(), any(), any());
@@ -74,7 +77,7 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().withAskedDigest(null).build());
 
     verify(reader, never()).check(any(), any(), any(), any());
@@ -85,11 +88,11 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
     when(outcomes.apply(any(), any(), any())).thenReturn(AcceptanceEnding.PASSED);
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader, times(1)).check(any(), any(), any(), any());
@@ -109,7 +112,9 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
     TaskState task = askedDeploy().build();
 
-    checkerCheckJob().build(config, paths, reader, outcomes, new FakeClock()).run("ABC-42", task);
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
+        .run("ABC-42", task);
 
     verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet));
   }
@@ -119,7 +124,7 @@ class CheckerCheckJobTest {
     acceptanceEnvironment().build(root);
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(outcomes).apply(eq("ABC-42"), any(), eq(acceptanceVerdict().build()));
@@ -135,7 +140,7 @@ class CheckerCheckJobTest {
     TaskState restarted = reducer.relayed(askedDeploy().build(), "accept", "digest", "", 1);
 
     checkerCheckJob()
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", restarted);
 
     verify(reader)
@@ -154,7 +159,7 @@ class CheckerCheckJobTest {
 
     checkerCheckJob()
         .withRoleFile(role)
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader).check(any(), any(), any(), any());
@@ -166,7 +171,7 @@ class CheckerCheckJobTest {
 
     checkerCheckJob()
         .withRoleFile(role)
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().build());
 
     verify(reader, never()).check(any(), any(), any(), any());
@@ -179,9 +184,74 @@ class CheckerCheckJobTest {
 
     checkerCheckJob()
         .withRoleFile(role)
-        .build(config, paths, reader, outcomes, new FakeClock())
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
         .run("ABC-42", askedDeploy().withStatus(TaskStatus.DONE).build());
 
     verify(reader).check(any(), any(), any(), any());
+  }
+
+  @Test
+  void stopsOnReadEndedStopNamingTheTicketWhereNoTextCameOfIt() {
+    acceptanceEnvironment().build(root);
+    when(tickets.of("ABC-42")).thenReturn(Optional.empty());
+    TaskState task = askedDeploy().withTicketUrl("https://t.example/ABC-42").build();
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
+        .run("ABC-42", task);
+
+    verify(outcomes).unread("ABC-42", "ticket");
+    verify(reader, never()).check(any(), any(), any(), any());
+    verify(outcomes, never()).apply(any(), any(), any());
+  }
+
+  @Test
+  void leavesTheStandingStopAloneWhileTheTicketIsStillMissing() {
+    acceptanceEnvironment().build(root);
+    when(tickets.of("ABC-42")).thenReturn(Optional.empty());
+    TaskState stopped =
+        askedDeploy()
+            .withTicketUrl("https://t.example/ABC-42")
+            .withStop(new TaskStop(TaskStop.Trigger.ACCEPTANCE_UNREAD, 1L, "no ticket"))
+            .build();
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
+        .run("ABC-42", stopped);
+
+    verify(outcomes, never()).unread(any(), any());
+    verify(outcomes, never()).inputsRead(any());
+    verify(reader, never()).check(any(), any(), any(), any());
+  }
+
+  @Test
+  void endsTheStopAndChecksOnceTheTicketTextIsThere() {
+    acceptanceEnvironment().build(root);
+    when(tickets.of("ABC-42")).thenReturn(Optional.of("Sort the list."));
+    TaskState stopped =
+        askedDeploy()
+            .withTicketUrl("https://t.example/ABC-42")
+            .withStop(new TaskStop(TaskStop.Trigger.ACCEPTANCE_UNREAD, 1L, "no ticket"))
+            .build();
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
+        .run("ABC-42", stopped);
+
+    verify(outcomes).inputsRead("ABC-42");
+    verify(reader).check(any(), any(), any(), any());
+  }
+
+  @Test
+  void stopsNamingTheDeployWhereTheTaskHasNoWorktree() {
+    acceptanceEnvironment().build(root);
+    TaskState task = askedDeploy().withWorktree(null).build();
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, tickets, new FakeClock())
+        .run("ABC-42", task);
+
+    verify(outcomes).unread("ABC-42", "deploy");
+    verify(reader, never()).check(any(), any(), any(), any());
   }
 }

@@ -40,7 +40,7 @@ public class CheckerJobs implements JobSource {
   }
 
   private List<TaskJob> of(RoleKit kit) {
-    CheckerPrompts prompts = new CheckerPrompts(kit.definition(), kit.files());
+    CheckerPrompts prompts = ledgers.prompts(kit);
     CheckerReads reads = readers.reads(kit);
     CheckerRecords records = ledgers.records(kit.definition().id());
     CheckerOutcomes outcomes = acts.outcomes(kit);

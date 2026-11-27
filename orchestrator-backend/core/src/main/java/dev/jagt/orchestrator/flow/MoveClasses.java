@@ -189,6 +189,7 @@ final class MoveClasses {
             StopKind.SESSION_ALIVE,
             StopKind.SESSION_REPORT,
             StopKind.DEPLOY_READ,
+            StopKind.INPUT_READ,
             StopKind.PAUSE));
     ignored(
         chart,
@@ -201,6 +202,7 @@ final class MoveClasses {
             StopKind.SESSION_ALIVE,
             StopKind.SESSION_REPORT,
             StopKind.DEPLOY_READ,
+            StopKind.INPUT_READ,
             StopKind.PAUSE));
     ignored(
         chart,

@@ -4,8 +4,13 @@ import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleFiles;
 import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
 import dev.jagt.orchestrator.service.reach.CheckerReach;
+import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 
@@ -13,8 +18,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CheckerPrompts {
 
+  private static final Duration REREAD = Duration.ofMinutes(10);
+
   private final RoleDefinition role;
   private final RoleFiles brief;
+  private final TicketTexts tickets;
+  private final Clock clock;
+
+  /**
+   * The input a round cannot be given: the deploy's worktree, or the ticket text of a task that has
+   * a ticket. A ticket not yet kept is read here at most once per re-read window, each read being
+   * paid.
+   */
+  public Optional<String> missingInput(String taskId, TaskState task) {
+    if (task.worktreePath() == null) {
+      return Optional.of("deploy");
+    }
+    String url = task.ticket().ticketUrl();
+    if (url == null || url.isBlank() || tickets.of(taskId).isPresent()) {
+      return Optional.empty();
+    }
+    long now = clock.millis();
+    if (tickets.readSince(taskId, now - REREAD.toMillis())) {
+      return Optional.of("ticket");
+    }
+    tickets.read(taskId, url, now);
+    return tickets.of(taskId).isPresent() ? Optional.empty() : Optional.of("ticket");
+  }
 
   public CheckerReader.Run accept(
       String taskId, String worktree, String sha, RoleOptions acceptance, String step) {
@@ -27,7 +57,8 @@ public class CheckerPrompts {
             + "\nCheck it on:\n"
             + environments
             + flowsLine(acceptance)
-            + workspaceLine(acceptance, worktree, sha);
+            + workspaceLine(acceptance, worktree, sha)
+            + ticketLine(taskId);
     return new CheckerReader.Run(
         acceptance.layout().fill(brief.text()),
         acceptance.layout().fill(brief.section(step)) + "\n\n" + facts,
@@ -71,6 +102,13 @@ public class CheckerPrompts {
         CheckerReach.of(acceptance),
         role.replies().decline().json(),
         role.id());
+  }
+
+  private String ticketLine(String taskId) {
+    return tickets
+        .of(taskId)
+        .map(text -> "\nThe ticket, as jagt read it at intake:\n<ticket>\n" + text + "\n</ticket>")
+        .orElse("");
   }
 
   private static String flowsLine(RoleOptions acceptance) {

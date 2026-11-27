@@ -278,6 +278,11 @@ public class TaskStops {
     return endWhen(taskId, TaskStop.Trigger.Ends.DEPLOY_READ, true, "");
   }
 
+  /** The stop a read of every input an acceptance round is given ended. */
+  public Optional<TaskStop> endOnInputRead(String taskId) {
+    return endWhen(taskId, TaskStop.Trigger.Ends.INPUT_READ, true, "");
+  }
+
   /** The stop that ended because the session's window runs again: one whose trigger ends on it. */
   public Optional<TaskStop> endOnSessionAlive(String taskId) {
     return endWhen(taskId, TaskStop.Trigger.Ends.SESSION_ALIVE, true, "");

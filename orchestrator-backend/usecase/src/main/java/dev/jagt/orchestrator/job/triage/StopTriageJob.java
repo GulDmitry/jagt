@@ -57,7 +57,8 @@ public class StopTriageJob implements TaskJob {
             StopKind.HOST_READ,
             StopKind.SESSION_ALIVE,
             StopKind.SESSION_REPORT,
-            StopKind.DEPLOY_READ);
+            StopKind.DEPLOY_READ,
+            StopKind.INPUT_READ);
   }
 
   @Override

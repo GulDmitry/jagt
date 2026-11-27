@@ -104,6 +104,12 @@ public record TaskStop(
         "Fix what the check needs, then lift: the same check runs once more",
         Ends.LIFT,
         false),
+    ACCEPTANCE_UNREAD(
+        Kind.BROKEN,
+        "acceptance lacks an input",
+        "Make the missing input readable: jagt's next read of it clears the stop",
+        Ends.INPUT_READ,
+        false),
     DEPLOY_UNREAD(
         Kind.BROKEN,
         "deploy pipeline cannot be read",
@@ -122,7 +128,8 @@ public record TaskStop(
     /**
      * What ends a stop: a human's lift, a read of the checks that shows the outside condition gone,
      * the session's window running again, a report of the session that is no wait, a read of the
-     * deploy's pipeline, or, for a human's pause, only the human's lift.
+     * deploy's pipeline, a read of what an acceptance round is given, or, for a human's pause, only
+     * the human's lift.
      */
     public enum Ends {
       LIFT,
@@ -130,6 +137,7 @@ public record TaskStop(
       SESSION_ALIVE,
       SESSION_REPORT,
       DEPLOY_READ,
+      INPUT_READ,
       PAUSE
     }
 

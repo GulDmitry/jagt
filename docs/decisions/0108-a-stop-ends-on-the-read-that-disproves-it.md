@@ -17,6 +17,7 @@ Accepted 2026-10-29. Extends [0105](0105-infrastructure-failures-are-waited-out.
 - `CHECKS` and `INFRA` end on `HOST_READ`: the condition is outside jagt, a read can disprove it.
 - `UNDELIVERED` ends on `SESSION_ALIVE`: `SessionAliveJob` looks at the session's window every minute and ends the stop once it runs.
 - `WAIT` ends on `SESSION_REPORT`: it keeps saying `wait-over` at the last `infraWait.backoff`, and a report that is no wait ends it.
+- `ACCEPTANCE_UNREAD` ends on `INPUT_READ`: `CheckerCheckJob` reads the ticket text and the deploy's worktree each tick while it stands.
 - Every other trigger is a judgement and ends on `LIFT`.
 - The read is `StopReadJob`, every 5 minutes, whatever auto-review says; it runs while the stop stands.
 - It goes through `RoundReading`, the read a sweep makes.

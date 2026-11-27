@@ -12,6 +12,7 @@ public enum StopKind {
   SESSION_ALIVE,
   SESSION_REPORT,
   DEPLOY_READ,
+  INPUT_READ,
   PAUSE;
 
   /** Every kind a stop can stand in but a human's pause. */
