@@ -10,22 +10,38 @@ class TaskStopTest {
 
   @ParameterizedTest
   @CsvSource({
-    "PAUSE,PAUSE",
-    "STALLED,GUARD",
-    "SHIPS,GUARD",
-    "MISS,GUARD",
-    "ROUNDS,GUARD",
-    "PACE,GUARD",
-    "UNCHANGED_FAILURE,GUARD",
-    "CHECKS,BROKEN",
-    "INFRA,BROKEN",
-    "UNDELIVERED,BROKEN",
-    "WAIT,BROKEN",
-    "DEPLOY_UNREAD,BROKEN",
-    "ACCEPTANCE_FAILED,BROKEN"
+    "PAUSE,PAUSE,PAUSE",
+    "STALLED,GUARD,LIFT",
+    "SHIPS,GUARD,LIFT",
+    "MISS,GUARD,LIFT",
+    "ROUNDS,GUARD,LIFT",
+    "PACE,GUARD,LIFT",
+    "UNCHANGED_FAILURE,GUARD,LIFT",
+    "ACCEPTANCE_FAILED,GUARD,LIFT",
+    "CHECKS,BROKEN,HOST_READ",
+    "INFRA,BROKEN,HOST_READ",
+    "UNDELIVERED,BROKEN,SESSION_ALIVE",
+    "WAIT,BROKEN,SESSION_REPORT",
+    "DEPLOY_UNREAD,BROKEN,DEPLOY_READ"
   })
-  void sortsEveryTriggerIntoWhoseStopItIs(TaskStop.Trigger trigger, TaskStop.Trigger.Kind kind) {
+  void sortsEveryTriggerIntoGuardExactlyWhereOnlyLiftEndsIt(
+      TaskStop.Trigger trigger, TaskStop.Trigger.Kind kind, TaskStop.Trigger.Ends ends) {
     assertThat(trigger.kind()).isEqualTo(kind);
+    assertThat(trigger.ends()).isEqualTo(ends);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"CHECKS", "INFRA", "UNDELIVERED", "WAIT", "DEPLOY_UNREAD"})
+  void neverTellsTheHumanToLiftWhereReadEndsTheStop(TaskStop.Trigger trigger) {
+    assertThat(trigger.next()).doesNotContain("lift");
+    assertThat(new TaskStop(trigger, 1L, "evidence").reading()).doesNotContain("lift");
+  }
+
+  @Test
+  void readingTellsTheHumanToLiftOrCloseWhereOnlyLiftEndsTheStop() {
+    TaskStop stop = new TaskStop(TaskStop.Trigger.SHIPS, 1L, "evidence");
+
+    assertThat(stop.reading()).endsWith(", then lift or close");
   }
 
   @Test

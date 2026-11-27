@@ -88,18 +88,18 @@ public record TaskStop(
     INFRA(
         Kind.BROKEN,
         "checks failed on infrastructure",
-        "Re-run the job or fix the runner, then lift",
+        "Re-run the job or fix the runner: the next read of the checks clears it",
         Ends.HOST_READ,
         true),
     WAIT(
         Kind.BROKEN,
         "a dependency stayed down",
-        "Bring up what the session named, then lift",
+        "Bring up what the session named: its next report clears it",
         Ends.SESSION_REPORT,
         false),
     @JsonAlias("QA_FAILED")
     ACCEPTANCE_FAILED(
-        Kind.BROKEN,
+        Kind.GUARD,
         "the acceptance check failed",
         "Fix what the check needs, then lift: the same check runs once more",
         Ends.LIFT,
@@ -184,6 +184,7 @@ public record TaskStop(
   }
 
   public String reading() {
-    return evidence + ". " + trigger.next + ", then lift or close";
+    String read = evidence + ". " + trigger.next;
+    return trigger.kind == Trigger.Kind.BROKEN ? read : read + ", then lift or close";
   }
 }

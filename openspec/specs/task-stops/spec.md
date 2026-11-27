@@ -90,7 +90,8 @@ a stop a read ends ends on it.
 - **THEN** the stop is yours and the Master is not asked
 
 ### Requirement: A stopped task is rung on the board
-Each stop SHALL carry a kind, `stop.kind`. `PAUSE` is yours, `GUARD` is jagt's own loop guards, `BROKEN` a failed check or outside condition.
+Each stop SHALL carry a kind, `stop.kind`. `PAUSE` is yours. `GUARD` is jagt's own loop guards and any stop only your lift ends.
+`BROKEN` is a failed check or outside condition that a read ends, its advice never to lift.
 A `GUARD` stop SHALL wear the `■` badge and the ring, its move line `lift the stop` and its short reason.
 A `BROKEN` stop SHALL wear the `!` problem badge, no ring. The hover SHALL carry the evidence, the advice and the UTC time.
 #### Scenario: A stopped task says why
@@ -103,6 +104,9 @@ A `BROKEN` stop SHALL wear the `!` problem badge, no ring. The hover SHALL carry
 #### Scenario: A problem and a plan look different
 - **WHEN** a run fails on ABC-42 and ABC-43 has a plan waiting for you
 - **THEN** ABC-42 wears the `!` problem badge and ABC-43 the plain required badge, each with its own legend row
+#### Scenario: A failed acceptance check is lifted like a guard
+- **WHEN** ABC-42 is stopped on ACCEPTANCE_FAILED
+- **THEN** its card reads `lift the stop` on the `■` stop badge, its status ringed
 
 ### Requirement: Your lift ends the stop
 A human's `lift` or `deploy` SHALL clear it, and a new
