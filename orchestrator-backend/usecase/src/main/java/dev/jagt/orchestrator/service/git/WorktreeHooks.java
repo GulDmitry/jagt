@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.git;
 
+import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -106,7 +107,8 @@ public final class WorktreeHooks {
 
   /**
    * Reads the refs git is about to write, one per line, and refuses every destination that is not
-   * the task's own branch. The repository's own hook runs after the guard, on the same input.
+   * the task's own branch, and every commit carrying a file jagt writes into the worktree. The
+   * repository's own hook runs after the guard, on the same input.
    */
   private static String pushGuard(String taskBranch) {
     return """
@@ -114,6 +116,16 @@ public final class WorktreeHooks {
     branch=%s
     project_hook=%s/pre-push
     refs=$(cat)
+    is_artifact() {
+        case "$1" in
+            %s) return 0 ;;
+        esac
+        case "$1" in
+            */*) return 1 ;;
+            %s) return 0 ;;
+        esac
+        return 1
+    }
     while read -r local_ref local_sha remote_ref remote_sha; do
         [ -n "$remote_ref" ] || continue
         if [ "$remote_ref" != "refs/heads/$branch" ]; then
@@ -130,6 +142,14 @@ public final class WorktreeHooks {
                 exit 1
                 ;;
         esac
+        carried=$(git log --name-only --format= --diff-filter=A "$local_sha" --not --remotes)
+        for path in $carried; do
+            if is_artifact "$path"; then
+                echo "jagt refuses this push: $path is a file jagt writes into the worktree, not\
+     the project's." >&2
+                exit 1
+            fi
+        done
     done <<REFS
     $refs
     REFS
@@ -143,7 +163,21 @@ public final class WorktreeHooks {
     fi
     exit 0
     """
-        .formatted(quoted(taskBranch), PROJECT_HOOKS);
+        .formatted(quoted(taskBranch), PROJECT_HOOKS, artifactFolders(), artifactRootNames());
+  }
+
+  private static String artifactFolders() {
+    return Artifact.excludePatterns().stream()
+        .filter(pattern -> pattern.endsWith("/"))
+        .map(folder -> folder.substring(1) + "*")
+        .collect(Collectors.joining("|"));
+  }
+
+  private static String artifactRootNames() {
+    return Artifact.excludePatterns().stream()
+        .filter(pattern -> !pattern.endsWith("/"))
+        .map(name -> name.startsWith("/") ? name.substring(1) : name)
+        .collect(Collectors.joining("|"));
   }
 
   /**

@@ -21,7 +21,7 @@ A review judges a check against this file. The records it condenses keep the evi
 | `ToolGate` | a session's shell line or a plan's command probe, `git worktree add` included | block-list over one line, fails open | the worktree's `pre-push` |
 | `PlanFirst` | a session's file write while its plan waits | allow-list: `plan.md`, `task_visual.md`, `task_notes.md` | the human, who reads the diff |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
-| `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
+| `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit: another branch, a deletion, a commit carrying an `Artifact` at the root (list generated from `Artifact`; `WorktreeWritersFitness` keeps every literal writer on it) | the code host's branch protection |
 | `TaskOffers` git-trust read (`GitDistrust`) | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
 | CLI's OS sandbox, opt-in | a session's shell writing | path allow-list (`WorktreeSandbox`) | the human, asked by the CLI |
 

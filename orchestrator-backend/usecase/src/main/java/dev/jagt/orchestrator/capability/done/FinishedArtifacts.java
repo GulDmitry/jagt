@@ -9,11 +9,13 @@ import dev.jagt.orchestrator.task.launch.TaskName;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +83,10 @@ public class FinishedArtifacts {
       for (String name : Artifact.fileNames()) {
         copyArtifact(worktree.resolve(name), into, name);
       }
+      for (String name : expanded(worktree)) {
+        Files.createDirectories(into.resolve(name).getParent());
+        copyArtifact(worktree.resolve(name), into, name);
+      }
       Files.writeString(
           into.resolve("finished.json"),
           mapper.writerWithDefaultPrettyPrinter().writeValueAsString(finished),
@@ -95,6 +101,28 @@ public class FinishedArtifacts {
     }
     trimToBudget(into);
     return kept ? Optional.of(into) : Optional.empty();
+  }
+
+  private static List<String> expanded(Path worktree) throws IOException {
+    List<String> found = new ArrayList<>();
+    for (String pattern : Artifact.expandable()) {
+      if (pattern.endsWith("/")) {
+        Path folder = worktree.resolve(pattern);
+        if (Files.isDirectory(folder)) {
+          try (Stream<Path> walk = Files.walk(folder)) {
+            walk.filter(Files::isRegularFile)
+                .forEach(file -> found.add(worktree.relativize(file).toString()));
+          }
+        }
+      } else {
+        try (DirectoryStream<Path> top = Files.newDirectoryStream(worktree, pattern)) {
+          for (Path file : top) {
+            found.add(worktree.relativize(file).toString());
+          }
+        }
+      }
+    }
+    return found;
   }
 
   private void copyArtifact(Path artifact, Path into, String name) throws IOException {

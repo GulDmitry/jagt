@@ -103,6 +103,24 @@ class FinishedArtifactsTest {
   }
 
   @Test
+  void keepsEveryRolesReportAndTheFlowEvidenceOfFinishedTask() throws Exception {
+    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+    Files.writeString(worktree.resolve("acceptance-report.md"), "the verdict");
+    Files.writeString(worktree.resolve("security-report.md"), "the findings");
+    Files.createDirectories(worktree.resolve("acceptance"));
+    Files.writeString(worktree.resolve("acceptance/report.json"), "{}");
+    TaskState spent = TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED).build();
+    state.putTask("ABC-42", spent);
+
+    artifacts.keep(FinishedTask.of("ABC-42", spent, 1L));
+
+    Path kept = root.resolve("archive/261028-101530-ABC-42");
+    assertThat(kept.resolve("acceptance-report.md")).hasContent("the verdict");
+    assertThat(kept.resolve("security-report.md")).hasContent("the findings");
+    assertThat(kept.resolve("acceptance/report.json")).hasContent("{}");
+  }
+
+  @Test
   void keepsTheRecordOfTaskThatLeftNoDocumentBehind() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
 

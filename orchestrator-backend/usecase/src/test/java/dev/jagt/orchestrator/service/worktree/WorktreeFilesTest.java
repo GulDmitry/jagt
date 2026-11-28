@@ -139,6 +139,15 @@ class WorktreeFilesTest {
   }
 
   @Test
+  void keepsEveryRolesReportAndTheFlowEvidenceOutOfEveryWorktreesGitStatus(
+      @TempDir Path gitCommonDir) throws Exception {
+    WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+
+    assertThat(Files.readAllLines(gitCommonDir.resolve("info").resolve("exclude")))
+        .contains("/*-report.md", "/acceptance/");
+  }
+
+  @Test
   void keepsTheActiveAgentsOwnFilesOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir)
       throws Exception {
     AgentRuntime runtime = mock(AgentRuntime.class);

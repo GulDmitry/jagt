@@ -33,6 +33,7 @@ technical:
       config-key-vendors: { fitness: ConfigKeyVendorsFitness, governs: class-dependency, max: 0, decision: "0267", hint: "a config key names a vendor only as its own block or inside it: the key choosing a tool names its kind, the vendor is its value" }
       flow-doors: { fitness: FlowDoorsFitness, governs: class-dependency, max: 0, decision: "0144" }
       fact-generations: { fitness: FactGenerationsFitness, governs: class-dependency, max: 0, decision: "0261", hint: "a move whose edge writes what a read saw carries the Generation it was read at, so the reducer drops it once the task moved past" }
+      worktree-writers-are-artifacts: { fitness: WorktreeWritersFitness, governs: count, max: 0, hint: "a file jagt writes into a worktree by a literal name is a task.plan.Artifact, so the push guard and git status know it; dot-names are runtime config and stay out" }
       task-opening-doors: { fitness: TaskOpeningDoorsFitness, governs: class-dependency, max: 0, decision: "0066" }
       command-literals-in-surface: { fitness: CommandLiteralsFitness, governs: count, max: 0, hint: "a surface reads a verb from TaskAction or a GlobalCommand bean, never spells it" }
       turn-verdicts-in-usecase: { engine: scan, glob: "surface/src/main/**/*.java", per: line, regex: "Move\\.|FlowRules\\.|\\.standing\\(\\)\\.status\\(\\)", governs: count, max: 0, hint: "a surface words a verdict, a usecase service decides it" }

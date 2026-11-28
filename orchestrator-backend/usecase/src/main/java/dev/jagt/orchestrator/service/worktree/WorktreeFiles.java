@@ -68,7 +68,7 @@ public final class WorktreeFiles {
     List<String> entries =
         Stream.of(
                 plumbing,
-                Artifact.fileNames().stream(),
+                Artifact.excludePatterns().stream(),
                 runtime.statusExclusions().stream(),
                 PROJECT_FILES.stream())
             .flatMap(names -> names)

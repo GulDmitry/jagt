@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class WorktreeHooksTest {
 
@@ -87,6 +89,60 @@ class WorktreeHooksTest {
 
     assertThat(push.exitValue()).isNotZero();
     assertThat(output).contains("refs/heads/main is not this task's branch");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"plan.md", "acceptance-report.md", "acceptance/shot.png"})
+  void refusesPushCarryingAnArtifactJagtWritesIntoTheWorktree(String artifact) throws Exception {
+    Files.createDirectories(worktree.resolve(artifact).getParent());
+    Files.writeString(worktree.resolve(artifact), "notes");
+    GitRepos.git(runner, worktree, "add", "-f", artifact);
+    GitRepos.git(runner, worktree, "commit", "-qm", "work");
+    WorktreeHooks.install(worktree, "ABC-42");
+
+    Process push =
+        GitRepos.shell(
+            worktree, WorktreeHooks.gitEnv(worktree) + "git push origin HEAD:refs/heads/ABC-42");
+    String output = new String(push.getInputStream().readAllBytes(), UTF_8);
+    assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
+
+    assertThat(push.exitValue()).isNotZero();
+    assertThat(output).contains("refuses this push").contains(artifact);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"docs/plan.md", "plan.md.orig", "lan.md"})
+  void pushesFileNamedLikeAnArtifactButNotOne(String file) throws Exception {
+    Files.createDirectories(worktree.resolve(file).getParent());
+    Files.writeString(worktree.resolve(file), "the project's own");
+    GitRepos.git(runner, worktree, "add", file);
+    GitRepos.git(runner, worktree, "commit", "-qm", "work");
+    WorktreeHooks.install(worktree, "ABC-42");
+
+    Process push =
+        GitRepos.shell(worktree, WorktreeHooks.gitEnv(worktree) + "git push origin HEAD 2>&1");
+
+    assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
+    assertThat(push.exitValue()).isZero();
+  }
+
+  @Test
+  void pushesChangeToTheProjectsOwnTrackedFileNamedLikeAnArtifact() throws Exception {
+    Files.writeString(worktree.resolve("plan.md"), "the project's own");
+    GitRepos.git(runner, worktree, "add", "-f", "plan.md");
+    GitRepos.git(runner, worktree, "commit", "-qm", "project");
+    GitRepos.git(runner, worktree, "push", "-q", "origin", "HEAD:refs/heads/ABC-42");
+    Files.writeString(worktree.resolve("plan.md"), "the project's own, edited");
+    GitRepos.git(runner, worktree, "commit", "-qam", "work");
+    WorktreeHooks.install(worktree, "ABC-42");
+
+    Process push =
+        GitRepos.shell(
+            worktree,
+            WorktreeHooks.gitEnv(worktree) + "git push origin HEAD:refs/heads/ABC-42 2>&1");
+
+    assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
+    assertThat(push.exitValue()).isZero();
   }
 
   @Test

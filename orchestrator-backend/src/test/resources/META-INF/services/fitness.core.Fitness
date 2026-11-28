@@ -34,3 +34,4 @@ technical.maintainability.testability.FixedBugCaseFitness
 technical.maintainability.testability.InstanceStateFitness
 technical.maintainability.analysability.JobCatchFitness
 technical.maintainability.modularity.ConfigKeyVendorsFitness
+technical.maintainability.modularity.WorktreeWritersFitness

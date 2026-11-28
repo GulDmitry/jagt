@@ -40,7 +40,11 @@ public enum Artifact {
    */
   DECISIONS("master-decisions.md"),
   /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */
-  REVIEW("master-review.md");
+  REVIEW("master-review.md"),
+  /** What a checking role concluded about the round, one file per role id. */
+  ROLE_REPORT("*-report.md"),
+  /** What the scripted flows recorded while they ran: their report, screenshots and traces. */
+  EVIDENCE("acceptance/");
 
   private final String fileName;
 
@@ -48,8 +52,34 @@ public enum Artifact {
     return fileName;
   }
 
-  /** Every name jagt writes into a worktree of its own accord, so no caller keeps a second list. */
+  /** A name with a wildcard or a folder stands for several paths, not one file. */
+  public boolean isPlain() {
+    return fileName.indexOf('*') < 0 && !fileName.endsWith("/");
+  }
+
+  /**
+   * Every file name jagt writes into a worktree of its own accord, so no caller keeps a second
+   * list.
+   */
   public static List<String> fileNames() {
-    return Arrays.stream(values()).map(Artifact::fileName).toList();
+    return Arrays.stream(values()).filter(Artifact::isPlain).map(Artifact::fileName).toList();
+  }
+
+  /**
+   * The same names as git's exclude spells them; a wildcard or folder is anchored to the root, so a
+   * project's own nested file of that shape stays visible.
+   */
+  public static List<String> excludePatterns() {
+    return Arrays.stream(values())
+        .map(artifact -> artifact.isPlain() ? artifact.fileName : "/" + artifact.fileName)
+        .toList();
+  }
+
+  /** The wildcard and folder names, which a reader expands against what the worktree holds. */
+  public static List<String> expandable() {
+    return Arrays.stream(values())
+        .filter(artifact -> !artifact.isPlain())
+        .map(Artifact::fileName)
+        .toList();
   }
 }
