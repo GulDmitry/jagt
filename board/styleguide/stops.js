@@ -38,6 +38,12 @@ const STOPS = [
     "Check that the code host's MCP can list the pipelines",
   ],
   [
+    "SILENT",
+    "GUARD",
+    "session silent",
+    "jagt nudged it and handed it to a fresh session; ask it where it stands",
+  ],
+  [
     "UNDELIVERED",
     "BROKEN",
     "a step never landed",
