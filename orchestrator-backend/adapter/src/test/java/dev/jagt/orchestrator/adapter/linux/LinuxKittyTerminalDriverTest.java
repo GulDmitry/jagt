@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
+import dev.jagt.orchestrator.adapter.terminal.KittyProperties;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.testing.FakeClock;
 import dev.jagt.orchestrator.testing.FakeHost;
@@ -19,13 +19,13 @@ class LinuxKittyTerminalDriverTest {
     var driver =
         new LinuxKittyTerminalDriver(
             mock(ProcessRunner.class),
-            new KittyOptions("no-such-kitty", ""),
+            new KittyProperties("no-such-kitty", ""),
             new FakeClock(),
             FakeHost.machine());
 
     assertThat(driver.problems())
         .extracting(Problem::key)
-        .containsExactly("orchestrator.kitty-command");
+        .containsExactly("orchestrator.kitty.command");
   }
 
   @Test
@@ -33,7 +33,7 @@ class LinuxKittyTerminalDriverTest {
     var driver =
         new LinuxKittyTerminalDriver(
             mock(ProcessRunner.class),
-            new KittyOptions("kitty", ""),
+            new KittyProperties("kitty", ""),
             new FakeClock(),
             FakeHost.machine());
 
@@ -46,7 +46,7 @@ class LinuxKittyTerminalDriverTest {
 
     assertThatCode(() ->
             new LinuxKittyTerminalDriver(
-                    runner, new KittyOptions("kitty", ""), new FakeClock(), FakeHost.machine())
+                    runner, new KittyProperties("kitty", ""), new FakeClock(), FakeHost.machine())
                 .bringToFront())
         .doesNotThrowAnyException();
     verifyNoInteractions(runner);

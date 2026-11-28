@@ -65,6 +65,7 @@ single-module repo's own `.env`.
 **`multiplexer`** picks the tool that keeps every agent session running: `tmux` (the default) or `herdr`.
 Each tool has its own block, `tmux: {command, socket}` or `herdr: {command, home}`.
 `viewer.session` names the session either tool runs. tmux reserves `:` and `.` in it.
+The kitty viewer's settings sit in `kitty: {command, fontSize}`.
 
 **Renamed keys** still work until release 0.32.0. Startup names each one you still write, once.
 
@@ -74,6 +75,8 @@ Each tool has its own block, `tmux: {command, socket}` or `herdr: {command, home
 | `tmuxCommand` | `tmux.command` |
 | `tmuxSocket` | `tmux.socket` |
 | `viewer.tmuxSession` | `viewer.session` |
+| `kittyCommand` | `kitty.command` |
+| `kittyFontSize` | `kitty.fontSize` |
 
 **Binaries are resolved by bare name** — PATH, then the usual install directories (a GUI-launched process has
 no Homebrew on PATH), then inside application bundles. Give an absolute path to pin one; for `editorCommand`

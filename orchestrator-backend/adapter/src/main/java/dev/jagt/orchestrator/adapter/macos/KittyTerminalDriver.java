@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.macos;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
-import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
+import dev.jagt.orchestrator.adapter.terminal.KittyProperties;
 import dev.jagt.orchestrator.port.host.Host;
 import java.time.Clock;
 import java.util.List;
@@ -35,7 +35,7 @@ public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
   public KittyTerminalDriver(
       ProcessRunner processRunner,
       OsaScript osaScript,
-      KittyOptions options,
+      KittyProperties options,
       Clock clock,
       Host host) {
     super(processRunner, options, clock, host);

@@ -87,8 +87,9 @@ orchestrator:
   logging: file            # file | console. `console`: every line, the Master's included, is one ECS JSON object on stdout and no log file is written (a container); `file`: the files under logs/
   interactionLog: true    # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
   # terminal: kitty       # kitty | ghostty | none: the viewer; ghostty is macOS only and needs Ghostty 1.3 or newer; `none` opens no window, needs no kitty and `focus` names this key
-  # kittyCommand: kitty   # if the binary is not on PATH
-  # kittyFontSize: 13     # blank keeps kitty.conf's own
+  # kitty:
+  #   command: kitty      # if the binary is not on PATH
+  #   fontSize: 13        # blank keeps kitty.conf's own
   # multiplexer: tmux     # tmux | herdr: what keeps every agent session running; herdr needs its binary, startup names herdr.command when it is missing
   # tmux:
   #   command: tmux       # a bare name is resolved on PATH and in the usual install dirs

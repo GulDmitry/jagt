@@ -58,7 +58,7 @@ A `NoClassDefFoundError` during a startup failure or on exit is the same cause, 
 
 | symptom | fix |
 |---------|-----|
-| Focus raises no window | `grep kitty <data>/logs/jagt-backend.log` — install kitty, or set `orchestrator.kittyCommand` |
+| Focus raises no window | `grep kitty <data>/logs/jagt-backend.log` — install kitty, or set `orchestrator.kitty.command` |
 | You cannot find the log | `tail -f <data>/logs/jagt-backend.log`, in `logs/` of the data folder |
 | A session went missing and you want to know when | `grep -E 'session window changed|session gone|task window' <data>/logs/jagt-backend.log`: one line per change |
 

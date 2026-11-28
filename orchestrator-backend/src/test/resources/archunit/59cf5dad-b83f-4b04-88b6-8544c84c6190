@@ -4,7 +4,6 @@ dev.jagt.orchestrator.adapter.agent.TestOpenCodeRuntimeBuilder
 dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder
 dev.jagt.orchestrator.adapter.assistant.TestOpenCodeGateBuilder
 dev.jagt.orchestrator.adapter.flows.TestAcceptanceRoleSettingsBuilder
-dev.jagt.orchestrator.adapter.macos.TestKittyTerminalDriverBuilder
 dev.jagt.orchestrator.adapter.tmux.TestTmuxHostBuilder
 dev.jagt.orchestrator.job.TestAgentStatusReportsBuilder
 dev.jagt.orchestrator.job.TestSessionBriefBuilder

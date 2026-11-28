@@ -6,7 +6,7 @@ import static org.awaitility.Awaitility.await;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.host.SystemHost;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
-import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
+import dev.jagt.orchestrator.adapter.terminal.KittyProperties;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -33,7 +33,7 @@ class LinuxKittyTerminalDriverLinuxTest {
   private final LinuxKittyTerminalDriver driver =
       new LinuxKittyTerminalDriver(
           runner,
-          new KittyOptions("kitty", ""),
+          new KittyProperties("kitty", ""),
           Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
           new SystemHost());
 

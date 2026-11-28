@@ -108,7 +108,7 @@ class AbstractKittyTerminalDriverTest {
         .thenReturn(new Processes.Result(0, "", ""));
     var driver =
         new AbstractKittyTerminalDriver(
-            runner, new KittyOptions("kitty", ""), new FakeClock(), FakeHost.machine()) {
+            runner, new KittyProperties("kitty", ""), new FakeClock(), FakeHost.machine()) {
           @Override
           protected List<String> platformOptions() {
             return List.of();
@@ -138,7 +138,7 @@ class AbstractKittyTerminalDriverTest {
     when(clock.millis()).thenReturn(0L, 60_000L);
     var driver =
         new AbstractKittyTerminalDriver(
-            runner, new KittyOptions("kitty", ""), clock, FakeHost.machine()) {
+            runner, new KittyProperties("kitty", ""), clock, FakeHost.machine()) {
           @Override
           protected List<String> platformOptions() {
             return List.of();

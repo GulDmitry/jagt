@@ -76,8 +76,9 @@ orchestrator:
   # platform: macos
   # kitty | ghostty | none — the viewer terminal, none opens no window and needs no kitty; ghostty needs macOS and Ghostty 1.3 or newer.
   terminal: kitty
-  # kitty-command: kitty   # override the kitty binary if not on PATH
-  # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own
+  # kitty:
+  #   command: kitty   # override the kitty binary if not on PATH
+  #   font-size: 13    # viewer font size; blank keeps kitty.conf's own
   # Any CLI launcher, resolved on PATH and in the usual install dirs; the worktree path is appended.
   # `open -a` will NOT do: it activates the app without opening the passed directory.
   # Unset, the code verb opens the board's Code tab alone and launches nothing.

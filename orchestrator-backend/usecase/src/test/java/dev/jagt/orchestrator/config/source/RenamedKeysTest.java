@@ -15,7 +15,9 @@ class RenamedKeysTest {
         Map.of("sessionHost", "herdr"),
         Map.of("tmuxCommand", "herdr"),
         Map.of("tmuxSocket", "herdr"),
-        Map.of("viewer", Map.of("tmuxSession", "herdr")));
+        Map.of("viewer", Map.of("tmuxSession", "herdr")),
+        Map.of("kittyCommand", "herdr"),
+        Map.of("kittyFontSize", "herdr"));
   }
 
   @Test
@@ -32,6 +34,13 @@ class RenamedKeysTest {
 
     assertThat(applied)
         .isEqualTo(Map.of("tmux", Map.of("command", "/opt/tmux", "socket", "jagt-sock")));
+  }
+
+  @Test
+  void movesKittyCommandAndFontSizeIntoTheKittyBlock() {
+    Object applied = RenamedKeys.applied(Map.of("kittyCommand", "/opt/kitty", "kittyFontSize", 15));
+
+    assertThat(applied).isEqualTo(Map.of("kitty", Map.of("command", "/opt/kitty", "fontSize", 15)));
   }
 
   @Test

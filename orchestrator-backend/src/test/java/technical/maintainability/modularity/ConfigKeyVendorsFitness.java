@@ -9,13 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import tools.jackson.databind.JsonNode;
 
 public final class ConfigKeyVendorsFitness implements Fitness {
-
-  private static final Set<String> PENDING_RENAME =
-      Set.of("orchestrator.kittyCommand", "orchestrator.kittyFontSize");
 
   @Override
   public Measurement measure(FitnessFunction function, Project project) {
@@ -29,7 +25,7 @@ public final class ConfigKeyVendorsFitness implements Fitness {
     for (Map.Entry<String, JsonNode> property : node.path("properties").properties()) {
       String key = property.getKey();
       String full = path.isEmpty() ? key : path + "." + key;
-      if (!PENDING_RENAME.contains(full) && vendorOutsideItsBlock(key, ancestors)) {
+      if (vendorOutsideItsBlock(key, ancestors)) {
         named.add("vendor named outside its own block: " + full);
       }
       List<String> inside = new ArrayList<>(ancestors);

@@ -35,7 +35,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
   private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
 
   protected AbstractKittyTerminalDriver(
-      ProcessRunner processRunner, KittyOptions options, Clock clock, Host host) {
+      ProcessRunner processRunner, KittyProperties options, Clock clock, Host host) {
     this.processRunner = processRunner;
     this.kittyCommand = Executables.resolve(options.command());
     this.kittyFontSize = options.fontSize();
@@ -48,8 +48,8 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     return Executables.unresolved(kittyCommand)
         ? List.of(
             new Problem(
-                "orchestrator.kitty-command",
-                "orchestrator.kitty-command: '"
+                "orchestrator.kitty.command",
+                "orchestrator.kitty.command: '"
                     + kittyCommand
                     + "' is not on PATH nor in the usual install directories — nothing would show"
                     + " the agents' sessions. Install kitty or set the key to a full path."))

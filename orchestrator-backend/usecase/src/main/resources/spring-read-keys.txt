@@ -16,8 +16,7 @@ hookUrl
 infraWait
 interactionLog
 keepAwake
-kittyCommand
-kittyFontSize
+kitty
 logging
 mcpUrl
 multiplexer

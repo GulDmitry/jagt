@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.linux;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
-import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
+import dev.jagt.orchestrator.adapter.terminal.KittyProperties;
 import dev.jagt.orchestrator.port.host.Host;
 import java.time.Clock;
 import java.util.List;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
   public LinuxKittyTerminalDriver(
-      ProcessRunner processRunner, KittyOptions options, Clock clock, Host host) {
+      ProcessRunner processRunner, KittyProperties options, Clock clock, Host host) {
     super(processRunner, options, clock, host);
   }
 

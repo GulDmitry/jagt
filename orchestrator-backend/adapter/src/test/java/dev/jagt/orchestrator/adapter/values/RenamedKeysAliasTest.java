@@ -19,7 +19,9 @@ class RenamedKeysAliasTest {
     "orchestrator.sessionHost, orchestrator.multiplexer",
     "orchestrator.session-host, orchestrator.multiplexer",
     "orchestrator.tmuxCommand, orchestrator.tmux.command",
-    "orchestrator.tmux-socket, orchestrator.tmux.socket"
+    "orchestrator.tmux-socket, orchestrator.tmux.socket",
+    "orchestrator.kittyCommand, orchestrator.kitty.command",
+    "orchestrator.kitty-font-size, orchestrator.kitty.font-size"
   })
   void readsAnOldKeyAsItsNewOne(String written, String read) {
     MockEnvironment environment = new MockEnvironment();

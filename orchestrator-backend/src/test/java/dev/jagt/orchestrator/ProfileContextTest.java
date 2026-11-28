@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.macos.GhosttyTerminalDriver;
 import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
+import dev.jagt.orchestrator.adapter.terminal.KittyProperties;
 import dev.jagt.orchestrator.adapter.terminal.NoEditorDriver;
 import dev.jagt.orchestrator.adapter.terminal.NoTerminalDriver;
 import dev.jagt.orchestrator.adapter.tmux.TmuxSessionHost;
@@ -132,6 +133,24 @@ class ProfileContextTest {
           assertThat(context.containsBean("claudeSandboxCheck")).isTrue();
           assertThat(context.containsBean("claudeKeychain")).isFalse();
         });
+  }
+
+  @Test
+  void runsTheKittyCommandAndFontSizeTheKittyBlockNames(@TempDir Path root) throws Exception {
+    ShippedRoot.copyInto(root);
+
+    shipped
+        .withPropertyValues(
+            "orchestrator.root=" + root,
+            "orchestrator.config-file=" + root.resolve("jagt.yml"),
+            "orchestrator.state-file=" + root.resolve("state.json"),
+            "orchestrator.platform=linux",
+            "orchestrator.notifier=none",
+            "orchestrator.kitty.command=/opt/kitty",
+            "orchestrator.kitty.font-size=15")
+        .run(context ->
+            assertThat(context.getBean(KittyProperties.class))
+                .isEqualTo(new KittyProperties("/opt/kitty", "15")));
   }
 
   @Test

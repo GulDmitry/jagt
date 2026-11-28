@@ -24,7 +24,9 @@ public final class RenamedKeys {
           new Rename("sessionHost", "multiplexer"),
           new Rename("tmuxCommand", "tmux.command"),
           new Rename("tmuxSocket", "tmux.socket"),
-          new Rename("viewer.tmuxSession", "viewer.session"));
+          new Rename("viewer.tmuxSession", "viewer.session"),
+          new Rename("kittyCommand", "kitty.command"),
+          new Rename("kittyFontSize", "kitty.fontSize"));
 
   private RenamedKeys() {}
 

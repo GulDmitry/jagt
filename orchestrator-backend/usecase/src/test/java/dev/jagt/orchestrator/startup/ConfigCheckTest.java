@@ -145,6 +145,8 @@ class ConfigCheckTest {
           tmuxCommand: /opt/tmux        | orchestrator.tmuxCommand         | orchestrator.tmux.command
           tmuxSocket: jagt              | orchestrator.tmuxSocket          | orchestrator.tmux.socket
           viewer: { tmuxSession: jagt } | orchestrator.viewer.tmuxSession  | orchestrator.viewer.session
+          kittyCommand: /opt/kitty      | orchestrator.kittyCommand        | orchestrator.kitty.command
+          kittyFontSize: 13             | orchestrator.kittyFontSize       | orchestrator.kitty.fontSize
           """)
   void notesOnceTheNewKeyOfEachRenamedKeyStillRead(String written, String oldKey, String newKey)
       throws Exception {

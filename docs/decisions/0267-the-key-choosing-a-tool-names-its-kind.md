@@ -25,7 +25,7 @@ Accepted 2026-11-27.
 - **`config-key-vendors`** (`ConfigKeyVendorsFitness`) fails on a vendor's name in a config key outside that vendor's own block.
   It reads the generated schema of `jagt.yml`, so a key in a record, a default or a `@ConditionalOnProperty` is held alike.
 - `EdgeNamesFitness` exempts only `RenamedKeys`, the table holding the retired names.
-- `kittyCommand` and `kittyFontSize` stay, listed in the check as pending their own rename into a `kitty` block.
+- `kittyCommand` and `kittyFontSize` read the same way as `kitty.command` and `kitty.fontSize` (`KittyProperties`).
 
 ## Rejected
 
