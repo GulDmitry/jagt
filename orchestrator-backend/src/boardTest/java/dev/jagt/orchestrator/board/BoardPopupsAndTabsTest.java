@@ -653,9 +653,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     Page page = openBoard();
 
-    assertThat(page.locator("#pane .actions.flow button").last())
+    assertThat(page.locator("#pane .actions[data-group=\"flow\"] button").last())
         .hasClass(Pattern.compile("\\bapart\\b"));
-    assertThat(page.locator("#pane .actions.flow button.apart")).hasText("Done");
+    assertThat(page.locator("#pane .actions[data-group=\"flow\"] button.apart")).hasText("Done");
     org.assertj.core.api.Assertions.assertThat(
             Objects.requireNonNull(page.locator("#pane button.apart").boundingBox()).x)
         .isGreaterThan(
@@ -724,7 +724,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
     page.navigate("http://localhost:" + port + "/styleguide.html");
 
-    assertThat(page.locator("table.jobs [aria-label='not run yet']")).hasCount(1);
+    assertThat(page.locator("[data-theme=light] table.jobs [aria-label='not run yet']"))
+        .hasCount(1);
   }
 
   @Test

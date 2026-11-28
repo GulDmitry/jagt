@@ -91,7 +91,7 @@ export function Card({
     ${task.detail ? html`<div class=${detailClass(task)}>${task.detail}</div>` : ""}
     ${actionRows(task).map(
       ({ group, items }) =>
-        html`<div class=${`actions ${group}`} data-group=${group}>
+        html`<div class="actions" data-group=${group}>
           ${items.map(
             ({ action }) =>
               html`<${Button}

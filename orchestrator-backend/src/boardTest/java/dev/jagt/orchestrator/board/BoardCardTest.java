@@ -551,9 +551,9 @@ class BoardCardTest extends BoardPageContext {
             new String[] {
               "Check review", "Deploy", "Pause", "Done", "Focus", "Code", "Diff", "Restart agent"
             });
-    assertThat(page.locator("article .actions.flow button"))
+    assertThat(page.locator("article .actions[data-group=\"flow\"] button"))
         .hasText(new String[] {"Check review", "Deploy", "Pause", "Done"});
-    assertThat(page.locator("article .actions.tool button"))
+    assertThat(page.locator("article .actions[data-group=\"tool\"] button"))
         .hasText(new String[] {"Focus", "Code", "Diff", "Restart agent"});
     assertThat(page.locator("article .actions button.primary")).hasText("Deploy");
   }
@@ -564,8 +564,9 @@ class BoardCardTest extends BoardPageContext {
 
     Page page = openLiveBoard();
 
-    assertThat(page.locator("article .actions.tool button.primary")).hasText("Focus");
-    assertThat(page.locator("article .actions.tool button.primary"))
+    assertThat(page.locator("article .actions[data-group=\"tool\"] button.primary"))
+        .hasText("Focus");
+    assertThat(page.locator("article .actions[data-group=\"tool\"] button.primary"))
         .hasCSS("color", "rgb(255, 255, 255)");
   }
 

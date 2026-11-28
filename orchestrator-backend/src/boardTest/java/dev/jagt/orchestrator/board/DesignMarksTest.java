@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 class DesignMarksTest {
 
   private static final Path BOARD = Path.of("../board");
+  private static final Path RULES = Path.of("../docs/rules");
   private static final Pattern RULE = Pattern.compile("([^{}]+)\\{([^{}]*)\\}");
   private static final Pattern MARKING_DECLARATION =
       Pattern.compile(
@@ -30,7 +31,9 @@ class DesignMarksTest {
   @Test
   void everyMarkClassHasOneDesignLineAndOneLegendSample() throws IOException {
     String css = Files.readString(BOARD.resolve("app.css")).replaceAll("(?s)/\\*.*?\\*/", "");
-    String design = Files.readString(Path.of("../docs/rules/design.md"));
+    String design =
+        Files.readString(RULES.resolve("design.md"))
+            + Files.readString(RULES.resolve("design-elements.md"));
     String legend;
     try (Stream<Path> files = Files.list(BOARD.resolve("ui/legend"))) {
       legend =
@@ -102,7 +105,9 @@ class DesignMarksTest {
   @Test
   void everySelectorDesignNamesExistsInTheStylesheet() throws IOException {
     String css = Files.readString(BOARD.resolve("app.css")).replaceAll("(?s)/\\*.*?\\*/", "");
-    String design = Files.readString(Path.of("../docs/rules/design.md"));
+    String design =
+        Files.readString(RULES.resolve("design.md"))
+            + Files.readString(RULES.resolve("design-elements.md"));
     List<String> cssSelectors =
         RULE.matcher(css)
             .results()

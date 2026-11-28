@@ -81,9 +81,9 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 - **AND** while no job's last run failed, no jobs chip shows; once one threw, its hover names it and its cause until its next clean run
 
 ### Requirement: Components ship as the files that run
-The board SHALL render Preact components written with `htm`, served from `board/vendor/` byte for byte as the npm registry published them. The page's
-import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 241 KB
-(`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
+The board SHALL render Preact components written with `htm`, served from `board/vendor/` byte for byte as the npm registry published them.
+The page's import map resolves them. A page SHALL load nothing from outside the jar. The board's code and styles SHALL weigh under 224 KB,
+the style book not counted (`BoardAssetsTest`). A manifest and two PNG icons from the jar make it installable from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
 - **WHEN** `vendor/preact.mjs` differs from the published 11.2.0 by one byte
 - **THEN** `BoardAssetsTest` fails naming the file
@@ -93,10 +93,10 @@ import map resolves them. A page SHALL load nothing from outside the jar, and th
 - **THEN** it opens in its own window at `/`, and `GET /manifest.webmanifest` answers `application/manifest+json`
 
 ### Requirement: The styleguide draws every state
-`styleguide.html` SHALL render each component in each state its `styleguide/` fixtures name, with the modules the
-board renders. A component reads no module state and imports nothing from `ui/`: everything it shows arrives in its props.
+`styleguide.html` SHALL render in both themes each component in each state its `styleguide/` fixtures name: a card per status
+and stop trigger the backend sends, and the legend. A component reads no module state and no `ui/` module: its props carry all it shows.
 #### Scenario: Opening the styleguide
-- **WHEN** a human opens `/styleguide.html`; **THEN** every card state stands as one card under its name, and the page throws nothing
+- **WHEN** a human opens `/styleguide.html`; **THEN** each card state, status and stop trigger stands as a named card in both themes; nothing throws
 
 ### Requirement: A press is logged as a control and a status
 The board SHALL log each press as `{at, control, status}` to `interactions.jsonl` beside `state.json`, unless `interactionLog: false`. `control`

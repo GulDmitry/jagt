@@ -15,6 +15,7 @@
   --danger: light-dark(#b42318, #fca5a5);
   --ok: light-dark(#166534, #86efac);
   --chip-bg: light-dark(#eceef1, #24282c);
+  --shade: rgb(0 0 0);
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 :root[data-theme="light"] {
@@ -104,7 +105,7 @@ header .waiting {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shade) 14%, transparent);
 }
 #reports button {
   border: 0;
@@ -160,10 +161,10 @@ dialog#project-dialog {
   width: min(720px, 94vw);
   background: var(--panel);
   color: var(--text);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--shade) 25%, transparent);
 }
 dialog:not(#report)::backdrop {
-  background: rgba(16, 19, 26, 0.35);
+  background: color-mix(in srgb, var(--shade) 35%, transparent);
 }
 dialog form {
   display: flex;
@@ -533,13 +534,6 @@ h1 {
   border-radius: 999px;
   font-weight: 600;
 }
-.control {
-  color: var(--muted);
-  font-size: 13px;
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-}
 .checkbox {
   cursor: pointer;
 }
@@ -627,10 +621,10 @@ body.stale #report-line,
   max-width: min(1000px, 94vw);
   max-height: 92vh;
   overflow: hidden;
-  box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--shade) 28%, transparent);
 }
 #report::backdrop {
-  background: rgb(0 0 0 / 45%);
+  background: color-mix(in srgb, var(--shade) 45%, transparent);
 }
 .report-head {
   display: flex;
@@ -919,13 +913,13 @@ main#board > #pane:only-child {
 #pane article > .detail {
   flex: 0 0 100%;
 }
-#pane article .actions.flow > button {
+#pane article .actions[data-group="flow"] > button {
   order: 1;
 }
-#pane article .actions.tool > button {
+#pane article .actions[data-group="tool"] > button {
   order: 2;
 }
-#pane article .actions.tool > button:first-child {
+#pane article .actions[data-group="tool"] > button:first-child {
   margin-left: 12px;
 }
 #pane article .actions > button.apart {
@@ -1206,11 +1200,11 @@ a {
   flex-wrap: wrap;
   margin-top: 8px;
 }
-.actions.tool {
+.actions[data-group="tool"] {
   margin-top: 4px;
   gap: 4px;
 }
-.actions.tool button:not(.primary) {
+.actions[data-group="tool"] button:not(.primary) {
   font-size: 11px;
   padding: 2px 7px;
   color: var(--muted);
@@ -1226,7 +1220,7 @@ a {
   bottom: 16px;
   color: var(--muted);
   font-size: 12px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--shade) 12%, transparent);
 }
 #tip {
   position: fixed;
@@ -1243,7 +1237,7 @@ a {
   font-size: 12px;
   line-height: 1.35;
   white-space: pre-wrap;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shade) 24%, transparent);
 }
 #tip.scrolls {
   pointer-events: auto;
@@ -1268,7 +1262,7 @@ a {
   font-size: 13px;
   overflow-wrap: anywhere;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--shade) 18%, transparent);
   width: 100%;
   text-align: left;
 }
@@ -1329,20 +1323,6 @@ button.quiet:hover:not(:disabled) {
   border-style: dashed;
   color: var(--muted);
 }
-#styleguide h2 {
-  font-size: 15px;
-  margin: 16px 16px 0;
-}
-.state {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.state figcaption {
-  font-size: 12px;
-}
-
 #pane .heading {
   margin: 0;
 }

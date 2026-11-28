@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.surface.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.stop.TaskStop;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,6 +18,7 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -150,7 +153,7 @@ class BoardAssetsTest {
   }
 
   @Test
-  void theBoardsCodeAndStylesWeighUnderTwoHundredFortyOneKilobytes() throws IOException {
+  void theBoardsCodeAndStylesWeighUnderTwoHundredTwentyFourKilobytes() throws IOException {
     long bytes;
     try (Stream<Path> files = Files.walk(STATIC)) {
       bytes =
@@ -163,11 +166,13 @@ class BoardAssetsTest {
               .filter(path -> !path.startsWith(STATIC.resolve("viewer")))
               .filter(path -> !path.startsWith(STATIC.resolve("terminal")))
               .filter(path -> !path.startsWith(STATIC.resolve("vendor/xterm")))
+              .filter(path -> !path.startsWith(STATIC.resolve("styleguide")))
+              .filter(path -> !path.endsWith("styleguide.html"))
               .mapToLong(path -> path.toFile().length())
               .sum();
     }
 
-    assertThat(bytes).isLessThan(241 * 1024);
+    assertThat(bytes).isLessThan(224 * 1024);
   }
 
   @Test
@@ -235,5 +240,35 @@ class BoardAssetsTest {
                 .satisfiesAnyOf(
                     text -> assertThat(text).doesNotContain("Intl.DateTimeFormat"),
                     text -> assertThat(text).contains("timeZone: \"UTC\"")));
+  }
+
+  @ParameterizedTest
+  @EnumSource(TaskStatus.class)
+  void theStyleBookDrawsEveryStatusTheBackendSends(TaskStatus status) throws IOException {
+    String fixture = Files.readString(STATIC.resolve("styleguide").resolve("statuses.js"));
+
+    assertThat(fixture)
+        .containsPattern(
+            Pattern.compile(
+                "\\[\\s*\"" + status.name() + "\",\\s*\"" + Pattern.quote(status.label()) + "\""));
+  }
+
+  @ParameterizedTest
+  @EnumSource(TaskStop.Trigger.class)
+  void theStyleBookDrawsEveryStopTheBackendSends(TaskStop.Trigger trigger) throws IOException {
+    String fixture = Files.readString(STATIC.resolve("styleguide").resolve("stops.js"));
+
+    assertThat(fixture)
+        .containsPattern(
+            Pattern.compile(
+                "\\[\\s*\""
+                    + trigger.name()
+                    + "\",\\s*\""
+                    + trigger.kind()
+                    + "\",\\s*\""
+                    + Pattern.quote(trigger.reason())
+                    + "\",\\s*\""
+                    + Pattern.quote(trigger.next())
+                    + "\""));
   }
 }

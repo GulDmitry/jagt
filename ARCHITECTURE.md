@@ -413,7 +413,7 @@ both in `vendor/` behind the import map ([0046](docs/decisions/0046-the-board-re
 | `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
 | `ui/legend`, `ui/legend/` | what every mark means, as the page's own elements — their one definition; `card` and `page` hold the rows |
 | `ui/refresh`, `ui/interactions` | how the page learns a task changed; what the human pressed |
-| `styleguide.html`, `styleguide/` | every component in every state, from fixtures; `boardTest` loads it |
+| `styleguide.html`, `styleguide/` | every component in every state, in both themes, from fixtures; `boardTest` loads it ([design](docs/rules/design.md)) |
 
 - **A component reads no module and calls nothing**: its facts arrive as props, its presses leave as `data-*`.
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a

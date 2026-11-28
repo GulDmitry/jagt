@@ -1,0 +1,31 @@
+#styleguide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 640px), 1fr));
+}
+.theme {
+  background: var(--bg);
+  color: var(--text);
+  min-width: 0;
+}
+.theme[data-theme="light"] {
+  color-scheme: light;
+}
+.theme[data-theme="dark"] {
+  color-scheme: dark;
+}
+#styleguide h2 {
+  font-size: 15px;
+  margin: 16px 16px 0;
+}
+figure.state {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+figure.state figcaption {
+  font-size: 12px;
+}
+#styleguide .legend {
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+}

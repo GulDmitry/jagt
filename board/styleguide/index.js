@@ -1,8 +1,16 @@
 import { render } from "preact";
+import { html } from "../components/html.js";
 import "../ui/tips.js";
-import { cardSection } from "./cardSection.js";
-import { checksSection, jobsSection } from "./jobsSection.js";
-import { listSection } from "./listSection.js";
+import { sections } from "./book.js";
 
 const host = document.getElementById("styleguide");
-if (host) render([cardSection, listSection, jobsSection, checksSection], host);
+if (host)
+  render(
+    ["light", "dark"].map(
+      (theme) =>
+        html`<div class="theme" data-theme=${theme} aria-label=${theme}>
+          ${sections}
+        </div>`,
+    ),
+    host,
+  );

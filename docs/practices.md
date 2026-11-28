@@ -94,7 +94,7 @@ twelve-factor, SLSA build level 2 and test-pyramid rows it names.
 | A prompt is budgeted and evaluated; a vendor CLI's screen is pinned on a capture | [style](rules/style.md), [seams](rules/seams.md) | `session-brief-step-lines`, `promptEval`, `roleEval` | n.a. | `FitnessTest` |
 | A guard names what it cannot stop; the base branch is read-only (ASVS V1 shell, 25010 integrity) | [guards](rules/guards.md), 0022, 0040 | `ToolGateTest`; arguments as lists, one fixed `sh -c` | n.a. | the guard tests |
 | A new role starts from its design file | [components](rules/components.md) | `RoleNamesFitness` | n.a. | `RoleNamesFitness` |
-| What the board draws has one meaning per colour and mark | [design](rules/design.md) | `BoardAssetsTest` | `boardTest` | `BoardAssetsTest` |
+| What the board draws has one meaning per colour and mark | [design](rules/design.md), [elements](rules/design-elements.md), 0271 | `BoardAssetsTest`, `stylebook.test.js` | `boardTest` | `BoardAssetsTest` |
 
 ## Security
 

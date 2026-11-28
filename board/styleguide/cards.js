@@ -12,7 +12,7 @@ const now = Date.now();
  * @param {Partial<Action>} [extra]
  * @returns {Action}
  */
-const verb = (id, label, group, extra) => ({
+export const verb = (id, label, group, extra) => ({
   id,
   label,
   hint: label,
@@ -20,7 +20,7 @@ const verb = (id, label, group, extra) => ({
   apart: id === "done",
   ...extra,
 });
-const tools = [
+export const tools = [
   verb("code", "Code", "tool", { key: "o" }),
   verb("diff", "Diff", "tool", { key: "g" }),
   verb("focus", "Focus", "tool", { onRow: true, key: "f" }),
@@ -49,7 +49,7 @@ const task = (fields) => ({
  * @param {Parameters<typeof task>[0]} fields
  * @param {{ manyProjects?: boolean, flagged?: boolean, blocked?: Set<string>, now?: number, offers?: { part?: string }[] }} [extra]
  */
-const card = (name, fields, extra) => ({
+export const card = (name, fields, extra) => ({
   name,
   props: {
     task: task(fields),
