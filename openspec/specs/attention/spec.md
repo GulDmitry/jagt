@@ -52,7 +52,7 @@ nothing newer behind it past the threshold: the same flip, a NEEDS YOU line, ove
 - **WHEN** a session ends with a reason declared as `continuing-end` (cleared, resumed)
 - **THEN** it is recorded as `IDLE`, not as gone; no banner is sent
 - **WHEN** Claude ends its turn without reporting, or the turn that began with the human's terminal answer to its question does
-- **THEN** it is sent back once to report first, so NEEDS INPUT does not outlive its answer; still unreported, it is silent
+- **THEN** it is sent back once to report first, so NEEDS INPUT outlives no answer; still unreported, it is woken first (`cold-prompts`)
 - **WHEN** a turn at a status the agent works in ends with an `OPEN QUESTIONS` line other than `none` and the report asks nothing
 - **THEN** it is sent back once to report it as `outcome=question`
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`

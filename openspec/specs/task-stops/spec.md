@@ -58,10 +58,10 @@ writes only the stop's hover. A job's `Watch` admits one only where it names the
 - **AND** a deploy any other origin presses is refused and lifts nothing, saying jagt stopped it and only a human presses it until `lift`
 
 ### Requirement: In act the Master decides a stop for a suspected loop
-In `roles.master.mode: act` without `lift` in `mine`, a STALLED, SHIPS, ROUNDS, PACE or UNCHANGED_FAILURE stop SHALL be asked of the Master once
-(`MasterStopJob`). Its first line decides: `lift: <reason>` lifts; `return: <instruction>` lifts and answers the session with it; `escalate: <reason>`
-lifts and restarts it one tier up ([next tier](#requirement-a-stop-lifts-on-the-next-tier)) unless in `mine`. Any other line or none leaves it yours;
-a stop a read ends ends on it.
+In `roles.master.mode: act` without `lift` in `mine`, a STALLED, SHIPS, ROUNDS, PACE, UNCHANGED_FAILURE or SILENT stop SHALL be asked of the
+Master once (`MasterStopJob`). Its first line decides: `lift: <reason>` lifts; `return: <instruction>` lifts and answers the session with it;
+`escalate: <reason>` lifts and restarts it one tier up ([next tier](#requirement-a-stop-lifts-on-the-next-tier)) unless in `mine`. Any other line or
+none leaves it yours; a stop a read ends ends on it.
 #### Scenario: A looping task goes on
 - **WHEN** ABC-42 stops on ROUNDS in `act` and the Master answers `lift: each round answered a new report`
 - **THEN** the stop is lifted as the Master's and its count starts anew

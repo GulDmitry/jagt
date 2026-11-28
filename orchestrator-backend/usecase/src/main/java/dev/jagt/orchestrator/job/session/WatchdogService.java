@@ -26,8 +26,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Reads every open task's session each tick and alerts for the ones that have stopped in a status
- * where the agent should be working. What it finds is the session record's, written by the reducer
- * alone.
+ * where the agent should be working; a running one whose turn ended is woken first. What it finds
+ * is the session record's, written by the reducer alone.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,6 +37,7 @@ public class WatchdogService implements Job {
   private final StateService stateService;
   private final OrchestratorProperties properties;
   private final SessionProbe probe;
+  private final SilentWake wake;
   private final Clock clock;
 
   @Override
@@ -114,7 +115,9 @@ public class WatchdogService implements Job {
     }
     Generation started = Generation.of(Generation.Kind.SESSION_START, task);
     stateService.reduce(taskId, (reducer, current) -> reducer.signed(current, started, read, now));
-    alert(taskId, stateService.task(taskId).orElse(task), now);
+    TaskState current = stateService.task(taskId).orElse(task);
+    alert(taskId, current, now);
+    wake.wake(taskId, current);
   }
 
   private void alert(String taskId, TaskState task, long now) {

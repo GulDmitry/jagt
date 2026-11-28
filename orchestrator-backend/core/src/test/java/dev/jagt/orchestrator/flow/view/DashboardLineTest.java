@@ -205,6 +205,20 @@ class DashboardLineTest {
   }
 
   @Test
+  void showsNothingOfRunningSessionWhoseTurnEndedUntilJagtHasWokenIt() {
+    TaskState task =
+        TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
+            .session(
+                Session.defaults()
+                    .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 1_000, null))
+                    .withQuietSince(2_000)
+                    .withWindow(new Session.Window(Session.Window.State.RUNNING, 1, 0)))
+            .build();
+
+    assertThat(DashboardLine.forTask(task, null, null)).isEqualTo(DashboardLine.Line.NONE);
+  }
+
+  @Test
   void saysWhatToLookAtWhenNothingWasEverReported() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.NEW)

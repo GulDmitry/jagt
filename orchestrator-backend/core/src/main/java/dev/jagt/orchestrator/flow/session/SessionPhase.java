@@ -49,10 +49,31 @@ public enum SessionPhase {
   }
 
   /**
-   * Since when an agent that should be working has stopped, or 0 where it has not, or where its
-   * status idles by design.
+   * Since when an agent that should be working has stopped and a human is owed the word, or 0 where
+   * it has not, where its status idles by design, or where jagt is still to wake it.
    */
   public static long silentSince(TaskState task) {
+    return wakeable(task) ? 0 : stoppedSince(task);
+  }
+
+  /**
+   * Since when a session whose turn ended with no report still runs its process: jagt's to nudge
+   * and relay to before any human is told; 0 otherwise.
+   */
+  public static long wakeableSince(TaskState task) {
+    return wakeable(task) ? stoppedSince(task) : 0;
+  }
+
+  private static boolean wakeable(TaskState task) {
+    Session session = task.work().session();
+    Session.Halt halt = session.halt();
+    return of(session) == QUIET
+        && halt != null
+        && halt.kind() == Session.Halt.Kind.IDLE
+        && Boolean.TRUE.equals(session.alive());
+  }
+
+  private static long stoppedSince(TaskState task) {
     if (!FlowRules.watched(task.standing().status())
         || task.standing().report() == AgentReport.WAIT) {
       return 0;
@@ -97,8 +118,7 @@ public enum SessionPhase {
     return switch (halt.kind()) {
       case GONE -> cause == null ? "the session ended" : "the session ended: " + cause;
       case FAILED -> cause == null ? "its turn failed" : "its turn failed: " + cause;
-      case IDLE ->
-          "its turn ended and nothing has moved since" + (running ? ", process running" : "");
+      case IDLE -> "its turn ended and nothing has moved since";
     };
   }
 }

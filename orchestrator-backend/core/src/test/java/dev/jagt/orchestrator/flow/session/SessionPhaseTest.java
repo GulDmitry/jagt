@@ -139,19 +139,39 @@ class SessionPhaseTest {
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .session(Session.defaults().withHalt(idle).withQuietSince(5_000))
             .build();
-    TaskState running =
+
+    assertThat(SessionPhase.silentBecause(stopped))
+        .isEqualTo("its turn ended and nothing has moved since");
+  }
+
+  @Test
+  void isWakeableNotSilentWhereTurnEndedWithNoReportAndProcessRuns() {
+    TaskState task =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .session(
                 Session.defaults()
-                    .withHalt(idle)
+                    .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 4_000, null))
                     .withQuietSince(5_000)
                     .withWindow(new Session.Window(Session.Window.State.RUNNING, 1, 0)))
             .build();
 
-    assertThat(SessionPhase.silentBecause(stopped))
-        .isEqualTo("its turn ended and nothing has moved since");
-    assertThat(SessionPhase.silentBecause(running))
-        .isEqualTo("its turn ended and nothing has moved since, process running");
+    assertThat(SessionPhase.silentSince(task)).isZero();
+    assertThat(SessionPhase.wakeableSince(task)).isEqualTo(5_000);
+  }
+
+  @Test
+  void isSilentAtOnceWhereProcessDoesNotRun() {
+    TaskState task =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .session(
+                Session.defaults()
+                    .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 4_000, null))
+                    .withQuietSince(5_000)
+                    .withWindow(new Session.Window(Session.Window.State.DEAD_SHELL, 1, 0)))
+            .build();
+
+    assertThat(SessionPhase.silentSince(task)).isEqualTo(5_000);
+    assertThat(SessionPhase.wakeableSince(task)).isZero();
   }
 
   @Test

@@ -21,7 +21,8 @@ public record TestWatchdogServiceBuilder(Path root) {
         .withStateFile(root.resolve("state.json").toString());
   }
 
-  public WatchdogService build(StateService state, SessionProbe probe, Clock clock) {
-    return new WatchdogService(state, properties(), probe, clock);
+  public WatchdogService build(
+      StateService state, SessionProbe probe, SilentWake wake, Clock clock) {
+    return new WatchdogService(state, properties(), probe, wake, clock);
   }
 }

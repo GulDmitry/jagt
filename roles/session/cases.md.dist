@@ -250,6 +250,14 @@ by: jagt
 replies: any; plain, question, permission, no_changes, wait
 A usage limit has reset, so a stopped session goes on.
 
+## silent
+
+step: silent
+at: any but DONE
+by: jagt
+replies: any; plain, question, permission, no_changes, wait
+A running session ended its turn with no report, so jagt nudges it, then hands it to a fresh session.
+
 ## wait-over
 
 step: wait-over

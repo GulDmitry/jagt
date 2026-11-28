@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -65,7 +66,10 @@ class WatchdogServiceTest {
   @BeforeEach
   void givenWatchdogOverAnEmptyState() {
     state = stateService().withRoot(root).build();
-    watchdog = watchdogService().withRoot(root).build(state, probe, new FakeClock());
+    watchdog =
+        watchdogService()
+            .withRoot(root)
+            .build(state, probe, mock(SilentWake.class), new FakeClock());
   }
 
   @Test
@@ -106,6 +110,18 @@ class WatchdogServiceTest {
         .isNotEqualTo(SessionPhase.GONE);
   }
 
+  @Test
+  void wakesTheTaskItJustRead() {
+    SilentWake wake = mock(SilentWake.class);
+    state.putTask("ABC-1", watchedTask().withLastActive(now).build());
+    when(probe.read(anyString(), any(), anyLong(), anyLong()))
+        .thenReturn(new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, now, 300_000, null));
+
+    watchdogService().withRoot(root).build(state, probe, wake, new FakeClock()).run();
+
+    verify(wake).wake(eq("ABC-1"), any(TaskState.class));
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = Session.Window.State.class,
@@ -131,7 +147,9 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 300_000, null));
     WatchdogService counting =
-        watchdogService().withRoot(root).build(counted, probe, new FakeClock());
+        watchdogService()
+            .withRoot(root)
+            .build(counted, probe, mock(SilentWake.class), new FakeClock());
 
     counting.run();
     counting.run();
@@ -188,7 +206,10 @@ class WatchdogServiceTest {
     SessionProbe real =
         new SessionProbe(mock(ConfigService.class), sessions, mock(AgentRuntime.class));
 
-    watchdogService().withRoot(root).build(state, real, new FakeClock()).run();
+    watchdogService()
+        .withRoot(root)
+        .build(state, real, mock(SilentWake.class), new FakeClock())
+        .run();
 
     TaskState task = state.task("ABC-42").orElseThrow();
     assertThat(SessionPhase.of(task.work().session())).isEqualTo(SessionPhase.GONE);
@@ -374,7 +395,9 @@ class WatchdogServiceTest {
         StateService counted =
             stateService().withRoot(root).build(event -> writes.incrementAndGet());
         WatchdogService counting =
-            watchdogService().withRoot(root).build(counted, probe, new FakeClock());
+            watchdogService()
+                .withRoot(root)
+                .build(counted, probe, mock(SilentWake.class), new FakeClock());
 
         counting.run();
         counting.run();
@@ -409,7 +432,11 @@ class WatchdogServiceTest {
         WatchdogService atFiveHundred =
             watchdogService()
                 .withRoot(root)
-                .build(state, probe, Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
+                .build(
+                    state,
+                    probe,
+                    mock(SilentWake.class),
+                    Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
         state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 2_000));
         atFiveHundred.run();
         state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Called(), 3_000));
@@ -424,7 +451,11 @@ class WatchdogServiceTest {
         WatchdogService atFiveHundred =
             watchdogService()
                 .withRoot(root)
-                .build(state, probe, Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
+                .build(
+                    state,
+                    probe,
+                    mock(SilentWake.class),
+                    Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
         try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
           state.updateTask(
               "ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 2_000));
@@ -447,7 +478,11 @@ class WatchdogServiceTest {
         WatchdogService atTenThousand =
             watchdogService()
                 .withRoot(root)
-                .build(state, probe, Clock.fixed(Instant.ofEpochMilli(10_000), ZoneOffset.UTC));
+                .build(
+                    state,
+                    probe,
+                    mock(SilentWake.class),
+                    Clock.fixed(Instant.ofEpochMilli(10_000), ZoneOffset.UTC));
         try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
           state.updateTask(
               "ABC-1", task -> reducer.signed(task, new SessionSign.Ended("boom"), 5_000));
@@ -497,7 +532,9 @@ class WatchdogServiceTest {
         void logsOnceForOneSilenceAcrossRestart() {
           watchdog.run();
           WatchdogService restarted =
-              watchdogService().withRoot(root).build(state, probe, new FakeClock());
+              watchdogService()
+                  .withRoot(root)
+                  .build(state, probe, mock(SilentWake.class), new FakeClock());
 
           restarted.run();
 
@@ -510,7 +547,8 @@ class WatchdogServiceTest {
         void logsOnceForOneSilenceAcrossManyStaleWindows() {
           Clock clock = mock(Clock.class);
           when(clock.millis()).thenReturn(10_000_000L, 10_300_000L, 10_600_000L, 12_000_000L);
-          WatchdogService staling = watchdogService().withRoot(root).build(state, probe, clock);
+          WatchdogService staling =
+              watchdogService().withRoot(root).build(state, probe, mock(SilentWake.class), clock);
 
           staling.run();
           staling.run();

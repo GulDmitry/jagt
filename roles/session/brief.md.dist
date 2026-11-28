@@ -79,6 +79,11 @@ Continue where you stopped.
 The wait you asked for is over: probe what you named. Up: go on with the step you were on. Still down: report
 IN_PROGRESS with outcome=wait again, naming it and the probe.
 
+## silent
+
+Your turn ended with no report. Report where you stand: REVIEW_PENDING if the work is done, outcome=question if you
+need the human, IN_PROGRESS if you go on.
+
 ## restarted
 
 Repeat your last status report.

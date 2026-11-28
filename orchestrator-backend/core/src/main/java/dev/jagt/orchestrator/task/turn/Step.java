@@ -34,6 +34,7 @@ public enum Step {
   RESTARTED("restarted"),
   WAKE("wake"),
   WAIT_OVER("wait-over"),
+  SILENT("silent"),
   ACCEPTANCE_ROUND("acceptance-round");
 
   private static final String JOINT = "+";

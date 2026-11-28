@@ -116,6 +116,12 @@ public record TaskStop(
         "Check that the code host's CLI can list the deploy commit's pipelines",
         Ends.DEPLOY_READ,
         false),
+    SILENT(
+        Kind.GUARD,
+        "session silent",
+        "jagt nudged it and handed it to a fresh session; ask it where it stands",
+        Ends.SESSION_REPORT,
+        false),
     PAUSE(Kind.PAUSE, "you paused it", "Look at what you paused it for", Ends.PAUSE, false);
 
     /** Whose stop it is to read: the human's own pause, a guard jagt holds, or a failure. */

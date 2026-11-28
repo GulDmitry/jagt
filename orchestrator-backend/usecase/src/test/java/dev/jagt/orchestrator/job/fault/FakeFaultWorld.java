@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.master.MasterDeployJob;
+import dev.jagt.orchestrator.job.session.SilentWake;
 import dev.jagt.orchestrator.job.session.WatchdogService;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CodeHost;
@@ -288,7 +289,7 @@ public final class FakeFaultWorld implements AutoCloseable {
         flow,
         new ReviewRound(reader, codeHost),
         new RoundOutcome(new RoundRecord(state, stops, clock, causes), reports, relay),
-        watchdogService().withRoot(root).build(state, probe, clock),
+        watchdogService().withRoot(root).build(state, probe, mock(SilentWake.class), clock),
         masterDeployJob().build(config, commands, worktrees, stops, state, clock));
   }
 

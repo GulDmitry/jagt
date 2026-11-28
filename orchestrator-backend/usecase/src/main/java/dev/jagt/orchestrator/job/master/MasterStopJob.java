@@ -58,7 +58,7 @@ public class MasterStopJob implements TaskJob {
 
   @Override
   public Watch watch() {
-    return Watch.defaults().withStops(StopKind.LIFT);
+    return Watch.defaults().withStops(StopKind.LIFT, StopKind.SESSION_REPORT);
   }
 
   @Override

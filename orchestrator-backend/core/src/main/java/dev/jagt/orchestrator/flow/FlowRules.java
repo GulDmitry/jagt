@@ -416,5 +416,6 @@ public final class FlowRules {
           TaskStop.Trigger.SHIPS,
           TaskStop.Trigger.ROUNDS,
           TaskStop.Trigger.PACE,
+          TaskStop.Trigger.SILENT,
           TaskStop.Trigger.UNCHANGED_FAILURE);
 }
