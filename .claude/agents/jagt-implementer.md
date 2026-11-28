@@ -25,6 +25,8 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    `./gradlew fitness -Pfitness.block=<dimension>[.<characteristic>[.<subcharacteristic>]]` runs one block of the rules.
 6. Judge every `pitestDiff` survivor on your diff: kill it or say why.
 7. One commit for the whole brief, as AGENTS.md says in "Git and committing"; write it in the style of `git log --oneline -5`.
+   Squash onto your base, `git reset --soft "$(git merge-base HEAD release)"`, never onto `release`: it moves while you work,
+   and a soft reset onto a newer one reverts what landed meanwhile.
    A new `docs/decisions/` number is the next free one on `release` after `git rebase release`, taken just before that commit:
    parallel branches take numbers too.
 
