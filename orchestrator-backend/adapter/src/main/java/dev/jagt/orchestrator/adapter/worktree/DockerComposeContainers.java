@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,35 @@ public class DockerComposeContainers implements WorktreeContainers {
   @Override
   public Map<String, String> environment(Path worktree) {
     return Map.of("COMPOSE_PROJECT_NAME", projectName(worktree));
+  }
+
+  @Override
+  public Optional<Path> installCommands(Path worktree) {
+    try {
+      return Optional.of(ComposeShims.install(worktree));
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("compose shims not written")
+          .addKeyValue("path", worktree)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "stacks named after the session's first worktree")
+          .log();
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public void writeStackName(Path worktree) {
+    try {
+      ComposeShims.writeStackName(worktree, projectName(worktree));
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("compose stack name not written")
+          .addKeyValue("path", worktree)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "stacks named after the session's first worktree")
+          .log();
+    }
   }
 
   /**

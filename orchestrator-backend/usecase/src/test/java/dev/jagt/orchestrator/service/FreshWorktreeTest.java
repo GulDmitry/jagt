@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
@@ -22,7 +23,8 @@ import org.junit.jupiter.api.Test;
 class FreshWorktreeTest {
 
   private final Processes processes = mock(Processes.class);
-  private final FreshWorktree fresh = new FreshWorktree(mock(SubAgentBriefing.class), processes);
+  private final FreshWorktree fresh =
+      new FreshWorktree(mock(SubAgentBriefing.class), processes, mock(WorktreeContainers.class));
   private final NewTask request = NewTask.builder("ABC-42", "api").build();
   private final NewRepo seeded =
       new NewRepo(

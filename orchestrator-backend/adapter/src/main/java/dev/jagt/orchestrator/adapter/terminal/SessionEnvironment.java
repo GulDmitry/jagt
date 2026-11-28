@@ -37,7 +37,18 @@ public class SessionEnvironment {
         containers.environment(worktree).entrySet().stream()
             .map(variable -> variable.getKey() + "=" + quoted(variable.getValue()) + " ")
             .collect(Collectors.joining());
-    return WorktreeHooks.gitEnv(worktree) + stacks + outsideGit(worktree) + sessionStart(worktree);
+    return WorktreeHooks.gitEnv(worktree)
+        + stacks
+        + commands(worktree)
+        + outsideGit(worktree)
+        + sessionStart(worktree);
+  }
+
+  private String commands(Path worktree) {
+    return containers
+        .installCommands(worktree)
+        .map(dir -> "PATH=" + quoted(dir.toString()) + ":\"$PATH\" ")
+        .orElse("");
   }
 
   /** Fixed at the process's birth, so a hook of a session since restarted still names its own. */

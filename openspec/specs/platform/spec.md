@@ -92,9 +92,9 @@ IDE service folders present in the base repository SHALL be copied into a fresh 
 - **THEN** the Code tab opens and the editor launches too
 
 ### Requirement: jagt stops a worktree's container stacks
-A session and a command in a task's worktree SHALL carry `COMPOSE_PROJECT_NAME=<repository>-<task>`, so no two tasks share a project.
-Removing a worktree SHALL first run `compose down -v` on that project and on every one whose compose file lies under it (`WorktreeContainers.stop`).
-Another project SHALL never be touched. `orchestrator.containers` selects `docker-compose` (default) or `none`, which sets no name.
+A compose command SHALL run as `<repository>-<task>` of its own worktree, wherever its session started.
+Removing a worktree SHALL first run `compose down -v` on that project and each whose compose file lies under it (`WorktreeContainers.stop`).
+Another project SHALL never be touched. `orchestrator.containers` is `docker-compose` (default) or `none`, which names none.
 A missing or failing Docker SHALL log a WARN at most and never stop the removal.
 
 #### Scenario: A task is done with a stack running in its worktree
@@ -112,6 +112,10 @@ A missing or failing Docker SHALL log a WARN at most and never stop the removal.
 #### Scenario: Two tasks work on one repository
 - **WHEN** ABC-1 and ABC-2 each start a session in their worktree of `shop`
 - **THEN** the sessions run as projects `shop-abc-1` and `shop-abc-2`, and closing ABC-1 takes down `shop-abc-1` alone
+
+#### Scenario: A session runs compose in its second repository
+- **WHEN** a session started in ABC-42's worktree of `a` runs a compose command in its worktree of `b`
+- **THEN** the project is `b-abc-42`
 
 ### Requirement: The notifier is chosen by orchestrator.notifier
 `orchestrator.notifier` SHALL select the `UserNotifier`: `desktop` (default, the platform's own notifier) or `none`.

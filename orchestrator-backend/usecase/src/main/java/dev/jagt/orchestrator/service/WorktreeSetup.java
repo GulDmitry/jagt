@@ -71,6 +71,7 @@ public class WorktreeSetup {
     Path worktreePath = repo.worktreePath();
     WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime);
     WorktreeHooks.install(worktreePath, request.taskId());
+    fresh.nameStack(worktreePath);
     provision(
         worktreePath,
         WorktreeSandbox.of(

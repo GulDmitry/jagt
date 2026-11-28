@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
@@ -31,6 +32,7 @@ class WorktreeSetupTest {
   private final ConfigService config = mock(ConfigService.class);
   private final SubAgentBriefing briefing = mock(SubAgentBriefing.class);
   private final Processes processes = mock(Processes.class);
+  private final WorktreeContainers containers = mock(WorktreeContainers.class);
   private WorktreeSetup setup;
   private Path project;
   private Path worktree;
@@ -50,7 +52,11 @@ class WorktreeSetupTest {
             FakeHost.machine());
     setup =
         new WorktreeSetup(
-            runtime, paths, config, new FreshWorktree(briefing, processes), FakeHost.machine());
+            runtime,
+            paths,
+            config,
+            new FreshWorktree(briefing, processes, containers),
+            FakeHost.machine());
     project = Files.createDirectories(root.resolve("repo"));
     worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     knowledge = worktree.resolve("AGENTS.md");
@@ -225,6 +231,22 @@ class WorktreeSetupTest {
     setup.attach(NewTask.builder("ABC-1", "registry").build(), registry, List.of(api, registry));
 
     verify(runtime).admit(apiWorktree, registryWorktree);
+  }
+
+  @Test
+  void namesTheStackOfRepositoryAddedToItsTaskAfterTheSessionStarted() throws Exception {
+    when(runtime.briefedFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
+
+    setup.attach(NewTask.builder("ABC-1", "registry").build(), registry, List.of(api, registry));
+
+    verify(containers).writeStackName(registryWorktree);
+  }
+
+  @Test
+  void namesTheStackOfTheWorktreeItCutsForTheTask() throws Exception {
+    setup.fill(NewTask.builder("ABC-1", "repo").build(), repo, List.of(repo));
+
+    verify(containers).writeStackName(worktree);
   }
 
   @Test

@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
+import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,11 @@ public class FreshWorktree {
 
   private final SubAgentBriefing briefing;
   private final Processes processes;
+  private final WorktreeContainers containers;
+
+  public void nameStack(Path worktree) {
+    containers.writeStackName(worktree);
+  }
 
   public SubAgentBriefing briefing() {
     return briefing;
