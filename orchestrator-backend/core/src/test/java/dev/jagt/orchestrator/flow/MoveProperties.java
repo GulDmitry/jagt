@@ -27,6 +27,7 @@ class MoveProperties {
       @ForAll("rounds") RoundState round,
       @ForAll boolean agentSilent,
       @ForAll("watches") AutoReviewWatch watch) {
+    // planGateStandsShutOnlyWhereNoRoundIsReportedYet (TaskChartProperties)
     Facts reachable =
         facts
             .withDelivery(
@@ -40,10 +41,7 @@ class MoveProperties {
                     .withPlanClosed(
                         facts.hold().planClosed()
                             && EnumSet.of(
-                                    TaskStatus.NEW,
-                                    TaskStatus.PLAN_PENDING,
-                                    TaskStatus.IN_PROGRESS,
-                                    TaskStatus.VERIFYING)
+                                    TaskStatus.NEW, TaskStatus.PLAN_PENDING, TaskStatus.IN_PROGRESS)
                                 .contains(status)));
 
     Move move = Move.forTask(rules, status, reachable, round, agentSilent, watch);
@@ -58,13 +56,7 @@ class MoveProperties {
         Combinators.combine(flag, flag, flag, flag, flag, flag)
             .as((request, merged, live, conflict, shipped, green) ->
                 new Facts.Delivery(
-                    request,
-                    request && merged,
-                    live,
-                    conflict,
-                    !request && shipped,
-                    green,
-                    () -> false));
+                    request, request && merged, live, conflict, shipped, green, () -> false));
     Arbitrary<Facts.Hold> hold =
         Combinators.combine(flag, flag, flag, flag, flag)
             .as((stopped, paused, arbiters, above, closed) ->

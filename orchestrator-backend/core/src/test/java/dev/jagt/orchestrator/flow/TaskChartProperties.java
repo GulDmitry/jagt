@@ -45,6 +45,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,6 +76,18 @@ class TaskChartProperties {
     Set<String> unclassified = new Explorer(chart).walk().unclassified();
 
     assertThat(unclassified).isEmpty();
+  }
+
+  @Example
+  void planGateStandsShutOnlyWhereNoRoundIsReportedYet() {
+    Set<String> shutAt =
+        new Explorer(chart)
+            .walkFromCreation().reached().stream()
+                .filter(states -> !"OPEN".equals(states.get("plan")))
+                .map(states -> states.get("lifecycle"))
+                .collect(Collectors.toCollection(TreeSet::new));
+
+    assertThat(shutAt).isSubsetOf("NEW", "PLAN_PENDING", "IN_PROGRESS");
   }
 
   @Example
@@ -516,14 +529,29 @@ class TaskChartProperties {
       this.chart = chart;
     }
 
-    record Walk(Set<String> fired, Set<String> unclassified) {}
+    record Walk(Set<String> fired, Set<String> unclassified, Set<Map<String, String>> reached) {}
 
     Set<String> fired() {
       return walk().fired();
     }
 
     Walk walk() {
-      List<Map.Entry<TaskMove, ChartFacts>> presses = presses();
+      return walkFrom(starts(), move -> true);
+    }
+
+    // Autoplanned is sent only to a task being born.
+    Walk walkFromCreation() {
+      Configuration born = chart.chart().initial();
+      Configuration autoplanned =
+          chart
+              .chart()
+              .step(born, around(false, CheckerPhase.NONE), new TaskMove.Autoplanned())
+              .configuration();
+      return walkFrom(List.of(born, autoplanned), move -> !(move instanceof TaskMove.Autoplanned));
+    }
+
+    private Walk walkFrom(List<Configuration> starts, Predicate<TaskMove> taken) {
+      List<Map.Entry<TaskMove, ChartFacts>> presses = presses(taken);
       List<Map.Entry<TaskMove, ChartFacts>> afterTheStart =
           presses.stream().filter(press -> !offers(press)).toList();
       Set<String> fired = new TreeSet<>();
@@ -531,7 +559,7 @@ class TaskChartProperties {
       Set<String> placed = new HashSet<>();
       Set<Key> seen = new HashSet<>();
       Deque<Configuration> frontier = new ArrayDeque<>();
-      starts().stream().filter(start -> seen.add(Key.of(start))).forEach(frontier::add);
+      starts.stream().filter(start -> seen.add(Key.of(start))).forEach(frontier::add);
       Set<Key> startKeys = new HashSet<>(seen);
       while (!frontier.isEmpty()) {
         Configuration at = frontier.poll();
@@ -552,7 +580,10 @@ class TaskChartProperties {
         }
       }
       assertThat(seen).hasSizeLessThan(CEILING);
-      return new Walk(fired, unclassified);
+      return new Walk(
+          fired,
+          unclassified,
+          seen.stream().map(Key::states).collect(Collectors.toCollection(HashSet::new)));
     }
 
     private static boolean learns(
@@ -610,10 +641,10 @@ class TaskChartProperties {
           .moves();
     }
 
-    private List<Map.Entry<TaskMove, ChartFacts>> presses() {
+    private List<Map.Entry<TaskMove, ChartFacts>> presses(Predicate<TaskMove> taken) {
       List<Map.Entry<TaskMove, ChartFacts>> presses = new ArrayList<>();
       List<ChartFacts> surroundings = surroundings();
-      for (TaskMove move : moves()) {
+      for (TaskMove move : moves().stream().filter(taken).toList()) {
         List<ChartFacts> facts = move instanceof TaskMove.Offers ? offered() : surroundings;
         facts.forEach(around -> presses.add(Map.entry(move, around)));
       }
