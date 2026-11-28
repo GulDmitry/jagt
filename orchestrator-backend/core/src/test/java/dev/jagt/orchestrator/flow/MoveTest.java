@@ -53,6 +53,27 @@ class MoveTest {
   }
 
   @ParameterizedTest
+  @EnumSource(
+      value = TaskStatus.class,
+      names = {"REVIEW_PENDING", "REVERTED"})
+  void leadsWithDoneWhereEveryRequestIsMergedAndTheRoundOrRevertWaits(TaskStatus status) {
+    TaskAction primary =
+        Move.forTask(
+                rules,
+                status,
+                Facts.defaults()
+                    .withDelivery(
+                        Facts.Delivery.defaults()
+                            .withHasReviewRequest(true)
+                            .withRequestMerged(true)),
+                RoundState.of(AgentReport.NO_CHANGES, true),
+                false)
+            .primary();
+
+    assertThat(primary).isEqualTo(TaskAction.DONE);
+  }
+
+  @ParameterizedTest
   @EnumSource(TaskStatus.class)
   void withholdsShipWhereEveryRequestIsMerged(TaskStatus status) {
     List<TaskAction> actions =

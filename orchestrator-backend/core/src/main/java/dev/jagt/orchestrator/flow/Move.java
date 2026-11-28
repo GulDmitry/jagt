@@ -162,7 +162,9 @@ public record Move(
    */
   private static boolean nothingLeftToLand(TaskStatus status, Facts facts, RoundState round) {
     return facts.delivery().requestMerged()
-        && FlowRules.awaitsApproval(status)
+        && (FlowRules.awaitsApproval(status)
+            || status == TaskStatus.REVIEW_PENDING
+            || status == TaskStatus.REVERTED)
         && !asking(status, round)
         && !arbiterReading(status, round);
   }
