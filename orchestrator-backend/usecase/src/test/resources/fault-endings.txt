@@ -1,0 +1,4 @@
+# faults a schedule holds, any order | the ending it may reach besides deploys | intended, or the task fixing the defect it pins
+question | stalls REVIEW_PENDING | intended: the human answers
+master-retry | stalls IN_PROGRESS | JAGT-395
+partial | stalls REVIEWED | JAGT-397

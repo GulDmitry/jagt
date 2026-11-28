@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job.fault;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import dev.jagt.orchestrator.job.fault.FakeFaultWorld.Allowed;
 import dev.jagt.orchestrator.job.fault.FakeFaultWorld.Case;
 import dev.jagt.orchestrator.job.fault.FakeFaultWorld.Event;
 import java.util.List;
@@ -16,6 +17,7 @@ import net.jqwik.api.Provide;
 class FaultScheduleProperties {
 
   private static final int DEPTH = 3;
+  private static final List<Allowed> ALLOWED = FakeFaultWorld.allowed();
 
   @Property(generation = GenerationMode.EXHAUSTIVE)
   void eachNamedScheduleEndsAsItsLinePins(@ForAll("named") Case schedule) {
@@ -31,15 +33,27 @@ class FaultScheduleProperties {
     }
   }
 
+  @Property(generation = GenerationMode.EXHAUSTIVE)
+  void eachAllowedEndingIsReachedByItsFaultsAlone(@ForAll("allowed") Allowed row) {
+    try (FakeFaultWorld world = new FakeFaultWorld(0)) {
+      world.runSettling(row.faults());
+
+      assertThat(world.outcome()).as(world.told(row.toString())).isEqualTo(row.ending());
+    }
+  }
+
   @Property(generation = GenerationMode.EXHAUSTIVE, tries = 10_000)
-  void everyScheduleUpToTheDepthAsksOnlyScriptedPortsAndPressesEachVerbOncePerArrival(
+  void everyScheduleUpToTheDepthEndsAsAllowedAsksOnlyScriptedPortsAndTellsEachThingOnce(
       @ForAll("schedules") List<Event> faults) {
     try (FakeFaultWorld world = new FakeFaultWorld(0)) {
       world.runSettling(faults);
 
       assertSoftly(soft -> {
+        soft.assertThat(world.outcome())
+            .as(world.told(faults.toString()))
+            .isIn(Allowed.endings(ALLOWED, faults));
         soft.assertThat(world.failures()).as(world.told(faults.toString())).isEmpty();
-        soft.assertThat(world.pressedTwice()).as(world.told(faults.toString())).isEmpty();
+        soft.assertThat(world.toldTwice()).as(world.told(faults.toString())).isEmpty();
       });
     }
   }
@@ -62,6 +76,11 @@ class FaultScheduleProperties {
   @Provide
   Arbitrary<Case> named() {
     return Arbitraries.of(FakeFaultWorld.cases());
+  }
+
+  @Provide
+  Arbitrary<Allowed> allowed() {
+    return Arbitraries.of(ALLOWED);
   }
 
   @Provide
