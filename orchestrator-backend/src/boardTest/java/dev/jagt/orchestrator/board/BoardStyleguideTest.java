@@ -17,27 +17,6 @@ class BoardStyleguideTest extends BoardPageContext {
 
   private static final String LIGHT = "[data-theme=light] figure.state";
   private static final String DARK = "[data-theme=dark] figure.state";
-  private static final List<String> NOT_IN_A_FRAME_YET =
-      List.of(
-          "role-chips",
-          "search",
-          "menu",
-          "grow",
-          "phase",
-          "sep",
-          "order",
-          "clear-filters",
-          "empty",
-          "open",
-          "field",
-          "field-row",
-          "checkbox",
-          "hint",
-          "report-head",
-          "dialog-foot",
-          "jobs-table",
-          "scrolls",
-          "login");
   private static final Pattern SELECTOR = Pattern.compile("([^{};]+)\\{");
   private static final Pattern CLASS = Pattern.compile("\\.(-?[A-Za-z_][\\w-]*)");
   private static final String SHOWN_IN =
@@ -115,7 +94,6 @@ class BoardStyleguideTest extends BoardPageContext {
             .filter(selector -> !selector.matches("(@|from\\b|to\\b|\\d).*"))
             .flatMap(selector -> CLASS.matcher(selector).results().map(m -> m.group(1)))
             .distinct()
-            .filter(name -> !NOT_IN_A_FRAME_YET.contains(name))
             .toList();
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/styleguide.html");
@@ -130,23 +108,6 @@ class BoardStyleguideTest extends BoardPageContext {
     org.assertj.core.api.Assertions.assertThat(defined)
         .as("classes no dark frame shows")
         .isSubsetOf(dark);
-  }
-
-  @Test
-  void anOwedClassStaysUnshownAndStyled() throws IOException {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/styleguide.html");
-    assertThat(page.locator(".legend-key").first()).isAttached();
-
-    List<String> light = List.of(String.valueOf(page.evaluate(SHOWN_IN, "light")).split(" "));
-    String css = Files.readString(Path.of("../board/app.css"));
-
-    org.assertj.core.api.Assertions.assertThat(NOT_IN_A_FRAME_YET)
-        .as("owed classes a frame now shows")
-        .doesNotContainAnyElementsOf(light);
-    org.assertj.core.api.Assertions.assertThat(NOT_IN_A_FRAME_YET)
-        .as("owed classes app.css no longer styles")
-        .allMatch(name -> Pattern.compile("\\." + name + "(?![\\w-])").matcher(css).find());
   }
 
   @Test

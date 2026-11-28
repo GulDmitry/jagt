@@ -55,6 +55,7 @@
     "styleguide/State.js": "Preact component rendering DOM; covered by boardTest, not loadable in node",
     "styleguide/book.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "styleguide/cards.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
+    "styleguide/chromeSection.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "styleguide/index.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "styleguide/legendSection.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",
     "styleguide/listSection.js": "uses DOM or browser globals; covered by boardTest, not loadable in node",

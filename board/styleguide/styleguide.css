@@ -29,3 +29,12 @@ figure.state figcaption {
 #styleguide .legend {
   grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
 }
+#styleguide header {
+  position: static;
+}
+#styleguide #tip {
+  position: static;
+}
+#styleguide form.login {
+  margin: 0;
+}

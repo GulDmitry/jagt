@@ -7,7 +7,8 @@ import { checksSection, jobsSection } from "../styleguide/jobsSection.js";
 const mainOf = (/** @type {any} */ section) =>
   section.props.children.find((/** @type {any} */ c) => c.type === "main");
 
-const table = () => mainOf(jobsSection).props.children.props.children;
+const table = () =>
+  mainOf(jobsSection).props.children.props.children.props.children;
 
 /** @param {string} id */
 const job = (id) =>

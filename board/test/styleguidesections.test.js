@@ -12,7 +12,8 @@ test("everyCardStateHasItsOwnFrame whenTheCardSectionIsBuilt", () => {
 });
 
 test("fourJobsAreShown whenTheJobsSectionIsBuilt", () => {
-  const table = mainOf(jobsSection).props.children.props.children;
+  const table =
+    mainOf(jobsSection).props.children.props.children.props.children;
 
   assert.deepEqual(
     table.props.jobs.map((/** @type {{id: string}} */ job) => job.id),

@@ -5,7 +5,7 @@ import { State } from "./State.js";
 
 export const jobsSection = html`<section aria-label="Jobs">
   <h2>Jobs</h2>
-  <main><${State} name="one failed, one never run, one running, one whose last run passed"><${JobsTable} now=${Date.now()} jobs=${[
+  <main><${State} name="one failed, one never run, one running, one whose last run passed"><div class="jobs-table"><${JobsTable} now=${Date.now()} jobs=${[
     {
       id: "verify",
       describe: "runs the project’s verify command",
@@ -42,7 +42,7 @@ export const jobsSection = html`<section aria-label="Jobs">
       nextRunAt: Date.now() + 3000000,
       running: false,
     },
-  ]}/></${State}></main>
+  ]}/></div></${State}></main>
 </section>`;
 
 export const checksSection = html`<section aria-label="Project checks">
