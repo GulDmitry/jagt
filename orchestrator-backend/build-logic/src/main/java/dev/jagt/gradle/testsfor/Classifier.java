@@ -123,7 +123,7 @@ final class Classifier {
     selection.projects.add(at.module());
     if (main) {
       testsNaming(at.module(), TOMCAT);
-    } else if (!at.set().equals("test")) {
+    } else if (!at.set().equals("test") && repo.exists(layout.setDirectory(at))) {
       selection.otherSets.add(at.module() + ":" + at.set());
     }
     if (!repo.exists(path)) {

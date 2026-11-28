@@ -31,9 +31,11 @@ record Layout(String backend) {
   }
 
   String testDirectory(String module) {
-    return module.equals(ROOT)
-        ? within() + "src/test/java"
-        : within() + module + "/src/test/java";
+    return setDirectory(new Located(module, "test")) + "/java";
+  }
+
+  String setDirectory(Located at) {
+    return within() + (at.module().equals(ROOT) ? "" : at.module() + "/") + "src/" + at.set();
   }
 
   String directory() {

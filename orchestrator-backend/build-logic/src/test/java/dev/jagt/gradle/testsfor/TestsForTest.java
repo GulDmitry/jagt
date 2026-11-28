@@ -139,6 +139,25 @@ class TestsForTest {
   }
 
   @Test
+  void plansOnlyTheSuccessorsTasksWhenSourceSetIsRenamed(@TempDir Path repo) throws Exception {
+    TestsFor testsFor =
+        TestRepoBuilder.in(repo)
+            .file("orchestrator-backend/src/newEval/java/e/CaseTest.java", "class CaseTest {}")
+            .tracked();
+
+    TestsFor.Plan plan =
+        testsFor.plan(
+            List.of(
+                "orchestrator-backend/src/oldEval/java/e/CaseTest.java",
+                "orchestrator-backend/src/newEval/java/e/CaseTest.java"));
+
+    assertThat(plan.lines())
+        .startsWith(
+            GRADLE + "600 ./gradlew :compileJava :compileTestJava :compileNewEvalJava",
+            GRADLE + "600 ./gradlew :checkstyleMain :checkstyleTest :checkstyleNewEval");
+  }
+
+  @Test
   void runsOnlyTheDocumentRuleTestsThatExistWhenMarkdownChanges(@TempDir Path repo)
       throws Exception {
     TestsFor testsFor =

@@ -7,7 +7,7 @@ def evalIsTriage = evalRole == 'triage'
 def evalIsReviewer = evalRole == 'code-reviewer'
 def evalIsSession = evalRole == 'session'
 def evalSet = evalIsArbiter ? sourceSets.masterEval : evalIsTriage ? sourceSets.triageEval
-        : evalIsReviewer || evalIsSession ? sourceSets.codeReviewEval : sourceSets.acceptanceEval
+        : evalIsReviewer || evalIsSession ? sourceSets.roleReadEval : sourceSets.acceptanceEval
 def evalCli = (project.findProperty('roleCli') ?: 'claude').toString()
 def evalOnOpenCode = evalCli == 'opencode'
 tasks.register('roleEval', Test) {
