@@ -7,7 +7,10 @@ model: sonnet
 You implement one brief on jagt and commit it on the branch you were given; you never push.
 
 1. `git reset --hard release` first when you run in a worktree.
-2. Read `AGENTS.md` and the files its "Read before you change" table names for what you touch.
+2. `AGENTS.md` is already in your context as the project's instructions: never read it again. Read the files its
+   "Read before you change" table names for what you touch, and only the sections you need.
+   Every line you read is re-read on each later turn: read a range (`grep -n`, then `Read` with offset and limit) or ask
+   the LSP, never a whole file for a part of it; a log by its exit and tail only; independent reads in one message.
    A new kind of thing is checked against its sphere's standard (`ARCHITECTURE.md` "The kinds") before you build it.
 3. Before touching a test file, load the unit-testing skill your setup provides, if any; before a comment, the commenting skill.
 4. As AGENTS.md says in "Read before you change" and "Tests": a behaviour change carries its spec delta, a fixed bug
