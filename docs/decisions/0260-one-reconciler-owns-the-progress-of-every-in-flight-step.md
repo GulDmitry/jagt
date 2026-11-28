@@ -16,7 +16,7 @@ Accepted 2026-11-26.
 
 - **One component decides progress**: `flow/Reconciler.decide(task, now)` over the table `flow/StepPolicy`, run by `job/ReconcileJob`. Each tick
   returns STAY, LAND, RERUN, RETRY, RESTART or STOP per task; "supervisor" is `port/host/Supervisor`'s (0161). Every other writer (sessions, sweep,
-  watchdog, Master answers, deploy reads) records a fact or a beat.
+  watchdog, Master answers, deploy reads) records a fact or a beat. Deciding is jagt's tick, stop, retry and restart, never a role's press.
 - **Input is stored facts alone**: the chart configuration, its regions' stamps, a `Beat(step, since, lastAt, attempts, reds)` per step, written
   through the reducer, so a restart changes no decision. A step is derived, never stored: sealed `flow/ProgressStep`, a `StepPolicy` row each.
 - **The tick is door two** (`FlowDoorsFitness`): LAND is `FlowReports.tick`, eventless guarded edges over the CHECKS, APPROVAL, REQUEST, DEPLOY
@@ -24,11 +24,11 @@ Accepted 2026-11-26.
 
 | step (in flight) | beat missed: retry · restart · named stop |
 |------------------|-------------------------------------------|
-| SESSION_TURN (turn open, session holds it) | nudge once · relay to a woken or fresh session once per generation · SILENT |
+| SESSION_TURN (turn open, session holds it) | nudge once · relay to a woken or fresh session once per generation · SILENT, a trigger of its own ending on the session's report (UNDELIVERED ends on a live session) |
 | VERIFICATION (status VERIFYING) | rerun a lost run · none · hand-back to the human naming the cause |
-| HOST_READ (request open) | reread · none · CHECKS past `checksMinutes`, ending on the read (WAIT froze it: S3); red keeps the loop guards |
+| HOST_READ (request open) | none · none · CHECKS past `checksMinutes`, ending on the read (WAIT froze it: S3); red keeps the loop guards |
 | INFRA_RERUN (`InfraPhase` armed) | `InfraRetries` budget · none · INFRA |
-| JUDGE_ROUND (a claim open) | `undoClaim`, claim once · none · turn to the human |
+| JUDGE_ROUND (a claim open) | none · none · turn to the human |
 | DEPLOY (in flight until the post-merge pipeline and the acceptance check are green; the session may not leave) | finish from recorded steps; red once · none · DEPLOY_CONFLICT or DEPLOY_UNREAD |
 
 - **A lost reach of jagt's own** suspends the row's clock and marks the board's head, never a card. An exhausted policy logs one ERROR, sets one
@@ -41,9 +41,9 @@ Accepted 2026-11-26.
   green, resolved and approved; S4 no effect twice for one fact, a restart included; S5 a stopped task takes only the read its stop names. L: within B
   ticks of `StepPolicy`'s budgets and with no human move, every reachable state reaches deployed or closed, a human's advancing action, a stop naming
   its end, or the head naming a lost reach, and no hold on the session outlasts B ticks; JGraphT (test scope) finds the cycles.
-- **A fixed defect becomes a case**, RED with the fix reverted: a fault move in the model or a named schedule line in the simulation; the `Case:`
-  trailer names it.
-- **Migration is one step kind at a time behind `ProgressOwnerFitness`**: no class but `ReconcileJob` decides; the count ratchets to 0.
+- **A fixed defect becomes a case**, RED with the fix reverted, named by its `Case:` trailer: a fault move in the model or a simulation schedule.
+- **Migration**: `ReconcileJob` is born running LAND alone, then takes RETRY, RESTART and STOP one step kind at a time behind
+  `ProgressOwnerFitness`: no class but `ReconcileJob` decides; the count ratchets to 0.
 
 ## Reopens when
 

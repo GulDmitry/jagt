@@ -30,9 +30,9 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state | standard it follows · check pinning it |
 |------|-------------|-------|------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json`; `service/launch/PendingStarts` keeps a start in `pending-starts.json` until its task is written | ISO/IEC 25010 recoverability: atomic writes, state read across a minor, a cut-short start kept · `StateServiceCompatibilityTest`, `TaskLauncherPendingStartTest` |
-| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsFitness`, `FlowDoorsFitness` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions, each drawn in `docs/task-<region>-chart.md` as `TaskChartTest` renders it, the lifecycle's in [`docs/task-chart.md`](docs/task-chart.md): lifecycle, stop (its way out), plan (the gate), report, turn, deploy, session (its signs), git (trust), repo (the repository request), request (the review requests), checks and approval (what a read said), infra (the re-runs), acceptance (its read, pass and round), master (what the Master left), plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` | hexagonal centre, one state machine owning every status · `RingsFitness`, `FlowDoorsFitness` |
 | `capability/` | one thing that can be done to a task | built — a class per verb | command pattern, one class per verb · `KindsTest` |
-| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use; the progress of every in-flight step is decided by `flow/Reconciler`, run by `job/ReconcileJob` alone ([0260](docs/decisions/0260-one-reconciler-owns-the-progress-of-every-in-flight-step.md)) | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
+| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use; the progress of every in-flight step is decided by `flow/Reconciler` and run by `job/ReconcileJob` alone (planned: some twenty jobs still decide it) ([0260](docs/decisions/0260-one-reconciler-owns-the-progress-of-every-in-flight-step.md)) | Spring lifecycle: start work an event or a `Job`, stop work a `SmartLifecycle` · `post-construct-hooks` |
 | `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/channel/Notification` + `port/channel/ChannelDriver` | twelve-factor IV, a channel a backing service chosen in `jagt.yml` · `RoutesTest` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` | OWASP ASVS 5 level 2 · `NotThePageTest`, `LoopbackOrRootTokenTest`; the board's `ui/`: `boardTest` (V8 coverage per file, `board/coverage-floors/floors.json`, a branch floor of a file whose count moves with async timing: the lowest seen minus 3 points, rounded down), `node --test` under c8 |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb | command pattern, one class per verb · `KindsTest` |
@@ -91,7 +91,13 @@ answer. Every type in `flow/`, one question each:
 | `FlowRules` | the questions asked of the chart — `allows`, `allowed`, `next`, `reportable` — and no declaration |
 | `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
-| `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
+| `FlowReports` | door two: a task's report (`FlowRules.reportable`), the host's verdict (`read`, `readDeploy`), and the Reconciler's tick once built ([0260](docs/decisions/0260-one-reconciler-owns-the-progress-of-every-in-flight-step.md)) |
+| `Generation` | the counter a read was taken at; a landing on a state that moved past it is dropped ([0261](docs/decisions/0261-a-read-carries-its-generation-and-every-fault-meets-every-step.md)) |
+| `Reconciler` | `decide(task, now)`: STAY, LAND, RERUN, RETRY, RESTART or STOP from stored facts alone (0260); model-checked, no production caller yet |
+| `ProgressStep` | a piece of work in flight jagt waits on, one of six, derived from the stored facts, never stored |
+| `StepPolicy` | one step's row: the retries and restarts a missed beat earns, the red reads, then its named stop |
+| `Beat` | a step's last sign: since, last at, attempts, red reads |
+| `MoveClasses` | the regions each kind of move concerns, and its class in every state no edge takes it in ([0264](docs/decisions/0264-a-move-has-a-declared-class-in-every-state.md)) |
 | `TaskAction` | a verb, named once for every surface |
 | `Capabilities` | every `flow/capability/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |
@@ -107,16 +113,8 @@ answer. Every type in `flow/`, one question each:
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
 | `TaskView` | what the board renders, built by `service/task/TaskViews` |
 
-- The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md); the stop's way out, in
-  [`docs/task-stop-chart.md`](docs/task-stop-chart.md); the plan gate, in [`docs/task-plan-chart.md`](docs/task-plan-chart.md); the report, in
-  [`docs/task-report-chart.md`](docs/task-report-chart.md); the turn, in [`docs/task-turn-chart.md`](docs/task-turn-chart.md); the session's signs,
-  in [`docs/task-session-chart.md`](docs/task-session-chart.md); the deploy, in [`docs/task-deploy-chart.md`](docs/task-deploy-chart.md); the git
-  trust, in [`docs/task-git-chart.md`](docs/task-git-chart.md); the repository request, in [`docs/task-repo-chart.md`](docs/task-repo-chart.md); the
-  review requests, in [`docs/task-request-chart.md`](docs/task-request-chart.md); the checks and the approval a read said, in
-  [`docs/task-checks-chart.md`](docs/task-checks-chart.md) and [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure
-  re-runs, in [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
-  [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
-  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/turn/ToldOnce`, written by the reducer alone
+- The lifecycle's legal moves are `flow/TaskChart`, each region drawn as the `flow/` row of [the kinds](#the-kinds) names.
+- What was told once is the ledger `task/turn/ToldOnce`, written by the reducer alone
   ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other marks are bookkeeping, written by `withMark`.
 - `withStatus` has exactly two callers outside the record: the two doors (`FlowDoorsFitness`). A task is born at NEW (`service/TaskProvisioning`).
 - **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
